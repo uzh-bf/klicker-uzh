@@ -1076,10 +1076,12 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="input-numerical-3"]').clear().type(this.data.NR.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+    cy.dismissToasts()
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-4"]').type(this.data.FT.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+    cy.dismissToasts()
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[id="selection-5-field-0"]').click()
     cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
@@ -1088,6 +1090,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[id="react-select-selection-5-field-1-option-2"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+    cy.dismissToasts()
     cy.answerCaseStudy({
       elementIx: 6,
       answers: this.data.CS.answers,
@@ -1098,8 +1101,10 @@ describe('Different live-quiz workflows', function () {
         .should('be.disabled'),
       sequentialUI: true,
     })
+    cy.dismissToasts()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+    cy.dismissToasts()
     cy.get('[data-cy="student-submit-answer"]').click() // no answer required for content element
     cy.wait(500)
 
@@ -1810,9 +1815,9 @@ describe('Different live-quiz workflows', function () {
       .clear()
       .type(this.data.liveQuiz.newSCTitle)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
-      .realType(this.data.liveQuiz.newSCContent)
+      .typeRichText(this.data.liveQuiz.newSCContent)
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(1000) // wait for the question to be saved and the modal to be closed
 

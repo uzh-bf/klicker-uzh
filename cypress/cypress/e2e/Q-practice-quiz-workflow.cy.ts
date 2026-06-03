@@ -1229,9 +1229,9 @@ describe('Different practice quiz workflows', function () {
       .clear()
       .type(this.data.manipulation.newNRTitle)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
-      .realType(this.data.manipulation.newNRContent)
+      .typeRichText(this.data.manipulation.newNRContent)
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(1000) // wait for the question to be saved and the modal to be closed
 

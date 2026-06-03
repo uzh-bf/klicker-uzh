@@ -7,6 +7,55 @@ import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
 
+const richTextSelector = '[contenteditable="true"]'
+
+function getRichTextSubject(subject: unknown): JQuery<HTMLElement> | undefined {
+  if (!subject) return undefined
+
+  const $subject = Cypress.$(subject as any) as JQuery<HTMLElement>
+  const $richText = $subject
+    .filter(richTextSelector)
+    .add($subject.closest(richTextSelector))
+    .add($subject.find(richTextSelector))
+
+  return $richText.length > 0 ? $richText.first() : undefined
+}
+
+Cypress.Commands.add(
+  'typeRichText',
+  { prevSubject: 'element' },
+  (subject, text: string, options: Partial<Cypress.TypeOptions> = {}) => {
+    const $subject = Cypress.$(subject as any) as JQuery<HTMLElement>
+    const $richText = getRichTextSubject(subject) ?? $subject.first()
+
+    return cy
+      .wrap($richText, { log: false })
+      .scrollIntoView()
+      .should('be.visible')
+      .click()
+      .type(text, {
+        parseSpecialCharSequences: false,
+        ...options,
+      })
+      .then(() => undefined)
+  }
+)
+
+Cypress.Commands.add('dismissToasts', () => {
+  cy.get('body').then(($body) => {
+    const $closeButtons = $body.find(
+      '[data-sonner-toast] [data-close-button]:not([data-disabled="true"])'
+    )
+
+    if ($closeButtons.length === 0) return
+
+    cy.wrap($closeButtons, { log: false }).each(($button) => {
+      cy.wrap($button, { log: false }).click({ force: true })
+    })
+    cy.get('[data-sonner-toast]', { timeout: 2000 }).should('not.exist')
+  })
+})
+
 // Only do this in headless/CI runs to keep rich errors locally
 if (!Cypress.config('isInteractive')) {
   configure({
@@ -2046,6 +2095,11 @@ declare global {
         stackIx,
         instanceIx,
       }: TotalPointsArgs & StackInstanceArgs): Chainable<void>
+      typeRichText(
+        text: string,
+        options?: Partial<TypeOptions>
+      ): Chainable<void>
+      dismissToasts(): Chainable<void>
     }
   }
 }

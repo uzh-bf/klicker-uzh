@@ -133,7 +133,8 @@ Rollup workspaces: `apps/backend-docker`, `apps/hatchet-worker-general`, `apps/h
 - This branch takes the Next 16.2.6 release and direct maintenance/security bumps for `@modelcontextprotocol/sdk`, `nodemailer`, `validator`, Rollup, and Vitest.
 - The Rollup override in `pnpm-workspace.yaml` forces vulnerable `rollup@>=4.0.0 <4.59.0` ranges to `4.59.1`.
 - Shared Next image optimization is stricter than the first implementation attempt: local-IP optimization is allowed only in development and test, not staging.
-- `pnpm audit --audit-level high` is still not run to completion because npm audit sends dependency inventory to the configured registry. This needs explicit approval before running against the public npm advisory endpoint.
+- Final local security review on 2026-06-03 found no new high-confidence exploitable issue in the validation fixes. The latest runtime code change is a type-only migration client import alignment; the Cypress helpers and screenshots are test/report artifacts.
+- `pnpm audit --audit-level high` is still not run because npm audit sends dependency inventory to the configured registry. This needs explicit approval before running against the public npm advisory endpoint.
 
 ## Verification
 
@@ -144,8 +145,17 @@ Passed:
 - `pnpm run check`
 - `pnpm run lint`
 - `pnpm run build`
+- `pnpm run build:test`
 - `git diff --check`
 - Commit hook for final commit: `check`, lint, staged Prettier, and syncpack
+- `pnpm --filter @klicker-uzh/prisma generate`
+- `pnpm --filter @klicker-uzh/prisma build`
+- `pnpm --filter @klicker-uzh/prisma build:test`
+- `pnpm --filter @klicker-uzh/backend-docker check`
+- `pnpm --filter @klicker-uzh/cypress exec tsc --noEmit`
+- Focused Cypress live-quiz rerun after the mobile-toast synchronization fix: `CYPRESS_FAIL_FAST=false ... pnpm --filter @klicker-uzh/cypress exec cypress run --spec cypress/e2e/O-live-quiz-workflow.cy.ts` -> 78 tests passed.
+- Full Cypress E2E against the local production-style test stack: `CYPRESS_FAIL_FAST=false ... pnpm --filter @klicker-uzh/cypress test:run:raw` -> 758 tests passed across 26 specs.
+- Playwright Chromium smoke against the clean seeded local test stack: `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium` -> 1 test passed.
 - `pnpm --filter @klicker-uzh/util test` -> 46 tests passed
 - `pnpm --filter @klicker-uzh/grading test` -> 10 tests passed
 - `pnpm --filter @klicker-uzh/chat test:run` -> 40 tests passed
@@ -163,15 +173,19 @@ Browser smoke screenshots against built Next apps:
 Blocked or pending:
 
 - `pnpm audit --audit-level high`: pending explicit approval to submit dependency inventory to npm's advisory endpoint.
-- `pnpm --filter @klicker-uzh/cypress test:run`: pending a full local E2E stack with required ports free.
-- `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 pnpm --filter @klicker-uzh/playwright test:run`: pending a full local E2E stack with required ports free.
-- Current local blocker: unrelated `data-ingestion-hatchet-lite-1` owns Hatchet ports `7077` and `8888`, preventing the stopped `klicker-uzh-hatchet-1` container from starting for the Klicker E2E stack.
-- The local Klicker PostgreSQL database needs an explicit destructive-reset approval before the Cypress/Playwright E2E schema and seed setup can be completed.
-- Previously approved stops cleared the earlier `3002` and `7078` conflicts; `lsof` currently shows no listener on either port.
+- Full configured Playwright cross-browser run: Chromium passed, but Firefox and WebKit failed before app execution because their Playwright browser binaries were missing locally. A `playwright install firefox webkit` attempt downloaded Firefox but then stalled in the browser downloader with only a partial cache, so it was terminated. This is local browser-cache/tooling state, not an observed Klicker app failure.
+
+Real local test-stack browser verification with `npx agent-browser`:
+
+- PWA login before interaction: `project/2026-06-01-next-16-screenshots/klicker-next16-realstack-pwa-login.png`
+- PWA signed-in homepage: `project/2026-06-01-next-16-screenshots/klicker-next16-realstack-pwa-home.png`
+- Auth/manage delegated login screen: `project/2026-06-01-next-16-screenshots/klicker-next16-realstack-auth-manage-login.png`
+- Manage signed-in library view: `project/2026-06-01-next-16-screenshots/klicker-next16-realstack-manage.png`
+- Control course selection view: `project/2026-06-01-next-16-screenshots/klicker-next16-realstack-control.png`
 
 ## Follow-Up Upgrade Plan
 
-1. Finish E2E/audit validation for this Next 16 PR after the local port and disclosure blockers are cleared.
+1. Run `pnpm audit --audit-level high` after explicit disclosure approval, and rerun full Playwright cross-browser once the local Firefox/WebKit browser cache is repaired.
 2. Open a separate Turbopack migration PR. This should remove `--webpack`, validate the custom webpack `conditionNames` behavior, and specifically prove the PWA worker generation story.
 3. Open a separate TypeScript 6 PR. Start with `pnpm run check`, inspect all `tsconfig.json` files for deprecated/default-sensitive options, then fix compiler errors package-by-package.
 4. Decide whether to keep `@ducanh2912/next-pwa` or move the PWA apps to Serwist/native service-worker handling before Turbopack becomes mandatory for this repo.
@@ -182,7 +196,7 @@ Blocked or pending:
 Use this prompt for the next implementation agent if the work needs to be handed off:
 
 ```text
-Goal: Finish the KlickerUZH Next 16 upgrade PR with full E2E validation and merge-ready reporting.
+Goal: Finish the residual audit and cross-browser Playwright follow-up for the KlickerUZH Next 16 upgrade PR.
 
 Repo: /Users/roland/.codex/worktrees/df0c/klicker-uzh
 Branch: codex/next-16-upgrade
@@ -197,32 +211,16 @@ Context:
 - Leave unrelated untracked files alone, especially dependency-audit-report.md unless the user explicitly includes it.
 
 Required process:
-1. Re-read project/2026-06-01-next-16-upgrade-plan.md and update its Progress section while working.
-2. Verify the branch status and avoid staging unrelated files.
-3. Clear the local E2E blockers:
-   - Get explicit user approval before stopping unrelated containers.
-   - Free Hatchet ports 7077 and 8888, currently held by data-ingestion-hatchet-lite-1.
-   - Get explicit user approval before resetting the local Klicker PostgreSQL database for E2E schema/seed setup.
-4. Get explicit user approval before running pnpm audit because npm audit submits dependency inventory to the configured registry.
-5. Run:
-   - pnpm install --frozen-lockfile
-   - pnpm run check:syncpack
-   - pnpm run check
-   - pnpm run lint
-   - pnpm run build
-   - pnpm audit --audit-level high
-   - pnpm --filter @klicker-uzh/cypress test:run
-   - PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 pnpm --filter @klicker-uzh/playwright test:run
-6. Run browser verification with screenshots for auth, manage, pwa, control, and chat against the real local dev/test environment, not only built smoke servers.
-7. Confirm PWA service workers/custom workers are generated for frontend-control, frontend-manage, and frontend-pwa.
-8. Run a final security review before branch finalization. Handle findings or explicitly document deferrals.
-9. Use $mr-description-writer for the PR body. The body must cover the whole branch against origin/codex/dependency-refresh-lts: commits, diff, plan/progress, validation, screenshots, risks, and follow-ups.
-10. Push the branch and create or update a draft PR titled chore(deps): upgrade Next apps to Next 16.
+1. Re-read project/2026-06-01-next-16-upgrade-plan.md and this report before updating the PR.
+2. Get explicit user approval before running pnpm audit because npm audit submits dependency inventory to the configured registry.
+3. Repair or reinstall the missing local Playwright Firefox/WebKit browser binaries; the previous `playwright install firefox webkit` attempt stalled in the downloader after partially downloading Firefox.
+4. Run:
+   - `pnpm audit --audit-level high`
+   - `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 pnpm --filter @klicker-uzh/playwright test:run`
+5. Update the PR body with the final audit and cross-browser Playwright result.
 
 Completion criteria:
-- All required checks pass, including Cypress and Playwright E2E.
 - pnpm audit high passes or any remaining advisory is documented with a concrete owner/decision.
+- Full Playwright cross-browser passes, or Firefox/WebKit browser-cache failure remains documented as local tooling state.
 - The draft PR body contains screenshots and exact validation evidence.
-- The plan Progress and report are current.
-- Final response includes PR URL, validation summary, residual risk, and Next Steps.
 ```

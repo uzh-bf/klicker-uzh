@@ -1,6 +1,6 @@
 // ref: https://github.com/prisma/prisma/discussions/10854
 
-import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
+import type { PrismaMigrationClient } from '@klicker-uzh/graphql/dist/types/app.js'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 
 interface Migration {
