@@ -64,6 +64,19 @@ architecture should stay with focused TypeScript MCP services:
   passed. Local review/simplification moved capability tests away from
   `server.ts` imports so local validation does not depend on missing FastMCP
   symlinks in the temp worktree. Next: Slice 5 local E2E smoke scripts.
+- 2026-06-03: Slice 5 done. Added small local smoke scripts for student and
+  lecturer MCP services plus a shared raw Streamable HTTP JSON-RPC smoke
+  client. Scripts cover health, initialize, tool discovery, capability tools,
+  representative read paths, lecturer proposal creation, and optional student
+  answer submission behind `MCP_STUDENT_SMOKE_SUBMIT=1`. Evidence: scripts
+  compile with strict TypeScript to `/private/tmp/mcp-smoke-build`, compiled
+  student and lecturer `--dry-run` entrypoints passed, Prettier passed,
+  `git diff --check` passed, and the shared smoke client passed standalone
+  strict TypeScript. Live local smoke was not run because `localhost:7080` and
+  `localhost:7081` were not listening; package-script dry-run was also blocked
+  in this sparse temp worktree by pnpm/corepack `fetch failed`, so validation
+  used the compiled no-network path. Next: final whole-branch review/security
+  pass and PR description refresh.
 
 ## What To Take Over
 
