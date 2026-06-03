@@ -1,4 +1,5 @@
 import {
+  ElementType,
   ParameterType,
   PublicationStatus,
   UserRole,
@@ -47,6 +48,21 @@ function createPublishedActivity() {
         value: '42',
       },
     ],
+  }
+}
+
+function createSubmittableActivityInstance() {
+  return {
+    id: 33,
+    decisionsSubmittedAt: null,
+    group: {
+      participants: [{ id: 'participant-1' }],
+    },
+    groupActivity: {
+      status: PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(Date.now() - 60_000),
+      scheduledEndAt: new Date(Date.now() + 60_000),
+    },
   }
 }
 
@@ -189,6 +205,89 @@ describe('participant group activity routers', () => {
         groupId: 'group-1',
       })
     ).resolves.toEqual({ groupActivity: null })
+
+    expect(transaction).not.toHaveBeenCalled()
+  })
+
+  test('submits group activity decisions and updates aggregate instance results', async () => {
+    const elementInstanceUpdate = vi.fn()
+    const tx = {
+      elementInstance: {
+        findUnique: vi.fn().mockResolvedValue({
+          elementData: { type: ElementType.SC },
+          results: { choices: { 0: 0, 1: 0 }, total: 0 },
+        }),
+        update: elementInstanceUpdate,
+      },
+    }
+    const transaction = vi.fn(async (fn) => fn(tx))
+    const activityInstanceUpdate = vi.fn().mockResolvedValue({ id: 33 })
+    const prisma = {
+      groupActivityInstance: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(createSubmittableActivityInstance()),
+        update: activityInstanceUpdate,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.submitGroupActivityDecisions({
+        activityId: 33,
+        responses: [
+          {
+            instanceId: 101,
+            type: ElementType.SC,
+            choicesResponse: [{ ix: 1, selected: true }],
+          },
+        ],
+      })
+    ).resolves.toEqual({ groupActivityInstanceId: 33 })
+
+    expect(transaction).toHaveBeenCalledOnce()
+    expect(elementInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: 101 },
+      data: {
+        results: { choices: { 0: 0, 1: 1 }, total: 1 },
+      },
+    })
+    expect(activityInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: 33 },
+      data: {
+        decisions: [
+          {
+            instanceId: 101,
+            type: ElementType.SC,
+            choicesResponse: [{ ix: 1, selected: true }],
+          },
+        ],
+        decisionsSubmittedAt: expect.any(Date),
+      },
+      select: { id: true },
+    })
+  })
+
+  test('returns null when submitting decisions for a non-member group', async () => {
+    const transaction = vi.fn()
+    const prisma = {
+      groupActivityInstance: {
+        findUnique: vi.fn().mockResolvedValue({
+          ...createSubmittableActivityInstance(),
+          group: { participants: [] },
+        }),
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.submitGroupActivityDecisions({
+        activityId: 33,
+        responses: [],
+      })
+    ).resolves.toEqual({ groupActivityInstanceId: null })
 
     expect(transaction).not.toHaveBeenCalled()
   })

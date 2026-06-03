@@ -1,11 +1,30 @@
 import {
+  ElementType,
   ParameterType,
   PublicationStatus,
   type GroupActivity,
   type GroupActivityInstance,
+  type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import type {
+  ElementInstanceResults,
+  ElementResultsCaseStudy,
+  ElementResultsChoices,
+  ElementResultsOpen,
+  ElementResultsSelection,
+  FreeTextElementData,
+  NumericalElementData,
+  StackResponseInput,
+} from '@klicker-uzh/types'
 import dayjs from 'dayjs'
+import {
+  updateCaseStudyResults,
+  updateChoicesResults,
+  updateFreeTextResults,
+  updateNumericalResults,
+  updateSelectionResults,
+} from './participantStackEvaluations.js'
 
 type GroupActivityClueSource = {
   displayName: string
@@ -28,6 +47,10 @@ export type StartGroupActivityOutput = {
     id: string
     status: PublicationStatus
   } | null
+}
+
+export type SubmitGroupActivityDecisionsOutput = {
+  groupActivityInstanceId: number | null
 }
 
 function shuffleItems<T>(items: T[]) {
@@ -183,4 +206,174 @@ export async function startGroupActivity({
     console.error(error)
     return { groupActivity: null }
   }
+}
+
+function isObjectResult(
+  results: unknown
+): results is Record<string, unknown> & ElementInstanceResults {
+  return (
+    typeof results === 'object' && results !== null && !Array.isArray(results)
+  )
+}
+
+function isSubmittableGroupActivity(
+  activity: Pick<
+    GroupActivity,
+    'scheduledEndAt' | 'scheduledStartAt' | 'status'
+  >
+) {
+  return (
+    activity.status !== PublicationStatus.DRAFT &&
+    activity.status !== PublicationStatus.SCHEDULED &&
+    activity.status !== PublicationStatus.ENDED &&
+    isActivityAvailable({ ...activity, id: '', clues: [] })
+  )
+}
+
+async function updateAggregatedElementResults({
+  prisma,
+  response,
+}: {
+  prisma: PrismaClient
+  response: StackResponseInput
+}) {
+  if (response.type === ElementType.CONTENT) return
+
+  const instance = await prisma.elementInstance.findUnique({
+    where: { id: response.instanceId },
+    select: {
+      elementData: true,
+      results: true,
+    },
+  })
+  if (!instance?.elementData || !isObjectResult(instance.results)) return
+
+  const previousResults = instance.results
+  let updatedResults:
+    | { modified: boolean; results: ElementInstanceResults }
+    | undefined
+
+  if (
+    (response.type === ElementType.SC ||
+      response.type === ElementType.MC ||
+      response.type === ElementType.KPRIM) &&
+    'choices' in previousResults
+  ) {
+    updatedResults = updateChoicesResults({
+      previousResults: previousResults as ElementResultsChoices,
+      response: { choices: response.choicesResponse ?? [] },
+    })
+  } else if (
+    response.type === ElementType.NUMERICAL &&
+    'responses' in previousResults
+  ) {
+    updatedResults = updateNumericalResults({
+      previousResults: previousResults as ElementResultsOpen,
+      elementData: instance.elementData as NumericalElementData,
+      response: { value: String(response.numericalResponse) },
+    })
+  } else if (
+    response.type === ElementType.FREE_TEXT &&
+    'responses' in previousResults
+  ) {
+    updatedResults = updateFreeTextResults({
+      previousResults: previousResults as ElementResultsOpen,
+      elementData: instance.elementData as FreeTextElementData,
+      response: { value: response.freeTextResponse ?? '' },
+    })
+  } else if (
+    response.type === ElementType.SELECTION &&
+    'selections' in previousResults
+  ) {
+    updatedResults = updateSelectionResults({
+      previousResults: previousResults as ElementResultsSelection,
+      response: { selection: response.selectionResponse ?? [] },
+    })
+  } else if (
+    response.type === ElementType.CASE_STUDY &&
+    'assessments' in previousResults
+  ) {
+    updatedResults = updateCaseStudyResults({
+      previousResults: previousResults as ElementResultsCaseStudy,
+      response: { assessment: response.caseStudyResponse ?? [] },
+    })
+  } else {
+    console.log('Element type not supported for group activity')
+    return
+  }
+
+  if (!updatedResults.modified) return
+
+  await prisma.elementInstance.update({
+    where: { id: response.instanceId },
+    data: {
+      results: updatedResults.results as Prisma.InputJsonValue,
+    },
+  })
+}
+
+export async function submitGroupActivityDecisions({
+  activityId,
+  participantId,
+  prisma,
+  responses,
+}: {
+  activityId: number
+  participantId: string
+  prisma: PrismaClient
+  responses: StackResponseInput[]
+}): Promise<SubmitGroupActivityDecisionsOutput> {
+  const groupActivityInstance = await prisma.groupActivityInstance.findUnique({
+    where: { id: activityId },
+    select: {
+      id: true,
+      decisionsSubmittedAt: true,
+      group: {
+        select: {
+          participants: {
+            where: { id: participantId },
+            select: { id: true },
+          },
+        },
+      },
+      groupActivity: {
+        select: {
+          scheduledEndAt: true,
+          scheduledStartAt: true,
+          status: true,
+        },
+      },
+    },
+  })
+
+  if (
+    !groupActivityInstance ||
+    groupActivityInstance.group.participants.length === 0 ||
+    groupActivityInstance.decisionsSubmittedAt ||
+    !isSubmittableGroupActivity(groupActivityInstance.groupActivity)
+  ) {
+    return { groupActivityInstanceId: null }
+  }
+
+  await Promise.all(
+    responses.map((response) =>
+      prisma.$transaction((tx) =>
+        updateAggregatedElementResults({
+          prisma: tx as PrismaClient,
+          response,
+        })
+      )
+    )
+  )
+
+  const updatedActivityInstance = await prisma.groupActivityInstance.update({
+    where: { id: activityId },
+    data: {
+      decisions: responses as Prisma.InputJsonValue,
+      decisionsSubmittedAt: new Date(),
+    },
+    select: { id: true },
+  })
+
+  return { groupActivityInstanceId: updatedActivityInstance.id }
 }

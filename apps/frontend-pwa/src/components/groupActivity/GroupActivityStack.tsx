@@ -1,14 +1,11 @@
-import { useMutation } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
   ElementStack,
   ElementType,
   GroupActivityDecision,
-  GroupActivityDetailsDocument,
   GroupActivityResults,
   ResponseCorrectnessType,
   SelectionElementData,
-  SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   CaseStudyStudentResponseType,
@@ -20,17 +17,21 @@ import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/
 import { ChoicesResponse } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc, type RouterInputs } from '../../lib/trpc'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
+
+type GroupActivityResponseInput =
+  RouterInputs['participant']['submitGroupActivityDecisions']['responses'][number]
 
 interface GroupActivityStackProps {
   activityId: number
   activityEnded: boolean
   stack: ElementStack
   decisions?: GroupActivityDecision[] | null
+  onSubmitted: () => Promise<unknown>
   results?: GroupActivityResults | null
   submittedAt?: string
 }
@@ -40,26 +41,13 @@ function GroupActivityStack({
   activityEnded,
   stack,
   decisions,
+  onSubmitted,
   results,
   submittedAt,
 }: GroupActivityStackProps) {
   const t = useTranslations()
-  const router = useRouter()
-
-  const [submitGroupActivityDecisions, { loading: submitLoading }] =
-    useMutation(SubmitGroupActivityDecisionsDocument, {
-      // previous submissions need to be loaded in the correct format
-      // duplication of logic for rarely called function is probably not worth it
-      refetchQueries: [
-        {
-          query: GroupActivityDetailsDocument,
-          variables: {
-            groupId: router.query.groupId,
-            activityId: router.query.activityId,
-          },
-        },
-      ],
-    })
+  const submitGroupActivityDecisions =
+    trpc.participant.submitGroupActivityDecisions.useMutation()
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: true,
@@ -279,123 +267,127 @@ function GroupActivityStack({
             ) || activityEnded
           }
           onClick={async () => {
-            const result = await submitGroupActivityDecisions({
-              variables: {
-                activityId: activityId,
-                responses: Object.entries(studentResponse).map(
-                  ([instanceId, value]) => {
-                    if (
-                      value.type === ElementType.Sc ||
-                      value.type === ElementType.Mc ||
-                      value.type === ElementType.Kprim
-                    ) {
-                      // convert the solution objects into integer lists
-                      const responseList: ChoicesResponse[] = Object.entries(
-                        value.response!
-                      )
-                        .filter(([, value]) => value)
-                        .map(([key, value]) => ({
-                          ix: parseInt(key),
-                          selected: value ?? false,
-                        }))
+            const result = await submitGroupActivityDecisions.mutateAsync({
+              activityId: activityId,
+              responses: Object.entries(studentResponse).map(
+                ([instanceId, value]) => {
+                  if (
+                    value.type === ElementType.Sc ||
+                    value.type === ElementType.Mc ||
+                    value.type === ElementType.Kprim
+                  ) {
+                    // convert the solution objects into integer lists
+                    const responseList: ChoicesResponse[] = Object.entries(
+                      value.response!
+                    )
+                      .filter(([, value]) => value)
+                      .map(([key, value]) => ({
+                        ix: parseInt(key),
+                        selected: value ?? false,
+                      }))
 
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        choicesResponse: responseList,
-                      }
-                    } else if (value.type === ElementType.Numerical) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Numerical,
-                        numericalResponse: parseFloat(value.response!),
-                      }
-                    } else if (value.type === ElementType.FreeText) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.FreeText,
-                        freeTextResponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Content) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Content,
-                        contentReponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Selection) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Selection,
-                        selectionResponse: Object.values(
-                          value.response!
-                        ).filter(
-                          (entry) =>
-                            entry !== -1 &&
-                            typeof entry !== 'undefined' &&
-                            entry !== null
-                        ),
-                      }
-                    } else if (value.type === ElementType.CaseStudy) {
-                      const caseStudyResponse: CaseStudyCaseResponse[] =
-                        Object.entries(value.response!).map(
-                          ([caseId, caseResponse]) => {
-                            return {
-                              caseId,
-                              itemResponses: Object.entries(caseResponse).map(
-                                ([itemId, itemResponse]) => {
-                                  return {
-                                    itemId: parseInt(itemId),
-                                    criterionResponses: Object.entries(
-                                      itemResponse
-                                    ).flatMap(
-                                      ([criterionId, criterionResponse]) => {
-                                        if (
-                                          typeof criterionResponse ===
-                                          'undefined'
-                                        ) {
-                                          return []
-                                        }
-
-                                        return {
-                                          criterionId: criterionId,
-                                          response: criterionResponse,
-                                        }
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toGroupActivityResponseElementType(value.type),
+                      choicesResponse: responseList,
+                    }
+                  } else if (value.type === ElementType.Numerical) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toGroupActivityResponseElementType(
+                        ElementType.Numerical
+                      ),
+                      numericalResponse: parseFloat(value.response!),
+                    }
+                  } else if (value.type === ElementType.FreeText) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toGroupActivityResponseElementType(
+                        ElementType.FreeText
+                      ),
+                      freeTextResponse: value.response,
+                    }
+                  } else if (value.type === ElementType.Content) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toGroupActivityResponseElementType(
+                        ElementType.Content
+                      ),
+                      contentReponse: value.response,
+                    }
+                  } else if (value.type === ElementType.Selection) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toGroupActivityResponseElementType(
+                        ElementType.Selection
+                      ),
+                      selectionResponse: Object.values(value.response!).filter(
+                        (entry) =>
+                          entry !== -1 &&
+                          typeof entry !== 'undefined' &&
+                          entry !== null
+                      ),
+                    }
+                  } else if (value.type === ElementType.CaseStudy) {
+                    const caseStudyResponse: CaseStudyCaseResponse[] =
+                      Object.entries(value.response!).map(
+                        ([caseId, caseResponse]) => {
+                          return {
+                            caseId,
+                            itemResponses: Object.entries(caseResponse).map(
+                              ([itemId, itemResponse]) => {
+                                return {
+                                  itemId: parseInt(itemId),
+                                  criterionResponses: Object.entries(
+                                    itemResponse
+                                  ).flatMap(
+                                    ([criterionId, criterionResponse]) => {
+                                      if (
+                                        typeof criterionResponse === 'undefined'
+                                      ) {
+                                        return []
                                       }
-                                    ),
-                                  }
-                                }
-                              ),
-                            }
-                          }
-                        )
 
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        caseStudyResponse,
-                      }
-                    } else {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        response: value.response,
-                      }
+                                      return {
+                                        criterionId: criterionId,
+                                        response: criterionResponse,
+                                      }
+                                    }
+                                  ),
+                                }
+                              }
+                            ),
+                          }
+                        }
+                      )
+
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toGroupActivityResponseElementType(value.type),
+                      caseStudyResponse,
+                    }
+                  } else {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toGroupActivityResponseElementType(value.type),
                     }
                   }
-                ),
-              },
+                }
+              ),
             })
 
-            if (!result?.data?.submitGroupActivityDecisions) {
+            if (!result.groupActivityInstanceId) {
               console.error('Error submitting response')
               return
             }
+
+            await onSubmitted()
 
             // set status and score according to returned correctness
             setStudentResponse({})
           }}
           type="submit"
-          loading={submitLoading}
+          loading={submitGroupActivityDecisions.isLoading}
           className={{
             root: 'float-right mt-4 text-lg font-bold',
           }}
@@ -417,3 +409,9 @@ function GroupActivityStack({
 }
 
 export default GroupActivityStack
+
+function toGroupActivityResponseElementType(
+  type: ElementType
+): GroupActivityResponseInput['type'] {
+  return type as GroupActivityResponseInput['type']
+}

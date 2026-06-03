@@ -1426,7 +1426,7 @@ function computeUpdatedInstanceStatistics({
       }
 }
 
-function updateChoicesResults({
+export function updateChoicesResults({
   previousResults,
   response,
 }: {
@@ -1456,7 +1456,7 @@ function updateChoicesResults({
   }
 }
 
-function updateNumericalResults({
+export function updateNumericalResults({
   previousResults,
   elementData,
   response,
@@ -1514,7 +1514,7 @@ function updateNumericalResults({
   }
 }
 
-function updateFreeTextResults({
+export function updateFreeTextResults({
   previousResults,
   elementData,
   response,
@@ -1561,7 +1561,7 @@ function updateFreeTextResults({
   }
 }
 
-function updateSelectionResults({
+export function updateSelectionResults({
   previousResults,
   response,
 }: {
@@ -1616,7 +1616,7 @@ function convertCaseStudySolutionsObject({
     : undefined
 }
 
-function updateCaseStudyResults({
+export function updateCaseStudyResults({
   previousResults,
   response,
   solutions,

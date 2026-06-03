@@ -241,6 +241,7 @@ function GroupActivityDetails() {
                 activityEnded={groupActivity.status === PublicationStatus.Ended}
                 stack={groupActivity.stacks[0]}
                 decisions={instance.decisions}
+                onSubmitted={refetch}
                 results={instance.results}
                 submittedAt={dayjs(instance.decisionsSubmittedAt).format(
                   'DD.MM.YYYY HH:mm:ss'

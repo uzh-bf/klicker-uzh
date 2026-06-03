@@ -224,6 +224,11 @@ export const participantStartGroupActivityInput = z.object({
   groupId: z.string(),
 })
 
+export const participantSubmitGroupActivityDecisionsInput = z.object({
+  activityId: z.number().int(),
+  responses: z.array(participantStackResponseInput),
+})
+
 export const participantSubscribeToPushInput = z.object({
   courseId: z.string(),
   subscriptionObject: z.object({
