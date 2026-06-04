@@ -1,14 +1,11 @@
 import { faPeopleArrows } from '@fortawesome/free-solid-svg-icons'
-import {
-  ObjectType,
-  PermissionInfo,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import DirectSharingForm from './DirectSharingForm'
 import ExistingPermissionEntries from './ExistingPermissionEntries'
+import type { PermissionInfo } from './useObjectPermissions'
 
 function GrantedPermissionsTable({
   type,

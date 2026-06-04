@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue S04J manage read migration after the completed user-profile shell/settings, course-list, and course-navigation slices, prioritizing low-risk course detail/dashboard summary reads. Keep manage GraphQL mutations, Apollo providers, generated GraphQL artifacts, and GraphQL cleanup live until their dedicated slices.
+- Continue the manage sharing migration after S04K1. Ownership transfer, catalog sharing requests, catalog/resource list pages, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,75 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-04 Completed: S04K1 Manage Sharing Permission Table
+
+Status: complete for the scoped slice. This slice migrated the granted-permissions table inside the manage `ObjectSharingModal` from Apollo GraphQL to tRPC. It intentionally kept ownership transfer, catalog sharing requests, catalog/resource list pages, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup live for later slices.
+
+Scope:
+
+- `packages/api/src/trpc/schemas/sharing.ts`
+- `packages/api/src/trpc/dto/sharing.ts`
+- `packages/api/src/trpc/routers/sharing.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/sharing-permissions.test.ts`
+- `apps/frontend-manage/src/components/sharing/useObjectPermissions.ts`
+- `apps/frontend-manage/src/components/sharing/useDerivedObjectPermissions.ts`
+- `apps/frontend-manage/src/components/sharing/DerivedPermissionInfoDialog.tsx`
+- `apps/frontend-manage/src/components/sharing/DirectSharingForm.tsx`
+- `apps/frontend-manage/src/components/sharing/useObjectSharing.ts`
+- `apps/frontend-manage/src/components/sharing/usePermissionLevelChange.ts`
+- `apps/frontend-manage/src/components/sharing/usePermissionRevocation.ts`
+- `apps/frontend-manage/src/components/sharing/useTransferObjectOwnership.ts`
+- `apps/frontend-manage/src/components/sharing/DerivedPermissionsTable.tsx`
+- `apps/frontend-manage/src/components/sharing/ExistingPermissionEntries.tsx`
+- `apps/frontend-manage/src/components/sharing/GrantedPermissionsTable.tsx`
+- `apps/frontend-manage/src/components/sharing/PermissionListEntry.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetObjectPermissionsDocument`, `GetDerivedObjectPermissionsDocument`, `GetDerivedPermissionOriginDocument`, `GetUserGroupsUserDocument`, `ShareObjectDocument`, `ChangePermissionLevelDocument`, `RevokeObjectAccessDocument`, plus `DirectSharingForm`'s `UserProfileDocument` cache read.
+- GraphQL resolver(s): `Query.getObjectPermissions`, `Query.getDerivedObjectPermissions`, `Query.getDerivedPermissionOrigin`, `Mutation.shareObject`, `Mutation.changePermissionLevel`, `Mutation.revokeObjectAccess`.
+- Behavior source: GraphQL resolver permission gates in `packages/graphql/src/schema/query.ts` / `mutation.ts`, sharing service logic in `packages/graphql/src/services/sharing.ts`, and transport-neutral derived-permission helpers from `@klicker-uzh/util`.
+- tRPC router.procedure: added `sharing.userGroups`, `sharing.objectPermissions`, `sharing.derivedObjectPermissions`, `sharing.derivedPermissionOrigin`, `sharing.shareObject`, `sharing.changePermissionLevel`, and `sharing.revokeObjectAccess`; reused existing `user.profile` for the self-shortname check.
+- Input schema: `{ objectId: string, objectType: ObjectType }`, `{ id: number }`, `{ objectId, objectType, permissionLevel, shortnameOrEmail?, userGroupId?, propagation }`, `{ objectId, objectType, permissionId, permissionLevel, propagation }`, and `{ objectId, objectType, permissionId }`.
+- Output DTO: narrow `PermissionInfo`, `DerivedPermissionInfo`, and `DerivedPermissionOrigin` shapes matching the fields consumed by the sharing modal.
+- Active frontend consumers: `ObjectSharingModal`, `GrantedPermissionsTable`, `ExistingPermissionEntries`, `DirectSharingForm`, `DerivedPermissionsTable`, and `DerivedPermissionInfoDialog`.
+- Apollo cache/refetch behavior: replace Apollo `updateQuery` for object permissions with React Query cache updates/invalidation for `sharing.objectPermissions` and `sharing.derivedObjectPermissions`; keep broader catalog/request/page GraphQL refetches out of this slice except existing `refetchElements` / `refetchActivities` callbacks for own-permission revocation.
+- Ownership transfer bridge: `useTransferObjectOwnership` still uses the legacy GraphQL mutation in this slice, but now invalidates `sharing.objectPermissions` on success so the migrated permission table refreshes after a legacy ownership transfer.
+- Browser verification path: delegated-login manage app, open `/activities`, open representative live-quiz sharing modal, verify granted permissions and derived-permissions UI render, add/revoke a temporary `free` permission, capture screenshots, and confirm the migrated path uses `/api/trpc/sharing.*` without the listed GraphQL permission payloads.
+- Cleanup blocked until: ownership transfer, catalog sharing requests, catalog/resource list pages, activity action mutations, course/cache bridges, generated GraphQL type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test`: passed, 20 files / 189 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after fixing a generated-enum/tRPC-output enum mismatch in `PermissionListEntry`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing warnings (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `MISSING_MESSAGE` for `/qr/[...args]`, and large page-data warnings).
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for S04K1 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...`: passed for S04K1 touched files and this plan.
+- `git diff --check`: passed.
+- Scoped frontend audit over migrated sharing files for `GetObjectPermissionsDocument|GetDerivedObjectPermissionsDocument|GetDerivedPermissionOriginDocument|ShareObjectDocument|ChangePermissionLevelDocument|RevokeObjectAccessDocument|GetUserGroupsUserDocument|UserProfileDocument|@apollo/client`: no matches.
+- Scoped touched API audit for `@klicker-uzh/graphql|packages/graphql|graphql/dist`: no matches.
+
+Browser evidence:
+
+- Local auth/manage/API smoke required `localhost` consistently. A first `127.0.0.1` attempt reached manage `/noLogin` because auth issued a host-only `localhost` session cookie. Restarted auth, manage, and backend on `localhost` URLs with `APP_MANAGE_SUBDOMAIN=localhost`.
+- `npx agent-browser get url` hung in npm resolution, so `/Users/roland/.factory/bin/agent-browser` was used for the same browser verification path. This deviates from the repo preference for `npx agent-browser` and is recorded here.
+- Screenshots reviewed: `/tmp/klicker-manage-s04k1-activities-overview.png`, `/tmp/klicker-manage-s04k1-sharing-modal.png`, `/tmp/klicker-manage-s04k1-derived-permissions.png`, `/tmp/klicker-manage-s04k1-after-share.png`, `/tmp/klicker-manage-s04k1-after-revoke-confirmed.png`.
+- Fetch recorder evidence: modal open called `sharing.objectPermissions`, `sharing.userGroups`, and `user.profile`; derived toggle called `sharing.derivedObjectPermissions`; temporary direct share to `free` posted `sharing.shareObject`; confirmation cleanup posted `sharing.revokeObjectAccess`; no recorded old GraphQL sharing operation names matched `GetObjectPermissions`, `GetDerivedObjectPermissions`, `GetDerivedPermissionOrigin`, `GetUserGroupsUser`, `UserProfile`, `ShareObject`, `ChangePermissionLevel`, or `RevokeObjectAccess`.
+- Cleanup verified: temporary `free` permission row was removed after revoke confirmation, `agent-browser` was closed, temporary auth/manage/backend processes were stopped, and ports `3103`, `3104`, and `3106` had no listeners afterward.
+
+Review and simplification:
+
+- Subagent review/simplification unavailable under current tool policy unless explicitly requested; performed self-review against the slice scope, GraphQL coexistence rules, touched imports, cache invalidation paths, and browser evidence.
+- Simplification kept transfer ownership as a legacy bridge instead of migrating ownership transfer in this slice, and localized the generated-enum cast at the existing mixed GraphQL/tRPC boundary.
+
+Notes:
+
+- Context7 MCP is not exposed in this session after tool discovery; official tRPC v10 docs for React Query hooks and input validators were checked against installed `@trpc/*` `10.45.2`.
+- Next slice: continue manage sharing migration around ownership transfer or adjacent catalog/resource sharing consumers, while keeping Apollo/providers/generated GraphQL artifacts live until their dedicated cleanup gates.
 
 ### 2026-06-04 Completed: S04J12 Manage Activity Log Comments
 

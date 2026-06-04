@@ -1,8 +1,4 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetDerivedPermissionOriginDocument,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   AlertDialog,
@@ -15,6 +11,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function DerivedPermissionInfoDialog({
   derivedPermissionOriginAlert,
@@ -31,11 +28,11 @@ function DerivedPermissionInfoDialog({
 }) {
   const t = useTranslations()
 
-  const { data, loading } = useQuery(GetDerivedPermissionOriginDocument, {
-    variables: { id: derivedPermissionOriginAlert.permissionId ?? -1 },
-    skip: !derivedPermissionOriginAlert.permissionId,
-  })
-  const info = data?.getDerivedPermissionOrigin
+  const { data, isLoading } = trpc.sharing.derivedPermissionOrigin.useQuery(
+    { id: derivedPermissionOriginAlert.permissionId ?? -1 },
+    { enabled: Boolean(derivedPermissionOriginAlert.permissionId) }
+  )
+  const info = data?.derivedPermissionOrigin
 
   return (
     <AlertDialog
@@ -56,7 +53,7 @@ function DerivedPermissionInfoDialog({
             {t('manage.sharing.derivedPermissionOrigin')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {loading ? (
+            {isLoading ? (
               <Loader />
             ) : (
               <>

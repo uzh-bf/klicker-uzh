@@ -1,20 +1,13 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetAnswerCollectionsInfoDocument,
-  GetCatalogCollectionInfoDocument,
-  GetCatalogObjectsDocument,
-  GetCatalogSharingRequestsDocument,
-  GetDerivedObjectPermissionsDocument,
-  GetObjectPermissionsDocument,
-  ObjectType,
-  RevokeObjectAccessDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '../../lib/trpc'
+
+type ObjectPermissionsInput = RouterInputs['sharing']['objectPermissions']
+type RevokeObjectAccessInput = RouterInputs['sharing']['revokeObjectAccess']
 
 // function to revoke the permission for a certain object
 function usePermissionRevocation({
   objectId,
   objectType,
-  catalogCollectionId,
   onError,
   refetchElements,
   refetchActivities,
@@ -35,9 +28,37 @@ function usePermissionRevocation({
   }) => Promise<boolean>
   permissionRevoking: boolean
 } {
-  const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
-    RevokeObjectAccessDocument
-  )
+  const utils = trpc.useUtils()
+  const objectPermissionsInput: ObjectPermissionsInput = {
+    objectId: String(objectId),
+    objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
+  }
+  const revokeObjectAccess = trpc.sharing.revokeObjectAccess.useMutation({
+    onSuccess: (data) => {
+      if (data.revokedPermissionId == null) return
+
+      utils.sharing.objectPermissions.setData(
+        objectPermissionsInput,
+        (queryData) => {
+          if (!queryData?.objectPermissions) return queryData
+
+          return {
+            objectPermissions: {
+              ...queryData.objectPermissions,
+              permissions: queryData.objectPermissions.permissions.filter(
+                (permission) =>
+                  permission.permissionId !== data.revokedPermissionId
+              ),
+            },
+          }
+        }
+      )
+
+      void utils.sharing.derivedObjectPermissions.invalidate(
+        objectPermissionsInput
+      )
+    },
+  })
 
   const onPermissionRevocation = async ({
     permissionId,
@@ -47,64 +68,15 @@ function usePermissionRevocation({
     isOwn: boolean
   }) => {
     try {
-      const res = await revokeObjectAccess({
-        variables: {
-          permissionId,
-          objectId: String(objectId),
-          objectType,
-        },
-        update: (cache, { data }) => {
-          // verify that the revocation was successful
-          if (!data?.revokeObjectAccess) return
+      const input: RevokeObjectAccessInput = {
+        ...objectPermissionsInput,
+        objectType:
+          objectType as unknown as RevokeObjectAccessInput['objectType'],
+        permissionId,
+      }
+      const res = await revokeObjectAccess.mutateAsync(input)
 
-          // update the listed permissions to reflect the revocation
-          cache.updateQuery(
-            {
-              query: GetObjectPermissionsDocument,
-              variables: { objectId: String(objectId), objectType },
-            },
-            (qData) => {
-              if (!qData?.getObjectPermissions) return qData
-
-              return {
-                ...qData,
-                getObjectPermissions: {
-                  ...qData.getObjectPermissions,
-                  permissions: qData.getObjectPermissions.permissions.filter(
-                    (permission) =>
-                      permission.permissionId !== data.revokeObjectAccess
-                  ),
-                },
-              }
-            }
-          )
-        },
-        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
-        refetchQueries: [
-          { query: GetCatalogSharingRequestsDocument },
-          {
-            query: GetDerivedObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-          },
-          {
-            query: GetCatalogObjectsDocument,
-            variables: { catalogCollectionId },
-          },
-          ...(objectType === ObjectType.CatalogCollection
-            ? [
-                {
-                  query: GetCatalogCollectionInfoDocument,
-                  variables: { catalogCollectionId: objectId },
-                },
-              ]
-            : []),
-          ...(objectType === ObjectType.AnswerCollection
-            ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-        ],
-      })
-
-      if (res.data?.revokeObjectAccess) {
+      if (res.revokedPermissionId != null) {
         // if own permission was revoked, refetch elements and activities depending on object type
         if (isOwn && objectType === ObjectType.Element) {
           await refetchElements?.()
@@ -133,7 +105,7 @@ function usePermissionRevocation({
 
   return {
     onPermissionRevocation,
-    permissionRevoking: revokingObjectAccess,
+    permissionRevoking: revokeObjectAccess.isLoading,
   }
 }
 

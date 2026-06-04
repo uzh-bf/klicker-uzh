@@ -1,11 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  GetUserGroupsUserDocument,
-  ObjectType,
-  PermissionLevel,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
@@ -20,6 +14,7 @@ import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
+import { trpc } from '../../lib/trpc'
 
 function DirectSharingForm({
   type,
@@ -42,14 +37,13 @@ function DirectSharingForm({
 }) {
   const t = useTranslations()
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
-  const { data, loading } = useQuery(GetUserGroupsUserDocument, {
-    fetchPolicy: 'cache-and-network',
+  const { data, isLoading } = trpc.sharing.userGroups.useQuery(undefined, {
+    refetchOnMount: 'always',
   })
+  const userGroups = data?.userGroups ?? []
 
   // fetch own user to disable sharing with self
-  const { data: user } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
+  const { data: user } = trpc.user.profile.useQuery()
 
   const onFailure = () =>
     toast({
@@ -114,11 +108,8 @@ function DirectSharingForm({
             t('manage.sharing.noSelfSharing'),
             function (value) {
               // check if the user is trying to share with themselves
-              if (value && user?.userProfile) {
-                return (
-                  value.toLowerCase() !==
-                  user.userProfile.shortname.toLowerCase()
-                )
+              if (value && user?.shortname) {
+                return value.toLowerCase() !== user.shortname.toLowerCase()
               }
               return true
             }
@@ -181,9 +172,9 @@ function DirectSharingForm({
           <td className="px-4 py-3 text-sm text-gray-900">
             <SelectField
               key={`userGroupId-${values.userGroupId}`}
-              disabled={isSubmitting || data?.getUserGroupsUser?.length === 0}
+              disabled={isSubmitting || userGroups.length === 0}
               placeholder={
-                data?.getUserGroupsUser?.length === 0
+                userGroups.length === 0
                   ? t('manage.sharing.noUserGroupsAvailable')
                   : t('manage.sharing.noUserGroupSelected')
               }
@@ -198,10 +189,10 @@ function DirectSharingForm({
                 }, 0)
               }}
               items={
-                loading || !data?.getUserGroupsUser
+                isLoading
                   ? []
                   : sortBy(
-                      data.getUserGroupsUser.map((group) => ({
+                      userGroups.map((group) => ({
                         value: String(group.id),
                         labelString: group.name,
                         label: (

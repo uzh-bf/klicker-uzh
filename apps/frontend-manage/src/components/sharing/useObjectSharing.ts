@@ -1,20 +1,13 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetAnswerCollectionsInfoDocument,
-  GetCatalogCollectionInfoDocument,
-  GetCatalogObjectsDocument,
-  GetCatalogSharingRequestsDocument,
-  GetObjectPermissionsDocument,
-  ObjectType,
-  PermissionLevel,
-  ShareObjectDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '../../lib/trpc'
+
+type ObjectPermissionsInput = RouterInputs['sharing']['objectPermissions']
+type ShareObjectInput = RouterInputs['sharing']['shareObject']
 
 // function to revoke the permission for a certain object
 function useObjectSharing({
   objectId,
   objectType,
-  catalogCollectionId,
   onSuccess,
   onError,
 }: {
@@ -37,8 +30,48 @@ function useObjectSharing({
   }) => Promise<boolean>
   objectSharing: boolean
 } {
-  const [shareObject, { loading: sharingObject }] =
-    useMutation(ShareObjectDocument)
+  const utils = trpc.useUtils()
+  const objectPermissionsInput: ObjectPermissionsInput = {
+    objectId: String(objectId),
+    objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
+  }
+  const shareObject = trpc.sharing.shareObject.useMutation({
+    onSuccess: (data) => {
+      if (!data.permission) return
+
+      utils.sharing.objectPermissions.setData(
+        objectPermissionsInput,
+        (queryData) => {
+          if (!queryData?.objectPermissions) return queryData
+
+          const existingPermission = queryData.objectPermissions.permissions
+            .map((permission) =>
+              permission.permissionId === data.permission!.permissionId
+                ? data.permission!
+                : permission
+            )
+            .filter((permission) => permission.permissionId !== -1)
+          const permissionExists = existingPermission.some(
+            (permission) =>
+              permission.permissionId === data.permission!.permissionId
+          )
+
+          return {
+            objectPermissions: {
+              ...queryData.objectPermissions,
+              permissions: permissionExists
+                ? existingPermission
+                : [...existingPermission, data.permission!],
+            },
+          }
+        }
+      )
+
+      void utils.sharing.derivedObjectPermissions.invalidate(
+        objectPermissionsInput
+      )
+    },
+  })
 
   const onShareObject = async ({
     shortnameOrEmail,
@@ -52,65 +85,22 @@ function useObjectSharing({
     propagation: boolean
   }) => {
     try {
-      const res = await shareObject({
-        variables: {
-          objectId: String(objectId),
-          objectType,
-          shortnameOrEmail:
-            typeof shortnameOrEmail !== 'undefined' && shortnameOrEmail !== ''
-              ? shortnameOrEmail
-              : undefined,
-          userGroupId:
-            typeof shortnameOrEmail === 'undefined' ? userGroupId : undefined,
-          permissionLevel,
-          propagation,
-        },
-        update: (cache, { data }) => {
-          // verify that the sharing action was successful
-          if (!data?.shareObject) return
+      const input: ShareObjectInput = {
+        ...objectPermissionsInput,
+        objectType: objectType as unknown as ShareObjectInput['objectType'],
+        shortnameOrEmail:
+          typeof shortnameOrEmail !== 'undefined' && shortnameOrEmail !== ''
+            ? shortnameOrEmail
+            : undefined,
+        userGroupId:
+          typeof shortnameOrEmail === 'undefined' ? userGroupId : undefined,
+        permissionLevel:
+          permissionLevel as unknown as ShareObjectInput['permissionLevel'],
+        propagation,
+      }
+      const res = await shareObject.mutateAsync(input)
 
-          // update the list of permissions for the given object
-          cache.updateQuery(
-            {
-              query: GetObjectPermissionsDocument,
-              variables: { objectId: String(objectId), objectType },
-            },
-            (qData) => {
-              if (!qData?.getObjectPermissions) return qData
-              return {
-                getObjectPermissions: {
-                  ...qData.getObjectPermissions,
-                  permissions: [
-                    ...qData.getObjectPermissions.permissions,
-                    data.shareObject!,
-                  ],
-                },
-              }
-            }
-          )
-        },
-        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
-        refetchQueries: [
-          { query: GetCatalogSharingRequestsDocument },
-          {
-            query: GetCatalogObjectsDocument,
-            variables: { catalogCollectionId },
-          },
-          ...(objectType === ObjectType.CatalogCollection
-            ? [
-                {
-                  query: GetCatalogCollectionInfoDocument,
-                  variables: { catalogCollectionId: objectId },
-                },
-              ]
-            : []),
-          ...(objectType === ObjectType.AnswerCollection
-            ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-        ],
-      })
-
-      if (typeof res?.data?.shareObject?.permissionId !== 'undefined') {
+      if (typeof res?.permission?.permissionId !== 'undefined') {
         onSuccess?.()
         return true
       } else {
@@ -126,7 +116,7 @@ function useObjectSharing({
 
   return {
     onShareObject,
-    objectSharing: sharingObject,
+    objectSharing: shareObject.isLoading,
   }
 }
 

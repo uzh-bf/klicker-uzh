@@ -9,6 +9,9 @@ import {
   ObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '../../lib/trpc'
+
+type ObjectPermissionsInput = RouterInputs['sharing']['objectPermissions']
 
 function useTransferObjectOwnership({
   objectType,
@@ -24,6 +27,11 @@ function useTransferObjectOwnership({
   onTransfer: (shortnameOrEmail: string) => Promise<boolean>
   transferring: boolean
 } {
+  const utils = trpc.useUtils()
+  const objectPermissionsInput: ObjectPermissionsInput = {
+    objectId: String(objectId),
+    objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
+  }
   const [transferObjectOwnership, { loading: transferringOwnership }] =
     useMutation(TransferObjectOwnershipDocument)
 
@@ -68,6 +76,7 @@ function useTransferObjectOwnership({
       })
 
       if (res.data?.transferObjectOwnership) {
+        void utils.sharing.objectPermissions.invalidate(objectPermissionsInput)
         return true
       } else {
         onError()

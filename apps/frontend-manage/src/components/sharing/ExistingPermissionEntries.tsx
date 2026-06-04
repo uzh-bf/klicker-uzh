@@ -1,14 +1,11 @@
-import {
-  ObjectType,
-  PermissionInfo,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
 import PermissionListEntry from './PermissionListEntry'
 import PermissionRevocationModal from './PermissionRevocationModal'
+import type { PermissionInfo } from './useObjectPermissions'
 
 function ExistingPermissionEntries({
   type,

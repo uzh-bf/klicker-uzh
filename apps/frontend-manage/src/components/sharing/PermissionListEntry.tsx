@@ -1,8 +1,9 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { PermissionInfo, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select, SelectItem, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import type { PermissionInfo } from './useObjectPermissions'
 
 function PermissionListEntry({
   disabled = false,
@@ -103,7 +104,7 @@ function PermissionListEntry({
               onCheckedChange={async (newValue) => {
                 await handlePermissionLevelChange(
                   permission.permissionId,
-                  permission.permissionLevel,
+                  permission.permissionLevel as unknown as PermissionLevel,
                   newValue,
                   permission.isOwn ?? false
                 )

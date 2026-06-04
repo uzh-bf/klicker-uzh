@@ -1,20 +1,14 @@
-import { useMutation } from '@apollo/client'
-import {
-  ChangePermissionLevelDocument,
-  GetAnswerCollectionsInfoDocument,
-  GetCatalogCollectionInfoDocument,
-  GetCatalogObjectsDocument,
-  GetCatalogSharingRequestsDocument,
-  GetObjectPermissionsDocument,
-  ObjectType,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '../../lib/trpc'
+
+type ObjectPermissionsInput = RouterInputs['sharing']['objectPermissions']
+type ChangePermissionLevelInput =
+  RouterInputs['sharing']['changePermissionLevel']
 
 // function to change the permission level for a certain object
 function usePermissionLevelChange({
   objectId,
   objectType,
-  catalogCollectionId,
 }: {
   objectId: string | number
   objectType: ObjectType
@@ -31,8 +25,43 @@ function usePermissionLevelChange({
   }) => Promise<boolean>
   permissionChanging: boolean
 } {
-  const [changePermissionLevel, { loading: permissionLevelChanging }] =
-    useMutation(ChangePermissionLevelDocument)
+  const utils = trpc.useUtils()
+  const objectPermissionsInput: ObjectPermissionsInput = {
+    objectId: String(objectId),
+    objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
+  }
+  const changePermissionLevel = trpc.sharing.changePermissionLevel.useMutation({
+    onSuccess: (data, variables) => {
+      if (!data.changed) return
+
+      utils.sharing.objectPermissions.setData(
+        objectPermissionsInput,
+        (queryData) => {
+          if (!queryData?.objectPermissions) return queryData
+
+          return {
+            objectPermissions: {
+              ...queryData.objectPermissions,
+              permissions: queryData.objectPermissions.permissions.map(
+                (permission) =>
+                  permission.permissionId === variables.permissionId
+                    ? {
+                        ...permission,
+                        permissionLevel: variables.permissionLevel,
+                        propagation: variables.propagation,
+                      }
+                    : permission
+              ),
+            },
+          }
+        }
+      )
+
+      void utils.sharing.derivedObjectPermissions.invalidate(
+        objectPermissionsInput
+      )
+    },
+  })
 
   const onPermissionLevelChange = async ({
     permissionId,
@@ -44,68 +73,18 @@ function usePermissionLevelChange({
     newPropagation: boolean
   }) => {
     try {
-      const res = await changePermissionLevel({
-        variables: {
-          objectId: String(objectId),
-          objectType,
-          permissionId,
-          permissionLevel: newPermissionLevel,
-          propagation: newPropagation,
-        },
-        update: (cache, { data }) => {
-          // verify that the permission level change was successful
-          if (!data?.changePermissionLevel) return
+      const input: ChangePermissionLevelInput = {
+        ...objectPermissionsInput,
+        objectType:
+          objectType as unknown as ChangePermissionLevelInput['objectType'],
+        permissionId,
+        permissionLevel:
+          newPermissionLevel as unknown as ChangePermissionLevelInput['permissionLevel'],
+        propagation: newPropagation,
+      }
+      const res = await changePermissionLevel.mutateAsync(input)
 
-          // update the permission in the list with the updated permission level
-          cache.updateQuery(
-            {
-              query: GetObjectPermissionsDocument,
-              variables: { objectId: String(objectId), objectType },
-            },
-            (qData) => {
-              if (!qData?.getObjectPermissions) return qData
-
-              return {
-                ...qData,
-                getObjectPermissions: {
-                  ...qData.getObjectPermissions,
-                  permissions: qData.getObjectPermissions.permissions.map(
-                    (permission) =>
-                      permission.permissionId === permissionId
-                        ? {
-                            ...permission,
-                            permissionLevel: newPermissionLevel,
-                            propagation: newPropagation,
-                          }
-                        : permission
-                  ),
-                },
-              }
-            }
-          )
-        },
-        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
-        refetchQueries: [
-          {
-            query: GetCatalogObjectsDocument,
-            variables: { catalogCollectionId },
-          },
-          { query: GetCatalogSharingRequestsDocument },
-          ...(objectType === ObjectType.CatalogCollection
-            ? [
-                {
-                  query: GetCatalogCollectionInfoDocument,
-                  variables: { catalogCollectionId: objectId },
-                },
-              ]
-            : []),
-          ...(objectType === ObjectType.AnswerCollection
-            ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-        ],
-      })
-
-      if (res.data?.changePermissionLevel) {
+      if (res.changed) {
         return true
       } else {
         return false
@@ -118,7 +97,7 @@ function usePermissionLevelChange({
 
   return {
     onPermissionLevelChange,
-    permissionChanging: permissionLevelChanging,
+    permissionChanging: changePermissionLevel.isLoading,
   }
 }
 

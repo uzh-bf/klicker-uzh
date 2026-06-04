@@ -1,12 +1,12 @@
 import { faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { DerivedPermissionInfo } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import DerivedPermissionInfoDialog from './DerivedPermissionInfoDialog'
+import type { DerivedPermissionInfo } from './useDerivedObjectPermissions'
 
 function DerivedPermissionsTable({
   derivedPermissions,
