@@ -276,6 +276,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04I4 PWA Group Activity Generated Type Cleanup
+
+Status: complete for the scoped slice. This slice removed direct generated GraphQL type imports from the PWA group activity stack/clue rendering boundary after group activity reads and mutations already moved to tRPC. It intentionally did not touch GraphQL subscription bridge files, Apollo providers, generated GraphQL artifacts, shared-components generated type imports, live/session flows, manage app callers, or final GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-pwa/src/components/groupActivity/GroupActivityStack.tsx`
+- `apps/frontend-pwa/src/components/groupActivity/GroupActivityClue.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): none directly issued by the touched files.
+- GraphQL resolver(s): none directly called by the touched files.
+- Behavior source: existing tRPC `participant.groupActivityDetails`, `participant.startGroupActivity`, and `participant.submitGroupActivityDecisions` plus existing shared student element rendering behavior.
+- tRPC router.procedure: existing `participant.groupActivityDetails`, `participant.startGroupActivity`, and `participant.submitGroupActivityDecisions`; no new procedure.
+- Input schema: unchanged existing participant group activity detail/start/submit schemas; no new schema.
+- Output DTO: unchanged `GroupActivityDetails` and submission DTOs from `packages/api/src/services/participantGroupActivities.ts`.
+- Active frontend consumers: PWA group activity detail page.
+- Apollo behavior: generated imports in the touched files provided enum/type constants only; subscription bridge files stay on GraphQL until S05.
+- React Query/tRPC replacement: local enum-value constants, `RouterInputs`, transport-neutral response input types from `@klicker-uzh/types`, and prop types derived from the tRPC-backed page component boundary.
+- Browser verification path: local group activity detail route through the local PWA/backend stack showed hint rendering, task rendering, submitted state, and disabled controls after generated import cleanup.
+
+Implementation notes:
+
+- Replaced direct `@klicker-uzh/graphql/dist/ops` imports in `GroupActivityStack` with type-only `@klicker-uzh/types` imports, local enum-value constants, `RouterInputs`, and a stack type derived from the existing `useStudentResponse` compatibility boundary.
+- Replaced direct generated clue/participant/parameter imports in `GroupActivityClue` with a narrow structural prop type and local `ParameterType` value constants.
+- Kept `StudentElement` and `useStudentResponse` as the shared-component compatibility boundary for this slice. Local casts are limited to places where local enum values cross the existing shared-component student-response union.
+- Left existing tRPC procedures, input schemas, output DTOs, and GraphQL subscription bridge components unchanged.
+
+Verification:
+
+- Context7 tool discovery still did not expose Context7; tool search returned GitHub tools only. No new framework API pattern was added.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed. Existing warnings remained: `packages/next-config` has no module type, `next-intl` reports the Pages/App Router `i18n` config caveat, Browserslist data is stale, and several static pages exceed the 128 kB page-data threshold.
+- Scoped audit `rg -n "@klicker-uzh/graphql/dist/ops|@klicker-uzh/graphql|@apollo/client|GroupActivityDetailsDocument|SubmitGroupActivityDecisionsDocument|StartGroupActivityDocument" apps/frontend-pwa/src/components/groupActivity/GroupActivityStack.tsx apps/frontend-pwa/src/components/groupActivity/GroupActivityClue.tsx 'apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx'` returned no matches.
+- Group activity bridge audit showed only expected S05 subscription bridge imports in `GroupActivitySubscriber.tsx` and `GroupActivityListSubscriber.tsx`.
+- `git diff --check` passed.
+- Browser verification used the branch-local backend/PWA stack on `http://127.0.0.1:3103` and `http://127.0.0.1:3102`, with seeded participant `testuser1` / `abcdabcd`.
+- Fixture evidence: group `8f8ce30b-c1d2-40cf-aacb-2071f880f4ef`, activity `8fd6f573-6bc7-43e8-9b7a-4b1582c6d8e3`, group activity instance `17`, already submitted.
+- Screenshot: `/tmp/klicker-pwa-s04i4-group-activity-submitted.png`.
+- DOM/resource assertion after login: `Situation`, `Your hints`, `Your tasks`, `SC Question Content 2`, and `already submitted` were present; `50%` and `100%` buttons were disabled; a `participant.groupActivityDetails` tRPC resource was observed; no `/api/graphql` resource was observed for this rendered detail path.
+- Local backend/PWA listeners were stopped after verification, temporary generated `.env` files were removed, and ports `3102`/`3103` had no listeners.
+
+Review and cleanup:
+
+- Dedicated subagent tooling is not exposed in this session; explicit self-review confirmed the diff is scoped to generated-import cleanup and plan evidence.
+- GraphQL subscription bridge components remain intentionally in scope for S05, not this slice.
+- Shared components still import generated GraphQL types by design in this slice; migrate them only in a later structural shared-component slice.
+
 ### 2026-06-03 Completed: S04H26 PWA ElementStack Generated Type Cleanup
 
 Status: complete for the scoped slice. This slice removed the direct generated GraphQL import from the PWA `ElementStack` component while keeping `StudentElement` and `useStudentResponse` as the temporary shared-component compatibility boundary. It intentionally did not touch shared-component generated imports, live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, active Apollo hooks, manage app callers, or final GraphQL cleanup.
