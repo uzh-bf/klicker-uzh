@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateCourseDocument,
@@ -21,10 +21,12 @@ import CourseManipulationModal, {
 } from '../../components/courses/modals/CourseManipulationModal'
 import CourseRemovalModal from '../../components/courses/modals/CourseRemovalModal'
 import Layout from '../../components/Layout'
+import { trpc } from '../../lib/trpc'
 
 function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [createCourse] = useMutation(CreateCourseDocument)
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
@@ -44,10 +46,8 @@ function CourseSelectionPage() {
     courseName: string | null
   }>({ open: false, courseId: null, courseName: null })
 
-  const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetUserCoursesDocument,
-    { fetchPolicy: 'cache-and-network' }
-  )
+  const { isLoading: loadingCourses, data: dataCourses } =
+    trpc.course.userCourses.useQuery()
 
   if (loadingCourses) {
     return (
@@ -212,6 +212,7 @@ function CourseSelectionPage() {
                   })
 
                   if (result.data?.createCourse) {
+                    await utils.course.userCourses.invalidate()
                     showCreateCourseModal(false)
                     router.push(`/courses/${result.data.createCourse.id}`)
                   } else {

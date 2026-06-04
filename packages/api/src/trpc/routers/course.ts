@@ -4,6 +4,7 @@ import {
   toBasicCourseInformation,
   toControlCourse,
   toControlCourseListItem,
+  toManageCourseListItem,
 } from '../dto/course.js'
 import { publicProcedure, router } from '../init.js'
 import { userProcedure } from '../procedures.js'
@@ -53,6 +54,62 @@ export const courseRouter = router({
 
     return {
       controlCourses: user?.courses.map(toControlCourseListItem) ?? [],
+    }
+  }),
+
+  userCourses: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+    const user = await prisma.user.findUnique({
+      where: { id: ctx.user.sub },
+      select: {
+        objects: {
+          where: { courseId: { not: null } },
+          select: {
+            course: {
+              select: {
+                id: true,
+                name: true,
+                displayName: true,
+                color: true,
+                isArchived: true,
+                isGamificationEnabled: true,
+                isAssessmentEnabled: true,
+                isGroupCreationEnabled: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                createdAt: true,
+                updatedAt: true,
+                _count: {
+                  select: {
+                    permissions: true,
+                  },
+                },
+              },
+            },
+            derived: true,
+            directPermission: {
+              select: {
+                userGroupId: true,
+              },
+            },
+            permissionLevel: true,
+          },
+          orderBy: [{ course: { endDate: 'desc' } }],
+        },
+      },
+    })
+
+    return {
+      userCourses:
+        user?.objects
+          .flatMap((object) => {
+            const course = toManageCourseListItem(object)
+            return course ? [course] : []
+          })
+          .sort((a, b) => {
+            return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
+          }) ?? [],
     }
   }),
 

@@ -98,6 +98,165 @@ describe('control read routers', () => {
     })
   })
 
+  test('returns the current manage user course list with permission flags', async () => {
+    const activeStart = new Date('2026-02-01T00:00:00.000Z')
+    const activeEnd = new Date('2026-06-01T00:00:00.000Z')
+    const archivedStart = new Date('2025-02-01T00:00:00.000Z')
+    const archivedEnd = new Date('2025-06-01T00:00:00.000Z')
+    const findUnique = vi.fn().mockResolvedValue({
+      objects: [
+        {
+          course: {
+            id: 'course-archived',
+            name: 'Archived Course',
+            displayName: 'Archived Course',
+            color: '#cccccc',
+            isArchived: true,
+            isGamificationEnabled: false,
+            isAssessmentEnabled: false,
+            isGroupCreationEnabled: false,
+            description: 'Archived description',
+            startDate: archivedStart,
+            endDate: archivedEnd,
+            createdAt: archivedStart,
+            updatedAt: archivedEnd,
+            _count: {
+              permissions: 2,
+            },
+          },
+          derived: false,
+          directPermission: {
+            userGroupId: null,
+          },
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          course: {
+            id: 'course-active',
+            name: 'Active Course',
+            displayName: 'Active Course',
+            color: '#0028a5',
+            isArchived: false,
+            isGamificationEnabled: true,
+            isAssessmentEnabled: true,
+            isGroupCreationEnabled: true,
+            description: 'Active description',
+            startDate: activeStart,
+            endDate: activeEnd,
+            createdAt: activeStart,
+            updatedAt: activeEnd,
+            _count: {
+              permissions: 3,
+            },
+          },
+          derived: false,
+          directPermission: {
+            userGroupId: null,
+          },
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+    const prisma = {
+      user: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.course.userCourses()).resolves.toEqual({
+      userCourses: [
+        {
+          id: 'course-active',
+          name: 'Active Course',
+          displayName: 'Active Course',
+          color: '#0028a5',
+          isArchived: false,
+          isGamificationEnabled: true,
+          isAssessmentEnabled: true,
+          isGroupCreationEnabled: true,
+          description: 'Active description',
+          startDate: activeStart,
+          endDate: activeEnd,
+          createdAt: activeStart,
+          updatedAt: activeEnd,
+          derivedAccess: false,
+          numSharedUsers: 2,
+          permissionLevel: PermissionLevel.ADMIN,
+          isOwner: false,
+          isManager: true,
+          isEditor: true,
+          isShared: true,
+          isRemovable: true,
+        },
+        {
+          id: 'course-archived',
+          name: 'Archived Course',
+          displayName: 'Archived Course',
+          color: '#cccccc',
+          isArchived: true,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: false,
+          isGroupCreationEnabled: false,
+          description: 'Archived description',
+          startDate: archivedStart,
+          endDate: archivedEnd,
+          createdAt: archivedStart,
+          updatedAt: archivedEnd,
+          derivedAccess: false,
+          numSharedUsers: 1,
+          permissionLevel: PermissionLevel.READ,
+          isOwner: false,
+          isManager: false,
+          isEditor: false,
+          isShared: true,
+          isRemovable: true,
+        },
+      ],
+    })
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: user.id },
+      select: {
+        objects: {
+          where: { courseId: { not: null } },
+          select: {
+            course: {
+              select: {
+                id: true,
+                name: true,
+                displayName: true,
+                color: true,
+                isArchived: true,
+                isGamificationEnabled: true,
+                isAssessmentEnabled: true,
+                isGroupCreationEnabled: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                createdAt: true,
+                updatedAt: true,
+                _count: {
+                  select: {
+                    permissions: true,
+                  },
+                },
+              },
+            },
+            derived: true,
+            directPermission: {
+              select: {
+                userGroupId: true,
+              },
+            },
+            permissionLevel: true,
+          },
+          orderBy: [{ course: { endDate: 'desc' } }],
+        },
+      },
+    })
+  })
+
   test('returns public basic course information', async () => {
     const findUnique = vi.fn().mockResolvedValue({
       id: 'course-1',

@@ -7,6 +7,7 @@ import {
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
 
 export interface CourseDeletionConfirmationType {
@@ -41,6 +42,7 @@ function CourseDeletionModal({
       ...initialConfirmations,
     })
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
   // fetch course information
   const { data, loading: queryLoading } = useQuery(GetCourseSummaryDocument, {
@@ -114,6 +116,7 @@ function CourseDeletionModal({
             }))
           },
         })
+        await utils.course.userCourses.invalidate()
         onClose()
         setConfirmations({ ...initialConfirmations })
       }}

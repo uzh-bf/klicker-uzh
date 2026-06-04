@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { ToggleArchiveCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 function CourseArchiveModal({
   onClose,
@@ -13,6 +14,7 @@ function CourseArchiveModal({
   isArchived: boolean
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [toggleArchiveCourse, { loading }] = useMutation(
     ToggleArchiveCourseDocument
   )
@@ -56,6 +58,7 @@ function CourseArchiveModal({
             })
           },
         })
+        await utils.course.userCourses.invalidate()
         onClose()
       }}
       dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}

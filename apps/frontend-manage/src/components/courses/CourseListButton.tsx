@@ -1,36 +1,24 @@
 import { faClock, IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faMessage, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Course,
-  ObjectType,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { RouterOutputs } from '../../lib/trpc'
 import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import CourseArchiveButton from './CourseArchiveButton'
 import CourseDeletionButton from './CourseDeletionButton'
 
+type CourseListButtonCourse =
+  RouterOutputs['course']['userCourses']['userCourses'][number]
+
 interface CourseListButtonProps {
-  course?: Pick<
-    Course,
-    | 'id'
-    | 'name'
-    | 'color'
-    | 'startDate'
-    | 'endDate'
-    | 'permissionLevel'
-    | 'isArchived'
-    | 'isManager'
-    | 'isRemovable'
-    | 'isAssessmentEnabled'
-  >
+  course?: CourseListButtonCourse
   onClick: () => void
   icon?: IconDefinition
   label: string
@@ -72,6 +60,7 @@ function CourseListButton({
     ? dayjs(course.endDate).isBefore(dayjs())
     : false
   const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
+  const permissionLevel = course?.permissionLevel as PermissionLevel | undefined
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   return (
@@ -91,12 +80,12 @@ function CourseListButton({
           <div className="ml-1 flex flex-row items-center gap-3">
             {icon ? <FontAwesomeIcon icon={icon} /> : null}
             <div>{label}</div>
-            {typeof course?.permissionLevel !== 'undefined' &&
-              course?.permissionLevel !== null &&
-              course.permissionLevel !== PermissionLevel.Owner && (
+            {course &&
+              typeof permissionLevel !== 'undefined' &&
+              permissionLevel !== PermissionLevel.Owner && (
                 <ObjectPermissionLevel
                   objectName={course.name}
-                  permissionLevel={course.permissionLevel}
+                  permissionLevel={permissionLevel}
                 />
               )}
           </div>

@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -21,6 +22,7 @@ function CourseRemovalModal({
   setModalOpen: (newOpen: boolean) => void
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [confirmations, setConfirmations] = useState({
     actionFinal: false, // action cannot be undone, course will remain accessible to students
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
@@ -65,6 +67,7 @@ function CourseRemovalModal({
             }))
           },
         })
+        await utils.course.userCourses.invalidate()
         setModalOpen(false)
       }}
       submitting={removing}

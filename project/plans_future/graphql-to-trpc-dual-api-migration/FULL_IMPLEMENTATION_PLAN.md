@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue residual PWA non-realtime Apollo cleanup, prioritizing pages such as join-shortname, course practice, repetition, and timeline reads. Keep live/session flows, GraphQL subscriptions, Apollo providers, generated operations, and manage app callers live until their dedicated slices.
+- Continue S04J manage read migration after the completed user-profile shell/settings and course-list slices, prioritizing low-risk course dashboard/navigation reads. Keep manage GraphQL mutations, Apollo providers, generated GraphQL artifacts, and GraphQL cleanup live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-04 Completed: S04J2 Manage Course List Read
+
+Status: complete for the scoped slice. This slice migrated the manage `/courses` list read from Apollo `GetUserCoursesDocument` to a narrow tRPC course-list procedure. It intentionally did not migrate course creation/archive/delete/remove mutations, course detail reads, analytics/course dashboard reads, activity authoring, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
+
+Scope:
+
+- `packages/api/src/trpc/routers/course.ts`
+- `packages/api/src/trpc/dto/course.ts`
+- `packages/api/src/trpc/__tests__/control-read.test.ts`
+- `apps/frontend-manage/src/pages/courses/index.tsx`
+- `apps/frontend-manage/src/components/courses/CourseListButton.tsx`
+- `apps/frontend-manage/src/components/courses/modals/CourseArchiveModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/CourseRemovalModal.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetUserCoursesDocument` read in `apps/frontend-manage/src/pages/courses/index.tsx`.
+- GraphQL resolver(s): `Query.userCourses`.
+- Behavior source: `packages/graphql/src/services/courses.ts` `getUserCourses`, including derived permission flags, direct-permission removability, archived-last sorting, and course metadata used by `CourseListButton`.
+- tRPC router.procedure: add `course.userCourses`.
+- Input schema: none.
+- Output DTO: narrow `userCourses` list with `id`, `name`, `displayName`, `color`, `isArchived`, `isGamificationEnabled`, `isAssessmentEnabled`, `isGroupCreationEnabled`, `description`, `startDate`, `endDate`, `createdAt`, `updatedAt`, `derivedAccess`, `numSharedUsers`, `permissionLevel`, `isOwner`, `isManager`, `isEditor`, `isShared`, and `isRemovable`.
+- Active frontend consumers: manage course selection page and its `CourseListButton`.
+- Apollo behavior: course create/archive/delete/remove writes stay GraphQL for this slice; retained Apollo cache updates stay for remaining GraphQL consumers and the mutation paths also invalidate tRPC `course.userCourses`.
+- React Query/tRPC replacement: `trpc.course.userCourses.useQuery` for the page read and `trpc.useUtils().course.userCourses.invalidate()` after retained GraphQL course-list mutations.
+- Browser verification path: delegated-login manage app, `/courses` list render, archive toggle visibility, course buttons and create-course button visible.
+
+Implementation notes:
+
+- Added `course.userCourses` in `packages/api`, using the existing GraphQL service behavior as the source for visible course metadata, derived access, direct-permission removability, archived-last ordering, and permission flags.
+- Added `toManageCourseListItem` as a narrow DTO mapper so the manage app does not consume broad Prisma records.
+- Replaced the manage `/courses` Apollo read with `trpc.course.userCourses.useQuery`.
+- Kept GraphQL course create/archive/delete/remove mutations live and added `trpc.useUtils().course.userCourses.invalidate()` on their success paths so the migrated list read refreshes after retained GraphQL writes.
+- Updated `CourseListButton` to use the tRPC `RouterOutputs` course-list item type while retaining generated GraphQL enum imports needed by still-Apollo-backed child components.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for all S04J2 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- control-read`: passed; Vitest ran 17 files / 168 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed after replacing the non-exported Prisma count-output type with a narrow local `_count` shape.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after tightening the `CourseListButton` permission guard.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing repository warnings only.
+- `git diff --check`: passed before browser verification.
+- Scoped audit confirmed `/courses` uses `trpc.course.userCourses.useQuery`; retained `GetUserCoursesDocument` imports are only for GraphQL mutation cache-update coexistence paths in this slice.
+- Browser verification with `npx agent-browser` on `http://127.0.0.1:3104/courses` after delegated login rendered the course list, archive toggle, known seeded courses, and create-course button. Corrected resource check confirmed a batched `/api/trpc/user.profile,course.userCourses` request and no `GetUserCourses` GraphQL resource. Screenshot: `/tmp/klicker-manage-s04j2-courses.png`.
+- Cleanup: closed `agent-browser`, stopped temporary verification servers on ports `3103`, `3104`, and `3106`, removed temporary verification `.env` files, and confirmed those ports were free afterward.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns are planned.
+- Subagent delegation is not used because current tool policy only allows spawning when the user explicitly asks for subagents; perform explicit self-review before commit.
 
 ### 2026-06-04 Completed: S04J1 Manage User Profile Shell and Settings Read
 

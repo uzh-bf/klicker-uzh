@@ -1,4 +1,5 @@
 import type * as DB from '@klicker-uzh/prisma/client'
+import { PermissionLevel } from '@klicker-uzh/prisma/client'
 
 type ControlCourseListItem = Pick<
   DB.Course,
@@ -16,6 +17,34 @@ type BasicCourseInformationSource = Pick<
   owner: Pick<DB.User, 'shortname'>
 }
 
+type ManageCourseListCourseSource = Pick<
+  DB.Course,
+  | 'color'
+  | 'createdAt'
+  | 'description'
+  | 'displayName'
+  | 'endDate'
+  | 'id'
+  | 'isArchived'
+  | 'isAssessmentEnabled'
+  | 'isGamificationEnabled'
+  | 'isGroupCreationEnabled'
+  | 'name'
+  | 'startDate'
+  | 'updatedAt'
+> & {
+  _count: {
+    permissions: number
+  }
+}
+
+type ManageCourseListObjectSource = {
+  course: ManageCourseListCourseSource | null
+  derived: boolean
+  directPermission: Pick<DB.Permission, 'userGroupId'> | null
+  permissionLevel: DB.PermissionLevel
+}
+
 export function toControlCourseListItem(course: ControlCourseListItem) {
   return {
     id: course.id,
@@ -23,6 +52,43 @@ export function toControlCourseListItem(course: ControlCourseListItem) {
     isArchived: course.isArchived,
     displayName: course.displayName,
     description: course.description,
+  }
+}
+
+export function toManageCourseListItem(object: ManageCourseListObjectSource) {
+  const course = object.course
+  if (!course) return null
+
+  return {
+    id: course.id,
+    name: course.name,
+    displayName: course.displayName,
+    color: course.color,
+    isArchived: course.isArchived,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    isGroupCreationEnabled: course.isGroupCreationEnabled,
+    description: course.description,
+    startDate: course.startDate,
+    endDate: course.endDate,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+    derivedAccess: object.derived,
+    numSharedUsers: course._count.permissions - 1,
+    permissionLevel: object.permissionLevel,
+    isOwner: object.permissionLevel === PermissionLevel.OWNER,
+    isManager:
+      object.permissionLevel === PermissionLevel.OWNER ||
+      object.permissionLevel === PermissionLevel.ADMIN,
+    isEditor:
+      object.permissionLevel === PermissionLevel.OWNER ||
+      object.permissionLevel === PermissionLevel.ADMIN ||
+      object.permissionLevel === PermissionLevel.WRITE,
+    isShared: object.permissionLevel !== PermissionLevel.OWNER,
+    isRemovable:
+      object.permissionLevel !== PermissionLevel.OWNER &&
+      !object.derived &&
+      object.directPermission?.userGroupId === null,
   }
 }
 
