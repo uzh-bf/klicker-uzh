@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue S04J manage read migration after the completed user-profile shell/settings and course-list slices, prioritizing low-risk course dashboard/navigation reads. Keep manage GraphQL mutations, Apollo providers, generated GraphQL artifacts, and GraphQL cleanup live until their dedicated slices.
+- Continue S04J manage read migration after the completed user-profile shell/settings, course-list, and course-navigation slices, prioritizing low-risk course detail/dashboard summary reads. Keep manage GraphQL mutations, Apollo providers, generated GraphQL artifacts, and GraphQL cleanup live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-04 Completed: S04J3 Manage Course Navigation Reads
+
+Status: complete for the scoped slice. This slice migrated read-only manage course-navigation consumers of `GetUserCoursesDocument` to the existing `course.userCourses` tRPC procedure from S04J2. It intentionally did not migrate tag/activity authoring selectors, course detail/dashboard payloads, analytics result queries, catalog sharing counts, running live quiz header reads, GraphQL mutations, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-manage/src/components/common/Header.tsx`
+- `apps/frontend-manage/src/components/analytics/overview/AnalyticsNavigation.tsx`
+- `apps/frontend-manage/src/components/analytics/activity/SuspendedCourseComparison.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetUserCoursesDocument` reads in the manage header analytics menu, analytics overview navigation selector, and activity analytics course-comparison selector.
+- GraphQL resolver(s): `Query.userCourses`.
+- Behavior source: `packages/graphql/src/services/courses.ts` `getUserCourses`; S04J2 already mirrored this behavior in `course.userCourses`.
+- tRPC router.procedure: reuse `course.userCourses`.
+- Input schema: none.
+- Output DTO: existing `userCourses` list from S04J2, narrowed to the fields currently consumed by each navigation component (`id`, `name`, plus retained DTO fields for shared procedure compatibility).
+- Active frontend consumers: manage `Header`, `AnalyticsNavigation`, and `SuspendedCourseComparison`.
+- Apollo behavior: other header reads (`CountCatalogSharingRequestsDocument`, `GetUserRunningLiveQuizzesDocument`) and all remaining Apollo consumers stay GraphQL for this slice.
+- React Query/tRPC replacement: `trpc.course.userCourses.useQuery()`; the formerly suspense-backed comparison selector now renders its existing layout with a local loader while the tRPC query resolves.
+- Browser verification path: delegated-login manage app, `/courses` header analytics menu presence, `/analytics` navigation list, and `/analytics/<courseId>/activity` course-comparison selector when seeded data allows.
+
+Implementation notes:
+
+- Replaced the manage header analytics menu's `GetUserCoursesDocument` read with `trpc.course.userCourses.useQuery()`.
+- Replaced analytics overview course navigation with `trpc.course.userCourses.useQuery()` while preserving the existing loading state.
+- Replaced the activity analytics course-comparison selector's Apollo suspense query with a standard tRPC query plus a local loader state; the selector remains data-gated by the existing weekly-activity condition.
+- Left other header Apollo reads (`CountCatalogSharingRequestsDocument`, `GetUserRunningLiveQuizzesDocument`) and known retained `GetUserCoursesDocument` mutation-cache/tag-selector consumers untouched for later slices.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for all S04J3 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing repository warnings only.
+- `git diff --check`: passed.
+- Scoped audit confirmed `Header`, `AnalyticsNavigation`, and `SuspendedCourseComparison` now use `trpc.course.userCourses.useQuery()`. Remaining `GetUserCoursesDocument` hits are retained GraphQL mutation cache-update coexistence paths and the later tag/activity selector slice.
+- Browser verification used `npx agent-browser` against a local stack on `localhost:3103` backend, `localhost:3104` manage, and `localhost:3106` auth. Backend needed `APP_MANAGE_SUBDOMAIN=localhost` for local tRPC auth because the JWT middleware keys lecturer cookies off the request origin.
+- Browser `/courses` rendered the course list and header; resource check confirmed `course.userCourses` through `/api/trpc` and no `GetUserCourses` GraphQL resource. Screenshot: `/tmp/klicker-manage-s04j3-courses-localhost.png`.
+- Header analytics menu rendered tRPC-backed course entries and the older-courses link. Screenshot: `/tmp/klicker-manage-s04j3-header-analytics-menu.png`.
+- Browser `/analytics` rendered course navigation entries and dashboard buttons; resource check confirmed `course.userCourses` through `/api/trpc` and no `GetUserCourses` GraphQL resource. Screenshot: `/tmp/klicker-manage-s04j3-analytics-overview.png`.
+- Browser first-course `/analytics/<courseId>/activity` rendered the activity dashboard and course selector; resource check confirmed `course.userCourses` through `/api/trpc` and no `GetUserCourses` GraphQL resource. Screenshot: `/tmp/klicker-manage-s04j3-activity-analytics.png`.
+- Runtime caveat: the `SuspendedCourseComparison` dropdown itself did not render in seeded data because the selected course has no weekly activity data, so that data-gated branch was typechecked/build-verified but not visually exercised.
+- Cleanup: closed `agent-browser`, stopped temporary verification servers on ports `3103`, `3104`, and `3106`, removed temporary verification `.env` files, and confirmed those ports were free afterward.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; this slice reuses established local tRPC hook patterns.
+- Subagent delegation is not used because current tool policy only allows spawning when the user explicitly asks for subagents; perform explicit self-review before commit.
 
 ### 2026-06-04 Completed: S04J2 Manage Course List Read
 

@@ -1,15 +1,14 @@
-import { useQuery } from '@apollo/client'
 import {
   faChevronLeft,
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { trpc } from '../../../lib/trpc'
 
 interface AnalyticsNavigationProps {
   hrefLeft: string
@@ -26,11 +25,11 @@ function AnalyticsNavigation({
   labelRight,
   slug,
 }: AnalyticsNavigationProps) {
-  const { data, loading } = useQuery(GetUserCoursesDocument)
+  const { data, isLoading } = trpc.course.userCourses.useQuery()
   const router = useRouter()
   const t = useTranslations()
 
-  if (loading) {
+  if (isLoading) {
     return <Loader />
   }
 

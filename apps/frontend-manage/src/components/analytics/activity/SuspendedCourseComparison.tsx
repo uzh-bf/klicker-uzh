@@ -1,10 +1,9 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Checkbox, H3, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 
 function SuspendedCourseComparison({
   courseComparison,
@@ -21,14 +20,22 @@ function SuspendedCourseComparison({
   const router = useRouter()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
 
-  const { data } = useSuspenseQuery(GetUserCoursesDocument)
+  const { data, isLoading } = trpc.course.userCourses.useQuery()
   const courses =
-    data.userCourses
+    data?.userCourses
       ?.filter((course) => course.id !== router.query.courseId)
       .map((course) => ({
         label: course.name,
         value: course.id,
       })) ?? []
+
+  if (isLoading) {
+    return (
+      <div className="w-full px-4 lg:w-1/4">
+        <Loader />
+      </div>
+    )
+  }
 
   return (
     <div className="w-full px-4 lg:w-1/4">

@@ -6,7 +6,6 @@ import {
 import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import {
   CountCatalogSharingRequestsDocument,
-  GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -20,7 +19,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { RouterOutputs } from '../../lib/trpc'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import SupportModal from './SupportModal'
 
 type UserProfile = RouterOutputs['user']['profile']
@@ -36,9 +35,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
   const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-first',
   })
-  const { data: courseData } = useQuery(GetUserCoursesDocument, {
-    fetchPolicy: 'cache-first',
-  })
+  const { data: courseData } = trpc.course.userCourses.useQuery()
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
   const courses = courseData?.userCourses
