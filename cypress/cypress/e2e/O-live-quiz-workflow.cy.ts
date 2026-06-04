@@ -1,6 +1,8 @@
 import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString, getFutureDate } from './helpers'
 
+const EVALUATION_VIEW_TIMEOUT = 10000
+
 describe('Different live-quiz workflows', function () {
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
@@ -1596,40 +1598,57 @@ describe('Different live-quiz workflows', function () {
 
   it('Verify that after closing the active live quiz block, the sample solution is shown', function () {
     cy.loginLecturer()
-
-    cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
     ).click()
-    cy.wait(1000)
 
-    cy.get('[data-cy="embed-evaluation-cockpit"]').click()
-    cy.get('[data-cy="embedding-show-solution-switch"]').click() // enable sample solution on evaluation
-    cy.get('[data-cy="embedding-show-explanation-switch"]').click() // enable sample explanation on evaluation
+    cy.get('[data-cy="embed-evaluation-cockpit"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    })
+      .should('be.visible')
+      .click()
+    cy.get('[data-cy="embedding-show-solution-switch"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).click() // enable sample solution on evaluation
+    cy.get('[data-cy="embedding-show-explanation-switch"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).click() // enable sample explanation on evaluation
 
     // SC question with sample solution and explanation (closed block)
-    cy.get('[data-cy="open-embedding-link-question-0"]')
+    cy.get('[data-cy="open-embedding-link-question-0"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    })
+      .should('not.be.empty')
       .invoke('text')
       .then((text) => {
         cy.wrap(text).as('solutionEvaluationLink0')
       })
     // NR question without sample solution but with explanation (closed block)
-    cy.get('[data-cy="open-embedding-link-question-3"]')
+    cy.get('[data-cy="open-embedding-link-question-3"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    })
+      .should('not.be.empty')
       .invoke('text')
       .then((text) => {
         cy.wrap(text).as('solutionEvaluationLink3')
       })
 
     // CT element without sample solution or explanation (closed block)
-    cy.get('[data-cy="open-embedding-link-question-7"]')
+    cy.get('[data-cy="open-embedding-link-question-7"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    })
+      .should('not.be.empty')
       .invoke('text')
       .then((text) => {
         cy.wrap(text).as('solutionEvaluationLink7')
       })
 
     // MC question with sample solution and explanation (active block)
-    cy.get('[data-cy="open-embedding-link-question-9"]')
+    cy.get('[data-cy="open-embedding-link-question-9"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    })
+      .should('not.be.empty')
       .invoke('text')
       .then((text) => {
         cy.wrap(text).as('solutionEvaluationLink9')
@@ -1639,37 +1658,41 @@ describe('Different live-quiz workflows', function () {
     cy.get('@solutionEvaluationLink0').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.SCML.content).should('exist')
-    cy.findByText(this.data.SCML.explanation).should('exist')
-    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
-    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
+    cy.findByText(this.data.SCML.content, {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('exist')
+    cy.findByText(this.data.SCML.explanation, {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('have.attr', 'data-state', 'checked')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('have.attr', 'data-state', 'checked')
 
     // for past NR question without sample solution but with explanation (closed block)
     cy.get('@solutionEvaluationLink3').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.NR.content).should('exist')
-    cy.findByText(this.data.NR.explanation).should('exist')
+    cy.findByText(this.data.NR.content, {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('exist')
+    cy.findByText(this.data.NR.explanation, {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('exist')
     cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
-    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('have.attr', 'data-state', 'checked')
 
     // for content elements, neither the sample solution nor the explanation switch should exist
     cy.get('@solutionEvaluationLink7').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.CT.content).should('exist')
+    cy.findByText(this.data.CT.content, {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('exist')
     cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
     cy.get('[data-cy="evaluation-footer-show-explanation"]').should('not.exist')
 
@@ -1677,28 +1700,24 @@ describe('Different live-quiz workflows', function () {
     cy.get('@solutionEvaluationLink9').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.MCML2.content).should('exist')
-    cy.findByText(this.data.MCML2.explanation).should('exist')
-    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
-    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
-    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
-      'not.have.attr',
-      'disabled',
-      'disabled'
-    )
-    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
-      'not.have.attr',
-      'disabled',
-      'disabled'
-    )
+    cy.findByText(this.data.MCML2.content, {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('exist')
+    cy.findByText(this.data.MCML2.explanation, {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('have.attr', 'data-state', 'checked')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('have.attr', 'data-state', 'checked')
+    cy.get('[data-cy="evaluation-footer-show-solution"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('not.have.attr', 'disabled', 'disabled')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]', {
+      timeout: EVALUATION_VIEW_TIMEOUT,
+    }).should('not.have.attr', 'disabled', 'disabled')
   })
 
   it('Check that the deleted feedbacks are not visible anymore', function () {
