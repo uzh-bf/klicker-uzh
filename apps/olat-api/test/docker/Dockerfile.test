@@ -1,7 +1,7 @@
 FROM node:20
 
-# Install dependencies
-RUN npm install -g pnpm@10.15.0
+# Enable the repo-pinned package manager
+RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 
 WORKDIR /app
 
