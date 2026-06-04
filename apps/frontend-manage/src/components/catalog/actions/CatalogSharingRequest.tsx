@@ -1,21 +1,44 @@
-import { useMutation } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  CountCatalogSharingRequestsDocument,
-  DeclineObjectSharingRequestDocument,
-  GetCatalogSharingRequestsDocument,
-  ObjectSharingRequest,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { trpc, type RouterOutputs } from '../../../lib/trpc'
 import SharingRequestApprovalModal from './SharingRequestApprovalModal'
+
+type ObjectSharingRequest = NonNullable<
+  RouterOutputs['sharing']['catalogSharingRequests']['catalogSharingRequests']
+>[number]
 
 function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
   const t = useTranslations()
   const [approvalModal, setApprovalModal] = useState(false)
-  const [declineObjectSharingRequest, { loading: declineLoading }] =
-    useMutation(DeclineObjectSharingRequestDocument)
+  const utils = trpc.useUtils()
+  const declineObjectSharingRequest =
+    trpc.sharing.declineObjectSharingRequest.useMutation()
+
+  const removeRequestFromCaches = () => {
+    utils.sharing.catalogSharingRequests.setData(undefined, (queryData) => {
+      if (!queryData?.catalogSharingRequests) return queryData
+
+      return {
+        catalogSharingRequests: queryData.catalogSharingRequests.filter(
+          (cachedRequest) =>
+            !(
+              cachedRequest.requestId === request.requestId &&
+              cachedRequest.userId === request.userId
+            )
+        ),
+      }
+    })
+
+    utils.sharing.catalogSharingRequestCount.setData(undefined, (queryData) => {
+      if (typeof queryData?.count !== 'number') return queryData
+
+      return {
+        count: Math.max(queryData.count - 1, 0),
+      }
+    })
+  }
 
   // TODO: add requested permission levels, once UI supports the selection of a specific one during request
   return (
@@ -48,54 +71,16 @@ function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
           data={{
             cy: `deny-sharing-request-${request.objectName}-${request.userShortname}`,
           }}
-          disabled={declineLoading}
+          disabled={declineObjectSharingRequest.isLoading}
           onClick={async (e) => {
             e?.stopPropagation()
-            const result = await declineObjectSharingRequest({
-              variables: {
-                requestId: request.requestId,
-                userId: request.userId,
-              },
-              optimisticResponse: {
-                declineObjectSharingRequest: true,
-              },
-              update: (cache, { data }) => {
-                if (!data?.declineObjectSharingRequest) return
-
-                cache.updateQuery(
-                  { query: GetCatalogSharingRequestsDocument },
-                  (qData) => {
-                    if (!qData?.getCatalogSharingRequests) return qData
-                    return {
-                      getCatalogSharingRequests:
-                        qData.getCatalogSharingRequests.filter(
-                          (r) =>
-                            !(
-                              r.requestId === request.requestId &&
-                              r.userId === request.userId
-                            )
-                        ),
-                    }
-                  }
-                )
-
-                cache.updateQuery(
-                  { query: CountCatalogSharingRequestsDocument },
-                  (qData) => {
-                    if (typeof qData?.countCatalogSharingRequests !== 'number')
-                      return qData
-                    return {
-                      countCatalogSharingRequests: Math.max(
-                        qData.countCatalogSharingRequests - 1,
-                        0
-                      ),
-                    }
-                  }
-                )
-              },
+            const result = await declineObjectSharingRequest.mutateAsync({
+              requestId: request.requestId,
+              userId: request.userId,
             })
 
-            if (result) {
+            if (result.resolved) {
+              removeRequestFromCaches()
               toast({
                 type: 'success',
                 message: t('manage.catalog.declineSuccessful'),

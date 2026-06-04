@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage sharing migration after S04K2. Catalog sharing requests, catalog/resource list pages, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage sharing/catalog migration after S04K3. Catalog/resource list pages, catalog object request/copy/import flows, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,64 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-04 Completed: S04K3 Manage Catalog Sharing Requests
+
+Status: complete for the scoped slice. This slice migrated the manage catalog sharing-request badge/list/resolve workflow from Apollo GraphQL to tRPC. GraphQL remains live for catalog/resource list pages, catalog object request/copy/import flows, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and S06 cleanup.
+
+Scope:
+
+- `packages/api/src/trpc/schemas/sharing.ts`
+- `packages/api/src/trpc/dto/sharing.ts`
+- `packages/api/src/trpc/routers/sharing.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/sharing-catalog-requests.test.ts`
+- `apps/frontend-manage/src/components/common/Header.tsx`
+- `apps/frontend-manage/src/components/catalog/actions/PendingSharingRequests.tsx`
+- `apps/frontend-manage/src/components/catalog/actions/CatalogSharingRequest.tsx`
+- `apps/frontend-manage/src/components/catalog/actions/SharingRequestApprovalModal.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `CountCatalogSharingRequestsDocument`, `GetCatalogSharingRequestsDocument`, `ApproveObjectSharingRequestDocument`, `DeclineObjectSharingRequestDocument`.
+- GraphQL resolver(s): `Query.countCatalogSharingRequests`, `Query.getCatalogSharingRequests`, `Mutation.approveObjectSharingRequest`, `Mutation.declineObjectSharingRequest`.
+- Behavior source: `SharingService.countCatalogSharingRequests`, `SharingService.getCatalogSharingRequests`, and `SharingService.resolveObjectSharingRequest` in `packages/graphql/src/services/sharing.ts`.
+- tRPC router.procedure: add `sharing.catalogSharingRequestCount`, `sharing.catalogSharingRequests`, `sharing.approveObjectSharingRequest`, and `sharing.declineObjectSharingRequest`.
+- Input schema: no-input queries, `{ requestId: number, userId: string }`, and `{ requestId, userId, permissionLevel, propagation }`.
+- Output DTO: narrow `ObjectSharingRequest` shape consumed by the catalog list (`requestId`, `objectName`, `objectType`, `userId`, `userShortname`, `userEmail`) plus count / boolean mutation outputs.
+- Active frontend consumers: manage `Header`, `PendingSharingRequests`, `CatalogSharingRequest`, and `SharingRequestApprovalModal`.
+- Apollo cache/refetch behavior: replace Apollo `cache.updateQuery` for request count/list with React Query cache updates on successful approve/decline; keep unrelated catalog object/list Apollo caches live for later catalog slices.
+- Browser verification path: delegated-login manage app, open `/resources/catalog`, verify pending-sharing-request rendering with one temporary local access request, decline it through the migrated tRPC path, and capture before/after screenshots.
+- Cleanup blocked until: catalog object/list consumers, catalog collection CRUD/access mutations, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- sharing-catalog-requests`: passed, 21 files / 195 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed after casting the mocked emitter in the focused test.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after localizing the generated GraphQL enum / tRPC Prisma enum boundary in `SharingRequestApprovalModal`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing warnings (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `MISSING_MESSAGE` for `/qr/[...args]`, and large page-data warnings).
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for S04K3 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...`: passed for S04K3 touched files and this plan.
+- `git diff --check`: passed.
+- Scoped frontend audit over the migrated files for `CountCatalogSharingRequestsDocument|GetCatalogSharingRequestsDocument|ApproveObjectSharingRequestDocument|DeclineObjectSharingRequestDocument`: no matches.
+- Scoped touched API audit for `@klicker-uzh/graphql|packages/graphql|graphql/dist`: no matches.
+
+Browser evidence:
+
+- Local seeded DB initially had no `AccessRequest` rows. Inserted one temporary local request (`id=19`) for user `free` against lecturer-owned element `383` to exercise the UI.
+- Screenshots reviewed: `/tmp/klicker-manage-s04k3-catalog-request-before.png` showed one unresolved request and the resources notification; `/tmp/klicker-manage-s04k3-catalog-request-after-decline.png` showed the request list and notification removed after decline.
+- Fetch recorder evidence: decline posted `POST http://localhost:3103/api/trpc/sharing.declineObjectSharingRequest?batch=1` with `requestId: 19`; no recorded migrated GraphQL operation names appeared for the decline action.
+- Cleanup verified: `select count(*) from "AccessRequest" where id = 19;` returned `0`, `agent-browser` was closed, temporary auth/manage/backend processes were stopped, and ports `3103`, `3104`, and `3106` had no listeners afterward.
+
+Review and simplification:
+
+- Subagent review/simplification unavailable under current tool policy unless explicitly requested; performed self-review against the slice scope, GraphQL coexistence rules, touched imports, transaction side effects, enum boundary, and browser evidence.
+
+Notes:
+
+- Context7 MCP is still not exposed in this session after tool discovery; official tRPC v10 docs for React Query mutation hooks and input validators are the fallback source for hook/schema usage.
+- Next slice: continue manage catalog/resource migration around catalog collection/object list reads or catalog collection/object request actions, while keeping Apollo/providers/generated GraphQL artifacts live until their dedicated cleanup gates.
 
 ### 2026-06-04 Completed: S04K2 Manage Sharing Ownership Transfer
 

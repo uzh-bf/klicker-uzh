@@ -15,6 +15,7 @@ import {
   sortDerivedPermissionInfos,
   sortPermissionInfos,
   toActivityLogEntry,
+  toCatalogSharingRequest,
   toDerivedPermissionInfo,
   toOwnerPermission,
   toPermissionInfo,
@@ -26,11 +27,13 @@ import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
   activityLogEntryInput,
   addActivityMessageInput,
+  approveObjectSharingRequestInput,
   changePermissionLevelInput,
   derivedPermissionOriginInput,
   objectActivityInput,
   revokeObjectAccessInput,
   shareObjectInput,
+  sharingRequestInput,
   transferObjectOwnershipInput,
 } from '../schemas/sharing.js'
 
@@ -107,6 +110,18 @@ const derivedPermissionOriginInclude = {
 type DerivedPermissionOriginSource = Prisma.DerivedPermissionGetPayload<{
   include: typeof derivedPermissionOriginInclude
 }>
+
+type AccessRequestScopeSource = Pick<
+  Prisma.AccessRequestGetPayload<{}>,
+  | 'catalogCollectionId'
+  | 'answerCollectionId'
+  | 'elementId'
+  | 'courseId'
+  | 'liveQuizId'
+  | 'practiceQuizId'
+  | 'microLearningId'
+  | 'groupActivityId'
+>
 
 function parseNumericObjectId(objectId: string) {
   const parsedObjectId = Number.parseInt(objectId, 10)
@@ -977,6 +992,48 @@ function getPermissionScopeFromDerivedPermission(
   }
 }
 
+function getPermissionScopeFromAccessRequest(
+  request: AccessRequestScopeSource
+): PermissionObjectScope {
+  return {
+    catalogCollectionId: request.catalogCollectionId ?? undefined,
+    answerCollectionId: request.answerCollectionId ?? undefined,
+    elementId: request.elementId ?? undefined,
+    courseId: request.courseId ?? undefined,
+    liveQuizId: request.liveQuizId ?? undefined,
+    practiceQuizId: request.practiceQuizId ?? undefined,
+    microLearningId: request.microLearningId ?? undefined,
+    groupActivityId: request.groupActivityId ?? undefined,
+  }
+}
+
+function emitObjectInvalidation(
+  scope: PermissionObjectScope,
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+) {
+  if (!emitter) return
+
+  const defined = [
+    ['CatalogCollection', scope.catalogCollectionId],
+    ['AnswerCollection', scope.answerCollectionId],
+    ['Element', scope.elementId],
+    ['Course', scope.courseId],
+    ['LiveQuiz', scope.liveQuizId],
+    ['PracticeQuiz', scope.practiceQuizId],
+    ['MicroLearning', scope.microLearningId],
+    ['GroupActivity', scope.groupActivityId],
+  ].filter(([, value]) => value != null)
+
+  if (defined.length !== 1) return
+
+  const [typename, id] = defined[0]!
+
+  emitter.emit('invalidate', {
+    typename,
+    id,
+  })
+}
+
 function toDerivedPermissionOrigin(permission: DerivedPermissionOriginSource) {
   const permissionUser = `${permission.user.shortname} (${permission.user.email})`
 
@@ -1233,6 +1290,123 @@ async function shareObjectWithUserGroup({
     propagation: permission.propagation,
     isOwn: false,
   }
+}
+
+async function countCatalogSharingRequests(
+  prisma: ReturnType<typeof getPrisma>,
+  userId: string
+) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { pendingRequests: true },
+  })
+
+  return user?.pendingRequests.length ?? 0
+}
+
+async function getCatalogSharingRequests(
+  prisma: ReturnType<typeof getPrisma>,
+  userId: string
+) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      pendingRequests: {
+        include: {
+          user: { select: { shortname: true, email: true } },
+          catalogCollection: { select: { name: true } },
+          answerCollection: { select: { name: true } },
+          element: { select: { name: true } },
+        },
+      },
+    },
+  })
+
+  if (!user) return null
+
+  return user.pendingRequests
+    .map(toCatalogSharingRequest)
+    .filter((request) => request !== null)
+}
+
+async function resolveObjectSharingRequest({
+  prisma,
+  emitter,
+  sourceUserId,
+  requestId,
+  userId,
+  permissionLevel,
+  propagation,
+  approved,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  sourceUserId: string
+  requestId: number
+  userId: string
+  permissionLevel: PermissionLevel
+  propagation: boolean
+  approved: boolean
+}) {
+  const pendingRequest = await prisma.accessRequest.findUnique({
+    where: {
+      id: requestId,
+      userId,
+      objectAdminOrOwnerId: sourceUserId,
+    },
+  })
+
+  if (!pendingRequest) return false
+
+  const scope = getPermissionScopeFromAccessRequest(pendingRequest)
+
+  await prisma.$transaction(
+    async (transaction) => {
+      if (approved) {
+        await transaction.permission.upsert({
+          where: permissionUserWhere(scope, userId),
+          create: {
+            permissionLevel,
+            propagation,
+            userId,
+            ...scope,
+          },
+          update: {},
+        })
+      }
+
+      await transaction.accessRequest.deleteMany({
+        where: {
+          userId,
+          ...scope,
+        },
+      })
+
+      const { objectType, objectId } = getAuditLogObjectType(scope)
+      await createPermissionAuditLog({
+        prisma: transaction,
+        scope,
+        type: AuditLogType.REQUEST_RESOLVED,
+        sourceUserId,
+        targetUserId: userId,
+        message: `Access request ${
+          approved
+            ? `approved (with permission level ${permissionLevel})`
+            : 'declined'
+        } for ${objectType} (ID ${objectId}) by owner / admin ${sourceUserId} for user ${userId}.`,
+      })
+
+      await recomputeForScope(scope, transaction, {
+        userId,
+        updateAccessRequests: permissionLevel === PermissionLevel.ADMIN,
+      })
+    },
+    { timeout: 60000 }
+  )
+
+  emitObjectInvalidation(scope, emitter)
+
+  return true
 }
 
 async function transferObjectOwnership({
@@ -1537,6 +1711,61 @@ export const sharingRouter = router({
 
     return { userGroups: await getUserGroupsUser(prisma, ctx.user.sub) }
   }),
+
+  catalogSharingRequestCount: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return { count: await countCatalogSharingRequests(prisma, ctx.user.sub) }
+  }),
+
+  catalogSharingRequests: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return {
+      catalogSharingRequests: await getCatalogSharingRequests(
+        prisma,
+        ctx.user.sub
+      ),
+    }
+  }),
+
+  approveObjectSharingRequest: userFullAccessProcedure
+    .input(approveObjectSharingRequestInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        resolved: await resolveObjectSharingRequest({
+          prisma,
+          emitter: ctx.emitter,
+          sourceUserId: ctx.user.sub,
+          requestId: input.requestId,
+          userId: input.userId,
+          permissionLevel: input.permissionLevel,
+          propagation: input.propagation,
+          approved: true,
+        }),
+      }
+    }),
+
+  declineObjectSharingRequest: userFullAccessProcedure
+    .input(sharingRequestInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        resolved: await resolveObjectSharingRequest({
+          prisma,
+          emitter: ctx.emitter,
+          sourceUserId: ctx.user.sub,
+          requestId: input.requestId,
+          userId: input.userId,
+          permissionLevel: PermissionLevel.READ,
+          propagation: false,
+          approved: false,
+        }),
+      }
+    }),
 
   objectPermissions: userProcedure
     .input(objectActivityInput)

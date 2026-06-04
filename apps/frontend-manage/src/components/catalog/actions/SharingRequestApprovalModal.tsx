@@ -1,19 +1,18 @@
-import { useMutation } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  ApproveObjectSharingRequestDocument,
-  CountCatalogSharingRequestsDocument,
-  GetCatalogSharingRequestsDocument,
-  ObjectSharingRequest,
-  ObjectType,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, SelectField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
+import { trpc, type RouterInputs, type RouterOutputs } from '../../../lib/trpc'
 import PermissionsTable from '../../sharing/PermissionsTable'
 import PropagatedPermissionsTable from '../../sharing/PropagatedPermissionsTable'
+
+type ObjectSharingRequest = NonNullable<
+  RouterOutputs['sharing']['catalogSharingRequests']['catalogSharingRequests']
+>[number]
+type ApproveObjectSharingRequestInput =
+  RouterInputs['sharing']['approveObjectSharingRequest']
 
 function SharingRequestApprovalModal({
   request,
@@ -26,12 +25,37 @@ function SharingRequestApprovalModal({
 }) {
   const t = useTranslations()
   const [permissionLevel, setPermissionLevel] = useState(PermissionLevel.Read)
+  const objectType = request.objectType as unknown as ObjectType
   const permissionLevelSelectItems = usePermissionLevelSelection({
-    type: request.objectType,
+    type: objectType,
   })
+  const utils = trpc.useUtils()
+  const approveObjectSharingRequest =
+    trpc.sharing.approveObjectSharingRequest.useMutation()
 
-  const [approveObjectSharingRequest, { loading: approvalLoading }] =
-    useMutation(ApproveObjectSharingRequestDocument)
+  const removeRequestFromCaches = () => {
+    utils.sharing.catalogSharingRequests.setData(undefined, (queryData) => {
+      if (!queryData?.catalogSharingRequests) return queryData
+
+      return {
+        catalogSharingRequests: queryData.catalogSharingRequests.filter(
+          (cachedRequest) =>
+            !(
+              cachedRequest.requestId === request.requestId &&
+              cachedRequest.userId === request.userId
+            )
+        ),
+      }
+    })
+
+    utils.sharing.catalogSharingRequestCount.setData(undefined, (queryData) => {
+      if (typeof queryData?.count !== 'number') return queryData
+
+      return {
+        count: Math.max(queryData.count - 1, 0),
+      }
+    })
+  }
 
   return (
     <Modal
@@ -46,7 +70,7 @@ function SharingRequestApprovalModal({
       <div>
         {t('manage.catalog.specifyObjectPermissionLevel', {
           objectName: request.objectName,
-          objectType: t(`shared.types.${request.objectType}`),
+          objectType: t(`shared.types.${objectType}`),
           userShortname: request.userShortname,
         })}
       </div>
@@ -73,58 +97,22 @@ function SharingRequestApprovalModal({
         </Button>
         <Button
           primary
-          loading={approvalLoading}
+          loading={approveObjectSharingRequest.isLoading}
           className={{ root: 'h-8 py-0' }}
           data={{ cy: 'confirm-approval' }}
           onClick={async (e) => {
             e?.stopPropagation()
-            const result = await approveObjectSharingRequest({
-              variables: {
-                requestId: request.requestId,
-                userId: request.userId,
-                permissionLevel,
-                propagation: false, // TODO: update this value once the propagation parameter can be toggled in the UI (only relevant for courses at the moment - which cannot be requested)
-              },
-              optimisticResponse: {
-                approveObjectSharingRequest: true,
-              },
-              update: (cache, { data }) => {
-                if (!data?.approveObjectSharingRequest) return
+            const input: ApproveObjectSharingRequestInput = {
+              requestId: request.requestId,
+              userId: request.userId,
+              permissionLevel:
+                permissionLevel as unknown as ApproveObjectSharingRequestInput['permissionLevel'],
+              propagation: false, // TODO: update this value once the propagation parameter can be toggled in the UI (only relevant for courses at the moment - which cannot be requested)
+            }
+            const result = await approveObjectSharingRequest.mutateAsync(input)
 
-                cache.updateQuery(
-                  { query: GetCatalogSharingRequestsDocument },
-                  (qData) => {
-                    if (!qData?.getCatalogSharingRequests) return qData
-                    return {
-                      getCatalogSharingRequests:
-                        qData.getCatalogSharingRequests.filter(
-                          (r) =>
-                            !(
-                              r.requestId === request.requestId &&
-                              r.userId === request.userId
-                            )
-                        ),
-                    }
-                  }
-                )
-
-                cache.updateQuery(
-                  { query: CountCatalogSharingRequestsDocument },
-                  (qData) => {
-                    if (typeof qData?.countCatalogSharingRequests !== 'number')
-                      return qData
-                    return {
-                      countCatalogSharingRequests: Math.max(
-                        qData.countCatalogSharingRequests - 1,
-                        0
-                      ),
-                    }
-                  }
-                )
-              },
-            })
-
-            if (result) {
+            if (result.resolved) {
+              removeRequestFromCaches()
               onSuccess()
               onClose()
             } else {
@@ -136,22 +124,25 @@ function SharingRequestApprovalModal({
             }
           }}
         >
-          <Button.Icon icon={faCheck} loading={approvalLoading} />
+          <Button.Icon
+            icon={faCheck}
+            loading={approveObjectSharingRequest.isLoading}
+          />
           <Button.Label>{t('shared.generic.approve')}</Button.Label>
         </Button>
       </div>
 
       <div className="mt-6">
         <PermissionsTable
-          objectType={request.objectType}
+          objectType={objectType}
           activePermissionLevel={permissionLevel}
         />
       </div>
 
       <PropagatedPermissionsTable
-        objectType={request.objectType}
+        objectType={objectType}
         activePermissionLevel={permissionLevel}
-        showPropagationSetting={request.objectType === ObjectType.Course}
+        showPropagationSetting={objectType === ObjectType.Course}
       />
     </Modal>
   )

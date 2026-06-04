@@ -38,3 +38,13 @@ export const revokeObjectAccessInput = objectActivityInput.extend({
 export const transferObjectOwnershipInput = objectActivityInput.extend({
   shortnameOrEmail: z.string(),
 })
+
+export const sharingRequestInput = z.object({
+  requestId: z.number().int(),
+  userId: z.string(),
+})
+
+export const approveObjectSharingRequestInput = sharingRequestInput.extend({
+  permissionLevel: z.nativeEnum(PermissionLevel),
+  propagation: z.boolean(),
+})

@@ -5,7 +5,6 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import {
-  CountCatalogSharingRequestsDocument,
   GetUserRunningLiveQuizzesDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -29,9 +28,8 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  const { data: pendingRequestData } = useQuery(
-    CountCatalogSharingRequestsDocument
-  )
+  const { data: pendingRequestData } =
+    trpc.sharing.catalogSharingRequestCount.useQuery()
   const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-first',
   })
@@ -66,9 +64,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
       label: t('manage.general.catalog'),
       onClick: () => router.push('/resources/catalog'),
       badge: !user?.privatePreview ? t('shared.generic.comingSoon') : undefined,
-      notification:
-        pendingRequestData &&
-        pendingRequestData.countCatalogSharingRequests !== 0,
+      notification: pendingRequestData && pendingRequestData.count !== 0,
       data: { cy: 'catalog' },
       className: {
         label: 'bg-opacity-100',
@@ -143,9 +139,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||
         router.pathname === '/resources/mediaLibrary',
-      notification:
-        pendingRequestData &&
-        pendingRequestData.countCatalogSharingRequests !== 0,
+      notification: pendingRequestData && pendingRequestData.count !== 0,
       elements: resourceElements,
       data: { cy: 'resources' },
       className: {

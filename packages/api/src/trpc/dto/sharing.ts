@@ -1,5 +1,5 @@
 import type * as DB from '@klicker-uzh/prisma/client'
-import { PermissionLevel } from '@klicker-uzh/prisma/client'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/prisma/client'
 import type { ActivityLogModificationFieldType } from '@klicker-uzh/types'
 
 type ActivityLogEntrySource = DB.ActivityLogEntry & {
@@ -52,6 +52,15 @@ export function toActivityLogEntry(
 type UserSummary = Pick<DB.User, 'id' | 'shortname' | 'email'>
 
 type UserGroupSummary = Pick<DB.UserGroup, 'id' | 'name'>
+
+type ObjectNameSummary = { name: string }
+
+type CatalogSharingRequestSource = DB.AccessRequest & {
+  user: Pick<DB.User, 'shortname' | 'email'>
+  catalogCollection?: ObjectNameSummary | null
+  answerCollection?: ObjectNameSummary | null
+  element?: ObjectNameSummary | null
+}
 
 type DirectPermissionSource = DB.Permission & {
   user?: UserSummary | null
@@ -137,4 +146,39 @@ export function toUserGroupMember(
     email: user.email,
     isSelf: user.id === userId,
   }
+}
+
+export function toCatalogSharingRequest(request: CatalogSharingRequestSource) {
+  const sharedRequestAttributes = {
+    requestId: request.id,
+    userId: request.userId,
+    userShortname: request.user.shortname,
+    userEmail: request.user.email,
+  }
+
+  if (request.catalogCollection) {
+    return {
+      ...sharedRequestAttributes,
+      objectName: request.catalogCollection.name,
+      objectType: ObjectType.CATALOG_COLLECTION,
+    }
+  }
+
+  if (request.answerCollection) {
+    return {
+      ...sharedRequestAttributes,
+      objectName: request.answerCollection.name,
+      objectType: ObjectType.ANSWER_COLLECTION,
+    }
+  }
+
+  if (request.element) {
+    return {
+      ...sharedRequestAttributes,
+      objectName: request.element.name,
+      objectType: ObjectType.ELEMENT,
+    }
+  }
+
+  return null
 }
