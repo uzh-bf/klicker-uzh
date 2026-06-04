@@ -4,6 +4,7 @@ import {
   ObjectAccess,
   ObjectType,
   PermissionLevel,
+  type CatalogCollectionAssignment,
   type DerivedPermission,
   type Prisma,
 } from '@klicker-uzh/prisma/client'
@@ -32,9 +33,14 @@ import {
   activityLogEntryInput,
   addActivityMessageInput,
   approveObjectSharingRequestInput,
+  catalogCollectionAccessInput,
   catalogCollectionInput,
+  catalogCollectionNameInput,
+  catalogObjectAccessInput,
   catalogObjectActionInput,
   changePermissionLevelInput,
+  createCatalogCollectionInput,
+  deleteCatalogCollectionInput,
   derivedPermissionOriginInput,
   objectActivityInput,
   requestCatalogCollectionInput,
@@ -77,6 +83,12 @@ type UpdateAccessRequestScope = Parameters<
 >[0]
 
 const adminPermissionLevels = [PermissionLevel.ADMIN, PermissionLevel.OWNER]
+
+const writePermissionLevels = [
+  PermissionLevel.WRITE,
+  PermissionLevel.ADMIN,
+  PermissionLevel.OWNER,
+]
 
 const readPermissionLevels = [
   PermissionLevel.READ,
@@ -138,6 +150,19 @@ type AccessRequestScopeSource = Pick<
   | 'microLearningId'
   | 'groupActivityId'
 >
+
+type CatalogCollectionAssignmentScopeSource = Pick<
+  CatalogCollectionAssignment,
+  | 'answerCollectionId'
+  | 'elementId'
+  | 'courseId'
+  | 'liveQuizId'
+  | 'practiceQuizId'
+  | 'microLearningId'
+  | 'groupActivityId'
+> & {
+  catalogCollectionId?: string | null
+}
 
 type CatalogActionScope =
   | { answerCollectionId: number; elementId?: undefined }
@@ -1354,17 +1379,250 @@ async function hasCatalogCollectionReadPermission(
   catalogCollectionId: string,
   userId: string
 ) {
+  return hasCatalogCollectionPermission(
+    prisma,
+    catalogCollectionId,
+    userId,
+    readPermissionLevels
+  )
+}
+
+async function hasCatalogCollectionPermission(
+  prisma: ReturnType<typeof getPrisma>,
+  catalogCollectionId: string,
+  userId: string,
+  permissionLevels: PermissionLevel[]
+) {
   const permission = await prisma.derivedPermission.findUnique({
     where: {
       catalogCollectionId_userId: {
         catalogCollectionId,
         userId,
       },
-      permissionLevel: { in: readPermissionLevels },
+      permissionLevel: { in: permissionLevels },
     },
   })
 
   return Boolean(permission)
+}
+
+function getPermissionScopeFromCatalogAssignment(
+  assignment: CatalogCollectionAssignmentScopeSource
+): PermissionObjectScope {
+  return {
+    catalogCollectionId: assignment.catalogCollectionId ?? undefined,
+    answerCollectionId: assignment.answerCollectionId ?? undefined,
+    elementId: assignment.elementId ?? undefined,
+    courseId: assignment.courseId ?? undefined,
+    liveQuizId: assignment.liveQuizId ?? undefined,
+    practiceQuizId: assignment.practiceQuizId ?? undefined,
+    microLearningId: assignment.microLearningId ?? undefined,
+    groupActivityId: assignment.groupActivityId ?? undefined,
+  }
+}
+
+async function verifyCatalogObjectEditPermissions({
+  prisma,
+  assignmentId,
+  userId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  assignmentId: number
+  userId: string
+}) {
+  const assignment = await prisma.catalogCollectionAssignment.findUnique({
+    where: { id: assignmentId },
+  })
+
+  if (!assignment) return false
+
+  if (assignment.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID) {
+    return hasCatalogCollectionPermission(
+      prisma,
+      assignment.catalogCollectionId,
+      userId,
+      writePermissionLevels
+    )
+  }
+
+  const scope = getPermissionScopeFromCatalogAssignment({
+    ...assignment,
+    catalogCollectionId: undefined,
+  })
+
+  return hasAdminObjectPermission(prisma, scope, userId)
+}
+
+async function createCatalogCollection({
+  prisma,
+  userId,
+  name,
+  access,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  name: string
+  access: ObjectAccess
+}) {
+  const collection = await prisma.$transaction(
+    async (transaction) => {
+      const newCollection = await transaction.catalogCollection.create({
+        data: { name, access, owner: { connect: { id: userId } } },
+        include: { owner: { select: { shortname: true } } },
+      })
+
+      await recomputeDerivedPermissions(
+        { catalogCollectionId: newCollection.id, userId },
+        transaction
+      )
+
+      return newCollection
+    },
+    { timeout: 60000 }
+  )
+
+  return {
+    id: collection.id,
+    name: collection.name,
+    access: collection.access,
+    ownerShortname: collection.owner?.shortname ?? null,
+    isOwner: true,
+    isManager: true,
+    isEditor: true,
+    isRequested: false,
+    isShared: false,
+  }
+}
+
+async function changeCatalogCollectionAccess({
+  prisma,
+  emitter,
+  userId,
+  catalogCollectionId,
+  access,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  catalogCollectionId: string
+  access: ObjectAccess
+}) {
+  const collection = await prisma.$transaction(async (transaction) => {
+    const updatedCollection = await transaction.catalogCollection.update({
+      where: { id: catalogCollectionId },
+      data: { access },
+    })
+
+    await transaction.auditLogEntry.create({
+      data: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        objectId: catalogCollectionId,
+        sourceUserId: userId,
+        message: `Catalog collection access level changed to ${access}`,
+      },
+    })
+
+    return updatedCollection
+  })
+
+  emitObjectInvalidation({ catalogCollectionId: collection.id }, emitter)
+
+  return true
+}
+
+async function changeCatalogCollectionName({
+  prisma,
+  emitter,
+  catalogCollectionId,
+  name,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  catalogCollectionId: string
+  name: string
+}) {
+  const updatedCollection = await prisma.catalogCollection.update({
+    where: { id: catalogCollectionId },
+    data: { name },
+  })
+
+  emitObjectInvalidation({ catalogCollectionId: updatedCollection.id }, emitter)
+
+  return true
+}
+
+async function changeCatalogObjectAccess({
+  prisma,
+  emitter,
+  userId,
+  assignmentId,
+  access,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  assignmentId: number
+  access: ObjectAccess
+}) {
+  const sufficientPermissions = await verifyCatalogObjectEditPermissions({
+    prisma,
+    assignmentId,
+    userId,
+  })
+
+  if (!sufficientPermissions) return false
+
+  const updatedAssignment = await prisma.$transaction(async (transaction) => {
+    const newAssignment = await transaction.catalogCollectionAssignment.update({
+      where: { id: assignmentId },
+      data: { access },
+    })
+    const scope = getPermissionScopeFromCatalogAssignment({
+      ...newAssignment,
+      catalogCollectionId: undefined,
+    })
+    const { objectType, objectId } = getAuditLogObjectType(scope)
+
+    await transaction.auditLogEntry.create({
+      data: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
+        objectType,
+        objectId,
+        sourceUserId: userId,
+        message: `Catalog object assignment (ID ${newAssignment.id} for ${objectType} with ID ${objectId}) access level changed to ${access}`,
+      },
+    })
+
+    return newAssignment
+  })
+
+  emitter?.emit('invalidate', {
+    typename: 'CatalogCollectionAssignment',
+    id: updatedAssignment.id,
+  })
+
+  return (
+    updatedAssignment.id !== null && typeof updatedAssignment.id !== 'undefined'
+  )
+}
+
+async function deleteCatalogCollection({
+  prisma,
+  emitter,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  catalogCollectionId: string
+}) {
+  const deletedCollection = await prisma.catalogCollection.delete({
+    where: { id: catalogCollectionId },
+  })
+
+  emitObjectInvalidation({ catalogCollectionId }, emitter)
+
+  return deletedCollection.id
 }
 
 async function verifyCatalogCollectionBrowsable({
@@ -2733,6 +2991,104 @@ export const sharingRouter = router({
         catalogObjects: await getCatalogObjects({
           prisma,
           userId: ctx.user.sub,
+          catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  createCatalogCollection: userFullAccessProcedure
+    .input(createCatalogCollectionInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        catalogCollection: await createCatalogCollection({
+          prisma,
+          userId: ctx.user.sub,
+          name: input.name,
+          access: input.access,
+        }),
+      }
+    }),
+
+  changeCatalogCollectionName: userFullAccessProcedure
+    .input(catalogCollectionNameInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canEdit = await hasCatalogCollectionPermission(
+        prisma,
+        input.catalogCollectionId,
+        ctx.user.sub,
+        writePermissionLevels
+      )
+
+      if (!canEdit) return { changed: false }
+
+      return {
+        changed: await changeCatalogCollectionName({
+          prisma,
+          emitter: ctx.emitter,
+          catalogCollectionId: input.catalogCollectionId,
+          name: input.name,
+        }),
+      }
+    }),
+
+  changeCatalogCollectionAccess: userFullAccessProcedure
+    .input(catalogCollectionAccessInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canManage = await hasAdminObjectPermission(
+        prisma,
+        { catalogCollectionId: input.catalogCollectionId },
+        ctx.user.sub
+      )
+
+      if (!canManage) return { changed: false }
+
+      return {
+        changed: await changeCatalogCollectionAccess({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          catalogCollectionId: input.catalogCollectionId,
+          access: input.access,
+        }),
+      }
+    }),
+
+  changeCatalogObjectAccess: userFullAccessProcedure
+    .input(catalogObjectAccessInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        changed: await changeCatalogObjectAccess({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          assignmentId: input.assignmentId,
+          access: input.access,
+        }),
+      }
+    }),
+
+  deleteCatalogCollection: userFullAccessProcedure
+    .input(deleteCatalogCollectionInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canManage = await hasAdminObjectPermission(
+        prisma,
+        { catalogCollectionId: input.catalogCollectionId },
+        ctx.user.sub
+      )
+
+      if (!canManage) return { deletedCatalogCollectionId: null }
+
+      return {
+        deletedCatalogCollectionId: await deleteCatalogCollection({
+          prisma,
+          emitter: ctx.emitter,
           catalogCollectionId: input.catalogCollectionId,
         }),
       }

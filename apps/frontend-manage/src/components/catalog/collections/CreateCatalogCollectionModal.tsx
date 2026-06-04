@@ -1,9 +1,4 @@
-import { useMutation } from '@apollo/client'
-import {
-  CreateCatalogCollectionDocument,
-  GetCatalogCollectionsListDocument,
-  ObjectAccess,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikTextField,
@@ -13,6 +8,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 
 function CreateCatalogCollectionModal({
@@ -25,7 +21,9 @@ function CreateCatalogCollectionModal({
   onError: () => void
 }) {
   const t = useTranslations()
-  const [createCatalogCollection] = useMutation(CreateCatalogCollectionDocument)
+  const utils = trpc.useUtils()
+  const createCatalogCollection =
+    trpc.sharing.createCatalogCollection.useMutation()
 
   return (
     <Modal
@@ -50,29 +48,23 @@ function CreateCatalogCollectionModal({
         })}
         onSubmit={async (values, { resetForm }) => {
           try {
-            const res = await createCatalogCollection({
-              variables: {
-                name: values.name,
-                access: values.access as ObjectAccess,
-              },
-              update: (cache, { data }) => {
-                // check if the creation was successful
-                if (!data?.createCatalogCollection) return
+            const input: RouterInputs['sharing']['createCatalogCollection'] = {
+              name: values.name,
+              access:
+                values.access as unknown as RouterInputs['sharing']['createCatalogCollection']['access'],
+            }
+            const res = await createCatalogCollection.mutateAsync(input)
 
-                // update the cached list of catalog collections
-                cache.updateQuery(
-                  { query: GetCatalogCollectionsListDocument },
-                  (qData) => ({
-                    getCatalogCollectionsList: [
-                      ...(qData?.getCatalogCollectionsList ?? []),
-                      data.createCatalogCollection!,
-                    ],
-                  })
-                )
-              },
-            })
-
-            if (res.data?.createCatalogCollection) {
+            if (res.catalogCollection) {
+              utils.sharing.catalogCollections.setData(
+                undefined,
+                (queryData) => ({
+                  catalogCollections: [
+                    ...(queryData?.catalogCollections ?? []),
+                    res.catalogCollection,
+                  ],
+                })
+              )
               resetForm()
               onSuccess()
             } else {

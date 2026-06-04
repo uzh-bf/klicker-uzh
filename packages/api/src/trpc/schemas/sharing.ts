@@ -1,4 +1,8 @@
-import { ObjectType, PermissionLevel } from '@klicker-uzh/prisma/client'
+import {
+  ObjectAccess,
+  ObjectType,
+  PermissionLevel,
+} from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 
 export const objectActivityInput = z.object({
@@ -64,4 +68,28 @@ export const requestCatalogObjectInput = catalogObjectActionInput.extend({
 export const requestCatalogCollectionInput = z.object({
   catalogCollectionId: z.string(),
   requestedPermissionLevel: z.nativeEnum(PermissionLevel).nullish(),
+})
+
+export const createCatalogCollectionInput = z.object({
+  name: z.string(),
+  access: z.nativeEnum(ObjectAccess),
+})
+
+export const catalogCollectionNameInput = z.object({
+  catalogCollectionId: z.string(),
+  name: z.string(),
+})
+
+export const catalogCollectionAccessInput = z.object({
+  catalogCollectionId: z.string(),
+  access: z.nativeEnum(ObjectAccess),
+})
+
+export const catalogObjectAccessInput = z.object({
+  assignmentId: z.number().int(),
+  access: z.nativeEnum(ObjectAccess),
+})
+
+export const deleteCatalogCollectionInput = z.object({
+  catalogCollectionId: z.string(),
 })

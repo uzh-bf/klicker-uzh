@@ -276,6 +276,43 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04K6 Manage Catalog Collection Administration
+
+Status: complete for the scoped slice. This slice migrated manage catalog collection administration mutations to tRPC and wired them into the S04K4 React Query catalog collection/object caches. Add-object selection reads/mutation, catalog object assignment removal, answer-collection resource CRUD, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.
+
+Implemented:
+
+- Added tRPC input schemas for catalog collection create/name/access/delete and catalog object assignment access.
+- Added `sharing.createCatalogCollection`, `sharing.changeCatalogCollectionName`, `sharing.changeCatalogCollectionAccess`, `sharing.changeCatalogObjectAccess`, and `sharing.deleteCatalogCollection`.
+- Mirrored old GraphQL sharing-service behavior, including permission gates, derived collection permissions after create, top-level versus collection-contained object assignment access rules, audit logging, and invalidation calls.
+- Added focused API coverage in `packages/api/src/trpc/__tests__/sharing-catalog-admin.test.ts` for create/rename/access/delete and assignment access, including denied paths.
+- Replaced Apollo mutation hooks in `CreateCatalogCollectionModal`, `CatalogCollectionNameChangeModal`, `CatalogCollectionDeletionModal`, and `CatalogChangeAccessModal` with tRPC mutations.
+- Replaced `GetCatalogCollectionsListDocument` / `GetCatalogObjectsDocument` cache writes with React Query `sharing.catalogCollections` / `sharing.catalogObjects` updates.
+- Preserved a visible deletion-failed toast when a denied delete returns no deleted collection id.
+
+Review:
+
+- Dedicated review agent: `DONE_WITH_CONCERNS`. Accepted findings: delete-denied null result must surface to the user, and tests should cover collection access/delete denial plus collection-contained object assignment access. Addressed by showing the existing deletion-failed toast and adding the missing API tests.
+- Dedicated simplification agent: `DONE_WITH_CONCERNS`. Rejected helper-collapse and broad invalidation suggestions for this slice: the router helper style matches surrounding sharing router code, keeps procedure bodies readable, and manual React Query cache updates preserve the old Apollo immediate-update behavior verified in-browser. Kept output shapes close to old GraphQL id-return behavior and deferred wider prop/type cleanup.
+
+Verification:
+
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- sharing-catalog-admin` (24 files / 217 tests).
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` (exit 0; existing warnings observed: `MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n` config warning, stale Browserslist data, `MISSING_MESSAGE` during `/qr/[...args]` static generation, and large page-data warnings).
+- Passed: `git diff --check`.
+- Passed scoped migrated-admin audit: touched frontend files no longer import the migrated catalog admin GraphQL documents or Apollo mutation hooks.
+- Passed touched API audit: no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in touched API router/schema/test files.
+- Browser verification: local backend/auth/manage stack on `localhost:3103/3106/3104`; delegated login as `lecturer`; `/resources/catalog` rendered successfully. Screenshots: `/tmp/agent-browser-shots/s04k6-catalog-loaded.png`, `/tmp/agent-browser-shots/s04k6-create-modal.png`, `/tmp/agent-browser-shots/s04k6-catalog-created.png`, `/tmp/agent-browser-shots/s04k6-catalog-restricted.png`, `/tmp/agent-browser-shots/s04k6-catalog-renamed.png`, `/tmp/agent-browser-shots/s04k6-catalog-final.png`.
+- Browser request capture showed create, access change, rename, and delete calls going through `/api/trpc/sharing.*` with no migrated GraphQL mutation request. The temporary collection was deleted and the local dev processes were stopped after verification.
+
+Next:
+
+- Commit S04K6 as one conventional slice commit.
+- Next slice candidate: migrate the add-object-to-catalog selection/read mutation and catalog object assignment removal flow, keeping answer-collection resource CRUD and global Apollo cleanup for later.
+
 ### 2026-06-05 Completed: S04K5 Manage Catalog Browser Actions
 
 Status: complete for the scoped slice. This slice migrated manage catalog browser request/copy/import/cancel actions from Apollo GraphQL mutations to tRPC and wired the S04K4 React Query catalog read cache for request/cancel/import/copy updates. Collection CRUD/name/delete/access-change, add-object selection reads/mutations, catalog object removal, Apollo provider cleanup, generated GraphQL type cleanup, and S06 cleanup remain live.

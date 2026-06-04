@@ -1,12 +1,8 @@
-import { useMutation } from '@apollo/client'
-import {
-  ChangeCatalogCollectionNameDocument,
-  GetCatalogCollectionsListDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 function CatalogCollectionNameChangeModal({
   catalogCollectionId,
@@ -18,9 +14,9 @@ function CatalogCollectionNameChangeModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [changeCatalogCollectionName] = useMutation(
-    ChangeCatalogCollectionNameDocument
-  )
+  const utils = trpc.useUtils()
+  const changeCatalogCollectionName =
+    trpc.sharing.changeCatalogCollectionName.useMutation()
 
   const onErrorToast = () =>
     toast({
@@ -50,36 +46,28 @@ function CatalogCollectionNameChangeModal({
           setSubmitting(true)
 
           try {
-            const res = await changeCatalogCollectionName({
-              variables: {
-                catalogCollectionId,
-                name: values.name,
-              },
-              update: (cache, { data }) => {
-                // check if request was successful
-                if (!data?.changeCatalogCollectionName) return
-
-                // update list of catalog collections
-                cache.updateQuery(
-                  { query: GetCatalogCollectionsListDocument },
-                  (qData) => {
-                    if (!qData?.getCatalogCollectionsList) return qData
-
-                    return {
-                      getCatalogCollectionsList:
-                        qData.getCatalogCollectionsList.map((obj) =>
-                          obj.id === catalogCollectionId
-                            ? { ...obj, name: values.name }
-                            : obj
-                        ),
-                    }
-                  }
-                )
-              },
+            const res = await changeCatalogCollectionName.mutateAsync({
+              catalogCollectionId,
+              name: values.name,
             })
 
             // Check if mutation was successful
-            if (res.data?.changeCatalogCollectionName) {
+            if (res.changed) {
+              utils.sharing.catalogCollections.setData(
+                undefined,
+                (queryData) => {
+                  if (!queryData?.catalogCollections) return queryData
+
+                  return {
+                    catalogCollections: queryData.catalogCollections.map(
+                      (obj) =>
+                        obj.id === catalogCollectionId
+                          ? { ...obj, name: values.name }
+                          : obj
+                    ),
+                  }
+                }
+              )
               toast({
                 type: 'success',
                 message: t('manage.catalog.catalogCollectionNameChangeSuccess'),
