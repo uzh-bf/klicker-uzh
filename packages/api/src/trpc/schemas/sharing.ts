@@ -52,3 +52,16 @@ export const approveObjectSharingRequestInput = sharingRequestInput.extend({
 export const catalogCollectionInput = z.object({
   catalogCollectionId: z.string().nullish(),
 })
+
+export const catalogObjectActionInput = objectActivityInput.extend({
+  catalogCollectionId: z.string().nullish(),
+})
+
+export const requestCatalogObjectInput = catalogObjectActionInput.extend({
+  requestedPermissionLevel: z.nativeEnum(PermissionLevel).nullish(),
+})
+
+export const requestCatalogCollectionInput = z.object({
+  catalogCollectionId: z.string(),
+  requestedPermissionLevel: z.nativeEnum(PermissionLevel).nullish(),
+})

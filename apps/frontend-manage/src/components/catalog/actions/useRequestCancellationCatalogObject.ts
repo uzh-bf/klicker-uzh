@@ -1,9 +1,5 @@
-import { useMutation } from '@apollo/client'
-import {
-  CancelObjectSharingRequestDocument,
-  GetCatalogObjectsDocument,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 // function to trigger object sharing request, returns success boolean
 function useRequestCancellationCatalogObject({
@@ -17,47 +13,40 @@ function useRequestCancellationCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  const [cancelObjectSharingRequest, { loading: cancellingSharingRequest }] =
-    useMutation(CancelObjectSharingRequestDocument)
+  const utils = trpc.useUtils()
+  const cancelObjectSharingRequest =
+    trpc.sharing.cancelObjectSharingRequest.useMutation()
 
   const onObjectSharingRequestCancellation = async () => {
     try {
-      const res = await cancelObjectSharingRequest({
-        variables: { objectId: String(objectId), objectType },
-        optimisticResponse: {
-          cancelObjectSharingRequest: true,
-        },
-        update: (cache, { data }) => {
-          // check if cancellation was successful
-          if (!data?.cancelObjectSharingRequest) return
-
-          // update the cache
-          cache.updateQuery(
-            {
-              query: GetCatalogObjectsDocument,
-              variables: { catalogCollectionId },
-            },
-            (qData) => {
-              if (!qData?.getCatalogObjects) return qData
-              return {
-                getCatalogObjects: qData.getCatalogObjects.map((obj) =>
-                  (typeof objectId === 'number' && obj.objectId === objectId) ||
-                  (typeof objectId === 'string' && obj.objectUuid === objectId)
-                    ? { ...obj, isRequested: false }
-                    : obj
-                ),
-              }
-            }
-          )
-        },
-      })
-
-      if (res.data?.cancelObjectSharingRequest) {
-        return true
-      } else {
-        onError()
-        return false
+      const input: RouterInputs['sharing']['cancelObjectSharingRequest'] = {
+        objectId: String(objectId),
+        objectType:
+          objectType as unknown as RouterInputs['sharing']['cancelObjectSharingRequest']['objectType'],
       }
+      const res = await cancelObjectSharingRequest.mutateAsync(input)
+
+      if (res.cancelled) {
+        utils.sharing.catalogObjects.setData(
+          { catalogCollectionId },
+          (queryData) => {
+            if (!queryData?.catalogObjects) return queryData
+
+            return {
+              catalogObjects: queryData.catalogObjects.map((obj) =>
+                (typeof objectId === 'number' && obj.objectId === objectId) ||
+                (typeof objectId === 'string' && obj.objectUuid === objectId)
+                  ? { ...obj, isRequested: false }
+                  : obj
+              ),
+            }
+          }
+        )
+        return true
+      }
+
+      onError()
+      return false
     } catch (error) {
       console.error(error)
       onError()
@@ -67,7 +56,7 @@ function useRequestCancellationCatalogObject({
 
   return {
     onCancellation: onObjectSharingRequestCancellation,
-    cancelling: cancellingSharingRequest,
+    cancelling: cancelObjectSharingRequest.isLoading,
   }
 }
 

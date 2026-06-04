@@ -1,9 +1,9 @@
-import { useMutation } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
 import {
   GetAnswerCollectionsInfoDocument,
-  ImportCatalogObjectDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 // function to trigger object import, returns success boolean
 function useImportCatalogObject({
@@ -17,9 +17,9 @@ function useImportCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  const [importCatalogObject, { loading: importing }] = useMutation(
-    ImportCatalogObjectDocument
-  )
+  const apolloClient = useApolloClient()
+  const utils = trpc.useUtils()
+  const importCatalogObject = trpc.sharing.importCatalogObject.useMutation()
 
   if (objectType !== ObjectType.AnswerCollection) {
     return {
@@ -33,26 +33,24 @@ function useImportCatalogObject({
 
   const onImportCatalogObject = async () => {
     try {
-      const res = await importCatalogObject({
-        variables: {
-          objectId: String(objectId),
-          objectType,
-          catalogCollectionId,
-        },
-        // generic return type supporting multiple object types is not available
-        // proper cache update therefore impractical -> refetch query is acceptable here
-        refetchQueries: [
-          ...(objectType === ObjectType.AnswerCollection
-            ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-        ],
-      })
-
-      if (res.data?.importCatalogObject) {
-        return true
-      } else {
-        return false
+      const input: RouterInputs['sharing']['importCatalogObject'] = {
+        objectId: String(objectId),
+        objectType:
+          objectType as unknown as RouterInputs['sharing']['importCatalogObject']['objectType'],
+        catalogCollectionId,
       }
+      const res = await importCatalogObject.mutateAsync(input)
+
+      if (res.imported) {
+        void utils.sharing.catalogObjects.invalidate({
+          catalogCollectionId,
+        })
+        void apolloClient.refetchQueries({
+          include: [GetAnswerCollectionsInfoDocument],
+        })
+        return true
+      }
+      return false
     } catch (error) {
       console.error(error)
       return false
@@ -61,7 +59,7 @@ function useImportCatalogObject({
 
   return {
     onImport: onImportCatalogObject,
-    importing,
+    importing: importCatalogObject.isLoading,
   }
 }
 

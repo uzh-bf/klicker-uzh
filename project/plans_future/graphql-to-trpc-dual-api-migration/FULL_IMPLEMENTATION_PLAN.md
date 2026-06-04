@@ -276,6 +276,42 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04K5 Manage Catalog Browser Actions
+
+Status: complete for the scoped slice. This slice migrated manage catalog browser request/copy/import/cancel actions from Apollo GraphQL mutations to tRPC and wired the S04K4 React Query catalog read cache for request/cancel/import/copy updates. Collection CRUD/name/delete/access-change, add-object selection reads/mutations, catalog object removal, Apollo provider cleanup, generated GraphQL type cleanup, and S06 cleanup remain live.
+
+Implemented:
+
+- Added tRPC input schemas for catalog object actions, catalog object requests, and catalog collection requests.
+- Added `sharing.copyCatalogObjectToAccount`, `sharing.importCatalogObject`, `sharing.requestCatalogObject`, `sharing.requestCatalogCollection`, and `sharing.cancelObjectSharingRequest`.
+- Mirrored old GraphQL resolver/service behavior for answer collection and element copy/request/cancel plus answer collection import and restricted catalog-collection request.
+- Added focused API coverage in `packages/api/src/trpc/__tests__/sharing-catalog-actions.test.ts` for unsupported action guards, restricted browse protection, public answer-collection import/copy, collection request, object request, and request cancellation.
+- Replaced Apollo mutation hooks in `useCopyCatalogObject`, `useImportCatalogObject`, `useRequestCatalogObject`, and `useRequestCancellationCatalogObject` with tRPC mutations.
+- Replaced `GetCatalogObjectsDocument` / `GetCatalogCollectionsListDocument` cache writes with React Query `sharing.catalogObjects` / `sharing.catalogCollections` updates.
+- Preserved a narrow Apollo coexistence refetch for `GetAnswerCollectionsInfoDocument` after successful answer-collection copy/import because the answer-collection resource list is still Apollo-only in this branch.
+
+Review:
+
+- Dedicated review agent: `DONE_WITH_CONCERNS`. Accepted finding: preserve answer-collection resource-list refresh while it remains Apollo-only. Addressed by `useApolloClient().refetchQueries({ include: [GetAnswerCollectionsInfoDocument] })` after successful answer-collection copy/import. Accepted minor test-gap finding and added copy/object-request happy-path API tests.
+- Dedicated simplification agent: `DONE_WITH_CONCERNS`. Rejected critical request/cancel type finding after checking `packages/graphql/src/schema/mutation.ts`: old resolver only forwarded answer collection and element IDs for `requestCatalogObject` / `cancelObjectSharingRequest`; other object IDs were hard-coded `undefined`. Accepted minor cleanup: removed duplicate parser helper and fixed misleading catalog-object log text.
+
+Verification:
+
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- sharing-catalog-actions` (23 files / 207 tests).
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` (exit 0; existing warnings observed: `MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n` config warning, stale Browserslist data, `MISSING_MESSAGE` during `/qr/[...args]` static generation, and large page-data warnings).
+- Passed scoped migrated-action audit: action hooks no longer import `CopyCatalogObjectToAccountDocument`, `ImportCatalogObjectDocument`, `RequestCatalogObjectDocument`, `RequestCatalogCollectionDocument`, `CancelObjectSharingRequestDocument`, `GetCatalogObjectsDocument`, or `GetCatalogCollectionsListDocument`; the remaining `GetAnswerCollectionsInfoDocument` import is intentional Apollo coexistence for the still-Apollo resource list.
+- Passed touched API audit: no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in touched API router/schema/test files.
+- Browser verification: local backend/auth/manage stack on `localhost:3103/3106/3104`; delegated login as `lecturer`; `/resources/catalog` rendered successfully. Screenshot: `/tmp/agent-browser-shots/s04k5-catalog-final.png`. Request sample showed `sharing.catalogCollections` and `sharing.catalogObjects` through `/api/trpc`; local seeded catalog data had no actionable public/requestable catalog objects, so copy/import/request/cancel UI clicks were verified by API tests rather than browser action clicks.
+- Dev-server note: restarting `frontend-manage` was required after running `next build` while `next dev` was active, because mixed `.next` artifacts produced a transient blank page. The final browser screenshot was taken after restart.
+
+Next:
+
+- Commit S04K5 as one conventional slice commit.
+- Next slice candidate: migrate remaining catalog collection CRUD/access-change/add-object/removal mutations, or split further if that surface is too large.
+
 ### 2026-06-04 Completed: S04K4 Manage Catalog Browser Reads
 
 Status: complete for the scoped slice. This slice migrated the manage catalog browser read path from Apollo GraphQL to tRPC while leaving catalog object request/copy/import/cancel actions, collection CRUD/access mutations, add-object selection reads/mutations, generated GraphQL type cleanup, Apollo providers, and S06 cleanup live.

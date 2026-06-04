@@ -1,9 +1,9 @@
-import { useMutation } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
 import {
-  CopyCatalogObjectToAccountDocument,
   GetAnswerCollectionsInfoDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 // function to trigger object import, returns success boolean
 function useCopyCatalogObject({
@@ -17,8 +17,10 @@ function useCopyCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  const [copyCatalogObjectToAccount, { loading: copyingCatalogObject }] =
-    useMutation(CopyCatalogObjectToAccountDocument)
+  const apolloClient = useApolloClient()
+  const utils = trpc.useUtils()
+  const copyCatalogObjectToAccount =
+    trpc.sharing.copyCatalogObjectToAccount.useMutation()
 
   if (objectType === ObjectType.CatalogCollection) {
     return {
@@ -32,26 +34,26 @@ function useCopyCatalogObject({
 
   const onCopyCatalogObject = async () => {
     try {
-      const res = await copyCatalogObjectToAccount({
-        variables: {
-          objectId: String(objectId),
-          objectType,
-          catalogCollectionId,
-        },
-        // generic return type supporting multiple object types is not available
-        // proper cache update therefore impractical -> refetch query is acceptable here
-        refetchQueries: [
-          ...(objectType === ObjectType.AnswerCollection
-            ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-        ],
-      })
-
-      if (res.data?.copyCatalogObjectToAccount) {
-        return true
-      } else {
-        return false
+      const input: RouterInputs['sharing']['copyCatalogObjectToAccount'] = {
+        objectId: String(objectId),
+        objectType:
+          objectType as unknown as RouterInputs['sharing']['copyCatalogObjectToAccount']['objectType'],
+        catalogCollectionId,
       }
+      const res = await copyCatalogObjectToAccount.mutateAsync(input)
+
+      if (res.copied) {
+        void utils.sharing.catalogObjects.invalidate({
+          catalogCollectionId,
+        })
+        if (objectType === ObjectType.AnswerCollection) {
+          void apolloClient.refetchQueries({
+            include: [GetAnswerCollectionsInfoDocument],
+          })
+        }
+        return true
+      }
+      return false
     } catch (error) {
       console.error(error)
       return false
@@ -60,7 +62,7 @@ function useCopyCatalogObject({
 
   return {
     onCopy: onCopyCatalogObject,
-    copying: copyingCatalogObject,
+    copying: copyCatalogObjectToAccount.isLoading,
   }
 }
 

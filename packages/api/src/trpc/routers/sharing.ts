@@ -33,9 +33,12 @@ import {
   addActivityMessageInput,
   approveObjectSharingRequestInput,
   catalogCollectionInput,
+  catalogObjectActionInput,
   changePermissionLevelInput,
   derivedPermissionOriginInput,
   objectActivityInput,
+  requestCatalogCollectionInput,
+  requestCatalogObjectInput,
   revokeObjectAccessInput,
   shareObjectInput,
   sharingRequestInput,
@@ -135,6 +138,10 @@ type AccessRequestScopeSource = Pick<
   | 'microLearningId'
   | 'groupActivityId'
 >
+
+type CatalogActionScope =
+  | { answerCollectionId: number; elementId?: undefined }
+  | { elementId: number; answerCollectionId?: undefined }
 
 function parseNumericObjectId(objectId: string) {
   const parsedObjectId = Number.parseInt(objectId, 10)
@@ -1516,6 +1523,785 @@ async function getCatalogObjects({
   )
 }
 
+function getCatalogActionScope({
+  objectId,
+  objectType,
+}: {
+  objectId: string
+  objectType: ObjectType
+}): CatalogActionScope | null {
+  if (objectType === ObjectType.ANSWER_COLLECTION) {
+    const answerCollectionId = parseNumericObjectId(objectId)
+    return answerCollectionId === null ? null : { answerCollectionId }
+  }
+
+  if (objectType === ObjectType.ELEMENT) {
+    const elementId = parseNumericObjectId(objectId)
+    return elementId === null ? null : { elementId }
+  }
+
+  return null
+}
+
+async function copyAnswerCollectionToAccount({
+  prisma,
+  emitter,
+  userId,
+  collectionId,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  collectionId: number
+  catalogCollectionId?: string | null
+}) {
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable({
+        prisma,
+        catalogCollectionId,
+        userId,
+      })
+    : true
+
+  if (!validAccess) return false
+
+  const assignment = await prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+    },
+  })
+
+  if (!assignment || assignment.access !== ObjectAccess.PUBLIC) return false
+
+  const collection = assignment.answerCollection
+  if (!collection || collection.ownerId === userId) return false
+
+  const importCount = await prisma.answerCollection.count({
+    where: {
+      originalId: collection.id,
+      ownerId: userId,
+    },
+  })
+
+  await prisma.$transaction(async (transaction) => {
+    const newCollection = await transaction.answerCollection.create({
+      data: {
+        originalId: collection.id,
+        name:
+          importCount > 0
+            ? `${collection.name} (${importCount})`
+            : collection.name,
+        description: collection.description,
+        owner: {
+          connect: {
+            id: userId,
+          },
+        },
+        entries: {
+          create: collection.entries.map((entry) => ({
+            value: entry.value,
+          })),
+        },
+      },
+      include: {
+        entries: true,
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      { answerCollectionId: newCollection.id, userId },
+      transaction
+    )
+
+    return newCollection
+  })
+
+  emitObjectInvalidation({ answerCollectionId: collection.id }, emitter)
+
+  return true
+}
+
+async function copyElementToAccount({
+  prisma,
+  emitter,
+  userId,
+  elementId,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  elementId: number
+  catalogCollectionId?: string | null
+}) {
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable({
+        prisma,
+        catalogCollectionId,
+        userId,
+      })
+    : true
+
+  if (!validAccess) return false
+
+  const assignment = await prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      elementId_catalogCollectionId: {
+        elementId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    include: {
+      element: {
+        include: {
+          answerCollectionItems: true,
+        },
+      },
+    },
+  })
+
+  if (!assignment || assignment.access !== ObjectAccess.PUBLIC) return false
+
+  const element = assignment.element
+  if (!element || element.ownerId === userId) return false
+
+  const importCount = await prisma.element.count({
+    where: {
+      originalId: String(element.id),
+      ownerId: userId,
+    },
+  })
+
+  await prisma.$transaction(async (transaction) => {
+    const newElement = await transaction.element.create({
+      data: {
+        originalId: String(element.id),
+        name:
+          importCount > 0 ? `${element.name} (${importCount})` : element.name,
+        content: element.content,
+        explanation: element.explanation,
+        basePoints: element.basePoints,
+        pointsMultiplier: element.pointsMultiplier,
+        type: element.type,
+        options: element.options,
+        answerCollection:
+          element.answerCollectionId !== null
+            ? {
+                connect: {
+                  id: element.answerCollectionId,
+                },
+              }
+            : undefined,
+        answerCollectionItems: {
+          connect: element.answerCollectionItems.map((item) => ({
+            id: item.id,
+          })),
+        },
+        owner: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      { elementId: newElement.id, userId },
+      transaction
+    )
+
+    if (newElement.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: newElement.answerCollectionId,
+          userId,
+        },
+        transaction
+      )
+    }
+
+    return newElement
+  })
+
+  emitObjectInvalidation({ elementId: element.id }, emitter)
+
+  return true
+}
+
+async function importAnswerCollection({
+  prisma,
+  emitter,
+  userId,
+  collectionId,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  collectionId: number
+  catalogCollectionId?: string | null
+}) {
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable({
+        prisma,
+        catalogCollectionId,
+        userId,
+      })
+    : true
+
+  if (!validAccess) return false
+
+  const assignment = await prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+    },
+  })
+
+  if (!assignment || assignment.access !== ObjectAccess.PUBLIC) return false
+
+  const collection = assignment.answerCollection
+  if (!collection || collection.ownerId === userId) return false
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.permission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: collection.id,
+          userId,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.READ,
+        propagation: false,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        answerCollection: {
+          connect: {
+            id: collection.id,
+          },
+        },
+      },
+      update: {},
+    })
+
+    await recomputeDerivedPermissions(
+      { answerCollectionId: collection.id, userId },
+      transaction
+    )
+
+    await transaction.auditLogEntry.create({
+      data: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(collection.id),
+        sourceUserId: userId,
+        targetUserId: userId,
+        message: `Read permission granted on answer collection (ID ${collection.id}) through public catalog collection (ID ${catalogCollectionId}) and assignment (ID ${assignment.id}) for user ${userId}.`,
+      },
+    })
+  })
+
+  emitObjectInvalidation({ answerCollectionId: collection.id }, emitter)
+
+  return true
+}
+
+async function copyCatalogObjectToAccount({
+  prisma,
+  emitter,
+  userId,
+  objectId,
+  objectType,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  objectId: string
+  objectType: ObjectType
+  catalogCollectionId?: string | null
+}) {
+  const scope = getCatalogActionScope({ objectId, objectType })
+
+  if (scope?.answerCollectionId !== undefined) {
+    return copyAnswerCollectionToAccount({
+      prisma,
+      emitter,
+      userId,
+      collectionId: scope.answerCollectionId,
+      catalogCollectionId,
+    })
+  }
+
+  if (scope?.elementId !== undefined) {
+    return copyElementToAccount({
+      prisma,
+      emitter,
+      userId,
+      elementId: scope.elementId,
+      catalogCollectionId,
+    })
+  }
+
+  return false
+}
+
+async function importCatalogObject({
+  prisma,
+  emitter,
+  userId,
+  objectId,
+  objectType,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  objectId: string
+  objectType: ObjectType
+  catalogCollectionId?: string | null
+}) {
+  if (objectType !== ObjectType.ANSWER_COLLECTION) return false
+
+  const scope = getCatalogActionScope({ objectId, objectType })
+  if (scope?.answerCollectionId === undefined) return false
+
+  return importAnswerCollection({
+    prisma,
+    emitter,
+    userId,
+    collectionId: scope.answerCollectionId,
+    catalogCollectionId,
+  })
+}
+
+async function requestCatalogCollection({
+  prisma,
+  emitter,
+  userId,
+  catalogCollectionId,
+  requestedPermissionLevel,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  catalogCollectionId: string
+  requestedPermissionLevel?: PermissionLevel | null
+}) {
+  const permissionLevel = requestedPermissionLevel ?? PermissionLevel.READ
+  const catalogCollection = await prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId,
+      permissions: {
+        none: {
+          userId,
+          permissionLevel,
+        },
+      },
+      accessRequests: {
+        none: {
+          userId,
+          permissionLevel,
+        },
+      },
+    },
+    include: {
+      permissions: {
+        where: {
+          userId,
+          permissionLevel,
+        },
+      },
+      accessRequests: {
+        where: {
+          userId,
+          permissionLevel,
+        },
+      },
+      owner: { select: { shortname: true } },
+    },
+  })
+
+  if (
+    !catalogCollection ||
+    catalogCollection.permissions.length > 0 ||
+    catalogCollection.accessRequests.length > 0 ||
+    !catalogCollection.ownerId
+  ) {
+    return null
+  }
+
+  const adminOwnerPermissions = await prisma.derivedPermission.findMany({
+    where: {
+      catalogCollectionId,
+      permissionLevel: {
+        in: adminPermissionLevels,
+      },
+    },
+  })
+
+  if (adminOwnerPermissions.length === 0) {
+    console.log(
+      'No admin or owner could be found on the catalog collection ',
+      catalogCollectionId
+    )
+    return null
+  }
+
+  const ownerAdminIds = adminOwnerPermissions.map(
+    (permission) => permission.userId
+  )
+  await prisma.$transaction(async (transaction) => {
+    const results = await Promise.allSettled(
+      ownerAdminIds.map(async (adminOwnerId) => {
+        await transaction.accessRequest.upsert({
+          where: {
+            catalogCollectionId_userId_objectAdminOrOwnerId: {
+              catalogCollectionId,
+              userId,
+              objectAdminOrOwnerId: adminOwnerId,
+            },
+          },
+          create: {
+            permissionLevel,
+            catalogCollectionId,
+            userId,
+            objectAdminOrOwnerId: adminOwnerId,
+          },
+          update: {
+            permissionLevel,
+          },
+        })
+
+        await transaction.auditLogEntry.create({
+          data: {
+            type: AuditLogType.REQUEST_CREATED,
+            objectType: ObjectType.CATALOG_COLLECTION,
+            objectId: catalogCollectionId,
+            sourceUserId: userId,
+            targetUserId: adminOwnerId,
+            message: `Access request (permission level ${permissionLevel}) created for ${ObjectType.CATALOG_COLLECTION} (ID ${catalogCollectionId}) by user ${userId} for owner / admin ${adminOwnerId}.`,
+          },
+        })
+      })
+    )
+
+    if (!results.every((result) => result.status === 'fulfilled')) {
+      throw new Error(
+        `Failed to create access requests for catalog collection ${catalogCollectionId}: ${JSON.stringify(
+          results
+        )}`
+      )
+    }
+  })
+
+  emitObjectInvalidation({ catalogCollectionId }, emitter)
+
+  return {
+    id: catalogCollection.id,
+    name: catalogCollection.name,
+    access: catalogCollection.access,
+    ownerShortname: catalogCollection.owner?.shortname ?? null,
+    isOwner: false,
+    isManager: false,
+    isEditor: false,
+    isRequested: true,
+    isShared: false,
+  }
+}
+
+async function requestCatalogObject({
+  prisma,
+  emitter,
+  userId,
+  objectId,
+  objectType,
+  catalogCollectionId,
+  requestedPermissionLevel,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  objectId: string
+  objectType: ObjectType
+  catalogCollectionId?: string | null
+  requestedPermissionLevel?: PermissionLevel | null
+}) {
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable({
+        prisma,
+        catalogCollectionId,
+        userId,
+      })
+    : true
+
+  if (!validAccess) return false
+
+  const scope = getCatalogActionScope({ objectId, objectType })
+  if (!scope) return false
+
+  const permissionLevel = requestedPermissionLevel ?? PermissionLevel.READ
+  let objectInfo:
+    | {
+        existingPermission: boolean
+        existingRequest: boolean
+      }
+    | undefined
+
+  if (scope.answerCollectionId !== undefined) {
+    const collection = await prisma.answerCollection.findUnique({
+      where: {
+        id: scope.answerCollectionId,
+        permissions: {
+          none: {
+            userId,
+            permissionLevel,
+          },
+        },
+        accessRequests: {
+          none: {
+            userId,
+            permissionLevel,
+          },
+        },
+      },
+      include: {
+        permissions: {
+          where: {
+            userId,
+            permissionLevel,
+          },
+        },
+        accessRequests: {
+          where: {
+            userId,
+            permissionLevel,
+          },
+        },
+      },
+    })
+
+    if (!collection) return false
+
+    objectInfo = {
+      existingPermission: collection.permissions.length > 0,
+      existingRequest: collection.accessRequests.length > 0,
+    }
+  } else if (scope.elementId !== undefined) {
+    const element = await prisma.element.findUnique({
+      where: {
+        id: scope.elementId,
+        permissions: {
+          none: {
+            userId,
+            permissionLevel,
+          },
+        },
+        accessRequests: {
+          none: {
+            userId,
+            permissionLevel,
+          },
+        },
+      },
+      include: {
+        permissions: {
+          where: {
+            userId,
+            permissionLevel,
+          },
+        },
+        accessRequests: {
+          where: {
+            userId,
+            permissionLevel,
+          },
+        },
+      },
+    })
+
+    if (!element) return false
+
+    objectInfo = {
+      existingPermission: element.permissions.length > 0,
+      existingRequest: element.accessRequests.length > 0,
+    }
+  }
+
+  if (
+    !objectInfo ||
+    objectInfo.existingPermission ||
+    objectInfo.existingRequest
+  ) {
+    return false
+  }
+
+  const adminOwnerPermissions = await prisma.derivedPermission.findMany({
+    where: {
+      permissionLevel: {
+        in: adminPermissionLevels,
+      },
+      ...scope,
+    },
+  })
+
+  if (adminOwnerPermissions.length === 0) {
+    console.log(
+      'No admin or owner could be found on the catalog object ',
+      scope
+    )
+    return false
+  }
+
+  const ownerAdminIds = adminOwnerPermissions.map(
+    (permission) => permission.userId
+  )
+  await prisma.$transaction(async (transaction) => {
+    const results = await Promise.allSettled(
+      ownerAdminIds.map(async (adminOwnerId) => {
+        await transaction.accessRequest.upsert({
+          where: {
+            answerCollectionId_userId_objectAdminOrOwnerId:
+              typeof scope.answerCollectionId !== 'undefined'
+                ? {
+                    answerCollectionId: scope.answerCollectionId,
+                    userId,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+            elementId_userId_objectAdminOrOwnerId:
+              typeof scope.elementId !== 'undefined'
+                ? {
+                    elementId: scope.elementId,
+                    userId,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+          },
+          create: {
+            permissionLevel,
+            userId,
+            objectAdminOrOwnerId: adminOwnerId,
+            ...scope,
+          },
+          update: {
+            permissionLevel,
+          },
+        })
+
+        const { objectType: auditObjectType, objectId: auditObjectId } =
+          getAuditLogObjectType(scope)
+        await transaction.auditLogEntry.create({
+          data: {
+            type: AuditLogType.REQUEST_CREATED,
+            objectType: auditObjectType,
+            objectId: auditObjectId,
+            sourceUserId: userId,
+            targetUserId: adminOwnerId,
+            message: `Access request (permission level ${permissionLevel}) created for ${auditObjectType} (ID ${auditObjectId}) by user ${userId} for owner / admin ${adminOwnerId}.`,
+          },
+        })
+      })
+    )
+
+    if (!results.every((result) => result.status === 'fulfilled')) {
+      throw new Error(
+        `Failed to create access requests for object ${JSON.stringify(
+          scope
+        )}: ${JSON.stringify(results)}`
+      )
+    }
+  })
+
+  emitObjectInvalidation(scope, emitter)
+
+  return true
+}
+
+async function cancelObjectSharingRequest({
+  prisma,
+  emitter,
+  userId,
+  objectId,
+  objectType,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  objectId: string
+  objectType: ObjectType
+}) {
+  const scope = getCatalogActionScope({ objectId, objectType })
+  if (!scope) return false
+
+  const requests = await prisma.accessRequest.findMany({
+    where: {
+      userId,
+      ...scope,
+    },
+  })
+
+  if (requests.length === 0) return false
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.accessRequest.deleteMany({
+      where: {
+        userId,
+        ...scope,
+      },
+    })
+
+    const { objectType: auditObjectType, objectId: auditObjectId } =
+      getAuditLogObjectType(scope)
+    await transaction.auditLogEntry.create({
+      data: {
+        type: AuditLogType.REQUEST_CANCELLED,
+        objectType: auditObjectType,
+        objectId: auditObjectId,
+        sourceUserId: userId,
+        message: `Access request cancelled for ${auditObjectType} (ID ${auditObjectId}) by user ${userId}.`,
+      },
+    })
+  })
+
+  for (const request of requests) {
+    emitter?.emit('invalidate', {
+      typename: 'AccessRequest',
+      id: request.id,
+    })
+  }
+  emitObjectInvalidation(scope, emitter)
+
+  return true
+}
+
 async function resolveObjectSharingRequest({
   prisma,
   emitter,
@@ -1948,6 +2734,90 @@ export const sharingRouter = router({
           prisma,
           userId: ctx.user.sub,
           catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  copyCatalogObjectToAccount: userFullAccessProcedure
+    .input(catalogObjectActionInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        copied: await copyCatalogObjectToAccount({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          objectId: input.objectId,
+          objectType: input.objectType,
+          catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  importCatalogObject: userFullAccessProcedure
+    .input(catalogObjectActionInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        imported: await importCatalogObject({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          objectId: input.objectId,
+          objectType: input.objectType,
+          catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  requestCatalogCollection: userFullAccessProcedure
+    .input(requestCatalogCollectionInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        catalogCollection: await requestCatalogCollection({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          catalogCollectionId: input.catalogCollectionId,
+          requestedPermissionLevel: input.requestedPermissionLevel,
+        }),
+      }
+    }),
+
+  requestCatalogObject: userFullAccessProcedure
+    .input(requestCatalogObjectInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        requested: await requestCatalogObject({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          objectId: input.objectId,
+          objectType: input.objectType,
+          catalogCollectionId: input.catalogCollectionId,
+          requestedPermissionLevel: input.requestedPermissionLevel,
+        }),
+      }
+    }),
+
+  cancelObjectSharingRequest: userFullAccessProcedure
+    .input(objectActivityInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        cancelled: await cancelObjectSharingRequest({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          objectId: input.objectId,
+          objectType: input.objectType,
         }),
       }
     }),
