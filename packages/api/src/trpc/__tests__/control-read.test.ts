@@ -257,6 +257,98 @@ describe('control read routers', () => {
     })
   })
 
+  test('returns a course deletion summary when read permission exists', async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      permissionLevel: PermissionLevel.READ,
+    })
+    const findUnique = vi.fn().mockResolvedValue({
+      _count: {
+        participations: 5,
+        liveQuizzes: 2,
+        practiceQuizzes: 3,
+        microLearnings: 4,
+        groupActivities: 1,
+        leaderboard: 6,
+        participantGroups: 7,
+      },
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst,
+      },
+      course: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.summary({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      courseSummary: {
+        numOfParticipations: 5,
+        numOfLiveQuizzes: 2,
+        numOfPracticeQuizzes: 3,
+        numOfMicroLearnings: 4,
+        numOfGroupActivities: 1,
+        numOfLeaderboardEntries: 6,
+        numOfParticipantGroups: 7,
+      },
+    })
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        courseId: 'course-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: {
+        _count: {
+          select: {
+            liveQuizzes: { where: { isDeleted: false } },
+            practiceQuizzes: { where: { isDeleted: false } },
+            microLearnings: { where: { isDeleted: false } },
+            groupActivities: { where: { isDeleted: false } },
+            leaderboard: true,
+            participantGroups: true,
+            participations: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('returns null for a course deletion summary without read permission', async () => {
+    const findUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      course: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.summary({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      courseSummary: null,
+    })
+    expect(findUnique).not.toHaveBeenCalled()
+  })
+
   test('returns public basic course information', async () => {
     const findUnique = vi.fn().mockResolvedValue({
       id: 'course-1',

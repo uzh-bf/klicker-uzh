@@ -1,9 +1,13 @@
-import { CourseSummary } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import type { RouterOutputs } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import { CourseDeletionConfirmationType } from './CourseDeletionModal'
+
+type CourseSummary = NonNullable<
+  RouterOutputs['course']['summary']['courseSummary']
+>
 
 interface CourseDeletionConfirmationsProps {
   summary: CourseSummary

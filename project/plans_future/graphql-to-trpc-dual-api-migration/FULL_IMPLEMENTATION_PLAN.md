@@ -276,6 +276,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J4 Manage Course Deletion Summary Read
+
+Status: complete for the scoped slice. This slice migrated the course deletion modal summary read from Apollo `GetCourseSummaryDocument` to a narrow tRPC `course.summary` procedure. It intentionally did not migrate the GraphQL `DeleteCourseDocument` mutation, Apollo cache updates for retained GraphQL consumers, course detail/dashboard reads, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
+
+Scope:
+
+- `packages/api/src/trpc/routers/course.ts`
+- `packages/api/src/trpc/dto/course.ts`
+- `packages/api/src/trpc/schemas/course.ts`
+- `packages/api/src/trpc/permissions.ts`
+- `packages/api/src/trpc/__tests__/control-read.test.ts`
+- `apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/CourseDeletionConfirmations.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetCourseSummaryDocument` in `CourseDeletionModal`.
+- GraphQL resolver(s): `Query.getCourseSummary`, guarded by `withPermission(..., PermissionLevel.READ, ...)`.
+- Behavior source: `packages/graphql/src/services/courses.ts` `getCourseSummary`, including non-deleted activity counts and nullable return on missing course or missing access.
+- tRPC router.procedure: add `course.summary`.
+- Input schema: `{ courseId: string }`.
+- Output DTO: `{ courseSummary: { numOfParticipations, numOfLiveQuizzes, numOfPracticeQuizzes, numOfMicroLearnings, numOfGroupActivities, numOfLeaderboardEntries, numOfParticipantGroups } | null }`.
+- Active frontend consumers: manage `CourseDeletionModal` and `CourseDeletionConfirmations`.
+- Apollo behavior: retained GraphQL `DeleteCourseDocument` mutation and `GetUserCoursesDocument` cache update remain GraphQL for this slice; the existing tRPC `course.userCourses.invalidate()` after deletion remains.
+- Browser verification path: delegated-login manage app, `/courses`, open a course deletion modal, confirm summary rows render, and confirm modal-open network calls use `/api/trpc/course.summary` without a new `/api/graphql` call.
+
+Implementation notes:
+
+- Context7 MCP is not exposed in this session; this slice reuses established local tRPC query, DTO, and permission-helper patterns.
+- Added `hasCoursePermission` in `packages/api/src/trpc/permissions.ts`, reusing the same accepted permission hierarchy as GraphQL `checkAccess` for `PermissionLevel.READ`.
+- Added `course.summary` in `packages/api`, returning `courseSummary: null` when READ access is missing or the course cannot be found, matching GraphQL `withPermission` / nullable resolver behavior.
+- Added a narrow `toCourseSummary` DTO for deletion counts and focused caller tests for authorized and unauthorized access.
+- Replaced the deletion modal's Apollo summary query with `trpc.course.summary.useQuery`; retained the Apollo `DeleteCourseDocument` mutation and `GetUserCoursesDocument` cache update for coexistence.
+- Replaced the generated GraphQL `CourseSummary` type import in `CourseDeletionConfirmations` with a local `RouterOutputs['course']['summary']['courseSummary']` alias.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for all S04J4 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- control-read`: passed; Vitest ran 17 files / 170 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after rerunning once the parallel API build had refreshed exported router types.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/PWA/i18n warnings only.
+- `git diff --check`: passed.
+- Scoped audit confirmed `CourseDeletionModal` now uses `trpc.course.summary.useQuery`; `CourseDeletionConfirmations` no longer imports generated GraphQL types; the retained `@klicker-uzh/graphql/dist/ops` modal import is only for the still-GraphQL delete mutation/cache-update path; `packages/api/src` still has no GraphQL runtime imports.
+- Browser verification used `npx agent-browser` against a local stack on `localhost:3103` backend, `localhost:3104` manage, and `localhost:3106` auth. Backend used `APP_MANAGE_SUBDOMAIN=localhost` for local tRPC auth.
+- Browser `/courses` rendered the seeded course list before opening the modal. Screenshot: `/tmp/klicker-manage-s04j4-courses-before-modal.png`.
+- Browser deletion modal for `Testkurs` rendered summary rows for participants, live quizzes, practice quizzes, microlearnings, group activities, participant groups, and auto-confirmed the zero-count leaderboard row. Screenshot: `/tmp/klicker-manage-s04j4-course-deletion-summary.png`.
+- Modal-open resource check cleared timings before the click and observed only `/api/trpc/course.summary?...`; no `/api/graphql` request was made for the summary modal load.
+- Cleanup: closed `agent-browser`, stopped temporary verification servers on ports `3103`, `3104`, and `3106`, removed generated local verification `.env` files, and confirmed those ports were free afterward.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns were introduced beyond established local tRPC hooks and router helpers.
+- Subagent delegation is not used because current tool policy only allows spawning when the user explicitly asks for subagents; performed explicit self-review before commit.
+
 ### 2026-06-04 Completed: S04J3 Manage Course Navigation Reads
 
 Status: complete for the scoped slice. This slice migrated read-only manage course-navigation consumers of `GetUserCoursesDocument` to the existing `course.userCourses` tRPC procedure from S04J2. It intentionally did not migrate tag/activity authoring selectors, course detail/dashboard payloads, analytics result queries, catalog sharing counts, running live quiz header reads, GraphQL mutations, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.

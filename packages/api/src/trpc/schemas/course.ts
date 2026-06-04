@@ -7,3 +7,7 @@ export const controlCourseInput = z.object({
 export const basicCourseInformationInput = z.object({
   courseId: z.string(),
 })
+
+export const courseSummaryInput = z.object({
+  courseId: z.string(),
+})

@@ -1,16 +1,19 @@
 import { PermissionLevel } from '@klicker-uzh/prisma/client'
-import { getPrisma } from '../context.js'
+import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
   toBasicCourseInformation,
   toControlCourse,
   toControlCourseListItem,
+  toCourseSummary,
   toManageCourseListItem,
 } from '../dto/course.js'
 import { publicProcedure, router } from '../init.js'
+import { hasCoursePermission } from '../permissions.js'
 import { userProcedure } from '../procedures.js'
 import {
   basicCourseInformationInput,
   controlCourseInput,
+  courseSummaryInput,
 } from '../schemas/course.js'
 
 const courseExecutePermissionLevels = [
@@ -112,6 +115,42 @@ export const courseRouter = router({
           }) ?? [],
     }
   }),
+
+  summary: userProcedure
+    .input(courseSummaryInput)
+    .query(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.courseId,
+          PermissionLevel.READ
+        ))
+      ) {
+        return { courseSummary: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        select: {
+          _count: {
+            select: {
+              liveQuizzes: { where: { isDeleted: false } },
+              practiceQuizzes: { where: { isDeleted: false } },
+              microLearnings: { where: { isDeleted: false } },
+              groupActivities: { where: { isDeleted: false } },
+              leaderboard: true,
+              participantGroups: true,
+              participations: true,
+            },
+          },
+        },
+      })
+
+      return {
+        courseSummary: toCourseSummary(course),
+      }
+    }),
 
   controlCourse: userProcedure
     .input(controlCourseInput)

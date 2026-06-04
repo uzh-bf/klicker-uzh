@@ -44,6 +44,25 @@ export async function hasLiveQuizPermission(
   return Boolean(permission)
 }
 
+export async function hasCoursePermission(
+  ctx: TRPCContextWithUser,
+  courseId: string,
+  requiredPermissionLevel: PermissionLevel
+) {
+  const prisma = getPrisma(ctx)
+  const permission = await prisma.derivedPermission.findFirst({
+    where: {
+      courseId,
+      userId: ctx.user.sub,
+      permissionLevel: {
+        in: acceptedPermissionLevels[requiredPermissionLevel],
+      },
+    },
+  })
+
+  return Boolean(permission)
+}
+
 export async function requireLiveQuizPermission(
   ctx: TRPCContextWithUser,
   liveQuizId: string,

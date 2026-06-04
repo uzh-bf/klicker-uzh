@@ -45,6 +45,18 @@ type ManageCourseListObjectSource = {
   permissionLevel: DB.PermissionLevel
 }
 
+type CourseSummarySource = {
+  _count: {
+    participations: number
+    liveQuizzes: number
+    practiceQuizzes: number
+    microLearnings: number
+    groupActivities: number
+    leaderboard: number
+    participantGroups: number
+  }
+}
+
 export function toControlCourseListItem(course: ControlCourseListItem) {
   return {
     id: course.id,
@@ -120,5 +132,19 @@ export function toBasicCourseInformation(
     owner: {
       shortname: course.owner.shortname,
     },
+  }
+}
+
+export function toCourseSummary(course: CourseSummarySource | null) {
+  if (!course) return null
+
+  return {
+    numOfParticipations: course._count.participations,
+    numOfLiveQuizzes: course._count.liveQuizzes,
+    numOfPracticeQuizzes: course._count.practiceQuizzes,
+    numOfMicroLearnings: course._count.microLearnings,
+    numOfGroupActivities: course._count.groupActivities,
+    numOfLeaderboardEntries: course._count.leaderboard,
+    numOfParticipantGroups: course._count.participantGroups,
   }
 }

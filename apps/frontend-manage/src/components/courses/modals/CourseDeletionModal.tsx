@@ -1,7 +1,6 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import {
   DeleteCourseDocument,
-  GetCourseSummaryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
@@ -45,34 +44,33 @@ function CourseDeletionModal({
   const utils = trpc.useUtils()
 
   // fetch course information
-  const { data, loading: queryLoading } = useQuery(GetCourseSummaryDocument, {
-    variables: { courseId: courseId ?? '' },
-    skip: !courseId,
-  })
+  const { data, isLoading: queryLoading } = trpc.course.summary.useQuery(
+    { courseId: courseId ?? '' },
+    { enabled: Boolean(courseId) }
+  )
 
   const [deleteCourse, { loading: courseDeleting }] =
     useMutation(DeleteCourseDocument)
 
   // skip confirmation for the elements where none are present
   useEffect(() => {
-    if (!courseId || !data?.getCourseSummary) {
+    if (!courseId || !data?.courseSummary) {
       return
     }
 
     setConfirmations({
-      deleteParticipations: data.getCourseSummary.numOfParticipations === 0,
-      disconnectLiveQuizzes: data.getCourseSummary.numOfLiveQuizzes === 0,
-      deletePracticeQuizzes: data.getCourseSummary.numOfPracticeQuizzes === 0,
-      deleteMicroLearnings: data.getCourseSummary.numOfMicroLearnings === 0,
-      deleteGroupActivities: data.getCourseSummary.numOfGroupActivities === 0,
-      deleteParticipantGroups:
-        data.getCourseSummary.numOfParticipantGroups === 0,
+      deleteParticipations: data.courseSummary.numOfParticipations === 0,
+      disconnectLiveQuizzes: data.courseSummary.numOfLiveQuizzes === 0,
+      deletePracticeQuizzes: data.courseSummary.numOfPracticeQuizzes === 0,
+      deleteMicroLearnings: data.courseSummary.numOfMicroLearnings === 0,
+      deleteGroupActivities: data.courseSummary.numOfGroupActivities === 0,
+      deleteParticipantGroups: data.courseSummary.numOfParticipantGroups === 0,
       deleteLeaderboardEntries:
-        data.getCourseSummary.numOfLeaderboardEntries === 0,
+        data.courseSummary.numOfLeaderboardEntries === 0,
     })
-  }, [courseId, data?.getCourseSummary])
+  }, [courseId, data?.courseSummary])
 
-  const summary = data?.getCourseSummary
+  const summary = data?.courseSummary
   if (!courseId) {
     return null
   }
