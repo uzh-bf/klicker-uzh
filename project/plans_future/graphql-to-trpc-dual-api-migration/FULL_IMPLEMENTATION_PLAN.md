@@ -276,6 +276,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J5 Manage Analytics Overview Read
+
+Status: complete for the scoped slice. This slice migrated the manage `/analytics` overview page read from Apollo `GetUserCoursesDocument` to the existing tRPC `course.userCourses` procedure and removed generated GraphQL `Course` type imports from the overview display components. It intentionally did not migrate analytics detail/dashboard result queries, course activity analytics reads, mutations, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-manage/src/pages/analytics/index.tsx`
+- `apps/frontend-manage/src/components/analytics/overview/CourseDashboardList.tsx`
+- `apps/frontend-manage/src/components/analytics/overview/DashboardButtons.tsx`
+- `apps/frontend-manage/src/components/analytics/overview/AnalyticsCourseLabel.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetUserCoursesDocument` in `apps/frontend-manage/src/pages/analytics/index.tsx`.
+- GraphQL resolver(s): `Query.userCourses`.
+- Behavior source: existing `course.userCourses` tRPC procedure from S04J2, which mirrors GraphQL `CourseService.getUserCourses` for manage course list/read consumers.
+- tRPC router.procedure: reuse `course.userCourses`.
+- Input schema: none.
+- Output DTO: existing `userCourses` list; this page consumes `id`, `name`, `startDate`, and `endDate`.
+- Active frontend consumers: analytics overview page and its course dashboard labels/buttons.
+- Apollo behavior: analytics detail/result queries and remaining GraphQL cache-update consumers stay GraphQL for later slices.
+- Browser verification path: delegated-login manage app, `/analytics`, course labels and dashboard buttons render, and resource check confirms `/api/trpc/course.userCourses` for the page read without a `GetUserCourses` GraphQL resource.
+
+Implementation notes:
+
+- Context7 MCP is not exposed in this session; this slice reuses established local tRPC hook/type patterns.
+- Replaced `/analytics` page-level Apollo `useQuery(GetUserCoursesDocument)` with `trpc.course.userCourses.useQuery()`.
+- Replaced generated GraphQL `Course` type imports in `CourseDashboardList`, `DashboardButtons`, and `AnalyticsCourseLabel` with narrow local structural prop types for the fields they render.
+- Left analytics detail/result queries and retained header GraphQL reads (`CountCatalogSharingRequestsDocument`, `GetUserRunningLiveQuizzesDocument`) untouched for later slices.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for all S04J5 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/PWA/i18n warnings only.
+- `git diff --check`: passed.
+- Scoped audit confirmed `/analytics` now uses `trpc.course.userCourses.useQuery()` and the touched analytics overview files no longer import Apollo or generated GraphQL operations/types.
+- Browser verification used `npx agent-browser` against a local stack on `localhost:3103` backend, `localhost:3104` manage, and `localhost:3106` auth. Backend used `APP_MANAGE_SUBDOMAIN=localhost` for local tRPC auth.
+- Browser `/analytics` rendered the seeded course labels and dashboard buttons for activity, performance/progress, and quiz dashboards. Screenshot: `/tmp/klicker-manage-s04j5-analytics-overview.png`.
+- Resource check on a direct page load showed `course.userCourses` through `/api/trpc`; generic `/api/graphql` calls remained expected from retained header reads in this mixed-state slice.
+- Precise client-side navigation check from `/courses` to Analytics -> `Older courses...` installed a fetch recorder before navigation and observed only `/_next/data/.../analytics.json` plus `/api/trpc/course.userCourses,user.profile`; no `GetUserCourses` GraphQL payload was issued.
+- Cleanup: closed `agent-browser`, stopped temporary verification servers on ports `3103`, `3104`, and `3106`, removed generated local verification `.env` files, and confirmed those ports were free afterward.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns were introduced beyond established local tRPC hooks and narrow prop types.
+- Subagent delegation is not used because current tool policy only allows spawning when the user explicitly asks for subagents; performed explicit self-review before commit.
+
 ### 2026-06-04 Completed: S04J4 Manage Course Deletion Summary Read
 
 Status: complete for the scoped slice. This slice migrated the course deletion modal summary read from Apollo `GetCourseSummaryDocument` to a narrow tRPC `course.summary` procedure. It intentionally did not migrate the GraphQL `DeleteCourseDocument` mutation, Apollo cache updates for retained GraphQL consumers, course detail/dashboard reads, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.

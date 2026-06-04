@@ -1,18 +1,15 @@
-import { useQuery } from '@apollo/client'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import CourseDashboardList from '../../components/analytics/overview/CourseDashboardList'
 import Layout from '../../components/Layout'
+import { trpc } from '../../lib/trpc'
 
 function Analytics() {
   const t = useTranslations()
-  const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetUserCoursesDocument
-  )
+  const { data, isLoading } = trpc.course.userCourses.useQuery()
 
-  if (loadingCourses) {
+  if (isLoading) {
     return (
       <Layout displayName={t('shared.generic.learningAnalytics')}>
         <Loader />
@@ -22,7 +19,7 @@ function Analytics() {
 
   return (
     <Layout displayName={t('shared.generic.learningAnalytics')}>
-      <CourseDashboardList courses={dataCourses?.userCourses} />
+      <CourseDashboardList courses={data?.userCourses} />
     </Layout>
   )
 }
