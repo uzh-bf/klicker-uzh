@@ -17,13 +17,16 @@ const user = {
   id: 'user-1',
 }
 
-function createContext(prisma: TRPCContext['prisma']): TRPCContext {
+function createContext(
+  prisma: TRPCContext['prisma'],
+  options?: { scope?: UserLoginScope }
+): TRPCContext {
   return {
     prisma,
     user: {
       sub: user.id,
       role: UserRole.USER,
-      scope: UserLoginScope.ACCOUNT_OWNER,
+      scope: options?.scope ?? UserLoginScope.ACCOUNT_OWNER,
       catalystInstitutional: false,
       catalystIndividual: true,
     },
@@ -551,5 +554,119 @@ describe('manage activity read routers', () => {
         },
       },
     })
+  })
+
+  test('sets standalone live quiz review status for activity admins', async () => {
+    const update = vi.fn().mockResolvedValue({ id: 'live-quiz-1' })
+    const prisma = {
+      liveQuiz: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.setReviewStatus({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        isReviewed: true,
+      })
+    ).resolves.toEqual({ reviewStatus: ReviewStatus.REVIEWED })
+
+    expect(update).toHaveBeenCalledWith({
+      where: {
+        id: 'live-quiz-1',
+        OR: [
+          {
+            courseId: null,
+            permissions: {
+              some: {
+                userId: user.id,
+                permissionLevel: {
+                  in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                },
+              },
+            },
+          },
+          {
+            courseId: { not: null },
+            course: {
+              permissions: {
+                some: {
+                  userId: user.id,
+                  permissionLevel: {
+                    in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      data: { reviewStatus: ReviewStatus.REVIEWED },
+      select: { id: true },
+    })
+  })
+
+  test('returns null when setting activity review status fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const update = vi.fn().mockRejectedValue(new Error('not found'))
+    const prisma = {
+      practiceQuiz: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.setReviewStatus({
+        activityId: 'practice-quiz-1',
+        activityType: ActivityType.PRACTICE_QUIZ,
+        isReviewed: false,
+      })
+    ).resolves.toEqual({ reviewStatus: null })
+
+    expect(update).toHaveBeenCalledWith({
+      where: {
+        id: 'practice-quiz-1',
+        course: {
+          permissions: {
+            some: {
+              userId: user.id,
+              permissionLevel: {
+                in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
+      data: { reviewStatus: ReviewStatus.INCOMPLETE },
+      select: { id: true },
+    })
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  test('requires full-access user scope for review status mutation', async () => {
+    const update = vi.fn()
+    const prisma = {
+      liveQuiz: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { scope: UserLoginScope.READ_ONLY })
+    )
+
+    await expect(
+      caller.activity.setReviewStatus({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        isReviewed: true,
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(update).not.toHaveBeenCalled()
   })
 })

@@ -1,4 +1,8 @@
-import { PermissionLevel, Prisma } from '@klicker-uzh/prisma/client'
+import {
+  PermissionLevel,
+  Prisma,
+  ReviewStatus,
+} from '@klicker-uzh/prisma/client'
 import { ActivityType, SortByType } from '@klicker-uzh/types'
 import { getPrisma } from '../context.js'
 import {
@@ -10,12 +14,18 @@ import {
 } from '../dto/activity.js'
 import { router } from '../init.js'
 import { hasActivityPermission } from '../permissions.js'
-import { userProcedure } from '../procedures.js'
+import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
   activityDetailsInput,
+  activityReviewStatusInput,
   outdatedElementInstancesInput,
   userActivitiesInput,
 } from '../schemas/activity.js'
+
+const reviewStatusPermissionLevels = [
+  PermissionLevel.ADMIN,
+  PermissionLevel.OWNER,
+]
 
 export const activityRouter = router({
   details: userProcedure
@@ -312,6 +322,112 @@ export const activityRouter = router({
               isGroupActivity: true,
             })
           : null,
+      }
+    }),
+
+  setReviewStatus: userFullAccessProcedure
+    .input(activityReviewStatusInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const reviewStatus = input.isReviewed
+        ? ReviewStatus.REVIEWED
+        : ReviewStatus.INCOMPLETE
+
+      try {
+        if (input.activityType === ActivityType.LIVE_QUIZ) {
+          const liveQuiz = await prisma.liveQuiz.update({
+            where: {
+              id: input.activityId,
+              OR: [
+                {
+                  courseId: null,
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: reviewStatusPermissionLevels },
+                    },
+                  },
+                },
+                {
+                  courseId: { not: null },
+                  course: {
+                    permissions: {
+                      some: {
+                        userId: ctx.user.sub,
+                        permissionLevel: { in: reviewStatusPermissionLevels },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+            data: { reviewStatus },
+            select: { id: true },
+          })
+
+          return { reviewStatus: liveQuiz ? reviewStatus : null }
+        }
+
+        if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+          const practiceQuiz = await prisma.practiceQuiz.update({
+            where: {
+              id: input.activityId,
+              course: {
+                permissions: {
+                  some: {
+                    userId: ctx.user.sub,
+                    permissionLevel: { in: reviewStatusPermissionLevels },
+                  },
+                },
+              },
+            },
+            data: { reviewStatus },
+            select: { id: true },
+          })
+
+          return { reviewStatus: practiceQuiz ? reviewStatus : null }
+        }
+
+        if (input.activityType === ActivityType.MICRO_LEARNING) {
+          const microLearning = await prisma.microLearning.update({
+            where: {
+              id: input.activityId,
+              course: {
+                permissions: {
+                  some: {
+                    userId: ctx.user.sub,
+                    permissionLevel: { in: reviewStatusPermissionLevels },
+                  },
+                },
+              },
+            },
+            data: { reviewStatus },
+            select: { id: true },
+          })
+
+          return { reviewStatus: microLearning ? reviewStatus : null }
+        }
+
+        const groupActivity = await prisma.groupActivity.update({
+          where: {
+            id: input.activityId,
+            course: {
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
+                  permissionLevel: { in: reviewStatusPermissionLevels },
+                },
+              },
+            },
+          },
+          data: { reviewStatus },
+          select: { id: true },
+        })
+
+        return { reviewStatus: groupActivity ? reviewStatus : null }
+      } catch (error) {
+        console.error('Error setting activity review status:', error)
+        return { reviewStatus: null }
       }
     }),
 

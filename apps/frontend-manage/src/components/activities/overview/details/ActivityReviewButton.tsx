@@ -1,9 +1,9 @@
-import { useMutation } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   GetSingleCourseDocument,
-  SetActivityReviewStatusDocument,
+  ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -22,30 +22,31 @@ function ActivityReviewButton({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
+  const apolloClient = useApolloClient()
   const detailsInput: RouterInputs['activity']['details'] = {
     activityId,
     activityType:
       activityType as unknown as RouterInputs['activity']['details']['activityType'],
   }
-  const [setActivityReviewStatus, { loading: settingReviewedStatus }] =
-    useMutation(SetActivityReviewStatusDocument)
+  const setActivityReviewStatus = trpc.activity.setReviewStatus.useMutation()
 
   return (
     <Button
-      disabled={settingReviewedStatus}
+      disabled={setActivityReviewStatus.isLoading}
       className={{ root: 'h-7 text-sm' }}
       data={{ cy: 'activity-review-button' }}
       onClick={async () => {
-        const { data: res } = await setActivityReviewStatus({
-          variables: { activityId, activityType, isReviewed: !isReviewed },
-          update: (cache, { data: res }) => {
-            if (!res?.setActivityReviewStatus) return
+        const res = await setActivityReviewStatus.mutateAsync({
+          activityId,
+          activityType:
+            activityType as unknown as RouterInputs['activity']['setReviewStatus']['activityType'],
+          isReviewed: !isReviewed,
+        })
 
-            // if no course id is specified, only update activity details
-            if (!courseId) return
-
-            // update course overview query
-            cache.updateQuery(
+        if (res.reviewStatus) {
+          // Keep the Apollo course cache coherent until course details move to tRPC.
+          if (courseId) {
+            apolloClient.cache.updateQuery(
               {
                 query: GetSingleCourseDocument,
                 variables: { courseId },
@@ -71,7 +72,7 @@ function ActivityReviewButton({
                     act.id === activityId
                       ? {
                           ...act,
-                          reviewStatus: res.setActivityReviewStatus,
+                          reviewStatus: res.reviewStatus as ReviewStatus,
                         }
                       : act
                   ) ?? []
@@ -84,10 +85,8 @@ function ActivityReviewButton({
                 }
               }
             )
-          },
-        })
+          }
 
-        if (res?.setActivityReviewStatus) {
           await utils.activity.details.invalidate(detailsInput)
           toast({
             type: 'success',

@@ -27,6 +27,12 @@ export const activityDetailsInput = z.object({
   activityType: z.nativeEnum(ActivityType),
 })
 
+export const activityReviewStatusInput = z.object({
+  activityId: z.string(),
+  activityType: z.nativeEnum(ActivityType),
+  isReviewed: z.boolean(),
+})
+
 export const outdatedElementInstancesInput = z.object({
   instanceIds: z.array(z.number().int()),
 })

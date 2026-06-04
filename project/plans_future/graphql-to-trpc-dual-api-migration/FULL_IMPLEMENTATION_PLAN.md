@@ -276,6 +276,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J11 Manage Activity Review Status Mutation
+
+Status: complete for the scoped slice. This slice migrated the manage activity details modal review-status mutation from Apollo to tRPC. It intentionally keeps the GraphQL course query/cache target, activity log/comments hook, action mutations, sharing modal internals, batch operations, generated GraphQL types, Apollo providers, and GraphQL cleanup live for later slices.
+
+Scope:
+
+- `packages/api/src/trpc/procedures.ts`
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/overview/details/ActivityReviewButton.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `SetActivityReviewStatusDocument`.
+- GraphQL resolver(s): `Mutation.setActivityReviewStatus`, guarded by `asUserFullAccess`.
+- Behavior source: `packages/graphql/src/services/activities.ts` `setActivityReviewStatus`.
+- tRPC router.procedure: add `activity.setReviewStatus`.
+- Input schema: `{ activityId, activityType, isReviewed }`.
+- Output DTO: `{ reviewStatus: ReviewStatus | null }`, matching the GraphQL nullable review-status result.
+- Active frontend consumers: `ActivityReviewButton` inside the manage `/activities` details modal and URL-driven details modal.
+- Apollo cache/refetch behavior: replace the mutation network call with a tRPC mutation; keep the existing `GetSingleCourseDocument` Apollo cache update as a coexistence bridge while course details remain GraphQL-backed; keep tRPC `activity.details` invalidation after success.
+- Retained GraphQL in modal: `ActivityLog` / `useObjectActivity` still issues `GetObjectActivityDocument` and comment mutations; this belongs to the sharing/comments migration slice.
+- Browser verification path: delegated-login manage app, open an activity details modal, click the review-status button, verify toast/status refresh behavior, and record network evidence that `SetActivityReviewStatus` is absent while `/api/trpc/activity.setReviewStatus` is present; retained `GetObjectActivity` GraphQL payload is expected.
+- Cleanup blocked until: activity log/comments, action mutations, course-detail reads, sharing modal internals, batch operations, generated type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Verification:
+
+- Added focused API tests for live-quiz review-status update behavior, unauthorized/not-found fallback to `null`, and full-access scope enforcement.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test` passed: 18 files, 178 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after rebuilding `@klicker-uzh/api` so the app saw the new router type.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing baseline warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `MISSING_MESSAGE` for `/qr/[...args]`, large page data warnings).
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...touched files...` passed.
+- `git diff --check` passed.
+- Scoped coexistence audit confirmed `SetActivityReviewStatusDocument` is no longer imported by active app/API code; `ActivityReviewButton` calls `trpc.activity.setReviewStatus`. The button still imports `GetSingleCourseDocument` only for the retained course-query Apollo cache bridge, and `ActivityLog` / `useObjectActivity` still uses `GetObjectActivityDocument` as planned. Touched API files do not import `@klicker-uzh/graphql`.
+- Browser verification used a real local backend/auth/manage stack on ports 3103/3106/3104 with delegated-login lecturer credentials. Screenshots:
+  - `/tmp/klicker-manage-s04j11-initial.png`
+  - `/tmp/klicker-manage-s04j11-auth-entry.png`
+  - `/tmp/klicker-manage-s04j11-activities-overview.png`
+  - `/tmp/klicker-manage-s04j11-live-quiz-details-before-review.png`
+  - `/tmp/klicker-manage-s04j11-live-quiz-details-after-review.png`
+  - `/tmp/klicker-manage-s04j11-live-quiz-details-after-reset.png`
+- Browser network evidence showed `/api/trpc/activity.setReviewStatus` POST requests for both review and reset, no `SetActivityReviewStatus` GraphQL payload, `/api/trpc/activity.details` refetch after success, and the expected retained `GetObjectActivity` GraphQL payload for comments/logs.
+- Cleanup verified: local dev listeners on 3103/3104/3106 were absent after verification, generated local test `.env` files were removed from backend/worker/response-api app folders, and the local seeded review flag was reset after the mutation test.
+
+Review and simplification:
+
+- Kept the review-status update branches explicit by activity type to mirror the GraphQL service and avoid Prisma model-map typing complexity for one mutation.
+- Added `userFullAccessProcedure` because the GraphQL resolver used `asUserFullAccess`; this keeps delegated read-only sessions from mutating review state.
+- Kept the small Apollo cache bridge for `GetSingleCourseDocument` until course detail data moves to tRPC; removing it now would regress still-GraphQL course views.
+- Residual risk: `ActivityReviewButton` still imports generated GraphQL types/documents for `ActivityType`, `ReviewStatus`, and the course cache target. This is intentional until course details and generated-type cleanup slices.
+
+Notes:
+
+- Context7 MCP is not exposed in this session; use installed `@trpc/*` `10.45.2` patterns and the official tRPC v10 docs fallback already recorded for this migration.
+- Subagent spawning is unavailable under current tool policy unless the user explicitly asks for subagents; perform explicit self-review and simplification before commit.
+
 ### 2026-06-04 Completed: S04J10 Manage Activity Details Reads
 
 Status: complete for the scoped slice. This slice migrated the manage activity details modal read queries from Apollo to tRPC. It intentionally keeps the review-status mutation, course cache update, activity log/comments hook, action mutations, sharing modal internals, batch operations, generated GraphQL types, Apollo providers, and GraphQL cleanup live for later slices.
