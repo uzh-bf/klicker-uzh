@@ -34,3 +34,7 @@ export const changePermissionLevelInput = objectActivityInput.extend({
 export const revokeObjectAccessInput = objectActivityInput.extend({
   permissionId: z.number().int(),
 })
+
+export const transferObjectOwnershipInput = objectActivityInput.extend({
+  shortnameOrEmail: z.string(),
+})

@@ -1,22 +1,13 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetAnswerCollectionsInfoDocument,
-  GetCatalogCollectionsListDocument,
-  GetCatalogObjectsDocument,
-  GetCatalogSharingRequestsDocument,
-  GetObjectPermissionsDocument,
-  GetSingleCourseDocument,
-  ObjectType,
-  TransferObjectOwnershipDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { trpc, type RouterInputs } from '../../lib/trpc'
 
 type ObjectPermissionsInput = RouterInputs['sharing']['objectPermissions']
+type TransferObjectOwnershipInput =
+  RouterInputs['sharing']['transferObjectOwnership']
 
 function useTransferObjectOwnership({
   objectType,
   objectId,
-  catalogCollectionId,
   onError,
 }: {
   objectType: ObjectType
@@ -32,51 +23,29 @@ function useTransferObjectOwnership({
     objectId: String(objectId),
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
-  const [transferObjectOwnership, { loading: transferringOwnership }] =
-    useMutation(TransferObjectOwnershipDocument)
+  const transferObjectOwnership =
+    trpc.sharing.transferObjectOwnership.useMutation({
+      onSuccess: (data) => {
+        if (!data.permission) return
+
+        void utils.sharing.objectPermissions.invalidate(objectPermissionsInput)
+        void utils.sharing.derivedObjectPermissions.invalidate(
+          objectPermissionsInput
+        )
+      },
+    })
 
   const onTransfer = async (shortnameOrEmail: string) => {
     try {
-      const res = await transferObjectOwnership({
-        variables: {
-          objectId: String(objectId),
-          objectType,
-          shortnameOrEmail,
-        },
-        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
-        refetchQueries: [
-          // use refetch query instead of cache update, because new owner permissions might also
-          // be removed in addition to the added new admin permission for the previous owner
-          {
-            query: GetObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-          },
-          { query: GetCatalogSharingRequestsDocument },
-          ...(objectType === ObjectType.CatalogCollection
-            ? [{ query: GetCatalogCollectionsListDocument }]
-            : []),
-          ...(objectType === ObjectType.AnswerCollection
-            ? [
-                {
-                  query: GetCatalogObjectsDocument,
-                  variables: { catalogCollectionId },
-                },
-                { query: GetAnswerCollectionsInfoDocument },
-              ]
-            : []),
-          ...(objectType === ObjectType.Course
-            ? [
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: String(objectId) },
-                },
-              ]
-            : []),
-        ],
-      })
+      const input: TransferObjectOwnershipInput = {
+        ...objectPermissionsInput,
+        objectType:
+          objectType as unknown as TransferObjectOwnershipInput['objectType'],
+        shortnameOrEmail,
+      }
+      const res = await transferObjectOwnership.mutateAsync(input)
 
-      if (res.data?.transferObjectOwnership) {
-        void utils.sharing.objectPermissions.invalidate(objectPermissionsInput)
+      if (res.permission) {
         return true
       } else {
         onError()
@@ -91,7 +60,7 @@ function useTransferObjectOwnership({
 
   return {
     onTransfer,
-    transferring: transferringOwnership,
+    transferring: transferObjectOwnership.isLoading,
   }
 }
 

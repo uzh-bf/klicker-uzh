@@ -31,6 +31,7 @@ import {
   objectActivityInput,
   revokeObjectAccessInput,
   shareObjectInput,
+  transferObjectOwnershipInput,
 } from '../schemas/sharing.js'
 
 type ActivityLogObjectFields = Pick<
@@ -316,6 +317,119 @@ async function hasAdminObjectPermission(
   return false
 }
 
+async function hasOwnerObjectPermission(
+  prisma: Prisma.TransactionClient | ReturnType<typeof getPrisma>,
+  scope: PermissionObjectScope,
+  userId: string
+) {
+  const permissionLevel = PermissionLevel.OWNER
+
+  if (scope.catalogCollectionId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: scope.catalogCollectionId,
+            userId,
+          },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  if (scope.answerCollectionId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: scope.answerCollectionId,
+            userId,
+          },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  if (scope.elementId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: { elementId: scope.elementId, userId },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  if (scope.courseId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: { courseId: scope.courseId, userId },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  if (scope.liveQuizId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          liveQuizId_userId: { liveQuizId: scope.liveQuizId, userId },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  if (scope.practiceQuizId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: scope.practiceQuizId,
+            userId,
+          },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  if (scope.microLearningId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          microLearningId_userId: {
+            microLearningId: scope.microLearningId,
+            userId,
+          },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  if (scope.groupActivityId) {
+    return Boolean(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          groupActivityId_userId: {
+            groupActivityId: scope.groupActivityId,
+            userId,
+          },
+          permissionLevel,
+        },
+      })
+    )
+  }
+
+  return false
+}
+
 function permissionUserWhere(
   scope: PermissionObjectScope,
   userId: string
@@ -432,6 +546,163 @@ async function createPermissionAuditLog({
       message,
     },
   })
+}
+
+async function getObjectOwnerId(
+  prisma: ReturnType<typeof getPrisma>,
+  scope: PermissionObjectScope
+) {
+  if (scope.catalogCollectionId) {
+    return (
+      await prisma.catalogCollection.findUnique({
+        where: { id: scope.catalogCollectionId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  if (scope.answerCollectionId) {
+    return (
+      await prisma.answerCollection.findUnique({
+        where: { id: scope.answerCollectionId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  if (scope.elementId) {
+    return (
+      await prisma.element.findUnique({
+        where: { id: scope.elementId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  if (scope.courseId) {
+    return (
+      await prisma.course.findUnique({
+        where: { id: scope.courseId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  if (scope.liveQuizId) {
+    return (
+      await prisma.liveQuiz.findUnique({
+        where: { id: scope.liveQuizId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  if (scope.practiceQuizId) {
+    return (
+      await prisma.practiceQuiz.findUnique({
+        where: { id: scope.practiceQuizId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  if (scope.microLearningId) {
+    return (
+      await prisma.microLearning.findUnique({
+        where: { id: scope.microLearningId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  if (scope.groupActivityId) {
+    return (
+      await prisma.groupActivity.findUnique({
+        where: { id: scope.groupActivityId },
+        select: { ownerId: true },
+      })
+    )?.ownerId
+  }
+
+  return null
+}
+
+async function updateObjectOwner(
+  prisma: Prisma.TransactionClient,
+  scope: PermissionObjectScope,
+  newOwnerId: string
+) {
+  if (scope.catalogCollectionId) {
+    await prisma.catalogCollection.update({
+      where: { id: scope.catalogCollectionId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+    return
+  }
+
+  if (scope.answerCollectionId) {
+    await prisma.answerCollection.update({
+      where: { id: scope.answerCollectionId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+    return
+  }
+
+  if (scope.elementId) {
+    await prisma.element.update({
+      where: { id: scope.elementId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+    return
+  }
+
+  if (scope.courseId) {
+    await prisma.course.update({
+      where: { id: scope.courseId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+    return
+  }
+
+  if (scope.liveQuizId) {
+    await prisma.liveQuiz.update({
+      where: { id: scope.liveQuizId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+    return
+  }
+
+  if (scope.practiceQuizId) {
+    await prisma.practiceQuiz.update({
+      where: { id: scope.practiceQuizId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+    return
+  }
+
+  if (scope.microLearningId) {
+    await prisma.microLearning.update({
+      where: { id: scope.microLearningId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+    return
+  }
+
+  if (scope.groupActivityId) {
+    await prisma.groupActivity.update({
+      where: { id: scope.groupActivityId },
+      data: { owner: { connect: { id: newOwnerId } } },
+    })
+  }
+}
+
+function rejectsSameOwnerTransfer(scope: PermissionObjectScope) {
+  return Boolean(
+    scope.liveQuizId ||
+      scope.practiceQuizId ||
+      scope.microLearningId ||
+      scope.groupActivityId
+  )
 }
 
 function toObjectPermissionsResult(
@@ -964,6 +1235,78 @@ async function shareObjectWithUserGroup({
   }
 }
 
+async function transferObjectOwnership({
+  prisma,
+  scope,
+  sourceUserId,
+  shortnameOrEmail,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  scope: PermissionObjectScope
+  sourceUserId: string
+  shortnameOrEmail: string
+}) {
+  const newOwner = await prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: scope } },
+  })
+  const currentOwnerId = await getObjectOwnerId(prisma, scope)
+
+  if (!newOwner || currentOwnerId == null) return null
+  if (rejectsSameOwnerTransfer(scope) && currentOwnerId === newOwner.id) {
+    return null
+  }
+
+  const permission = await prisma.$transaction(
+    async (transaction) => {
+      await updateObjectOwner(transaction, scope, newOwner.id)
+
+      const adminPermission = await transaction.permission.upsert({
+        where: permissionUserWhere(scope, sourceUserId),
+        create: {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: sourceUserId,
+          ...scope,
+        },
+        update: { permissionLevel: PermissionLevel.ADMIN },
+        include: directPermissionInclude,
+      })
+
+      if (newOwner.sharedObjects.length > 0) {
+        await transaction.permission.delete({
+          where: permissionUserWhere(scope, newOwner.id),
+        })
+      }
+
+      const { objectType, objectId } = getAuditLogObjectType(scope)
+      await createPermissionAuditLog({
+        prisma: transaction,
+        scope,
+        type: AuditLogType.OWNER_TRANSFERRED,
+        sourceUserId,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${objectType} (ID ${objectId}) transferred from user ${sourceUserId} to user ${newOwner.id}.`,
+      })
+
+      await recomputeForScope(scope, transaction, {
+        userId: newOwner.id,
+        updateAccessRequests: true,
+      })
+      await recomputeForScope(scope, transaction, {
+        userId: sourceUserId,
+        updateAccessRequests: false,
+      })
+
+      return adminPermission
+    },
+    { timeout: 60000 }
+  )
+
+  return permission.user ? toPermissionInfo(permission, sourceUserId) : null
+}
+
 async function changeObjectPermissionLevel({
   prisma,
   scope,
@@ -1314,6 +1657,36 @@ export const sharingRouter = router({
       }
 
       return { permission: null }
+    }),
+
+  transferObjectOwnership: userFullAccessProcedure
+    .input(transferObjectOwnershipInput)
+    .mutation(async ({ ctx, input }) => {
+      const scope = getPermissionObjectScope(input)
+
+      if (!scope) return { permission: null }
+
+      const prisma = getPrisma(ctx)
+      const canTransfer = await hasOwnerObjectPermission(
+        prisma,
+        scope,
+        ctx.user.sub
+      )
+
+      if (!canTransfer) return { permission: null }
+
+      const shortnameOrEmail = input.shortnameOrEmail.trim()
+
+      if (!shortnameOrEmail) return { permission: null }
+
+      return {
+        permission: await transferObjectOwnership({
+          prisma,
+          scope,
+          sourceUserId: ctx.user.sub,
+          shortnameOrEmail,
+        }),
+      }
     }),
 
   changePermissionLevel: userFullAccessProcedure

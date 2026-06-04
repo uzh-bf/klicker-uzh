@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage sharing migration after S04K1. Ownership transfer, catalog sharing requests, catalog/resource list pages, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage sharing migration after S04K2. Catalog sharing requests, catalog/resource list pages, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-04 Completed: S04K2 Manage Sharing Ownership Transfer
+
+Status: complete for the scoped slice. This slice migrated the ownership-transfer action inside the manage sharing modal from Apollo GraphQL to tRPC. GraphQL remains live for catalog sharing requests, catalog/resource list pages, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and S06 cleanup.
+
+Scope:
+
+- `packages/api/src/trpc/schemas/sharing.ts`
+- `packages/api/src/trpc/routers/sharing.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/sharing-permissions.test.ts`
+- `apps/frontend-manage/src/components/sharing/useTransferObjectOwnership.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation: `TransferObjectOwnershipDocument` / `MTransferObjectOwnership.graphql`.
+- GraphQL resolver: `Mutation.transferObjectOwnership`.
+- Behavior source: owner-only `checkAccess` resolver gate in `packages/graphql/src/schema/mutation.ts` and type-specific transfer functions in `packages/graphql/src/services/sharing.ts`.
+- tRPC router.procedure: add `sharing.transferObjectOwnership`.
+- Input schema: `{ objectId: string, objectType: ObjectType, shortnameOrEmail: string }`.
+- Output DTO: existing narrow `PermissionInfo` shape for the ADMIN permission returned to the previous owner.
+- Active frontend consumer: `TransferOwnershipModal` through `useTransferObjectOwnership` inside `ObjectSharingModal`.
+- Apollo cache/refetch behavior: replace Apollo mutation/refetchQueries with React Query invalidation for `sharing.objectPermissions` and `sharing.derivedObjectPermissions`. Broader catalog/request/page GraphQL refetches remain out of scope and are tracked for later catalog/course cache-bridge slices.
+- Browser verification path: delegated-login manage app, open `/activities`, open a representative live-quiz sharing modal, open ownership-transfer modal, verify the migrated hook calls `sharing.transferObjectOwnership` through the non-destructive same-owner rejection path, and capture screenshots.
+- Cleanup blocked until: catalog sharing requests, catalog/resource list pages, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- sharing-permissions`: passed, 20 files / 191 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing warnings (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `MISSING_MESSAGE` for `/qr/[...args]`, and large page-data warnings).
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for S04K2 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...`: passed for S04K2 touched files and this plan.
+- `git diff --check`: passed.
+- Scoped frontend audit over `useTransferObjectOwnership.ts` for `TransferObjectOwnershipDocument|@apollo/client|GetObjectPermissionsDocument|GetCatalogSharingRequestsDocument|GetCatalogCollectionsListDocument|GetCatalogObjectsDocument|GetAnswerCollectionsInfoDocument|GetSingleCourseDocument`: no matches.
+- Scoped touched API audit for `@klicker-uzh/graphql|packages/graphql|graphql/dist`: no matches.
+
+Browser evidence:
+
+- Screenshots reviewed: `/tmp/klicker-manage-s04k2-activities-overview.png`, `/tmp/klicker-manage-s04k2-sharing-modal.png`, `/tmp/klicker-manage-s04k2-transfer-modal.png`, `/tmp/klicker-manage-s04k2-transfer-same-owner-error.png`.
+- Fetch recorder evidence: modal open called `sharing.objectPermissions` and `sharing.userGroups,user.profile`; the ownership-transfer submit posted `POST http://localhost:3103/api/trpc/sharing.transferObjectOwnership?batch=1` with `shortnameOrEmail: "lecturer"`; no recorded legacy `TransferObjectOwnership` GraphQL payload appeared.
+- Used the same-owner rejection path intentionally because ownership transfer is now owner-only: transferring to another user would leave the current local session with ADMIN access only and would not be reversible from that login.
+- Cleanup verified: `agent-browser` was closed, temporary auth/manage/backend processes were stopped, and ports `3103`, `3104`, and `3106` had no listeners afterward.
+
+Review and simplification:
+
+- Subagent review/simplification unavailable under current tool policy unless explicitly requested; performed self-review against the slice scope, GraphQL coexistence rules, touched imports, owner-only gate, and browser evidence.
+
+Notes:
+
+- Context7 MCP is still not exposed in this session after tool discovery; official tRPC v10 docs for React Query hooks and input validators are the fallback source for hook/schema usage.
+- Next slice: continue manage sharing/catalog migration around catalog sharing requests, catalog/resource list consumers, or broader cache bridge cleanup, while keeping Apollo/providers/generated GraphQL artifacts live until their dedicated cleanup gates.
 
 ### 2026-06-04 Completed: S04K1 Manage Sharing Permission Table
 

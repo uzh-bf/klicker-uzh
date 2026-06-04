@@ -242,6 +242,166 @@ describe('sharing permission router', () => {
     })
   })
 
+  test('requires owner permission before transferring ownership', async () => {
+    const findUnique = vi.fn().mockResolvedValue(null)
+    const userFindFirst = vi.fn()
+    const liveQuizFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: { findUnique },
+      user: { findFirst: userFindFirst },
+      liveQuiz: { findUnique: liveQuizFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.transferObjectOwnership({
+        objectId: 'live-quiz-1',
+        objectType: ObjectType.LIVE_QUIZ,
+        shortnameOrEmail: 'assistant',
+      })
+    ).resolves.toEqual({ permission: null })
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: 'live-quiz-1',
+          userId: user.id,
+        },
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+    expect(userFindFirst).not.toHaveBeenCalled()
+    expect(liveQuizFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('transfers object ownership and recomputes both affected users', async () => {
+    const findUnique = vi.fn().mockResolvedValue({ id: 1 })
+    const liveQuizFindUnique = vi.fn().mockResolvedValue({
+      ownerId: user.id,
+    })
+    const liveQuizUpdate = vi.fn().mockResolvedValue({})
+    const upsert = vi.fn().mockResolvedValue({
+      id: 8,
+      user: {
+        id: user.id,
+        shortname: 'lecturer',
+        email: 'lecturer@example.com',
+      },
+      userGroup: null,
+      permissionLevel: PermissionLevel.ADMIN,
+      propagation: false,
+    })
+    const deletePermission = vi.fn().mockResolvedValue({ id: 9 })
+    const auditCreate = vi.fn().mockResolvedValue({})
+    const transaction = vi.fn(async (callback) =>
+      callback({
+        liveQuiz: { update: liveQuizUpdate },
+        permission: { upsert, delete: deletePermission },
+        auditLogEntry: { create: auditCreate },
+      })
+    )
+    const prisma = {
+      derivedPermission: { findUnique },
+      liveQuiz: { findUnique: liveQuizFindUnique },
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'user-2',
+          sharedObjects: [{ id: 9 }],
+        }),
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.transferObjectOwnership({
+        objectId: 'live-quiz-1',
+        objectType: ObjectType.LIVE_QUIZ,
+        shortnameOrEmail: 'assistant',
+      })
+    ).resolves.toEqual({
+      permission: {
+        permissionId: 8,
+        userId: user.id,
+        username: 'lecturer',
+        userEmail: 'lecturer@example.com',
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: PermissionLevel.ADMIN,
+        propagation: false,
+        isOwn: true,
+      },
+    })
+
+    expect(liveQuizUpdate).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1' },
+      data: { owner: { connect: { id: 'user-2' } } },
+    })
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          catalogCollectionId_userId: undefined,
+          answerCollectionId_userId: undefined,
+          elementId_userId: undefined,
+          courseId_userId: undefined,
+          liveQuizId_userId: {
+            liveQuizId: 'live-quiz-1',
+            userId: user.id,
+          },
+          practiceQuizId_userId: undefined,
+          microLearningId_userId: undefined,
+          groupActivityId_userId: undefined,
+        },
+        create: {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: user.id,
+          liveQuizId: 'live-quiz-1',
+        },
+        update: { permissionLevel: PermissionLevel.ADMIN },
+      })
+    )
+    expect(deletePermission).toHaveBeenCalledWith({
+      where: {
+        catalogCollectionId_userId: undefined,
+        answerCollectionId_userId: undefined,
+        elementId_userId: undefined,
+        courseId_userId: undefined,
+        liveQuizId_userId: {
+          liveQuizId: 'live-quiz-1',
+          userId: 'user-2',
+        },
+        practiceQuizId_userId: undefined,
+        microLearningId_userId: undefined,
+        groupActivityId_userId: undefined,
+      },
+    })
+    expect(auditCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: AuditLogType.OWNER_TRANSFERRED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: 'live-quiz-1',
+        sourceUserId: user.id,
+        targetUserId: 'user-2',
+      }),
+    })
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      {
+        liveQuizId: 'live-quiz-1',
+        userId: 'user-2',
+        updateAccessRequests: true,
+      },
+      expect.anything()
+    )
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        updateAccessRequests: false,
+      },
+      expect.anything()
+    )
+  })
+
   test('changes permission level for an existing direct permission', async () => {
     const findUnique = vi.fn().mockResolvedValue({ id: 1 })
     const findFirst = vi.fn().mockResolvedValue({
