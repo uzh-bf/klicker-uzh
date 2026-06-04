@@ -276,6 +276,90 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J9 Manage Activities Overview Reads
+
+Status: complete for the scoped slice. This slice migrated the manage `/activities` overview page read queries from Apollo to tRPC. It intentionally keeps activity action mutations, batch operations, details modals, sharing modal internals, generated GraphQL types, Apollo providers, and GraphQL cleanup live for later slices.
+
+Scope:
+
+- `packages/api/src/trpc/dto/activity.ts`
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/root.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/`
+- `apps/frontend-manage/src/pages/activities.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetUserActivitiesCoursesDocument`, `GetUserActivitiesDocument`.
+- GraphQL resolver(s): `Query.getUserActivitiesCourses`, `Query.userActivities`, both guarded by `asUser`.
+- Behavior source: `packages/graphql/src/services/activities.ts` `getUserActivitiesCourses`, `getUserActivities`, and `getPermissionBooleans`.
+- tRPC router.procedure: add `activity.userActivitiesCourses` and `activity.userActivities`.
+- Input schema: none for courses; Zod object mirroring the existing activity filters, sorting, limit, and offset arguments for activity list.
+- Output DTO: narrow course filter entries `{ id, name }` and activity overview entries matching the fields consumed by `ActivityList` / action components.
+- Active frontend consumers: manage `/activities` filters, pagination, list entries, select-all, action menus, details modal refetch callbacks, and batch-operation selected activity state.
+- Apollo cache/refetch/subscription behavior: replace the page-level Apollo queries and `refetchActivities` callback with tRPC query data and `refetch`; leave action mutations and modal internals on GraphQL.
+- React Query replacement: `trpc.activity.userActivitiesCourses.useQuery()` and `trpc.activity.userActivities.useQuery(input)`.
+- Browser verification path: delegated-login manage app, open `/activities`, verify course filters/list/pagination/action menu rendering, and record network evidence that page-level overview reads use `/api/trpc/activity.userActivitiesCourses,activity.userActivities` without `GetUserActivities` / `GetUserActivitiesCourses` GraphQL payloads.
+- Cleanup blocked until: activity action mutations, details modal reads/mutations, sharing modal internals, batch operations, generated type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Planned verification:
+
+- API test for activity overview DTO/filter behavior where cheap to isolate.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`
+- Scoped coexistence audit for the touched page and retained GraphQL action/modal consumers.
+- `npx agent-browser` screenshots against a real local manage/backend/auth stack when available.
+
+Implemented:
+
+- Added `activity.userActivitiesCourses` and `activity.userActivities` tRPC procedures under `packages/api/src/trpc/routers/activity.ts`.
+- Added narrow activity DTO helpers in `packages/api/src/trpc/dto/activity.ts`, including the existing permission boolean semantics and derived soft-delete filtering from `packages/graphql/src/services/activities.ts`.
+- Added `packages/api/src/trpc/schemas/activity.ts` for the activity overview filter/sort/pagination input.
+- Mounted `activityRouter` in `packages/api/src/trpc/root.ts`.
+- Migrated `apps/frontend-manage/src/pages/activities.tsx` from Apollo `GetUserActivitiesCoursesDocument` / `GetUserActivitiesDocument` to `trpc.activity.userActivitiesCourses.useQuery()` and `trpc.activity.userActivities.useQuery(input)`.
+- Kept the page-local GraphQL generated enum/type imports at the client boundary because downstream activity list/action/modal components still consume mixed generated GraphQL shapes until later cleanup slices.
+- Added focused API tests in `packages/api/src/trpc/__tests__/manage-activities.test.ts` for course filter availability, activity filters/order/pagination, permission booleans, live quiz PIN exposure, `automaticPublicationAt`, and derived soft-deleted activity filtering.
+
+Verification evidence:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write packages/api/src/trpc/dto/activity.ts packages/api/src/trpc/schemas/activity.ts packages/api/src/trpc/routers/activity.ts packages/api/src/trpc/root.ts packages/api/src/trpc/__tests__/manage-activities.test.ts apps/frontend-manage/src/pages/activities.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test` passed: 18 test files, 172 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after narrowing the page-boundary enum casts through `unknown`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA service worker logs, stale Browserslist, `/qr/[...args]` missing message, large page-data warnings).
+- `git diff --check` passed.
+- Scoped audit passed: `apps/frontend-manage/src/pages/activities.tsx` no longer imports `@apollo/client` or the `GetUserActivities*Document` operations; the only remaining `@klicker-uzh/graphql/dist/ops` imports are generated types/enums retained for mixed downstream components.
+- Scoped API audit passed: the new `packages/api/src/trpc/{routers,dto,schemas,__tests__}/activity*` files have no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports.
+
+Browser evidence:
+
+- Local stack: backend `dev:test` on `http://localhost:3103`, auth Next dev on `http://localhost:3106`, manage Next dev on `http://localhost:3104`.
+- Delegated-login screenshot: `/tmp/klicker-manage-s04j9-auth-login.png`.
+- Activities overview screenshot: `/tmp/klicker-manage-s04j9-activities-overview.png`; rendered the seeded activity rows for Group Activity, Microlearning, Practice Quiz, and Live Quiz, plus filters, pagination, and action controls.
+- Course-filter screenshot: `/tmp/klicker-manage-s04j9-activities-course-filter.png`; rendered `No course assigned` and `Testkurs`, showing the migrated course options feed the filter UI.
+- Fetch-recorder evidence after client-side navigation Activities -> Courses -> Activities: recorded tRPC calls for `activity.userActivitiesCourses` and `activity.userActivities`; recorded no `GetUserActivities` or `GetUserActivitiesCourses` GraphQL payload bodies for that path.
+- Cleanup: closed agent-browser with direct fallback after `npx agent-browser close` hung, stopped temporary backend/auth/manage dev processes, verified ports `3103`, `3104`, and `3106` had no listeners, and removed only the generated temporary `.env` files without reading them.
+
+Self-review / simplification:
+
+- Compared the tRPC filters, ordering, pagination, course option logic, and permission booleans against `packages/graphql/src/services/activities.ts`.
+- Kept a dedicated DTO instead of returning the whole Prisma view object so the new API surface does not leak extra fields.
+- Kept the `ActivityInfo` cast localized to `apps/frontend-manage/src/pages/activities.tsx` because later slices still need generated GraphQL component contracts.
+- Did not add new dependencies or broader abstractions.
+
+Notes:
+
+- Context7 MCP is not exposed in this session; official tRPC v10 docs were checked because the installed `@trpc/*` packages are `10.45.2`.
+- Subagent spawning is unavailable under current tool policy unless the user explicitly asks for subagents; perform explicit self-review and simplification before commit.
+- Browser CLI hiccup: one optional activity action-menu click and the first `npx agent-browser close` wrapper hung; the core page/list/filter/network evidence was already captured, and the stuck wrapper processes were terminated before cleanup.
+- Next: continue with the remaining manage activity GraphQL consumers: action mutations, details modal reads/mutations, sharing modal internals, and batch operations before S06 cleanup gates.
+
 ### 2026-06-04 Completed: S04J8 Manage Activity Action Profile Reads
 
 Status: complete for the scoped slice. This slice migrated manage activity overview action-menu profile reads from Apollo `UserProfileDocument` to the existing tRPC `user.profile` procedure. It intentionally did not migrate activity list queries, activity mutations/action hooks, activity detail modals, sharing modal internals, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.

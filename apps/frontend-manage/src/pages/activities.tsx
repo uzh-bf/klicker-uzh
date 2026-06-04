@@ -1,12 +1,9 @@
-import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
-  ActivityInfo,
   ActivityType,
-  GetUserActivitiesCoursesDocument,
-  GetUserActivitiesDocument,
   PublicationStatus,
   SharingType,
+  type ActivityInfo,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
@@ -26,6 +23,7 @@ import Layout from '../components/Layout'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useActivitySortingAndFiltering'
+import { trpc, type RouterInputs } from '../lib/trpc'
 
 type ActivityModeFilterVariables = {
   isGamificationEnabled?: boolean
@@ -98,40 +96,44 @@ function Activities() {
     toggleModeFilter,
   } = useActivitySortingAndFiltering(storedFiltering)
 
+  const activityFiltersInput: RouterInputs['activity']['userActivities'] = {
+    statusFilter:
+      filters.status as unknown as RouterInputs['activity']['userActivities']['statusFilter'],
+    activityTypeFilter:
+      filters.type as unknown as RouterInputs['activity']['userActivities']['activityTypeFilter'],
+    courseId: filters.course !== null ? filters.course : undefined,
+    withoutCourse: filters.course === null ? true : undefined,
+    searchString: searchString.trim() || undefined,
+    showOwned: filters.sharingType.includes(SharingType.Owned),
+    showShared: filters.sharingType.includes(SharingType.Shared),
+    showDependencies: filters.sharingType.includes(SharingType.Dependency),
+    multiplier: filters.multiplier ?? undefined,
+    reviewStatus:
+      filters.reviewStatus as unknown as RouterInputs['activity']['userActivities']['reviewStatus'],
+    isGamificationEnabled: filters.mode.gamified ? true : undefined,
+    isAssessmentEnabled: filters.mode.assessment ? true : undefined,
+    isPinProtected: filters.mode.pinProtected ? true : undefined,
+    sortByType:
+      sort.by as unknown as RouterInputs['activity']['userActivities']['sortByType'],
+    sortByAsc: sort.asc,
+    numEntries: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  }
+
   // get available courses
-  const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: dataCourses } = trpc.activity.userActivitiesCourses.useQuery()
 
   // get user activities while respecting the corresponding filters and pagination
   const {
-    loading: loadingActivities,
+    isLoading: loadingActivities,
     data: dataActivities,
     refetch: refetchActivities,
-  } = useQuery(GetUserActivitiesDocument, {
-    variables: {
-      statusFilter: filters.status,
-      activityTypeFilter: filters.type,
-      courseId: filters.course !== null ? filters.course : undefined,
-      withoutCourse: filters.course === null ? true : undefined,
-      searchString: searchString.trim() || undefined,
-      showOwned: filters.sharingType.includes(SharingType.Owned),
-      showShared: filters.sharingType.includes(SharingType.Shared),
-      showDependencies: filters.sharingType.includes(SharingType.Dependency),
-      multiplier: filters.multiplier ?? undefined,
-      reviewStatus: filters.reviewStatus ?? undefined,
-      isGamificationEnabled: filters.mode.gamified ? true : undefined,
-      isAssessmentEnabled: filters.mode.assessment ? true : undefined,
-      isPinProtected: filters.mode.pinProtected ? true : undefined,
-      sortByType: sort.by,
-      sortByAsc: sort.asc,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
-    },
-    fetchPolicy: 'network-only',
+  } = trpc.activity.userActivities.useQuery(activityFiltersInput, {
+    refetchOnMount: 'always',
   })
-  const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
-  const activities = dataActivities?.userActivities?.activities || []
+  const numOfActivities = dataActivities?.userActivities.numOfActivities || 0
+  const activities = (dataActivities?.userActivities.activities ??
+    []) as unknown as ActivityInfo[]
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -242,7 +244,7 @@ function Activities() {
             toggleReviewStatusFilter={toggleReviewStatusFilter}
             toggleModeFilter={toggleModeFilter}
             handleReset={handleReset}
-            availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
+            availableCourses={dataCourses?.userActivitiesCourses ?? []}
             filtersActive={filtersActive}
           />
         </div>
