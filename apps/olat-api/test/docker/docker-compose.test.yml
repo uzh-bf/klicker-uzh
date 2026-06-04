@@ -20,6 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
       NODE_ENV: test
+      CI: '${CI:-false}'
       PNPM_HOME: '/tmp/.pnpm'
       OLAT_API_KEY: 'test-key'
     volumes:
