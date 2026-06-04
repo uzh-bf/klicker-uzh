@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeShortnameDocument,
   CheckShortnameAvailableDocument,
-  User,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
@@ -18,9 +17,12 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
 import SimpleSetting from '../../components/user/SimpleSetting'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
+
+type UserProfile = NonNullable<RouterOutputs['user']['profile']>
 
 interface ShortnameSettingProps {
-  user?: User | null
+  user?: UserProfile | null
 }
 
 function ShortnameSetting({ user }: ShortnameSettingProps) {
@@ -30,6 +32,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
     boolean | undefined
   >(true)
 
+  const utils = trpc.useUtils()
   const [changeShortname] = useMutation(ChangeShortnameDocument)
   const [checkShortnameAvailable] = useLazyQuery(
     CheckShortnameAvailableDocument
@@ -84,6 +87,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 shortname: t('manage.settings.shortnameTaken'),
               })
             } else {
+              await utils.user.profile.invalidate()
               setSubmitting(false)
               setEditShortname(false)
             }

@@ -1,15 +1,18 @@
 import { useMutation } from '@apollo/client'
 import {
   ChangeEmailSettingsDocument,
-  User,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import SimpleSetting from './SimpleSetting'
 
-function EmailSetting({ user }: { user: User }) {
+type UserProfile = NonNullable<RouterOutputs['user']['profile']>
+
+function EmailSetting({ user }: { user: UserProfile }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [changeEmailSettings] = useMutation(ChangeEmailSettingsDocument)
 
   return (
@@ -19,7 +22,7 @@ function EmailSetting({ user }: { user: User }) {
     >
       <Switch
         checked={user?.sendProjectUpdates ?? false}
-        onCheckedChange={async () =>
+        onCheckedChange={async () => {
           await changeEmailSettings({
             variables: { projectUpdates: !user?.sendProjectUpdates },
             optimisticResponse: {
@@ -49,7 +52,8 @@ function EmailSetting({ user }: { user: User }) {
               })
             },
           })
-        }
+          await utils.user.profile.invalidate()
+        }}
       />
     </SimpleSetting>
   )

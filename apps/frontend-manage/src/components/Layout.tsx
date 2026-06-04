@@ -1,5 +1,3 @@
-import { useQuery } from '@apollo/client'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -8,6 +6,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../lib/trpc'
 import Header from './common/Header'
 
 interface LayoutProps {
@@ -30,10 +29,10 @@ function Layout({
   const router = useRouter()
 
   const {
-    loading: loadingUser,
+    isLoading: loadingUser,
     error: errorUser,
     data: dataUser,
-  } = useQuery(UserProfileDocument, { fetchPolicy: 'cache-and-network' })
+  } = trpc.user.profile.useQuery()
 
   if (!dataUser && !loadingUser) {
     router.push('/login')
@@ -63,7 +62,7 @@ function Layout({
       </Head>
 
       <div className="flex-none">
-        <Header user={dataUser.userProfile} />
+        <Header user={dataUser} />
       </div>
 
       <div

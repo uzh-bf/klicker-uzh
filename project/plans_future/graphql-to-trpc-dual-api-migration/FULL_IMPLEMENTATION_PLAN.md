@@ -276,6 +276,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J1 Manage User Profile Shell and Settings Read
+
+Status: complete for the scoped slice. This slice migrated the manage app shell and settings page user-profile reads from Apollo `UserProfileDocument` to existing tRPC `user.profile`. It intentionally did not touch manage course/dashboard reads, settings GraphQL write mutations, Apollo providers, generated GraphQL artifacts, realtime flows, PWA/control callers, or final GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-manage/src/components/Layout.tsx`
+- `apps/frontend-manage/src/components/common/Header.tsx`
+- `apps/frontend-manage/src/components/common/SupportModal.tsx`
+- `apps/frontend-manage/src/pages/user/settings.tsx`
+- `apps/frontend-manage/src/components/user/ShortnameSetting.tsx`
+- `apps/frontend-manage/src/components/user/LanguageSetting.tsx`
+- `apps/frontend-manage/src/components/user/EmailSetting.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `UserProfileDocument` read in manage `Layout` and `user/settings`.
+- GraphQL resolver(s): `Query.userProfile`.
+- Behavior source: `packages/graphql/src/schema/query.ts` `userProfile` resolver plus existing `packages/api/src/trpc/routers/user.ts` `user.profile` procedure.
+- tRPC router.procedure: existing `user.profile`; no new procedure.
+- Input schema: none.
+- Output DTO: existing `toUserProfile` DTO with `id`, `email`, `sendProjectUpdates`, `shortname`, `role`, `locale`, `firstLogin`, `catalyst`, `catalystTier`, `publicPreview`, `privatePreview`, and `numChatbots`.
+- Active frontend consumers: manage app global layout/header and user settings page.
+- Apollo behavior: Apollo settings write mutations stay for this slice; after a write, settings components must invalidate the tRPC `user.profile` query so the tRPC-backed read surface stays fresh.
+- React Query/tRPC replacement: `trpc.user.profile.useQuery` for shell/settings reads and `trpc.useUtils().user.profile.invalidate()` after retained GraphQL settings mutations.
+- Browser verification path: delegated-login manage app, settings page render, stored email/shortname/language/email switch visible, no `UserProfileDocument` GraphQL read from touched read surfaces.
+
+Implementation notes:
+
+- Replaced `useQuery(UserProfileDocument)` in manage `Layout` and `pages/user/settings` with `trpc.user.profile.useQuery`.
+- Retyped `Header`, `SupportModal`, `ShortnameSetting`, `LanguageSetting`, and `EmailSetting` to use the existing tRPC `RouterOutputs['user']['profile']` shape instead of generated GraphQL `User`.
+- Kept GraphQL settings write mutations in place for this slice and added `utils.user.profile.invalidate()` after shortname, locale, and email-settings writes so tRPC-backed reads refresh after retained GraphQL mutations.
+- Reused the existing `packages/api/src/trpc/routers/user.ts` `user.profile` procedure, existing `toUserProfile` DTO, and existing `control-read.test.ts` API coverage; no API code change was needed.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/backend-docker build` passed with the existing unused `PrismaClient` import warning in `apps/backend-docker/src/migration.ts`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for `packages/next-config` module type, `next-intl` Pages/App Router migration config, stale Browserslist data, deprecated `images.domains`, and large page data.
+- Scoped audit confirmed no `UserProfileDocument` profile read remains in `Layout` or `pages/user/settings`; `UserProfileDocument` remains only in the retained settings mutation components for Apollo cache updates while writes stay GraphQL.
+- Scoped audit confirmed `trpc.user.profile.useQuery()` in `Layout` and `pages/user/settings`, plus `utils.user.profile.invalidate()` in shortname, locale, and email-settings mutation paths.
+- Browser verification used backend `3103`, manage `3104`, and auth `3106` with the local Docker database and delegated login (`lecturer` / `abcd`). The manage settings page rendered the authenticated profile fields: `lecturer@df.uzh.ch`, shortname `lecturer`, language selector, and project-updates switch. Screenshot: `/tmp/klicker-manage-s04j1-settings.png`.
+- Browser resource timing was unavailable in the in-app browser runtime (`window.performance` absent), so runtime request evidence is limited to rendered authenticated profile data plus the scoped code audit.
+- `git diff --check` passed.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns were introduced.
+- Dedicated subagent delegation was not used for this narrow slice; an explicit self-review checked scope, retained GraphQL write behavior, and stale-cache invalidation.
+- Temporary local browser-verification processes and generated Hatchet env files were cleaned up after verification.
+
 ### 2026-06-04 Completed: S04I4 PWA Group Activity Generated Type Cleanup
 
 Status: complete for the scoped slice. This slice removed direct generated GraphQL type imports from the PWA group activity stack/clue rendering boundary after group activity reads and mutations already moved to tRPC. It intentionally did not touch GraphQL subscription bridge files, Apollo providers, generated GraphQL artifacts, shared-components generated type imports, live/session flows, manage app callers, or final GraphQL cleanup.

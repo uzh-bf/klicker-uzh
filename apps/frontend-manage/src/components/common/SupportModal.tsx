@@ -13,7 +13,6 @@ import {
   faQuestion,
   faServer,
 } from '@fortawesome/free-solid-svg-icons'
-import { User } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -24,7 +23,7 @@ function SupportModal({
   user,
 }: {
   onClose: () => void
-  user?: User | null
+  user?: { catalyst?: boolean } | null
 }) {
   const t = useTranslations()
 

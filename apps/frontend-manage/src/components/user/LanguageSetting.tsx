@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client'
 import {
   ChangeUserLocaleDocument,
   LocaleType,
-  User,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { routing } from '@klicker-uzh/i18n'
@@ -10,15 +9,19 @@ import { Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import SimpleSetting from '../../components/user/SimpleSetting'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
+
+type UserProfile = NonNullable<RouterOutputs['user']['profile']>
 
 interface LanguageSettingProps {
-  user: User
+  user: UserProfile
 }
 
 function LanguageSetting({ user }: LanguageSettingProps) {
   const t = useTranslations()
   const router = useRouter()
   const { pathname, query, asPath } = router
+  const utils = trpc.useUtils()
   const [changeUserLocale, { loading: changingLanguage }] = useMutation(
     ChangeUserLocaleDocument
   )
@@ -32,7 +35,7 @@ function LanguageSetting({ user }: LanguageSettingProps) {
         disabled={changingLanguage}
         value={user?.locale || 'en'}
         onChange={(newLocale: string) => {
-          changeUserLocale({
+          void changeUserLocale({
             variables: { locale: newLocale as LocaleType },
             optimisticResponse: {
               __typename: 'Mutation',
@@ -59,7 +62,7 @@ function LanguageSetting({ user }: LanguageSettingProps) {
                 }
               })
             },
-          })
+          }).then(() => utils.user.profile.invalidate())
           router.push({ pathname, query }, asPath, { locale: newLocale })
         }}
         items={routing.locales.map((loc) => ({

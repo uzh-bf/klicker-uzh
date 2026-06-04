@@ -8,7 +8,6 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  User,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -21,9 +20,12 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { RouterOutputs } from '../../lib/trpc'
 import SupportModal from './SupportModal'
 
-function Header({ user }: { user?: User | null }): React.ReactElement {
+type UserProfile = RouterOutputs['user']['profile']
+
+function Header({ user }: { user?: UserProfile }): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
