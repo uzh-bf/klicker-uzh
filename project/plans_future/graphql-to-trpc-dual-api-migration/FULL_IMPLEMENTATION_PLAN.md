@@ -276,6 +276,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J10 Manage Activity Details Reads
+
+Status: complete for the scoped slice. This slice migrated the manage activity details modal read queries from Apollo to tRPC. It intentionally keeps the review-status mutation, course cache update, activity log/comments hook, action mutations, sharing modal internals, batch operations, generated GraphQL types, Apollo providers, and GraphQL cleanup live for later slices.
+
+Scope:
+
+- `packages/api/src/trpc/dto/activity.ts`
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/permissions.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/overview/details/ActivityDetailsModal.tsx`
+- `apps/frontend-manage/src/components/activities/overview/details/ActivityReviewButton.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetActivityDetailsDocument`, `GetOutdatedElementInstancesDocument`.
+- GraphQL resolver(s): `Query.activityDetails`, `Query.getOutdatedElementInstances`, both guarded by `asUser`; `activityDetails` additionally checks READ derived permission by activity type.
+- Behavior source: inline `activityDetails` resolver dispatch in `packages/graphql/src/schema/query.ts`, detail helpers in `packages/graphql/src/services/activities.ts`, and `packages/graphql/src/services/elements.ts` `getOutdatedElementInstances`.
+- tRPC router.procedure: add `activity.details` and `activity.outdatedElementInstances`.
+- Input schema: `{ activityId, activityType }` for details and `{ instanceIds: number[] }` for outdated instances.
+- Output DTO: narrow activity details object with the fields consumed by `ActivityDetailsActions`, `ActivityInformation`, `ActivityOverviewTable`, and `StudentElementPreviewActivityDetails`; outdated-instance entries `{ id, newTitle, newSampleSolution }`.
+- Active frontend consumers: manage `/activities` row details modal and URL-driven `openActivityDetailsId` / `openActivityDetailsType` details modal.
+- Apollo cache/refetch behavior: replace the modal read queries with tRPC hooks; keep `SetActivityReviewStatusDocument` GraphQL mutation and `GetSingleCourseDocument` cache update live, and add tRPC details invalidation/refetch after review-status updates.
+- Retained GraphQL in modal: `ActivityLog` / `useObjectActivity` still issues `GetObjectActivityDocument` and comment mutations; this belongs to the sharing/comments migration slice.
+- Browser verification path: delegated-login manage app, open an activity details modal, verify details/table/comments area render, and record network evidence that `GetActivityDetails` / `GetOutdatedElementInstances` are absent while `/api/trpc/activity.details` / `/api/trpc/activity.outdatedElementInstances` are present; retained `GetObjectActivity` GraphQL payload is expected.
+- Cleanup blocked until: review-status mutation, activity log/comments, action mutations, details generated type cleanup, sharing modal internals, batch operations, generated type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Verification:
+
+- Added focused API tests for permission denial, live-quiz detail DTO/points behavior, and outdated-instance filtering.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test` passed: 18 files, 175 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing baseline warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `MISSING_MESSAGE` for `/qr/[...args]`, large page data warnings).
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...touched files...` passed.
+- `git diff --check` passed.
+- Scoped coexistence audit confirmed the details modal no longer imports `GetActivityDetailsDocument` or `GetOutdatedElementInstancesDocument`; it calls `trpc.activity.details` and `trpc.activity.outdatedElementInstances`. `ActivityReviewButton` still uses `SetActivityReviewStatusDocument` and invalidates `utils.activity.details`; `ActivityLog` / `useObjectActivity` still uses `GetObjectActivityDocument` as planned. Remaining `GetOutdatedElementInstancesDocument` consumers are activity creation flows, not the overview details modal.
+- Browser verification used a real local backend/auth/manage stack on ports 3103/3106/3104 with delegated-login lecturer credentials. Screenshots:
+  - `/tmp/klicker-manage-s04j10-initial.png`
+  - `/tmp/klicker-manage-s04j10-auth-entry.png`
+  - `/tmp/klicker-manage-s04j10-activities-overview.png`
+  - `/tmp/klicker-manage-s04j10-live-quiz-details-modal.png`
+  - `/tmp/klicker-manage-s04j10-live-quiz-details-preview.png`
+- Browser network evidence showed `/api/trpc/activity.details` and `/api/trpc/activity.outdatedElementInstances` requests for the live-quiz details modal, no `GetActivityDetails` / `GetOutdatedElementInstances` GraphQL payloads, and the expected retained `GetObjectActivity` GraphQL payload for comments/logs.
+- Cleanup verified: local dev listeners on 3103/3104/3106 were absent after verification, and generated local test `.env` files were removed from backend/worker/response-api app folders.
+
+Review and simplification:
+
+- Kept the activity-type-specific Prisma includes explicit in `activity.details`; extracting shared include fragments would add type complexity without reducing this slice's risk.
+- Kept GraphQL generated types at the manage component boundary only. Runtime enum values match shared `ActivityType` values (`LIVE_QUIZ`, `PRACTICE_QUIZ`, `MICRO_LEARNING`, `GROUP_ACTIVITY`), so the modal casts are type-boundary compatibility until later generated-type cleanup.
+- Residual risk: detail child components still expect generated GraphQL shapes; this is intentional until the review/comments/actions/sharing cleanup slices replace the remaining Apollo paths.
+
+Notes:
+
+- Context7 MCP is not exposed in this session; official tRPC v10 docs for `useQuery`, `useUtils`, and Zod input validators were checked against installed `@trpc/*` `10.45.2`.
+- Subagent spawning is unavailable under current tool policy unless the user explicitly asks for subagents; perform explicit self-review and simplification before commit.
+
 ### 2026-06-04 Completed: S04J9 Manage Activities Overview Reads
 
 Status: complete for the scoped slice. This slice migrated the manage `/activities` overview page read queries from Apollo to tRPC. It intentionally keeps activity action mutations, batch operations, details modals, sharing modal internals, generated GraphQL types, Apollo providers, and GraphQL cleanup live for later slices.

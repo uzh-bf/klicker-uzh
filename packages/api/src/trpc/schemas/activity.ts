@@ -21,3 +21,12 @@ export const userActivitiesInput = z.object({
   numEntries: z.number().int().nullish(),
   offset: z.number().int().nullish(),
 })
+
+export const activityDetailsInput = z.object({
+  activityId: z.string(),
+  activityType: z.nativeEnum(ActivityType),
+})
+
+export const outdatedElementInstancesInput = z.object({
+  instanceIds: z.array(z.number().int()),
+})

@@ -1,11 +1,9 @@
-import { useQuery } from '@apollo/client'
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityDetails,
   ActivityType,
   ElementInstance,
-  GetActivityDetailsDocument,
-  GetOutdatedElementInstancesDocument,
   ObjectType,
   PublicationStatus,
   ReviewStatus,
@@ -14,6 +12,7 @@ import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { trpc, type RouterInputs } from '../../../../lib/trpc'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
 import ActivityDetailsActions from './ActivityDetailsActions'
@@ -32,40 +31,53 @@ function ActivityDetailsModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const detailsInput: RouterInputs['activity']['details'] = {
+    activityId,
+    activityType:
+      activityType as unknown as RouterInputs['activity']['details']['activityType'],
+  }
 
   // fetch activity details
-  const { data: detailsData, loading } = useQuery(GetActivityDetailsDocument, {
-    variables: { activityId, activityType },
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: detailsData, isLoading: loading } =
+    trpc.activity.details.useQuery(detailsInput, {
+      refetchOnMount: 'always',
+    })
 
   const details = detailsData?.activityDetails
-  const stacks = detailsData?.activityDetails?.stacks ?? []
-  const isReviewed = details?.reviewStatus === ReviewStatus.Reviewed
-
-  // check which instances are outdated
-  const { data } = useQuery(GetOutdatedElementInstancesDocument, {
-    variables: {
-      instanceIds: stacks.flatMap((stack) =>
+  const stacks = details?.stacks ?? []
+  const detailsStatus = details?.status as unknown as PublicationStatus
+  const detailsReviewStatus = details?.reviewStatus as unknown as
+    | ReviewStatus
+    | undefined
+  const isReviewed = detailsReviewStatus === ReviewStatus.Reviewed
+  const instanceIds = useMemo(
+    () =>
+      stacks.flatMap((stack) =>
         stack.elements.map((element) => element.instance.id)
       ),
-    },
-    skip: !details,
-    fetchPolicy: 'cache-and-network',
-  })
+    [stacks]
+  )
+
+  // check which instances are outdated
+  const { data } = trpc.activity.outdatedElementInstances.useQuery(
+    { instanceIds },
+    {
+      enabled: !!details && instanceIds.length > 0,
+      refetchOnMount: 'always',
+    }
+  )
 
   const outdatedInstances = useMemo(() => {
-    if (!details?.status) return []
+    if (!detailsStatus) return []
 
     return [
       PublicationStatus.Draft,
       PublicationStatus.Scheduled,
       PublicationStatus.Template,
-    ].includes(details.status)
-      ? (data?.getOutdatedElementInstances?.map((instance) => instance.id) ??
-          [])
+    ].includes(detailsStatus)
+      ? (data?.outdatedElementInstances.map((instance) => instance.id) ?? [])
       : []
-  }, [data?.getOutdatedElementInstances, details?.status])
+  }, [data?.outdatedElementInstances, detailsStatus])
 
   // selected instance id
   const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(
@@ -76,9 +88,8 @@ function ActivityDetailsModal({
       selectedInstanceId !== null
         ? (stacks
             .flatMap((stack) => stack.elements)
-            .find((element) => element.instance.id === selectedInstanceId) ?? {
-            instance: { id: '', elementData: { name: '' } },
-          })
+            .find((element) => element.instance.id === selectedInstanceId) ??
+          null)
         : null,
     [stacks, selectedInstanceId]
   )
@@ -103,19 +114,19 @@ function ActivityDetailsModal({
         <div className="flex h-auto min-h-0 flex-col gap-2 lg:flex-row xl:h-full xl:max-h-full xl:flex-row">
           <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-2 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
             <ActivityDetailsActions
-              details={details}
+              details={details as unknown as ActivityDetails}
               activityType={activityType}
               isReviewed={isReviewed}
               setSelectedInstanceId={setSelectedInstanceId}
             />
             <ActivityInformation
-              details={details}
+              details={details as unknown as ActivityDetails}
               activityType={activityType}
-              activityReviewStatus={details?.reviewStatus}
+              activityReviewStatus={detailsReviewStatus as ReviewStatus}
             />
 
             <ActivityOverviewTable
-              details={details}
+              details={details as unknown as ActivityDetails}
               activityType={activityType}
               outdatedInstances={outdatedInstances}
               selectedInstanceId={selectedInstanceId}
@@ -130,7 +141,7 @@ function ActivityDetailsModal({
                     {t('manage.general.elementPreviewDescription')}:
                   </h4>
                   <StudentElementPreviewActivityDetails
-                    instance={selected.instance as ElementInstance}
+                    instance={selected.instance as unknown as ElementInstance}
                   />
                 </div>
                 <div className="flex flex-row items-center justify-center gap-5">

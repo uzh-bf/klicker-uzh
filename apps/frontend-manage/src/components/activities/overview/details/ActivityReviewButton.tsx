@@ -2,12 +2,12 @@ import { useMutation } from '@apollo/client'
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
-  GetActivityDetailsDocument,
   GetSingleCourseDocument,
   SetActivityReviewStatusDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc, type RouterInputs } from '../../../../lib/trpc'
 
 function ActivityReviewButton({
   activityId,
@@ -21,6 +21,12 @@ function ActivityReviewButton({
   isReviewed: boolean
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
+  const detailsInput: RouterInputs['activity']['details'] = {
+    activityId,
+    activityType:
+      activityType as unknown as RouterInputs['activity']['details']['activityType'],
+  }
   const [setActivityReviewStatus, { loading: settingReviewedStatus }] =
     useMutation(SetActivityReviewStatusDocument)
 
@@ -34,25 +40,6 @@ function ActivityReviewButton({
           variables: { activityId, activityType, isReviewed: !isReviewed },
           update: (cache, { data: res }) => {
             if (!res?.setActivityReviewStatus) return
-
-            // update activity details query
-            cache.updateQuery(
-              {
-                query: GetActivityDetailsDocument,
-                variables: { activityId, activityType },
-              },
-              (queryData) => {
-                // if query data does not exist, return null
-                if (!queryData?.activityDetails) return null
-
-                return {
-                  activityDetails: {
-                    ...queryData.activityDetails,
-                    reviewStatus: res.setActivityReviewStatus!,
-                  },
-                }
-              }
-            )
 
             // if no course id is specified, only update activity details
             if (!courseId) return
@@ -101,6 +88,7 @@ function ActivityReviewButton({
         })
 
         if (res?.setActivityReviewStatus) {
+          await utils.activity.details.invalidate(detailsInput)
           toast({
             type: 'success',
             message: t('manage.activities.reviewStatusUpdated'),

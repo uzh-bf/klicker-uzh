@@ -1,4 +1,6 @@
 import {
+  ElementInstanceType,
+  ElementType,
   Locale,
   PermissionLevel,
   PublicationStatus,
@@ -298,5 +300,256 @@ describe('manage activity read routers', () => {
       skip: 10,
     })
     expect(count).toHaveBeenCalledWith({ where })
+  })
+
+  test('returns null activity details when read permission is missing', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const findUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst,
+      },
+      liveQuiz: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.details({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({ activityDetails: null })
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).not.toHaveBeenCalled()
+  })
+
+  test('returns live quiz activity details with point totals and permission flags', async () => {
+    const findFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      name: 'Live Quiz',
+      displayName: 'Displayed Live Quiz',
+      status: PublicationStatus.SCHEDULED,
+      reviewStatus: ReviewStatus.INCOMPLETE,
+      courseId: null,
+      owner: {
+        shortname: 'lecturer',
+        email: 'lecturer@example.com',
+      },
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
+      pointsMultiplier: 2,
+      defaultPoints: 5,
+      defaultCorrectPoints: 10,
+      maxBonusPoints: 3,
+      pinCode: '123456',
+      _count: {
+        permissions: 1,
+      },
+      course: null,
+      blocks: [
+        {
+          id: 7,
+          timeLimit: 30,
+          elements: [
+            {
+              id: 11,
+              type: ElementInstanceType.LIVE_QUIZ,
+              elementType: ElementType.SC,
+              options: {
+                basePoints: true,
+                pointsMultiplier: 2,
+              },
+              elementData: {
+                id: 'element-1-v1',
+                elementId: 1,
+                name: 'Question 1',
+                type: ElementType.SC,
+                content: 'Question text',
+                explanation: null,
+                basePoints: true,
+                pointsMultiplier: 1,
+                options: {
+                  hasSampleSolution: true,
+                },
+              },
+              results: { total: 3 },
+              anonymousResults: { total: 2 },
+              element: {
+                isDeleted: false,
+                _count: {
+                  permissions: 1,
+                },
+              },
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst,
+      },
+      liveQuiz: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.details({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({
+      activityDetails: {
+        id: 'live-quiz-1',
+        name: 'Live Quiz',
+        displayName: 'Displayed Live Quiz',
+        status: PublicationStatus.SCHEDULED,
+        reviewStatus: ReviewStatus.INCOMPLETE,
+        isActivityReviewer: true,
+        isActivityManager: true,
+        courseId: null,
+        ownerShortname: 'lecturer',
+        ownerEmail: 'lecturer@example.com',
+        isGamificationEnabled: true,
+        arePointsAwarded: true,
+        pointsMultiplier: 2,
+        totalBasePoints: 5,
+        totalCorrectnessPoints: 20,
+        totalBonusPoints: 6,
+        totalPoints: 31,
+        isAssessmentEnabled: false,
+        isPinProtected: true,
+        pinCode: '123456',
+        stacks: [
+          {
+            id: 7,
+            numOfParticipants: 5,
+            timeLimit: 30,
+            stackPoints: 31,
+            elements: [
+              {
+                basePoints: 5,
+                correctnessPoints: 20,
+                bonusPoints: 6,
+                totalPoints: 31,
+                hasSampleSolution: true,
+                isEditor: true,
+                isDeleted: false,
+                instance: {
+                  id: 11,
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementType: ElementType.SC,
+                  options: {
+                    basePoints: true,
+                    pointsMultiplier: 2,
+                  },
+                  elementData: {
+                    id: 'element-1-v1',
+                    elementId: 1,
+                    name: 'Question 1',
+                    type: ElementType.SC,
+                    content: 'Question text',
+                    explanation: null,
+                    basePoints: true,
+                    pointsMultiplier: 1,
+                    options: {
+                      hasSampleSolution: true,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    })
+  })
+
+  test('returns outdated element instance information only for stale versions', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: 11,
+        elementData: {
+          id: 'element-1-v1',
+        },
+        element: {
+          version: 3,
+          name: 'New Question 1',
+          options: {
+            hasSampleSolution: true,
+          },
+        },
+      },
+      {
+        id: 12,
+        elementData: {
+          id: 'element-2-v3',
+        },
+        element: {
+          version: 3,
+          name: 'Question 2',
+          options: {
+            hasSampleSolution: false,
+          },
+        },
+      },
+    ])
+    const prisma = {
+      elementInstance: {
+        findMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.outdatedElementInstances({
+        instanceIds: [11, 12],
+      })
+    ).resolves.toEqual({
+      outdatedElementInstances: [
+        {
+          id: 11,
+          newTitle: 'New Question 1',
+          newSampleSolution: true,
+        },
+      ],
+    })
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: [11, 12] },
+        element: { isDeleted: false },
+      },
+      include: {
+        element: {
+          select: {
+            id: true,
+            version: true,
+            name: true,
+            options: true,
+          },
+        },
+      },
+    })
   })
 })

@@ -1,15 +1,354 @@
 import { PermissionLevel, Prisma } from '@klicker-uzh/prisma/client'
-import { SortByType } from '@klicker-uzh/types'
+import { ActivityType, SortByType } from '@klicker-uzh/types'
 import { getPrisma } from '../context.js'
 import {
+  toAsyncActivityDetails,
+  toLiveQuizActivityDetails,
+  toOutdatedElementInstanceInfo,
   toUserActivitiesCourseListItem,
   toUserActivityOverviewItem,
 } from '../dto/activity.js'
 import { router } from '../init.js'
+import { hasActivityPermission } from '../permissions.js'
 import { userProcedure } from '../procedures.js'
-import { userActivitiesInput } from '../schemas/activity.js'
+import {
+  activityDetailsInput,
+  outdatedElementInstancesInput,
+  userActivitiesInput,
+} from '../schemas/activity.js'
 
 export const activityRouter = router({
+  details: userProcedure
+    .input(activityDetailsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canRead = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.activityId,
+          activityType: input.activityType,
+        },
+        PermissionLevel.READ
+      )
+
+      if (!canRead) return { activityDetails: null }
+
+      if (input.activityType === ActivityType.LIVE_QUIZ) {
+        const liveQuiz = await prisma.liveQuiz.findUnique({
+          where: { id: input.activityId },
+          include: {
+            owner: true,
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+            course: {
+              include: {
+                _count: {
+                  select: {
+                    permissions: {
+                      where: {
+                        userId: ctx.user.sub,
+                        permissionLevel: {
+                          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            blocks: {
+              include: {
+                elements: {
+                  include: {
+                    element: {
+                      include: {
+                        _count: {
+                          select: {
+                            permissions: {
+                              where: {
+                                userId: ctx.user.sub,
+                                permissionLevel: {
+                                  in: [
+                                    PermissionLevel.WRITE,
+                                    PermissionLevel.ADMIN,
+                                    PermissionLevel.OWNER,
+                                  ],
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  orderBy: { order: 'asc' },
+                },
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+        })
+
+        return {
+          activityDetails: liveQuiz
+            ? toLiveQuizActivityDetails(liveQuiz)
+            : null,
+        }
+      }
+
+      if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+        const practiceQuiz = await prisma.practiceQuiz.findUnique({
+          where: { id: input.activityId },
+          include: {
+            owner: true,
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+            course: {
+              include: {
+                _count: {
+                  select: {
+                    permissions: {
+                      where: {
+                        userId: ctx.user.sub,
+                        permissionLevel: {
+                          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            stacks: {
+              include: {
+                elements: {
+                  include: {
+                    element: {
+                      include: {
+                        permissions: {
+                          where: {
+                            userId: ctx.user.sub,
+                            permissionLevel: {
+                              in: [
+                                PermissionLevel.WRITE,
+                                PermissionLevel.ADMIN,
+                                PermissionLevel.OWNER,
+                              ],
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  orderBy: { order: 'asc' },
+                },
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+        })
+
+        return {
+          activityDetails: practiceQuiz
+            ? toAsyncActivityDetails({ activity: practiceQuiz })
+            : null,
+        }
+      }
+
+      if (input.activityType === ActivityType.MICRO_LEARNING) {
+        const microLearning = await prisma.microLearning.findUnique({
+          where: { id: input.activityId },
+          include: {
+            owner: true,
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+            course: {
+              include: {
+                _count: {
+                  select: {
+                    permissions: {
+                      where: {
+                        userId: ctx.user.sub,
+                        permissionLevel: {
+                          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            stacks: {
+              include: {
+                elements: {
+                  include: {
+                    element: {
+                      include: {
+                        permissions: {
+                          where: {
+                            userId: ctx.user.sub,
+                            permissionLevel: {
+                              in: [
+                                PermissionLevel.WRITE,
+                                PermissionLevel.ADMIN,
+                                PermissionLevel.OWNER,
+                              ],
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  orderBy: { order: 'asc' },
+                },
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+        })
+
+        return {
+          activityDetails: microLearning
+            ? toAsyncActivityDetails({ activity: microLearning })
+            : null,
+        }
+      }
+
+      const groupActivity = await prisma.groupActivity.findUnique({
+        where: { id: input.activityId },
+        include: {
+          owner: true,
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+          course: {
+            include: {
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  element: {
+                    include: {
+                      permissions: {
+                        where: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              PermissionLevel.WRITE,
+                              PermissionLevel.ADMIN,
+                              PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      })
+
+      return {
+        activityDetails: groupActivity
+          ? toAsyncActivityDetails({
+              activity: groupActivity,
+              isGroupActivity: true,
+            })
+          : null,
+      }
+    }),
+
+  outdatedElementInstances: userProcedure
+    .input(outdatedElementInstancesInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      if (input.instanceIds.length === 0) {
+        return { outdatedElementInstances: [] }
+      }
+
+      const dbInstances = await prisma.elementInstance.findMany({
+        where: {
+          id: { in: input.instanceIds },
+          element: { isDeleted: false },
+        },
+        include: {
+          element: {
+            select: {
+              id: true,
+              version: true,
+              name: true,
+              options: true,
+            },
+          },
+        },
+      })
+
+      return {
+        outdatedElementInstances: dbInstances.flatMap((instance) => {
+          const item = toOutdatedElementInstanceInfo(instance)
+          return item ? [item] : []
+        }),
+      }
+    }),
+
   userActivitiesCourses: userProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)
     const user = await prisma.user.findUnique({
