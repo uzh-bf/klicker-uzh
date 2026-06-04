@@ -276,6 +276,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J7 Manage Course Header Profile Read
+
+Status: complete for the scoped slice. This slice migrated the manage course overview header's profile read from Apollo `UserProfileDocument` to the existing tRPC `user.profile` procedure. It intentionally did not migrate the course detail `GetSingleCourseDocument` payload, retained course-settings mutation/cache update, course activity lists, activity authoring, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `UserProfileDocument` in `CourseOverviewHeader`, currently read with Apollo `cache-only`.
+- GraphQL resolver(s): `Query.userProfile`, guarded by `asUser`, reading the authenticated user by `ctx.user.sub`.
+- Behavior source: existing `user.profile` tRPC procedure and `toUserProfile` DTO in `packages/api`, already used by manage shell/settings.
+- tRPC router.procedure: reuse `user.profile`.
+- Input schema: none.
+- Output DTO: existing user profile DTO; this header consumes `privatePreview` and `publicPreview`.
+- Active frontend consumers: manage course detail header sharing and learning-analytics buttons.
+- Apollo behavior: surrounding `GetSingleCourseDocument`, `UpdateCourseSettingsDocument`, and cache update stay GraphQL for later slices.
+- Browser verification path: delegated-login manage app, open a seeded course detail page, confirm the header renders course title/buttons, and confirm the header profile read uses `/api/trpc/user.profile` without a `UserProfile` GraphQL payload.
+
+Implementation notes:
+
+- Context7 MCP is not exposed in this session; this slice reuses established local tRPC hook patterns.
+- No API change was needed because `user.profile` already returns the needed flags.
+- Replaced `useQuery(UserProfileDocument, { fetchPolicy: 'cache-only' })` in `CourseOverviewHeader` with `trpc.user.profile.useQuery()`.
+- Left Apollo `useMutation(UpdateCourseSettingsDocument)`, `GetSingleCourseDocument` cache update, and surrounding course detail GraphQL reads untouched for later slices.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for the touched header file and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/PWA/i18n warnings only.
+- `git diff --check`: passed.
+- Scoped audit confirmed `CourseOverviewHeader` now uses `trpc.user.profile.useQuery()` and no longer imports `UserProfileDocument` or Apollo `useQuery`; Apollo remains only for the retained course-settings mutation.
+- Browser verification used `npx agent-browser` against a local stack on `localhost:3103` backend, `localhost:3104` manage, and `localhost:3106` auth. Backend used `APP_MANAGE_SUBDOMAIN=localhost` for local tRPC auth.
+- Browser `/courses` rendered the seeded course list before detail navigation. Screenshot: `/tmp/klicker-manage-s04j7-courses-before-detail.png`.
+- Browser course detail for `Testkurs` rendered the course title, `Share course`, `View Comments`, `Join course`, `Learning Analytics`, and `LTI Links` header actions. Screenshot: `/tmp/klicker-manage-s04j7-course-header.png`.
+- Course-list-to-detail fetch recorder observed `/api/trpc/course.userCourses,user.profile` and `/api/trpc/user.profile`; retained GraphQL calls were `GetSingleCourse`, `GetCourseLeaderboard`, and `GetCourseGroups`. `hasTrpcUserProfile: true`; `hasUserProfileGraphqlPayload: false`.
+- Cleanup: closed `agent-browser`, stopped verification servers on ports `3103`, `3104`, and `3106`, removed generated local verification `.env` files, and confirmed those ports were free afterward.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns were introduced beyond established local tRPC hooks.
+- Subagent delegation is not used because current tool policy only allows spawning when the user explicitly asks for subagents; performed explicit self-review before commit.
+
 ### 2026-06-04 Completed: S04J6 Manage Live Quiz Embedding Info Read
 
 Status: complete for the scoped slice. This slice migrated the manage live quiz embedding modal from Apollo `GetLiveQuizEmbeddingInfoDocument` to the existing tRPC `liveQuiz.embeddingInfo` procedure. It intentionally did not migrate live quiz cockpit reads/mutations, activity-list reads/actions, running-live-quiz header reads, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.

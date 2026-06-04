@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
@@ -13,13 +13,13 @@ import {
   GetSingleCourseDocument,
   ObjectType,
   UpdateCourseSettingsDocument,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
@@ -58,10 +58,7 @@ function CourseOverviewHeader({
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const { data: user } = trpc.user.profile.useQuery()
 
   const ltiDropdownItems = [
     getLTIAccessLink({
