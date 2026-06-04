@@ -276,6 +276,75 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J12 Manage Activity Log Comments
+
+Status: complete for the scoped slice. This slice migrated the manage activity log read/add/delete comment path from Apollo GraphQL to tRPC while preserving the existing UI contract. GraphQL remains live for sharing modals, activity actions, course-detail cache bridges, generated types, Apollo providers, and S06 cleanup.
+
+Scope:
+
+- `packages/api/src/trpc/root.ts`
+- `packages/api/src/trpc/permissions.ts`
+- `packages/api/src/trpc/schemas/sharing.ts`
+- `packages/api/src/trpc/dto/sharing.ts`
+- `packages/api/src/trpc/routers/sharing.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/sharing-activity-log.test.ts`
+- `apps/frontend-manage/src/lib/hooks/useObjectActivity.ts`
+- `apps/frontend-manage/src/components/sharing/ActivityLog.tsx`
+- `AGENTS.md`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetObjectActivityDocument`, `AddActivityMessageDocument`, `DeleteActivityMessageDocument`, and the currently stubbed `ResolveActivityLogEntryDocument` hook surface.
+- GraphQL resolver(s): `Query.getObjectActivity`, `Mutation.addActivityMessage`, `Mutation.deleteActivityMessage`, `Mutation.resolveActivityLogEntry`.
+- Behavior source: `SharingService.getObjectActivity`, `SharingService.addActivityMessage`, `SharingService.deleteActivityMessage`, and GraphQL resolver permission checks in `packages/graphql/src/schema/query.ts` / `mutation.ts`.
+- tRPC router.procedure: add `sharing.objectActivity`, `sharing.addActivityMessage`, `sharing.deleteActivityMessage`, and a no-op-compatible `sharing.resolveActivityLogEntry` returning `null` to preserve the hook contract.
+- Input schema: `{ objectId: string, objectType: ObjectType }`, `{ objectId, objectType, message }`, and `{ id: number }`.
+- Output DTO: narrow `ActivityLogEntry` fields consumed by `ActivityLog` (`id`, `type`, `objectType`, `message`, `resolved`, `resolvedAt`, `username`, `isOwn`, `options`, `isEdited`, `createdAt`, `updatedAt`).
+- Active frontend consumers: `useObjectActivity` and `ActivityLog` in manage activity/details and sharing UI.
+- Apollo cache/refetch behavior: replace `cache.updateQuery` for add/delete with React Query cache updates for `sharing.objectActivity`; preserve visible/skip behavior with `enabled` and `refetchOnMount`.
+- Browser verification path: delegated-login manage app, open `/activities`, open an activity details modal, add a comment in the activity log, verify it appears, delete it, verify it disappears, capture screenshots, and confirm `/api/trpc/sharing.objectActivity`, `/api/trpc/sharing.addActivityMessage`, and `/api/trpc/sharing.deleteActivityMessage` are used without `GetObjectActivity` / `AddActivityMessage` GraphQL payloads.
+- Cleanup blocked until: sharing modal internals, activity action mutations, course detail reads/cache bridges, remaining manage Apollo hooks, generated type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Verification:
+
+- Added focused API tests for permission denial, activity DTO mapping, add-message creation, unsupported object-type fail-closed behavior, and own-message delete authorization.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test` passed: 19 files, 183 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing baseline warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `MISSING_MESSAGE` for `/qr/[...args]`, large page data warnings).
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...touched files...` passed.
+- `git diff --check` passed.
+- Scoped audit confirmed `useObjectActivity` and `ActivityLog` no longer import Apollo hooks or `GetObjectActivityDocument` / `AddActivityMessageDocument` / `DeleteActivityMessageDocument` / `ResolveActivityLogEntryDocument`; the hook now calls `trpc.sharing.objectActivity`, `sharing.addActivityMessage`, `sharing.deleteActivityMessage`, and the no-op-compatible `sharing.resolveActivityLogEntry`.
+- Scoped API audit produced no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in touched API files.
+
+Browser evidence:
+
+- Local stack used backend `http://127.0.0.1:3103`, auth `http://127.0.0.1:3106`, and manage `http://127.0.0.1:3104` with delegated-login lecturer credentials. Backend used `APP_MANAGE_SUBDOMAIN=127.0.0.1`; a first run with `localhost` showed the hostname-sensitive auth-origin gotcha now recorded in `AGENTS.md`.
+- Screenshots:
+  - `/tmp/klicker-manage-s04j12-login.png`
+  - `/tmp/klicker-manage-s04j12-activities-overview.png`
+  - `/tmp/klicker-manage-s04j12-live-quiz-details-before-comment.png`
+  - `/tmp/klicker-manage-s04j12-live-quiz-details-after-comment.png`
+  - `/tmp/klicker-manage-s04j12-live-quiz-details-after-delete.png`
+- Browser fetch-recorder evidence showed a batched GET for `/api/trpc/sharing.objectActivity,activity.details,activity.outdatedElementInstances`, a POST to `/api/trpc/sharing.addActivityMessage`, and a POST to `/api/trpc/sharing.deleteActivityMessage`.
+- Browser evidence recorded no `GetObjectActivity`, `AddActivityMessage`, or `DeleteActivityMessage` GraphQL payloads for the activity-log comment path.
+- Cleanup verified: the verification comment `S04J12 comment smoke 20260604T2105` was deleted from the rendered log, `agent-browser` was closed, temporary backend/auth/manage processes were stopped, and ports `3103`, `3104`, and `3106` had no listeners afterward.
+
+Review and simplification:
+
+- Kept a dedicated `sharing` router instead of overloading `activity`, because the hook is used by sharing/comment UI for several object types.
+- Added a generic object permission helper in `permissions.ts` and kept unsupported object types fail-closed instead of reproducing the legacy GraphQL query fallback.
+- Kept generated GraphQL `ObjectType` as a type-only client boundary in `ActivityLog` / `useObjectActivity` because surrounding manage components still pass generated enums until later cleanup slices.
+- Replaced Apollo cache updates with narrow React Query cache updates for add/delete, preserving the visible/skip behavior via `enabled` and `refetchOnMount`.
+
+Notes:
+
+- Context7 MCP is still not exposed in this session after tool discovery; use installed `@trpc/*` `10.45.2` patterns already present in this branch and record the limitation.
+- Subagent spawning is unavailable under current tool policy unless the user explicitly asks for subagents; perform explicit self-review and simplification before commit.
+- Unsupported activity-log object types fail closed in tRPC for reads/writes rather than reproducing the legacy GraphQL query's loose fallback behavior.
+
 ### 2026-06-04 Completed: S04J11 Manage Activity Review Status Mutation
 
 Status: complete for the scoped slice. This slice migrated the manage activity details modal review-status mutation from Apollo to tRPC. It intentionally keeps the GraphQL course query/cache target, activity log/comments hook, action mutations, sharing modal internals, batch operations, generated GraphQL types, Apollo providers, and GraphQL cleanup live for later slices.

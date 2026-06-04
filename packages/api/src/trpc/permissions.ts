@@ -1,4 +1,8 @@
-import { PermissionLevel, type Prisma } from '@klicker-uzh/prisma/client'
+import {
+  ObjectType,
+  PermissionLevel,
+  type Prisma,
+} from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import { getPrisma, type TRPCContext } from './context.js'
 import { throwForbidden } from './errors.js'
@@ -107,6 +111,82 @@ export async function hasActivityPermission(
   const permission = await prisma.derivedPermission.findFirst({
     where: {
       ...getActivityPermissionWhere({ activityId, activityType }),
+      userId: ctx.user.sub,
+      permissionLevel: {
+        in: acceptedPermissionLevels[requiredPermissionLevel],
+      },
+    },
+  })
+
+  return Boolean(permission)
+}
+
+function parseNumericObjectId(objectId: string) {
+  const parsedObjectId = Number.parseInt(objectId, 10)
+
+  return Number.isNaN(parsedObjectId) ? null : parsedObjectId
+}
+
+function getObjectPermissionWhere({
+  objectId,
+  objectType,
+}: {
+  objectId: string
+  objectType: ObjectType
+}): Pick<
+  Prisma.DerivedPermissionWhereInput,
+  | 'answerCollectionId'
+  | 'elementId'
+  | 'courseId'
+  | 'liveQuizId'
+  | 'practiceQuizId'
+  | 'microLearningId'
+  | 'groupActivityId'
+> | null {
+  switch (objectType) {
+    case ObjectType.ANSWER_COLLECTION: {
+      const answerCollectionId = parseNumericObjectId(objectId)
+      return answerCollectionId === null ? null : { answerCollectionId }
+    }
+    case ObjectType.ELEMENT: {
+      const elementId = parseNumericObjectId(objectId)
+      return elementId === null ? null : { elementId }
+    }
+    case ObjectType.COURSE:
+      return { courseId: objectId }
+    case ObjectType.LIVE_QUIZ:
+      return { liveQuizId: objectId }
+    case ObjectType.PRACTICE_QUIZ:
+      return { practiceQuizId: objectId }
+    case ObjectType.MICRO_LEARNING:
+      return { microLearningId: objectId }
+    case ObjectType.GROUP_ACTIVITY:
+      return { groupActivityId: objectId }
+    case ObjectType.CATALOG_COLLECTION:
+    case ObjectType.USER_GROUP:
+      return null
+  }
+}
+
+export async function hasObjectPermission(
+  ctx: TRPCContextWithUserId,
+  {
+    objectId,
+    objectType,
+  }: {
+    objectId: string
+    objectType: ObjectType
+  },
+  requiredPermissionLevel: PermissionLevel
+) {
+  const permissionWhere = getObjectPermissionWhere({ objectId, objectType })
+
+  if (!permissionWhere) return false
+
+  const prisma = getPrisma(ctx)
+  const permission = await prisma.derivedPermission.findFirst({
+    where: {
+      ...permissionWhere,
       userId: ctx.user.sub,
       permissionLevel: {
         in: acceptedPermissionLevels[requiredPermissionLevel],

@@ -1,5 +1,5 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { ActivityLogEntry, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import type { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, TextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -7,7 +7,10 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useObjectActivity } from '../../lib/hooks/useObjectActivity'
+import {
+  type ActivityLogEntry,
+  useObjectActivity,
+} from '../../lib/hooks/useObjectActivity'
 
 dayjs.extend(relativeTime)
 
@@ -31,11 +34,8 @@ function ActivityLog({
     loading: queryLoading,
     error: queryError,
     addActivityMessage,
-    resolveActivityLogEntry,
     deleteActivityMessage,
     isAddingMessage: hookIsAddingMessage,
-    isResolvingMessage: hookIsResolvingMessage,
-    isDeletingMessage: hookIsDeletingMessage,
     refetch,
   } = useObjectActivity({
     objectId,
