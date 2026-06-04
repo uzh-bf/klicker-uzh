@@ -1,15 +1,9 @@
-import { useQuery } from '@apollo/client'
 import {
   faArrowLeft,
   faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetCatalogCollectionsListDocument,
-  GetCatalogObjectsDocument,
-  ObjectAccess,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, TextField, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -17,9 +11,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
 import AddObjectToCatalogButton from '../administration/AddObjectToCatalogButton'
 import AddObjectToCatalogModal from '../administration/AddObjectToCatalogModal'
 import CatalogCollectionListItem from '../administration/CatalogCollectionListItem'
+import type {
+  CatalogBrowserCollection,
+  CatalogBrowserObject,
+} from '../catalogBrowserTypes'
 import CreateCatalogCollectionButton from '../collections/CreateCatalogCollectionButton'
 import CreateCatalogCollectionModal from '../collections/CreateCatalogCollectionModal'
 import CatalogObjectItem from './CatalogObjectItem'
@@ -47,20 +46,16 @@ function ObjectImport({
   >('all')
 
   // fetch all available catalog collections
-  const { data: collectionsData, loading: collectionsLoading } = useQuery(
-    GetCatalogCollectionsListDocument,
-    { skip: typeof catalogCollectionId !== 'undefined' }
-  )
-  const collections = collectionsData?.getCatalogCollectionsList ?? []
+  const { data: collectionsData, isLoading: collectionsLoading } =
+    trpc.sharing.catalogCollections.useQuery(undefined, {
+      enabled: typeof catalogCollectionId === 'undefined',
+    })
+  const collections = (collectionsData?.catalogCollections ??
+    []) as CatalogBrowserCollection[]
 
-  const { data: objectsData, loading: objectsLoading } = useQuery(
-    GetCatalogObjectsDocument,
-    {
-      variables: { catalogCollectionId },
-      fetchPolicy: 'cache-and-network',
-    }
-  )
-  const objects = objectsData?.getCatalogObjects ?? []
+  const { data: objectsData, isLoading: objectsLoading } =
+    trpc.sharing.catalogObjects.useQuery({ catalogCollectionId })
+  const objects = (objectsData?.catalogObjects ?? []) as CatalogBrowserObject[]
 
   const { filteredObjects, filteredCatalogCollections } = useObjectFilters({
     objects,

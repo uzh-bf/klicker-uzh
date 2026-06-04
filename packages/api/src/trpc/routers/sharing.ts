@@ -1,12 +1,14 @@
 import {
   ActivityLogType,
   AuditLogType,
+  ObjectAccess,
   ObjectType,
   PermissionLevel,
   type DerivedPermission,
   type Prisma,
 } from '@klicker-uzh/prisma/client'
 import {
+  MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
@@ -15,6 +17,8 @@ import {
   sortDerivedPermissionInfos,
   sortPermissionInfos,
   toActivityLogEntry,
+  toCatalogCollection,
+  toCatalogObjectsFromAssignment,
   toCatalogSharingRequest,
   toDerivedPermissionInfo,
   toOwnerPermission,
@@ -28,6 +32,7 @@ import {
   activityLogEntryInput,
   addActivityMessageInput,
   approveObjectSharingRequestInput,
+  catalogCollectionInput,
   changePermissionLevelInput,
   derivedPermissionOriginInput,
   objectActivityInput,
@@ -69,6 +74,14 @@ type UpdateAccessRequestScope = Parameters<
 >[0]
 
 const adminPermissionLevels = [PermissionLevel.ADMIN, PermissionLevel.OWNER]
+
+const readPermissionLevels = [
+  PermissionLevel.READ,
+  PermissionLevel.EXECUTE,
+  PermissionLevel.WRITE,
+  PermissionLevel.ADMIN,
+  PermissionLevel.OWNER,
+]
 
 const directPermissionInclude = {
   user: { select: { id: true, shortname: true, email: true } },
@@ -1329,6 +1342,180 @@ async function getCatalogSharingRequests(
     .filter((request) => request !== null)
 }
 
+async function hasCatalogCollectionReadPermission(
+  prisma: ReturnType<typeof getPrisma>,
+  catalogCollectionId: string,
+  userId: string
+) {
+  const permission = await prisma.derivedPermission.findUnique({
+    where: {
+      catalogCollectionId_userId: {
+        catalogCollectionId,
+        userId,
+      },
+      permissionLevel: { in: readPermissionLevels },
+    },
+  })
+
+  return Boolean(permission)
+}
+
+async function verifyCatalogCollectionBrowsable({
+  prisma,
+  catalogCollectionId,
+  userId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  catalogCollectionId: string
+  userId: string
+}) {
+  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
+    return true
+  }
+
+  const catalogCollection = await prisma.catalogCollection.findUnique({
+    where: { id: catalogCollectionId },
+    select: { access: true },
+  })
+
+  if (!catalogCollection) return false
+  if (catalogCollection.access === ObjectAccess.PUBLIC) return true
+
+  return hasCatalogCollectionReadPermission(prisma, catalogCollectionId, userId)
+}
+
+async function getCatalogCollectionInfo({
+  prisma,
+  userId,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  catalogCollectionId?: string | null
+}) {
+  if (
+    !catalogCollectionId ||
+    catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
+  ) {
+    return null
+  }
+
+  const valid = await verifyCatalogCollectionBrowsable({
+    prisma,
+    catalogCollectionId,
+    userId,
+  })
+
+  if (!valid) return null
+
+  const collection = await prisma.catalogCollection.findUnique({
+    where: { id: catalogCollectionId },
+    include: {
+      owner: { select: { shortname: true } },
+      permissions: { where: { userId } },
+      accessRequests: { where: { userId }, select: { id: true } },
+    },
+  })
+
+  return collection ? toCatalogCollection(collection) : null
+}
+
+async function getCatalogCollectionsList(
+  prisma: ReturnType<typeof getPrisma>,
+  userId: string
+) {
+  const collections = await prisma.catalogCollection.findMany({
+    where: { id: { not: MISSING_CATALOG_COLLECTION_ID } },
+    include: {
+      _count: { select: { objectAssignments: true } },
+      owner: { select: { shortname: true } },
+      permissions: { where: { userId } },
+      accessRequests: { where: { userId }, select: { id: true } },
+    },
+  })
+
+  return collections
+    .filter(
+      (collection) =>
+        collection.ownerId === userId ||
+        collection.access !== ObjectAccess.PUBLIC ||
+        collection._count.objectAssignments !== 0 ||
+        collection.permissions.length !== 0
+    )
+    .map(toCatalogCollection)
+}
+
+async function getCatalogObjects({
+  prisma,
+  userId,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  catalogCollectionId?: string | null
+}) {
+  if (
+    catalogCollectionId &&
+    !(await verifyCatalogCollectionBrowsable({
+      prisma,
+      catalogCollectionId,
+      userId,
+    }))
+  ) {
+    return []
+  }
+
+  const catalogCollection = await prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+    },
+    include: {
+      objectAssignments: {
+        include: {
+          answerCollection: {
+            where: { isDeleted: false },
+            select: {
+              id: true,
+              name: true,
+              owner: { select: { shortname: true } },
+              permissions: { where: { userId } },
+              accessRequests: { where: { userId }, select: { id: true } },
+            },
+          },
+          element: {
+            where: { isDeleted: false },
+            select: {
+              id: true,
+              name: true,
+              owner: { select: { shortname: true } },
+              permissions: { where: { userId } },
+              accessRequests: { where: { userId }, select: { id: true } },
+            },
+          },
+          liveQuiz: {
+            where: { isDeleted: false },
+            select: {
+              id: true,
+              name: true,
+              status: true,
+              owner: { select: { shortname: true } },
+              permissions: { where: { userId } },
+              accessRequests: { where: { userId }, select: { id: true } },
+              templateInfo: { select: { id: true } },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  return (
+    catalogCollection?.objectAssignments
+      .map(toCatalogObjectsFromAssignment)
+      .filter((object) => object !== null) ?? []
+  )
+}
+
 async function resolveObjectSharingRequest({
   prisma,
   emitter,
@@ -1728,6 +1915,42 @@ export const sharingRouter = router({
       ),
     }
   }),
+
+  catalogCollectionInfo: userProcedure
+    .input(catalogCollectionInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        catalogCollectionInfo: await getCatalogCollectionInfo({
+          prisma,
+          userId: ctx.user.sub,
+          catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  catalogCollections: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return {
+      catalogCollections: await getCatalogCollectionsList(prisma, ctx.user.sub),
+    }
+  }),
+
+  catalogObjects: userProcedure
+    .input(catalogCollectionInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        catalogObjects: await getCatalogObjects({
+          prisma,
+          userId: ctx.user.sub,
+          catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
 
   approveObjectSharingRequest: userFullAccessProcedure
     .input(approveObjectSharingRequestInput)

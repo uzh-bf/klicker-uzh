@@ -1,7 +1,6 @@
-import { useQuery } from '@apollo/client'
-import { GetCatalogCollectionInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
+import { trpc } from '../../lib/trpc'
 import ObjectImport from './actions/ObjectImport'
 import PendingSharingRequests from './actions/PendingSharingRequests'
 
@@ -11,40 +10,40 @@ function CatalogBrowser({
   catalogCollectionId?: string
 }) {
   const router = useRouter()
+  const isCollectionView = typeof catalogCollectionId === 'string'
 
   // get current collection metadata (only if inside a collection)
-  const { data: metaData, loading: metaDataLoading } = useQuery(
-    GetCatalogCollectionInfoDocument,
-    {
-      variables: {
-        catalogCollectionId: catalogCollectionId as string,
-      },
-      skip: typeof catalogCollectionId !== 'string',
-    }
-  )
+  const { data: metaData, isLoading: metaDataLoading } =
+    trpc.sharing.catalogCollectionInfo.useQuery(
+      { catalogCollectionId },
+      {
+        enabled: isCollectionView,
+      }
+    )
+  const collectionInfo = metaData?.catalogCollectionInfo
 
-  if (metaDataLoading) {
+  if (isCollectionView && metaDataLoading) {
     return <Loader />
   }
 
   // redirect user to home of catalog if access is not valid
   if (
     typeof catalogCollectionId !== 'undefined' &&
-    !metaData?.getCatalogCollectionInfo &&
+    !collectionInfo &&
     !metaDataLoading
   ) {
-    router.push('/resources/catalog')
+    void router.push('/resources/catalog')
   }
 
   return (
     <div className="h-full">
       <PendingSharingRequests />
       <ObjectImport
-        collectionName={metaData?.getCatalogCollectionInfo?.name}
+        collectionName={collectionInfo?.name}
         catalogCollectionId={catalogCollectionId as string | undefined}
         collectionEditor={
           (typeof catalogCollectionId === 'undefined' ||
-            metaData?.getCatalogCollectionInfo?.isEditor) ??
+            collectionInfo?.isEditor) ??
           false
         }
       />

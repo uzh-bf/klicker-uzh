@@ -48,3 +48,7 @@ export const approveObjectSharingRequestInput = sharingRequestInput.extend({
   permissionLevel: z.nativeEnum(PermissionLevel),
   propagation: z.boolean(),
 })
+
+export const catalogCollectionInput = z.object({
+  catalogCollectionId: z.string().nullish(),
+})

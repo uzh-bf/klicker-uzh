@@ -1,5 +1,9 @@
 import type * as DB from '@klicker-uzh/prisma/client'
-import { ObjectType, PermissionLevel } from '@klicker-uzh/prisma/client'
+import {
+  ObjectType,
+  PermissionLevel,
+  PublicationStatus,
+} from '@klicker-uzh/prisma/client'
 import type { ActivityLogModificationFieldType } from '@klicker-uzh/types'
 
 type ActivityLogEntrySource = DB.ActivityLogEntry & {
@@ -60,6 +64,44 @@ type CatalogSharingRequestSource = DB.AccessRequest & {
   catalogCollection?: ObjectNameSummary | null
   answerCollection?: ObjectNameSummary | null
   element?: ObjectNameSummary | null
+}
+
+type CatalogPermissionSummary = Pick<DB.DerivedPermission, 'permissionLevel'>
+
+type CatalogCollectionSource = Pick<
+  DB.CatalogCollection,
+  'id' | 'name' | 'access' | 'ownerId'
+> & {
+  owner?: Pick<DB.User, 'shortname'> | null
+  permissions: CatalogPermissionSummary[]
+  accessRequests: Pick<DB.AccessRequest, 'id'>[]
+}
+
+type CatalogObjectSource = {
+  id: number
+  name: string
+  owner?: Pick<DB.User, 'shortname'> | null
+  permissions: CatalogPermissionSummary[]
+  accessRequests: Pick<DB.AccessRequest, 'id'>[]
+}
+
+type CatalogLiveQuizSource = {
+  id: string
+  name: string
+  status: DB.PublicationStatus
+  owner?: Pick<DB.User, 'shortname'> | null
+  permissions: CatalogPermissionSummary[]
+  accessRequests: Pick<DB.AccessRequest, 'id'>[]
+  templateInfo?: { id: string } | null
+}
+
+type CatalogObjectAssignmentSource = Pick<
+  DB.CatalogCollectionAssignment,
+  'id' | 'access'
+> & {
+  answerCollection?: CatalogObjectSource | null
+  element?: CatalogObjectSource | null
+  liveQuiz?: CatalogLiveQuizSource | null
 }
 
 type DirectPermissionSource = DB.Permission & {
@@ -178,6 +220,157 @@ export function toCatalogSharingRequest(request: CatalogSharingRequestSource) {
       objectName: request.element.name,
       objectType: ObjectType.ELEMENT,
     }
+  }
+
+  return null
+}
+
+function getCatalogPermissionFlags(permissions: CatalogPermissionSummary[]) {
+  return permissions.reduce(
+    (acc, permission) => {
+      const level = permission.permissionLevel
+      return {
+        isOwner: acc.isOwner || level === PermissionLevel.OWNER,
+        isManager:
+          acc.isManager ||
+          level === PermissionLevel.OWNER ||
+          level === PermissionLevel.ADMIN,
+        isEditor:
+          acc.isEditor ||
+          level === PermissionLevel.OWNER ||
+          level === PermissionLevel.ADMIN ||
+          level === PermissionLevel.WRITE,
+        isShared: acc.isShared || level !== PermissionLevel.OWNER,
+      }
+    },
+    {
+      isOwner: false,
+      isManager: false,
+      isEditor: false,
+      isShared: false,
+    }
+  )
+}
+
+export function toCatalogCollection(collection: CatalogCollectionSource) {
+  const isRequested = collection.accessRequests.length > 0
+  const { isOwner, isManager, isEditor, isShared } = getCatalogPermissionFlags(
+    collection.permissions
+  )
+
+  return {
+    id: collection.id,
+    name: collection.name,
+    access: collection.access,
+    ownerShortname: collection.owner?.shortname ?? null,
+    isOwner,
+    isManager,
+    isEditor,
+    isRequested,
+    isShared,
+  }
+}
+
+function toCatalogObject({
+  assignmentId,
+  access,
+  objectId,
+  objectUuid,
+  name,
+  objectType,
+  templateId,
+  ownerShortname,
+  permissions,
+  accessRequests,
+}: {
+  assignmentId: number
+  access: DB.ObjectAccess
+  objectId: number | null
+  objectUuid: string | null
+  name: string
+  objectType: ObjectType
+  templateId: string | null
+  ownerShortname: string | null
+  permissions: CatalogPermissionSummary[]
+  accessRequests: Pick<DB.AccessRequest, 'id'>[]
+}) {
+  const permission = permissions[0]
+
+  return {
+    id: assignmentId,
+    objectId,
+    objectUuid,
+    name,
+    objectType,
+    templateId,
+    access,
+    ownerShortname,
+    isOwner: permission?.permissionLevel === PermissionLevel.OWNER,
+    isManager:
+      permission?.permissionLevel === PermissionLevel.ADMIN ||
+      permission?.permissionLevel === PermissionLevel.OWNER,
+    isRequested: accessRequests.length > 0,
+    isShared:
+      typeof permission !== 'undefined' &&
+      permission.permissionLevel !== PermissionLevel.OWNER,
+  }
+}
+
+export function toCatalogObjectsFromAssignment(
+  assignment: CatalogObjectAssignmentSource
+) {
+  if (assignment.answerCollection) {
+    const answerCollection = assignment.answerCollection
+
+    return toCatalogObject({
+      assignmentId: assignment.id,
+      access: assignment.access,
+      objectId: answerCollection.id,
+      objectUuid: null,
+      name: answerCollection.name,
+      objectType: ObjectType.ANSWER_COLLECTION,
+      templateId: null,
+      ownerShortname: answerCollection.owner?.shortname ?? null,
+      permissions: answerCollection.permissions,
+      accessRequests: answerCollection.accessRequests,
+    })
+  }
+
+  if (assignment.element) {
+    const element = assignment.element
+
+    return toCatalogObject({
+      assignmentId: assignment.id,
+      access: assignment.access,
+      objectId: element.id,
+      objectUuid: null,
+      name: element.name,
+      objectType: ObjectType.ELEMENT,
+      templateId: null,
+      ownerShortname: element.owner?.shortname ?? null,
+      permissions: element.permissions,
+      accessRequests: element.accessRequests,
+    })
+  }
+
+  if (
+    assignment.liveQuiz &&
+    assignment.liveQuiz.status === PublicationStatus.TEMPLATE
+  ) {
+    const liveQuiz = assignment.liveQuiz
+
+    return toCatalogObject({
+      assignmentId: assignment.id,
+      access: assignment.access,
+      objectId: null,
+      objectUuid: liveQuiz.id,
+      name: liveQuiz.name,
+      objectType: ObjectType.LIVE_QUIZ,
+      templateId: liveQuiz.templateInfo?.id ?? null,
+      ownerShortname: liveQuiz.owner?.shortname ?? null,
+      permissions: liveQuiz.permissions,
+      accessRequests: liveQuiz.accessRequests,
+    })
   }
 
   return null

@@ -1,19 +1,19 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObject,
   GetCatalogObjectsDocument,
   ObjectType,
   RemoveCatalogObjectAssignmentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { CatalogBrowserObject } from '../catalogBrowserTypes'
 
 function CatalogObjectRemovalModal({
   object,
   catalogCollectionId,
   onClose,
 }: {
-  object: CatalogObject
+  object: CatalogBrowserObject
   catalogCollectionId?: string
   onClose: () => void
 }) {

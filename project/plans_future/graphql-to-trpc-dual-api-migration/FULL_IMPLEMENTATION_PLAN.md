@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage sharing/catalog migration after S04K3. Catalog/resource list pages, catalog object request/copy/import flows, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage catalog migration with the next narrow mutation/action slice. Recommended next scope: catalog object request/copy/import/cancel actions and their React Query invalidation bridge. Collection CRUD/access mutations, add-object selection reads/mutations, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,68 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-04 Completed: S04K4 Manage Catalog Browser Reads
+
+Status: complete for the scoped slice. This slice migrated the manage catalog browser read path from Apollo GraphQL to tRPC while leaving catalog object request/copy/import/cancel actions, collection CRUD/access mutations, add-object selection reads/mutations, generated GraphQL type cleanup, Apollo providers, and S06 cleanup live.
+
+Scope:
+
+- `packages/api/src/trpc/schemas/sharing.ts`
+- `packages/api/src/trpc/dto/sharing.ts`
+- `packages/api/src/trpc/routers/sharing.ts`
+- focused API tests under `packages/api/src/trpc/__tests__/sharing-catalog-browser.test.ts`
+- `apps/frontend-manage/src/components/catalog/CatalogBrowser.tsx`
+- `apps/frontend-manage/src/components/catalog/actions/ObjectImport.tsx`
+- `apps/frontend-manage/src/components/catalog/actions/useObjectFilters.ts`
+- catalog browser item/action components only if needed for the tRPC DTO type boundary
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetCatalogCollectionInfoDocument`, `GetCatalogCollectionsListDocument`, `GetCatalogObjectsDocument`.
+- GraphQL resolver(s): `Query.getCatalogCollectionInfo`, `Query.getCatalogCollectionsList`, `Query.getCatalogObjects`.
+- Behavior source: `SharingService.getCatalogCollectionInfo`, `SharingService.getCatalogCollectionsList`, and `SharingService.getCatalogObjects` in `packages/graphql/src/services/sharing.ts`.
+- tRPC router.procedure: add `sharing.catalogCollectionInfo`, `sharing.catalogCollections`, and `sharing.catalogObjects`.
+- Input schema: `{ catalogCollectionId?: string | null }` for collection metadata and object list; no-input query for top-level collection list.
+- Output DTO: narrow catalog collection metadata/list DTOs and catalog object list DTO with existing UI fields (`id`, `objectId`, `objectUuid`, `name`, `objectType`, `templateId`, `access`, `ownerShortname`, `isOwner`, `isManager`, `isEditor`, `isRequested`, `isShared` where applicable).
+- Active frontend consumers: manage `CatalogBrowser`, `ObjectImport`, `useObjectFilters`, and catalog browser list item boundaries needed to accept the tRPC DTO.
+- Apollo cache/refetch behavior: replace read hooks with React Query queries. Existing Apollo mutation cache updates in catalog request/copy/import/cancel/access/collection CRUD flows remain live and may not update the new tRPC read cache until their own mutation slices add React Query invalidation.
+- React Query replacement: `trpc.sharing.catalogCollectionInfo.useQuery`, `trpc.sharing.catalogCollections.useQuery`, and `trpc.sharing.catalogObjects.useQuery`.
+- Browser verification path: delegated-login manage app, open `/resources/catalog`, verify catalog collection/object list rendering and screenshots. If local catalog data allows, open a catalog collection detail and verify the collection metadata/object-list path.
+- Cleanup blocked until: catalog object request/copy/import/cancel mutations, collection CRUD/access mutations, add-object workflow, broader cache bridges, generated GraphQL type cleanup, Apollo provider removal, and S06 cleanup gates.
+
+Implemented:
+
+- Added `sharing.catalogCollectionInfo`, `sharing.catalogCollections`, and `sharing.catalogObjects` tRPC reads with narrow DTO mapping for catalog collection summaries and catalog object rows.
+- Added focused API coverage for collection metadata, top-level collection filtering/mapping, restricted object access, and answer-collection/element/live-quiz-template object mapping.
+- Replaced Apollo catalog browser read hooks in `CatalogBrowser` and `ObjectImport` with React Query tRPC hooks.
+- Added a local catalog-browser DTO boundary so existing UI components can keep using generated enum runtime values while the migrated read data comes from tRPC.
+- Kept GraphQL action/mutation/cache paths live for retained catalog workflows. `CatalogObjectRemovalModal`, add-object/collection modals, access changes, and request/copy/import/cancel flows still intentionally use GraphQL until later mutation slices.
+- Fixed a browser-discovered React Query loading gate: the disabled collection-metadata query on the top-level catalog overview must not block rendering just because it has no data.
+
+Verification:
+
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- sharing-catalog-browser` (22 files / 199 tests).
+- Passed before the frontend-only loading fix, with no later API changes: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`.
+- Passed before the frontend-only loading fix, with no later API changes: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` with existing Next/PWA/i18n/page-data warnings.
+- Passed: Prettier check for all S04K4 touched files.
+- Passed: `git diff --check`.
+- Passed: scoped migrated-read audit for `GetCatalogCollectionInfoDocument|GetCatalogCollectionsListDocument|GetCatalogObjectsDocument` in the migrated read files.
+- Passed: touched API audit for `@klicker-uzh/graphql|packages/graphql|graphql/dist`.
+- Browser verified with `npx agent-browser` against local API/auth/manage on ports `3103`/`3106`/`3104`.
+  - Screenshots: `/tmp/klicker-manage-s04k4-login.png`, `/tmp/klicker-manage-s04k4-catalog-overview-fixed.png`, `/tmp/klicker-manage-s04k4-catalog-missing-collection-redirect.png`.
+  - Delegated login succeeded with seeded lecturer credentials.
+  - `/resources/catalog` rendered the empty seeded catalog overview without the loader.
+  - In-page fetch body capture across a client-side collection-route navigation showed catalog reads through tRPC and no catalog GraphQL read documents.
+  - Local seeded catalog data had no visible collection rows, so collection metadata was verified with a valid nonexistent UUID redirect path instead of an existing collection detail page.
+
+Notes:
+
+- Context7 MCP is still not exposed in this session after tool discovery; official tRPC v10 docs for React Query query/mutation hooks and validators are the fallback source for tRPC `10.45.2`.
+- Full-page route reloads still show baseline `/api/graphql` POST noise while Apollo remains mounted in manage; body capture on client-side navigation confirmed the migrated catalog read documents are not the source.
 
 ### 2026-06-04 Completed: S04K3 Manage Catalog Sharing Requests
 
