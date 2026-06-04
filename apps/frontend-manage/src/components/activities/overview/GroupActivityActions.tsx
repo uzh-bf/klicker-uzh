@@ -1,14 +1,13 @@
-import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
   ElementInstanceType,
   ObjectType,
   PublicationStatus,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from '../../courses/modals/GroupActivityEndingModal'
@@ -88,10 +87,7 @@ function GroupActivityActions({
   const [removalModal, setRemovalModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const { data: user } = trpc.user.profile.useQuery()
 
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(() => {

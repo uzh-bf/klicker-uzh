@@ -276,6 +276,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J8 Manage Activity Action Profile Reads
+
+Status: complete for the scoped slice. This slice migrated manage activity overview action-menu profile reads from Apollo `UserProfileDocument` to the existing tRPC `user.profile` procedure. It intentionally did not migrate activity list queries, activity mutations/action hooks, activity detail modals, sharing modal internals, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-manage/src/components/activities/overview/GroupActivityActions.tsx`
+- `apps/frontend-manage/src/components/activities/overview/LiveQuizActions.tsx`
+- `apps/frontend-manage/src/components/activities/overview/MicrolearningActions.tsx`
+- `apps/frontend-manage/src/components/activities/overview/PracticeQuizActions.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `UserProfileDocument` in activity overview action components, currently read with Apollo `cache-only`.
+- GraphQL resolver(s): `Query.userProfile`, guarded by `asUser`, reading the authenticated user by `ctx.user.sub`.
+- Behavior source: existing `user.profile` tRPC procedure and `toUserProfile` DTO in `packages/api`, already used by manage shell/settings/course header.
+- tRPC router.procedure: reuse `user.profile`.
+- Input schema: none.
+- Output DTO: existing user profile DTO; these action menus consume `privatePreview` and `publicPreview`.
+- Active frontend consumers: manage `/activities` action menus for group activities, live quizzes, microlearnings, and practice quizzes.
+- Apollo behavior: surrounding `GetUserActivitiesDocument`, `GetUserActivitiesCoursesDocument`, action mutations, and cache updates stay GraphQL for later slices.
+- Browser verification path: delegated-login manage app, open `/activities`, confirm representative activity action menus render expected share/analytics actions, and confirm action-menu profile reads use `/api/trpc/user.profile` without a `UserProfile` GraphQL payload.
+
+Implementation notes:
+
+- Context7 MCP is not exposed in this session; this slice reuses established local tRPC hook patterns.
+- No API change was needed because `user.profile` already returns the needed flags.
+- Replaced `useQuery(UserProfileDocument, { fetchPolicy: 'cache-only' })` in group activity, live quiz, microlearning, and practice quiz overview action components with `trpc.user.profile.useQuery()`.
+- Removed Apollo imports entirely from group activity, microlearning, and practice quiz action components; retained Apollo `useMutation` in `LiveQuizActions` for the still-GraphQL delete mutation/cache update.
+- Left activity overview page reads, filters, action mutations, sharing modal internals, and retained GraphQL cache behavior untouched for later slices.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`: passed for all S04J8 touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/PWA/i18n warnings only.
+- `git diff --check`: passed.
+- Scoped audit confirmed the four touched action components now use `trpc.user.profile.useQuery()` and no longer import `UserProfileDocument` or Apollo `useQuery`; `LiveQuizActions` retains Apollo only for the delete live quiz mutation.
+- Browser verification used `npx agent-browser` against a local stack on `localhost:3103` backend, `localhost:3104` manage, and `localhost:3106` auth. Backend used `APP_MANAGE_SUBDOMAIN=localhost` for local tRPC auth.
+- Browser `/activities` rendered seeded group activity, microlearning, practice quiz, and live quiz rows. Screenshot: `/tmp/klicker-manage-s04j8-activities-overview.png`.
+- Action menu checks confirmed the private-preview gated sharing actions still render: `Share Group Activity`, `Share Microlearning`, `Share Practice Quiz`, and `Share Live Quiz`. Live quiz menu also rendered `Convert to Template`. Representative screenshot: `/tmp/klicker-manage-s04j8-live-quiz-actions-menu.png`.
+- Client-side navigation fetch recorder from `/courses` back to `/activities` observed `/api/trpc/course.userCourses,user.profile`; retained GraphQL payloads were `GetUserActivitiesCourses` and `GetUserActivities`. `hasTrpcUserProfile: true`; `hasUserProfileGraphqlPayload: false`.
+- Cleanup: closed `agent-browser`, stopped verification servers on ports `3103`, `3104`, and `3106`, removed generated local verification `.env` files, and confirmed those ports were free afterward.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns were introduced beyond established local tRPC hooks.
+- Subagent delegation is not used because current tool policy only allows spawning when the user explicitly asks for subagents; performed explicit self-review before commit.
+
 ### 2026-06-04 Completed: S04J7 Manage Course Header Profile Read
 
 Status: complete for the scoped slice. This slice migrated the manage course overview header's profile read from Apollo `UserProfileDocument` to the existing tRPC `user.profile` procedure. It intentionally did not migrate the course detail `GetSingleCourseDocument` payload, retained course-settings mutation/cache update, course activity lists, activity authoring, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.

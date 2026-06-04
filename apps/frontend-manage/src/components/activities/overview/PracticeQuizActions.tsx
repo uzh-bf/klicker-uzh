@@ -1,12 +1,11 @@
-import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
   ObjectType,
   PublicationStatus,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
@@ -78,10 +77,7 @@ function PracticeQuizActions({
   const [removalModal, setRemovalModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const { data: user } = trpc.user.profile.useQuery()
 
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
@@ -6,11 +6,11 @@ import {
   GetSingleCourseDocument,
   ObjectType,
   PublicationStatus,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
@@ -150,10 +150,7 @@ function LiveQuizActions({
       },
     }
   )
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const { data: user } = trpc.user.profile.useQuery()
 
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(() => {
