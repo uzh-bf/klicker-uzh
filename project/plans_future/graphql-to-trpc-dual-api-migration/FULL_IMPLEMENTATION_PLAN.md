@@ -276,6 +276,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-04 Completed: S04J6 Manage Live Quiz Embedding Info Read
+
+Status: complete for the scoped slice. This slice migrated the manage live quiz embedding modal from Apollo `GetLiveQuizEmbeddingInfoDocument` to the existing tRPC `liveQuiz.embeddingInfo` procedure. It intentionally did not migrate live quiz cockpit reads/mutations, activity-list reads/actions, running-live-quiz header reads, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-manage/src/components/liveQuiz/EmbeddingModal.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): `GetLiveQuizEmbeddingInfoDocument` in `EmbeddingModal`.
+- GraphQL resolver(s): `Query.getLiveQuizEmbeddingInfo`.
+- Behavior source: existing `liveQuiz.embeddingInfo` tRPC procedure and `toLiveQuizEmbeddingInfo` DTO in `packages/api`, already covered by `control-read` tests.
+- tRPC router.procedure: reuse `liveQuiz.embeddingInfo`.
+- Input schema: existing `{ id: string }` live quiz input.
+- Output DTO: existing `{ embeddingInfo: { id, hmac, instances } | null }`.
+- Active frontend consumers: manage `EmbeddingModal`, reachable from live quiz activity actions and cockpit timeline.
+- Apollo behavior: surrounding live quiz/cockpit/activity reads and mutations stay GraphQL for later slices.
+- Browser verification path: delegated-login manage app, open a seeded live quiz embedding modal, confirm evaluation and per-question links render, and confirm modal-open network calls use `/api/trpc/liveQuiz.embeddingInfo` without `GetLiveQuizEmbeddingInfo`.
+
+Implementation notes:
+
+- Context7 MCP is not exposed in this session; this slice reuses established local tRPC hook patterns.
+- No API change was needed because `liveQuiz.embeddingInfo` and focused tests already exist.
+- Replaced `useQuery(GetLiveQuizEmbeddingInfoDocument)` with `trpc.liveQuiz.embeddingInfo.useQuery({ id: quizId })` in `EmbeddingModal`.
+- Replaced GraphQL response reads from `data.getLiveQuizEmbeddingInfo` with the tRPC DTO field `data.embeddingInfo`.
+- Left the surrounding live quiz action, cockpit, and activity GraphQL consumers untouched for later slices.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/PWA/i18n warnings only.
+- `git diff --check`: passed.
+- Scoped audit confirmed `EmbeddingModal` now uses `trpc.liveQuiz.embeddingInfo` and no longer imports Apollo, `GetLiveQuizEmbeddingInfoDocument`, or generated GraphQL ops.
+- Browser verification used `npx agent-browser` against existing local stack listeners from this worktree on `localhost:3103` backend, `localhost:3104` manage, and `localhost:3106` auth.
+- Delegated-login manage `/activities` rendered the seeded draft live quiz row `Live Quiz Instance Update`. Screenshot before modal: `/tmp/klicker-manage-s04j6-activities-before-modal.png`.
+- Opening `Embed Evaluation` rendered evaluation and per-question embedding links. Screenshot: `/tmp/klicker-manage-s04j6-embedding-modal.png`.
+- Modal-open fetch recorder observed exactly `/api/trpc/liveQuiz.embeddingInfo?batch=1&input=...97af4226-c707-4341-8c54-d99bf937a189...`, `hasTrpcEmbeddingInfo: true`, and `hasGetLiveQuizEmbeddingInfo: false`.
+- Cleanup: closed `agent-browser`, stopped verification server PIDs listening on ports `3103`, `3104`, and `3106`, removed generated local verification `.env` files, and confirmed those ports were free afterward.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns were introduced beyond established local tRPC hooks.
+- Subagent delegation is not used because current tool policy only allows spawning when the user explicitly asks for subagents; performed explicit self-review before commit.
+
 ### 2026-06-04 Completed: S04J5 Manage Analytics Overview Read
 
 Status: complete for the scoped slice. This slice migrated the manage `/analytics` overview page read from Apollo `GetUserCoursesDocument` to the existing tRPC `course.userCourses` procedure and removed generated GraphQL `Course` type imports from the overview display components. It intentionally did not migrate analytics detail/dashboard result queries, course activity analytics reads, mutations, Apollo providers, generated GraphQL artifacts, or GraphQL cleanup.
