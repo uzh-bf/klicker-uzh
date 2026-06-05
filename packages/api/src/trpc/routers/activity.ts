@@ -30,6 +30,7 @@ import {
   checkTemplateElementExistsInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
+  templateInformationInput,
   templatePreviewAnswerCollectionEntriesInput,
   userActivitiesInput,
 } from '../schemas/activity.js'
@@ -128,6 +129,26 @@ function toTemplateElementStackDto(stack: TemplateElementStackRecord) {
     displayName: stack.displayName ?? null,
     description: stack.description ?? null,
     elements: stack.elements?.map(toTemplateElementInstanceDto) ?? null,
+  }
+}
+
+type TemplateInformationRecord = {
+  name: string
+  templateInfo: {
+    id: string
+    description: string
+    instructions: string
+  } | null
+}
+
+function toTemplateInformationDto(activity: TemplateInformationRecord | null) {
+  if (!activity?.templateInfo) return null
+
+  return {
+    templateId: activity.templateInfo.id,
+    name: activity.name,
+    description: activity.templateInfo.description,
+    instructions: activity.templateInfo.instructions,
   }
 }
 
@@ -723,6 +744,79 @@ export const activityRouter = router({
           return item ? [item] : []
         }),
       }
+    }),
+
+  templateInformation: userProcedure
+    .input(templateInformationInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canWrite = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.activityId,
+          activityType: input.activityType,
+        },
+        PermissionLevel.WRITE
+      )
+
+      if (!canWrite) return { templateInformation: null }
+
+      const select = {
+        name: true,
+        templateInfo: {
+          select: {
+            id: true,
+            description: true,
+            instructions: true,
+          },
+        },
+      }
+
+      if (input.activityType === ActivityType.LIVE_QUIZ) {
+        const liveQuiz = await prisma.liveQuiz.findUnique({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.TEMPLATE,
+          },
+          select,
+        })
+
+        return { templateInformation: toTemplateInformationDto(liveQuiz) }
+      }
+
+      if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+        const practiceQuiz = await prisma.practiceQuiz.findUnique({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.TEMPLATE,
+          },
+          select,
+        })
+
+        return { templateInformation: toTemplateInformationDto(practiceQuiz) }
+      }
+
+      if (input.activityType === ActivityType.MICRO_LEARNING) {
+        const microLearning = await prisma.microLearning.findUnique({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.TEMPLATE,
+          },
+          select,
+        })
+
+        return { templateInformation: toTemplateInformationDto(microLearning) }
+      }
+
+      const groupActivity = await prisma.groupActivity.findUnique({
+        where: {
+          id: input.activityId,
+          status: PublicationStatus.TEMPLATE,
+        },
+        select,
+      })
+
+      return { templateInformation: toTemplateInformationDto(groupActivity) }
     }),
 
   template: userProcedure

@@ -1,14 +1,15 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   ActivityType,
   EditActivityTemplateDocument,
-  GetTemplateInformationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateEditModalProps {
@@ -20,6 +21,13 @@ interface TemplateEditModalProps {
   refetchActivities?: () => Promise<void>
 }
 
+const trpcActivityTypeByGraphqlActivityType = {
+  [ActivityType.GroupActivity]: ApiActivityType.GROUP_ACTIVITY,
+  [ActivityType.LiveQuiz]: ApiActivityType.LIVE_QUIZ,
+  [ActivityType.MicroLearning]: ApiActivityType.MICRO_LEARNING,
+  [ActivityType.PracticeQuiz]: ApiActivityType.PRACTICE_QUIZ,
+} satisfies Record<ActivityType, ApiActivityType>
+
 function TemplateEditModal({
   activityId,
   activityType,
@@ -30,20 +38,20 @@ function TemplateEditModal({
 }: TemplateEditModalProps) {
   const t = useTranslations()
   const [editActivityTemplate] = useMutation(EditActivityTemplateDocument)
-  const { data, loading } = useQuery(GetTemplateInformationDocument, {
-    variables: {
+  const trpcActivityType = trpcActivityTypeByGraphqlActivityType[activityType]
+  const { data, isLoading } = trpc.activity.templateInformation.useQuery(
+    {
       activityId,
-      activityType,
+      activityType: trpcActivityType,
     },
-    skip: !open,
-    fetchPolicy: 'cache-and-network',
-  })
-  const info = data?.getTemplateInformation
+    { enabled: Boolean(activityId) }
+  )
+  const info = data?.templateInformation
 
   return (
     <Modal
       open
-      loading={loading || !info}
+      loading={isLoading || !info}
       title={t('manage.template.editTemplate')}
       onClose={onClose}
       className={{ content: 'gap-2 pb-2' }}

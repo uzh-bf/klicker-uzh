@@ -795,6 +795,107 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('returns template information for writable live quiz templates', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const liveQuizFindUnique = vi.fn().mockResolvedValue({
+      name: 'Template live quiz',
+      templateInfo: {
+        id: 'template-1',
+        description: 'Template description',
+        instructions: 'Template instructions',
+      },
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.templateInformation({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({
+      templateInformation: {
+        templateId: 'template-1',
+        name: 'Template live quiz',
+        description: 'Template description',
+        instructions: 'Template instructions',
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(liveQuizFindUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'live-quiz-1',
+        status: PublicationStatus.TEMPLATE,
+      },
+      select: {
+        name: true,
+        templateInfo: {
+          select: {
+            id: true,
+            description: true,
+            instructions: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('returns null template information when write permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const liveQuizFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.templateInformation({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({ templateInformation: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(liveQuizFindUnique).not.toHaveBeenCalled()
+  })
+
   test('returns null for inaccessible activity templates', async () => {
     const templateFindUnique = vi.fn().mockResolvedValue(null)
     const prisma = {
