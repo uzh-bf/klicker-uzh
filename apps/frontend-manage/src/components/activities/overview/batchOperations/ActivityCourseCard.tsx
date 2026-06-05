@@ -1,6 +1,5 @@
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Course } from '@klicker-uzh/graphql/dist/ops'
 import {
   Card,
   CardContent,
@@ -13,20 +12,13 @@ import {
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ActivityBatchOperationActions } from './types'
+import {
+  ActivityBatchOperationActions,
+  ActivityBatchOperationCourse,
+} from './types'
 
 interface ActivityCourseCardProps {
-  courses: Pick<
-    Course,
-    | 'id'
-    | 'name'
-    | 'isGamificationEnabled'
-    | 'isAssessmentEnabled'
-    | 'isGroupCreationEnabled'
-    | 'startDate'
-    | 'endDate'
-    | 'groupDeadlineDate'
-  >[]
+  courses: ActivityBatchOperationCourse[]
   selectedActions: ActivityBatchOperationActions
   setSelectedActions: Dispatch<SetStateAction<ActivityBatchOperationActions>>
 }

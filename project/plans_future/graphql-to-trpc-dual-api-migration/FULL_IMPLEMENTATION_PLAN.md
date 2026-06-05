@@ -276,6 +276,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M15 Manage Activity Batch Operations Course Read
+
+Status: complete for the scoped slice. Scope was the active-course read inside `ActivityBatchOperationsModal` and the local course option type passed to `ActivityCourseCard`. This slice intentionally leaves the `ApplyActivityBatchOperationsDocument` mutation, generated activity types in the activities overview, Apollo providers, generated GraphQL operation cleanup, realtime, and S06 cleanup live.
+
+Operation mapping:
+
+```text
+Slice: S04M15 Manage Activity Batch Operations Course Read
+GraphQL operation(s): GetActiveUserCourses without activityId/activityType variables
+GraphQL resolver(s): Query.getActiveUserCourses
+Behavior source: packages/graphql/src/services/courses.ts getActiveUserCourses no-argument branch, already mirrored by course.activeUserCourses in S04M13/S04M14
+tRPC router.procedure: course.activeUserCourses
+Input schema: { activityId?: string | null; activityType?: ActivityType | null } | null, called without input in this slice
+Output DTO: { activeUserCourses: ActiveUserCourse[] }
+Active frontend consumers: apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx
+Apollo cache/refetch/subscription behavior: network-only read query; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: trpc.course.activeUserCourses.useQuery()
+Browser verification path: branch-local manage app; delegated login; open /activities; select at least one draft/scheduled activity; open Batch Operations; verify /api/trpc/course.activeUserCourses and course action card renders
+Cleanup blocked until: batch operation mutation migration, remaining activity overview/generated type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Write scope:
+
+- `apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx`
+- `apps/frontend-manage/src/components/activities/overview/batchOperations/ActivityCourseCard.tsx`
+- `apps/frontend-manage/src/components/activities/overview/batchOperations/types.ts`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Replaced `ActivityBatchOperationsModal`'s `useQuery(GetActiveUserCoursesDocument, { fetchPolicy: 'network-only' })` with `trpc.course.activeUserCourses.useQuery()`.
+- Passed `dataCourses?.activeUserCourses` to `ActivityCourseCard`, preserving the existing disabled/unselected course-card behavior.
+- Added a narrow `ActivityBatchOperationCourse` type in the local batch operation types file and removed `ActivityCourseCard`'s generated GraphQL `Course` type import.
+- Removed a stale commented fragment near the modal import block while touching the same lines.
+- No API code or tests changed in this slice; `course.activeUserCourses` no-argument behavior is covered by S04M13/S04M14 API tests.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing Next/PWA/Browserslist/i18n/MISSING_MESSAGE and large-page-data warnings only.
+- Static audit `rg -n "GetActiveUserCoursesDocument|GetActiveUserCourses\\b" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n`: no matches.
+- Touched batch course card/types no longer import generated GraphQL course types; the modal still imports generated activity/mutation types for the intentionally-live batch mutation path.
+- Browser verification used a branch-local stack on ports `3133` backend, `3134` manage, and `3136` auth. Screenshots: `/tmp/agent-browser-shots/s04m15-before.png`, `/tmp/agent-browser-shots/s04m15-activities.png`, and `/tmp/agent-browser-shots/s04m15-batch-modal.png`.
+- Browser smoke opened `/activities`, selected `Live Quiz Instance Update`, opened `Batch operations (1 activities)`, and confirmed the course assignment action card rendered.
+- Browser resource timing showed `http://127.0.0.1:3133/api/trpc/course.activeUserCourses?batch=1...`; `/api/graphql` also appeared for unrelated Apollo-backed activity overview calls that this slice intentionally leaves live.
+- Local verification cleanup closed `agent-browser`, stopped backend/auth/manage listeners, confirmed ports `3133`, `3134`, and `3136` were free, and left only the older pre-existing backend Rollup watcher `40246` untouched.
+
+Review / simplification:
+
+- Multi-agent review/simplification was not run because the exposed tool policy allows spawning subagents only when the user explicitly asks for them. Self-review kept the slice frontend-only, reused the existing tested `course.activeUserCourses` API, and removed the incidental stale comment fragment in the touched modal import area.
+
+Next candidate:
+
+- Continue S04 manage activity authoring by migrating a small activity mutation path, for example template creation (`CreateLiveQuizFromTemplateDocument`) or the batch operation mutation (`ApplyActivityBatchOperationsDocument`), while leaving GraphQL live until cleanup gates.
+
 ### 2026-06-05 Completed: S04M14 Manage Activity Creation Active Course Read
 
 Status: complete for the scoped slice. Scope was the active-course read inside `ActivityCreation`, including the optional edit-mode activity context used to include the currently linked course when the user has write access to the edited activity. This slice intentionally leaves the other activity detail reads in `ActivityCreation`, the batch operations active-course read, activity mutations, Apollo provider cleanup, generated GraphQL type cleanup, realtime, and S06 cleanup live.

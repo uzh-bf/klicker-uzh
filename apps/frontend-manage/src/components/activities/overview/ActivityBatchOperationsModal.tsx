@@ -1,24 +1,19 @@
+import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
   ApplyActivityBatchOperationsDocument,
-  GetActiveUserCoursesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-//           : null,
-//       course: selectedActions.course ?? undefined,
-//       liveQuizPoints: selectedActions.liveQuizPoints ?? undefined,
-//     },
-//   })ops'
-import { useMutation, useQuery } from '@apollo/client'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { isShallowEqual } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
 import ActivityBatchOperationsInfo from './batchOperations/ActivityBatchOperationsInfo'
 import ActivityCourseCard from './batchOperations/ActivityCourseCard'
 import ActivityLiveQuizPointsCard from './batchOperations/ActivityLiveQuizPointsCard'
@@ -56,10 +51,8 @@ function ActivityBatchOperationsModal({
     ApplyActivityBatchOperationsDocument
   )
 
-  const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetActiveUserCoursesDocument,
-    { fetchPolicy: 'network-only' }
-  )
+  const { isLoading: loadingCourses, data: dataCourses } =
+    trpc.course.activeUserCourses.useQuery()
 
   // whenever the applied filters change, update the affected activities
   useEffect(() => {
@@ -272,7 +265,7 @@ function ActivityBatchOperationsModal({
               <ActivityCourseCard
                 selectedActions={selectedActions}
                 setSelectedActions={setSelectedActions}
-                courses={dataCourses?.getActiveUserCourses ?? []}
+                courses={dataCourses?.activeUserCourses ?? []}
               />
               <ActivityLiveQuizPointsCard
                 selectedActions={selectedActions}
