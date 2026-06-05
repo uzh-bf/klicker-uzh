@@ -1,4 +1,8 @@
-import { ObjectType, PermissionLevel } from '@klicker-uzh/prisma/client'
+import {
+  AuditLogType,
+  ObjectType,
+  PermissionLevel,
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { getPrisma } from '../context.js'
 import {
@@ -383,6 +387,92 @@ async function deleteAnswerCollection({
   return collectionId
 }
 
+async function removeAnswerCollection({
+  prisma,
+  userId,
+  id,
+  emitter,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  id: number
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+}) {
+  const permission = await prisma.permission.findUnique({
+    where: {
+      answerCollectionId_userId: {
+        answerCollectionId: id,
+        userId,
+      },
+    },
+    include: {
+      answerCollection: {
+        include: {
+          _count: {
+            select: {
+              linkedElements: {
+                where: { permissions: { some: { userId } } },
+              },
+              linkedTemplates: {
+                where: {
+                  OR: [
+                    { liveQuiz: { permissions: { some: { userId } } } },
+                    { practiceQuiz: { permissions: { some: { userId } } } },
+                    { microLearning: { permissions: { some: { userId } } } },
+                    { groupActivity: { permissions: { some: { userId } } } },
+                  ],
+                },
+              },
+              permissions: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const collection = permission?.answerCollection
+  if (
+    !permission ||
+    !collection ||
+    collection._count.linkedElements > 0 ||
+    collection._count.linkedTemplates > 0 ||
+    collection.ownerId === userId
+  ) {
+    return null
+  }
+
+  if (collection._count.permissions === 1 && collection.isDeleted === true) {
+    await prisma.answerCollection.delete({ where: { id } })
+  } else {
+    await prisma.$transaction(
+      async (transaction) => {
+        await transaction.permission.delete({ where: { id: permission.id } })
+
+        await transaction.auditLogEntry.create({
+          data: {
+            type: AuditLogType.PERMISSION_REMOVED,
+            objectId: String(id),
+            objectType: ObjectType.ANSWER_COLLECTION,
+            sourceUserId: userId,
+            message: `User ${userId} removed own permission on ${ObjectType.ANSWER_COLLECTION} (ID: ${id})`,
+          },
+        })
+
+        await recomputeDerivedPermissions(
+          { answerCollectionId: id, userId },
+          transaction
+        )
+      },
+      { timeout: 60000 }
+    )
+  }
+
+  emitAnswerCollectionInvalidation({ collectionId: collection.id, emitter })
+
+  return collection.id
+}
+
 async function addAnswerCollectionOption({
   prisma,
   collectionId,
@@ -579,6 +669,21 @@ export const resourcesRouter = router({
               emitter: ctx.emitter,
             })
           : null,
+      }
+    }),
+
+  removeAnswerCollection: userFullAccessProcedure
+    .input(answerCollectionIdInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        removedAnswerCollectionId: await removeAnswerCollection({
+          prisma,
+          userId: ctx.user.sub,
+          id: input.id,
+          emitter: ctx.emitter,
+        }),
       }
     }),
 

@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CreateAnswerCollectionDocument,
   ElementType,
   FlagOutdatedElementInstancesDocument,
   GetSingleElementDocument,
@@ -60,6 +59,8 @@ function ElementEditModal({
 }: ElementEditModalProps): React.ReactElement {
   const router = useRouter()
   const utils = trpc.useUtils()
+  const createAnswerCollectionMutation =
+    trpc.resources.createAnswerCollection.useMutation()
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
@@ -102,7 +103,6 @@ function ElementEditModal({
   const [manipulateCaseStudyQuestion] = useMutation(
     ManipulateCaseStudyQuestionDocument
   )
-  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
   const [flagOutdatedElementInstances] = useMutation(
     FlagOutdatedElementInstancesDocument
@@ -271,7 +271,13 @@ function ElementEditModal({
                 values.options.itemSelectionMode === 'new'
                   ? await createInlineSelectionCollection({
                       values,
-                      createAnswerCollection,
+                      createAnswerCollection: async (input) => {
+                        const res =
+                          await createAnswerCollectionMutation.mutateAsync(
+                            input
+                          )
+                        return res.answerCollection
+                      },
                       onAnswerCollectionCreated: () => {
                         void utils.resources.answerCollectionsInfo.invalidate()
                       },
@@ -315,7 +321,13 @@ function ElementEditModal({
                 values.options.itemSelectionMode === 'new'
                   ? await createInlineCaseStudyCollection({
                       values,
-                      createAnswerCollection,
+                      createAnswerCollection: async (input) => {
+                        const res =
+                          await createAnswerCollectionMutation.mutateAsync(
+                            input
+                          )
+                        return res.answerCollection
+                      },
                       onAnswerCollectionCreated: () => {
                         void utils.resources.answerCollectionsInfo.invalidate()
                       },

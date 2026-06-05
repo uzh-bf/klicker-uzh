@@ -1,6 +1,4 @@
-import { useMutation } from '@apollo/client'
 import {
-  CreateAnswerCollectionDocument,
   ElementStatus,
   ElementType,
   TemplateElementManipulationInput,
@@ -22,7 +20,8 @@ import extractFormValuesFromElementInstance from '../extractFormValuesFromElemen
 import { LiveQuizTemplateFormValues } from '../types'
 
 function useProcessLiveQuizTemplateBlocksData() {
-  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
+  const createAnswerCollectionMutation =
+    trpc.resources.createAnswerCollection.useMutation()
   const utils = trpc.useUtils()
 
   const processLiveQuizTemplateBlocksData = async ({
@@ -136,7 +135,13 @@ function useProcessLiveQuizTemplateBlocksData() {
                   values.options.itemSelectionMode === 'new'
                     ? await createInlineSelectionCollection({
                         values,
-                        createAnswerCollection,
+                        createAnswerCollection: async (input) => {
+                          const res =
+                            await createAnswerCollectionMutation.mutateAsync(
+                              input
+                            )
+                          return res.answerCollection
+                        },
                         onAnswerCollectionCreated: () => {
                           void utils.resources.answerCollectionsInfo.invalidate()
                         },
@@ -177,7 +182,13 @@ function useProcessLiveQuizTemplateBlocksData() {
                   values.options.itemSelectionMode === 'new'
                     ? await createInlineCaseStudyCollection({
                         values,
-                        createAnswerCollection,
+                        createAnswerCollection: async (input) => {
+                          const res =
+                            await createAnswerCollectionMutation.mutateAsync(
+                              input
+                            )
+                          return res.answerCollection
+                        },
                         onAnswerCollectionCreated: () => {
                           void utils.resources.answerCollectionsInfo.invalidate()
                         },

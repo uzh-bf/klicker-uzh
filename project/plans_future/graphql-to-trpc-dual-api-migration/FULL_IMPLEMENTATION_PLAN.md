@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage catalog migration with the next narrow mutation/action slice. Recommended next scope: catalog object request/copy/import/cancel actions and their React Query invalidation bridge. Collection CRUD/access mutations, add-object selection reads/mutations, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: remaining generic shared-object removal callers or the next element/template manipulation mutation group. Catalog object request/copy/import/cancel actions, add-object selection reads/mutations, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,48 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04K10 Manage Inline Answer Collection Creation and Removal
+
+Status: complete for the scoped slice. This slice removed the remaining answer-collection-specific Apollo mutation callers in manage element/template helper workflows and the answer-collection shared-object removal modal. Generic `RemoveObjectDocument` users for activities, courses, and elements; sharing modals; generated `ObjectType` imports in other components; Apollo providers; generated GraphQL type cleanup; and S06 cleanup remain live.
+
+Implemented:
+
+- Reused the S04K9 `resources.createAnswerCollection` tRPC procedure for inline Selection and Case Study answer-collection creation in `ElementEditModal` and live-quiz template block processing.
+- Changed `createInlineSelectionCollection` and `createInlineCaseStudyCollection` to accept a narrow tRPC-shaped create callback and removed their Apollo mutation/cache update types.
+- Added `resources.removeAnswerCollection` with the existing `answerCollectionIdInput` schema; no schema file change was needed.
+- Mirrored `packages/graphql/src/services/resources.ts` shared answer-collection removal behavior: nullable blocked result for missing, owned, or user-linked collections; hard delete of already soft-deleted last-permission collections; direct permission deletion; audit log creation; derived-permission recomputation; and answer-collection invalidation.
+- Added focused API tests for successful shared removal, owned-collection no-op, and final hard delete of an already soft-deleted last-permission collection.
+- Migrated `AnswerCollectionRemovalModal` from generic GraphQL `RemoveObjectDocument` plus Apollo cache update to `resources.removeAnswerCollection` plus `resources.answerCollectionsInfo` invalidation.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- resources-answer-collections` passed: 26 test files, 237 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after correcting the removal modal translation key constant to `ANSWER_COLLECTION`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config/message lookup, Browserslist freshness, and large page data.
+- `git diff --check` passed.
+- Scoped inline creation audit found no `CreateAnswerCollectionDocument`, `CreateAnswerCollectionMutation`, `GetAnswerCollectionsInfoDocument`, `ApolloCache`, `DefaultContext`, `FetchResult`, or `MutationFunctionOptions` in the touched inline helper/caller files.
+- Scoped removal modal audit found no `@apollo/client`, `RemoveObjectDocument`, `GetAnswerCollectionsInfoDocument`, or generated `ObjectType` import usage in `AnswerCollectionRemovalModal`.
+- Touched API audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` coupling in the resources router/test files.
+- Browser verification used local backend/auth/manage on ports 3103/3106/3104 with delegated login. `npx agent-browser` failed because the npm registry was unavailable in the restricted network environment, so installed `agent-browser` was used after approval.
+- Browser verification loaded `/resources/answerCollections`, opened Library element creation, switched to Selection, chose the inline "enter the available options manually" path, added two manual options, saved the element, and confirmed the generated collection `AC: S04K10 inline selection smoke` appeared with 2 answers on `/resources/answerCollections`.
+- Screenshots: `/tmp/agent-browser-shots/s04k10-answer-collections-authenticated.png`, `/tmp/agent-browser-shots/s04k10-library-after-backend-dev.png`, `/tmp/agent-browser-shots/s04k10-selection-modal.png`, `/tmp/agent-browser-shots/s04k10-inline-manual-mode.png`, `/tmp/agent-browser-shots/s04k10-inline-manual-two-options.png`, `/tmp/agent-browser-shots/s04k10-inline-create-after-save.png`, and `/tmp/agent-browser-shots/s04k10-answer-collections-after-inline-create.png`.
+- Browser removal verification was not data-accessible because the local seeded/manage state exposed no removable shared answer collection. Removal behavior is covered by focused API tests; the page-level answer collection resource view was verified after inline creation.
+- Verification servers and agent-browser were stopped after runtime checks; ports 3103, 3104, and 3106 were free afterward.
+- Context7 status: unavailable in this session; local installed tRPC patterns only.
+
+Review and simplification:
+
+- Self-review only: subagent tooling was not available under the current tool policy without explicit user delegation. No correctness issues were found after comparing the tRPC procedure against the existing GraphQL service behavior.
+- Kept the tRPC create adapter local to the two call sites instead of adding a new abstraction; the duplication is small and preserves the current helper boundary.
+- Kept generated GraphQL enum/type imports that still back unmigrated element/template manipulation flows; broader generated type cleanup remains gated by later slices.
+
+Next:
+
+- Continue with the next narrow manage workflow slice: remaining generic shared-object removal callers or the next element/template manipulation mutation group.
 
 ### 2026-06-05 Completed: S04K9 Manage Answer Collection Resource Mutations
 

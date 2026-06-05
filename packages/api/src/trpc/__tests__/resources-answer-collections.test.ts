@@ -1,4 +1,6 @@
 import {
+  AuditLogType,
+  ObjectType,
   PermissionLevel,
   UserLoginScope,
   UserRole,
@@ -504,5 +506,185 @@ describe('resources answer collection router', () => {
     ).resolves.toEqual({ deletedAnswerCollectionEntryId: null })
     expect(prisma?.answerCollectionEntry.delete).not.toHaveBeenCalled()
     expect(prisma?.answerCollection.update).not.toHaveBeenCalled()
+  })
+
+  test('removes a shared answer collection and recomputes permissions', async () => {
+    const transactionClient = {
+      permission: {
+        delete: vi.fn(),
+      },
+      auditLogEntry: {
+        create: vi.fn(),
+      },
+    }
+    const transaction = vi.fn(async (callback) => callback(transactionClient))
+    const emit = vi.fn()
+    const prisma = {
+      permission: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 5,
+          answerCollection: {
+            id: 21,
+            ownerId: 'other-user',
+            isDeleted: false,
+            _count: {
+              linkedElements: 0,
+              linkedTemplates: 0,
+              permissions: 2,
+            },
+          },
+        }),
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { emit } as unknown as TRPCContext['emitter'])
+    )
+
+    await expect(
+      caller.resources.removeAnswerCollection({ id: 21 })
+    ).resolves.toEqual({ removedAnswerCollectionId: 21 })
+    expect(prisma?.permission.findUnique).toHaveBeenCalledWith({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: 21,
+          userId: user.id,
+        },
+      },
+      include: {
+        answerCollection: {
+          include: {
+            _count: {
+              select: {
+                linkedElements: {
+                  where: { permissions: { some: { userId: user.id } } },
+                },
+                linkedTemplates: {
+                  where: {
+                    OR: [
+                      {
+                        liveQuiz: {
+                          permissions: { some: { userId: user.id } },
+                        },
+                      },
+                      {
+                        practiceQuiz: {
+                          permissions: { some: { userId: user.id } },
+                        },
+                      },
+                      {
+                        microLearning: {
+                          permissions: { some: { userId: user.id } },
+                        },
+                      },
+                      {
+                        groupActivity: {
+                          permissions: { some: { userId: user.id } },
+                        },
+                      },
+                    ],
+                  },
+                },
+                permissions: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: 60000,
+    })
+    expect(transactionClient.permission.delete).toHaveBeenCalledWith({
+      where: { id: 5 },
+    })
+    expect(transactionClient.auditLogEntry.create).toHaveBeenCalledWith({
+      data: {
+        type: AuditLogType.PERMISSION_REMOVED,
+        objectId: '21',
+        objectType: ObjectType.ANSWER_COLLECTION,
+        sourceUserId: user.id,
+        message: `User ${user.id} removed own permission on ${ObjectType.ANSWER_COLLECTION} (ID: 21)`,
+      },
+    })
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      { answerCollectionId: 21, userId: user.id },
+      transactionClient
+    )
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'AnswerCollection',
+      id: 21,
+    })
+  })
+
+  test('does not remove an owned answer collection', async () => {
+    const prisma = {
+      permission: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 5,
+          answerCollection: {
+            id: 21,
+            ownerId: user.id,
+            isDeleted: false,
+            _count: {
+              linkedElements: 0,
+              linkedTemplates: 0,
+              permissions: 1,
+            },
+          },
+        }),
+      },
+      answerCollection: {
+        delete: vi.fn(),
+      },
+      $transaction: vi.fn(),
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.resources.removeAnswerCollection({ id: 21 })
+    ).resolves.toEqual({ removedAnswerCollectionId: null })
+    expect(prisma?.answerCollection.delete).not.toHaveBeenCalled()
+    expect(prisma?.$transaction).not.toHaveBeenCalled()
+  })
+
+  test('fully deletes a removed soft-deleted answer collection when no other permissions remain', async () => {
+    const emit = vi.fn()
+    const prisma = {
+      permission: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 5,
+          answerCollection: {
+            id: 21,
+            ownerId: 'other-user',
+            isDeleted: true,
+            _count: {
+              linkedElements: 0,
+              linkedTemplates: 0,
+              permissions: 1,
+            },
+          },
+        }),
+      },
+      answerCollection: {
+        delete: vi.fn(),
+      },
+      $transaction: vi.fn(),
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { emit } as unknown as TRPCContext['emitter'])
+    )
+
+    await expect(
+      caller.resources.removeAnswerCollection({ id: 21 })
+    ).resolves.toEqual({ removedAnswerCollectionId: 21 })
+    expect(prisma?.answerCollection.delete).toHaveBeenCalledWith({
+      where: { id: 21 },
+    })
+    expect(prisma?.$transaction).not.toHaveBeenCalled()
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'AnswerCollection',
+      id: 21,
+    })
   })
 })

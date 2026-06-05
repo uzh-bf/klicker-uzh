@@ -1,14 +1,10 @@
-import { useMutation } from '@apollo/client'
 import { faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetAnswerCollectionsInfoDocument,
-  ObjectType,
-  RemoveObjectDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../lib/trpc'
+
+const answerCollectionObjectType = 'ANSWER_COLLECTION'
 
 function AnswerCollectionRemovalModal({
   id,
@@ -21,8 +17,8 @@ function AnswerCollectionRemovalModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [removeObject, { loading: removing }] =
-    useMutation(RemoveObjectDocument)
+  const removeAnswerCollection =
+    trpc.resources.removeAnswerCollection.useMutation()
 
   const onRemovalError = () =>
     toast({
@@ -34,49 +30,23 @@ function AnswerCollectionRemovalModal({
   return (
     <Modal
       open
-      title={t(`manage.sharing.remove${ObjectType.AnswerCollection}`)}
+      title={t(`manage.sharing.remove${answerCollectionObjectType}`)}
       onClose={onClose}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!removing && <FontAwesomeIcon icon={faX} />}
+          {!removeAnswerCollection.isLoading && <FontAwesomeIcon icon={faX} />}
           <span>{t('manage.sharing.confirmRemoval')}</span>
         </div>
       }
       primaryButtonStyle="destructive"
-      primaryLoading={removing}
+      primaryLoading={removeAnswerCollection.isLoading}
       onPrimaryAction={async () => {
         try {
-          const res = await removeObject({
-            variables: {
-              objectId: String(id),
-              objectType: ObjectType.AnswerCollection,
-            },
-            update: (cache, { data }) => {
-              // check if the removal was successful
-              if (!data?.removeObject) return
-
-              // update the cache to remove the deleted collection
-              const answerCollectionId = parseInt(data.removeObject, 10)
-              cache.updateQuery(
-                { query: GetAnswerCollectionsInfoDocument },
-                (qData) => {
-                  if (!qData?.getAnswerCollectionsInfo) return qData
-
-                  return {
-                    getAnswerCollectionsInfo:
-                      qData.getAnswerCollectionsInfo.filter(
-                        (collection) => collection.id !== answerCollectionId
-                      ),
-                  }
-                }
-              )
-            },
+          const res = await removeAnswerCollection.mutateAsync({
+            id,
           })
 
-          if (
-            typeof res.data?.removeObject !== 'undefined' &&
-            res.data?.removeObject !== null
-          ) {
+          if (res.removedAnswerCollectionId !== null) {
             void utils.resources.answerCollectionsInfo.invalidate()
             toast({
               type: 'success',
@@ -96,7 +66,7 @@ function AnswerCollectionRemovalModal({
       dataCloseButton={{ cy: 'close-remove-object' }}
       className={{ content: 'max-w-xl', footer: 'justify-end' }}
     >
-      {t(`manage.sharing.confirmRemoval${ObjectType.AnswerCollection}`, {
+      {t(`manage.sharing.confirmRemoval${answerCollectionObjectType}`, {
         objectName: name,
       })}
     </Modal>
