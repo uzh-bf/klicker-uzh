@@ -45,6 +45,30 @@ type ManageCourseListObjectSource = {
   permissionLevel: DB.PermissionLevel
 }
 
+type ActiveUserCourseSource = Pick<
+  DB.Course,
+  | 'color'
+  | 'createdAt'
+  | 'description'
+  | 'displayName'
+  | 'endDate'
+  | 'groupDeadlineDate'
+  | 'id'
+  | 'isArchived'
+  | 'isAssessmentEnabled'
+  | 'isGamificationEnabled'
+  | 'isGroupCreationEnabled'
+  | 'name'
+  | 'pinCode'
+  | 'startDate'
+  | 'updatedAt'
+>
+
+type ActiveUserCourseObjectSource = {
+  course: ActiveUserCourseSource | null
+  permissionLevel: DB.PermissionLevel
+}
+
 type CourseSummarySource = {
   _count: {
     participations: number
@@ -101,6 +125,38 @@ export function toManageCourseListItem(object: ManageCourseListObjectSource) {
       object.permissionLevel !== PermissionLevel.OWNER &&
       !object.derived &&
       object.directPermission?.userGroupId === null,
+  }
+}
+
+export function toActiveUserCourse(object: ActiveUserCourseObjectSource) {
+  const course = object.course
+  if (!course) return null
+
+  return {
+    id: course.id,
+    name: course.name,
+    displayName: course.displayName,
+    color: course.color,
+    pinCode: course.pinCode,
+    isArchived: course.isArchived,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    isGroupCreationEnabled: course.isGroupCreationEnabled,
+    description: course.description,
+    startDate: course.startDate,
+    endDate: course.endDate,
+    groupDeadlineDate: course.groupDeadlineDate,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+    isOwner: object.permissionLevel === PermissionLevel.OWNER,
+    isManager:
+      object.permissionLevel === PermissionLevel.OWNER ||
+      object.permissionLevel === PermissionLevel.ADMIN,
+    isEditor:
+      object.permissionLevel === PermissionLevel.OWNER ||
+      object.permissionLevel === PermissionLevel.ADMIN ||
+      object.permissionLevel === PermissionLevel.WRITE,
+    isShared: object.permissionLevel !== PermissionLevel.OWNER,
   }
 }
 

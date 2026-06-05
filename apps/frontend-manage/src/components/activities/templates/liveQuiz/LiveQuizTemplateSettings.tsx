@@ -1,10 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faCheck, faInfoCircle, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Course,
-  GetActiveUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   Checkbox,
@@ -17,6 +12,7 @@ import { Dispatch, SetStateAction, useMemo } from 'react'
 import * as yup from 'yup'
 import useCoursesGamificationSplit from '../../../../lib/hooks/useCoursesGamificationSplit'
 import useLiveQuizCourseGrouping from '../../../../lib/hooks/useLiveQuizCourseGrouping'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import EditorField from '../../creation/EditorField'
 import LiveQuizGradingIllustration from '../../creation/liveQuiz/LiveQuizGradingIllustration'
@@ -36,38 +32,21 @@ function LiveQuizTemplateSettings({
   setClosingSettingsDisabled: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
-  const { data: dataCourses } = useQuery(GetActiveUserCoursesDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: dataCourses } = trpc.course.activeUserCourses.useQuery()
 
   const courseSelection = useMemo(
     (): ElementSelectCourse[] =>
-      dataCourses?.getActiveUserCourses?.map(
-        (
-          course: Pick<
-            Course,
-            | 'id'
-            | 'name'
-            | 'isGamificationEnabled'
-            | 'isAssessmentEnabled'
-            | 'isGroupCreationEnabled'
-            | 'startDate'
-            | 'endDate'
-            | 'groupDeadlineDate'
-            | 'isManager'
-          >
-        ) => ({
-          label: course.name,
-          value: course.id,
-          isGamified: course.isGamificationEnabled,
-          isAssessmentEnabled: course.isAssessmentEnabled,
-          isGroupCreationEnabled: course.isGroupCreationEnabled,
-          startDate: course.startDate,
-          endDate: course.endDate,
-          groupDeadline: course.groupDeadlineDate,
-          isManager: course.isManager ?? false,
-        })
-      ) ?? [],
+      dataCourses?.activeUserCourses?.map((course) => ({
+        label: course.name,
+        value: course.id,
+        isGamified: course.isGamificationEnabled,
+        isAssessmentEnabled: course.isAssessmentEnabled,
+        isGroupCreationEnabled: course.isGroupCreationEnabled,
+        startDate: course.startDate,
+        endDate: course.endDate,
+        groupDeadline: course.groupDeadlineDate,
+        isManager: course.isManager ?? false,
+      })) ?? [],
     [dataCourses]
   )
   const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =

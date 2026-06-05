@@ -1,6 +1,7 @@
 import { PermissionLevel } from '@klicker-uzh/prisma/client'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
+  toActiveUserCourse,
   toBasicCourseInformation,
   toControlCourse,
   toControlCourseListItem,
@@ -114,6 +115,58 @@ export const courseRouter = router({
           .sort((a, b) => {
             return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
           }) ?? [],
+    }
+  }),
+
+  activeUserCourses: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+    const user = await prisma.user.findUnique({
+      where: { id: ctx.user.sub },
+      select: {
+        objects: {
+          where: {
+            courseId: { not: null },
+            course: {
+              endDate: { gte: new Date() },
+              isArchived: false,
+            },
+          },
+          select: {
+            course: {
+              select: {
+                id: true,
+                name: true,
+                displayName: true,
+                color: true,
+                pinCode: true,
+                isArchived: true,
+                isGamificationEnabled: true,
+                isAssessmentEnabled: true,
+                isGroupCreationEnabled: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                groupDeadlineDate: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+            permissionLevel: true,
+          },
+          orderBy: [
+            { course: { startDate: 'asc' } },
+            { course: { name: 'asc' } },
+          ],
+        },
+      },
+    })
+
+    return {
+      activeUserCourses:
+        user?.objects.flatMap((object) => {
+          const course = toActiveUserCourse(object)
+          return course ? [course] : []
+        }) ?? [],
     }
   }),
 

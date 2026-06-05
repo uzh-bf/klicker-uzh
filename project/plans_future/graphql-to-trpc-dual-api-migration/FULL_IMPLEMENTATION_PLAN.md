@@ -276,6 +276,76 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M13 Manage Live Quiz Template Settings Course Read
+
+Status: complete for the scoped slice. Scope was the live-quiz template settings read that populates the course selection while creating an activity from a template. This slice intentionally migrated only the no-argument `GetActiveUserCourses` usage in `LiveQuizTemplateSettings`; activity-specific active-course reads in activity creation / batch operations, create-from-template mutation, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup stay live.
+
+Operation mapping:
+
+```text
+Slice: S04M13 Manage Live Quiz Template Settings Course Read
+GraphQL operation(s): GetActiveUserCourses without activityId/activityType variables
+GraphQL resolver(s): Query.getActiveUserCourses
+Behavior source: packages/graphql/src/services/courses.ts getActiveUserCourses no-argument branch
+tRPC router.procedure: course.activeUserCourses
+Input schema: none for this slice
+Output DTO: { activeUserCourses: ActiveUserCourse[] }
+Active frontend consumers: apps/frontend-manage/src/components/activities/templates/liveQuiz/LiveQuizTemplateSettings.tsx
+Apollo cache/refetch/subscription behavior: cache-and-network read query; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: trpc.course.activeUserCourses.useQuery()
+Browser verification path: branch-local manage app; delegated login; open /templates/<templateId>, expand Activity Settings if needed, and verify the page issues /api/trpc/course.activeUserCourses while GraphQL remains live for unrelated calls
+Cleanup blocked until: activity-specific GetActiveUserCourses consumers, create-from-template/template metadata mutations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Write scope:
+
+- `packages/api/src/trpc/dto/course.ts`
+- `packages/api/src/trpc/routers/course.ts`
+- `packages/api/src/trpc/__tests__/control-read.test.ts`
+- `apps/frontend-manage/src/components/activities/templates/liveQuiz/LiveQuizTemplateSettings.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `course.activeUserCourses` for the no-argument `GetActiveUserCourses` branch used by template settings. It filters to non-archived courses whose `endDate >= now()` and preserves GraphQL sort order by `startDate` then `name`.
+- Added `toActiveUserCourse` DTO with the GraphQL-selected fields and permission booleans used by course selectors.
+- Migrated `LiveQuizTemplateSettings` from Apollo `useQuery(GetActiveUserCoursesDocument)` to `trpc.course.activeUserCourses.useQuery()`.
+- Context7 was not exposed in this session; checked the official tRPC v10 `useQuery` docs and followed the existing repo hook pattern.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...` on touched S04M13 files: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- control-read`: passed, 27 files and 276 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/PWA/large-page-data warnings.
+- Static audit `rg -n "GetActiveUserCoursesDocument|GetActiveUserCourses\b|@apollo/client" apps/frontend-manage/src/components/activities/templates/liveQuiz/LiveQuizTemplateSettings.tsx`: no matches.
+- Static audit `rg -n "GetActiveUserCoursesDocument" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n`: remaining matches only in `ActivityCreation.tsx` and `ActivityBatchOperationsModal.tsx`, intentionally live for later slices.
+- Static audit over touched API files for `@klicker-uzh/graphql|packages/graphql|graphql/dist`: no matches.
+- `git diff --check`: passed.
+
+Browser evidence:
+
+- Created disposable local template fixture `11111111-1111-4111-8111-111111110512` and active course fixture `11111111-1111-4111-8111-111111110515`; deleted them after verification and confirmed template/live quiz/course/permission counts returned to `0|0|0|0`.
+- Branch-local stack: backend `127.0.0.1:3133`, manage `127.0.0.1:3134`, auth `127.0.0.1:3136`.
+- `npx agent-browser` delegated-login smoke opened `http://127.0.0.1:3134/templates/11111111-1111-4111-8111-111111110512`, expanded Activity Settings, and opened the Course dropdown.
+- Screenshot before auth gate: `/tmp/agent-browser-shots/s04m13-template-settings-before.png`.
+- Screenshot after expanded settings: `/tmp/agent-browser-shots/s04m13-template-settings-after.png`.
+- Screenshot with course dropdown options: `/tmp/agent-browser-shots/s04m13-template-settings-course-options.png`; dropdown rendered active course groups/options such as `Testkurs` and `Non-Gamified Course`.
+- Resource timing included `http://127.0.0.1:3133/api/trpc/course.activeUserCourses?batch=1...`; GraphQL also appeared for remaining Apollo-backed calls, intentionally live.
+- Cleaned browser localStorage key `live-quiz-template-inputs-11111111-1111-4111-8111-111111110512`, closed browser, stopped this slice's dev processes, confirmed ports `3133`, `3134`, and `3136` were free, and left only the older pre-existing backend Rollup watcher untouched.
+
+Self-review / simplification:
+
+- Dedicated review/simplification subagents were not spawned because the available multi-agent tool currently requires explicit user authorization for sub-agent work; used explicit self-review instead.
+- Reused a narrow new procedure rather than broadening `course.userCourses`, because the GraphQL active-course read has different filters and sort semantics.
+- Did not implement the activity-specific `GetActiveUserCourses` branch in this slice because this component passes no activity variables; the remaining consumers still use GraphQL until migrated.
+
+Next:
+
+- Candidate next slice: migrate the activity creation or batch-operations `GetActiveUserCoursesDocument` consumers with the activity-specific branch, or migrate `CreateLiveQuizFromTemplateDocument`. Keep generated GraphQL type cleanup, Apollo provider removal, realtime, and S06 cleanup blocked until their gates.
+
 ### 2026-06-05 Completed: S04M12 Manage Activity Template Page Read
 
 Status: complete for the scoped slice. Scope was the manage template page read that loads the selected activity template and its linked activity/element instances. This slice intentionally leaves live-quiz creation from template, template metadata mutations, generated GraphQL type cleanup in template components, Apollo providers, subscriptions, and S06 cleanup live.

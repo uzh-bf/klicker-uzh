@@ -257,6 +257,110 @@ describe('control read routers', () => {
     })
   })
 
+  test('returns active user courses for activity course selectors', async () => {
+    const startDate = new Date('2026-02-01T00:00:00.000Z')
+    const endDate = new Date('2026-08-01T00:00:00.000Z')
+    const groupDeadlineDate = new Date('2026-03-01T00:00:00.000Z')
+    const updatedAt = new Date('2026-01-15T00:00:00.000Z')
+    const findUnique = vi.fn().mockResolvedValue({
+      objects: [
+        {
+          course: {
+            id: 'course-active',
+            name: 'Active Course',
+            displayName: 'Active Course',
+            color: '#0028a5',
+            pinCode: 123456789,
+            isArchived: false,
+            isGamificationEnabled: true,
+            isAssessmentEnabled: false,
+            isGroupCreationEnabled: true,
+            description: 'Active description',
+            startDate,
+            endDate,
+            groupDeadlineDate,
+            createdAt: startDate,
+            updatedAt,
+          },
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+    const prisma = {
+      user: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.course.activeUserCourses()).resolves.toEqual({
+      activeUserCourses: [
+        {
+          id: 'course-active',
+          name: 'Active Course',
+          displayName: 'Active Course',
+          color: '#0028a5',
+          pinCode: 123456789,
+          isArchived: false,
+          isGamificationEnabled: true,
+          isAssessmentEnabled: false,
+          isGroupCreationEnabled: true,
+          description: 'Active description',
+          startDate,
+          endDate,
+          groupDeadlineDate,
+          createdAt: startDate,
+          updatedAt,
+          isOwner: false,
+          isManager: false,
+          isEditor: true,
+          isShared: true,
+        },
+      ],
+    })
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: user.id },
+      select: {
+        objects: {
+          where: {
+            courseId: { not: null },
+            course: {
+              endDate: { gte: expect.any(Date) },
+              isArchived: false,
+            },
+          },
+          select: {
+            course: {
+              select: {
+                id: true,
+                name: true,
+                displayName: true,
+                color: true,
+                pinCode: true,
+                isArchived: true,
+                isGamificationEnabled: true,
+                isAssessmentEnabled: true,
+                isGroupCreationEnabled: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                groupDeadlineDate: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+            permissionLevel: true,
+          },
+          orderBy: [
+            { course: { startDate: 'asc' } },
+            { course: { name: 'asc' } },
+          ],
+        },
+      },
+    })
+  })
+
   test('returns course activity ids grouped by activity type', async () => {
     const findUnique = vi.fn().mockResolvedValue({
       objects: [
