@@ -1,4 +1,8 @@
-import { PublicationStatus, ReviewStatus } from '@klicker-uzh/prisma/client'
+import {
+  ElementType,
+  PublicationStatus,
+  ReviewStatus,
+} from '@klicker-uzh/prisma/client'
 import { ActivityType, SortByType } from '@klicker-uzh/types'
 import { z } from 'zod'
 
@@ -35,6 +39,12 @@ export const activityReviewStatusInput = z.object({
 
 export const checkTemplateElementExistsInput = z.object({
   name: z.string(),
+})
+
+export const matchingUserElementsTemplateInput = z.object({
+  elementType: z.nativeEnum(ElementType),
+  hasSampleSolution: z.boolean().nullish(),
+  hasAnswerFeedbacks: z.boolean().nullish(),
 })
 
 export const outdatedElementInstancesInput = z.object({

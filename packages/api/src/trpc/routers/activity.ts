@@ -1,4 +1,5 @@
 import {
+  ElementType,
   PermissionLevel,
   Prisma,
   ReviewStatus,
@@ -19,6 +20,7 @@ import {
   activityDetailsInput,
   activityReviewStatusInput,
   checkTemplateElementExistsInput,
+  matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
   userActivitiesInput,
 } from '../schemas/activity.js'
@@ -27,6 +29,35 @@ const reviewStatusPermissionLevels = [
   PermissionLevel.ADMIN,
   PermissionLevel.OWNER,
 ]
+
+const elementTypesWithSampleSolution: ElementType[] = [
+  ElementType.SC,
+  ElementType.MC,
+  ElementType.KPRIM,
+  ElementType.NUMERICAL,
+  ElementType.FREE_TEXT,
+  ElementType.SELECTION,
+  ElementType.CASE_STUDY,
+]
+
+const elementTypesWithAnswerFeedbacks: ElementType[] = [
+  ElementType.SC,
+  ElementType.MC,
+  ElementType.KPRIM,
+]
+
+function optionFlagMatches(
+  options: unknown,
+  key: 'hasSampleSolution' | 'hasAnswerFeedbacks',
+  expected: boolean
+) {
+  return (
+    options !== null &&
+    typeof options === 'object' &&
+    key in options &&
+    (options as Record<string, unknown>)[key] === expected
+  )
+}
 
 export const activityRouter = router({
   details: userProcedure
@@ -479,6 +510,65 @@ export const activityRouter = router({
       })
 
       return { checkTemplateElementExists: element !== null }
+    }),
+
+  matchingUserElementsTemplate: userProcedure
+    .input(matchingUserElementsTemplateInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const availableElements = await prisma.element.findMany({
+        where: {
+          type: input.elementType,
+          isDeleted: false,
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          content: true,
+          options: true,
+        },
+      })
+
+      const matchingUserElementsTemplate = availableElements
+        .filter((element) => {
+          if (
+            input.hasSampleSolution != null &&
+            elementTypesWithSampleSolution.includes(input.elementType) &&
+            !optionFlagMatches(
+              element.options,
+              'hasSampleSolution',
+              input.hasSampleSolution
+            )
+          ) {
+            return false
+          }
+
+          if (
+            input.hasAnswerFeedbacks != null &&
+            elementTypesWithAnswerFeedbacks.includes(input.elementType) &&
+            !optionFlagMatches(
+              element.options,
+              'hasAnswerFeedbacks',
+              input.hasAnswerFeedbacks
+            )
+          ) {
+            return false
+          }
+
+          return true
+        })
+        .map((element) => ({
+          id: element.id,
+          name: element.name,
+          content: element.content,
+        }))
+
+      return { matchingUserElementsTemplate }
     }),
 
   userActivitiesCourses: userProcedure.query(async ({ ctx }) => {

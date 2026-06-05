@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with adjacent template-authoring reads such as `getMatchingUserElementsTemplate`, `getTemplatePreviewAnswerCollectionEntries`, `getArtificialInstance`, or the live-quiz-template settings read. Keep template mutations, generated GraphQL type cleanup, Apollo providers, realtime, and GraphQL cleanup live for later slices.
+- Continue the manage vertical migration with adjacent template-authoring reads such as `getTemplatePreviewAnswerCollectionEntries`, `getArtificialInstance`, or the live-quiz-template settings read. Keep template mutations, generated GraphQL type cleanup, Apollo providers, realtime, and GraphQL cleanup live for later slices.
 
 Still intentionally live:
 
@@ -275,6 +275,68 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04M9 Manage Template Existing Element Selection Read
+
+Status: complete for the scoped slice. This slice migrated the template authoring modal that lets a lecturer replace a template element with an existing library element of the same type and matching sample-solution / answer-feedback settings. It intentionally migrated one read-only modal query only; template page loading, preview reads, live-quiz-template settings reads, template mutations, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup remain live.
+
+Operation mapping:
+
+```text
+Slice: S04M9 Manage Template Existing Element Selection Read
+GraphQL operation(s): GetMatchingUserElementsTemplate
+GraphQL resolver(s): Query.getMatchingUserElementsTemplate
+Behavior source: packages/graphql/src/services/templates.ts getMatchingUserElementsTemplate
+tRPC router.procedure: activity.matchingUserElementsTemplate
+Input schema: { elementType: ElementType; hasSampleSolution?: boolean | null; hasAnswerFeedbacks?: boolean | null }
+Output DTO: { matchingUserElementsTemplate: { id: number; name: string; content: string }[] }
+Active frontend consumers: apps/frontend-manage/src/components/activities/templates/ExistingElementSelectionModal.tsx
+Apollo cache/refetch/subscription behavior: cache-and-network Apollo query while the modal is mounted; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: trpc.activity.matchingUserElementsTemplate.useQuery(input)
+Browser verification path: branch-local manage app; delegated login; open a template use flow, click "Replace with existing element from library", verify the modal renders matching element options from /api/trpc/activity.matchingUserElementsTemplate
+Cleanup blocked until: remaining template authoring GraphQL reads/mutations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/templates/ExistingElementSelectionModal.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `activity.matchingUserElementsTemplate`, mirroring `getMatchingUserElementsTemplate` behavior: current-user element permission, matching element type, `isDeleted: false`, sample-solution filtering only for supported element types, and answer-feedback filtering only for SC/MC/KPRIM.
+- Added focused API coverage for matching SC filtering and for ignored option filters on unsupported element types.
+- Replaced `ExistingElementSelectionModal`'s Apollo `GetMatchingUserElementsTemplateDocument` query with `trpc.activity.matchingUserElementsTemplate.useQuery`.
+- Kept the modal's generated `ElementType` import type-only because the surrounding template workflow still uses generated GraphQL element types; broader generated type cleanup remains a later slice.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities` passed: 27 files, 270 tests.
+- Initial `@klicker-uzh/api check` found a helper-array type narrowing issue and the expected `/Volumes` build-info write boundary. Fixed the type issue by typing the helper arrays as `ElementType[]`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed after rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed after rerun with escalation for Rollup cache/output writes.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after API build refreshed `@klicker-uzh/api` declarations and rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing Next/PWA/Browserslist/i18n, `/qr/[...args]` `MISSING_MESSAGE`, and large-page-data warnings only.
+- `git diff --check` passed.
+- Scoped migrated-operation audits passed: no `@apollo/client`, `GetMatchingUserElementsTemplateDocument`, `GetMatchingUserElementsTemplate`, or `getMatchingUserElementsTemplate(` remains in `ExistingElementSelectionModal`; no `GetMatchingUserElementsTemplateDocument` consumer remains outside generated GraphQL artifacts; touched API files have no GraphQL runtime imports.
+- Browser verification used a branch-local stack on ports `3133` backend, `3134` manage, and `3136` auth. Because the local DB had no seeded templates, one temporary `ActivityTemplate` row was linked to the existing lecturer-owned live quiz `Live Quiz Instance Update`, then deleted after verification.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m9-login.png`, `/tmp/agent-browser-shots/s04m9-auth-ready.png`, `/tmp/agent-browser-shots/s04m9-manage-home.png`, `/tmp/agent-browser-shots/s04m9-template-loaded.png`, `/tmp/agent-browser-shots/s04m9-element-expanded.png`, and `/tmp/agent-browser-shots/s04m9-existing-element-modal.png`.
+- Browser resource timing showed `http://127.0.0.1:3133/api/trpc/activity.matchingUserElementsTemplate?batch=1` with input `elementType: "SC"`, `hasSampleSolution: true`, and `hasAnswerFeedbacks: false`; the modal rendered `select-existing-element-New Single Choice Title`.
+- Baseline `/api/graphql` requests still occurred during template page loading because `GetActivityTemplate` and preview reads remain Apollo-backed by design.
+- Local verification cleanup closed `agent-browser`, deleted the temporary template row (`count = 0`), stopped backend/auth/manage dev servers, and confirmed ports `3133`, `3134`, and `3136` were free.
+
+Notes:
+
+- Context7 was not available through tool discovery in this session; official tRPC v10 validator/query docs and the branch's local tRPC patterns were used instead.
+- Review/simplification: self-review only because subagents were not explicitly requested; no permission drift, GraphQL runtime import, broad DTO leakage, or unnecessary new router namespace was found.
+
+Next candidate:
+
+- Continue manage template authoring migration with the preview reads (`getTemplatePreviewAnswerCollectionEntries`, `getArtificialInstance`) or the live-quiz-template settings read, keeping template mutations and global Apollo cleanup for later slices.
 
 ### 2026-06-05 Completed: S04M8 Manage Template Element Name Availability Read
 

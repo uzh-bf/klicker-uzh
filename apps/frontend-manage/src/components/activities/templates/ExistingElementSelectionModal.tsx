@@ -1,13 +1,13 @@
-import { useQuery } from '@apollo/client'
-import {
-  ElementType,
-  GetMatchingUserElementsTemplateDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
+
+type MatchingUserElementsTemplateInput =
+  RouterInputs['activity']['matchingUserElementsTemplate']
 
 function ExistingElementSelectionModal({
   onClose,
@@ -28,16 +28,14 @@ function ExistingElementSelectionModal({
     name: string
   } | null>(null)
 
-  const { data, loading } = useQuery(GetMatchingUserElementsTemplateDocument, {
-    variables: {
-      elementType: requiredElementType,
+  const { data, isLoading } =
+    trpc.activity.matchingUserElementsTemplate.useQuery({
+      elementType:
+        requiredElementType as MatchingUserElementsTemplateInput['elementType'],
       hasSampleSolution,
       hasAnswerFeedbacks,
-    },
-    skip: !open,
-    fetchPolicy: 'cache-and-network',
-  })
-  const availableElements = data?.getMatchingUserElementsTemplate ?? []
+    })
+  const availableElements = data?.matchingUserElementsTemplate ?? []
 
   const elementDescriptors = [
     ...(hasSampleSolution !== null && typeof hasSampleSolution !== 'undefined'
@@ -60,7 +58,7 @@ function ExistingElementSelectionModal({
       open
       escapeDisabled
       hideCloseButton
-      loading={loading}
+      loading={isLoading}
       title={t('manage.template.selectExistingElement')}
       onClose={() => {
         setSelectedElement(null)
@@ -92,7 +90,7 @@ function ExistingElementSelectionModal({
 
       <div className="mt-2 max-h-[calc(80vh-12rem)] overflow-y-auto rounded-md border border-gray-200 p-3">
         <div className="flex flex-col gap-2">
-          {availableElements.length === 0 && !loading && (
+          {availableElements.length === 0 && !isLoading && (
             <UserNotification
               type="warning"
               message={t('manage.template.noMatchingQuestionsFound')}

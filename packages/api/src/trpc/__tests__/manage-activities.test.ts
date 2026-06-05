@@ -596,6 +596,111 @@ describe('manage activity read routers', () => {
     ).resolves.toEqual({ checkTemplateElementExists: false })
   })
 
+  test('returns matching user elements for template replacement', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: 1,
+        name: 'Matching SC',
+        content: 'Matching question',
+        options: {
+          hasSampleSolution: true,
+          hasAnswerFeedbacks: false,
+        },
+      },
+      {
+        id: 2,
+        name: 'Wrong feedback setting',
+        content: 'Wrong question',
+        options: {
+          hasSampleSolution: true,
+          hasAnswerFeedbacks: true,
+        },
+      },
+      {
+        id: 3,
+        name: 'Wrong sample setting',
+        content: 'Wrong sample',
+        options: {
+          hasSampleSolution: false,
+          hasAnswerFeedbacks: false,
+        },
+      },
+    ])
+    const prisma = {
+      element: {
+        findMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.matchingUserElementsTemplate({
+        elementType: ElementType.SC,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
+      })
+    ).resolves.toEqual({
+      matchingUserElementsTemplate: [
+        {
+          id: 1,
+          name: 'Matching SC',
+          content: 'Matching question',
+        },
+      ],
+    })
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        type: ElementType.SC,
+        isDeleted: false,
+        permissions: {
+          some: {
+            userId: user.id,
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        content: true,
+        options: true,
+      },
+    })
+  })
+
+  test('ignores template replacement option filters for unsupported element types', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: 4,
+        name: 'Flashcard',
+        content: 'Flashcard content',
+        options: {},
+      },
+    ])
+    const prisma = {
+      element: {
+        findMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.matchingUserElementsTemplate({
+        elementType: ElementType.FLASHCARD,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+      })
+    ).resolves.toEqual({
+      matchingUserElementsTemplate: [
+        {
+          id: 4,
+          name: 'Flashcard',
+          content: 'Flashcard content',
+        },
+      ],
+    })
+  })
+
   test('sets standalone live quiz review status for activity admins', async () => {
     const update = vi.fn().mockResolvedValue({ id: 'live-quiz-1' })
     const prisma = {
