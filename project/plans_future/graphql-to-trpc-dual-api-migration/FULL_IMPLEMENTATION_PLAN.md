@@ -276,6 +276,71 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M7 Manage Element Edit Wizard Support Reads
+
+Status: complete for the scoped slice. This slice migrated the remaining Apollo read helpers in the manage element edit wizard: answer-collection options for selection/case-study editing and affected activity metadata for the instance-update switch. GraphQL remains live; this slice did not touch mutations, generated artifacts, Apollo providers, subscriptions, or S06 cleanup.
+
+Operation mapping:
+
+```text
+Slice: S04M7 Manage Element Edit Wizard Support Reads
+GraphQL operation(s): GetAnswerCollectionsElements; GetInstanceUpdateActivities; cache-only UserProfile in InstanceUpdateSwitch
+GraphQL resolver(s): Query.getAnswerCollectionsElements; Query.getInstanceUpdateActivities; Query.userProfile cache read consumer
+Behavior source: packages/graphql/src/services/resources.ts getAnswerCollectionsElements; packages/graphql/src/services/elements.ts getInstanceUpdateActivities; existing packages/api user.profile
+tRPC router.procedure: resources.answerCollectionsForElements; element.instanceUpdateActivities; user.profile
+Input schema: resources.answerCollectionsForElements { templateId?: string | null }; element.instanceUpdateActivities { elementId: number; hasSampleSolution?: boolean | null; includeTemplateInstances: boolean }
+Output DTO: answer collections with { id, name, isShared, isEditor, entries: { id, value }[] }; instance activities with { activityName, activityType, status }
+Active frontend consumers: apps/frontend-manage/src/components/elements/manipulation/ElementEditForm.tsx; apps/frontend-manage/src/components/elements/manipulation/InstanceUpdateSwitch.tsx
+Apollo cache/refetch/subscription behavior: ElementEditForm uses network-only query plus refetch after collection edits; InstanceUpdateSwitch uses cache-only UserProfileDocument and cache-and-network instance activity query
+React Query replacement: tRPC queries with enabled inputs, `refetch` for collection edits, existing `trpc.user.profile.useQuery` for private-preview flag
+Browser verification path: branch-local manage Library element edit modal; open selection/case-study options and confirm answer collections load/refetch; confirm update instance switch renders from tRPC when affected activities exist
+Cleanup blocked until: remaining manage/PWA Apollo consumers, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/routers/resources.ts`
+- `packages/api/src/trpc/schemas/resources.ts`
+- `packages/api/src/trpc/routers/element.ts`
+- `packages/api/src/trpc/schemas/element.ts`
+- `packages/api/src/trpc/__tests__/resources-answer-collections.test.ts`
+- `packages/api/src/trpc/__tests__/manage-elements.test.ts`
+- `apps/frontend-manage/src/components/elements/manipulation/ElementEditForm.tsx`
+- `apps/frontend-manage/src/components/elements/manipulation/InstanceUpdateSwitch.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `resources.answerCollectionsForElements`, mirroring `getAnswerCollectionsElements` behavior including user-owned/shared collections, accessible template-only collections, collection deduping, and editor/shared flags.
+- Added `element.instanceUpdateActivities`, mirroring `getInstanceUpdateActivities` behavior including WRITE permission, accepted draft/scheduled/template statuses, async activity sample-solution gating, activity sorting, and activity-name deduping.
+- Replaced `ElementEditForm`'s `GetAnswerCollectionsElementsDocument` Apollo query with `trpc.resources.answerCollectionsForElements.useQuery`.
+- Replaced `InstanceUpdateSwitch`'s `UserProfileDocument` and `GetInstanceUpdateActivitiesDocument` Apollo queries with `trpc.user.profile.useQuery` and `trpc.element.instanceUpdateActivities.useQuery`.
+- Added focused API tests for template collection access/deduping, missing template access, missing element write access, and instance update activity filtering.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed after rerun with escalation for `/Volumes` write permissions.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- resources-answer-collections` passed: 27 files, 266 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements` passed: 27 files, 266 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed after rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed after rerun with escalation for Rollup cache/output writes.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after API build refreshed `@klicker-uzh/api` declarations and rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing Next/PWA/Browserslist/i18n and large-page-data warnings only.
+- `git diff --check` passed.
+- Scoped migrated-operation audits passed: no `@apollo/client`, `GetAnswerCollectionsElementsDocument`, `GetInstanceUpdateActivitiesDocument`, or `UserProfileDocument` remains in the migrated components; touched API files have no GraphQL runtime imports.
+- Browser verification used a branch-local stack on ports `3133` backend, `3134` manage, and `3136` auth. Screenshots: `/tmp/agent-browser-shots/s04m7-library.png`, `/tmp/agent-browser-shots/s04m7-edit-selection-modal.png`, and `/tmp/agent-browser-shots/s04m7-answer-options-open.png`.
+- Browser resource timing confirmed `resources.answerCollectionsForElements` batched with `element.single`, and `element.instanceUpdateActivities` batched with tags/profile. The selection edit modal rendered and the answer option combobox opened with `Option A` / `Option B`.
+- Local verification cleanup closed `agent-browser`, stopped backend/auth/manage dev sessions, and confirmed ports `3133`, `3134`, and `3136` were free.
+
+Notes:
+
+- Context7 was not available through tool discovery in this session; official tRPC v10 validator/query docs were checked instead and match the branch's local tRPC v10 patterns.
+- Review/simplification: self-review only because subagents were not explicitly requested; no permission drift, broad DTO leakage, GraphQL runtime import, or unnecessary dependency was found.
+
+Next candidate:
+
+- Continue manage migration with adjacent activity/template authoring GraphQL consumers, or start residual generated GraphQL type cleanup in element edit helpers once remaining runtime Apollo reads are mapped.
+
 ### 2026-06-05 Completed: S04M6 Manage Question Pool Filter Sidebar Reads
 
 Status: complete for the scoped slice. This slice migrated the manage Library/question-pool filter sidebar reads for private-preview sharing filter visibility, user course selection, and activity id/name selection from GraphQL/Apollo to tRPC. Element list reads, element edit/delete/batch mutations, tag CRUD/list reads, and answer-collection resource mutations were already migrated; element form answer-collection selection, instance update activity reads, activity/template authoring flows, generated enum/type cleanup, Apollo providers, subscriptions, and GraphQL cleanup remain out of scope.

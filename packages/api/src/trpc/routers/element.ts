@@ -34,6 +34,7 @@ import {
   editTagInput,
   elementIdInput,
   flagOutdatedElementInstancesInput,
+  instanceUpdateActivitiesInput,
   listElementsInput,
   manipulateCaseStudyElementInput,
   manipulateChoicesElementInput,
@@ -1612,6 +1613,207 @@ async function applyElementBatchOperations({
   return updatedCount
 }
 
+type InstanceUpdateActivity = {
+  activityName: string
+  activityType: ActivityType
+  status: PublicationStatus
+}
+
+function sortAndDeduplicateInstanceUpdateActivities(
+  activities: InstanceUpdateActivity[]
+) {
+  const sortedActivities = [...activities].sort((first, second) => {
+    const activityTypeOrder = second.activityType.localeCompare(
+      first.activityType
+    )
+
+    return activityTypeOrder === 0
+      ? first.activityName.localeCompare(second.activityName)
+      : activityTypeOrder
+  })
+
+  const seenActivityNames = new Set<string>()
+
+  return sortedActivities.filter((activity) => {
+    if (seenActivityNames.has(activity.activityName)) return false
+
+    seenActivityNames.add(activity.activityName)
+    return true
+  })
+}
+
+async function getInstanceUpdateActivities({
+  elementId,
+  hasSampleSolution,
+  includeTemplateInstances,
+  prisma,
+  userId,
+}: {
+  elementId: number
+  hasSampleSolution?: boolean | null
+  includeTemplateInstances: boolean
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+}) {
+  const acceptedStatusValues = includeTemplateInstances
+    ? [
+        PublicationStatus.DRAFT,
+        PublicationStatus.SCHEDULED,
+        PublicationStatus.TEMPLATE,
+      ]
+    : [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED]
+  const requiredActivityAccess: PermissionLevel[] = [
+    PermissionLevel.WRITE,
+    PermissionLevel.ADMIN,
+    PermissionLevel.OWNER,
+  ]
+
+  const element = await prisma.element.findUnique({
+    where: { id: elementId },
+    include: {
+      elementInstances: {
+        include: {
+          elementStack: {
+            include: {
+              microLearning: {
+                where: {
+                  status: { in: acceptedStatusValues },
+                  permissions: {
+                    some: {
+                      userId,
+                      permissionLevel: { in: requiredActivityAccess },
+                    },
+                  },
+                },
+              },
+              practiceQuiz: {
+                where: {
+                  status: { in: acceptedStatusValues },
+                  permissions: {
+                    some: {
+                      userId,
+                      permissionLevel: { in: requiredActivityAccess },
+                    },
+                  },
+                },
+              },
+              groupActivity: {
+                where: {
+                  status: { in: acceptedStatusValues },
+                  permissions: {
+                    some: {
+                      userId,
+                      permissionLevel: { in: requiredActivityAccess },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          elementBlock: {
+            include: {
+              liveQuiz: {
+                include: {
+                  permissions: { where: { userId } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!element) return []
+
+  const asynchronousActivityValid =
+    element.type === ElementType.FLASHCARD ||
+    element.type === ElementType.CONTENT ||
+    element.type === ElementType.FREE_TEXT ||
+    hasSampleSolution
+
+  const activities = element.elementInstances.reduce<InstanceUpdateActivity[]>(
+    (instanceActivities, instance) => {
+      const liveQuiz = instance.elementBlock?.liveQuiz
+      const microLearning = instance.elementStack?.microLearning
+      const practiceQuiz = instance.elementStack?.practiceQuiz
+      const groupActivity = instance.elementStack?.groupActivity
+
+      if (
+        liveQuiz &&
+        (liveQuiz.status === PublicationStatus.DRAFT ||
+          liveQuiz.status === PublicationStatus.SCHEDULED ||
+          (includeTemplateInstances &&
+            liveQuiz.status === PublicationStatus.TEMPLATE)) &&
+        liveQuiz.permissions.some((permission) =>
+          requiredActivityAccess.includes(permission.permissionLevel)
+        )
+      ) {
+        instanceActivities.push({
+          activityName: liveQuiz.name,
+          activityType: ActivityType.LIVE_QUIZ,
+          status: liveQuiz.status,
+        })
+
+        return instanceActivities
+      }
+
+      if (
+        microLearning &&
+        (microLearning.status === PublicationStatus.DRAFT ||
+          microLearning.status === PublicationStatus.SCHEDULED ||
+          (includeTemplateInstances &&
+            microLearning.status === PublicationStatus.TEMPLATE)) &&
+        asynchronousActivityValid
+      ) {
+        instanceActivities.push({
+          activityName: microLearning.name,
+          activityType: ActivityType.MICRO_LEARNING,
+          status: microLearning.status,
+        })
+
+        return instanceActivities
+      }
+
+      if (
+        practiceQuiz &&
+        (practiceQuiz.status === PublicationStatus.DRAFT ||
+          practiceQuiz.status === PublicationStatus.SCHEDULED ||
+          (includeTemplateInstances &&
+            practiceQuiz.status === PublicationStatus.TEMPLATE)) &&
+        asynchronousActivityValid
+      ) {
+        instanceActivities.push({
+          activityName: practiceQuiz.name,
+          activityType: ActivityType.PRACTICE_QUIZ,
+          status: practiceQuiz.status,
+        })
+
+        return instanceActivities
+      }
+
+      if (
+        groupActivity &&
+        (groupActivity.status === PublicationStatus.DRAFT ||
+          groupActivity.status === PublicationStatus.SCHEDULED ||
+          (includeTemplateInstances &&
+            groupActivity.status === PublicationStatus.TEMPLATE))
+      ) {
+        instanceActivities.push({
+          activityName: groupActivity.name,
+          activityType: ActivityType.GROUP_ACTIVITY,
+          status: groupActivity.status,
+        })
+      }
+
+      return instanceActivities
+    },
+    []
+  )
+
+  return sortAndDeduplicateInstanceUpdateActivities(activities)
+}
+
 async function flagOutdatedElementInstances({
   elementId,
   prisma,
@@ -1773,6 +1975,29 @@ export const elementRouter = router({
     const element = await getSingleElementForEdit({ ctx, id: input.id })
     return { element }
   }),
+
+  instanceUpdateActivities: userProcedure
+    .input(instanceUpdateActivitiesInput)
+    .query(async ({ ctx, input }) => {
+      if (
+        !(await hasElementPermission({
+          ctx,
+          id: input.elementId,
+          permissionLevel: PermissionLevel.WRITE,
+        }))
+      ) {
+        return { instanceUpdateActivities: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const instanceUpdateActivities = await getInstanceUpdateActivities({
+        ...input,
+        prisma,
+        userId: ctx.user.sub,
+      })
+
+      return { instanceUpdateActivities }
+    }),
 
   manipulateContent: userFullAccessProcedure
     .input(manipulateContentElementInput)

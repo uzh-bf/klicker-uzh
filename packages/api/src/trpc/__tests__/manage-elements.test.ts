@@ -4,10 +4,11 @@ import {
   ElementType,
   ObjectType,
   PermissionLevel,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { SharingType, SortByType } from '@klicker-uzh/types'
+import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
@@ -336,6 +337,112 @@ describe('manage element router', () => {
         },
         answerCollectionItems: true,
       },
+    })
+  })
+
+  test('returns null instance update activities when write permission is missing', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const elementFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { findUnique: elementFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.instanceUpdateActivities({
+        elementId: 17,
+        hasSampleSolution: true,
+        includeTemplateInstances: true,
+      })
+    ).resolves.toEqual({ instanceUpdateActivities: null })
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        elementId: 17,
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(elementFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('returns instance update activity metadata for writable element instances', async () => {
+    const findFirst = vi.fn().mockResolvedValue({ id: 3 })
+    const elementFindUnique = vi.fn().mockResolvedValue({
+      id: 17,
+      type: ElementType.SC,
+      elementInstances: [
+        {
+          elementBlock: {
+            liveQuiz: {
+              name: 'Live quiz',
+              status: PublicationStatus.DRAFT,
+              permissions: [{ permissionLevel: PermissionLevel.WRITE }],
+            },
+          },
+          elementStack: null,
+        },
+        {
+          elementBlock: null,
+          elementStack: {
+            microLearning: null,
+            practiceQuiz: {
+              name: 'Practice quiz',
+              status: PublicationStatus.DRAFT,
+            },
+            groupActivity: null,
+          },
+        },
+        {
+          elementBlock: null,
+          elementStack: {
+            microLearning: null,
+            practiceQuiz: null,
+            groupActivity: {
+              name: 'Group activity',
+              status: PublicationStatus.TEMPLATE,
+            },
+          },
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { findUnique: elementFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.instanceUpdateActivities({
+        elementId: 17,
+        hasSampleSolution: false,
+        includeTemplateInstances: true,
+      })
+    ).resolves.toEqual({
+      instanceUpdateActivities: [
+        {
+          activityName: 'Live quiz',
+          activityType: ActivityType.LIVE_QUIZ,
+          status: PublicationStatus.DRAFT,
+        },
+        {
+          activityName: 'Group activity',
+          activityType: ActivityType.GROUP_ACTIVITY,
+          status: PublicationStatus.TEMPLATE,
+        },
+      ],
+    })
+    expect(elementFindUnique).toHaveBeenCalledWith({
+      where: { id: 17 },
+      include: expect.objectContaining({
+        elementInstances: expect.any(Object),
+      }),
     })
   })
 

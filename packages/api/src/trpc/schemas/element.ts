@@ -176,6 +176,12 @@ export const updateElementInstancesInput = z.object({
   includeTemplates: z.boolean(),
 })
 
+export const instanceUpdateActivitiesInput = z.object({
+  elementId: z.number().int(),
+  hasSampleSolution: z.boolean().nullish(),
+  includeTemplateInstances: z.boolean(),
+})
+
 export const flagOutdatedElementInstancesInput = z.object({
   elementId: z.number().int(),
 })

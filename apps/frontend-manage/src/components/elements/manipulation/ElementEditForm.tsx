@@ -1,11 +1,9 @@
-import { useQuery } from '@apollo/client'
 import { faMagnifyingGlass, faMessage } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementData,
   ElementStatus,
   ElementType,
-  GetAnswerCollectionsElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -20,6 +18,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
@@ -104,13 +103,13 @@ function ElementEditForm({
 
   const {
     data,
-    loading: collectionsLoading,
+    isLoading: collectionsLoading,
     refetch,
-  } = useQuery(GetAnswerCollectionsElementsDocument, {
-    variables: { templateId },
-    fetchPolicy: 'network-only',
-  })
-  const collections = data?.getAnswerCollectionsElements ?? []
+  } = trpc.resources.answerCollectionsForElements.useQuery(
+    { templateId },
+    { refetchOnMount: 'always' }
+  )
+  const collections = data?.answerCollections ?? []
 
   return (
     <Modal

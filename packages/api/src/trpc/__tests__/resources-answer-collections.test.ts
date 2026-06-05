@@ -1,5 +1,6 @@
 import {
   AuditLogType,
+  ObjectAccess,
   ObjectType,
   PermissionLevel,
   UserLoginScope,
@@ -173,6 +174,167 @@ describe('resources answer collection router', () => {
         }),
       })
     )
+  })
+
+  test('returns answer collections available for element editing including accessible template collections', async () => {
+    const userFindUnique = vi.fn().mockResolvedValue({
+      objects: [
+        {
+          permissionLevel: PermissionLevel.OWNER,
+          answerCollection: {
+            id: 21,
+            name: 'Owned answers',
+            entries: [{ id: 1, value: 'A' }],
+          },
+        },
+        {
+          permissionLevel: PermissionLevel.READ,
+          answerCollection: {
+            id: 22,
+            name: 'Shared answers',
+            entries: [{ id: 2, value: 'B' }],
+          },
+        },
+      ],
+    })
+    const templateFindUnique = vi
+      .fn()
+      .mockResolvedValueOnce({
+        liveQuiz: {
+          ownerId: 'other-owner',
+          permissions: [{ id: 7 }],
+          catalogAssignments: [],
+        },
+        practiceQuiz: null,
+        microLearning: null,
+        groupActivity: null,
+      })
+      .mockResolvedValueOnce({
+        answerCollections: [
+          {
+            id: 22,
+            name: 'Shared answers duplicate',
+            entries: [{ id: 2, value: 'B' }],
+          },
+          {
+            id: 23,
+            name: 'Template answers',
+            entries: [{ id: 3, value: 'C' }],
+          },
+        ],
+      })
+    const prisma = {
+      user: { findUnique: userFindUnique },
+      activityTemplate: { findUnique: templateFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.resources.answerCollectionsForElements({
+        templateId: 'template-1',
+      })
+    ).resolves.toEqual({
+      answerCollections: [
+        {
+          id: 21,
+          name: 'Owned answers',
+          isShared: false,
+          isEditor: true,
+          entries: [{ id: 1, value: 'A' }],
+        },
+        {
+          id: 22,
+          name: 'Shared answers',
+          isShared: true,
+          isEditor: false,
+          entries: [{ id: 2, value: 'B' }],
+        },
+        {
+          id: 23,
+          name: 'Template answers',
+          isShared: false,
+          isEditor: false,
+          entries: [{ id: 3, value: 'C' }],
+        },
+      ],
+    })
+    expect(userFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: user.id },
+        include: expect.objectContaining({
+          objects: expect.objectContaining({
+            where: { answerCollectionId: { not: null } },
+          }),
+        }),
+      })
+    )
+    expect(templateFindUnique).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: { id: 'template-1' },
+        include: expect.objectContaining({
+          liveQuiz: expect.any(Object),
+          practiceQuiz: expect.any(Object),
+          microLearning: expect.any(Object),
+          groupActivity: expect.any(Object),
+        }),
+      })
+    )
+    expect(templateFindUnique).toHaveBeenNthCalledWith(2, {
+      where: { id: 'template-1' },
+      include: {
+        answerCollections: {
+          include: {
+            entries: {
+              orderBy: {
+                value: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
+      },
+    })
+  })
+
+  test('does not include template answer collections without template access', async () => {
+    const templateFindUnique = vi.fn().mockResolvedValueOnce({
+      liveQuiz: {
+        ownerId: 'other-owner',
+        permissions: [],
+        catalogAssignments: [
+          {
+            access: ObjectAccess.RESTRICTED,
+            catalogCollectionId: 'catalog-1',
+            catalogCollection: {
+              access: ObjectAccess.RESTRICTED,
+              permissions: [],
+            },
+          },
+        ],
+      },
+      practiceQuiz: null,
+      microLearning: null,
+      groupActivity: null,
+    })
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          objects: [],
+        }),
+      },
+      activityTemplate: { findUnique: templateFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.resources.answerCollectionsForElements({
+        templateId: 'template-1',
+      })
+    ).resolves.toEqual({ answerCollections: [] })
+    expect(templateFindUnique).toHaveBeenCalledTimes(1)
   })
 
   test('returns single answer collection detail for users with access', async () => {

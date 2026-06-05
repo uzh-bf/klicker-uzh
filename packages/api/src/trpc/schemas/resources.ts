@@ -4,6 +4,10 @@ export const singleAnswerCollectionInput = z.object({
   id: z.number().int(),
 })
 
+export const answerCollectionsForElementsInput = z.object({
+  templateId: z.string().nullish(),
+})
+
 export const createAnswerCollectionInput = z.object({
   name: z.string(),
   description: z.string(),

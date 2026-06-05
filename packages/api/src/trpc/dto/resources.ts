@@ -46,6 +46,14 @@ type AnswerCollectionEntrySource = {
   value: string
 }
 
+type AnswerCollectionForElementsSource = {
+  id: number
+  name: string
+  isShared?: boolean | null
+  isEditor?: boolean | null
+  entries?: AnswerCollectionEntrySource[] | null
+}
+
 type OwnedAnswerCollectionMutationSource = {
   id: number
   name: string
@@ -80,6 +88,18 @@ export function toAnswerCollectionEntry(entry: AnswerCollectionEntrySource) {
   return {
     id: entry.id,
     value: entry.value,
+  }
+}
+
+export function toAnswerCollectionForElements(
+  collection: AnswerCollectionForElementsSource
+) {
+  return {
+    id: collection.id,
+    name: collection.name,
+    isShared: collection.isShared ?? false,
+    isEditor: collection.isEditor ?? false,
+    entries: collection.entries?.map(toAnswerCollectionEntry) ?? [],
   }
 }
 

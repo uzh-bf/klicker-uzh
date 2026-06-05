@@ -1,17 +1,17 @@
-import { useQuery } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetInstanceUpdateActivitiesDocument,
-  PublicationStatus,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H4, Prose, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
+
+const publicationStatus = {
+  draft: 'DRAFT',
+  template: 'TEMPLATE',
+} as const
 
 interface InstanceUpdateSwitchProps {
   elementId: number
@@ -31,31 +31,27 @@ function InstanceUpdateSwitch({
   setIncludeTemplateUpdates,
 }: InstanceUpdateSwitchProps) {
   const t = useTranslations()
-  const { data: user } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
+  const { data: user } = trpc.user.profile.useQuery()
 
-  const { data, loading } = useQuery(GetInstanceUpdateActivitiesDocument, {
-    variables: {
+  const { data, isLoading } = trpc.element.instanceUpdateActivities.useQuery(
+    {
       elementId,
       hasSampleSolution,
       includeTemplateInstances: true,
     },
-    fetchPolicy: 'cache-and-network',
-  })
+    { refetchOnMount: 'always' }
+  )
+  const instanceUpdateActivities = data?.instanceUpdateActivities
 
   const usedInTemplates = useMemo(() => {
     return (
-      data?.getInstanceUpdateActivities?.some(
-        (activity) => activity.status === PublicationStatus.Template
+      instanceUpdateActivities?.some(
+        (activity) => activity.status === publicationStatus.template
       ) ?? false
     )
-  }, [data?.getInstanceUpdateActivities])
+  }, [instanceUpdateActivities])
 
-  if (
-    !data?.getInstanceUpdateActivities ||
-    data.getInstanceUpdateActivities.length === 0
-  ) {
+  if (!instanceUpdateActivities || instanceUpdateActivities.length === 0) {
     return null
   }
 
@@ -82,38 +78,36 @@ function InstanceUpdateSwitch({
         </div>
       </div>
 
-      {usedInTemplates &&
-        updateInstances &&
-        user?.userProfile?.privatePreview && (
-          <div className="mt-2 flex flex-row items-center gap-5">
-            <Switch
-              checked={includeTemplateUpdates}
-              onCheckedChange={() => {
-                setIncludeTemplateUpdates((prev) => !prev)
-              }}
-              data={{ cy: 'template-update-switch' }}
-            />
-            <div>
-              <H4 className={{ root: 'm-0' }}>
-                {t('manage.elements.includeTemplateInstanceUpdates')}
-              </H4>
-            </div>
+      {usedInTemplates && updateInstances && user?.privatePreview && (
+        <div className="mt-2 flex flex-row items-center gap-5">
+          <Switch
+            checked={includeTemplateUpdates}
+            onCheckedChange={() => {
+              setIncludeTemplateUpdates((prev) => !prev)
+            }}
+            data={{ cy: 'template-update-switch' }}
+          />
+          <div>
+            <H4 className={{ root: 'm-0' }}>
+              {t('manage.elements.includeTemplateInstanceUpdates')}
+            </H4>
           </div>
-        )}
+        </div>
+      )}
 
       <div className="ml-17">
-        {loading && (
+        {isLoading && (
           <Loader data={{ cy: 'instance-update-activities-loading' }} />
         )}
-        {!loading && data?.getInstanceUpdateActivities && (
+        {!isLoading && (
           <div className="mt-2 border-t border-gray-200">
-            {data.getInstanceUpdateActivities
+            {instanceUpdateActivities
               .filter(
                 (activity) =>
                   includeTemplateUpdates ||
-                  activity.status !== PublicationStatus.Template
+                  activity.status !== publicationStatus.template
               )
-              .map((activity, ix) => (
+              .map((activity) => (
                 <div
                   key={`instance-update-list-${activity.activityName}`}
                   className="border-b border-gray-200"
@@ -123,16 +117,16 @@ function InstanceUpdateSwitch({
                     <span
                       className={twMerge(
                         'flex w-24 flex-row items-center justify-center gap-1.5 rounded px-2 py-0.5 text-xs',
-                        activity.status === PublicationStatus.Draft
+                        activity.status === publicationStatus.draft
                           ? 'bg-gray-200'
-                          : activity.status === PublicationStatus.Template
+                          : activity.status === publicationStatus.template
                             ? 'bg-primary-40'
                             : 'bg-orange-300'
                       )}
                     >
                       <FontAwesomeIcon
                         icon={
-                          activity.status === PublicationStatus.Draft
+                          activity.status === publicationStatus.draft
                             ? faPencil
                             : faClock
                         }
@@ -142,7 +136,7 @@ function InstanceUpdateSwitch({
                     <span className="font-medium">{activity.activityName}</span>
                     <span className="text-xs text-gray-500">
                       ({t(`shared.types.${activity.activityType}`)}
-                      {activity.status === PublicationStatus.Template
+                      {activity.status === publicationStatus.template
                         ? ` ${t('shared.generic.template')}`
                         : null}
                       )

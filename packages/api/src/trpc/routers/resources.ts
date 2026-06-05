@@ -1,12 +1,17 @@
 import {
   AuditLogType,
+  ObjectAccess,
   ObjectType,
   PermissionLevel,
 } from '@klicker-uzh/prisma/client'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  MISSING_CATALOG_COLLECTION_ID,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { getPrisma } from '../context.js'
 import {
   toAnswerCollectionEntry,
+  toAnswerCollectionForElements,
   toAnswerCollectionInfo,
   toModifiedAnswerCollection,
   toOwnedAnswerCollectionMutationResult,
@@ -19,6 +24,7 @@ import {
   addAnswerCollectionOptionInput,
   answerCollectionEntryInput,
   answerCollectionIdInput,
+  answerCollectionsForElementsInput,
   createAnswerCollectionInput,
   deleteAnswerCollectionEntryInput,
   deleteAnswerCollectionInput,
@@ -142,6 +148,188 @@ async function getAnswerCollectionsInfo({
     const collection = toAnswerCollectionInfo(object)
     return collection ? [collection] : []
   })
+}
+
+async function isTemplateAccessible({
+  prisma,
+  userId,
+  templateId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  templateId: string
+}) {
+  const template = await prisma.activityTemplate.findUnique({
+    where: { id: templateId },
+    include: {
+      liveQuiz: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+      practiceQuiz: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+      microLearning: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+      groupActivity: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const activity =
+    template?.liveQuiz ??
+    template?.practiceQuiz ??
+    template?.microLearning ??
+    template?.groupActivity
+
+  if (!activity) return false
+  if (activity.ownerId === userId) return true
+  if (activity.permissions.length > 0) return true
+
+  return activity.catalogAssignments.some(
+    (assignment) =>
+      assignment.access === ObjectAccess.PUBLIC &&
+      (assignment.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID ||
+        assignment.catalogCollection?.access === ObjectAccess.PUBLIC ||
+        (assignment.catalogCollection?.permissions.length ?? 0) > 0)
+  )
+}
+
+async function getAnswerCollectionsForElements({
+  prisma,
+  userId,
+  templateId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  templateId?: string | null
+}) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      objects: {
+        where: { answerCollectionId: { not: null } },
+        include: {
+          answerCollection: {
+            include: {
+              owner: { select: { shortname: true } },
+              entries: { orderBy: { value: 'asc' } },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!user) return []
+
+  let templateAnswerCollections: {
+    id: number
+    name: string
+    entries: { id: number; value: string }[]
+  }[] = []
+
+  if (
+    templateId &&
+    (await isTemplateAccessible({ prisma, userId, templateId }))
+  ) {
+    const template = await prisma.activityTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        answerCollections: {
+          include: {
+            entries: {
+              orderBy: {
+                value: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
+      },
+    })
+
+    templateAnswerCollections = template?.answerCollections ?? []
+  }
+
+  const sharedAnswerCollectionIds = user.objects
+    .filter((object) => object.answerCollection)
+    .map((object) => object.answerCollection!.id)
+
+  const combinedAnswerCollections = [
+    ...user.objects.flatMap((object) =>
+      object.answerCollection
+        ? [
+            {
+              ...object.answerCollection,
+              isShared: object.permissionLevel !== PermissionLevel.OWNER,
+              isEditor:
+                object.permissionLevel === PermissionLevel.WRITE ||
+                object.permissionLevel === PermissionLevel.ADMIN ||
+                object.permissionLevel === PermissionLevel.OWNER,
+            },
+          ]
+        : []
+    ),
+    ...templateAnswerCollections
+      .filter(
+        (collection) => !sharedAnswerCollectionIds.includes(collection.id)
+      )
+      .map((collection) => ({
+        ...collection,
+        isShared: false,
+        isEditor: false,
+      })),
+  ]
+
+  return combinedAnswerCollections.reduce<
+    ReturnType<typeof toAnswerCollectionForElements>[]
+  >((collections, collection) => {
+    if (!collections.some((item) => item.id === collection.id)) {
+      collections.push(toAnswerCollectionForElements(collection))
+    }
+
+    return collections
+  }, [])
 }
 
 async function getSingleAnswerCollection({
@@ -575,6 +763,20 @@ export const resourcesRouter = router({
       }),
     }
   }),
+
+  answerCollectionsForElements: userProcedure
+    .input(answerCollectionsForElementsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        answerCollections: await getAnswerCollectionsForElements({
+          prisma,
+          userId: ctx.user.sub,
+          templateId: input.templateId,
+        }),
+      }
+    }),
 
   singleAnswerCollection: userProcedure
     .input(singleAnswerCollectionInput)
