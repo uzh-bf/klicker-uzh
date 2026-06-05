@@ -276,6 +276,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M11 Manage Standalone Question Preview Read
+
+Status: complete for the scoped slice. Scope was the standalone manage question preview page that still read an artificial element instance through Apollo. This was intentionally frontend-only because `element.artificialInstance` was added and tested in S04M10; template loading, template mutations, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup remain live.
+
+Operation mapping:
+
+```text
+Slice: S04M11 Manage Standalone Question Preview Read
+GraphQL operation(s): GetArtificialInstance
+GraphQL resolver(s): Query.artificialInstance
+Behavior source: packages/graphql/src/services/elements.ts getArtificialElementInstance; S04M10 tRPC procedure parity tests
+tRPC router.procedure: element.artificialInstance
+Input schema: { elementId: number }
+Output DTO: { artificialInstance: ElementInstancePreview | null }
+Active frontend consumers: apps/frontend-manage/src/pages/questions/[id].tsx
+Apollo cache/refetch/subscription behavior: read query with route-param skip guard; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: trpc.element.artificialInstance.useQuery(input, { enabled })
+Browser verification path: branch-local manage app; delegated login; open /questions/<elementId> and verify the preview issues /api/trpc/element.artificialInstance
+Cleanup blocked until: remaining manage Apollo consumers, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `apps/frontend-manage/src/pages/questions/[id].tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Replaced the page-level Apollo `useQuery(GetArtificialInstanceDocument)` call with `trpc.element.artificialInstance.useQuery`.
+- Kept the generated `ElementType` runtime enum and local `ElementInstance` compatibility cast because `StudentElement` / `useSingleStudentResponse` still consume generated GraphQL element-instance shapes until the later generated-type cleanup slice.
+- Added a route-param `enabled` guard for valid positive integer element ids and kept invalid ready routes on the existing error notification path.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...` on the touched S04M11 files: passed, unchanged.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after rerun with filesystem escalation for `tsconfig.tsbuildinfo` writes in the `/Volumes` worktree.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing unrelated warnings (`packages/next-config` module type, next-intl App Router migration, PWA/browserlist, `/qr/[...args]` `MISSING_MESSAGE`, and existing large page-data warnings).
+- Static audit: no `GetArtificialInstanceDocument` remains in active frontend/shared consumers under `apps/frontend-manage/src`, `apps/frontend-pwa/src`, `apps/frontend-control/src`, `packages/shared-components`, `packages/markdown`, or `packages/i18n`.
+- Static audit: the touched standalone preview and template preview files have no `@apollo/client`, `GetArtificialInstanceDocument`, or `GetArtificialInstance` matches.
+- `git diff --check`: passed.
+- Browser smoke used `npx agent-browser` with delegated `lecturer` login against a branch-local stack on ports `3133` backend, `3134` manage, and `3136` auth. The backend again required `NODE_ENV=development`, `APP_MANAGE_SUBDOMAIN=127.0.0.1`, and a process-local dummy Hatchet JWT to start without editing `.env` files.
+- Browser resource timing confirmed HTTP fetch to `/api/trpc/element.artificialInstance?batch=1` with `elementId: 386` and no `/api/graphql` request for the standalone preview.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m11-question-preview-before.png`, `/tmp/agent-browser-shots/s04m11-after-login.png`, `/tmp/agent-browser-shots/s04m11-question-preview-after.png`.
+- Local verification cleanup closed `agent-browser`, stopped the local backend/auth/manage listeners, and confirmed ports `3133`, `3134`, and `3136` were free. One older pre-existing backend Rollup watcher in this worktree was left untouched.
+- Review/simplification: self-review found no cache behavior to port and no need for a new DTO or abstraction; the local compatibility cast matches the already browser-verified template-preview bridge from S04M10.
+
+Next candidate:
+
+- Continue manage template authoring with the activity template read or live-quiz-template create-from-template mutation, keeping generated GraphQL type cleanup and Apollo/provider removal for later gates.
+
 ### 2026-06-05 Completed: S04M10 Manage Template Element Preview Reads
 
 Status: complete for the scoped slice. Scope was the template element preview workflow in manage, migrating the two read-only GraphQL queries used by `TemplateElementPreview` while leaving template loading, template mutations, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup live.

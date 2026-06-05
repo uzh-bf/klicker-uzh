@@ -1,7 +1,6 @@
-import { useQuery } from '@apollo/client'
 import {
   ElementType,
-  GetArtificialInstanceDocument,
+  type ElementInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -13,18 +12,29 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function QuestionDetails() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data, loading } = useQuery(GetArtificialInstanceDocument, {
-    variables: {
-      elementId: Number(router.query.id),
+  const elementId =
+    typeof router.query.id === 'string' ? Number(router.query.id) : -1
+  const shouldFetchArtificialInstance =
+    Number.isInteger(elementId) && elementId > 0
+
+  const { data, isLoading } = trpc.element.artificialInstance.useQuery(
+    {
+      elementId,
     },
-    skip: !router.query.id,
-  })
-  const instance = data?.artificialInstance
+    {
+      enabled: shouldFetchArtificialInstance,
+    }
+  )
+  const instance = data?.artificialInstance as
+    | ElementInstance
+    | null
+    | undefined
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -40,7 +50,7 @@ function QuestionDetails() {
     setStudentResponse,
   })
 
-  if (loading) {
+  if (!router.isReady || (shouldFetchArtificialInstance && isLoading)) {
     return <Loader />
   }
 
