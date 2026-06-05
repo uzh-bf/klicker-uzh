@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: S04M3 Manage Element Edit Wizard Mutations, because tag list/edit/delete/order is now tRPC-backed and the remaining element edit modal Apollo usage is the actual element read/create/update/update-instance mutation group. Batch operations, analytics/evaluation reads, realtime, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: S04M4 Manage Element Batch Operations, because the element edit wizard read/mutate/status paths are now tRPC-backed and the remaining batch-operation modal is the next isolated manage question-pool mutation group. Analytics/evaluation reads, realtime, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,70 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04M3 Manage Element Edit Wizard Mutations
+
+Status: complete for the scoped slice. This slice migrated the manage element edit wizard read/mutate/status paths from GraphQL/Apollo to tRPC while leaving element list reads, batch operations, activity/template element manipulation flows, generated enum/type cleanup in shared manipulation helpers, Apollo providers, subscriptions, and GraphQL cleanup out of scope.
+
+Operation mapping:
+
+```text
+Slice: S04M3 Manage Element Edit Wizard Mutations
+GraphQL operation(s): GetSingleElement, ManipulateContentElement, ManipulateFlashcardElement, ManipulateChoicesQuestion, ManipulateNumericalQuestion, ManipulateFreeTextQuestion, ManipulateSelectionQuestion, ManipulateCaseStudyQuestion, UpdateElementInstances, FlagOutdatedElementInstances, ChangeElementStatus
+GraphQL resolver(s): Query.element; Mutation.manipulateContentElement; Mutation.manipulateFlashcardElement; Mutation.manipulateChoicesQuestion; Mutation.manipulateNumericalQuestion; Mutation.manipulateFreeTextQuestion; Mutation.manipulateSelectionQuestion; Mutation.manipulateCaseStudyQuestion; Mutation.updateElementInstances; Mutation.flagOutdatedElementInstances; Mutation.changeElementStatus
+Behavior source: packages/graphql/src/services/elements.ts getSingleElement/manipulateElement/updateElementInstances/flagOutdatedElementInstances/changeElementStatus and resolver permission checks in packages/graphql/src/schema/mutation.ts
+tRPC router.procedure: element.single; element.manipulateContent; element.manipulateFlashcard; element.manipulateChoices; element.manipulateNumerical; element.manipulateFreeText; element.manipulateSelection; element.manipulateCaseStudy; element.updateInstances; element.flagOutdatedInstances; element.changeStatus
+Input schema: integer id; shared element manipulation schemas per element type; updateInstances { elementId, includeTemplates }; flagOutdatedInstances { elementId }; changeStatus { elementId, status }
+Output DTO: narrow edit element DTO with id/version/name/status/type/content/explanation/basePoints/pointsMultiplier/isOwner/isManager/isEditor/options/tags; manipulate mutations return nullable element DTO id/type discriminator; updateInstances returns updated instance ids
+Active frontend consumers: apps/frontend-manage/src/components/elements/manipulation/ElementEditModal.tsx; apps/frontend-manage/src/components/elements/manipulation/ElementInformationFields.tsx
+Apollo cache/refetch/subscription behavior: Apollo useQuery for GetSingleElement, useMutation for element manipulation, instance update/flag, and status change; manual refetchElements and user tag refetch after manipulation; Apollo cache update after status change
+React Query replacement: trpc.element.single query, trpc element manipulation mutations, trpc element update/flag instance mutations, trpc element changeStatus mutation, utils.element.single/tags invalidation plus existing refetchElements callback
+Browser verification path: branch-local manage Library element creation/edit modal through local backend/auth/manage stack
+Cleanup blocked until: manage question-pool list reads, batch operations, template/activity manipulation flows, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Implemented:
+
+- Added Zod schemas for all seven element manipulation inputs, edit initialization, update/flag instance follow-ups, and status changes.
+- Added `element.single`, seven `element.manipulate*` procedures, `element.updateInstances`, `element.flagOutdatedInstances`, and `element.changeStatus` in `packages/api/src/trpc/routers/element.ts`.
+- Mirrored GraphQL resolver/service behavior from `packages/graphql/src/services/elements.ts`, including nullable denial behavior, answer-collection read checks, input validation, element invalidation, activity invalidation, derived permissions, and activity-log side effects.
+- Returned a narrow edit DTO compatible with the existing wizard initialization shape while avoiding new GraphQL runtime imports in `packages/api`.
+- Migrated `ElementEditModal` from Apollo query/mutations to tRPC hooks and React Query invalidation.
+- Migrated `ElementInformationFields` from `ChangeElementStatusDocument` and Apollo cache updates to `trpc.element.changeStatus` plus `element.single` invalidation.
+- Kept generated enum/type imports in the frontend wizard where adjacent helper code still expects generated values; generated type cleanup stays in a later slice.
+- Added focused API tests for single-element read permission, edit permission denial, content creation side effects, outdated instance flagging, and status-change side effects.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements` passed: 27 test files, 255 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after rebuilding `@klicker-uzh/api`; an earlier parallel app check saw stale API dist and was re-run successfully.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config/message lookup, Browserslist freshness, `MISSING_MESSAGE` during `/qr/[...args]`, and large page data.
+- `git diff --check` passed.
+- Scoped migrated-operation audit found no remaining `GetSingleElementDocument`, `ChangeElementStatusDocument`, seven `Manipulate*Document`, `UpdateElementInstancesDocument`, or `FlagOutdatedElementInstancesDocument` usage in the migrated element manipulation/list entry scope.
+- Touched API audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in the new element procedures, schemas, or tests.
+- S04 coexistence audit still lists many GraphQL/Apollo files as expected; GraphQL remains intentionally live.
+- Browser verification used a disposable branch-local stack on ports 3123/3124/3126 and delegated login as seeded `lecturer`.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m3-manage-home.png`, `/tmp/agent-browser-shots/s04m3-edit-modal-386.png`, `/tmp/agent-browser-shots/s04m3-after-save-386.png`, `/tmp/agent-browser-shots/s04m3-status-review-386.png`, and `/tmp/agent-browser-shots/s04m3-status-ready-restored-386.png`.
+- Browser smoke opened `http://127.0.0.1:3124/?editElementId=386`, confirmed the edit modal rendered, saved unchanged data, changed status from Ready to Review, and restored Ready.
+- Browser resource timing showed `element.single`, `element.manipulateSelection`, `element.updateInstances`, and `element.changeStatus` requests under `http://127.0.0.1:3123/api/trpc/...`. Unrelated `/api/graphql` requests still appear on the page as expected during coexistence.
+- The Create Element button did not open a visible modal in this local browser state; API tests cover the creation procedure path and browser verification covered the shared edit wizard mutation path through an existing seeded element.
+- Verification backend/auth/manage servers and agent-browser session were stopped after browser checks; ports 3123, 3124, and 3126 were free afterward.
+
+Review and simplification:
+
+- Context7 was not available through tool discovery in this session; official tRPC v10 docs for routers and `useUtils` were loaded instead and matched the branch's installed `@trpc/*` 10.45.2 patterns.
+- Self-review only: subagent tooling was not available under the current tool policy without explicit user delegation.
+- Kept the implementation in the existing `element` router rather than adding a separate service layer because the slice needs behavior parity first and the current router already owns manage element procedures.
+- Kept frontend generated enum/type imports where neighboring helpers still require generated shapes; replacing those globally would mix generated-type cleanup into this workflow slice.
+- Used React Query invalidation for `element.single` and `element.tags` instead of recreating Apollo cache writes.
+
+Next:
+
+- Commit S04M3 as one conventional slice commit.
+- Recommended next slice: S04M4 Manage Element Batch Operations, then continue generated type leak cleanup only after the owning workflows are migrated.
 
 ### 2026-06-05 Completed: S04M2 Manage Tag CRUD, List, and Ordering
 

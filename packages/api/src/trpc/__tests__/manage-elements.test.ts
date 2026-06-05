@@ -1,4 +1,8 @@
 import {
+  ActivityLogType,
+  ElementStatus,
+  ElementType,
+  ObjectType,
   PermissionLevel,
   UserLoginScope,
   UserRole,
@@ -41,6 +45,306 @@ function createContext(
 describe('manage element router', () => {
   beforeEach(() => {
     vi.mocked(recomputeDerivedPermissions).mockClear()
+  })
+
+  test('returns null single element when read permission is missing', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const elementFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { findUnique: elementFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.element.single({ id: 17 })).resolves.toEqual({
+      element: null,
+    })
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        elementId: 17,
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(elementFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('returns single element edit data for readable elements', async () => {
+    const findFirst = vi.fn().mockResolvedValue({ id: 3 })
+    const elementFindUnique = vi.fn().mockResolvedValue({
+      id: 17,
+      version: 2,
+      name: 'Question',
+      status: ElementStatus.READY,
+      type: ElementType.SC,
+      content: 'Question content',
+      explanation: 'Explanation',
+      basePoints: true,
+      pointsMultiplier: 2,
+      options: {
+        displayMode: 'LIST',
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
+        choices: [{ ix: 0, value: 'A', correct: true }],
+      },
+      tags: [{ id: 5, name: 'Tag', order: 0 }],
+      answerCollectionId: null,
+      answerCollectionItems: [],
+      permissions: [
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          derived: false,
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { findUnique: elementFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.element.single({ id: 17 })).resolves.toMatchObject({
+      element: {
+        __typename: 'ChoicesElement',
+        id: 17,
+        name: 'Question',
+        isEditor: true,
+        options: {
+          hasSampleSolution: true,
+          choices: [{ ix: 0, value: 'A', correct: true }],
+        },
+        tags: [{ id: 5, name: 'Tag', order: 0 }],
+      },
+    })
+    expect(elementFindUnique).toHaveBeenCalledWith({
+      where: { id: 17, permissions: { some: { userId: user.id } } },
+      include: {
+        permissions: {
+          where: { userId: user.id },
+        },
+        tags: {
+          where: { ownerId: user.id },
+          orderBy: { order: 'asc' },
+        },
+        answerCollectionItems: true,
+      },
+    })
+  })
+
+  test('returns null when editing an element without write permission', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const upsert = vi.fn()
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { upsert },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.manipulateFlashcard({
+        id: 17,
+        status: ElementStatus.READY,
+        name: 'Flashcard',
+        content: 'Question',
+        explanation: 'Answer',
+        pointsMultiplier: 1,
+        tags: [],
+      })
+    ).resolves.toEqual({ element: null })
+    expect(upsert).not.toHaveBeenCalled()
+  })
+
+  test('creates a content element and records creation side effects', async () => {
+    const emit = vi.fn()
+    const createdAt = new Date('2026-06-05T08:00:00Z')
+    const updatedAt = new Date('2026-06-05T08:00:00Z')
+    const upsert = vi.fn().mockResolvedValue({
+      id: 17,
+      version: 1,
+      name: 'Content',
+      status: ElementStatus.READY,
+      type: ElementType.CONTENT,
+      content: 'Content body',
+      explanation: null,
+      basePoints: false,
+      pointsMultiplier: 1,
+      options: {},
+      tags: [{ id: 5, name: 'Tag', order: 0 }],
+      answerCollectionId: null,
+      answerCollectionItems: [],
+      createdAt,
+      updatedAt,
+    })
+    const activityLogCreate = vi.fn().mockResolvedValue({})
+    const prisma = {
+      element: { upsert },
+      activityLogEntry: { create: activityLogCreate },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { emit } as unknown as TRPCContext['emitter'])
+    )
+
+    await expect(
+      caller.element.manipulateContent({
+        status: ElementStatus.READY,
+        name: 'Content',
+        content: 'Content body',
+        pointsMultiplier: 1,
+        tags: ['Tag'],
+      })
+    ).resolves.toMatchObject({
+      element: {
+        __typename: 'ContentElement',
+        id: 17,
+        name: 'Content',
+        tags: [{ id: 5, name: 'Tag', order: 0 }],
+      },
+    })
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          type: ElementType.CONTENT,
+          owner: { connect: { id: user.id } },
+        }),
+      })
+    )
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      { elementId: 17, userId: user.id },
+      prisma
+    )
+    expect(activityLogCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: ActivityLogType.CREATION,
+        objectType: ObjectType.ELEMENT,
+        elementId: 17,
+        userId: user.id,
+        createdAt,
+        updatedAt,
+      }),
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'Element',
+      id: 17,
+    })
+  })
+
+  test('flags outdated element instances and emits activity invalidation', async () => {
+    const emit = vi.fn()
+    const findFirst = vi.fn().mockResolvedValue({ id: 3 })
+    const elementFindUnique = vi.fn().mockResolvedValue({
+      id: 17,
+      version: 3,
+    })
+    const elementInstanceFindMany = vi.fn().mockResolvedValue([
+      {
+        id: 23,
+        elementBlock: { liveQuizId: 'live-1' },
+        elementStack: null,
+      },
+    ])
+    const elementInstanceUpdate = vi.fn().mockResolvedValue({})
+    const liveQuizUpdate = vi.fn().mockResolvedValue({})
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { findUnique: elementFindUnique },
+      elementInstance: {
+        findMany: elementInstanceFindMany,
+        update: elementInstanceUpdate,
+      },
+      liveQuiz: { update: liveQuizUpdate },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { emit } as unknown as TRPCContext['emitter'])
+    )
+
+    await expect(
+      caller.element.flagOutdatedInstances({ elementId: 17 })
+    ).resolves.toEqual({ success: true })
+    expect(elementInstanceFindMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        elementId: 17,
+        NOT: {
+          elementData: {
+            path: ['id'],
+            equals: '17-v3',
+          },
+        },
+      }),
+      include: expect.any(Object),
+    })
+    expect(elementInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: 23 },
+      data: { isVersionOutdated: true },
+    })
+    expect(liveQuizUpdate).toHaveBeenCalledWith({
+      where: { id: 'live-1' },
+      data: { areInstancesOutdated: true },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'LiveQuiz',
+      id: 'live-1',
+    })
+  })
+
+  test('changes element status, records modification, and emits invalidation', async () => {
+    const emit = vi.fn()
+    const findFirst = vi.fn().mockResolvedValue({ id: 3 })
+    const elementFindUnique = vi.fn().mockResolvedValue({
+      id: 17,
+      status: ElementStatus.DRAFT,
+    })
+    const elementUpdate = vi.fn().mockResolvedValue({
+      id: 17,
+      status: ElementStatus.READY,
+    })
+    const activityLogCreate = vi.fn().mockResolvedValue({})
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: {
+        findUnique: elementFindUnique,
+        update: elementUpdate,
+      },
+      activityLogEntry: { create: activityLogCreate },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { emit } as unknown as TRPCContext['emitter'])
+    )
+
+    await expect(
+      caller.element.changeStatus({
+        elementId: 17,
+        status: ElementStatus.READY,
+      })
+    ).resolves.toEqual({ success: true })
+    expect(elementUpdate).toHaveBeenCalledWith({
+      where: { id: 17 },
+      data: { status: ElementStatus.READY },
+    })
+    expect(activityLogCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: ActivityLogType.MODIFICATION,
+        objectType: ObjectType.ELEMENT,
+        elementId: 17,
+        userId: user.id,
+        modificationDetails: {
+          field: 'status',
+          oldValue: ElementStatus.DRAFT,
+          newValue: ElementStatus.READY,
+        },
+      }),
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'Element',
+      id: 17,
+    })
   })
 
   test('returns null summary when admin permission is missing', async () => {

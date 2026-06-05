@@ -1,9 +1,4 @@
-import { useMutation } from '@apollo/client'
-import {
-  ChangeElementStatusDocument,
-  ElementStatus,
-  GetSingleElementDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormLabel,
@@ -14,11 +9,14 @@ import {
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
 import useElementTypeOptions from './useElementTypeOptions'
 import useStatusOptions from './useStatusOptions'
+
+type ChangeElementStatusInput = RouterInputs['element']['changeStatus']
 
 interface ElementInformationFieldsProps {
   isTemplate?: boolean
@@ -41,9 +39,10 @@ function ElementInformationFields({
   const statusOptions = useStatusOptions()
   const questionTypeOptions = useElementTypeOptions()
   const { setFieldValue } = useFormikContext()
+  const utils = trpc.useUtils()
 
   const [statusSaving, setStatusSaving] = useState(false)
-  const [changeElementStatus] = useMutation(ChangeElementStatusDocument)
+  const changeElementStatus = trpc.element.changeStatus.useMutation()
 
   return (
     <>
@@ -67,30 +66,14 @@ function ElementInformationFields({
               setStatusSaving(true)
 
               if (typeof elementId !== 'undefined') {
-                await changeElementStatus({
-                  variables: { elementId, status: newValue as ElementStatus },
-                  update: (cache, { data }) => {
-                    // check if request was successful
-                    const success = data?.changeElementStatus
-                    if (!success) return
-
-                    // update single question query
-                    cache.updateQuery(
-                      {
-                        query: GetSingleElementDocument,
-                        variables: { id: elementId },
-                      },
-                      (data) => ({
-                        element: data?.element
-                          ? {
-                              ...data?.element,
-                              status: newValue as ElementStatus,
-                            }
-                          : null,
-                      })
-                    )
-                  },
+                const result = await changeElementStatus.mutateAsync({
+                  elementId,
+                  status: newValue as ChangeElementStatusInput['status'],
                 })
+
+                if (result.success) {
+                  await utils.element.single.invalidate({ id: elementId })
+                }
               }
 
               setFieldValue('status', newValue as ElementStatus)
