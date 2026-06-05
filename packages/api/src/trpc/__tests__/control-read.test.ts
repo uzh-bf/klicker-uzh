@@ -257,6 +257,113 @@ describe('control read routers', () => {
     })
   })
 
+  test('returns course activity ids grouped by activity type', async () => {
+    const findUnique = vi.fn().mockResolvedValue({
+      objects: [
+        {
+          liveQuiz: { id: 'live-1', name: 'Live Quiz' },
+          practiceQuiz: null,
+          microLearning: null,
+          groupActivity: null,
+        },
+        {
+          liveQuiz: null,
+          practiceQuiz: { id: 'practice-1', name: 'Practice Quiz' },
+          microLearning: null,
+          groupActivity: null,
+        },
+        {
+          liveQuiz: null,
+          practiceQuiz: null,
+          microLearning: { id: 'micro-1', name: 'Microlearning' },
+          groupActivity: null,
+        },
+        {
+          liveQuiz: null,
+          practiceQuiz: null,
+          microLearning: null,
+          groupActivity: { id: 'group-1', name: 'Group Activity' },
+        },
+      ],
+    })
+    const prisma = {
+      user: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.activityIds({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      courseActivityIds: {
+        liveQuizzes: [{ id: 'live-1', name: 'Live Quiz' }],
+        practiceQuizzes: [{ id: 'practice-1', name: 'Practice Quiz' }],
+        microLearnings: [{ id: 'micro-1', name: 'Microlearning' }],
+        groupActivities: [{ id: 'group-1', name: 'Group Activity' }],
+      },
+    })
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: user.id },
+      include: {
+        objects: {
+          where: {
+            OR: [
+              {
+                liveQuiz: {
+                  isDeleted: false,
+                  courseId: 'course-1',
+                },
+              },
+              {
+                practiceQuiz: {
+                  isDeleted: false,
+                  courseId: 'course-1',
+                },
+              },
+              {
+                microLearning: {
+                  isDeleted: false,
+                  courseId: 'course-1',
+                },
+              },
+              {
+                groupActivity: {
+                  isDeleted: false,
+                  courseId: 'course-1',
+                },
+              },
+            ],
+          },
+          include: {
+            liveQuiz: { select: { id: true, name: true } },
+            practiceQuiz: { select: { id: true, name: true } },
+            microLearning: { select: { id: true, name: true } },
+            groupActivity: { select: { id: true, name: true } },
+          },
+        },
+      },
+    })
+  })
+
+  test('returns null course activity ids when the user is missing', async () => {
+    const findUnique = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      user: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.course.activityIds({})).resolves.toEqual({
+      courseActivityIds: null,
+    })
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: user.id } })
+    )
+  })
+
   test('returns a course deletion summary when read permission exists', async () => {
     const findFirst = vi.fn().mockResolvedValue({
       permissionLevel: PermissionLevel.READ,

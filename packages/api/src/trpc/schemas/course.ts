@@ -8,6 +8,10 @@ export const basicCourseInformationInput = z.object({
   courseId: z.string(),
 })
 
+export const courseActivityIdsInput = z.object({
+  courseId: z.string().nullish(),
+})
+
 export const courseSummaryInput = z.object({
   courseId: z.string(),
 })

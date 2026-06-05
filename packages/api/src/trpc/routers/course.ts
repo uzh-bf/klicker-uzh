@@ -13,6 +13,7 @@ import { userProcedure } from '../procedures.js'
 import {
   basicCourseInformationInput,
   controlCourseInput,
+  courseActivityIdsInput,
   courseSummaryInput,
 } from '../schemas/course.js'
 
@@ -115,6 +116,108 @@ export const courseRouter = router({
           }) ?? [],
     }
   }),
+
+  activityIds: userProcedure
+    .input(courseActivityIdsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const user = await prisma.user.findUnique({
+        where: { id: ctx.user.sub },
+        include: {
+          objects: {
+            where: {
+              OR: [
+                {
+                  liveQuiz: {
+                    isDeleted: false,
+                    courseId: input.courseId ?? null,
+                  },
+                },
+                ...(input.courseId
+                  ? [
+                      {
+                        practiceQuiz: {
+                          isDeleted: false,
+                          courseId: input.courseId,
+                        },
+                      },
+                    ]
+                  : []),
+                ...(input.courseId
+                  ? [
+                      {
+                        microLearning: {
+                          isDeleted: false,
+                          courseId: input.courseId,
+                        },
+                      },
+                    ]
+                  : []),
+                ...(input.courseId
+                  ? [
+                      {
+                        groupActivity: {
+                          isDeleted: false,
+                          courseId: input.courseId,
+                        },
+                      },
+                    ]
+                  : []),
+              ],
+            },
+            include: {
+              liveQuiz: { select: { id: true, name: true } },
+              practiceQuiz: { select: { id: true, name: true } },
+              microLearning: { select: { id: true, name: true } },
+              groupActivity: { select: { id: true, name: true } },
+            },
+          },
+        },
+      })
+
+      if (!user) return { courseActivityIds: null }
+
+      return {
+        courseActivityIds: user.objects.reduce<{
+          liveQuizzes: { id: string; name: string }[]
+          practiceQuizzes: { id: string; name: string }[]
+          microLearnings: { id: string; name: string }[]
+          groupActivities: { id: string; name: string }[]
+        }>(
+          (acc, object) => {
+            if (object.liveQuiz) {
+              acc.liveQuizzes.push({
+                id: object.liveQuiz.id,
+                name: object.liveQuiz.name,
+              })
+            } else if (object.practiceQuiz) {
+              acc.practiceQuizzes.push({
+                id: object.practiceQuiz.id,
+                name: object.practiceQuiz.name,
+              })
+            } else if (object.microLearning) {
+              acc.microLearnings.push({
+                id: object.microLearning.id,
+                name: object.microLearning.name,
+              })
+            } else if (object.groupActivity) {
+              acc.groupActivities.push({
+                id: object.groupActivity.id,
+                name: object.groupActivity.name,
+              })
+            }
+
+            return acc
+          },
+          {
+            liveQuizzes: [],
+            practiceQuizzes: [],
+            microLearnings: [],
+            groupActivities: [],
+          }
+        ),
+      }
+    }),
 
   summary: userProcedure
     .input(courseSummaryInput)

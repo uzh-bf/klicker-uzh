@@ -276,6 +276,67 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M6 Manage Question Pool Filter Sidebar Reads
+
+Status: complete for the scoped slice. This slice migrated the manage Library/question-pool filter sidebar reads for private-preview sharing filter visibility, user course selection, and activity id/name selection from GraphQL/Apollo to tRPC. Element list reads, element edit/delete/batch mutations, tag CRUD/list reads, and answer-collection resource mutations were already migrated; element form answer-collection selection, instance update activity reads, activity/template authoring flows, generated enum/type cleanup, Apollo providers, subscriptions, and GraphQL cleanup remain out of scope.
+
+Operation mapping:
+
+```text
+Slice: S04M6 Manage Question Pool Filter Sidebar Reads
+GraphQL operation(s): UserProfile in FilterList; GetUserCourses; GetCourseActivityIds
+GraphQL resolver(s): Query.userProfile cache read consumer; Query.userCourses; Query.getCourseActivityIds
+Behavior source: existing packages/api user.profile and course.userCourses procedures; packages/graphql/src/services/activities.ts getCourseActivityIds
+tRPC router.procedure: user.profile; course.userCourses; course.activityIds
+Input schema: course.activityIds { courseId?: string | null }
+Output DTO: { liveQuizzes, practiceQuizzes, microLearnings, groupActivities } with { id, name } items
+Active frontend consumers: apps/frontend-manage/src/components/elements/tags/FilterList.tsx; apps/frontend-manage/src/components/elements/tags/SuspendedActivitySelection.tsx
+Apollo cache/refetch/subscription behavior: FilterList reads UserProfileDocument cache-only; SuspendedActivitySelection uses Suspense Apollo queries with cache-and-network for courses and course activity ids
+React Query replacement: trpc.user.profile useQuery; trpc.course.userCourses useQuery; trpc.course.activityIds useQuery keyed by active course filter
+Browser verification path: branch-local manage Library page, open sharing/user-tags/activity-usage filters, select a course/activity, confirm list refetch uses tRPC element.list with the selected activity id
+Cleanup blocked until: element form answer-collection selection, instance update activity reads, activity/template authoring flows, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/routers/course.ts`
+- `packages/api/src/trpc/schemas/course.ts`
+- `packages/api/src/trpc/__tests__/control-read.test.ts`
+- `apps/frontend-manage/src/components/elements/tags/FilterList.tsx`
+- `apps/frontend-manage/src/components/elements/tags/SuspendedActivitySelection.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `course.activityIds` in `packages/api`, mirroring `packages/graphql/src/services/activities.ts getCourseActivityIds` by reading the current user's accessible objects, preserving the unassigned live-quiz behavior when no course is selected, filtering deleted activities, and returning grouped `{ id, name }` items.
+- Reused the existing `course.userCourses` tRPC procedure for the course dropdown and existing `user.profile` tRPC procedure for the private-preview sharing filter visibility.
+- Replaced `FilterList`'s cache-only `UserProfileDocument` Apollo read with `trpc.user.profile.useQuery`.
+- Replaced `SuspendedActivitySelection`'s `GetUserCoursesDocument` and `GetCourseActivityIdsDocument` Apollo suspense queries with tRPC queries and a local loader.
+- Added focused API tests for grouped activity id output and missing-user null output.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed after rerun with escalation for a sandbox write denial in `SuspendedActivitySelection.tsx`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- control-read` passed: 27 files, 262 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed after rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed after rerun with escalation for Rollup cache/output writes.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed after rerun with escalation for `.next` writes, with existing Next/PWA/Browserslist/i18n and large-page-data warnings only.
+- Scoped migrated-operation audits passed: no `GetUserCoursesDocument`, `GetCourseActivityIdsDocument`, `UserProfileDocument`, or Apollo import remains in the migrated filter files; touched API files have no GraphQL runtime imports.
+- S04 coexistence audit still finds active GraphQL/Apollo references elsewhere, as expected before later slices and S06 cleanup.
+- Browser verification used a branch-local stack on ports `3133` backend, `3134` manage, and `3136` auth. Screenshots: `/tmp/agent-browser-shots/s04m6-library.png`, `/tmp/agent-browser-shots/s04m6-activity-filter-open.png`, `/tmp/agent-browser-shots/s04m6-course-selected.png`, and `/tmp/agent-browser-shots/s04m6-activity-selected.png`.
+- Browser resource timing confirmed initial `user.profile,element.list`, header `course.userCourses,user.profile`, filter `course.userCourses,course.activityIds`, course-scoped `course.activityIds`, and final `element.list` tRPC requests with the selected `activityId`.
+- Local runtime gotcha: backend JWT extraction checks request `Origin` against `APP_MANAGE_SUBDOMAIN`; for the branch-local `127.0.0.1:3134` manage URL, the backend had to run with `APP_MANAGE_SUBDOMAIN=127.0.0.1` so manager cookies were read correctly.
+
+Next candidate:
+
+- Continue with the remaining element edit wizard Apollo reads: `ElementEditForm.tsx` answer-collection selection (`GetAnswerCollectionsElementsDocument`) and `InstanceUpdateSwitch.tsx` profile/instance-update activity reads.
+
+Notes:
+
+- Context7 was not available through tool discovery in this session; official tRPC v10 router/procedure/validator/useQuery docs were loaded instead and matched the branch's installed `@trpc/*` 10.45.2 patterns.
+- Multi-agent tools are exposed, but their tool policy only permits spawning when the user explicitly asks for subagents; this slice used explicit self-review.
+
 ### 2026-06-05 Completed: S04M5 Manage Question Pool List Read
 
 Status: complete for the scoped slice. This slice migrated the manage Library/question-pool element list read and the row-level private-preview profile read used by element actions from GraphQL/Apollo to tRPC. Element edit/delete/batch mutations were already migrated in S04M1/S04M3/S04M4; tag filter sidebars, activity/template element-selection reads, activity authoring mutations, generated enum/type cleanup in shared hooks, Apollo providers, subscriptions, and GraphQL cleanup remain out of scope.
