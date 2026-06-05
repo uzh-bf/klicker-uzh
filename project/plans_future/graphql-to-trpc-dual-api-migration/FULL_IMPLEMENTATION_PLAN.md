@@ -83,7 +83,11 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with adjacent template-authoring reads such as `getTemplatePreviewAnswerCollectionEntries`, `getArtificialInstance`, or the live-quiz-template settings read. Keep template mutations, generated GraphQL type cleanup, Apollo providers, realtime, and GraphQL cleanup live for later slices.
+- Continue the manage vertical migration with the remaining adjacent
+  template-authoring surfaces, currently `CreateLiveQuizFromTemplateDocument` in
+  `LiveQuizTemplate` or `GetTemplateInformationDocument` in `TemplateEditModal`.
+  Keep generated GraphQL type cleanup, Apollo providers, realtime, and GraphQL
+  cleanup live for later slices.
 
 Still intentionally live:
 
@@ -275,6 +279,129 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04M16 Manage Activity Batch Operations Mutation
+
+Status: complete for the scoped slice. Scope was the single
+`ApplyActivityBatchOperationsDocument` mutation in
+`ActivityBatchOperationsModal`, following S04M15's course-read migration in the
+same modal. This slice keeps the modal's generated activity display types,
+remaining activity overview reads, Apollo providers, GraphQL endpoint,
+subscriptions, codegen, and final cleanup live.
+
+Operation mapping:
+
+```text
+Slice: S04M16 Manage Activity Batch Operations Mutation
+GraphQL operation(s): ApplyActivityBatchOperations
+GraphQL resolver(s): Mutation.applyActivityBatchOperations with asUserFullAccess
+Behavior source: packages/graphql/src/services/activities.ts applyActivityBatchOperations
+tRPC router.procedure: activity.applyBatchOperations
+Input schema: { activityIds: string[]; multiplier?: number | null; courseId?: string | null; basePoints?: number | null; correctnessPoints?: number | null; bonusPoints?: number | null; timeToZeroBonus?: number | null }
+Output DTO: { appliedCount: number }
+Active frontend consumers: apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx
+Apollo cache/refetch/subscription behavior: no Apollo cache writes; caller manually invokes refetchActivities() after success / partial success
+React Query replacement: trpc.activity.applyBatchOperations.useMutation(); keep existing refetchActivities() callback because the parent overview already owns the refresh path
+Browser verification path: branch-local manage app; delegated login; open /activities, select an eligible draft/scheduled activity, open batch operations modal, apply a benign multiplier/course update when a disposable or seeded eligible activity is available; capture before/after screenshots and verify /api/trpc/activity.applyBatchOperations in resource timing
+Cleanup blocked until: remaining manage activity reads/mutations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Intended write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/services/manageActivityBatchOperations.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx`
+- This plan file
+
+Implementation:
+
+- Added `applyActivityBatchOperationsInput` with Zod validation.
+- Added API-local `applyManageActivityBatchOperations` service, porting the
+  existing GraphQL service behavior without importing runtime modules from
+  `@klicker-uzh/graphql` into `packages/api`.
+- Added `activity.applyBatchOperations`, guarded by `userFullAccessProcedure`,
+  returning `{ appliedCount }`.
+- Migrated `ActivityBatchOperationsModal` from Apollo
+  `useMutation(ApplyActivityBatchOperationsDocument)` to
+  `trpc.activity.applyBatchOperations.useMutation()`.
+- Kept the existing `refetchActivities()` callback because the activity overview
+  refresh path is already tRPC-backed and owned by the parent workflow.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/manage-activities.test.ts`:
+  passed; the package script ran all API Vitest files (`27` files, `282` tests),
+  including new empty-selection, inaccessible-course, eligible-live-quiz, and
+  full-access guard cases for `activity.applyBatchOperations`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known Next/PWA/Browserslist/i18n `MISSING_MESSAGE` and
+  large-page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/backend-docker check`:
+  passed.
+- Static audit
+  `rg -n "ApplyActivityBatchOperationsDocument|ApplyActivityBatchOperations\\b" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n`:
+  no matches.
+- Touched-file audit confirmed the modal calls
+  `trpc.activity.applyBatchOperations.useMutation()` and no touched frontend
+  file imports the migrated GraphQL document.
+- S04 coexistence audit with `rg -l "@apollo/client|ApolloProvider|@klicker-uzh/graphql|/api/graphql|graphql-yoga|graphql-ws" apps packages cypress package.json pnpm-lock.yaml turbo.json`
+  still reports backend/manage/PWA/shared/packages/graphql/lockfile files by
+  design. GraphQL remains live until S06 gates.
+- tRPC surface audit with
+  `rg -l "@trpc|createTRPC|/api/trpc|type AppRouter|TrpcProvider" apps packages package.json pnpm-lock.yaml`
+  reports the expected API/backend/manage/PWA/control tRPC files.
+
+Browser verification:
+
+- Started branch-local backend/auth/manage on `3133`/`3136`/`3134`, using a
+  non-secret JWT-shaped local Hatchet token for backend startup. The first
+  backend attempt with a plain dummy token failed Hatchet parsing; restart with
+  the JWT-shaped dummy token succeeded.
+- `npx agent-browser` delegated-login smoke opened
+  `http://127.0.0.1:3134/activities`, selected the first eligible draft live
+  quiz, opened the batch operations modal, enabled multiplier modification, and
+  clicked Apply.
+- Screenshot before auth gate: `/tmp/agent-browser-shots/s04m16-before.png`.
+- Screenshot activity list:
+  `/tmp/agent-browser-shots/s04m16-activities.png`.
+- Screenshot modal before applying:
+  `/tmp/agent-browser-shots/s04m16-batch-modal-before-apply.png`.
+- Screenshot after apply:
+  `/tmp/agent-browser-shots/s04m16-after-apply.png`; modal closed and the list
+  refreshed with the live quiz modification timestamp updated.
+- Resource timing after Apply included
+  `http://127.0.0.1:3133/api/trpc/activity.applyBatchOperations?batch=1` and
+  the tRPC `activity.userActivities` refresh. GraphQL stayed available for
+  unrelated coexistence paths.
+- Closed the browser, stopped temporary listeners on ports `3133`, `3134`, and
+  `3136`, stopped the leftover nodemon parent from this verification run, and
+  confirmed only pre-existing watcher PID `40246` remained.
+
+Review / simplification:
+
+- Review subagents were not used because this goal context forbids spawning
+  multi-agents unless explicitly requested. Self-review checked the diff for
+  scope, no browser imports from server runtime modules, full-access parity with
+  GraphQL, and cleanup boundaries.
+- Simplification kept the mutation wrapper small and preserved the existing
+  parent refresh callback instead of introducing wider React Query invalidation
+  changes in the surrounding activity overview.
+
+Next:
+
+- Continue S04 manage template-authoring migration with either
+  `CreateLiveQuizFromTemplateDocument` in `LiveQuizTemplate` or
+  `GetTemplateInformationDocument` in `TemplateEditModal`. Keep generated
+  GraphQL type cleanup, Apollo provider removal, realtime, and S06 cleanup
+  blocked until their gates.
 
 ### 2026-06-05 Completed: S04M15 Manage Activity Batch Operations Course Read
 

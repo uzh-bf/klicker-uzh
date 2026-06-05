@@ -41,6 +41,16 @@ export const activityReviewStatusInput = z.object({
   isReviewed: z.boolean(),
 })
 
+export const applyActivityBatchOperationsInput = z.object({
+  activityIds: z.array(z.string()),
+  multiplier: z.number().int().nullish(),
+  courseId: z.string().nullish(),
+  basePoints: z.number().int().nullish(),
+  correctnessPoints: z.number().int().nullish(),
+  bonusPoints: z.number().int().nullish(),
+  timeToZeroBonus: z.number().int().nullish(),
+})
+
 export const checkTemplateElementExistsInput = z.object({
   name: z.string(),
 })

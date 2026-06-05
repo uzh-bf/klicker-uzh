@@ -9,6 +9,7 @@ import {
   ReviewStatus,
 } from '@klicker-uzh/prisma/client'
 import { ActivityType, SortByType, type ElementData } from '@klicker-uzh/types'
+import { applyManageActivityBatchOperations } from '../../services/manageActivityBatchOperations.js'
 import { getPrisma } from '../context.js'
 import {
   toAsyncActivityDetails,
@@ -25,6 +26,7 @@ import {
   activityDetailsInput,
   activityReviewStatusInput,
   activityTemplateInput,
+  applyActivityBatchOperationsInput,
   checkTemplateElementExistsInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
@@ -570,6 +572,17 @@ export const activityRouter = router({
             })
           : null,
       }
+    }),
+
+  applyBatchOperations: userFullAccessProcedure
+    .input(applyActivityBatchOperationsInput)
+    .mutation(async ({ ctx, input }) => {
+      const appliedCount = await applyManageActivityBatchOperations(input, {
+        prisma: getPrisma(ctx),
+        userId: ctx.user.sub,
+      })
+
+      return { appliedCount }
     }),
 
   setReviewStatus: userFullAccessProcedure

@@ -1110,6 +1110,204 @@ describe('manage activity read routers', () => {
     consoleError.mockRestore()
   })
 
+  test('returns zero for empty activity batch operations', async () => {
+    const findMany = vi.fn()
+    const prisma = {
+      liveQuiz: {
+        findMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.applyBatchOperations({
+        activityIds: [],
+        multiplier: 2,
+      })
+    ).resolves.toEqual({ appliedCount: 0 })
+
+    expect(findMany).not.toHaveBeenCalled()
+  })
+
+  test('returns zero when activity batch operation course is inaccessible', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue(null)
+    const liveQuizFindMany = vi.fn()
+    const prisma = {
+      course: {
+        findUnique: courseFindUnique,
+      },
+      liveQuiz: {
+        findMany: liveQuizFindMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.applyBatchOperations({
+        activityIds: ['live-quiz-1'],
+        courseId: 'course-1',
+        multiplier: 2,
+      })
+    ).resolves.toEqual({ appliedCount: 0 })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'course-1',
+        permissions: {
+          some: {
+            userId: user.id,
+            permissionLevel: {
+              in: [
+                PermissionLevel.OWNER,
+                PermissionLevel.ADMIN,
+                PermissionLevel.WRITE,
+                PermissionLevel.EXECUTE,
+                PermissionLevel.READ,
+              ],
+            },
+          },
+        },
+      },
+    })
+    expect(liveQuizFindMany).not.toHaveBeenCalled()
+  })
+
+  test('applies activity batch operations to eligible live quizzes', async () => {
+    const liveQuizFindMany = vi.fn().mockResolvedValue([
+      {
+        id: 'live-quiz-1',
+        courseId: null,
+        reviewStatus: ReviewStatus.REVIEWED,
+        blocks: [
+          {
+            elements: [
+              {
+                id: 11,
+                elementData: { pointsMultiplier: 4 },
+                options: { pointsMultiplier: 1 },
+              },
+            ],
+          },
+        ],
+      },
+    ])
+    const practiceQuizFindMany = vi.fn().mockResolvedValue([])
+    const microLearningFindMany = vi.fn().mockResolvedValue([])
+    const groupActivityFindMany = vi.fn().mockResolvedValue([])
+    const liveQuizUpdate = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      pointsMultiplier: 3,
+    })
+    const elementInstanceUpdate = vi.fn().mockResolvedValue({ id: 11 })
+    const transaction = vi.fn(async (callback) =>
+      callback({
+        liveQuiz: {
+          update: liveQuizUpdate,
+        },
+        elementInstance: {
+          update: elementInstanceUpdate,
+        },
+      })
+    )
+    const prisma = {
+      liveQuiz: {
+        findMany: liveQuizFindMany,
+      },
+      practiceQuiz: {
+        findMany: practiceQuizFindMany,
+      },
+      microLearning: {
+        findMany: microLearningFindMany,
+      },
+      groupActivity: {
+        findMany: groupActivityFindMany,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.applyBatchOperations({
+        activityIds: ['live-quiz-1'],
+        multiplier: 3,
+      })
+    ).resolves.toEqual({ appliedCount: 1 })
+
+    expect(liveQuizFindMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['live-quiz-1'] },
+        permissions: {
+          some: {
+            userId: user.id,
+            permissionLevel: {
+              in: [
+                PermissionLevel.WRITE,
+                PermissionLevel.ADMIN,
+                PermissionLevel.OWNER,
+              ],
+            },
+          },
+        },
+        status: {
+          in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+        },
+        AND: [
+          {
+            OR: [
+              { isGamificationEnabled: true },
+              { isAssessmentEnabled: true },
+            ],
+          },
+          {
+            OR: [
+              { courseId: null },
+              { isAssessmentEnabled: false },
+              {
+                isAssessmentEnabled: true,
+                course: {
+                  permissions: {
+                    some: {
+                      userId: user.id,
+                      permissionLevel: {
+                        in: [PermissionLevel.OWNER, PermissionLevel.ADMIN],
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+      include: {
+        blocks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+    expect(practiceQuizFindMany).toHaveBeenCalled()
+    expect(microLearningFindMany).toHaveBeenCalled()
+    expect(groupActivityFindMany).toHaveBeenCalled()
+    expect(transaction).toHaveBeenCalledTimes(1)
+    expect(liveQuizUpdate).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1' },
+      data: expect.objectContaining({
+        pointsMultiplier: { set: 3 },
+        reviewStatus: { set: ReviewStatus.MODIFIED_AFTER_REVIEW },
+      }),
+    })
+    expect(elementInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: 11 },
+      data: {
+        options: {
+          pointsMultiplier: 12,
+        },
+      },
+    })
+  })
+
   test('requires full-access user scope for review status mutation', async () => {
     const update = vi.fn()
     const prisma = {
@@ -1129,5 +1327,25 @@ describe('manage activity read routers', () => {
       })
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     expect(update).not.toHaveBeenCalled()
+  })
+
+  test('requires full-access user scope for activity batch operations', async () => {
+    const findMany = vi.fn()
+    const prisma = {
+      liveQuiz: {
+        findMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { scope: UserLoginScope.READ_ONLY })
+    )
+
+    await expect(
+      caller.activity.applyBatchOperations({
+        activityIds: ['live-quiz-1'],
+        multiplier: 2,
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(findMany).not.toHaveBeenCalled()
   })
 })

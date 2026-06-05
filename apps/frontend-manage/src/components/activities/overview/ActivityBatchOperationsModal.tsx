@@ -1,10 +1,8 @@
-import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
-  ApplyActivityBatchOperationsDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
@@ -46,10 +44,8 @@ function ActivityBatchOperationsModal({
   const [selectedActions, setSelectedActions] =
     useState<ActivityBatchOperationActions>(INITIAL_ACTIVITY_BATCH_OPERATIONS)
 
-  // database mutation to execute activity batch operations
-  const [applyActivityBatchOperations, { loading: applying }] = useMutation(
-    ApplyActivityBatchOperationsDocument
-  )
+  const applyActivityBatchOperations =
+    trpc.activity.applyBatchOperations.useMutation()
 
   const { isLoading: loadingCourses, data: dataCourses } =
     trpc.course.activeUserCourses.useQuery()
@@ -296,7 +292,7 @@ function ActivityBatchOperationsModal({
               <Button
                 primary
                 disabled={
-                  applying ||
+                  applyActivityBatchOperations.isLoading ||
                   numOfUpdatedActivities === 0 ||
                   isShallowEqual(
                     selectedActions,
@@ -306,31 +302,25 @@ function ActivityBatchOperationsModal({
                 }
                 onClick={async () => {
                   try {
-                    const { data: res } = await applyActivityBatchOperations({
-                      variables: {
-                        activityIds: selectedActivities.map(
-                          (activity) => activity.id
-                        ),
-                        multiplier:
-                          typeof selectedActions.multiplier !== 'undefined' &&
-                          selectedActions.multiplier !== ''
-                            ? parseInt(selectedActions.multiplier, 10)
-                            : null,
-                        courseId: selectedActions.course?.id,
-                        basePoints: selectedActions.liveQuizPoints?.basePoints,
-                        correctnessPoints:
-                          selectedActions.liveQuizPoints?.correctnessPoints,
-                        bonusPoints:
-                          selectedActions.liveQuizPoints?.bonusPoints,
-                        timeToZeroBonus:
-                          selectedActions.liveQuizPoints?.bonusTime,
-                      },
+                    const res = await applyActivityBatchOperations.mutateAsync({
+                      activityIds: selectedActivities.map(
+                        (activity) => activity.id
+                      ),
+                      multiplier:
+                        typeof selectedActions.multiplier !== 'undefined' &&
+                        selectedActions.multiplier !== ''
+                          ? parseInt(selectedActions.multiplier, 10)
+                          : null,
+                      courseId: selectedActions.course?.id,
+                      basePoints: selectedActions.liveQuizPoints?.basePoints,
+                      correctnessPoints:
+                        selectedActions.liveQuizPoints?.correctnessPoints,
+                      bonusPoints: selectedActions.liveQuizPoints?.bonusPoints,
+                      timeToZeroBonus:
+                        selectedActions.liveQuizPoints?.bonusTime,
                     })
 
-                    if (
-                      res?.applyActivityBatchOperations ===
-                      numOfUpdatedActivities
-                    ) {
+                    if (res.appliedCount === numOfUpdatedActivities) {
                       resetSelectedActivities()
                       await refetchActivities()
                       toast({
@@ -339,7 +329,7 @@ function ActivityBatchOperationsModal({
                         options: { duration: 3000 },
                       })
                       onClose()
-                    } else if (res?.applyActivityBatchOperations !== 0) {
+                    } else if (res.appliedCount !== 0) {
                       resetSelectedActivities()
                       await refetchActivities()
                       toast({
