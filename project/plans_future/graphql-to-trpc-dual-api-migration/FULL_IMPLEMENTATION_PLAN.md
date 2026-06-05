@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: S04M4 Manage Element Batch Operations, because the element edit wizard read/mutate/status paths are now tRPC-backed and the remaining batch-operation modal is the next isolated manage question-pool mutation group. Analytics/evaluation reads, realtime, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage vertical migration with adjacent template-authoring reads such as `getMatchingUserElementsTemplate`, `getTemplatePreviewAnswerCollectionEntries`, `getArtificialInstance`, or the live-quiz-template settings read. Keep template mutations, generated GraphQL type cleanup, Apollo providers, realtime, and GraphQL cleanup live for later slices.
 
 Still intentionally live:
 
@@ -275,6 +275,65 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04M8 Manage Template Element Name Availability Read
+
+Status: complete for the scoped slice. This slice migrated the template authoring warning that tells a lecturer when a template element name already exists in their element library. It intentionally migrated one boolean read only; template loading, template preview data, existing-element selection, live-quiz-template creation, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup remain live.
+
+Operation mapping:
+
+```text
+Slice: S04M8 Manage Template Element Name Availability Read
+GraphQL operation(s): CheckTemplateElementExists
+GraphQL resolver(s): Query.checkTemplateElementExists
+Behavior source: packages/graphql/src/services/templates.ts checkTemplateElementExists
+tRPC router.procedure: activity.checkTemplateElementExists
+Input schema: { name: string }
+Output DTO: { checkTemplateElementExists: boolean }
+Active frontend consumers: apps/frontend-manage/src/components/activities/templates/TemplateElementContent.tsx
+Apollo cache/refetch/subscription behavior: plain Apollo query with skip when an existing or newly-created element is selected; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: trpc.activity.checkTemplateElementExists.useQuery(input, { enabled: !useExistingElement && !useNewElement })
+Browser verification path: branch-local manage app; delegated login; open a seeded template use flow; verify the same-name warning renders and request timing uses /api/trpc/activity.checkTemplateElementExists
+Cleanup blocked until: remaining template authoring GraphQL reads/mutations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/templates/TemplateElementContent.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `activity.checkTemplateElementExists`, mirroring the GraphQL service behavior by checking for an element with the same name and any permission row for the current user.
+- Added focused API coverage for the `true` and `false` results of the new procedure.
+- Replaced `TemplateElementContent`'s Apollo `CheckTemplateElementExistsDocument` query with `trpc.activity.checkTemplateElementExists.useQuery` and the equivalent `enabled` gate.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed after rerun with escalation for `/Volumes` write permissions.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities` passed: 27 files, 268 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed after rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed after rerun with escalation for Rollup cache/output writes.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after API build refreshed `@klicker-uzh/api` declarations and rerun with escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing Next/PWA/Browserslist/i18n, `/qr/[...args]` `MISSING_MESSAGE`, and large-page-data warnings only.
+- `git diff --check` passed.
+- Scoped migrated-operation audits passed: no `@apollo/client`, `CheckTemplateElementExistsDocument`, `QCheckTemplateElementExists`, or `CheckTemplateElementExists` remains in `TemplateElementContent`; no `CheckTemplateElementExistsDocument` consumer remains outside generated GraphQL artifacts; touched API files have no GraphQL runtime imports.
+- Browser verification used a branch-local stack on ports `3133` backend, `3134` manage, and `3136` auth. Because the local DB had no seeded templates, one temporary `ActivityTemplate` row was linked to the existing lecturer-owned live quiz `Live Quiz Instance Update`, then deleted after verification.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m8-login.png`, `/tmp/agent-browser-shots/s04m8-auth-ready.png`, `/tmp/agent-browser-shots/s04m8-manage-home.png`, `/tmp/agent-browser-shots/s04m8-template-loaded.png`, `/tmp/agent-browser-shots/s04m8-template-element-warning.png`, and `/tmp/agent-browser-shots/s04m8-warning-visible.png`.
+- Browser resource timing showed `http://127.0.0.1:3133/api/trpc/activity.checkTemplateElementExists?batch=1` with input `New Single Choice Title`, and the warning rendered for `same-name-element-warning-0-0`.
+- Local verification cleanup closed `agent-browser`, deleted the temporary template row (`count = 0`), stopped backend/auth/manage dev servers, and confirmed ports `3133`, `3134`, and `3136` were free.
+
+Notes:
+
+- Context7 was not available through tool discovery in this session; official tRPC v10 validator/query docs and the branch's local tRPC patterns were used instead.
+- Review/simplification: self-review only because subagents were not explicitly requested; no permission drift, GraphQL runtime import, broad DTO leakage, or unnecessary namespace was found.
+
+Next candidate:
+
+- Continue manage template authoring migration with adjacent reads (`getMatchingUserElementsTemplate`, `getTemplatePreviewAnswerCollectionEntries`, `getArtificialInstance`) or the live-quiz-template settings read, keeping template mutations and global Apollo cleanup for later slices.
 
 ### 2026-06-05 Completed: S04M7 Manage Element Edit Wizard Support Reads
 

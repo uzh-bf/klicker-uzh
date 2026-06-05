@@ -33,6 +33,10 @@ export const activityReviewStatusInput = z.object({
   isReviewed: z.boolean(),
 })
 
+export const checkTemplateElementExistsInput = z.object({
+  name: z.string(),
+})
+
 export const outdatedElementInstancesInput = z.object({
   instanceIds: z.array(z.number().int()),
 })

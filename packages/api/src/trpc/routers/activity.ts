@@ -18,6 +18,7 @@ import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
   activityDetailsInput,
   activityReviewStatusInput,
+  checkTemplateElementExistsInput,
   outdatedElementInstancesInput,
   userActivitiesInput,
 } from '../schemas/activity.js'
@@ -463,6 +464,21 @@ export const activityRouter = router({
           return item ? [item] : []
         }),
       }
+    }),
+
+  checkTemplateElementExists: userProcedure
+    .input(checkTemplateElementExistsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const element = await prisma.element.findFirst({
+        where: {
+          name: input.name,
+          permissions: { some: { userId: ctx.user.sub } },
+        },
+        select: { id: true },
+      })
+
+      return { checkTemplateElementExists: element !== null }
     }),
 
   userActivitiesCourses: userProcedure.query(async ({ ctx }) => {

@@ -556,6 +556,46 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('checks whether the user can access an element with the template element name', async () => {
+    const findFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const prisma = {
+      element: {
+        findFirst,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.checkTemplateElementExists({
+        name: 'Template question',
+      })
+    ).resolves.toEqual({ checkTemplateElementExists: true })
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        name: 'Template question',
+        permissions: { some: { userId: user.id } },
+      },
+      select: { id: true },
+    })
+  })
+
+  test('returns false when no accessible template element name exists', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      element: {
+        findFirst,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.checkTemplateElementExists({
+        name: 'Missing question',
+      })
+    ).resolves.toEqual({ checkTemplateElementExists: false })
+  })
+
   test('sets standalone live quiz review status for activity admins', async () => {
     const update = vi.fn().mockResolvedValue({ id: 'live-quiz-1' })
     const prisma = {

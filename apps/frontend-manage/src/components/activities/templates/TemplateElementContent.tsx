@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import {
   faCopy,
   faEye,
@@ -11,11 +10,11 @@ import {
   faQuestion,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CheckTemplateElementExistsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
 import { ElementFormTypes } from '../../elements/manipulation/types'
 import ExistingElementSelectionModal from './ExistingElementSelectionModal'
 import NewElementDataDiscardingModal from './NewElementDataDiscardingModal'
@@ -57,12 +56,15 @@ function TemplateElementContent({
   })
 
   // check if the user already has access to an element with that specific name
-  const { data: nameCheck } = useQuery(CheckTemplateElementExistsDocument, {
-    variables: {
+  const { data: nameCheck } = trpc.activity.checkTemplateElementExists.useQuery(
+    {
       name: templateElement.instance.elementData.name,
     },
-    skip: templateElement.useExistingElement || templateElement.useNewElement,
-  })
+    {
+      enabled:
+        !templateElement.useExistingElement && !templateElement.useNewElement,
+    }
+  )
 
   // once either an existing element is selected or a new element is created, unset the preview parameter
   useEffect(() => {
