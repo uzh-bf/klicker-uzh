@@ -1,18 +1,15 @@
-import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { faPlusCircle, faX } from '@fortawesome/free-solid-svg-icons'
-import {
-  AddAnswerCollectionOptionDocument,
-  AnswerCollectionEntry,
-  GetAnswerCollectionsInfoDocument,
-  GetSingleAnswerCollectionDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import * as Yup from 'yup'
-import { trpc } from '../../../lib/trpc'
+import { trpc, type RouterOutputs } from '../../../lib/trpc'
+
+type AnswerCollectionEntry = NonNullable<
+  RouterOutputs['resources']['singleAnswerCollection']['answerCollection']
+>['entries'][number]
 
 function AddAnswerCollectionEntry({
   collectionId,
@@ -36,9 +33,8 @@ function AddAnswerCollectionEntry({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const [fieldOpen, setFieldOpen] = useState(false)
-  const [addAnswerCollectionOption] = useMutation(
-    AddAnswerCollectionOptionDocument
-  )
+  const addAnswerCollectionOption =
+    trpc.resources.addAnswerCollectionOption.useMutation()
 
   const entryValues = useMemo(
     () => entries.map((entry) => entry.value),
@@ -76,55 +72,9 @@ function AddAnswerCollectionEntry({
           .notOneOf(entryValues, t('manage.resources.uniqueValuesRequired')),
       })}
       onSubmit={async (values) => {
-        await addAnswerCollectionOption({
-          variables: {
-            collectionId,
-            value: values.newValue!,
-          },
-          update: (cache, { data }) => {
-            // check if the addition of the answer collection entry was successful
-            if (!data?.addAnswerCollectionOption) return
-
-            // update the currently displayed collection
-            cache.updateQuery(
-              {
-                query: GetSingleAnswerCollectionDocument,
-                variables: { id: collectionId },
-              },
-              (qData) => {
-                if (!qData?.getSingleAnswerCollection) return qData
-
-                return {
-                  getSingleAnswerCollection: {
-                    ...qData.getSingleAnswerCollection,
-                    entries: [
-                      ...(qData.getSingleAnswerCollection.entries ?? []),
-                      data.addAnswerCollectionOption!,
-                    ],
-                  },
-                }
-              }
-            )
-
-            // increase the count of entries on the overview
-            cache.updateQuery(
-              { query: GetAnswerCollectionsInfoDocument },
-              (qData) => {
-                if (!qData?.getAnswerCollectionsInfo) return qData
-                return {
-                  getAnswerCollectionsInfo: qData.getAnswerCollectionsInfo.map(
-                    (collection) =>
-                      collection.id === collectionId
-                        ? {
-                            ...collection,
-                            numOfEntries: (collection.numOfEntries ?? 0) + 1,
-                          }
-                        : collection
-                  ),
-                }
-              }
-            )
-          },
+        await addAnswerCollectionOption.mutateAsync({
+          collectionId,
+          value: values.newValue!,
         })
 
         // if the answer collection is edited inline (in a question context), refetch the selection

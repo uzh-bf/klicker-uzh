@@ -1,18 +1,16 @@
-import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  AnswerCollection,
-  GetSingleAnswerCollectionDocument,
-  ModifyAnswerCollectionDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import * as Yup from 'yup'
-import { trpc } from '../../../lib/trpc'
+import { trpc, type RouterOutputs } from '../../../lib/trpc'
 import EditorField from '../../activities/creation/EditorField'
 import TouchMonitor from './TouchMonitor'
+
+type AnswerCollection = NonNullable<
+  RouterOutputs['resources']['singleAnswerCollection']['answerCollection']
+>
 
 function AnswerCollectionMetaForm({
   collection,
@@ -31,32 +29,8 @@ function AnswerCollectionMetaForm({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument, {
-    update: (cache, { data }) => {
-      if (data?.modifyAnswerCollection) {
-        const updatedCollection = data.modifyAnswerCollection
-        cache.updateQuery(
-          {
-            query: GetSingleAnswerCollectionDocument,
-            variables: { id: updatedCollection.id },
-          },
-          (existingData) => {
-            if (!existingData) return null
-
-            return {
-              ...existingData,
-              getSingleAnswerCollection: {
-                ...existingData.getSingleAnswerCollection,
-                id: collection.id,
-                name: updatedCollection.name,
-                description: updatedCollection.description,
-              },
-            }
-          }
-        )
-      }
-    },
-  })
+  const modifyAnswerCollection =
+    trpc.resources.modifyAnswerCollection.useMutation()
 
   return (
     <Formik
@@ -66,18 +40,16 @@ function AnswerCollectionMetaForm({
         description: collection.description,
       }}
       onSubmit={async (values, { resetForm }) => {
-        const { data } = await modifyAnswerCollection({
-          variables: {
-            id: collection.id,
-            name: values.name !== collection.name ? values.name : undefined,
-            description:
-              values.description !== collection.description
-                ? values.description
-                : undefined,
-          },
+        const res = await modifyAnswerCollection.mutateAsync({
+          id: collection.id,
+          name: values.name !== collection.name ? values.name : undefined,
+          description:
+            values.description !== collection.description
+              ? values.description
+              : undefined,
         })
 
-        if (data?.modifyAnswerCollection?.id) {
+        if (res.answerCollection?.id) {
           // if the answer collection is edited inline (in a question context), refetch the selection
           if (inlineEditing) {
             await refetchAnswerCollections?.()

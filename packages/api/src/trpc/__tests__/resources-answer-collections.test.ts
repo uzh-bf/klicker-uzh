@@ -4,17 +4,31 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { SharingType } from '@klicker-uzh/types'
-import { describe, expect, test, vi } from 'vitest'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 import { appRouter } from '../root.js'
+
+vi.mock('@klicker-uzh/util', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@klicker-uzh/util')>()
+
+  return {
+    ...actual,
+    recomputeDerivedPermissions: vi.fn(),
+  }
+})
 
 const user = {
   id: 'owner-1',
 }
 
-function createContext(prisma: TRPCContext['prisma']): TRPCContext {
+function createContext(
+  prisma: TRPCContext['prisma'],
+  emitter?: TRPCContext['emitter']
+): TRPCContext {
   return {
     prisma,
+    emitter,
     user: {
       sub: user.id,
       role: UserRole.USER,
@@ -26,6 +40,10 @@ function createContext(prisma: TRPCContext['prisma']): TRPCContext {
 }
 
 describe('resources answer collection router', () => {
+  beforeEach(() => {
+    vi.mocked(recomputeDerivedPermissions).mockClear()
+  })
+
   test('lists answer collections with resource metadata', async () => {
     const createdAt = new Date('2026-01-01T10:00:00.000Z')
     const updatedAt = new Date('2026-01-02T10:00:00.000Z')
@@ -236,5 +254,255 @@ describe('resources answer collection router', () => {
     await expect(
       caller.resources.singleAnswerCollection({ id: 21 })
     ).resolves.toEqual({ answerCollection: null })
+  })
+
+  test('creates an answer collection and recomputes owner permissions', async () => {
+    const createdAt = new Date('2026-01-03T10:00:00.000Z')
+    const updatedAt = new Date('2026-01-03T10:00:00.000Z')
+    const transactionClient = {
+      answerCollection: {
+        create: vi.fn().mockResolvedValue({
+          id: 31,
+          name: 'New answers',
+          description: 'New description',
+          createdAt,
+          updatedAt,
+          entries: [
+            { id: 1, value: 'A' },
+            { id: 2, value: 'B' },
+          ],
+        }),
+      },
+    }
+    const transaction = vi.fn(async (callback) => callback(transactionClient))
+    const prisma = {
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.resources.createAnswerCollection({
+        name: 'New answers',
+        description: 'New description',
+        answers: ['A', 'B'],
+      })
+    ).resolves.toEqual({
+      answerCollection: {
+        id: 31,
+        name: 'New answers',
+        description: 'New description',
+        ownerShortname: undefined,
+        numSharedUsers: 0,
+        numOfEntries: 2,
+        permissionLevel: PermissionLevel.OWNER,
+        isOwner: true,
+        isManager: true,
+        isEditor: true,
+        isImported: false,
+        isShared: false,
+        isDeletable: true,
+        isRemovable: false,
+        sharingType: SharingType.OWNED,
+        createdAt,
+        updatedAt,
+        entries: [
+          { id: 1, value: 'A' },
+          { id: 2, value: 'B' },
+        ],
+      },
+    })
+    expect(transactionClient.answerCollection.create).toHaveBeenCalledWith({
+      data: {
+        name: 'New answers',
+        description: 'New description',
+        entries: { create: [{ value: 'A' }, { value: 'B' }] },
+        owner: { connect: { id: user.id } },
+      },
+      include: { entries: true },
+    })
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      { answerCollectionId: 31, userId: user.id },
+      transactionClient
+    )
+  })
+
+  test('duplicates an accessible answer collection', async () => {
+    const createdAt = new Date('2026-01-04T10:00:00.000Z')
+    const updatedAt = new Date('2026-01-04T10:00:00.000Z')
+    const transactionClient = {
+      answerCollection: {
+        create: vi.fn().mockResolvedValue({
+          id: 32,
+          name: 'Original answers (Copy)',
+          description: 'Original description',
+          createdAt,
+          updatedAt,
+          entries: [
+            { id: 3, value: 'A' },
+            { id: 4, value: 'B' },
+          ],
+        }),
+      },
+    }
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      answerCollection: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 21,
+          name: 'Original answers',
+          description: 'Original description',
+          entries: [
+            { id: 1, value: 'A' },
+            { id: 2, value: 'B' },
+          ],
+        }),
+      },
+      $transaction: vi.fn(async (callback) => callback(transactionClient)),
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.resources.duplicateAnswerCollection({ id: 21 })
+    ).resolves.toMatchObject({
+      answerCollection: {
+        id: 32,
+        name: 'Original answers (Copy)',
+        description: 'Original description',
+        entries: [
+          { id: 3, value: 'A' },
+          { id: 4, value: 'B' },
+        ],
+      },
+    })
+    expect(prisma?.derivedPermission.findFirst).toHaveBeenCalledWith({
+      where: {
+        answerCollectionId: 21,
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(transactionClient.answerCollection.create).toHaveBeenCalledWith({
+      data: {
+        name: 'Original answers (Copy)',
+        description: 'Original description',
+        entries: { create: [{ value: 'A' }, { value: 'B' }] },
+        owner: { connect: { id: user.id } },
+      },
+      include: { entries: true },
+    })
+  })
+
+  test('does not duplicate an answer collection without read permission', async () => {
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      answerCollection: {
+        findUnique: vi.fn(),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.resources.duplicateAnswerCollection({ id: 21 })
+    ).resolves.toEqual({ answerCollection: null })
+    expect(prisma?.answerCollection.findUnique).not.toHaveBeenCalled()
+  })
+
+  test('modifies answer collection metadata and emits invalidation', async () => {
+    const transactionClient = {
+      answerCollection: {
+        update: vi.fn().mockResolvedValue({
+          id: 21,
+          name: 'Updated',
+          description: 'Updated description',
+          entries: [{ id: 1, value: 'A' }],
+        }),
+      },
+    }
+    const emit = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      answerCollection: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 21,
+          _count: { permissions: 3 },
+        }),
+      },
+      $transaction: vi.fn(async (callback) => callback(transactionClient)),
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { emit } as unknown as TRPCContext['emitter'])
+    )
+
+    await expect(
+      caller.resources.modifyAnswerCollection({
+        id: 21,
+        name: 'Updated',
+        description: 'Updated description',
+      })
+    ).resolves.toEqual({
+      answerCollection: {
+        id: 21,
+        name: 'Updated',
+        description: 'Updated description',
+        numSharedUsers: 2,
+        entries: [{ id: 1, value: 'A' }],
+      },
+    })
+    expect(transactionClient.answerCollection.update).toHaveBeenCalledWith({
+      where: { id: 21 },
+      data: {
+        name: 'Updated',
+        description: 'Updated description',
+        version: { increment: 1 },
+      },
+      include: { entries: true },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'AnswerCollection',
+      id: 21,
+    })
+  })
+
+  test('does not delete an answer collection entry that is still used', async () => {
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      answerCollectionEntry: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 1,
+          collectionId: 21,
+          _count: { itemUsages: 1, templateUsages: 0 },
+        }),
+        delete: vi.fn(),
+      },
+      answerCollection: {
+        update: vi.fn(),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.resources.deleteAnswerCollectionEntry({
+        id: 1,
+        collectionId: 21,
+      })
+    ).resolves.toEqual({ deletedAnswerCollectionEntryId: null })
+    expect(prisma?.answerCollectionEntry.delete).not.toHaveBeenCalled()
+    expect(prisma?.answerCollection.update).not.toHaveBeenCalled()
   })
 })

@@ -1,10 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  DeleteAnswerCollectionDocument,
-  GetAnswerCollectionsInfoDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -24,30 +19,8 @@ function CollectionDeletionModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [deleteAnswerCollection, { loading }] = useMutation(
-    DeleteAnswerCollectionDocument,
-    {
-      variables: { collectionId: collection.id },
-      update: (cache, { data }) => {
-        // check if the removal was successful
-        if (!data?.deleteAnswerCollection) return
-
-        // update the cache to remove the deleted collection
-        cache.updateQuery(
-          { query: GetAnswerCollectionsInfoDocument },
-          (qData) => {
-            if (!qData?.getAnswerCollectionsInfo) return qData
-
-            return {
-              getAnswerCollectionsInfo: qData.getAnswerCollectionsInfo.filter(
-                (collection) => collection.id !== data.deleteAnswerCollection
-              ),
-            }
-          }
-        )
-      },
-    }
-  )
+  const deleteAnswerCollection =
+    trpc.resources.deleteAnswerCollection.useMutation()
 
   return (
     <Modal
@@ -56,30 +29,39 @@ function CollectionDeletionModal({
       onClose={() => setDeletionModal(false)}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!loading && <FontAwesomeIcon icon={faTrashCan} />}
+          {!deleteAnswerCollection.isLoading && (
+            <FontAwesomeIcon icon={faTrashCan} />
+          )}
           <span>
             {t('manage.resources.confirmDeletion', { name: collection.name })}
           </span>
         </div>
       }
       primaryButtonStyle="destructive"
-      primaryLoading={loading}
+      primaryLoading={deleteAnswerCollection.isLoading}
       onPrimaryAction={async () => {
-        const { data, errors } = await deleteAnswerCollection()
-
-        if (
-          typeof data?.deleteAnswerCollection !== 'undefined' &&
-          data?.deleteAnswerCollection !== null &&
-          !errors
-        ) {
-          void utils.resources.answerCollectionsInfo.invalidate()
-          toast({
-            type: 'success',
-            message: t('manage.resources.deletionSuccessful'),
-            options: { duration: 3000 },
+        try {
+          const res = await deleteAnswerCollection.mutateAsync({
+            collectionId: collection.id,
           })
-          setDeletionModal(false)
-        } else {
+
+          if (res.deletedAnswerCollectionId) {
+            void utils.resources.answerCollectionsInfo.invalidate()
+            toast({
+              type: 'success',
+              message: t('manage.resources.deletionSuccessful'),
+              options: { duration: 3000 },
+            })
+            setDeletionModal(false)
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.resources.deletionFailed'),
+              options: { duration: 3000 },
+            })
+          }
+        } catch (error) {
+          console.error('Error deleting answer collection:', error)
           toast({
             type: 'error',
             message: t('manage.resources.deletionFailed'),

@@ -1,6 +1,4 @@
-import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
-import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Accordion,
   AccordionContent,
@@ -15,6 +13,7 @@ import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
 import AddAnswerCollectionEntry from './AddAnswerCollectionEntry'
 import AnswerCollectionMetaForm from './AnswerCollectionMetaForm'
 import AnswerCollectionOption from './AnswerCollectionOption'
@@ -59,12 +58,10 @@ function AnswerCollectionEditModal({
     })
   }
 
-  const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
-    variables: { id: collectionId },
-    fetchPolicy: 'cache-and-network',
-    skip: !open,
-  })
-  const collection = data?.getSingleAnswerCollection
+  const { data, isLoading, isFetching } =
+    trpc.resources.singleAnswerCollection.useQuery({ id: collectionId })
+  const loading = isLoading || isFetching
+  const collection = data?.answerCollection
 
   // setup search
   const [searchQuery, setSearchQuery] = useState('')

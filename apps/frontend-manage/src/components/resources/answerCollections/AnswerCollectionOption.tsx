@@ -1,21 +1,17 @@
-import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faPencil, faSave, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  AnswerCollectionEntry,
-  DeleteAnswerCollectionEntryDocument,
-  EditAnswerCollectionEntryDocument,
-  GetAnswerCollectionsInfoDocument,
-  GetSingleAnswerCollectionDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import { trpc } from '../../../lib/trpc'
+import { trpc, type RouterOutputs } from '../../../lib/trpc'
+
+type AnswerCollectionEntry = NonNullable<
+  RouterOutputs['resources']['singleAnswerCollection']['answerCollection']
+>['entries'][number]
 
 function AnswerCollectionOption({
   entry,
@@ -45,12 +41,10 @@ function AnswerCollectionOption({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const [editMode, setEditMode] = useState(false)
-  const [editAnswerCollectionEntry] = useMutation(
-    EditAnswerCollectionEntryDocument
-  )
-  const [deleteAnswerCollectionEntry] = useMutation(
-    DeleteAnswerCollectionEntryDocument
-  )
+  const editAnswerCollectionEntry =
+    trpc.resources.editAnswerCollectionEntry.useMutation()
+  const deleteAnswerCollectionEntry =
+    trpc.resources.deleteAnswerCollectionEntry.useMutation()
   const deletionNotAllowed =
     deletionDisabled || (entry.numSolutionUsages ?? 0) > 0
 
@@ -70,53 +64,9 @@ function AnswerCollectionOption({
         disabled={deletionNotAllowed}
         data={{ cy: `delete-answer-option-${entry.value}` }}
         onClick={async () => {
-          await deleteAnswerCollectionEntry({
-            variables: { id: entry.id, collectionId },
-            update: (cache, { data }) => {
-              // check if deletion was successful
-              if (!data?.deleteAnswerCollectionEntry) return
-
-              // update the cache for the answer collection that was edited
-              cache.updateQuery(
-                {
-                  query: GetSingleAnswerCollectionDocument,
-                  variables: { id: collectionId },
-                },
-                (qData) => {
-                  if (!qData?.getSingleAnswerCollection) return qData
-                  return {
-                    getSingleAnswerCollection: {
-                      ...qData.getSingleAnswerCollection,
-                      entries: qData.getSingleAnswerCollection.entries?.filter(
-                        (e) => e.id !== data.deleteAnswerCollectionEntry
-                      ),
-                    },
-                  }
-                }
-              )
-
-              // decrease the count of entries on the overview
-              cache.updateQuery(
-                { query: GetAnswerCollectionsInfoDocument },
-                (qData) => {
-                  if (!qData?.getAnswerCollectionsInfo) return qData
-                  return {
-                    getAnswerCollectionsInfo:
-                      qData.getAnswerCollectionsInfo.map((collection) =>
-                        collection.id === collectionId
-                          ? {
-                              ...collection,
-                              numOfEntries: Math.max(
-                                (collection.numOfEntries ?? 0) - 1,
-                                0
-                              ),
-                            }
-                          : collection
-                      ),
-                  }
-                }
-              )
-            },
+          await deleteAnswerCollectionEntry.mutateAsync({
+            id: entry.id,
+            collectionId,
           })
 
           // if the answer collection is edited inline (in a question context), refetch the selection
@@ -170,45 +120,10 @@ function AnswerCollectionOption({
               setSubmitting(true)
 
               if (entry.value !== values.value) {
-                await editAnswerCollectionEntry({
-                  variables: {
-                    id: entry.id,
-                    value: values.value,
-                    collectionId,
-                  },
-                  update: (cache, { data }) => {
-                    // check if the update of the answer collection entry was successful
-                    if (!data?.editAnswerCollectionEntry) return
-
-                    // update the entry in the cached answer collection
-                    cache.updateQuery(
-                      {
-                        query: GetSingleAnswerCollectionDocument,
-                        variables: { id: collectionId },
-                      },
-                      (qData) => {
-                        if (!qData?.getSingleAnswerCollection) return qData
-
-                        return {
-                          getSingleAnswerCollection: {
-                            ...qData.getSingleAnswerCollection,
-                            entries:
-                              qData.getSingleAnswerCollection.entries?.map(
-                                (entry) =>
-                                  entry.id ===
-                                  data.editAnswerCollectionEntry!.id
-                                    ? {
-                                        ...entry,
-                                        value:
-                                          data.editAnswerCollectionEntry!.value,
-                                      }
-                                    : entry
-                              ),
-                          },
-                        }
-                      }
-                    )
-                  },
+                await editAnswerCollectionEntry.mutateAsync({
+                  id: entry.id,
+                  value: values.value,
+                  collectionId,
                 })
               }
 

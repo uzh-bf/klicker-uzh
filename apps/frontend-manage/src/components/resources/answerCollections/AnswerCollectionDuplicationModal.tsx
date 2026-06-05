@@ -1,11 +1,6 @@
-import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  DuplicateAnswerCollectionDocument,
-  GetAnswerCollectionsInfoDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
@@ -21,9 +16,8 @@ function AnswerCollectionDuplicationModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [duplicateAnswerCollection, { loading }] = useMutation(
-    DuplicateAnswerCollectionDocument
-  )
+  const duplicateAnswerCollection =
+    trpc.resources.duplicateAnswerCollection.useMutation()
 
   const onErrorToast = () =>
     toast({
@@ -47,37 +41,20 @@ function AnswerCollectionDuplicationModal({
       dataSecondaryAction={{ cy: 'cancel-duplication' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!loading && <FontAwesomeIcon icon={faCopy} />}
+          {!duplicateAnswerCollection.isLoading && (
+            <FontAwesomeIcon icon={faCopy} />
+          )}
           <span>{t('manage.resources.duplicateCollection')}</span>
         </div>
       }
-      primaryLoading={loading}
+      primaryLoading={duplicateAnswerCollection.isLoading}
       onPrimaryAction={async () => {
         try {
-          const result = await duplicateAnswerCollection({
-            variables: { id: collectionId },
-            update: (cache, { data }) => {
-              // check if the duplication was successful
-              if (!data?.duplicateAnswerCollection) return
-
-              // update the list of answer collections with the duplicate
-              cache.updateQuery(
-                { query: GetAnswerCollectionsInfoDocument },
-                (qData) => {
-                  if (!qData?.getAnswerCollectionsInfo) return qData
-
-                  return {
-                    getAnswerCollectionsInfo: [
-                      ...qData.getAnswerCollectionsInfo,
-                      data.duplicateAnswerCollection!,
-                    ],
-                  }
-                }
-              )
-            },
+          const result = await duplicateAnswerCollection.mutateAsync({
+            id: collectionId,
           })
 
-          if (result.data?.duplicateAnswerCollection) {
+          if (result.answerCollection) {
             void utils.resources.answerCollectionsInfo.invalidate()
             onClose()
             onSuccess()

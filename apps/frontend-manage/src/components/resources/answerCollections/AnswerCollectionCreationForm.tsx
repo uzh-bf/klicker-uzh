@@ -1,14 +1,9 @@
-import { useMutation } from '@apollo/client'
 import {
   faBan,
   faCheck,
   faPlusCircle,
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateAnswerCollectionDocument,
-  GetAnswerCollectionsInfoDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikTextField,
@@ -31,7 +26,8 @@ type AnswerCollectionFormValues = {
 function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
+  const createAnswerCollection =
+    trpc.resources.createAnswerCollection.useMutation()
 
   const validationSchema = Yup.object({
     name: Yup.string().required(t('manage.resources.nameRequired')),
@@ -67,41 +63,30 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
           entries: [{ value: undefined }, { value: undefined }],
         }}
         onSubmit={async (values: AnswerCollectionFormValues) => {
-          const { data } = await createAnswerCollection({
-            variables: {
+          try {
+            const res = await createAnswerCollection.mutateAsync({
               name: values.name!,
               description: values.description!,
               answers: values.entries.map((entry) => entry.value!),
-            },
-            update: (cache, { data }) => {
-              // check if the creation was successful
-              if (!data?.createAnswerCollection) return
-
-              cache.updateQuery(
-                { query: GetAnswerCollectionsInfoDocument },
-                (qData) => {
-                  if (!qData?.getAnswerCollectionsInfo) return qData
-
-                  return {
-                    getAnswerCollectionsInfo: [
-                      ...qData.getAnswerCollectionsInfo,
-                      data.createAnswerCollection!,
-                    ],
-                  }
-                }
-              )
-            },
-          })
-
-          if (data?.createAnswerCollection?.id) {
-            void utils.resources.answerCollectionsInfo.invalidate()
-            toast({
-              type: 'success',
-              message: t('manage.resources.collectionCreationSuccess'),
-              options: { duration: 3000 },
             })
-            onClose()
-          } else {
+
+            if (res.answerCollection?.id) {
+              void utils.resources.answerCollectionsInfo.invalidate()
+              toast({
+                type: 'success',
+                message: t('manage.resources.collectionCreationSuccess'),
+                options: { duration: 3000 },
+              })
+              onClose()
+            } else {
+              toast({
+                type: 'error',
+                message: t('manage.resources.collectionCreationError'),
+                options: { duration: 10000 },
+              })
+            }
+          } catch (error) {
+            console.error('Error creating answer collection:', error)
             toast({
               type: 'error',
               message: t('manage.resources.collectionCreationError'),

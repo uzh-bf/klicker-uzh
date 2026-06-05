@@ -276,6 +276,49 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04K9 Manage Answer Collection Resource Mutations
+
+Status: complete for the scoped slice. This slice migrated the manage answer-collection resource creation, duplication, deletion, metadata edit, option add/edit/delete, and edit-modal detail read from Apollo GraphQL to tRPC. Inline answer-collection creation inside element/template manipulation, shared-object removal, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.
+
+Implemented:
+
+- Added Zod inputs for answer-collection create, duplicate, delete, metadata edit, and option add/edit/delete.
+- Added DTOs for created/duplicated owned answer collections, metadata mutation results, and answer-collection entries without returning broad Prisma records.
+- Added `resources.createAnswerCollection`, `resources.duplicateAnswerCollection`, `resources.deleteAnswerCollection`, `resources.modifyAnswerCollection`, `resources.addAnswerCollectionOption`, `resources.editAnswerCollectionEntry`, and `resources.deleteAnswerCollectionEntry`; reused `resources.singleAnswerCollection` for the edit-modal detail read.
+- Mirrored `packages/graphql/src/services/resources.ts` behavior for owner derived-permission recomputation, duplicate naming, nullable denied/blocked results, version increments, invalidation events, entry usage guards, and hard versus soft collection deletion.
+- Preserved GraphQL permission semantics from `packages/graphql/src/schema/mutation.ts`: create is full-access only, duplicate requires READ, metadata/entry mutations require WRITE, and collection deletion requires ADMIN.
+- Migrated `AnswerCollectionCreationForm`, `AnswerCollectionDuplicationModal`, `CollectionDeletionModal`, `AnswerCollectionEditModal`, `AnswerCollectionMetaForm`, `AddAnswerCollectionEntry`, and `AnswerCollectionOption` from Apollo hooks/documents to tRPC hooks and React Query invalidation.
+- Replaced Apollo cache writes with `resources.answerCollectionsInfo` and `resources.singleAnswerCollection({ id })` invalidations. The top-level list uses initial `isLoading` only; browser verification showed `isFetching` during invalidation unmounted the edit modal after metadata/entry mutations.
+- Added focused API coverage for create/recompute, duplicate success, duplicate permission denial, metadata invalidation, and entry deletion usage guards.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- resources-answer-collections` passed: 26 test files, 234 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config/message lookup, Browserslist freshness, and large page data.
+- Browser verification used local backend/auth/manage on ports 3103/3106/3104 with delegated login. Screenshots: `/tmp/agent-browser-shots/s04k9-answer-collections-initial.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-after-login.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-create-form.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-after-create.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-edit-modal.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-after-metadata.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-options-panel.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-option-editing.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-after-option-delete.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-delete-modal.png`, `/tmp/agent-browser-shots/s04k9-answer-collections-after-duplicate.png`, and `/tmp/agent-browser-shots/s04k9-answer-collections-final-clean.png`.
+- Browser request capture confirmed `/api/trpc` calls for `resources.createAnswerCollection`, `resources.answerCollectionsInfo`, `resources.singleAnswerCollection`, `resources.modifyAnswerCollection`, `resources.addAnswerCollectionOption`, `resources.editAnswerCollectionEntry`, `resources.deleteAnswerCollectionEntry`, `resources.deleteAnswerCollection`, and `resources.duplicateAnswerCollection`, with no GraphQL mutation payload for the migrated resource actions.
+- Runtime verification created, edited, added an option to, edited an option in, deleted an option from, duplicated, and deleted temporary answer collections; temporary verification data was cleaned up afterward.
+- `git diff --check` passed.
+- Scoped migrated-resource audit found no `@apollo/client` or migrated answer-collection operation imports in the touched resource components.
+- Touched API audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` coupling in the resources router/schema/dto/test files.
+- Verification servers and agent-browser were stopped after runtime checks; ports 3103, 3104, and 3106 were free afterward.
+
+Review and simplification:
+
+- Self-review only: subagent tooling was not available under the current tool policy without explicit user delegation. No correctness issues were found after comparing the tRPC procedures against the existing GraphQL service and resolver permission gates.
+- Accepted runtime simplification: keep the answer-collection list loader on `isLoading` only. This keeps the edit modal mounted during background invalidations while still showing the initial page loader.
+- Rejected migrating inline answer-collection creation in `ElementEditModal` in this slice because it belongs to the element/template helper workflow and still uses Apollo-backed selection flows.
+- Rejected removing shared-object removal, sharing modals, `ObjectType` generated imports, Apollo providers, or GraphQL operations in this slice; those remain gated by later workflow migrations.
+
+Next:
+
+- Commit S04K9 as one conventional slice commit.
+- Next slice candidate: migrate the remaining inline answer-collection creation and shared-object removal paths, then continue generated GraphQL type cleanup and Apollo provider removal only after their cleanup gates.
+
 ### 2026-06-05 Completed: S04K8 Manage Answer Collection Resource Reads
 
 Status: complete for the scoped slice. This slice migrated the manage answer-collection resource list and read-only viewing modal from Apollo GraphQL to tRPC, while preserving Apollo-backed mutations and selectors for unmigrated consumers. Answer-collection mutation migration, entry edit modal cleanup, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.

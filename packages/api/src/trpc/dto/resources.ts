@@ -41,6 +41,28 @@ type SingleAnswerCollectionSource = {
   _count: { permissions: number }
 }
 
+type AnswerCollectionEntrySource = {
+  id: number
+  value: string
+}
+
+type OwnedAnswerCollectionMutationSource = {
+  id: number
+  name: string
+  description: string
+  createdAt: Date
+  updatedAt: Date
+  entries: AnswerCollectionEntrySource[]
+}
+
+type ModifiedAnswerCollectionSource = {
+  id: number
+  name: string
+  description: string
+  numSharedUsers: number
+  entries: AnswerCollectionEntrySource[]
+}
+
 function getPermissionFlags(permissionLevel: PermissionLevel) {
   const isOwner = permissionLevel === PermissionLevel.OWNER
   const isManager =
@@ -52,6 +74,55 @@ function getPermissionFlags(permissionLevel: PermissionLevel) {
     permissionLevel === PermissionLevel.OWNER
 
   return { isOwner, isManager, isEditor }
+}
+
+export function toAnswerCollectionEntry(entry: AnswerCollectionEntrySource) {
+  return {
+    id: entry.id,
+    value: entry.value,
+  }
+}
+
+export function toOwnedAnswerCollectionMutationResult(
+  collection: OwnedAnswerCollectionMutationSource | null
+) {
+  if (!collection) return null
+
+  const permissionLevel = PermissionLevel.OWNER
+  const flags = getPermissionFlags(permissionLevel)
+
+  return {
+    id: collection.id,
+    name: collection.name,
+    description: collection.description,
+    ownerShortname: undefined as string | undefined,
+    numSharedUsers: 0,
+    numOfEntries: collection.entries.length,
+    permissionLevel,
+    ...flags,
+    isImported: false,
+    isShared: false,
+    isDeletable: true,
+    isRemovable: false,
+    sharingType: SharingType.OWNED,
+    createdAt: collection.createdAt,
+    updatedAt: collection.updatedAt,
+    entries: collection.entries.map(toAnswerCollectionEntry),
+  }
+}
+
+export function toModifiedAnswerCollection(
+  collection: ModifiedAnswerCollectionSource | null
+) {
+  if (!collection) return null
+
+  return {
+    id: collection.id,
+    name: collection.name,
+    description: collection.description,
+    numSharedUsers: collection.numSharedUsers,
+    entries: collection.entries.map(toAnswerCollectionEntry),
+  }
 }
 
 export function toAnswerCollectionInfo(
