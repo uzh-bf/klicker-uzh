@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: remaining generic shared-object removal callers or the next element/template manipulation mutation group. Catalog object request/copy/import/cancel actions, add-object selection reads/mutations, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: catalog object request/copy/import/cancel actions, because the shared-object removal callers are now tRPC-backed. Element/template manipulation mutation groups, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,48 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04K11 Manage Shared Object Permission Removal
+
+Status: complete for the scoped slice. This slice removed the remaining manage `RemoveObjectDocument` callers for shared course, element, and activity permission removal. Answer-collection removal remains on `resources.removeAnswerCollection`; hard deletion workflows, sharing management modals, generated GraphQL type cleanup, Apollo providers, and S06 cleanup remain live.
+
+Implemented:
+
+- Added `sharing.removeObject` with a remove-specific schema alias over the existing object id/type input shape.
+- Mirrored the generic GraphQL `removeObject` behavior for `COURSE`, `ELEMENT`, `LIVE_QUIZ`, `PRACTICE_QUIZ`, `MICRO_LEARNING`, and `GROUP_ACTIVITY`: direct permission lookup, nullable no-op result, direct permission deletion, `PERMISSION_REMOVED` audit log, derived-permission recomputation for the acting user, invalidation emit, and string id return.
+- Kept `ANSWER_COLLECTION` out of generic object removal because it has linked-object and soft-delete special cases that are already covered by `resources.removeAnswerCollection`.
+- Added focused sharing-permission tests for successful direct object permission removal, missing-permission no-op behavior, and answer-collection rejection from the generic path.
+- Migrated `CourseRemovalModal`, `ElementRemovalModal`, and `ActivityRemovalModal` from Apollo `RemoveObjectDocument` mutations to `trpc.sharing.removeObject`.
+- Replaced Apollo mutation cache/refetch behavior with `course.userCourses` invalidation for courses and existing caller-provided refetch callbacks for elements and activities.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- sharing-permissions` passed: 26 test files, 240 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed after correcting test helper typing.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config/message lookup, Browserslist freshness, `MISSING_MESSAGE` during `/qr/[...args]`, and large page data.
+- `git diff --check` passed.
+- Touched API audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in the sharing router/schema/test files.
+- Scoped manage audit found no remaining `RemoveObjectDocument` usage in `apps/frontend-manage/src/components` or `apps/frontend-manage/src/pages`.
+- Touched removal modal audit found no migrated GraphQL removal mutation usage. `ElementRemovalModal` still imports Apollo `useQuery` for the unchanged `GetElementSummaryDocument` read; that read remains intentionally live until its own migration slice.
+- Browser verification used local backend/auth/manage on ports 3103/3106/3104 with delegated login. Screenshots: `/tmp/agent-browser-shots/s04k11-initial.png`, `/tmp/agent-browser-shots/s04k11-activities.png`, and `/tmp/agent-browser-shots/s04k11-activities-shared-filter.png`.
+- Browser smoke confirmed the authenticated manage activities page loaded against the local tRPC-enabled stack. A stable shared-object removal modal path was not data-accessible in the local seeded UI during this run; row action interaction became flaky and was stopped. Removal behavior is covered by focused API tests plus frontend type/build checks.
+- Verification servers and agent-browser were stopped after runtime checks; ports 3103, 3104, and 3106 were free afterward.
+- Context7 status: unavailable in this session; local installed tRPC 10.45.2 patterns only.
+
+Review and simplification:
+
+- Self-review only: subagent tooling was not available under the current tool policy without explicit user delegation. No correctness issues were found after comparing the tRPC procedure against the existing GraphQL resolver/service behavior.
+- Kept the implementation inside the existing sharing router scope helper pattern instead of adding a new service abstraction.
+- Kept answer-collection removal on the specialized resources procedure to avoid flattening distinct soft-delete semantics into the generic permission-removal path.
+- Deferred broader course/activity list cache migration and generated enum/type cleanup to later workflow slices where the owning reads are migrated.
+
+Next:
+
+- Commit S04K11 as one conventional slice commit.
+- Recommended next slice: catalog object request/copy/import/cancel actions, then continue element/template manipulation mutation groups and generated GraphQL type cleanup only after their cleanup gates.
 
 ### 2026-06-05 Completed: S04K10 Manage Inline Answer Collection Creation and Removal
 

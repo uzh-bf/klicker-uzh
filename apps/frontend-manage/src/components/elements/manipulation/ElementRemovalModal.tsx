@@ -1,11 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  GetElementSummaryDocument,
-  ObjectType,
-  RemoveObjectDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { GetElementSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from '../../courses/modals/ActivityConfirmationModal'
 
@@ -23,6 +20,7 @@ function ElementRemovalModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
+  const removeObject = trpc.sharing.removeObject.useMutation()
   const [confirmations, setConfirmations] = useState({
     actionFinal: false, // action cannot be undone, element will not be removed from any created activities
     derivedAccessHint: false, // derived access might be granted if element is still used
@@ -35,17 +33,6 @@ function ElementRemovalModal({
     skip: !elementId,
     fetchPolicy: 'network-only',
   })
-
-  // removal mutation
-  const [removeObject, { loading: removing }] = useMutation(
-    RemoveObjectDocument,
-    {
-      variables: {
-        objectId: String(elementId),
-        objectType: ObjectType.Element,
-      },
-    }
-  )
 
   const notApplicableDerived =
     !!data?.getElementSummary && !data.getElementSummary.retainsDerivedAccess
@@ -74,16 +61,14 @@ function ElementRemovalModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await removeObject({
-          variables: {
-            objectId: String(elementId),
-            objectType: ObjectType.Element,
-          },
+        await removeObject.mutateAsync({
+          objectId: String(elementId),
+          objectType: 'ELEMENT',
         })
         await refetchElements()
         setModalOpen(false)
       }}
-      submitting={removing}
+      submitting={removeObject.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={false}
       confirmationType="delete"

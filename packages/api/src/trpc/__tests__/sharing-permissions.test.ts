@@ -29,10 +29,11 @@ const user = {
 
 function createContext(
   prisma: TRPCContext['prisma'],
-  options?: { scope?: UserLoginScope }
+  options?: { scope?: UserLoginScope; emitter?: TRPCContext['emitter'] }
 ): TRPCContext {
   return {
     prisma,
+    emitter: options?.emitter,
     user: {
       sub: user.id,
       role: UserRole.USER,
@@ -502,6 +503,102 @@ describe('sharing permission router', () => {
       { liveQuizId: 'live-quiz-1', userId: 'user-2' },
       expect.anything()
     )
+  })
+
+  test('removes own direct object permission and recomputes derived permissions', async () => {
+    const emit = vi.fn()
+    const findFirst = vi.fn().mockResolvedValue({ id: 7 })
+    const deleteMany = vi.fn().mockResolvedValue({ count: 1 })
+    const auditCreate = vi.fn().mockResolvedValue({})
+    const transaction = vi.fn(async (callback) =>
+      callback({
+        permission: { deleteMany },
+        auditLogEntry: { create: auditCreate },
+      })
+    )
+    const prisma = {
+      permission: { findFirst },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+      })
+    )
+
+    await expect(
+      caller.sharing.removeObject({
+        objectId: 'live-quiz-1',
+        objectType: ObjectType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({ removedObjectId: 'live-quiz-1' })
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { liveQuizId: 'live-quiz-1', userId: user.id },
+    })
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: 60000,
+    })
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { liveQuizId: 'live-quiz-1', userId: user.id },
+    })
+    expect(auditCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: AuditLogType.PERMISSION_REMOVED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: 'live-quiz-1',
+        sourceUserId: user.id,
+        message: `User ${user.id} removed own permission on ${ObjectType.LIVE_QUIZ} (ID: live-quiz-1)`,
+      }),
+    })
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      { liveQuizId: 'live-quiz-1', userId: user.id },
+      expect.anything()
+    )
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'LiveQuiz',
+      id: 'live-quiz-1',
+    })
+  })
+
+  test('returns null when own direct object permission is missing', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const transaction = vi.fn()
+    const prisma = {
+      permission: { findFirst },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.removeObject({
+        objectId: '42',
+        objectType: ObjectType.ELEMENT,
+      })
+    ).resolves.toEqual({ removedObjectId: null })
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { elementId: 42, userId: user.id },
+    })
+    expect(transaction).not.toHaveBeenCalled()
+  })
+
+  test('does not route answer collections through generic object removal', async () => {
+    const findFirst = vi.fn()
+    const transaction = vi.fn()
+    const prisma = {
+      permission: { findFirst },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.removeObject({
+        objectId: '21',
+        objectType: ObjectType.ANSWER_COLLECTION,
+      })
+    ).resolves.toEqual({ removedObjectId: null })
+    expect(findFirst).not.toHaveBeenCalled()
+    expect(transaction).not.toHaveBeenCalled()
   })
 
   test('returns user groups for the direct sharing selector', async () => {

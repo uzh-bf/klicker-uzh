@@ -46,6 +46,7 @@ import {
   derivedPermissionOriginInput,
   objectActivityInput,
   removeCatalogObjectAssignmentInput,
+  removeObjectInput,
   requestCatalogCollectionInput,
   requestCatalogObjectInput,
   revokeObjectAccessInput,
@@ -3290,6 +3291,51 @@ async function revokeObjectAccess({
   return deletedPermission.id
 }
 
+async function removeObject({
+  prisma,
+  scope,
+  userId,
+  emitter,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  scope: PermissionObjectScope
+  userId: string
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+}) {
+  if (scope.answerCollectionId || scope.catalogCollectionId) return null
+
+  const permission = await prisma.permission.findFirst({
+    where: { ...scope, userId },
+  })
+
+  if (!permission) return null
+
+  const { objectType, objectId } = getAuditLogObjectType(scope)
+
+  await prisma.$transaction(
+    async (transaction) => {
+      await transaction.permission.deleteMany({
+        where: { ...scope, userId },
+      })
+
+      await createPermissionAuditLog({
+        prisma: transaction,
+        scope,
+        type: AuditLogType.PERMISSION_REMOVED,
+        sourceUserId: userId,
+        message: `User ${userId} removed own permission on ${objectType} (ID: ${objectId})`,
+      })
+
+      await recomputeForScope(scope, transaction, { userId })
+    },
+    { timeout: 60000 }
+  )
+
+  emitObjectInvalidation(scope, emitter)
+
+  return objectId
+}
+
 async function getUserGroupsUser(
   prisma: ReturnType<typeof getPrisma>,
   userId: string
@@ -3904,6 +3950,25 @@ export const sharingRouter = router({
           scope,
           sourceUserId: ctx.user.sub,
           permissionId: input.permissionId,
+        }),
+      }
+    }),
+
+  removeObject: userFullAccessProcedure
+    .input(removeObjectInput)
+    .mutation(async ({ ctx, input }) => {
+      const scope = getPermissionObjectScope(input)
+
+      if (!scope) return { removedObjectId: null }
+
+      const prisma = getPrisma(ctx)
+
+      return {
+        removedObjectId: await removeObject({
+          prisma,
+          scope,
+          userId: ctx.user.sub,
+          emitter: ctx.emitter,
         }),
       }
     }),

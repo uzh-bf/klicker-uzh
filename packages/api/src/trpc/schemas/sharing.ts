@@ -39,6 +39,8 @@ export const revokeObjectAccessInput = objectActivityInput.extend({
   permissionId: z.number().int(),
 })
 
+export const removeObjectInput = objectActivityInput
+
 export const transferObjectOwnershipInput = objectActivityInput.extend({
   shortnameOrEmail: z.string(),
 })
