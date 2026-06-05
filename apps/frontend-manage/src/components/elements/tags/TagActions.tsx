@@ -4,12 +4,12 @@ import {
   faPencil,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
-import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import TagDeletionModal from '../../courses/modals/TagDeletionModal'
+import type { UserTagData } from './types'
 
 interface TagActionsProps {
-  tag: Tag
+  tag: UserTagData
   active: boolean
   setEditMode?: (editMode: boolean) => void
   isDeletionModalOpen?: boolean

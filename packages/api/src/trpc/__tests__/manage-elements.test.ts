@@ -118,6 +118,146 @@ describe('manage element router', () => {
     })
   })
 
+  test('returns user tags ordered by tag order', async () => {
+    const userFindUnique = vi.fn().mockResolvedValue({
+      tags: [
+        { id: 1, name: 'Alpha', order: 0, createdAt: new Date() },
+        { id: 2, name: 'Beta', order: 1, createdAt: new Date() },
+      ],
+    })
+    const prisma = {
+      user: { findUnique: userFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.element.tags()).resolves.toEqual({
+      tags: [
+        { id: 1, name: 'Alpha', order: 0 },
+        { id: 2, name: 'Beta', order: 1 },
+      ],
+    })
+    expect(userFindUnique).toHaveBeenCalledWith({
+      where: { id: user.id },
+      include: { tags: { orderBy: { order: 'asc' } } },
+    })
+  })
+
+  test('returns null when editing a tag to an existing name', async () => {
+    const tagFindUnique = vi.fn().mockResolvedValue({ id: 5 })
+    const tagUpdate = vi.fn()
+    const prisma = {
+      tag: { findUnique: tagFindUnique, update: tagUpdate },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.editTag({ id: 17, name: 'Existing' })
+    ).resolves.toEqual({ tag: null })
+    expect(tagFindUnique).toHaveBeenCalledWith({
+      where: { ownerId_name: { ownerId: user.id, name: 'Existing' } },
+    })
+    expect(tagUpdate).not.toHaveBeenCalled()
+  })
+
+  test('updates a user-owned tag', async () => {
+    const tagFindUnique = vi.fn().mockResolvedValue(null)
+    const tagUpdate = vi.fn().mockResolvedValue({
+      id: 17,
+      name: 'Updated',
+      order: 2,
+    })
+    const prisma = {
+      tag: { findUnique: tagFindUnique, update: tagUpdate },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.editTag({ id: 17, name: 'Updated' })
+    ).resolves.toEqual({
+      tag: { id: 17, name: 'Updated', order: 2 },
+    })
+    expect(tagUpdate).toHaveBeenCalledWith({
+      where: { id: 17, ownerId: user.id },
+      data: { name: 'Updated' },
+    })
+  })
+
+  test('deletes a user-owned tag and emits invalidation', async () => {
+    const emit = vi.fn()
+    const tagDelete = vi.fn().mockResolvedValue({
+      id: 17,
+      name: 'Deleted',
+      order: 2,
+    })
+    const prisma = {
+      tag: { delete: tagDelete },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, { emit } as unknown as TRPCContext['emitter'])
+    )
+
+    await expect(caller.element.deleteTag({ id: 17 })).resolves.toEqual({
+      tag: { id: 17, name: 'Deleted', order: 2 },
+    })
+    expect(tagDelete).toHaveBeenCalledWith({
+      where: { id: 17, ownerId: user.id },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'Tag',
+      id: 17,
+    })
+  })
+
+  test('updates tag ordering for the current user', async () => {
+    const tagFindMany = vi.fn().mockResolvedValue([
+      { id: 1, name: 'Beta', order: 1 },
+      { id: 2, name: 'Alpha', order: 1 },
+      { id: 3, name: 'Gamma', order: 2 },
+    ])
+    const tagUpdate = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 2, name: 'Alpha', order: 0 })
+      .mockResolvedValueOnce({ id: 3, name: 'Gamma', order: 1 })
+      .mockResolvedValueOnce({ id: 1, name: 'Beta', order: 2 })
+    const transaction = vi.fn().mockResolvedValue([])
+    const prisma = {
+      tag: { findMany: tagFindMany, update: tagUpdate },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.updateTagOrdering({ originIx: 1, targetIx: 2 })
+    ).resolves.toEqual({
+      tags: [
+        { id: 2, name: 'Alpha', order: 1 },
+        { id: 3, name: 'Gamma', order: 2 },
+        { id: 1, name: 'Beta', order: 1 },
+      ],
+    })
+    expect(tagFindMany).toHaveBeenCalledWith({
+      where: { ownerId: user.id },
+      orderBy: { order: 'asc' },
+    })
+    expect(tagUpdate).toHaveBeenNthCalledWith(1, {
+      where: { id: 2 },
+      data: { order: 0 },
+    })
+    expect(tagUpdate).toHaveBeenNthCalledWith(2, {
+      where: { id: 3 },
+      data: { order: 1 },
+    })
+    expect(tagUpdate).toHaveBeenNthCalledWith(3, {
+      where: { id: 1 },
+      data: { order: 2 },
+    })
+    expect(transaction).toHaveBeenCalledWith([
+      expect.any(Promise),
+      expect.any(Promise),
+      expect.any(Promise),
+    ])
+  })
+
   test('returns null deleted element id when admin permission is missing', async () => {
     const findFirst = vi.fn().mockResolvedValue(null)
     const transaction = vi.fn()

@@ -1,20 +1,21 @@
-import { useMutation } from '@apollo/client'
-import { EditTagDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
+import type { UserTagData } from './types'
 
 function TagEditForm({
   tag,
   closeEditMode,
 }: {
-  tag: Tag
+  tag: UserTagData
   closeEditMode: () => void
 }) {
   const t = useTranslations()
-  const [editTag, { loading }] = useMutation(EditTagDocument)
+  const utils = trpc.useUtils()
+  const editTag = trpc.element.editTag.useMutation()
 
   const TagModifierSchema = Yup.object().shape({
     tag: Yup.string().required(t('manage.tags.validName')),
@@ -27,11 +28,13 @@ function TagEditForm({
         validationSchema={TagModifierSchema}
         onSubmit={async (values, { resetForm }) => {
           if (values.tag !== tag.name) {
-            const result = await editTag({
-              variables: { id: tag.id, name: values.tag },
+            const result = await editTag.mutateAsync({
+              id: tag.id,
+              name: values.tag,
             })
 
-            if (result.data?.editTag) {
+            if (result.tag) {
+              await utils.element.tags.invalidate()
               toast({
                 type: 'success',
                 message: t('manage.tags.tagNameUpdatedSuccessfully'),
@@ -62,7 +65,7 @@ function TagEditForm({
 
                 <Button
                   type="submit"
-                  disabled={loading || !isValid}
+                  disabled={editTag.isLoading || !isValid}
                   className={{
                     root: twMerge('mr-0 h-7 rounded border border-solid px-2'),
                   }}

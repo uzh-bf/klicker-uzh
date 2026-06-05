@@ -1,15 +1,11 @@
-import { useMutation, useSuspenseQuery } from '@apollo/client'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import {
-  GetUserTagsDocument,
-  Tag,
-  UpdateTagOrderingDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { TextField, UserNotification } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
-import { swapIndices } from 'remeda'
+import { trpc } from '../../../lib/trpc'
+import type { UserTagData } from './types'
 import UserTag from './UserTag'
 
 interface SuspendedTagsProps {
@@ -38,30 +34,41 @@ function SuspendedTags({
   refetchElements,
 }: SuspendedTagsProps) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
-  const { data, error } = useSuspenseQuery(GetUserTagsDocument)
-  const [updateTagOrdering] = useMutation(UpdateTagOrderingDocument)
+  const { data, error, isLoading } = trpc.element.tags.useQuery()
+  const updateTagOrdering = trpc.element.updateTagOrdering.useMutation()
+  const userTags = data?.tags ?? []
 
   // setup search
   const [searchQuery, setSearchQuery] = useState('')
   const filteredTags = useMemo(() => {
-    if (data?.userTags && searchQuery) {
+    if (userTags.length > 0 && searchQuery) {
       const search = new JsSearch.Search('id')
       search.searchIndex = new JsSearch.TfIdfSearchIndex('id')
       search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
       search.addIndex('name')
-      search.addDocuments(data.userTags)
-      return search.search(searchQuery) as Tag[]
+      search.addDocuments(userTags)
+      return search.search(searchQuery) as UserTagData[]
     }
 
-    return data?.userTags ?? []
-  }, [data?.userTags, searchQuery])
+    return userTags
+  }, [userTags, searchQuery])
+
+  async function moveTag(originIx: number, targetIx: number) {
+    await updateTagOrdering.mutateAsync({ originIx, targetIx })
+    await utils.element.tags.invalidate()
+  }
 
   if (error) {
     return <UserNotification type="error" message={error.message} />
   }
 
-  if (!data?.userTags || data.userTags.length === 0)
+  if (isLoading) {
+    return <Loader />
+  }
+
+  if (userTags.length === 0)
     return (
       <div className="px-2">
         <UserNotification type="info" className={{ root: 'py-1' }}>
@@ -85,7 +92,7 @@ function SuspendedTags({
       />
       <ul className="flex min-h-[4.7rem] list-none flex-col overflow-y-auto">
         {filteredTags.map(
-          (tag: Tag, ix): React.ReactElement => (
+          (tag: UserTagData, ix): React.ReactElement => (
             <UserTag
               key={tag.id}
               tag={tag}
@@ -100,51 +107,13 @@ function SuspendedTags({
               }
               active={activeTags.includes(tag.id.toString())}
               onMoveDown={
-                searchQuery === '' && ix < data.userTags!.length - 1
-                  ? async () =>
-                      await updateTagOrdering({
-                        variables: { originIx: ix, targetIx: ix + 1 },
-                        update: (cache, { data }) => {
-                          // check if the reordering operation was successful
-                          if (!data?.updateTagOrdering) return
-
-                          // exchange the two corresponding tags
-                          cache.updateQuery(
-                            { query: GetUserTagsDocument },
-                            (qData) => ({
-                              userTags: swapIndices(
-                                qData?.userTags ?? [],
-                                ix,
-                                ix + 1
-                              ),
-                            })
-                          )
-                        },
-                      })
+                searchQuery === '' && ix < userTags.length - 1
+                  ? async () => await moveTag(ix, ix + 1)
                   : undefined
               }
               onMoveUp={
                 searchQuery === '' && ix > 0
-                  ? async () =>
-                      await updateTagOrdering({
-                        variables: { originIx: ix, targetIx: ix - 1 },
-                        update: (cache, { data }) => {
-                          // check if the reordering operation was successful
-                          if (!data?.updateTagOrdering) return
-
-                          // exchange the two corresponding tags
-                          cache.updateQuery(
-                            { query: GetUserTagsDocument },
-                            (qData) => ({
-                              userTags: swapIndices(
-                                qData?.userTags ?? [],
-                                ix - 1,
-                                ix
-                              ),
-                            })
-                          )
-                        },
-                      })
+                  ? async () => await moveTag(ix, ix - 1)
                   : undefined
               }
               refetchElements={refetchElements}

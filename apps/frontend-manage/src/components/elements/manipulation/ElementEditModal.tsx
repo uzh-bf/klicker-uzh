@@ -3,7 +3,6 @@ import {
   ElementType,
   FlagOutdatedElementInstancesDocument,
   GetSingleElementDocument,
-  GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
   ManipulateContentElementDocument,
@@ -64,6 +63,9 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
+  const refetchAfterElementManipulation = async () => {
+    await Promise.all([utils.element.tags.invalidate(), refetchElements()])
+  }
 
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
@@ -165,11 +167,8 @@ function ElementEditModal({
                 values,
               })
 
-              const result = await manipulateContentElement({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateContentElement({ variables: args })
+              await refetchAfterElementManipulation()
 
               const data = result.data?.manipulateContentElement
               if (data?.__typename !== 'ContentElement' || !data.id) {
@@ -188,9 +187,8 @@ function ElementEditModal({
 
               const result = await manipulateFlashcardElement({
                 variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
               })
-              await refetchElements()
+              await refetchAfterElementManipulation()
 
               const data = result.data?.manipulateFlashcardElement
               if (data?.__typename !== 'FlashcardElement' || !data.id) {
@@ -211,9 +209,8 @@ function ElementEditModal({
 
               const result = await manipulateChoicesQuestion({
                 variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
               })
-              await refetchElements()
+              await refetchAfterElementManipulation()
 
               const data = result.data?.manipulateChoicesQuestion
               if (data?.__typename !== 'ChoicesElement' || !data.id) {
@@ -232,9 +229,8 @@ function ElementEditModal({
 
               const result = await manipulateNumericalQuestion({
                 variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
               })
-              await refetchElements()
+              await refetchAfterElementManipulation()
 
               const data = result.data?.manipulateNumericalQuestion
               if (data?.__typename !== 'NumericalElement' || !data.id) {
@@ -253,9 +249,8 @@ function ElementEditModal({
 
               const result = await manipulateFreeTextQuestion({
                 variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
               })
-              await refetchElements()
+              await refetchAfterElementManipulation()
 
               const data = result.data?.manipulateFreeTextQuestion
               if (data?.__typename !== 'FreeTextElement' || !data.id) {
@@ -303,9 +298,8 @@ function ElementEditModal({
 
               const result = await manipulateSelectionQuestion({
                 variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
               })
-              await refetchElements()
+              await refetchAfterElementManipulation()
 
               const data = result.data?.manipulateSelectionQuestion
               if (data?.__typename !== 'SelectionElement' || !data.id) {
@@ -353,9 +347,8 @@ function ElementEditModal({
 
               const result = await manipulateCaseStudyQuestion({
                 variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
               })
-              await refetchElements()
+              await refetchAfterElementManipulation()
 
               const data = result.data?.manipulateCaseStudyQuestion
               if (data?.__typename !== 'CaseStudyElement' || !data.id) {

@@ -1,24 +1,28 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetUserTagsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import Creatable from 'react-select/creatable'
+import { trpc } from '../../../lib/trpc'
 import { ElementFormTypes } from '../manipulation/types'
 
 function SuspendedTagInput({ disabled }: { disabled: boolean }) {
   const t = useTranslations()
   const [field, _, helpers] = useField<ElementFormTypes['tags']>('tags')
-  const { data } = useSuspenseQuery(GetUserTagsDocument)
+  const { data, isLoading } = trpc.element.tags.useQuery()
 
   const tags = useMemo(
     () => field.value?.map((tag) => ({ label: tag, value: tag })),
     [field.value]
   )
 
+  if (isLoading) {
+    return <Loader />
+  }
+
   const options = [
     ...(tags ?? []),
-    ...(data.userTags ?? []).map((tag) => ({
+    ...(data?.tags ?? []).map((tag) => ({
       label: tag.name,
       value: tag.name,
     })),

@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: S04M2 Manage Element Edit Wizard Mutations or tag CRUD, because `GetElementSummaryDocument` / `DeleteElementDocument` are now migrated but the element edit wizard, batch operations, tag reads/CRUD, analytics/evaluation reads, realtime, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: S04M3 Manage Element Edit Wizard Mutations, because tag list/edit/delete/order is now tRPC-backed and the remaining element edit modal Apollo usage is the actual element read/create/update/update-instance mutation group. Batch operations, analytics/evaluation reads, realtime, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,81 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04M2 Manage Tag CRUD, List, and Ordering
+
+Status: complete for the scoped slice. This slice migrated manage user tag list/edit/delete/order behavior from GraphQL/Apollo to tRPC while leaving element create/update mutations on GraphQL until the next element edit wizard slice.
+
+Operation mapping:
+
+```text
+Slice: S04M2 Manage Tag CRUD, List, and Ordering
+GraphQL operation(s): GetUserTags, EditTag, DeleteTag, UpdateTagOrdering
+GraphQL resolver(s): Query.userTags; Mutation.editTag; Mutation.deleteTag; Mutation.updateTagOrdering
+Behavior source: packages/graphql/src/schema/query.ts userTags resolver and packages/graphql/src/services/elements.ts editTag/deleteTag/updateTagOrdering
+tRPC router.procedure: element.tags; element.editTag; element.deleteTag; element.updateTagOrdering
+Input schema: no input for tags; { id }; { id, name }; { originIx, targetIx }
+Output DTO: narrow tag DTO with id, name, order for tag lists and mutation results
+Active frontend consumers: SuspendedTags, SuspendedTagInput, UserTag, TagActions, TagEditForm, TagDeletionModal, ElementDeletionModal tag invalidation bridge, ElementEditModal tag invalidation bridge
+Apollo cache/refetch/subscription behavior: Apollo useSuspenseQuery for tags, useMutation for edit/delete/order, cache.updateQuery for delete/order, refetchQueries(GetUserTagsDocument) after element mutation/delete side effects
+React Query replacement: trpc.element.tags query; trpc.element.editTag/deleteTag/updateTagOrdering mutations; utils.element.tags.invalidate after mutations and after GraphQL element mutations that can create/remove tags
+Browser verification path: local manage question pool tag filter and tag input on the branch-local dev stack
+Cleanup blocked until: element list/edit mutations and remaining manage Apollo consumers are migrated; GraphQL operation files/codegen stay until S06
+```
+
+Intended write scope:
+
+- `packages/api/src/trpc/routers/element.ts`
+- `packages/api/src/trpc/schemas/element.ts`
+- `packages/api/src/trpc/__tests__/manage-elements.test.ts`
+- `apps/frontend-manage/src/components/elements/tags/**`
+- `apps/frontend-manage/src/components/courses/modals/TagDeletionModal.tsx`
+- `apps/frontend-manage/src/components/elements/manipulation/ElementDeletionModal.tsx`
+- `apps/frontend-manage/src/components/elements/manipulation/ElementEditModal.tsx`
+
+Implemented:
+
+- Added `element.tags`, `element.editTag`, `element.deleteTag`, and `element.updateTagOrdering` to `packages/api/src/trpc/routers/element.ts`.
+- Added tag edit/order input schemas and a narrow tag DTO `{ id, name, order }`.
+- Mirrored `Query.userTags` by reading the current user's tags ordered by `order`.
+- Mirrored `ElementService.editTag` duplicate-name behavior by returning nullable `tag: null` when the user already owns the requested tag name.
+- Mirrored `ElementService.deleteTag` by deleting only a user-owned tag and emitting `Tag` invalidation.
+- Mirrored `ElementService.updateTagOrdering` by sorting by order/name, swapping the requested indices, and persisting order values.
+- Added focused API tests for tag list, duplicate edit, successful edit, delete invalidation, and ordering.
+- Migrated `SuspendedTags`, `SuspendedTagInput`, `TagEditForm`, `TagActions`, `UserTag`, and `TagDeletionModal` from Apollo/generated tag operations to tRPC hooks and a local tRPC tag DTO alias.
+- Replaced `GetUserTagsDocument` refetch bridges in `ElementDeletionModal` and `ElementEditModal` with `utils.element.tags.invalidate()`. Element edit mutations remain GraphQL-backed for the next slice.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements` passed after the final helper fix: 27 test files, 249 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config/message lookup, Browserslist freshness, `MISSING_MESSAGE` during `/qr/[...args]`, and large page data.
+- `git diff --check` passed.
+- Scoped manage audit found no remaining `GetUserTagsDocument`, `UpdateTagOrderingDocument`, `EditTagDocument`, or `DeleteTagDocument` usage in `apps/frontend-manage/src`.
+- Touched API/tag-file audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in the new element tag procedures/tests or migrated tag components.
+- S04 coexistence audit still lists many GraphQL/Apollo files as expected; GraphQL remains intentionally live.
+- Browser verification used a disposable branch-local stack on ports 3113/3114/3116. The backend required a dummy local Hatchet JWT because `apps/backend-docker/.env` leaves `HATCHET_CLIENT_TOKEN` empty. The stack also required `127.0.0.1` origin overrides so backend auth origin detection matched the manage origin.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m2-127-initial.png`, `/tmp/agent-browser-shots/s04m2-127-question-pool.png`, `/tmp/agent-browser-shots/s04m2-127-tags-filter.png`, and `/tmp/agent-browser-shots/s04m2-127-create-element-tag-input.png`.
+- Browser smoke authenticated as delegated `lecturer`, loaded the manage Library/question-pool page, opened the Tags filter, opened the Create Element modal, and confirmed the tag input rendered without errors.
+- Browser resource timing showed `http://127.0.0.1:3113/api/trpc/element.tags?...` when the Tags filter opened. Unrelated `/api/graphql` requests still appear on the page as expected during coexistence.
+- The seeded account did not expose tag action rows in this UI state, so edit/delete/order runtime interaction was not exercised in the browser; focused API tests cover those procedures.
+- Verification backend/auth/manage servers and agent-browser sessions were stopped after browser checks; ports 3113, 3114, and 3116 were free afterward.
+- Context7 status: unavailable in this session; local installed tRPC 10.45.2 patterns only.
+
+Review and simplification:
+
+- Self-review only: subagent tooling was not available under the current tool policy without explicit user delegation. No correctness issues were found after comparing the tRPC procedures against the existing GraphQL resolver/service behavior.
+- Kept the slice to tag list/edit/delete/order plus tag-query invalidation bridges; element create/update mutations remain for S04M3.
+- Used a local tag DTO alias for migrated tag components instead of leaking generated GraphQL `Tag` types into the tRPC tag workflow.
+- Kept React Query invalidation simple rather than recreating Apollo optimistic/cache update behavior for tag order/delete in this slice.
+
+Next:
+
+- Commit S04M2 as one conventional slice commit.
+- Recommended next slice: S04M3 Manage Element Edit Wizard Mutations, then follow with element batch operations or generated type leak cleanup only after the owning workflows are migrated.
 
 ### 2026-06-05 Completed: S04M1 Manage Element Summary and Deletion
 

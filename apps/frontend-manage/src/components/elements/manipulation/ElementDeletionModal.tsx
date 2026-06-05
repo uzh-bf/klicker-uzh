@@ -1,5 +1,3 @@
-import { useApolloClient } from '@apollo/client'
-import { GetUserTagsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -20,7 +18,6 @@ function ElementDeletionModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
-  const apolloClient = useApolloClient()
   const utils = trpc.useUtils()
   const deleteElement = trpc.element.delete.useMutation()
   const [confirmations, setConfirmations] = useState({
@@ -72,11 +69,10 @@ function ElementDeletionModal({
       })}
       onSubmit={async () => {
         await deleteElement.mutateAsync({ id: elementId })
-        void utils.resources.answerCollectionsInfo.invalidate()
-        // Tags are still Apollo-backed in this slice, so keep the old refetch bridge.
-        void apolloClient.refetchQueries({
-          include: [GetUserTagsDocument],
-        })
+        await Promise.all([
+          utils.resources.answerCollectionsInfo.invalidate(),
+          utils.element.tags.invalidate(),
+        ])
         await refetchElements()
         setModalOpen(false)
       }}

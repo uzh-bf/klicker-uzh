@@ -1,10 +1,6 @@
-import { useMutation } from '@apollo/client'
-import {
-  DeleteTagDocument,
-  GetUserTagsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 function TagDeletionModal({
   id,
@@ -18,28 +14,8 @@ function TagDeletionModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
-  const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
-    variables: { id },
-    update: (cache, { data }) => {
-      if (!data?.deleteTag) return
-
-      cache.updateQuery({ query: GetUserTagsDocument }, (qData) => {
-        if (!qData?.userTags) return qData
-
-        return {
-          userTags: qData.userTags.filter(
-            (tag) => tag.id !== data.deleteTag?.id
-          ),
-        }
-      })
-    },
-    optimisticResponse: {
-      deleteTag: {
-        id: id,
-        __typename: 'Tag',
-      },
-    },
-  })
+  const utils = trpc.useUtils()
+  const deleteTag = trpc.element.deleteTag.useMutation()
 
   return (
     <Modal
@@ -47,11 +23,11 @@ function TagDeletionModal({
       onClose={onClose}
       title={t('manage.tags.deleteTag')}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={deleting}
+      primaryLoading={deleteTag.isLoading}
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
-        await deleteTag()
-        await refetchElements()
+        await deleteTag.mutateAsync({ id })
+        await Promise.all([utils.element.tags.invalidate(), refetchElements()])
         onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-tag' }}
