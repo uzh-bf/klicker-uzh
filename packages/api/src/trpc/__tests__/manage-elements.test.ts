@@ -347,6 +347,181 @@ describe('manage element router', () => {
     })
   })
 
+  test('returns zero for element batch operations without selected work', async () => {
+    const elementFindMany = vi.fn()
+    const prisma = {
+      element: { findMany: elementFindMany },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.applyBatchOperations({
+        elementIds: [],
+        archive: false,
+        unarchive: false,
+        updateInstances: false,
+        updateTemplateInstances: false,
+      })
+    ).resolves.toEqual({ updatedCount: 0 })
+    await expect(
+      caller.element.applyBatchOperations({
+        elementIds: [17],
+        archive: true,
+        unarchive: true,
+        updateInstances: false,
+        updateTemplateInstances: false,
+      })
+    ).resolves.toEqual({ updatedCount: 0 })
+    await expect(
+      caller.element.applyBatchOperations({
+        elementIds: [17],
+        archive: false,
+        unarchive: false,
+        updateInstances: true,
+        updateTemplateInstances: false,
+      })
+    ).resolves.toEqual({ updatedCount: 0 })
+    expect(elementFindMany).not.toHaveBeenCalled()
+  })
+
+  test('applies element batch operations to eligible elements only', async () => {
+    const elementFindMany = vi.fn().mockResolvedValue([
+      { id: 17, type: ElementType.SC },
+      { id: 18, type: ElementType.MC },
+    ])
+    const elementUpdate = vi.fn(async ({ where }) => ({ id: where.id }))
+    const transactionClient = {
+      element: { update: elementUpdate },
+    }
+    const transaction = vi.fn(async (callback) => callback(transactionClient))
+    const prisma = {
+      element: { findMany: elementFindMany },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.applyBatchOperations({
+        elementIds: [17, 18, 19],
+        archive: false,
+        unarchive: false,
+        multiplier: 2,
+        updateInstances: false,
+        updateTemplateInstances: false,
+      })
+    ).resolves.toEqual({ updatedCount: 2 })
+    expect(elementFindMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: [17, 18, 19] },
+        isDeleted: false,
+        permissions: {
+          some: {
+            userId: user.id,
+            permissionLevel: {
+              in: [
+                PermissionLevel.OWNER,
+                PermissionLevel.ADMIN,
+                PermissionLevel.WRITE,
+              ],
+            },
+          },
+        },
+        isArchived: undefined,
+        options: { path: ['hasSampleSolution'], equals: true },
+        type: undefined,
+      },
+    })
+    expect(transaction).toHaveBeenCalledTimes(2)
+    expect(elementUpdate).toHaveBeenNthCalledWith(1, {
+      where: { id: 17 },
+      data: {
+        version: { increment: 1 },
+        isArchived: undefined,
+        status: undefined,
+        pointsMultiplier: 2,
+        basePoints: undefined,
+      },
+    })
+    expect(elementUpdate).toHaveBeenNthCalledWith(2, {
+      where: { id: 18 },
+      data: {
+        version: { increment: 1 },
+        isArchived: undefined,
+        status: undefined,
+        pointsMultiplier: 2,
+        basePoints: undefined,
+      },
+    })
+  })
+
+  test('updates element instances during element batch operations when requested', async () => {
+    const elementFindMany = vi
+      .fn()
+      .mockResolvedValue([{ id: 17, type: ElementType.SC }])
+    const elementUpdate = vi.fn().mockResolvedValue({ id: 17 })
+    const elementFindUnique = vi.fn().mockResolvedValue(null)
+    const transactionClient = {
+      element: {
+        update: elementUpdate,
+        findUnique: elementFindUnique,
+      },
+    }
+    const transaction = vi.fn(async (callback) => callback(transactionClient))
+    const prisma = {
+      element: { findMany: elementFindMany },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.applyBatchOperations({
+        elementIds: [17],
+        archive: false,
+        unarchive: false,
+        status: ElementStatus.READY,
+        updateInstances: true,
+        updateTemplateInstances: true,
+      })
+    ).resolves.toEqual({ updatedCount: 1 })
+    expect(elementFindMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: { in: [17] },
+        permissions: {
+          some: {
+            userId: user.id,
+            permissionLevel: {
+              in: [
+                PermissionLevel.OWNER,
+                PermissionLevel.ADMIN,
+                PermissionLevel.WRITE,
+                PermissionLevel.EXECUTE,
+                PermissionLevel.READ,
+              ],
+            },
+          },
+        },
+      }),
+    })
+    expect(elementUpdate).toHaveBeenCalledWith({
+      where: { id: 17 },
+      data: {
+        version: { increment: 1 },
+        isArchived: undefined,
+        status: ElementStatus.READY,
+        pointsMultiplier: undefined,
+        basePoints: undefined,
+      },
+    })
+    expect(elementFindUnique).toHaveBeenCalledWith({
+      where: { id: 17, isDeleted: false },
+      include: expect.objectContaining({
+        elementInstances: expect.any(Object),
+        answerCollection: { include: { entries: true } },
+        answerCollectionItems: true,
+      }),
+    })
+  })
+
   test('returns null summary when admin permission is missing', async () => {
     const findFirst = vi.fn().mockResolvedValue(null)
     const elementFindUnique = vi.fn()

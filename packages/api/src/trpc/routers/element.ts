@@ -26,6 +26,7 @@ import { router } from '../init.js'
 import { hasObjectPermission } from '../permissions.js'
 import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
+  applyElementBatchOperationsInput,
   changeElementStatusInput,
   editTagInput,
   elementIdInput,
@@ -1234,6 +1235,120 @@ async function updateElementInstances({
   return updatedInstances
 }
 
+async function applyElementBatchOperations({
+  ctx,
+  elementIds,
+  archive,
+  unarchive,
+  status,
+  multiplier,
+  basePoints,
+  updateInstances: shouldUpdateInstances,
+  updateTemplateInstances,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  elementIds: number[]
+  archive: boolean
+  unarchive: boolean
+  status?: ElementStatus | null
+  multiplier?: number | null
+  basePoints?: boolean | null
+  updateInstances: boolean
+  updateTemplateInstances: boolean
+}) {
+  if (elementIds.length === 0) return 0
+
+  let requiredPermissionLevels: PermissionLevel[] = []
+  if (archive || unarchive) {
+    requiredPermissionLevels = [PermissionLevel.OWNER, PermissionLevel.ADMIN]
+  } else if (
+    (typeof multiplier !== 'undefined' && multiplier !== null) ||
+    (typeof basePoints !== 'undefined' && basePoints !== null)
+  ) {
+    requiredPermissionLevels = [
+      PermissionLevel.OWNER,
+      PermissionLevel.ADMIN,
+      PermissionLevel.WRITE,
+    ]
+  } else if (typeof status !== 'undefined' && status !== null) {
+    requiredPermissionLevels = [
+      PermissionLevel.OWNER,
+      PermissionLevel.ADMIN,
+      PermissionLevel.WRITE,
+      PermissionLevel.EXECUTE,
+      PermissionLevel.READ,
+    ]
+  } else {
+    return 0
+  }
+
+  if (archive && unarchive) return 0
+
+  const prisma = getPrisma(ctx)
+  const elements = await prisma.element.findMany({
+    where: {
+      id: { in: elementIds },
+      isDeleted: false,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: { in: requiredPermissionLevels },
+        },
+      },
+      isArchived: archive ? false : unarchive ? true : undefined,
+      options:
+        typeof multiplier !== 'undefined' && multiplier !== null
+          ? { path: ['hasSampleSolution'], equals: true }
+          : undefined,
+      type:
+        typeof basePoints !== 'undefined' && basePoints !== null
+          ? { notIn: [ElementType.FLASHCARD, ElementType.CONTENT] }
+          : undefined,
+    },
+  })
+
+  if (elements.length === 0) return 0
+
+  let updatedCount = 0
+  for (const element of elements) {
+    await prisma.$transaction(async (tx) => {
+      const updatedElement = await tx.element.update({
+        where: { id: element.id },
+        data: {
+          version: { increment: 1 },
+          isArchived: archive ? true : unarchive ? false : undefined,
+          status: status ?? undefined,
+          pointsMultiplier:
+            typeof multiplier !== 'undefined' && multiplier !== null
+              ? multiplier
+              : undefined,
+          basePoints:
+            typeof basePoints !== 'undefined' && basePoints !== null
+              ? element.type !== ElementType.CONTENT &&
+                element.type !== ElementType.FLASHCARD
+                ? basePoints
+                : false
+              : undefined,
+        },
+      })
+
+      if (shouldUpdateInstances) {
+        await updateElementInstances({
+          elementId: updatedElement.id,
+          includeTemplates: updateTemplateInstances,
+          prisma: tx,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+        })
+      }
+    })
+
+    updatedCount += 1
+  }
+
+  return updatedCount
+}
+
 async function flagOutdatedElementInstances({
   elementId,
   prisma,
@@ -1601,6 +1716,13 @@ export const elementRouter = router({
 
       const success = await changeElementStatus({ ctx, ...input })
       return { success }
+    }),
+
+  applyBatchOperations: userFullAccessProcedure
+    .input(applyElementBatchOperationsInput)
+    .mutation(async ({ ctx, input }) => {
+      const updatedCount = await applyElementBatchOperations({ ctx, ...input })
+      return { updatedCount }
     }),
 
   tags: userProcedure.query(async ({ ctx }) => {

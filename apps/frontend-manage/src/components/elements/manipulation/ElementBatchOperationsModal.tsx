@@ -1,16 +1,12 @@
-import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ApplyElementBatchOperationsDocument,
-  Element,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, type Element } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { isShallowEqual, omit } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
 import ElementArchiveCard from './batchOperations/ElementArchiveCard'
 import ElementBasePointsCard from './batchOperations/ElementBasePointsCard'
 import ElementBatchOperationsInfo from './batchOperations/ElementBatchOperationsInfo'
@@ -45,10 +41,8 @@ function ElementBatchOperationsModal({
   const [selectedActions, setSelectedActions] =
     useState<ElementBatchOperationActions>(INITIAL_ELEMENT_BATCH_OPERATIONS)
 
-  // application function for element list batch operations
-  const [applyElementBatchOperations, { loading: applying }] = useMutation(
-    ApplyElementBatchOperationsDocument
-  )
+  const applyElementBatchOperations =
+    trpc.element.applyBatchOperations.useMutation()
 
   // whenever the applied filters change, update the affected elements
   useEffect(() => {
@@ -206,7 +200,7 @@ function ElementBatchOperationsModal({
               <Button
                 primary
                 disabled={
-                  applying ||
+                  applyElementBatchOperations.isLoading ||
                   numOfUpdatedElements === 0 ||
                   isShallowEqual(
                     omit(selectedActions, [
@@ -222,30 +216,26 @@ function ElementBatchOperationsModal({
                 onClick={async () => {
                   try {
                     // submit the batch operations
-                    const { data: res } = await applyElementBatchOperations({
-                      variables: {
-                        elementIds: affectedElements
-                          .filter((element) => element.actionsApplied)
-                          .map((element) => element.id),
-                        archive: selectedActions.archive,
-                        unarchive: selectedActions.unarchive,
-                        status: selectedActions.status ?? undefined,
-                        multiplier:
-                          typeof selectedActions.multiplier !== 'undefined' &&
-                          selectedActions.multiplier !== ''
-                            ? parseInt(selectedActions.multiplier, 10)
-                            : null,
-                        basePoints: selectedActions.basePoints ?? undefined,
-                        updateInstances: selectedActions.updateInstances,
-                        updateTemplateInstances:
-                          selectedActions.updateTemplateInstances,
-                      },
+                    const res = await applyElementBatchOperations.mutateAsync({
+                      elementIds: affectedElements
+                        .filter((element) => element.actionsApplied)
+                        .map((element) => element.id),
+                      archive: selectedActions.archive,
+                      unarchive: selectedActions.unarchive,
+                      status: selectedActions.status ?? undefined,
+                      multiplier:
+                        typeof selectedActions.multiplier !== 'undefined' &&
+                        selectedActions.multiplier !== ''
+                          ? parseInt(selectedActions.multiplier, 10)
+                          : null,
+                      basePoints: selectedActions.basePoints ?? undefined,
+                      updateInstances: selectedActions.updateInstances,
+                      updateTemplateInstances:
+                        selectedActions.updateTemplateInstances,
                     })
 
                     // in case of success, reset the selected elements and refetch the elements
-                    if (
-                      res?.applyElementBatchOperations === numOfUpdatedElements
-                    ) {
+                    if (res.updatedCount === numOfUpdatedElements) {
                       resetSelectedElements()
                       await refetchElements()
                       toast({
@@ -254,7 +244,7 @@ function ElementBatchOperationsModal({
                         options: { duration: 3000 },
                       })
                       onClose()
-                    } else if (res?.applyElementBatchOperations !== 0) {
+                    } else if (res.updatedCount !== 0) {
                       resetSelectedElements()
                       await refetchElements()
                       toast({

@@ -164,6 +164,17 @@ export const changeElementStatusInput = z.object({
   status: z.nativeEnum(ElementStatus),
 })
 
+export const applyElementBatchOperationsInput = z.object({
+  elementIds: z.array(z.number().int()),
+  archive: z.boolean(),
+  unarchive: z.boolean(),
+  status: z.nativeEnum(ElementStatus).nullish(),
+  multiplier: z.number().int().nullish(),
+  basePoints: z.boolean().nullish(),
+  updateInstances: z.boolean(),
+  updateTemplateInstances: z.boolean(),
+})
+
 export const editTagInput = z.object({
   id: z.number().int(),
   name: z.string(),

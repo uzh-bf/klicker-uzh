@@ -276,6 +276,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M4 Manage Element Batch Operations
+
+Status: complete for the scoped slice. This slice migrated the manage question-pool element batch-operation modal from GraphQL/Apollo to tRPC while leaving element list reads, activity batch operations, activity/template element manipulation flows, generated enum/type cleanup in shared manipulation helpers, Apollo providers, subscriptions, and GraphQL cleanup out of scope.
+
+Operation mapping:
+
+```text
+Slice: S04M4 Manage Element Batch Operations
+GraphQL operation(s): ApplyElementBatchOperations
+GraphQL resolver(s): Mutation.applyElementBatchOperations
+Behavior source: packages/graphql/src/services/elements.ts applyElementBatchOperations and its updateElementInstances follow-up behavior already ported in the element router
+tRPC router.procedure: element.applyBatchOperations
+Input schema: { elementIds, archive, unarchive, status, multiplier, basePoints, updateInstances, updateTemplateInstances }
+Output DTO: { updatedCount }
+Active frontend consumers: apps/frontend-manage/src/components/elements/manipulation/ElementBatchOperationsModal.tsx
+Apollo cache/refetch/subscription behavior: Apollo useMutation returns Int count; modal resets selected elements, refetches element list, shows success/partial/error toast, and closes on non-zero count
+React Query replacement: trpc.element.applyBatchOperations mutation; same selected-element reset/refetch/toast/close behavior with the existing element-list refetch callback
+Browser verification path: branch-local manage Library page, select one or more elements, open batch modal, apply a reversible status update
+Cleanup blocked until: manage question-pool list reads, activity batch operations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Implemented:
+
+- Added `applyElementBatchOperationsInput` in `packages/api/src/trpc/schemas/element.ts`.
+- Added `element.applyBatchOperations` in `packages/api/src/trpc/routers/element.ts`, mirroring GraphQL service behavior for early no-op returns, archive/unarchive conflict handling, permission-level selection by operation type, eligible-element filtering, version increments, archive/status/multiplier/base-points updates, and optional `updateElementInstances` follow-up work.
+- Migrated `apps/frontend-manage/src/components/elements/manipulation/ElementBatchOperationsModal.tsx` from `ApplyElementBatchOperationsDocument` and Apollo `useMutation` to `trpc.element.applyBatchOperations.useMutation`.
+- Preserved existing selected-element reset, `refetchElements`, success/partial/error toast, and modal close behavior.
+- Added focused API tests for no-op cases, eligible-element updates, permission/filter shape, and delegated instance updates.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements` passed: 27 test files, 258 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed after rerun with sandbox escalation for TypeScript build metadata.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config, PWA, Browserslist freshness, `MISSING_MESSAGE` during `/qr/[...args]`, and large page data.
+- Scoped migrated-operation audits found no remaining `ApplyElementBatchOperationsDocument`, `ApplyElementBatchOperations`, or Apollo `@apollo/client` import in the migrated modal; the only mutation hook match is now `trpc.element.applyBatchOperations.useMutation`.
+- Touched API audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in the new element procedure, schema, or tests.
+- S04 coexistence audit found 400 files still referencing GraphQL/Apollo patterns, expected while GraphQL remains live.
+- Browser verification used a disposable branch-local stack on ports 3123/3124/3126 and delegated login as seeded `lecturer`.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m4-question-pool.png`, `/tmp/agent-browser-shots/s04m4-batch-modal.png`, `/tmp/agent-browser-shots/s04m4-batch-status-review.png`, and `/tmp/agent-browser-shots/s04m4-batch-status-draft-restored.png`.
+- Browser smoke selected one Library element, opened the batch modal, changed status from Draft to Review, then restored Draft.
+- Browser resource timing showed two `http://127.0.0.1:3123/api/trpc/element.applyBatchOperations?batch=1` requests. Unrelated `/api/graphql` requests still appear on the page as expected during coexistence.
+- Runtime note: first manage reload showed `ApolloError: PersistedQueryOnly` because the backend was started without `NODE_ENV=test`; restarting the backend in test mode fixed the local coexistence setup. Backend Rollup watch then reported the existing missing `instrumented/index.ts` test-build caveat, but nodemon served the current `dist` and browser verification completed.
+
+Notes:
+
+- Context7 was not available through tool discovery in this session; official tRPC v10 router/procedure/validator/useMutation docs were loaded instead and matched the branch's installed `@trpc/*` 10.45.2 patterns.
+- Review/simplification subagent tooling is not exposed under the current tool policy; performed explicit self-review and simplified the router helper to return an incremented update count instead of accumulating updated records.
+
+Next:
+
+- Recommended next slice: continue manage question-pool list/read cleanup or the next isolated manage element/activity batch-operation consumer, while keeping Apollo providers, generated GraphQL artifacts, subscriptions, and S06 cleanup blocked until their gates pass.
+
 ### 2026-06-05 Completed: S04M3 Manage Element Edit Wizard Mutations
 
 Status: complete for the scoped slice. This slice migrated the manage element edit wizard read/mutate/status paths from GraphQL/Apollo to tRPC while leaving element list reads, batch operations, activity/template element manipulation flows, generated enum/type cleanup in shared manipulation helpers, Apollo providers, subscriptions, and GraphQL cleanup out of scope.
