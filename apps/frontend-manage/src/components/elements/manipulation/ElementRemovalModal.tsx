@@ -1,5 +1,3 @@
-import { useQuery } from '@apollo/client'
-import { GetElementSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -28,17 +26,15 @@ function ElementRemovalModal({
   })
 
   // fetch element information
-  const { data, loading: queryLoading } = useQuery(GetElementSummaryDocument, {
-    variables: { id: elementId },
-    skip: !elementId,
-    fetchPolicy: 'network-only',
-  })
+  const { data, isLoading: queryLoading } = trpc.element.summary.useQuery(
+    { id: elementId },
+    { enabled: !!elementId }
+  )
 
   const notApplicableDerived =
-    !!data?.getElementSummary && !data.getElementSummary.retainsDerivedAccess
+    !!data?.elementSummary && !data.elementSummary.retainsDerivedAccess
   const notApplicableResources =
-    !!data?.getElementSummary &&
-    !data.getElementSummary.derivedAccessToResources
+    !!data?.elementSummary && !data.elementSummary.derivedAccessToResources
 
   // on modal opening, reset the confirmation state
   useEffect(() => {

@@ -1,11 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeleteElementDocument,
-  GetElementSummaryDocument,
-  GetUserTagsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { useApolloClient } from '@apollo/client'
+import { GetUserTagsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from '../../courses/modals/ActivityConfirmationModal'
 
@@ -23,6 +20,9 @@ function ElementDeletionModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
+  const apolloClient = useApolloClient()
+  const utils = trpc.useUtils()
+  const deleteElement = trpc.element.delete.useMutation()
   const [confirmations, setConfirmations] = useState({
     actionFinal: false, // action cannot be undone, element will not be removed from any created activities
     otherUsersAccess: false, // other users might not lose access to the element, if used
@@ -31,25 +31,17 @@ function ElementDeletionModal({
   })
 
   // fetch element information
-  const { data, loading: queryLoading } = useQuery(GetElementSummaryDocument, {
-    variables: { id: elementId },
-    skip: !elementId,
-    fetchPolicy: 'network-only',
-  })
-
-  // deletion mutation
-  const [deleteElement, { loading: deleting }] = useMutation(
-    DeleteElementDocument
+  const { data, isLoading: queryLoading } = trpc.element.summary.useQuery(
+    { id: elementId },
+    { enabled: !!elementId }
   )
 
   const notApplicableShared =
-    !!data?.getElementSummary &&
-    !data.getElementSummary.sharedElementActivityUse
+    !!data?.elementSummary && !data.elementSummary.sharedElementActivityUse
   const notApplicableDerived =
-    !!data?.getElementSummary && !data.getElementSummary.retainsDerivedAccess
+    !!data?.elementSummary && !data.elementSummary.retainsDerivedAccess
   const notApplicableResources =
-    !!data?.getElementSummary &&
-    !data.getElementSummary.derivedAccessToResources
+    !!data?.elementSummary && !data.elementSummary.derivedAccessToResources
 
   // on modal opening, reset the confirmation state
   useEffect(() => {
@@ -79,15 +71,16 @@ function ElementDeletionModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await deleteElement({
-          variables: { id: elementId },
-          // refetch required, since it is more cumbersome to compute a diff of removed tags than just refetch them (cheap)
-          refetchQueries: [{ query: GetUserTagsDocument }],
+        await deleteElement.mutateAsync({ id: elementId })
+        void utils.resources.answerCollectionsInfo.invalidate()
+        // Tags are still Apollo-backed in this slice, so keep the old refetch bridge.
+        void apolloClient.refetchQueries({
+          include: [GetUserTagsDocument],
         })
         await refetchElements()
         setModalOpen(false)
       }}
-      submitting={deleting}
+      submitting={deleteElement.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={false}
     >

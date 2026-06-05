@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: catalog object request/copy/import/cancel actions, because the shared-object removal callers are now tRPC-backed. Element/template manipulation mutation groups, broader course/activity cache bridges, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
+- Continue the manage vertical migration with the next narrow workflow slice. Recommended next scope: S04M2 Manage Element Edit Wizard Mutations or tag CRUD, because `GetElementSummaryDocument` / `DeleteElementDocument` are now migrated but the element edit wizard, batch operations, tag reads/CRUD, analytics/evaluation reads, realtime, generated GraphQL type cleanup, Apollo providers, and GraphQL cleanup remain live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-05 Completed: S04M1 Manage Element Summary and Deletion
+
+Status: complete for the scoped slice. This slice migrated the question-pool element summary read and hard-delete modal path from GraphQL/Apollo to tRPC. Shared element permission removal remains tRPC-backed through `sharing.removeObject`; the element edit wizard, batch operations, tag CRUD, answer-collection catalog info reads, analytics/evaluation pages, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.
+
+Implemented:
+
+- Added `element.summary` and `element.delete` in a new `packages/api/src/trpc/routers/element.ts` router and mounted it in the app router.
+- Added an integer `elementIdInput` schema.
+- Mirrored `ElementService.getElementSummary` behavior for shared activity usage, retained derived activity access, and derived access to linked answer collections.
+- Mirrored GraphQL `withPermission` ADMIN gate semantics by returning nullable results when the user lacks ADMIN/OWNER derived permission.
+- Mirrored `ElementService.deleteElement` behavior: soft delete, disconnect linked answer collection and answer collection items, delete direct permissions, recompute derived element permissions, recompute linked answer collection permissions, delete orphan tags, clear tags from the soft-deleted element, and emit element invalidation.
+- Added focused API tests for summary permission denial, summary flags, delete permission denial, and delete side effects.
+- Migrated `ElementDeletionModal` from `GetElementSummaryDocument` / `DeleteElementDocument` to `trpc.element.summary` / `trpc.element.delete`.
+- Migrated `ElementRemovalModal` from `GetElementSummaryDocument` to `trpc.element.summary`.
+- Preserved a narrow Apollo `GetUserTagsDocument` refetch bridge in `ElementDeletionModal` because tag reads remain Apollo-backed until the tag slice.
+- Added `resources.answerCollectionsInfo` invalidation after hard-delete because deleting an element can disconnect a linked answer collection.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements` passed: 27 test files, 244 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config/message lookup, Browserslist freshness, `MISSING_MESSAGE` during `/qr/[...args]`, and large page data.
+- `git diff --check` passed.
+- Scoped manage audit found no remaining `GetElementSummaryDocument` or `DeleteElementDocument` usage in `apps/frontend-manage/src/components` or `apps/frontend-manage/src/pages`.
+- Touched API audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in the element router/schema/test/root files.
+- Touched modal audit found only the intentional Apollo `useApolloClient` / `GetUserTagsDocument` bridge in `ElementDeletionModal`.
+- Browser verification reused an already-running branch-local backend on port 3103 and started auth/manage on ports 3106/3104. Auth initially failed with the app-local `.env.development` database password issue, then succeeded after injecting the branch-local backend `.env` into auth without printing secret values and restarting auth/manage with consistent `localhost` URLs.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m1-initial.png`, `/tmp/agent-browser-shots/s04m1-auth-routing-gap.png`, `/tmp/agent-browser-shots/s04m1-delete-modal.png`, and `/tmp/agent-browser-shots/s04m1-after-cancel.png`.
+- Browser smoke authenticated as delegated `lecturer`, loaded the Library/question-pool page, opened the action menu for `S04K10 inline selection smoke`, opened the `Delete element` confirmation modal, and cancelled it without confirming deletion.
+- Browser resource timing showed `http://localhost:3103/api/trpc/element.summary?...` when the deletion modal opened. Unrelated `/api/graphql` requests still appear on the page as expected during coexistence.
+- Verification auth/manage servers were stopped after browser checks; ports 3104 and 3106 were free afterward. The pre-existing backend on 3103 was left running.
+- Context7 status: unavailable in this session; local installed tRPC 10.45.2 patterns only.
+
+Review and simplification:
+
+- Self-review only: subagent tooling was not available under the current tool policy without explicit user delegation. No correctness issues were found after comparing the tRPC procedures against the existing GraphQL service behavior.
+- Kept this slice to summary/delete only instead of pulling in the full element edit wizard, batch operations, or tag CRUD.
+- Kept the tag Apollo refetch bridge instead of prematurely migrating tag reads in this slice.
+- Used the existing `hasObjectPermission` helper instead of duplicating element-specific permission logic.
+
+Next:
+
+- Commit S04M1 as one conventional slice commit.
+- Recommended next slice: migrate the element edit wizard mutation group or tag CRUD, then continue generated GraphQL type cleanup only after the owning workflows are migrated.
 
 ### 2026-06-05 Completed: S04K11 Manage Shared Object Permission Removal
 
