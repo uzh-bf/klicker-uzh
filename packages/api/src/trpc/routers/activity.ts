@@ -28,6 +28,7 @@ import {
   activityTemplateInput,
   applyActivityBatchOperationsInput,
   checkTemplateElementExistsInput,
+  editActivityTemplateInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
   templateInformationInput,
@@ -150,6 +151,72 @@ function toTemplateInformationDto(activity: TemplateInformationRecord | null) {
     description: activity.templateInfo.description,
     instructions: activity.templateInfo.instructions,
   }
+}
+
+function getTemplateActivityWhere(input: {
+  activityId: string
+  activityType: ActivityType
+}) {
+  if (input.activityType === ActivityType.LIVE_QUIZ) {
+    return { liveQuizId: input.activityId }
+  }
+
+  if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+    return { practiceQuizId: input.activityId }
+  }
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    return { microLearningId: input.activityId }
+  }
+
+  return { groupActivityId: input.activityId }
+}
+
+async function updateTemplateActivityName(
+  tx: Prisma.TransactionClient,
+  {
+    activityId,
+    activityType,
+    name,
+  }: {
+    activityId: string
+    activityType: ActivityType
+    name: string
+  }
+) {
+  const where = {
+    id: activityId,
+    status: PublicationStatus.TEMPLATE,
+  }
+
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    await tx.liveQuiz.update({
+      where,
+      data: { name },
+    })
+    return
+  }
+
+  if (activityType === ActivityType.PRACTICE_QUIZ) {
+    await tx.practiceQuiz.update({
+      where,
+      data: { name },
+    })
+    return
+  }
+
+  if (activityType === ActivityType.MICRO_LEARNING) {
+    await tx.microLearning.update({
+      where,
+      data: { name },
+    })
+    return
+  }
+
+  await tx.groupActivity.update({
+    where,
+    data: { name },
+  })
 }
 
 type TemplateLiveQuizRecord = {
@@ -817,6 +884,48 @@ export const activityRouter = router({
       })
 
       return { templateInformation: toTemplateInformationDto(groupActivity) }
+    }),
+
+  editTemplate: userFullAccessProcedure
+    .input(editActivityTemplateInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canWrite = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.activityId,
+          activityType: input.activityType,
+        },
+        PermissionLevel.WRITE
+      )
+
+      if (!canWrite) return { editActivityTemplate: false }
+
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.activityTemplate.update({
+            where: {
+              id: input.templateId,
+              ...getTemplateActivityWhere(input),
+            },
+            data: {
+              description: input.description,
+              instructions: input.instructions,
+            },
+          })
+
+          await updateTemplateActivityName(tx, {
+            activityId: input.activityId,
+            activityType: input.activityType,
+            name: input.name,
+          })
+        })
+
+        return { editActivityTemplate: true }
+      } catch (error) {
+        console.error('Error editing activity template:', error)
+        return { editActivityTemplate: false }
+      }
     }),
 
   template: userProcedure

@@ -280,6 +280,102 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M18 Manage Template Edit Mutation
+
+Status: complete for the scoped slice. Scope was the single
+`EditActivityTemplateDocument` mutation in `TemplateEditModal`, following
+S04M17's metadata-read migration in the same modal. This slice keeps surrounding
+activity overview types/actions, Apollo providers, GraphQL endpoint,
+subscriptions, codegen, and final cleanup live.
+
+Operation mapping:
+
+```text
+Slice: S04M18 Manage Template Edit Mutation
+GraphQL operation(s): EditActivityTemplate
+GraphQL resolver(s): Mutation.editActivityTemplate with asUserFullAccess and WRITE activity access
+Behavior source: packages/graphql/src/services/templates.ts editActivityTemplate
+tRPC router.procedure: activity.editTemplate
+Input schema: { activityId: string; activityType: ActivityType; templateId: string; name: string; description: string; instructions: string }
+Output DTO: { editActivityTemplate: boolean }
+Active frontend consumers: apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx
+Apollo cache/refetch/subscription behavior: no cache writes; caller awaits refetchActivities() on success
+React Query replacement: trpc.activity.editTemplate.useMutation(); keep existing refetchActivities() callback and success/error handling
+Browser verification path: branch-local manage app; delegated login; create or fixture a template activity if seeded data lacks one; open template edit modal; submit a metadata update; verify /api/trpc/activity.editTemplate resource timing and visible updated metadata/name
+Cleanup blocked until: remaining manage template creation/deletion/conversion flows, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx`
+- This plan file
+
+Implementation:
+
+- Added `activity.editTemplate` with the same behavior as
+  `Mutation.editActivityTemplate`: full user access, WRITE permission check,
+  transactional `ActivityTemplate` metadata update, matching template activity
+  name update guarded by `PublicationStatus.TEMPLATE`, boolean success output,
+  and false-on-error fallback.
+- Added `editActivityTemplateInput` to the activity tRPC schemas.
+- Migrated `TemplateEditModal` from Apollo `useMutation(EditActivityTemplate)`
+  to `trpc.activity.editTemplate.useMutation()`, preserving the existing
+  `refetchActivities()` success path and modal error handling.
+- Added focused API tests for successful live-quiz template edit, missing WRITE
+  permission returning false without a transaction, and transaction failure
+  returning false while logging the error.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write packages/api/src/trpc/schemas/activity.ts packages/api/src/trpc/routers/activity.ts packages/api/src/trpc/__tests__/manage-activities.test.ts apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/manage-activities.test.ts` passed; package script ran all API test files: 27 files, 287 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/backend-docker check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with known Next module-type, next-intl i18n, Browserslist, `/qr/[...args]` `MISSING_MESSAGE`, and large page-data warnings only.
+- Static audit `rg -n "EditActivityTemplateDocument|EditActivityTemplate\b" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n`: no matches.
+- Component audit `rg -n "EditActivityTemplateDocument|editTemplate|editActivityTemplate" apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx`: only the new tRPC mutation and result property remain.
+- S04 GraphQL coexistence and tRPC surface audits passed with GraphQL still intentionally live for remaining consumers.
+- `git diff --check` passed.
+- Browser verification used branch-local backend/auth/manage dev servers on ports 3133/3136/3134, delegated login, and a temporary local DB fixture because seeded data had no template activities. Screenshots:
+  `/tmp/agent-browser-shots/s04m18-02-template-list-before-edit.png`,
+  `/tmp/agent-browser-shots/s04m18-03-edit-modal-before-submit.png`,
+  `/tmp/agent-browser-shots/s04m18-04-edit-modal-filled.png`,
+  `/tmp/agent-browser-shots/s04m18-05-after-edit-submit.png`.
+- Browser resource timing confirmed
+  `http://127.0.0.1:3133/api/trpc/activity.editTemplate?batch=1` and the
+  activity list rendered `Live Quiz: S04M18 Template Updated` after submit.
+- Database verification after submit confirmed `LiveQuiz.name =
+  S04M18 Template Updated`, `status = TEMPLATE`, `ActivityTemplate.description =
+  S04M18 updated template description.`, and `instructions = S04M18 updated
+  template instructions.`.
+- Cleanup removed the temporary `ActivityTemplate` row, restored the live quiz
+  to `DRAFT` with name `Live Quiz Instance Update`, confirmed
+  `template_rows = 0`, closed `agent-browser`, and stopped only temporary
+  listeners on ports 3133, 3134, and 3136. The pre-existing backend rollup
+  watcher PID 40246 remains untouched.
+
+Self-review:
+
+- No subagents were used in this slice because the workflow currently forbids
+  spawning them unless explicitly requested; this is recorded as a tooling gap
+  for the larger sliced-development process.
+- The new router helper duplicates the GraphQL service's activity-type switch
+  narrowly to keep this slice transport-local. Extracting a shared service can
+  be revisited if later template mutation slices repeat the same switch.
+
+Next:
+
+- Candidate next slice: migrate `CreateLiveQuizFromTemplateDocument` in the
+  live-quiz template creation flow, or another remaining manage template
+  creation/deletion/conversion mutation. Keep generated GraphQL type cleanup,
+  Apollo provider removal, realtime migration, and S06 cleanup blocked until
+  their gates.
+
 ### 2026-06-05 Completed: S04M17 Manage Template Edit Metadata Read
 
 Status: complete for the scoped slice. Scope was the single

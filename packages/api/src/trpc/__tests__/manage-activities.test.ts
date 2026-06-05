@@ -896,6 +896,145 @@ describe('manage activity read routers', () => {
     expect(liveQuizFindUnique).not.toHaveBeenCalled()
   })
 
+  test('edits writable live quiz template metadata and activity name', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const templateUpdate = vi.fn().mockResolvedValue({ id: 'template-1' })
+    const liveQuizUpdate = vi.fn().mockResolvedValue({ id: 'live-quiz-1' })
+    const transaction = vi.fn().mockImplementation(async (callback) =>
+      callback({
+        activityTemplate: {
+          update: templateUpdate,
+        },
+        liveQuiz: {
+          update: liveQuizUpdate,
+        },
+      })
+    )
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.editTemplate({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        templateId: 'template-1',
+        name: 'Updated template name',
+        description: 'Updated template description',
+        instructions: 'Updated template instructions',
+      })
+    ).resolves.toEqual({ editActivityTemplate: true })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(transaction).toHaveBeenCalledTimes(1)
+    expect(templateUpdate).toHaveBeenCalledWith({
+      where: {
+        id: 'template-1',
+        liveQuizId: 'live-quiz-1',
+      },
+      data: {
+        description: 'Updated template description',
+        instructions: 'Updated template instructions',
+      },
+    })
+    expect(liveQuizUpdate).toHaveBeenCalledWith({
+      where: {
+        id: 'live-quiz-1',
+        status: PublicationStatus.TEMPLATE,
+      },
+      data: {
+        name: 'Updated template name',
+      },
+    })
+  })
+
+  test('does not edit template metadata when write permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const transaction = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.editTemplate({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        templateId: 'template-1',
+        name: 'Updated template name',
+        description: 'Updated template description',
+        instructions: 'Updated template instructions',
+      })
+    ).resolves.toEqual({ editActivityTemplate: false })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(transaction).not.toHaveBeenCalled()
+  })
+
+  test('returns false when template edit transaction fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const transaction = vi.fn().mockRejectedValue(new Error('update failed'))
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.editTemplate({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        templateId: 'template-1',
+        name: 'Updated template name',
+        description: 'Updated template description',
+        instructions: 'Updated template instructions',
+      })
+    ).resolves.toEqual({ editActivityTemplate: false })
+
+    expect(transaction).toHaveBeenCalledTimes(1)
+    expect(consoleError).toHaveBeenCalledWith(
+      'Error editing activity template:',
+      expect.any(Error)
+    )
+    consoleError.mockRestore()
+  })
+
   test('returns null for inaccessible activity templates', async () => {
     const templateFindUnique = vi.fn().mockResolvedValue(null)
     const prisma = {

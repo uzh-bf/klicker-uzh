@@ -1,9 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  ActivityType,
-  EditActivityTemplateDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -37,8 +33,8 @@ function TemplateEditModal({
   refetchActivities,
 }: TemplateEditModalProps) {
   const t = useTranslations()
-  const [editActivityTemplate] = useMutation(EditActivityTemplateDocument)
   const trpcActivityType = trpcActivityTypeByGraphqlActivityType[activityType]
+  const editActivityTemplate = trpc.activity.editTemplate.useMutation()
   const { data, isLoading } = trpc.activity.templateInformation.useQuery(
     {
       activityId,
@@ -85,18 +81,16 @@ function TemplateEditModal({
           })}
           onSubmit={async (values) => {
             try {
-              const result = await editActivityTemplate({
-                variables: {
-                  activityId,
-                  activityType,
-                  templateId: info.templateId,
-                  name: values.name,
-                  description: values.description,
-                  instructions: values.instructions,
-                },
+              const result = await editActivityTemplate.mutateAsync({
+                activityId,
+                activityType: trpcActivityType,
+                templateId: info.templateId,
+                name: values.name,
+                description: values.description,
+                instructions: values.instructions,
               })
 
-              if (result.data?.editActivityTemplate) {
+              if (result.editActivityTemplate) {
                 await refetchActivities?.()
                 onSuccess()
                 onClose()
