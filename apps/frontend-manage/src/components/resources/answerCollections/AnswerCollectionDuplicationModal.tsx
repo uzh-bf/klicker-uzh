@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 function AnswerCollectionDuplicationModal({
   collectionId,
@@ -19,6 +20,7 @@ function AnswerCollectionDuplicationModal({
   onSuccess: () => void
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [duplicateAnswerCollection, { loading }] = useMutation(
     DuplicateAnswerCollectionDocument
   )
@@ -76,6 +78,7 @@ function AnswerCollectionDuplicationModal({
           })
 
           if (result.data?.duplicateAnswerCollection) {
+            void utils.resources.answerCollectionsInfo.invalidate()
             onClose()
             onSuccess()
           } else {

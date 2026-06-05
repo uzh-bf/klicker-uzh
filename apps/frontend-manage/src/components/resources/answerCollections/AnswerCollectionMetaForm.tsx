@@ -10,6 +10,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import EditorField from '../../activities/creation/EditorField'
 import TouchMonitor from './TouchMonitor'
 
@@ -29,6 +30,7 @@ function AnswerCollectionMetaForm({
   refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument, {
     update: (cache, { data }) => {
       if (data?.modifyAnswerCollection) {
@@ -81,6 +83,10 @@ function AnswerCollectionMetaForm({
             await refetchAnswerCollections?.()
           }
 
+          void utils.resources.answerCollectionsInfo.invalidate()
+          void utils.resources.singleAnswerCollection.invalidate({
+            id: collection.id,
+          })
           onSuccess()
           resetForm()
         }

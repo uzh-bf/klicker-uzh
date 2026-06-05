@@ -19,6 +19,7 @@ import {
 import { FieldArray, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import EditorField from '../../activities/creation/EditorField'
 
 type AnswerCollectionFormValues = {
@@ -29,6 +30,7 @@ type AnswerCollectionFormValues = {
 
 function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
 
   const validationSchema = Yup.object({
@@ -92,6 +94,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
           })
 
           if (data?.createAnswerCollection?.id) {
+            void utils.resources.answerCollectionsInfo.invalidate()
             toast({
               type: 'success',
               message: t('manage.resources.collectionCreationSuccess'),

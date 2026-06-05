@@ -1,6 +1,4 @@
-import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
-import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   Accordion,
@@ -14,6 +12,7 @@ import {
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 
 function AnswerCollectionViewingModal({
   collectionId,
@@ -23,11 +22,10 @@ function AnswerCollectionViewingModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
-    variables: { id: collectionId },
-    skip: !open,
+  const { data, isLoading } = trpc.resources.singleAnswerCollection.useQuery({
+    id: collectionId,
   })
-  const collection = data?.getSingleAnswerCollection
+  const collection = data?.answerCollection
 
   // initialize search
   const [searchQuery, setSearchQuery] = useState('')
@@ -56,7 +54,7 @@ function AnswerCollectionViewingModal({
   return (
     <Modal
       open
-      loading={loading || !collection}
+      loading={isLoading || !collection}
       onClose={onClose}
       title={
         <div

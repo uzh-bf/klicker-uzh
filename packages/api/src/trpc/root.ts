@@ -4,6 +4,7 @@ import { activityRouter } from './routers/activity.js'
 import { courseRouter } from './routers/course.js'
 import { liveQuizRouter } from './routers/liveQuiz.js'
 import { participantRouter } from './routers/participant.js'
+import { resourcesRouter } from './routers/resources.js'
 import { sharingRouter } from './routers/sharing.js'
 import { systemRouter } from './routers/system.js'
 import { userRouter } from './routers/user.js'
@@ -13,6 +14,7 @@ export const appRouter = router({
   course: courseRouter,
   liveQuiz: liveQuizRouter,
   participant: participantRouter,
+  resources: resourcesRouter,
   sharing: sharingRouter,
   system: systemRouter,
   user: userRouter,

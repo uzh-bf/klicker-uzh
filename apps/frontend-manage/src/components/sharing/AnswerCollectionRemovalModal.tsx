@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../lib/trpc'
 
 function AnswerCollectionRemovalModal({
   id,
@@ -19,6 +20,7 @@ function AnswerCollectionRemovalModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [removeObject, { loading: removing }] =
     useMutation(RemoveObjectDocument)
 
@@ -75,6 +77,7 @@ function AnswerCollectionRemovalModal({
             typeof res.data?.removeObject !== 'undefined' &&
             res.data?.removeObject !== null
           ) {
+            void utils.resources.answerCollectionsInfo.invalidate()
             toast({
               type: 'success',
               message: t('manage.sharing.removalSuccessful'),

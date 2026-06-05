@@ -276,6 +276,46 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04K8 Manage Answer Collection Resource Reads
+
+Status: complete for the scoped slice. This slice migrated the manage answer-collection resource list and read-only viewing modal from Apollo GraphQL to tRPC, while preserving Apollo-backed mutations and selectors for unmigrated consumers. Answer-collection mutation migration, entry edit modal cleanup, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.
+
+Implemented:
+
+- Added `packages/api/src/trpc/routers/resources.ts`, `schemas/resources.ts`, and `dto/resources.ts`, mounted as `resources` in `packages/api/src/trpc/root.ts`.
+- Added `resources.answerCollectionsInfo` and `resources.singleAnswerCollection`, matching `packages/graphql/src/services/resources.ts` behavior for owner/permission flags, sharing metadata, derived dependency filtering, entry counts, and `numSolutionUsages`.
+- Added focused API coverage in `packages/api/src/trpc/__tests__/resources-answer-collections.test.ts`.
+- Migrated `AnswerCollections`, `AnswerCollectionList`, `AnswerCollectionItem`, and `AnswerCollectionViewingModal` to `RouterOutputs` and `trpc.resources.*.useQuery`.
+- Kept list loading on `isLoading || isFetching` to match the old Apollo `network-only` behavior and avoid showing stale cached rows during refetch.
+- Converted sharing badge prop types to stable string unions so read components no longer depend on generated GraphQL enum imports.
+- Added tRPC invalidation bridges beside existing Apollo cache/refetch code for create, duplicate, delete, remove, metadata edit, entry add/edit/delete, catalog copy/import, and inline answer-collection creation from element/template flows.
+
+Review and simplification:
+
+- Correctness review found missing tRPC invalidation for inline answer-collection creation and stale React Query list rendering during refetch; both were fixed.
+- Simplification review found redundant modal query options; the redundant `enabled` guard and noisy refetch option were removed.
+- Rejected removing Apollo cache writes/refetches in this slice because `AnswerCollectionEditModal`, selector/edit flows, catalog compatibility paths, and other manage consumers still read Apollo data during coexistence.
+- Rejected changing the resources procedures to bare array/object returns because wrapper outputs match existing package-router style and give an explicit extension point without affecting behavior.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- resources-answer-collections` passed: 26 test files, 229 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing warnings for module type, next-intl config/message lookup, Browserslist freshness, and large page data.
+- Browser verification used local backend/auth/manage on ports 3103/3106/3104 with delegated login and screenshots at `/tmp/agent-browser-shots/s04k8-answer-collections-initial.png`, `/tmp/agent-browser-shots/s04k8-answer-collections-after-login.png`, and `/tmp/agent-browser-shots/s04k8-answer-collections-final.png`.
+- Browser request capture after client-side navigation showed `resources.answerCollectionsInfo` over `/api/trpc` and no `GetAnswerCollectionsInfo` or `GetSingleAnswerCollection` GraphQL payload for the migrated page.
+- `git diff --check` passed before final staging.
+- Scoped migrated-read audit found no `GetAnswerCollectionsInfoDocument`, `GetSingleAnswerCollectionDocument`, or `@apollo/client` imports in the migrated list/view files.
+- Touched API audit found no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` coupling in the new resources router/schema/dto/test files.
+
+Next:
+
+- Commit S04K8 as one conventional slice commit.
+- Recommended next slice: migrate answer-collection mutations and the entry edit/detail mutation path to tRPC, while keeping generated GraphQL cleanup and Apollo provider removal for later gates.
+
 ### 2026-06-05 Completed: S04K7 Manage Catalog Add/Remove Objects
 
 Status: complete for the scoped slice. This slice migrated the manage add-object-to-catalog modal, its object-selection reads, and catalog object assignment removal from Apollo GraphQL to tRPC. Answer-collection resource CRUD, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.

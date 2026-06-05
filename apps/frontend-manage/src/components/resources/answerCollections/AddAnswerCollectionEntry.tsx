@@ -12,6 +12,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 function AddAnswerCollectionEntry({
   collectionId,
@@ -33,6 +34,7 @@ function AddAnswerCollectionEntry({
   refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [fieldOpen, setFieldOpen] = useState(false)
   const [addAnswerCollectionOption] = useMutation(
     AddAnswerCollectionOptionDocument
@@ -130,6 +132,10 @@ function AddAnswerCollectionEntry({
           await refetchAnswerCollections?.()
         }
 
+        void utils.resources.answerCollectionsInfo.invalidate()
+        void utils.resources.singleAnswerCollection.invalidate({
+          id: collectionId,
+        })
         setFieldOpen(false)
         setOptionsEditingDisabled(false)
         onSuccess()

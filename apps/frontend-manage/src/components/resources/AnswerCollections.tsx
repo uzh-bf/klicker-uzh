@@ -1,16 +1,14 @@
-import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { trpc } from '../../lib/trpc'
 import AnswerCollectionCreation from './answerCollections/AnswerCollectionCreation'
 import AnswerCollectionList from './answerCollections/AnswerCollectionList'
 
 function AnswerCollections() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetAnswerCollectionsInfoDocument, {
-    fetchPolicy: 'network-only',
-  })
+  const { data, isFetching, isLoading } =
+    trpc.resources.answerCollectionsInfo.useQuery()
 
   return (
     <div className="h-full w-full">
@@ -33,8 +31,8 @@ function AnswerCollections() {
         </div>
         <div className="lg:w-1/2 lg:pr-4">
           <AnswerCollectionList
-            collections={data?.getAnswerCollectionsInfo ?? []}
-            loading={loading}
+            collections={data?.answerCollections ?? []}
+            loading={isLoading || isFetching}
           />
         </div>
       </div>

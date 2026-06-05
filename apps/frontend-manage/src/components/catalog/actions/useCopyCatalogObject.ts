@@ -47,6 +47,7 @@ function useCopyCatalogObject({
           catalogCollectionId,
         })
         if (objectType === ObjectType.AnswerCollection) {
+          void utils.resources.answerCollectionsInfo.invalidate()
           void apolloClient.refetchQueries({
             include: [GetAnswerCollectionsInfoDocument],
           })

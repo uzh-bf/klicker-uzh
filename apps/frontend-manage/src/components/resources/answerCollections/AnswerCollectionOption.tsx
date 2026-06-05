@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 function AnswerCollectionOption({
   entry,
@@ -42,6 +43,7 @@ function AnswerCollectionOption({
   refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [editMode, setEditMode] = useState(false)
   const [editAnswerCollectionEntry] = useMutation(
     EditAnswerCollectionEntryDocument
@@ -122,6 +124,10 @@ function AnswerCollectionOption({
             await refetchAnswerCollections?.()
           }
 
+          void utils.resources.answerCollectionsInfo.invalidate()
+          void utils.resources.singleAnswerCollection.invalidate({
+            id: collectionId,
+          })
           onSuccess()
         }}
       >
@@ -206,6 +212,9 @@ function AnswerCollectionOption({
                 })
               }
 
+              void utils.resources.singleAnswerCollection.invalidate({
+                id: collectionId,
+              })
               setSubmitting(false)
               setEditMode(false)
               setEditDisabled(false)

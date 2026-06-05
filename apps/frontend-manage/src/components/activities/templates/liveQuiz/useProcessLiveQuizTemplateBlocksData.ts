@@ -6,6 +6,7 @@ import {
   TemplateElementManipulationInput,
 } from '@klicker-uzh/graphql/dist/ops'
 import { omitBy } from 'remeda'
+import { trpc } from '../../../../lib/trpc'
 import {
   createInlineCaseStudyCollection,
   createInlineSelectionCollection,
@@ -22,6 +23,7 @@ import { LiveQuizTemplateFormValues } from '../types'
 
 function useProcessLiveQuizTemplateBlocksData() {
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
+  const utils = trpc.useUtils()
 
   const processLiveQuizTemplateBlocksData = async ({
     data,
@@ -135,6 +137,9 @@ function useProcessLiveQuizTemplateBlocksData() {
                     ? await createInlineSelectionCollection({
                         values,
                         createAnswerCollection,
+                        onAnswerCollectionCreated: () => {
+                          void utils.resources.answerCollectionsInfo.invalidate()
+                        },
                       })
                     : undefined
 
@@ -173,6 +178,9 @@ function useProcessLiveQuizTemplateBlocksData() {
                     ? await createInlineCaseStudyCollection({
                         values,
                         createAnswerCollection,
+                        onAnswerCollectionCreated: () => {
+                          void utils.resources.answerCollectionsInfo.invalidate()
+                        },
                       })
                     : undefined
 

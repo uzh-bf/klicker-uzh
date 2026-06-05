@@ -1,15 +1,18 @@
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import type { RouterOutputs } from '../../../lib/trpc'
 import AnswerCollectionItem from './AnswerCollectionItem'
+
+type AnswerCollectionInfo =
+  RouterOutputs['resources']['answerCollectionsInfo']['answerCollections'][number]
 
 function AnswerCollectionList({
   collections,
   loading,
 }: {
-  collections?: AnswerCollection[]
+  collections?: AnswerCollectionInfo[]
   loading: boolean
 }) {
   const t = useTranslations()

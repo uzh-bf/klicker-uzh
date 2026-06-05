@@ -45,6 +45,7 @@ function useImportCatalogObject({
         void utils.sharing.catalogObjects.invalidate({
           catalogCollectionId,
         })
+        void utils.resources.answerCollectionsInfo.invalidate()
         void apolloClient.refetchQueries({
           include: [GetAnswerCollectionsInfoDocument],
         })

@@ -2,22 +2,28 @@ import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  AnswerCollection,
   DeleteAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import { trpc } from '../../../lib/trpc'
+
+type DeletableAnswerCollection = {
+  id: number
+  name: string
+}
 
 function CollectionDeletionModal({
   collection,
   setDeletionModal,
 }: {
-  collection: AnswerCollection
+  collection: DeletableAnswerCollection
   setDeletionModal: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [deleteAnswerCollection, { loading }] = useMutation(
     DeleteAnswerCollectionDocument,
     {
@@ -66,6 +72,7 @@ function CollectionDeletionModal({
           data?.deleteAnswerCollection !== null &&
           !errors
         ) {
+          void utils.resources.answerCollectionsInfo.invalidate()
           toast({
             type: 'success',
             message: t('manage.resources.deletionSuccessful'),

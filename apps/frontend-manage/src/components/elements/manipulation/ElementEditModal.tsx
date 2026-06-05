@@ -17,6 +17,7 @@ import {
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import React, { useMemo, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ElementEditForm from './ElementEditForm'
 import {
   createInlineCaseStudyCollection,
@@ -58,6 +59,7 @@ function ElementEditModal({
   refetchElements,
 }: ElementEditModalProps): React.ReactElement {
   const router = useRouter()
+  const utils = trpc.useUtils()
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
@@ -270,6 +272,9 @@ function ElementEditModal({
                   ? await createInlineSelectionCollection({
                       values,
                       createAnswerCollection,
+                      onAnswerCollectionCreated: () => {
+                        void utils.resources.answerCollectionsInfo.invalidate()
+                      },
                     })
                   : undefined
 
@@ -311,6 +316,9 @@ function ElementEditModal({
                   ? await createInlineCaseStudyCollection({
                       values,
                       createAnswerCollection,
+                      onAnswerCollectionCreated: () => {
+                        void utils.resources.answerCollectionsInfo.invalidate()
+                      },
                     })
                   : undefined
 

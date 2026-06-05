@@ -238,11 +238,13 @@ type CreateAnswerCollectionType = (
 interface CreateInlineSelectionCollectionProps {
   values: ElementFormTypesSelection
   createAnswerCollection: CreateAnswerCollectionType
+  onAnswerCollectionCreated?: () => void
 }
 
 export async function createInlineSelectionCollection({
   values,
   createAnswerCollection,
+  onAnswerCollectionCreated,
 }: CreateInlineSelectionCollectionProps) {
   if (!values.options.manuallyCreatedItems) {
     return null
@@ -284,6 +286,8 @@ export async function createInlineSelectionCollection({
   if (!data?.createAnswerCollection) {
     return null
   }
+
+  onAnswerCollectionCreated?.()
 
   // set the answer collection id to the newly created answer collection
   innerValues.options.answerCollection = String(data.createAnswerCollection.id)
@@ -349,11 +353,13 @@ export function prepareSelectionArgs({
 interface CreateInlineCaseStudyCollectionProps {
   values: ElementFormTypesCaseStudy
   createAnswerCollection: CreateAnswerCollectionType
+  onAnswerCollectionCreated?: () => void
 }
 
 export async function createInlineCaseStudyCollection({
   values,
   createAnswerCollection,
+  onAnswerCollectionCreated,
 }: CreateInlineCaseStudyCollectionProps) {
   if (!values.options.manuallyCreatedItems) {
     return null
@@ -395,6 +401,8 @@ export async function createInlineCaseStudyCollection({
   if (!data?.createAnswerCollection) {
     return null
   }
+
+  onAnswerCollectionCreated?.()
 
   // set the answer collection id to the newly created answer collection
   innerValues.options.answerCollection = String(data.createAnswerCollection.id)
