@@ -4,6 +4,7 @@ import {
   ObjectAccess,
   ObjectType,
   PermissionLevel,
+  PublicationStatus,
   type CatalogCollectionAssignment,
   type DerivedPermission,
   type Prisma,
@@ -32,6 +33,7 @@ import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
   activityLogEntryInput,
   addActivityMessageInput,
+  addObjectToCatalogInput,
   approveObjectSharingRequestInput,
   catalogCollectionAccessInput,
   catalogCollectionInput,
@@ -43,6 +45,7 @@ import {
   deleteCatalogCollectionInput,
   derivedPermissionOriginInput,
   objectActivityInput,
+  removeCatalogObjectAssignmentInput,
   requestCatalogCollectionInput,
   requestCatalogObjectInput,
   revokeObjectAccessInput,
@@ -167,6 +170,23 @@ type CatalogCollectionAssignmentScopeSource = Pick<
 type CatalogActionScope =
   | { answerCollectionId: number; elementId?: undefined }
   | { elementId: number; answerCollectionId?: undefined }
+
+type AddCatalogObjectScope =
+  | {
+      answerCollectionId: number
+      elementId?: undefined
+      liveQuizId?: undefined
+    }
+  | {
+      elementId: number
+      answerCollectionId?: undefined
+      liveQuizId?: undefined
+    }
+  | {
+      liveQuizId: string
+      answerCollectionId?: undefined
+      elementId?: undefined
+    }
 
 function parseNumericObjectId(objectId: string) {
   const parsedObjectId = Number.parseInt(objectId, 10)
@@ -1781,6 +1801,75 @@ async function getCatalogObjects({
   )
 }
 
+async function getCatalogAnswerCollections(
+  prisma: ReturnType<typeof getPrisma>,
+  userId: string
+) {
+  const collections = await prisma.answerCollection.findMany({
+    where: {
+      isDeleted: false,
+      permissions: {
+        some: {
+          userId,
+          permissionLevel: { in: adminPermissionLevels },
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  return collections.map((collection) => ({
+    id: String(collection.id),
+    name: collection.name,
+  }))
+}
+
+async function getCatalogLiveQuizTemplates(
+  prisma: ReturnType<typeof getPrisma>,
+  userId: string
+) {
+  const liveQuizzes = await prisma.liveQuiz.findMany({
+    where: {
+      status: PublicationStatus.TEMPLATE,
+      permissions: {
+        some: {
+          userId,
+          permissionLevel: { in: adminPermissionLevels },
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  return liveQuizzes.map((liveQuiz) => ({
+    id: liveQuiz.id,
+    name: liveQuiz.name,
+  }))
+}
+
+async function getCatalogElements(
+  prisma: ReturnType<typeof getPrisma>,
+  userId: string
+) {
+  const elements = await prisma.element.findMany({
+    where: {
+      isDeleted: false,
+      permissions: {
+        some: {
+          userId,
+          permissionLevel: { in: adminPermissionLevels },
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  return elements.map((element) => ({
+    id: String(element.id),
+    name: element.name,
+  }))
+}
+
 function getCatalogActionScope({
   objectId,
   objectType,
@@ -1799,6 +1888,341 @@ function getCatalogActionScope({
   }
 
   return null
+}
+
+function getAddCatalogObjectScope({
+  objectId,
+  objectType,
+}: {
+  objectId: string
+  objectType: ObjectType
+}): AddCatalogObjectScope | null {
+  if (objectType === ObjectType.ANSWER_COLLECTION) {
+    const answerCollectionId = parseNumericObjectId(objectId)
+    return answerCollectionId === null ? null : { answerCollectionId }
+  }
+
+  if (objectType === ObjectType.ELEMENT) {
+    const elementId = parseNumericObjectId(objectId)
+    return elementId === null ? null : { elementId }
+  }
+
+  if (objectType === ObjectType.LIVE_QUIZ) {
+    return { liveQuizId: objectId }
+  }
+
+  return null
+}
+
+async function getCatalogObjectInfoForAddition({
+  prisma,
+  userId,
+  scope,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  scope: AddCatalogObjectScope
+}) {
+  if (typeof scope.answerCollectionId !== 'undefined') {
+    const answerCollection = await prisma.answerCollection.findUnique({
+      where: {
+        id: scope.answerCollectionId,
+        permissions: {
+          some: {
+            userId,
+            permissionLevel: { in: adminPermissionLevels },
+          },
+        },
+      },
+      include: {
+        owner: { select: { shortname: true } },
+        permissions: { where: { userId } },
+      },
+    })
+
+    const permission = answerCollection?.permissions[0]
+    if (!answerCollection || !permission) return null
+
+    return {
+      objectId: answerCollection.id,
+      objectUuid: null,
+      objectType: ObjectType.ANSWER_COLLECTION,
+      objectName: answerCollection.name,
+      ownerShortname: answerCollection.owner?.shortname ?? null,
+      ownerId: answerCollection.ownerId,
+      templateId: null,
+      isShared: permission.permissionLevel !== PermissionLevel.OWNER,
+    }
+  }
+
+  if (typeof scope.elementId !== 'undefined') {
+    const element = await prisma.element.findUnique({
+      where: {
+        id: scope.elementId,
+        permissions: {
+          some: {
+            userId,
+            permissionLevel: { in: adminPermissionLevels },
+          },
+        },
+      },
+      include: {
+        owner: { select: { shortname: true } },
+        permissions: { where: { userId } },
+      },
+    })
+
+    const permission = element?.permissions[0]
+    if (!element || !permission) return null
+
+    return {
+      objectId: element.id,
+      objectUuid: null,
+      objectType: ObjectType.ELEMENT,
+      objectName: element.name,
+      ownerShortname: element.owner?.shortname ?? null,
+      ownerId: element.ownerId,
+      templateId: null,
+      isShared: permission.permissionLevel !== PermissionLevel.OWNER,
+    }
+  }
+
+  if (typeof scope.liveQuizId !== 'undefined') {
+    const liveQuiz = await prisma.liveQuiz.findUnique({
+      where: {
+        id: scope.liveQuizId,
+        status: PublicationStatus.TEMPLATE,
+        permissions: {
+          some: {
+            userId,
+            permissionLevel: { in: adminPermissionLevels },
+          },
+        },
+      },
+      include: {
+        owner: { select: { shortname: true } },
+        templateInfo: { select: { id: true } },
+        permissions: { where: { userId } },
+      },
+    })
+
+    const permission = liveQuiz?.permissions[0]
+    if (!liveQuiz || !permission) return null
+
+    return {
+      objectId: null,
+      objectUuid: liveQuiz.id,
+      objectType: ObjectType.LIVE_QUIZ,
+      objectName: liveQuiz.name,
+      ownerShortname: liveQuiz.owner?.shortname ?? null,
+      ownerId: liveQuiz.ownerId,
+      templateId: liveQuiz.templateInfo?.id ?? null,
+      isShared: permission.permissionLevel !== PermissionLevel.OWNER,
+    }
+  }
+
+  return null
+}
+
+async function addObjectToCatalog({
+  prisma,
+  emitter,
+  userId,
+  objectId,
+  objectType,
+  access,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  objectId: string
+  objectType: ObjectType
+  access: ObjectAccess
+  catalogCollectionId?: string | null
+}) {
+  const canEditCollection =
+    catalogCollectionId && catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID
+      ? await hasCatalogCollectionPermission(
+          prisma,
+          catalogCollectionId,
+          userId,
+          writePermissionLevels
+        )
+      : true
+
+  if (!canEditCollection) return null
+
+  const scope = getAddCatalogObjectScope({ objectId, objectType })
+  if (!scope) return null
+
+  const objectInfo = await getCatalogObjectInfoForAddition({
+    prisma,
+    userId,
+    scope,
+  })
+  if (!objectInfo) return null
+
+  const assignedCatalogCollectionId =
+    catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID
+  const assignment = await prisma.$transaction(async (transaction) => {
+    const newAssignment = await transaction.catalogCollectionAssignment.upsert({
+      where: {
+        answerCollectionId_catalogCollectionId:
+          typeof scope.answerCollectionId !== 'undefined'
+            ? {
+                answerCollectionId: scope.answerCollectionId,
+                catalogCollectionId: assignedCatalogCollectionId,
+              }
+            : undefined,
+        elementId_catalogCollectionId:
+          typeof scope.elementId !== 'undefined'
+            ? {
+                elementId: scope.elementId,
+                catalogCollectionId: assignedCatalogCollectionId,
+              }
+            : undefined,
+        liveQuizId_catalogCollectionId:
+          typeof scope.liveQuizId !== 'undefined'
+            ? {
+                liveQuizId: scope.liveQuizId,
+                catalogCollectionId: assignedCatalogCollectionId,
+              }
+            : undefined,
+      },
+      create: {
+        access,
+        catalogCollection: {
+          connect: { id: assignedCatalogCollectionId },
+        },
+        answerCollection:
+          typeof scope.answerCollectionId !== 'undefined'
+            ? { connect: { id: scope.answerCollectionId } }
+            : undefined,
+        element:
+          typeof scope.elementId !== 'undefined'
+            ? { connect: { id: scope.elementId } }
+            : undefined,
+        liveQuiz:
+          typeof scope.liveQuizId !== 'undefined'
+            ? { connect: { id: scope.liveQuizId } }
+            : undefined,
+      },
+      update: { access },
+    })
+
+    const auditScope: PermissionObjectScope = {
+      answerCollectionId: scope.answerCollectionId,
+      elementId: scope.elementId,
+      liveQuizId: scope.liveQuizId,
+    }
+    const { objectType: auditObjectType, objectId: auditObjectId } =
+      getAuditLogObjectType(auditScope)
+
+    await transaction.auditLogEntry.create({
+      data: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
+        objectType: auditObjectType,
+        objectId: auditObjectId,
+        sourceUserId: userId,
+        message: `${auditObjectType} (ID ${auditObjectId}) added to catalog collection (ID ${catalogCollectionId}) by user ${userId}.`,
+      },
+    })
+
+    return newAssignment
+  })
+
+  emitter?.emit('invalidate', {
+    typename: 'CatalogCollectionAssignment',
+    id: assignment.id,
+  })
+
+  return {
+    id: assignment.id,
+    objectId: objectInfo.objectId,
+    objectUuid: objectInfo.objectUuid,
+    name: objectInfo.objectName,
+    objectType: objectInfo.objectType,
+    templateId: objectInfo.templateId,
+    access: assignment.access,
+    ownerShortname: objectInfo.ownerShortname,
+    isOwner: objectInfo.ownerId === userId,
+    isManager: true,
+    isRequested: false,
+    isShared: objectInfo.isShared,
+  }
+}
+
+async function removeCatalogObjectAssignment({
+  prisma,
+  emitter,
+  userId,
+  assignmentId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  emitter: { emit: (eventName: string, payload: unknown) => void } | undefined
+  userId: string
+  assignmentId: number
+}) {
+  const assignment = await prisma.catalogCollectionAssignment.findUnique({
+    where: { id: assignmentId },
+  })
+
+  if (!assignment) return false
+
+  const sufficientPermissions =
+    assignment.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID
+      ? await hasCatalogCollectionPermission(
+          prisma,
+          assignment.catalogCollectionId,
+          userId,
+          writePermissionLevels
+        )
+      : await hasAdminObjectPermission(
+          prisma,
+          getPermissionScopeFromCatalogAssignment({
+            ...assignment,
+            catalogCollectionId: undefined,
+          }),
+          userId
+        )
+
+  if (!sufficientPermissions) return false
+
+  const deletedAssignment = await prisma.$transaction(async (transaction) => {
+    const removedAssignment =
+      await transaction.catalogCollectionAssignment.delete({
+        where: { id: assignmentId },
+      })
+
+    const scope = getPermissionScopeFromCatalogAssignment({
+      ...assignment,
+      catalogCollectionId: undefined,
+    })
+    const { objectType: auditObjectType, objectId: auditObjectId } =
+      getAuditLogObjectType(scope)
+
+    await transaction.auditLogEntry.create({
+      data: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_DELETED,
+        objectType: auditObjectType,
+        objectId: auditObjectId,
+        sourceUserId: userId,
+        message: `${auditObjectType} (ID ${auditObjectId}) removed from catalog collection (ID ${assignment.catalogCollectionId}) by user ${userId}.`,
+      },
+    })
+
+    return removedAssignment
+  })
+
+  emitter?.emit('invalidate', {
+    typename: 'CatalogCollectionAssignment',
+    id: deletedAssignment.id,
+  })
+
+  return (
+    deletedAssignment.id !== null && typeof deletedAssignment.id !== 'undefined'
+  )
 }
 
 async function copyAnswerCollectionToAccount({
@@ -2996,6 +3420,36 @@ export const sharingRouter = router({
       }
     }),
 
+  catalogAnswerCollections: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return {
+      catalogAnswerCollections: await getCatalogAnswerCollections(
+        prisma,
+        ctx.user.sub
+      ),
+    }
+  }),
+
+  catalogLiveQuizTemplates: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return {
+      catalogLiveQuizTemplates: await getCatalogLiveQuizTemplates(
+        prisma,
+        ctx.user.sub
+      ),
+    }
+  }),
+
+  catalogElements: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return {
+      catalogElements: await getCatalogElements(prisma, ctx.user.sub),
+    }
+  }),
+
   createCatalogCollection: userFullAccessProcedure
     .input(createCatalogCollectionInput)
     .mutation(async ({ ctx, input }) => {
@@ -3090,6 +3544,39 @@ export const sharingRouter = router({
           prisma,
           emitter: ctx.emitter,
           catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  addObjectToCatalog: userFullAccessProcedure
+    .input(addObjectToCatalogInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        catalogObject: await addObjectToCatalog({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          objectId: input.objectId,
+          objectType: input.objectType,
+          access: input.access,
+          catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  removeCatalogObjectAssignment: userFullAccessProcedure
+    .input(removeCatalogObjectAssignmentInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        removed: await removeCatalogObjectAssignment({
+          prisma,
+          emitter: ctx.emitter,
+          userId: ctx.user.sub,
+          assignmentId: input.assignmentId,
         }),
       }
     }),

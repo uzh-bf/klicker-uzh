@@ -276,6 +276,43 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04K7 Manage Catalog Add/Remove Objects
+
+Status: complete for the scoped slice. This slice migrated the manage add-object-to-catalog modal, its object-selection reads, and catalog object assignment removal from Apollo GraphQL to tRPC. Answer-collection resource CRUD, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.
+
+Implemented:
+
+- Added `sharing.catalogAnswerCollections`, `sharing.catalogElements`, `sharing.catalogLiveQuizTemplates`, `sharing.addObjectToCatalog`, and `sharing.removeCatalogObjectAssignment`.
+- Mirrored GraphQL behavior for selection permissions, live quiz template filtering, collection WRITE gating for collection-contained additions/removals, top-level object ADMIN/OWNER removal, assignment upsert access updates, audit logs, and `CatalogCollectionAssignment` invalidation events.
+- Added focused API coverage in `packages/api/src/trpc/__tests__/sharing-catalog-add-remove.test.ts` for selection reads, top-level add, live quiz template add, denied collection add, collection-contained removal, top-level removal, and denied removal.
+- Replaced Apollo hooks in `SelectObjectForCatalog`, `AddObjectToCatalogModal`, and `CatalogObjectRemovalModal` with tRPC hooks.
+- Replaced Apollo `GetCatalogObjectsDocument` cache updates with React Query `sharing.catalogObjects` updates and invalidated `sharing.catalogCollections` after add/remove so collection counts refresh.
+- Fixed the migrated selection loader to consider only the active tRPC query; disabled tRPC queries can still report a loading state and otherwise keep the modal spinner visible.
+
+Review:
+
+- Dedicated review agent: `DONE_WITH_CONCERNS`. Accepted findings: invalidate catalog collections after add/remove and add missing API tests for element selection, live quiz add, and top-level removal. Addressed in this slice.
+- Dedicated simplification agent: `DONE_WITH_CONCERNS`. Accepted findings: do not seed a partial `catalogObjects` cache when no query data exists, and add live quiz add coverage. Rejected collapsing the add-object helper into the existing catalog action helper because request/copy/cancel intentionally keep unsupported object types out of scope.
+
+Verification:
+
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- sharing-catalog-add-remove` (25 files / 226 tests).
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`.
+- Passed: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` (exit 0; existing warnings observed: `MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n` config warning, stale Browserslist data, `MISSING_MESSAGE` during `/qr/[...args]` static generation, and large page-data warnings).
+- Passed: `git diff --check`.
+- Passed scoped migrated-add/remove audit: touched frontend files no longer import `AddObjectToCatalogDocument`, `RemoveCatalogObjectAssignmentDocument`, `GetCatalogAnswerCollectionsDocument`, `GetCatalogElementsDocument`, or `GetCatalogLiveQuizTemplatesDocument`; older Apollo-backed catalog actions remain for later slices.
+- Passed touched API audit: no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` imports in touched API router/schema/test files.
+- Browser verification: local backend/auth/manage stack on `localhost:3103/3106/3104`; delegated login as `lecturer`; `/resources/catalog` rendered successfully. Screenshots: `/tmp/agent-browser-shots/s04k7-final-initial.png`, `/tmp/agent-browser-shots/s04k7-final-element-selection.png`, `/tmp/agent-browser-shots/s04k7-final-after-add.png`, `/tmp/agent-browser-shots/s04k7-final-remove-modal.png`, `/tmp/agent-browser-shots/s04k7-final-after-remove.png`.
+- Browser request capture showed `sharing.catalogElements`, `sharing.addObjectToCatalog`, `sharing.removeCatalogObjectAssignment`, and post-add/post-remove `sharing.catalogCollections` calls through `/api/trpc`, with no migrated GraphQL add/remove request. The temporary element assignment was removed and local dev processes were stopped after verification.
+
+Next:
+
+- Commit S04K7 as one conventional slice commit.
+- Next slice candidate: migrate manage answer-collection resource CRUD/list/detail actions, then continue generated GraphQL type cleanup and Apollo provider removal only after their cleanup gates.
+
 ### 2026-06-05 Completed: S04K6 Manage Catalog Collection Administration
 
 Status: complete for the scoped slice. This slice migrated manage catalog collection administration mutations to tRPC and wired them into the S04K4 React Query catalog collection/object caches. Add-object selection reads/mutation, catalog object assignment removal, answer-collection resource CRUD, Apollo providers, generated GraphQL type cleanup, and S06 cleanup remain live.

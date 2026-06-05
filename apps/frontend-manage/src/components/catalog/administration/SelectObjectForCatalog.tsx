@@ -1,15 +1,10 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetCatalogAnswerCollectionsDocument,
-  GetCatalogElementsDocument,
-  GetCatalogLiveQuizTemplatesDocument,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import Select from 'react-select'
+import { trpc } from '../../../lib/trpc'
 
 interface SelectObjectForCatalogProps {
   objectType: ObjectType
@@ -23,71 +18,58 @@ function SelectObjectForCatalog({
   setFieldValue,
 }: SelectObjectForCatalogProps) {
   const t = useTranslations()
-  const [isLoading, setIsLoading] = useState(true)
-  const [options, setOptions] = useState<{ value: string; label: string }[]>([])
-
-  // mutations for data fetching
-  const { data: collectionsData, loading: collectionsLoading } = useQuery(
-    GetCatalogAnswerCollectionsDocument,
-    {
-      skip: objectType !== ObjectType.AnswerCollection,
-      fetchPolicy: 'cache-and-network',
-    }
-  )
-  const { data: liveQuizTemplateData, loading: liveQuizTemplateLoading } =
-    useQuery(GetCatalogLiveQuizTemplatesDocument, {
-      skip: objectType !== ObjectType.LiveQuiz || !isTemplate,
-      fetchPolicy: 'cache-and-network',
+  const answerCollectionsEnabled = objectType === ObjectType.AnswerCollection
+  const liveQuizTemplatesEnabled =
+    objectType === ObjectType.LiveQuiz && !!isTemplate
+  const elementsEnabled = objectType === ObjectType.Element
+  const { data: collectionsData, isLoading: collectionsLoading } =
+    trpc.sharing.catalogAnswerCollections.useQuery(undefined, {
+      enabled: answerCollectionsEnabled,
     })
-  const { data: elementsData, loading: elementsLoading } = useQuery(
-    GetCatalogElementsDocument,
-    {
-      skip: objectType !== ObjectType.Element,
-      fetchPolicy: 'cache-and-network',
-    }
-  )
+  const { data: liveQuizTemplateData, isLoading: liveQuizTemplateLoading } =
+    trpc.sharing.catalogLiveQuizTemplates.useQuery(undefined, {
+      enabled: liveQuizTemplatesEnabled,
+    })
+  const { data: elementsData, isLoading: elementsLoading } =
+    trpc.sharing.catalogElements.useQuery(undefined, {
+      enabled: elementsEnabled,
+    })
   // TODO: ... add loading queries for other object types
 
-  useEffect(() => {
-    // load available objects based on the selected type
-    const loadObjects = async () => {
-      setIsLoading(true)
-
-      try {
-        // load objects available to the user for sharing (owner or admin access)
-        if (objectType === ObjectType.AnswerCollection) {
-          const collections =
-            collectionsData?.getCatalogAnswerCollections?.map((c) => ({
-              value: c.id,
-              label: c.name,
-            })) ?? []
-          setOptions(collections)
-        } else if (objectType === ObjectType.LiveQuiz && isTemplate) {
-          const templates =
-            liveQuizTemplateData?.getCatalogLiveQuizTemplates?.map((t) => ({
-              value: t.id,
-              label: t.name,
-            })) ?? []
-          setOptions(templates)
-        } else if (objectType === ObjectType.Element) {
-          const elements =
-            elementsData?.getCatalogElements?.map((e) => ({
-              value: e.id,
-              label: e.name,
-            })) ?? []
-          setOptions(elements)
-        } // TODO: ... add other object types here
-        else {
-          setOptions([])
-        }
-      } catch (error) {
-        console.error('Error loading objects:', error)
-      } finally {
-        setIsLoading(false)
-      }
+  const isLoading =
+    (answerCollectionsEnabled && collectionsLoading) ||
+    (liveQuizTemplatesEnabled && liveQuizTemplateLoading) ||
+    (elementsEnabled && elementsLoading)
+  const options = useMemo(() => {
+    // load objects available to the user for sharing (owner or admin access)
+    if (objectType === ObjectType.AnswerCollection) {
+      return (
+        collectionsData?.catalogAnswerCollections.map((collection) => ({
+          value: collection.id,
+          label: collection.name,
+        })) ?? []
+      )
     }
 
-    loadObjects()
+    if (objectType === ObjectType.LiveQuiz && isTemplate) {
+      return (
+        liveQuizTemplateData?.catalogLiveQuizTemplates.map((template) => ({
+          value: template.id,
+          label: template.name,
+        })) ?? []
+      )
+    }
+
+    if (objectType === ObjectType.Element) {
+      return (
+        elementsData?.catalogElements.map((element) => ({
+          value: element.id,
+          label: element.name,
+        })) ?? []
+      )
+    }
+
+    return []
   }, [
     collectionsData,
     elementsData,
@@ -104,7 +86,7 @@ function SelectObjectForCatalog({
         })}
       </p>
 
-      {collectionsLoading || liveQuizTemplateLoading || elementsLoading ? (
+      {isLoading ? (
         <Loader />
       ) : options.length > 0 ? (
         <Select

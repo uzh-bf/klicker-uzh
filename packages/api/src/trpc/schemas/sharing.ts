@@ -90,6 +90,15 @@ export const catalogObjectAccessInput = z.object({
   access: z.nativeEnum(ObjectAccess),
 })
 
+export const addObjectToCatalogInput = objectActivityInput.extend({
+  access: z.nativeEnum(ObjectAccess),
+  catalogCollectionId: z.string().nullish(),
+})
+
+export const removeCatalogObjectAssignmentInput = z.object({
+  assignmentId: z.number().int(),
+})
+
 export const deleteCatalogCollectionInput = z.object({
   catalogCollectionId: z.string(),
 })
