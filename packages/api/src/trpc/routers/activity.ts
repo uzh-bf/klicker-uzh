@@ -22,8 +22,10 @@ import {
   checkTemplateElementExistsInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
+  templatePreviewAnswerCollectionEntriesInput,
   userActivitiesInput,
 } from '../schemas/activity.js'
+import { getAnswerCollectionsForElements } from './resources.js'
 
 const reviewStatusPermissionLevels = [
   PermissionLevel.ADMIN,
@@ -569,6 +571,28 @@ export const activityRouter = router({
         }))
 
       return { matchingUserElementsTemplate }
+    }),
+
+  templatePreviewAnswerCollectionEntries: userProcedure
+    .input(templatePreviewAnswerCollectionEntriesInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const collections = await getAnswerCollectionsForElements({
+        prisma,
+        userId: ctx.user.sub,
+        templateId: input.templateId,
+      })
+      const answerCollection = collections.find(
+        (collection) => collection.id === input.answerCollectionId
+      )
+
+      return {
+        templatePreviewAnswerCollectionEntries:
+          answerCollection?.entries.map((entry) => ({
+            id: entry.id,
+            value: entry.value,
+          })) ?? [],
+      }
     }),
 
   userActivitiesCourses: userProcedure.query(async ({ ctx }) => {

@@ -276,6 +276,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M10 Manage Template Element Preview Reads
+
+Status: complete for the scoped slice. Scope was the template element preview workflow in manage, migrating the two read-only GraphQL queries used by `TemplateElementPreview` while leaving template loading, template mutations, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup live.
+
+Operation mapping:
+
+```text
+Slice: S04M10 Manage Template Element Preview Reads
+GraphQL operation(s): GetTemplatePreviewAnswerCollectionEntries, GetArtificialInstance
+GraphQL resolver(s): Query.getTemplatePreviewAnswerCollectionEntries, Query.artificialInstance
+Behavior source: packages/graphql/src/services/templates.ts getTemplatePreviewAnswerCollectionEntries; packages/graphql/src/services/elements.ts getArtificialElementInstance
+tRPC router.procedure: activity.templatePreviewAnswerCollectionEntries; element.artificialInstance
+Input schema: { templateId: string; answerCollectionId: number }; { elementId: number }
+Output DTO: { templatePreviewAnswerCollectionEntries: { id: number; value: string }[] }; { artificialInstance: ElementInstancePreview | null }
+Active frontend consumers: apps/frontend-manage/src/components/activities/templates/TemplateElementPreview.tsx
+Apollo cache/refetch/subscription behavior: cache-and-network read queries with skip guards; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: tRPC useQuery hooks with enabled guards matching the old skips
+Browser verification path: branch-local manage app; delegated login; open a template use flow and verify the preview issues /api/trpc requests for template preview entries and existing element preview
+Cleanup blocked until: remaining template authoring GraphQL reads/mutations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/schemas/element.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/routers/element.ts`
+- `packages/api/src/trpc/routers/resources.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `packages/api/src/trpc/__tests__/manage-elements.test.ts`
+- `apps/frontend-manage/src/components/activities/templates/TemplateElementPreview.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `activity.templatePreviewAnswerCollectionEntries`, reusing the existing answer-collection-for-elements helper so template-linked resources still go through the template-access-aware resource picker behavior.
+- Added `element.artificialInstance` with the same read-permission guard as the GraphQL resolver, returning a narrow preview DTO with GraphQL-compatible `__typename` values because `StudentElement` / `useArtificialElementInstance` still consume generated GraphQL element-instance shapes in this slice.
+- Migrated `TemplateElementPreview` from Apollo `useQuery` to tRPC hooks. The generated `ElementType` runtime enum and local `ElementInstance` cast remain intentionally until the broader generated-type cleanup slice.
+- `GetTemplatePreviewAnswerCollectionEntriesDocument` has no active frontend consumers left outside GraphQL service/schema/generated artifacts. `GetArtificialInstanceDocument` remains intentionally active in `apps/frontend-manage/src/pages/questions/[id].tsx`.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...` on the touched S04M10 files: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities`: 273 tests passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements`: 273 tests passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing unrelated warnings (`packages/next-config` module type, next-intl App Router migration, PWA/browserlist, `/qr/[...args]` `MISSING_MESSAGE`, and existing large page-data warnings).
+- Static audit: `TemplateElementPreview.tsx` has no `@apollo/client`, `GetArtificialInstanceDocument`, or `GetTemplatePreviewAnswerCollectionEntriesDocument` matches.
+- Static audit: touched `packages/api/src/trpc/**` files have no `@klicker-uzh/graphql`, `packages/graphql`, or `graphql/dist` runtime imports.
+- `git diff --check`: passed.
+- Browser smoke used `npx agent-browser` with delegated `lecturer` login and temporary local fixture `ActivityTemplate 11111111-1111-4111-8111-111111110410` / `LiveQuiz 11111111-1111-4111-8111-111111110411`, then removed the fixture and template localStorage entry. Backend had to run with `NODE_ENV=development`; without it, the dev frontend sends full GraphQL operations while the backend rejects non-persisted operations with `PersistedQueryOnly`.
+- Browser screenshots: `/tmp/agent-browser-shots/s04m10-template-dev-backend-loaded.png`, `/tmp/agent-browser-shots/s04m10-template-preview-after-save.png`, `/tmp/agent-browser-shots/s04m10-template-existing-preview.png`.
+- Browser request metadata confirmed HTTP 200 for `/api/trpc/activity.templatePreviewAnswerCollectionEntries?...answerCollectionId%22%3A48...` and `/api/trpc/element.artificialInstance?...elementId%22%3A386...`.
+
 ### 2026-06-05 Completed: S04M9 Manage Template Existing Element Selection Read
 
 Status: complete for the scoped slice. This slice migrated the template authoring modal that lets a lecturer replace a template element with an existing library element of the same type and matching sample-solution / answer-feedback settings. It intentionally migrated one read-only modal query only; template page loading, preview reads, live-quiz-template settings reads, template mutations, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup remain live.

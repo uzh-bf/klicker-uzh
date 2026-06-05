@@ -1,5 +1,6 @@
 import {
   ActivityLogType,
+  ElementInstanceType,
   ElementStatus,
   ElementType,
   ObjectType,
@@ -335,6 +336,118 @@ describe('manage element router', () => {
           where: { ownerId: user.id },
           orderBy: { order: 'asc' },
         },
+        answerCollectionItems: true,
+      },
+    })
+  })
+
+  test('returns null artificial instance when read permission is missing', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const elementFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { findUnique: elementFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.artificialInstance({ elementId: 17 })
+    ).resolves.toEqual({
+      artificialInstance: null,
+    })
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        elementId: 17,
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(elementFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('returns artificial instance preview data for readable elements', async () => {
+    const findFirst = vi.fn().mockResolvedValue({ id: 3 })
+    const elementFindUnique = vi.fn().mockResolvedValue({
+      id: 17,
+      version: 2,
+      name: 'Question',
+      status: ElementStatus.READY,
+      type: ElementType.SC,
+      content: 'Question content',
+      explanation: 'Explanation',
+      basePoints: true,
+      pointsMultiplier: 2,
+      options: {
+        displayMode: 'LIST',
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+        choices: [
+          { ix: 0, value: 'A', correct: true, feedback: 'Correct' },
+          { ix: 1, value: 'B', correct: false, feedback: 'Incorrect' },
+        ],
+      },
+      answerCollection: null,
+      answerCollectionItems: [],
+    })
+    const prisma = {
+      derivedPermission: { findFirst },
+      element: { findUnique: elementFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.artificialInstance({ elementId: 17 })
+    ).resolves.toEqual({
+      artificialInstance: {
+        __typename: 'ElementInstance',
+        id: 0,
+        type: ElementInstanceType.LIVE_QUIZ,
+        elementType: ElementType.SC,
+        elementData: {
+          __typename: 'ChoicesElementData',
+          id: '17-v2',
+          elementId: 17,
+          name: 'Question',
+          type: ElementType.SC,
+          content: 'Question content',
+          explanation: 'Explanation',
+          basePoints: true,
+          pointsMultiplier: 2,
+          options: {
+            __typename: 'ChoiceElementOptions',
+            hasSampleSolution: true,
+            hasAnswerFeedbacks: true,
+            displayMode: 'LIST',
+            choices: [
+              {
+                ix: 0,
+                correct: true,
+                feedback: 'Correct',
+                value: 'A',
+              },
+              {
+                ix: 1,
+                correct: false,
+                feedback: 'Incorrect',
+                value: 'B',
+              },
+            ],
+          },
+        },
+      },
+    })
+    expect(elementFindUnique).toHaveBeenCalledWith({
+      where: { id: 17 },
+      include: {
+        answerCollection: { include: { entries: true } },
         answerCollectionItems: true,
       },
     })

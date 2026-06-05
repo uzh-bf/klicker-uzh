@@ -6,6 +6,10 @@ export const elementIdInput = z.object({
   id: z.number().int(),
 })
 
+export const artificialInstanceInput = z.object({
+  elementId: z.number().int(),
+})
+
 export const listElementsInput = z.object({
   status: z.nativeEnum(ElementStatus).nullish(),
   type: z.nativeEnum(ElementType).nullish(),

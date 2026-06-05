@@ -232,7 +232,7 @@ async function isTemplateAccessible({
   )
 }
 
-async function getAnswerCollectionsForElements({
+export async function getAnswerCollectionsForElements({
   prisma,
   userId,
   templateId,

@@ -47,6 +47,11 @@ export const matchingUserElementsTemplateInput = z.object({
   hasAnswerFeedbacks: z.boolean().nullish(),
 })
 
+export const templatePreviewAnswerCollectionEntriesInput = z.object({
+  templateId: z.string(),
+  answerCollectionId: z.number().int(),
+})
+
 export const outdatedElementInstancesInput = z.object({
   instanceIds: z.array(z.number().int()),
 })

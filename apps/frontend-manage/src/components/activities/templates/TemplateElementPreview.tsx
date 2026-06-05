@@ -1,8 +1,6 @@
-import { useQuery } from '@apollo/client'
 import {
   ElementType,
-  GetArtificialInstanceDocument,
-  GetTemplatePreviewAnswerCollectionEntriesDocument,
+  type ElementInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -12,6 +10,7 @@ import StudentElement, {
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import useArtificialElementInstance from '../../elements/manipulation/useArtificialElementInstance'
 import { ActivityTemplateElementFormValues } from './types'
 
@@ -26,41 +25,62 @@ function TemplateElementPreview({
 }): React.ReactElement {
   const t = useTranslations()
 
+  const answerCollectionId =
+    templateElement.formValues &&
+    'options' in templateElement.formValues &&
+    'answerCollection' in templateElement.formValues.options &&
+    typeof templateElement.formValues.options.answerCollection === 'string'
+      ? parseInt(templateElement.formValues.options.answerCollection)
+      : -1
+  const shouldFetchAnswerCollectionEntries =
+    !!templateElement.formValues &&
+    (templateElement.instance.elementData.__typename ===
+      'SelectionElementData' ||
+      templateElement.instance.elementData.__typename ===
+        'CaseStudyElementData')
+
   // fetch answer collection entries for the selected answer collection (for preview)
-  const { data: answerCollectionData } = useQuery(
-    GetTemplatePreviewAnswerCollectionEntriesDocument,
-    {
-      variables: {
+  const { data: answerCollectionData } =
+    trpc.activity.templatePreviewAnswerCollectionEntries.useQuery(
+      {
         templateId,
-        answerCollectionId:
-          templateElement.formValues &&
-          'options' in templateElement.formValues &&
-          'answerCollection' in templateElement.formValues.options &&
-          typeof templateElement.formValues.options.answerCollection ===
-            'string'
-            ? parseInt(templateElement.formValues?.options.answerCollection)
-            : -1,
+        answerCollectionId,
       },
-      skip:
-        !templateElement.formValues ||
-        !(
-          templateElement.instance.elementData.__typename ===
-            'SelectionElementData' ||
-          templateElement.instance.elementData.__typename ===
-            'CaseStudyElementData'
-        ),
-      fetchPolicy: 'cache-and-network',
-    }
-  )
+      {
+        enabled: shouldFetchAnswerCollectionEntries,
+      }
+    )
+
+  const existingElementId =
+    typeof templateElement.elementId === 'number'
+      ? templateElement.elementId
+      : -1
+  const shouldFetchArtificialInstance =
+    templateElement.useExistingElement && existingElementId !== -1
+
+  const { data: artificialInstanceData, isLoading: artificialInstanceLoading } =
+    trpc.element.artificialInstance.useQuery(
+      {
+        elementId: existingElementId,
+      },
+      {
+        enabled: shouldFetchArtificialInstance,
+      }
+    )
+
+  const artificialInstance = artificialInstanceData?.artificialInstance as
+    | ElementInstance
+    | null
+    | undefined
 
   // to avoid re-rendering issues, memoize the collection entries before passing them to the artificial instance computation
   const stableCollectionEntries = useMemo(() => {
-    if (answerCollectionData?.getTemplatePreviewAnswerCollectionEntries) {
-      return answerCollectionData.getTemplatePreviewAnswerCollectionEntries
+    if (answerCollectionData?.templatePreviewAnswerCollectionEntries) {
+      return answerCollectionData.templatePreviewAnswerCollectionEntries
     }
 
     return undefined
-  }, [answerCollectionData?.getTemplatePreviewAnswerCollectionEntries])
+  }, [answerCollectionData?.templatePreviewAnswerCollectionEntries])
 
   // convert current form entries into an artificial instance (skipped internally if formValues is null)
   const convertedInstance = useArtificialElementInstance({
@@ -77,28 +97,14 @@ function TemplateElementPreview({
       valid: false,
     })
 
-  const { data: artificialInstance, loading: artificialInstanceLoading } =
-    useQuery(GetArtificialInstanceDocument, {
-      variables: {
-        elementId: templateElement.elementId!,
-      },
-      skip:
-        !templateElement.useExistingElement ||
-        templateElement.elementId === null,
-      fetchPolicy: 'cache-and-network',
-    })
-
   // determine the loaded instance based on whether an existing element is selected or a new element is defined
   const loadedInstance = useMemo(() => {
     if (
       templateElement.useExistingElement &&
       templateElement.elementId !== null
     ) {
-      if (
-        !artificialInstanceLoading &&
-        artificialInstance?.artificialInstance
-      ) {
-        return artificialInstance.artificialInstance
+      if (!artificialInstanceLoading && artificialInstance) {
+        return artificialInstance
       }
     } else if (
       templateElement.useNewElement &&
@@ -112,7 +118,7 @@ function TemplateElementPreview({
   }, [
     templateElement.useExistingElement,
     templateElement.elementId,
-    artificialInstance?.artificialInstance,
+    artificialInstance,
     artificialInstanceLoading,
     templateElement.useNewElement,
     templateElement.formValues,

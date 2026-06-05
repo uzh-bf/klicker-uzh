@@ -701,6 +701,100 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('returns template preview answer collection entries from accessible templates', async () => {
+    const userFindUnique = vi.fn().mockResolvedValue({ objects: [] })
+    const templateFindUnique = vi
+      .fn()
+      .mockResolvedValueOnce({
+        liveQuiz: {
+          ownerId: 'other-user',
+          permissions: [{ id: 7 }],
+          catalogAssignments: [],
+        },
+        practiceQuiz: null,
+        microLearning: null,
+        groupActivity: null,
+      })
+      .mockResolvedValueOnce({
+        answerCollections: [
+          {
+            id: 21,
+            name: 'Preview answers',
+            entries: [
+              { id: 3, value: 'A' },
+              { id: 4, value: 'B' },
+            ],
+          },
+          {
+            id: 22,
+            name: 'Other answers',
+            entries: [{ id: 5, value: 'C' }],
+          },
+        ],
+      })
+    const prisma = {
+      user: {
+        findUnique: userFindUnique,
+      },
+      activityTemplate: {
+        findUnique: templateFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.templatePreviewAnswerCollectionEntries({
+        templateId: 'template-1',
+        answerCollectionId: 21,
+      })
+    ).resolves.toEqual({
+      templatePreviewAnswerCollectionEntries: [
+        { id: 3, value: 'A' },
+        { id: 4, value: 'B' },
+      ],
+    })
+
+    expect(userFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: user.id },
+        include: expect.objectContaining({
+          objects: expect.objectContaining({
+            where: { answerCollectionId: { not: null } },
+          }),
+        }),
+      })
+    )
+    expect(templateFindUnique).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: { id: 'template-1' },
+        include: expect.objectContaining({
+          liveQuiz: expect.any(Object),
+          practiceQuiz: expect.any(Object),
+          microLearning: expect.any(Object),
+          groupActivity: expect.any(Object),
+        }),
+      })
+    )
+    expect(templateFindUnique).toHaveBeenNthCalledWith(2, {
+      where: { id: 'template-1' },
+      include: {
+        answerCollections: {
+          include: {
+            entries: {
+              orderBy: {
+                value: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
+      },
+    })
+  })
+
   test('sets standalone live quiz review status for activity admins', async () => {
     const update = vi.fn().mockResolvedValue({ id: 'live-quiz-1' })
     const prisma = {
