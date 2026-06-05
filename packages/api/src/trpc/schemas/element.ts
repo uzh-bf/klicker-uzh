@@ -1,8 +1,29 @@
 import { ElementStatus, ElementType } from '@klicker-uzh/prisma/client'
+import { SortByType } from '@klicker-uzh/types'
 import { z } from 'zod'
 
 export const elementIdInput = z.object({
   id: z.number().int(),
+})
+
+export const listElementsInput = z.object({
+  status: z.nativeEnum(ElementStatus).nullish(),
+  type: z.nativeEnum(ElementType).nullish(),
+  hasSampleSolution: z.boolean(),
+  hasAnswerFeedbacks: z.boolean(),
+  searchString: z.string().nullish(),
+  showOwned: z.boolean().nullish(),
+  showShared: z.boolean().nullish(),
+  showDependencies: z.boolean().nullish(),
+  tagIds: z.array(z.number().int()),
+  activityId: z.string().nullish(),
+  multiplier: z.number().int().nullish(),
+  showUntagged: z.boolean(),
+  sortByType: z.nativeEnum(SortByType),
+  sortByAsc: z.boolean(),
+  showArchived: z.boolean(),
+  numEntries: z.number().int(),
+  offset: z.number().int(),
 })
 
 const nullableString = z.string().nullish()

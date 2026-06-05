@@ -4,6 +4,7 @@ import {
   ElementType,
   ObjectType,
   PermissionLevel,
+  Prisma,
   PublicationStatus,
   ReviewStatus,
   type ElementInstance,
@@ -11,6 +12,8 @@ import {
 import {
   ActivityLogModificationFieldType,
   ActivityType,
+  SharingType,
+  SortByType,
   type ActivityLogModificationDetails,
   type ElementManipulationInput,
   type ElementOptionsInput,
@@ -31,6 +34,7 @@ import {
   editTagInput,
   elementIdInput,
   flagOutdatedElementInstancesInput,
+  listElementsInput,
   manipulateCaseStudyElementInput,
   manipulateChoicesElementInput,
   manipulateContentElementInput,
@@ -124,6 +128,20 @@ type EditElementRecord = {
   isOwner?: boolean
   isManager?: boolean
   isEditor?: boolean
+}
+
+type ListElementRecord = EditElementRecord & {
+  createdAt?: Date | null
+  updatedAt?: Date | null
+  isArchived?: boolean | null
+  isDeleted?: boolean | null
+  originalId?: string | null
+  derivedAccess?: boolean
+  numSharedUsers?: number
+  isImported?: boolean
+  isShared?: boolean
+  isRemovable?: boolean
+  sharingType?: SharingType
 }
 
 function getElementTypename(type: ElementType) {
@@ -276,6 +294,251 @@ function toEditElementDto(element: EditElementRecord) {
   return {
     ...baseElement,
     __typename: 'ContentElement' as const,
+  }
+}
+
+function toListElementDto(element: ListElementRecord) {
+  const editElement = toEditElementDto(element)
+
+  return {
+    ...editElement,
+    createdAt: element.createdAt ?? null,
+    updatedAt: element.updatedAt ?? null,
+    isArchived: element.isArchived ?? false,
+    isDeleted: element.isDeleted ?? false,
+    derivedAccess: element.derivedAccess,
+    numSharedUsers: element.numSharedUsers,
+    permissionLevel: element.permissionLevel,
+    isImported: element.isImported,
+    isShared: element.isShared,
+    isRemovable: element.isRemovable,
+    sharingType: element.sharingType,
+  }
+}
+
+async function getUserElements({
+  ctx,
+  status,
+  type,
+  hasSampleSolution,
+  hasAnswerFeedbacks,
+  searchString,
+  showOwned = true,
+  showShared = true,
+  showDependencies = true,
+  tagIds,
+  activityId,
+  multiplier,
+  showUntagged,
+  sortByType,
+  sortByAsc,
+  showArchived,
+  numEntries,
+  offset,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  status?: ElementStatus | null
+  type?: ElementType | null
+  hasSampleSolution: boolean
+  hasAnswerFeedbacks: boolean
+  searchString?: string | null
+  showOwned?: boolean | null
+  showShared?: boolean | null
+  showDependencies?: boolean | null
+  tagIds: number[]
+  activityId?: string | null
+  multiplier?: number | null
+  showUntagged: boolean
+  sortByType: SortByType
+  sortByAsc: boolean
+  showArchived: boolean
+  numEntries: number
+  offset: number
+}) {
+  const prisma = getPrisma(ctx)
+  const elementFilteringClause = {
+    NOT: { derived: true, element: { isDeleted: true } },
+    permissionLevel:
+      showOwned && showShared
+        ? undefined
+        : {
+            in: [
+              ...(showOwned ? [PermissionLevel.OWNER] : []),
+              ...(showShared
+                ? [
+                    PermissionLevel.ADMIN,
+                    PermissionLevel.WRITE,
+                    PermissionLevel.EXECUTE,
+                    PermissionLevel.READ,
+                  ]
+                : []),
+            ],
+          },
+    derived: showDependencies ? undefined : false,
+    elementId: { not: null },
+    element: {
+      status: status ? status : undefined,
+      type: type ? type : undefined,
+      isArchived: showArchived ? undefined : false,
+      tags: showUntagged ? { none: { ownerId: ctx.user.sub } } : undefined,
+      AND: [
+        ...(multiplier ? [{ pointsMultiplier: multiplier }] : []),
+        ...(hasSampleSolution
+          ? [{ options: { path: ['hasSampleSolution'], equals: true } }]
+          : []),
+        ...(hasAnswerFeedbacks
+          ? [{ options: { path: ['hasAnswerFeedbacks'], equals: true } }]
+          : []),
+        ...(tagIds.length > 0
+          ? tagIds.map((id) => ({
+              tags: { some: { id } },
+            }))
+          : []),
+        ...(activityId
+          ? [
+              {
+                elementInstances: {
+                  some: {
+                    OR: [
+                      { elementBlock: { liveQuizId: activityId } },
+                      { elementStack: { practiceQuizId: activityId } },
+                      { elementStack: { microLearningId: activityId } },
+                      { elementStack: { groupActivityId: activityId } },
+                    ],
+                  },
+                },
+              },
+            ]
+          : []),
+      ],
+      OR: searchString
+        ? [
+            {
+              name: {
+                contains: searchString,
+                mode: 'insensitive' as Prisma.QueryMode,
+              },
+            },
+            {
+              content: {
+                contains: searchString,
+                mode: 'insensitive' as Prisma.QueryMode,
+              },
+            },
+          ]
+        : undefined,
+    },
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      _count: { select: { objects: { where: elementFilteringClause } } },
+      objects: {
+        where: elementFilteringClause,
+        include: {
+          directPermission: true,
+          element: {
+            include: {
+              tags: {
+                where: { ownerId: ctx.user.sub },
+                orderBy: { order: 'asc' },
+              },
+            },
+          },
+        },
+        orderBy: [
+          ...(sortByType === SortByType.CREATED
+            ? [
+                {
+                  element: {
+                    createdAt: (sortByAsc ? 'asc' : 'desc') as Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          ...(sortByType === SortByType.MODIFIED
+            ? [
+                {
+                  element: {
+                    updatedAt: (sortByAsc ? 'asc' : 'desc') as Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          ...(sortByType === SortByType.TITLE
+            ? [
+                {
+                  element: {
+                    name: (sortByAsc ? 'asc' : 'desc') as Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          ...(sortByType === SortByType.TYPE
+            ? [
+                {
+                  element: {
+                    type: (sortByAsc ? 'asc' : 'desc') as Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          ...(sortByType === SortByType.STATUS
+            ? [
+                {
+                  element: {
+                    status: (sortByAsc ? 'asc' : 'desc') as Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          { element: { updatedAt: 'desc' as Prisma.SortOrder } },
+        ],
+        take: numEntries ?? undefined,
+        skip: offset ?? undefined,
+      },
+    },
+  })
+
+  if (!user) return null
+
+  return {
+    numOfElements: user._count.objects,
+    elements: user.objects.flatMap((object) => {
+      if (!object.element) return []
+
+      return [
+        toListElementDto({
+          ...object.element,
+          permissionLevel: object.permissionLevel,
+          derivedAccess: object.derived,
+          numSharedUsers: undefined,
+          isOwner: object.permissionLevel === PermissionLevel.OWNER,
+          isManager:
+            object.permissionLevel === PermissionLevel.OWNER ||
+            object.permissionLevel === PermissionLevel.ADMIN,
+          isEditor:
+            object.permissionLevel === PermissionLevel.OWNER ||
+            object.permissionLevel === PermissionLevel.ADMIN ||
+            object.permissionLevel === PermissionLevel.WRITE,
+          isImported:
+            object.permissionLevel === PermissionLevel.OWNER &&
+            object.element.originalId !== null,
+          isShared: object.permissionLevel !== PermissionLevel.OWNER,
+          isRemovable:
+            object.permissionLevel !== PermissionLevel.OWNER &&
+            !object.derived &&
+            object.directPermission?.userGroupId === null,
+          sharingType:
+            object.permissionLevel === PermissionLevel.OWNER
+              ? SharingType.OWNED
+              : object.derived
+                ? SharingType.DEPENDENCY
+                : SharingType.SHARED,
+        }),
+      ]
+    }),
   }
 }
 
@@ -1488,6 +1751,14 @@ async function changeElementStatus({
 }
 
 export const elementRouter = router({
+  list: userProcedure.input(listElementsInput).query(async ({ ctx, input }) => {
+    const userElements = await getUserElements({ ctx, ...input })
+    return {
+      numOfElements: userElements?.numOfElements ?? 0,
+      elements: userElements?.elements ?? [],
+    }
+  }),
+
   single: userProcedure.input(elementIdInput).query(async ({ ctx, input }) => {
     if (
       !(await hasElementPermission({

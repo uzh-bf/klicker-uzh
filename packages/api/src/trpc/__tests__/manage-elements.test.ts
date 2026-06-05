@@ -7,6 +7,7 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import { SharingType, SortByType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
@@ -45,6 +46,205 @@ function createContext(
 describe('manage element router', () => {
   beforeEach(() => {
     vi.mocked(recomputeDerivedPermissions).mockClear()
+  })
+
+  test('returns empty element list when user is missing', async () => {
+    const userFindUnique = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      user: { findUnique: userFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.list({
+        hasSampleSolution: false,
+        hasAnswerFeedbacks: false,
+        tagIds: [],
+        showUntagged: false,
+        sortByType: SortByType.MODIFIED,
+        sortByAsc: false,
+        showArchived: false,
+        numEntries: 10,
+        offset: 0,
+      })
+    ).resolves.toEqual({ numOfElements: 0, elements: [] })
+    expect(userFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: user.id } })
+    )
+  })
+
+  test('returns filtered element list with sharing flags', async () => {
+    const createdAt = new Date('2026-01-01T10:00:00Z')
+    const updatedAt = new Date('2026-01-02T10:00:00Z')
+    const userFindUnique = vi.fn().mockResolvedValue({
+      _count: { objects: 2 },
+      objects: [
+        {
+          permissionLevel: PermissionLevel.OWNER,
+          derived: false,
+          directPermission: { userGroupId: null },
+          element: {
+            id: 17,
+            version: 2,
+            name: 'Owned SC',
+            status: ElementStatus.DRAFT,
+            type: ElementType.SC,
+            content: 'Question content',
+            explanation: null,
+            basePoints: true,
+            pointsMultiplier: 2,
+            options: {
+              hasSampleSolution: true,
+              hasAnswerFeedbacks: true,
+              displayMode: 'LIST',
+              choices: [{ ix: 0, value: 'A', correct: true }],
+            },
+            createdAt,
+            updatedAt,
+            isArchived: false,
+            isDeleted: false,
+            originalId: null,
+            tags: [{ id: 5, name: 'Tag', order: 0 }],
+          },
+        },
+        {
+          permissionLevel: PermissionLevel.READ,
+          derived: true,
+          directPermission: { userGroupId: null },
+          element: {
+            id: 18,
+            version: 1,
+            name: 'Dependency',
+            status: ElementStatus.READY,
+            type: ElementType.CONTENT,
+            content: 'Content',
+            explanation: null,
+            basePoints: false,
+            pointsMultiplier: 1,
+            options: {},
+            createdAt,
+            updatedAt,
+            isArchived: false,
+            isDeleted: false,
+            originalId: 'source-element-7',
+            tags: [],
+          },
+        },
+      ],
+    })
+    const prisma = {
+      user: { findUnique: userFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.list({
+        status: ElementStatus.DRAFT,
+        type: ElementType.SC,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+        searchString: 'owned',
+        showOwned: true,
+        showShared: true,
+        showDependencies: true,
+        tagIds: [5],
+        activityId: 'activity-1',
+        multiplier: 2,
+        showUntagged: false,
+        sortByType: SortByType.TITLE,
+        sortByAsc: true,
+        showArchived: false,
+        numEntries: 10,
+        offset: 20,
+      })
+    ).resolves.toMatchObject({
+      numOfElements: 2,
+      elements: [
+        {
+          __typename: 'ChoicesElement',
+          id: 17,
+          name: 'Owned SC',
+          permissionLevel: PermissionLevel.OWNER,
+          isOwner: true,
+          isManager: true,
+          isEditor: true,
+          isImported: false,
+          isShared: false,
+          isRemovable: false,
+          sharingType: SharingType.OWNED,
+          options: {
+            __typename: 'ChoiceElementOptions',
+            hasSampleSolution: true,
+            hasAnswerFeedbacks: true,
+          },
+          tags: [{ id: 5, name: 'Tag', order: 0 }],
+        },
+        {
+          __typename: 'ContentElement',
+          id: 18,
+          permissionLevel: PermissionLevel.READ,
+          derivedAccess: true,
+          isOwner: false,
+          isManager: false,
+          isEditor: false,
+          isImported: false,
+          isShared: true,
+          isRemovable: false,
+          sharingType: SharingType.DEPENDENCY,
+        },
+      ],
+    })
+    expect(userFindUnique).toHaveBeenCalledWith({
+      where: { id: user.id },
+      include: {
+        _count: { select: { objects: { where: expect.any(Object) } } },
+        objects: expect.objectContaining({
+          where: expect.objectContaining({
+            NOT: { derived: true, element: { isDeleted: true } },
+            permissionLevel: undefined,
+            derived: undefined,
+            elementId: { not: null },
+            element: expect.objectContaining({
+              status: ElementStatus.DRAFT,
+              type: ElementType.SC,
+              isArchived: false,
+              tags: undefined,
+              OR: [
+                {
+                  name: {
+                    contains: 'owned',
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  content: {
+                    contains: 'owned',
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            }),
+          }),
+          include: {
+            directPermission: true,
+            element: {
+              include: {
+                tags: {
+                  where: { ownerId: user.id },
+                  orderBy: { order: 'asc' },
+                },
+              },
+            },
+          },
+          orderBy: [
+            { element: { name: 'asc' } },
+            { element: { updatedAt: 'desc' } },
+          ],
+          take: 10,
+          skip: 20,
+        }),
+      },
+    })
   })
 
   test('returns null single element when read permission is missing', async () => {

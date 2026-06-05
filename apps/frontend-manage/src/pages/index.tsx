@@ -1,9 +1,7 @@
-import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   Element,
-  GetUserElementsDocument,
   SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -30,6 +28,9 @@ import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModa
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
+import { trpc, type RouterInputs } from '../lib/trpc'
+
+type ElementListInput = RouterInputs['element']['list']
 
 function Index() {
   const router = useRouter()
@@ -116,34 +117,32 @@ function Index() {
     handleReset()
   }, [router.query.filterByCourse, router.query.filterByActivity])
 
+  const elementListInput: ElementListInput = {
+    status: filters.status as ElementListInput['status'],
+    type: filters.type as ElementListInput['type'],
+    hasSampleSolution: filters.sampleSolution,
+    hasAnswerFeedbacks: filters.answerFeedbacks,
+    searchString: searchString.trim() || undefined,
+    showOwned: filters.sharingType.includes(SharingType.Owned),
+    showShared: filters.sharingType.includes(SharingType.Shared),
+    showDependencies: filters.sharingType.includes(SharingType.Dependency),
+    tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
+    activityId: filters.activityId,
+    multiplier: filters.multiplier,
+    showUntagged: filters.untagged,
+    sortByType: sort.by as unknown as ElementListInput['sortByType'],
+    sortByAsc: sort.asc,
+    showArchived: filters.archive,
+    numEntries: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  }
   const {
-    loading: loadingElements,
+    isLoading: loadingElements,
     data: dataElements,
     refetch: refetchElements,
-  } = useQuery(GetUserElementsDocument, {
-    variables: {
-      status: filters.status,
-      type: filters.type,
-      hasSampleSolution: filters.sampleSolution,
-      hasAnswerFeedbacks: filters.answerFeedbacks,
-      searchString: searchString.trim() || undefined,
-      showOwned: filters.sharingType.includes(SharingType.Owned),
-      showShared: filters.sharingType.includes(SharingType.Shared),
-      showDependencies: filters.sharingType.includes(SharingType.Dependency),
-      tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
-      activityId: filters.activityId,
-      multiplier: filters.multiplier,
-      showUntagged: filters.untagged,
-      sortByType: sort.by,
-      sortByAsc: sort.asc,
-      showArchived: filters.archive,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
-    },
-    fetchPolicy: 'network-only',
-  })
-  const numOfElements = dataElements?.userElements?.numOfElements || 0
-  const elements = dataElements?.userElements?.elements ?? []
+  } = trpc.element.list.useQuery(elementListInput)
+  const numOfElements = dataElements?.numOfElements || 0
+  const elements = (dataElements?.elements ?? []) as Element[]
 
   // on change, store new page size in local storage
   useEffect(() => {

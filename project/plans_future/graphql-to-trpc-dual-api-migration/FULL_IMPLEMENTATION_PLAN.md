@@ -276,6 +276,65 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M5 Manage Question Pool List Read
+
+Status: complete for the scoped slice. This slice migrated the manage Library/question-pool element list read and the row-level private-preview profile read used by element actions from GraphQL/Apollo to tRPC. Element edit/delete/batch mutations were already migrated in S04M1/S04M3/S04M4; tag filter sidebars, activity/template element-selection reads, activity authoring mutations, generated enum/type cleanup in shared hooks, Apollo providers, subscriptions, and GraphQL cleanup remain out of scope.
+
+Operation mapping:
+
+```text
+Slice: S04M5 Manage Question Pool List Read
+GraphQL operation(s): GetUserElements; row-local cache-only UserProfile in Element
+GraphQL resolver(s): Query.userElements; Query.userProfile cache read consumer
+Behavior source: packages/graphql/src/services/elements.ts getUserElements; existing packages/api user.profile tRPC procedure for privatePreview
+tRPC router.procedure: element.list; user.profile
+Input schema: { status, type, hasSampleSolution, hasAnswerFeedbacks, searchString, showOwned, showShared, showDependencies, tagIds, activityId, multiplier, showUntagged, sortByType, sortByAsc, showArchived, numEntries, offset }
+Output DTO: { numOfElements, elements } with the same element discriminants/list fields consumed by ElementList/Element/selection/batch flows
+Active frontend consumers: apps/frontend-manage/src/pages/index.tsx; apps/frontend-manage/src/components/elements/Element.tsx
+Apollo cache/refetch/subscription behavior: Apollo useQuery network-only for GetUserElements; refetchElements callback passed to filters/list/edit/delete/batch/first-login; Element row reads UserProfileDocument cache-only for privatePreview action visibility
+React Query replacement: trpc.element.list useQuery keyed by current filters/search/sort/page; refetch callback uses list query refetch; row privatePreview uses existing trpc.user.profile query
+Browser verification path: branch-local manage Library page, filter/search/list render, select an element, and open the batch modal from the tRPC-backed list row
+Cleanup blocked until: tag filter sidebars, activity/template selection reads, activity authoring flows, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/routers/element.ts`
+- `packages/api/src/trpc/schemas/element.ts`
+- `packages/api/src/trpc/__tests__/manage-elements.test.ts`
+- `apps/frontend-manage/src/pages/index.tsx`
+- `apps/frontend-manage/src/components/elements/Element.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `element.list` in `packages/api`, mirroring `getUserElements` filtering, ownership/shared/dependency flags, pagination, sorting, and list DTO fields without importing GraphQL runtime code.
+- Added focused API tests for the empty-user path and filtered list output with sharing flags.
+- Replaced the manage Library `GetUserElements` Apollo query with `trpc.element.list.useQuery`, preserving filter/search/sort/page inputs and the existing `refetchElements` callback contract.
+- Replaced the `Element` row's cache-only `UserProfileDocument` read with the existing `trpc.user.profile.useQuery` for `privatePreview` action visibility.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...` on touched source files and the plan passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements` passed: 27 files, 260 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed after fixing the `originalId` DTO type to `string | null`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` passed after narrowing the generated/shared `SortByType` bridge cast.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing Next/PWA/Browserslist/i18n warnings only.
+- Scoped migrated-operation audits passed: no `GetUserElementsDocument`, `UserProfileDocument`, Apollo import, or GraphQL runtime import remains in the migrated page/row/API files.
+- S04 coexistence audit still finds active GraphQL/Apollo references elsewhere, as expected before later slices and S06 cleanup.
+- Browser verification used a real local stack on ports `3123` backend, `3124` manage, and `3126` auth. Screenshots: `/tmp/agent-browser-shots/s04m5-library-list.png`, `/tmp/agent-browser-shots/s04m5-library-search-submitted.png`, `/tmp/agent-browser-shots/s04m5-batch-from-list.png`.
+- Browser resource timing confirmed `user.profile,element.list` batched tRPC on initial Library load and `element.list` tRPC after submitting search `S04K10`; the filtered element rendered and the batch modal opened from the selected tRPC-backed list row.
+
+Next candidate:
+
+- Continue with manage question-pool adjacent Apollo reads that remain around tag/filter sidebars and activity/template selection, including `FilterList.tsx`, `SuspendedActivitySelection.tsx`, and element manipulation form reads.
+
+Notes:
+
+- Context7 was not available through tool discovery in this session; official tRPC v10 router/procedure/validator/useQuery/useMutation/useUtils docs were loaded instead and matched the branch's installed `@trpc/*` 10.45.2 patterns.
+- Multi-agent tools are exposed, but their tool policy only permits spawning when the user explicitly asks for subagents; this slice used explicit self-review.
+
 ### 2026-06-05 Completed: S04M4 Manage Element Batch Operations
 
 Status: complete for the scoped slice. This slice migrated the manage question-pool element batch-operation modal from GraphQL/Apollo to tRPC while leaving element list reads, activity batch operations, activity/template element manipulation flows, generated enum/type cleanup in shared manipulation helpers, Apollo providers, subscriptions, and GraphQL cleanup out of scope.
