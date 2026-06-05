@@ -31,6 +31,10 @@ export const activityDetailsInput = z.object({
   activityType: z.nativeEnum(ActivityType),
 })
 
+export const activityTemplateInput = z.object({
+  templateId: z.string(),
+})
+
 export const activityReviewStatusInput = z.object({
   activityId: z.string(),
   activityType: z.nativeEnum(ActivityType),

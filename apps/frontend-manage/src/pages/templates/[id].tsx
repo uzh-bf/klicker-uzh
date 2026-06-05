@@ -1,9 +1,6 @@
-import { useQuery } from '@apollo/client'
-import {
-  ActivityType,
-  GetActivityTemplateDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ActivityTemplate } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { ActivityType } from '@klicker-uzh/types'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -12,15 +9,17 @@ import GroupActivityTemplate from '../../components/activities/templates/GroupAc
 import LiveQuizTemplate from '../../components/activities/templates/LiveQuizTemplate'
 import MicroLearningTemplate from '../../components/activities/templates/MicroLearningTemplate'
 import PracticeQuizTemplate from '../../components/activities/templates/PracticeQuizTemplate'
+import { trpc } from '../../lib/trpc'
 
 function Template({ templateId }: { templateId: string }) {
   const t = useTranslations()
 
-  const { data, loading } = useQuery(GetActivityTemplateDocument, {
-    variables: { templateId },
-  })
+  const { data, isLoading } = trpc.activity.template.useQuery(
+    { templateId },
+    { enabled: Boolean(templateId) }
+  )
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout displayName={t('manage.template.activityFromTemplate')}>
         <H2>{t('manage.template.activityFromTemplate')}</H2>
@@ -29,7 +28,7 @@ function Template({ templateId }: { templateId: string }) {
     )
   }
 
-  if (!data?.getActivityTemplate) {
+  if (!data?.activityTemplate) {
     return (
       <Layout displayName={t('manage.template.activityFromTemplate')}>
         <UserNotification
@@ -41,21 +40,27 @@ function Template({ templateId }: { templateId: string }) {
     )
   }
 
-  const template = data?.getActivityTemplate
+  const template = data.activityTemplate
   return (
     <Layout displayName={t('manage.template.activityFromTemplate')}>
       <H2>{t('manage.template.activityFromTemplate')}</H2>
-      {template?.activityType === ActivityType.LiveQuiz ? (
-        <LiveQuizTemplate template={template} />
+      {template.activityType === ActivityType.LIVE_QUIZ ? (
+        <LiveQuizTemplate template={template as unknown as ActivityTemplate} />
       ) : null}
-      {template?.activityType === ActivityType.PracticeQuiz ? (
-        <PracticeQuizTemplate template={template} />
+      {template.activityType === ActivityType.PRACTICE_QUIZ ? (
+        <PracticeQuizTemplate
+          template={template as unknown as ActivityTemplate}
+        />
       ) : null}
-      {template?.activityType === ActivityType.MicroLearning ? (
-        <MicroLearningTemplate template={template} />
+      {template.activityType === ActivityType.MICRO_LEARNING ? (
+        <MicroLearningTemplate
+          template={template as unknown as ActivityTemplate}
+        />
       ) : null}
-      {template?.activityType === ActivityType.GroupActivity ? (
-        <GroupActivityTemplate template={template} />
+      {template.activityType === ActivityType.GROUP_ACTIVITY ? (
+        <GroupActivityTemplate
+          template={template as unknown as ActivityTemplate}
+        />
       ) : null}
     </Layout>
   )

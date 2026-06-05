@@ -276,6 +276,79 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M12 Manage Activity Template Page Read
+
+Status: complete for the scoped slice. Scope was the manage template page read that loads the selected activity template and its linked activity/element instances. This slice intentionally leaves live-quiz creation from template, template metadata mutations, generated GraphQL type cleanup in template components, Apollo providers, subscriptions, and S06 cleanup live.
+
+Operation mapping:
+
+```text
+Slice: S04M12 Manage Activity Template Page Read
+GraphQL operation(s): GetActivityTemplate
+GraphQL resolver(s): Query.getActivityTemplate
+Behavior source: packages/graphql/src/services/templates.ts getActivityTemplate; template accessibility logic mirrored in packages/api resources router
+tRPC router.procedure: activity.template
+Input schema: { templateId: string }
+Output DTO: { activityTemplate: ActivityTemplatePreview | null }
+Active frontend consumers: apps/frontend-manage/src/pages/templates/[id].tsx
+Apollo cache/refetch/subscription behavior: page-level read query; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: trpc.activity.template.useQuery({ templateId }, { enabled })
+Browser verification path: branch-local manage app; delegated login; open /templates/<templateId> and verify the page issues /api/trpc/activity.template while still allowing Apollo-backed create mutation to remain untouched
+Cleanup blocked until: create-from-template/template metadata mutations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Write scope:
+
+- `packages/api/src/trpc/dto/elementPreview.ts`
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/routers/element.ts`
+- `packages/api/src/trpc/routers/resources.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/pages/templates/[id].tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `activity.template` with `activityTemplateInput`, access check via exported `isTemplateAccessible`, and DTO helpers for live quiz / practice quiz / microlearning / group activity template previews.
+- Extracted the repeated element preview serializer to `packages/api/src/trpc/dto/elementPreview.ts` so `element.artificialInstance` and `activity.template` share one GraphQL-compatible preview shape during coexistence.
+- Migrated `apps/frontend-manage/src/pages/templates/[id].tsx` from `GetActivityTemplateDocument` to `trpc.activity.template.useQuery({ templateId }, { enabled })`.
+- Kept child template component props on generated GraphQL shapes through narrow casts only at the page boundary; generated type cleanup remains a later slice.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...` on touched S04M12 files: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities`: passed, 27 files and 275 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-elements`: passed, 27 files and 275 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed after fixing the Prisma JSON cast through `unknown`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/PWA/large-page-data warnings.
+- Static audit `rg -n "GetActivityTemplateDocument|GetActivityTemplate\b|@apollo/client" apps/frontend-manage/src/pages/templates/[id].tsx`: no matches.
+- Static audit `rg -n "GetActivityTemplateDocument" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n`: no matches.
+- Static audit over touched API files for `@klicker-uzh/graphql|packages/graphql|graphql/dist`: no matches.
+
+Browser evidence:
+
+- Created disposable local template fixture `11111111-1111-4111-8111-111111110412` backed by live quiz `11111111-1111-4111-8111-111111110413`, seeded lecturer owner, and existing element `386`; deleted it after verification and confirmed template/live quiz/block counts returned to `0|0|0`.
+- Branch-local stack: backend `127.0.0.1:3133`, manage `127.0.0.1:3134`, auth `127.0.0.1:3136`.
+- `npx agent-browser` delegated-login smoke opened `http://127.0.0.1:3134/templates/11111111-1111-4111-8111-111111110412`.
+- Screenshot before auth gate: `/tmp/agent-browser-shots/s04m12-template-before.png`.
+- Screenshot after render: `/tmp/agent-browser-shots/s04m12-template-after.png`; page showed title, instructions, activity settings, block row, element row, reset button, and create button.
+- Resource timing included `http://127.0.0.1:3133/api/trpc/user.profile,activity.template?batch=1&...templateId=11111111-1111-4111-8111-111111110412...`; GraphQL also appeared for remaining Apollo-backed surrounding/template settings calls, intentionally left live.
+- Cleaned browser localStorage key `live-quiz-template-inputs-11111111-1111-4111-8111-111111110412`, closed browser, stopped this slice's dev processes, and left only the older pre-existing backend Rollup watcher untouched.
+
+Self-review / simplification:
+
+- Dedicated review/simplification subagents were not spawned because the available multi-agent tool currently requires explicit user authorization for sub-agent work; used explicit self-review instead.
+- DTO extraction is justified because two migrated procedures now return the same preview element shape; no broader transport abstraction was added.
+- `activity.template` keeps authorization fail-closed with `null`, matching GraphQL behavior.
+- Remaining generated GraphQL type casts are isolated at the page boundary and should be removed with the later generated-type cleanup slice.
+
+Next:
+
+- Candidate next slice: migrate the create-live-quiz-from-template mutation or the live-quiz-template settings `GetActiveUserCoursesDocument` read. Keep generated GraphQL type cleanup, Apollo provider removal, realtime, and S06 cleanup blocked until their gates.
+
 ### 2026-06-05 Completed: S04M11 Manage Standalone Question Preview Read
 
 Status: complete for the scoped slice. Scope was the standalone manage question preview page that still read an artificial element instance through Apollo. This was intentionally frontend-only because `element.artificialInstance` was added and tested in S04M10; template loading, template mutations, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup remain live.

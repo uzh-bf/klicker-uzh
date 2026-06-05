@@ -795,6 +795,228 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('returns null for inaccessible activity templates', async () => {
+    const templateFindUnique = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      activityTemplate: {
+        findUnique: templateFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.template({ templateId: 'template-1' })
+    ).resolves.toEqual({
+      activityTemplate: null,
+    })
+
+    expect(templateFindUnique).toHaveBeenCalledTimes(1)
+    expect(templateFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'template-1' },
+        include: expect.objectContaining({
+          liveQuiz: expect.any(Object),
+          practiceQuiz: expect.any(Object),
+          microLearning: expect.any(Object),
+          groupActivity: expect.any(Object),
+        }),
+      })
+    )
+  })
+
+  test('returns an accessible live quiz activity template with preview element data', async () => {
+    const createdAt = new Date('2026-05-01T10:00:00.000Z')
+    const elementData = {
+      id: 'element-data-1',
+      elementId: 17,
+      name: 'Template choice',
+      type: ElementType.SC,
+      content: 'Choose one option',
+      explanation: null,
+      basePoints: true,
+      pointsMultiplier: 1,
+      options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
+        displayMode: 'LIST',
+        choices: [
+          {
+            ix: 0,
+            correct: true,
+            feedback: 'Correct',
+            value: 'A',
+          },
+        ],
+      },
+    }
+    const templateFindUnique = vi
+      .fn()
+      .mockResolvedValueOnce({
+        liveQuiz: {
+          ownerId: user.id,
+          permissions: [],
+          catalogAssignments: [],
+        },
+        practiceQuiz: null,
+        microLearning: null,
+        groupActivity: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'template-1',
+        description: 'Template description',
+        instructions: 'Template instructions',
+        liveQuiz: {
+          id: 'live-quiz-1',
+          status: PublicationStatus.DRAFT,
+          isLiveQAEnabled: true,
+          isConfusionFeedbackEnabled: false,
+          isModerationEnabled: true,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: false,
+          accessMode: 'PUBLIC',
+          name: 'Template live quiz',
+          displayName: 'Template Live Quiz',
+          description: null,
+          pointsMultiplier: 2,
+          defaultPoints: 10,
+          defaultCorrectPoints: 5,
+          maxBonusPoints: 45,
+          timeToZeroBonus: 20,
+          createdAt,
+          blocks: [
+            {
+              id: 3,
+              order: 1,
+              status: 'SCHEDULED',
+              timeLimit: null,
+              elements: [
+                {
+                  id: 11,
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementType: ElementType.SC,
+                  elementData,
+                },
+              ],
+            },
+          ],
+        },
+        practiceQuiz: null,
+        microLearning: null,
+        groupActivity: null,
+      })
+    const prisma = {
+      activityTemplate: {
+        findUnique: templateFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.template({ templateId: 'template-1' })
+    ).resolves.toEqual({
+      activityTemplate: {
+        __typename: 'ActivityTemplate',
+        id: 'template-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        description: 'Template description',
+        instructions: 'Template instructions',
+        liveQuiz: {
+          __typename: 'LiveQuiz',
+          id: 'live-quiz-1',
+          status: PublicationStatus.DRAFT,
+          isLiveQAEnabled: true,
+          isConfusionFeedbackEnabled: false,
+          isModerationEnabled: true,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: false,
+          accessMode: 'PUBLIC',
+          name: 'Template live quiz',
+          displayName: 'Template Live Quiz',
+          description: null,
+          pointsMultiplier: 2,
+          defaultPoints: 10,
+          defaultCorrectPoints: 5,
+          maxBonusPoints: 45,
+          timeToZeroBonus: 20,
+          createdAt,
+          blocks: [
+            {
+              __typename: 'ElementBlock',
+              id: 3,
+              order: 1,
+              status: 'SCHEDULED',
+              timeLimit: null,
+              elements: [
+                {
+                  __typename: 'ElementInstance',
+                  id: 11,
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementType: ElementType.SC,
+                  elementData: {
+                    __typename: 'ChoicesElementData',
+                    id: 'element-data-1',
+                    elementId: 17,
+                    name: 'Template choice',
+                    type: ElementType.SC,
+                    content: 'Choose one option',
+                    explanation: null,
+                    basePoints: true,
+                    pointsMultiplier: 1,
+                    options: {
+                      __typename: 'ChoiceElementOptions',
+                      hasSampleSolution: true,
+                      hasAnswerFeedbacks: false,
+                      displayMode: 'LIST',
+                      choices: [
+                        {
+                          ix: 0,
+                          correct: true,
+                          feedback: 'Correct',
+                          value: 'A',
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        practiceQuiz: null,
+        microLearning: null,
+        groupActivity: null,
+      },
+    })
+
+    expect(templateFindUnique).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: { id: 'template-1' },
+        include: expect.objectContaining({
+          liveQuiz: expect.any(Object),
+          practiceQuiz: expect.any(Object),
+          microLearning: expect.any(Object),
+          groupActivity: expect.any(Object),
+        }),
+      })
+    )
+    expect(templateFindUnique).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: { id: 'template-1' },
+        include: expect.objectContaining({
+          liveQuiz: expect.objectContaining({
+            include: expect.objectContaining({
+              blocks: expect.objectContaining({
+                orderBy: { order: 'asc' },
+              }),
+            }),
+          }),
+        }),
+      })
+    )
+  })
+
   test('sets standalone live quiz review status for activity admins', async () => {
     const update = vi.fn().mockResolvedValue({ id: 'live-quiz-1' })
     const prisma = {

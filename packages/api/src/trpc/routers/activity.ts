@@ -1,10 +1,14 @@
 import {
+  ElementInstanceType,
+  ElementStackType,
   ElementType,
+  ParameterType,
   PermissionLevel,
   Prisma,
+  PublicationStatus,
   ReviewStatus,
 } from '@klicker-uzh/prisma/client'
-import { ActivityType, SortByType } from '@klicker-uzh/types'
+import { ActivityType, SortByType, type ElementData } from '@klicker-uzh/types'
 import { getPrisma } from '../context.js'
 import {
   toAsyncActivityDetails,
@@ -13,19 +17,24 @@ import {
   toUserActivitiesCourseListItem,
   toUserActivityOverviewItem,
 } from '../dto/activity.js'
+import { toPreviewElementData } from '../dto/elementPreview.js'
 import { router } from '../init.js'
 import { hasActivityPermission } from '../permissions.js'
 import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
   activityDetailsInput,
   activityReviewStatusInput,
+  activityTemplateInput,
   checkTemplateElementExistsInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
   templatePreviewAnswerCollectionEntriesInput,
   userActivitiesInput,
 } from '../schemas/activity.js'
-import { getAnswerCollectionsForElements } from './resources.js'
+import {
+  getAnswerCollectionsForElements,
+  isTemplateAccessible,
+} from './resources.js'
 
 const reviewStatusPermissionLevels = [
   PermissionLevel.ADMIN,
@@ -59,6 +68,210 @@ function optionFlagMatches(
     key in options &&
     (options as Record<string, unknown>)[key] === expected
   )
+}
+
+type TemplateElementInstanceRecord = {
+  id: number
+  type: ElementInstanceType
+  elementType: ElementType
+  elementData: Prisma.JsonValue
+}
+
+type TemplateElementBlockRecord = {
+  id: number
+  order: number
+  status: string
+  timeLimit?: number | null
+  elements?: TemplateElementInstanceRecord[] | null
+}
+
+type TemplateElementStackRecord = {
+  id: number
+  order?: number | null
+  type: ElementStackType
+  displayName?: string | null
+  description?: string | null
+  elements?: TemplateElementInstanceRecord[] | null
+}
+
+function toTemplateElementInstanceDto(instance: TemplateElementInstanceRecord) {
+  return {
+    __typename: 'ElementInstance' as const,
+    id: instance.id,
+    type: instance.type,
+    elementType: instance.elementType,
+    elementData: toPreviewElementData(
+      instance.elementData as unknown as ElementData
+    ),
+  }
+}
+
+function toTemplateElementBlockDto(block: TemplateElementBlockRecord) {
+  return {
+    __typename: 'ElementBlock' as const,
+    id: block.id,
+    order: block.order,
+    status: block.status,
+    timeLimit: block.timeLimit ?? null,
+    elements: block.elements?.map(toTemplateElementInstanceDto) ?? null,
+  }
+}
+
+function toTemplateElementStackDto(stack: TemplateElementStackRecord) {
+  return {
+    __typename: 'ElementStack' as const,
+    id: stack.id,
+    order: stack.order ?? null,
+    type: stack.type,
+    displayName: stack.displayName ?? null,
+    description: stack.description ?? null,
+    elements: stack.elements?.map(toTemplateElementInstanceDto) ?? null,
+  }
+}
+
+type TemplateLiveQuizRecord = {
+  id: string
+  status: PublicationStatus
+  isLiveQAEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+  isModerationEnabled: boolean
+  isGamificationEnabled: boolean
+  isAssessmentEnabled: boolean
+  accessMode: string
+  name: string
+  displayName: string
+  description?: string | null
+  pointsMultiplier: number
+  defaultPoints: number
+  defaultCorrectPoints: number
+  maxBonusPoints?: number | null
+  timeToZeroBonus?: number | null
+  createdAt: Date
+  blocks?: TemplateElementBlockRecord[] | null
+}
+
+type TemplateAsyncActivityRecord = {
+  id: string
+  name: string
+  status: PublicationStatus
+  displayName: string
+  description?: string | null
+  pointsMultiplier: number
+  stacks?: TemplateElementStackRecord[] | null
+}
+
+type TemplatePracticeQuizRecord = TemplateAsyncActivityRecord & {
+  resetTimeDays: number
+  orderType: string
+}
+
+type TemplateScheduledActivityRecord = TemplateAsyncActivityRecord & {
+  scheduledStartAt: Date
+  scheduledEndAt: Date
+}
+
+type TemplateGroupActivityRecord = TemplateScheduledActivityRecord & {
+  clues?: {
+    id: number
+    type: ParameterType
+    name: string
+    displayName: string
+    value: string
+    unit?: string | null
+  }[]
+}
+
+function toTemplateLiveQuizDto(liveQuiz: TemplateLiveQuizRecord | null) {
+  if (!liveQuiz) return null
+
+  return {
+    __typename: 'LiveQuiz' as const,
+    id: liveQuiz.id,
+    status: liveQuiz.status,
+    isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
+    isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
+    isModerationEnabled: liveQuiz.isModerationEnabled,
+    isGamificationEnabled: liveQuiz.isGamificationEnabled,
+    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+    accessMode: liveQuiz.accessMode,
+    name: liveQuiz.name,
+    displayName: liveQuiz.displayName,
+    description: liveQuiz.description ?? null,
+    pointsMultiplier: liveQuiz.pointsMultiplier,
+    defaultPoints: liveQuiz.defaultPoints,
+    defaultCorrectPoints: liveQuiz.defaultCorrectPoints,
+    maxBonusPoints: liveQuiz.maxBonusPoints ?? null,
+    timeToZeroBonus: liveQuiz.timeToZeroBonus ?? null,
+    createdAt: liveQuiz.createdAt,
+    blocks: liveQuiz.blocks?.map(toTemplateElementBlockDto) ?? null,
+  }
+}
+
+function toTemplatePracticeQuizDto(
+  practiceQuiz: TemplatePracticeQuizRecord | null
+) {
+  if (!practiceQuiz) return null
+
+  return {
+    __typename: 'PracticeQuiz' as const,
+    id: practiceQuiz.id,
+    name: practiceQuiz.name,
+    status: practiceQuiz.status,
+    displayName: practiceQuiz.displayName,
+    description: practiceQuiz.description ?? null,
+    pointsMultiplier: practiceQuiz.pointsMultiplier,
+    resetTimeDays: practiceQuiz.resetTimeDays,
+    orderType: practiceQuiz.orderType,
+    stacks: practiceQuiz.stacks?.map(toTemplateElementStackDto) ?? null,
+  }
+}
+
+function toTemplateMicroLearningDto(
+  microLearning: TemplateScheduledActivityRecord | null
+) {
+  if (!microLearning) return null
+
+  return {
+    __typename: 'MicroLearning' as const,
+    id: microLearning.id,
+    name: microLearning.name,
+    status: microLearning.status,
+    displayName: microLearning.displayName,
+    description: microLearning.description ?? null,
+    pointsMultiplier: microLearning.pointsMultiplier,
+    scheduledStartAt: microLearning.scheduledStartAt,
+    scheduledEndAt: microLearning.scheduledEndAt,
+    stacks: microLearning.stacks?.map(toTemplateElementStackDto) ?? null,
+  }
+}
+
+function toTemplateGroupActivityDto(
+  groupActivity: TemplateGroupActivityRecord | null
+) {
+  if (!groupActivity) return null
+
+  return {
+    __typename: 'GroupActivity' as const,
+    id: groupActivity.id,
+    name: groupActivity.name,
+    displayName: groupActivity.displayName,
+    description: groupActivity.description ?? null,
+    pointsMultiplier: groupActivity.pointsMultiplier,
+    status: groupActivity.status,
+    scheduledStartAt: groupActivity.scheduledStartAt,
+    scheduledEndAt: groupActivity.scheduledEndAt,
+    clues:
+      groupActivity.clues?.map((clue) => ({
+        __typename: 'GroupActivityClue' as const,
+        id: clue.id,
+        type: clue.type,
+        name: clue.name,
+        displayName: clue.displayName,
+        value: clue.value,
+        unit: clue.unit ?? null,
+      })) ?? null,
+    stacks: groupActivity.stacks?.map(toTemplateElementStackDto) ?? null,
+  }
 }
 
 export const activityRouter = router({
@@ -496,6 +709,107 @@ export const activityRouter = router({
           const item = toOutdatedElementInstanceInfo(instance)
           return item ? [item] : []
         }),
+      }
+    }),
+
+  template: userProcedure
+    .input(activityTemplateInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const accessible = await isTemplateAccessible({
+        prisma,
+        userId: ctx.user.sub,
+        templateId: input.templateId,
+      })
+
+      if (!accessible) return { activityTemplate: null }
+
+      const template = await prisma.activityTemplate.findUnique({
+        where: { id: input.templateId },
+        include: {
+          liveQuiz: {
+            where: { isDeleted: false },
+            include: {
+              blocks: {
+                include: {
+                  elements: {
+                    orderBy: { order: 'asc' },
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+          },
+          practiceQuiz: {
+            where: { isDeleted: false },
+            include: {
+              stacks: {
+                include: {
+                  elements: {
+                    orderBy: { order: 'asc' },
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+          },
+          microLearning: {
+            where: { isDeleted: false },
+            include: {
+              stacks: {
+                include: {
+                  elements: {
+                    orderBy: { order: 'asc' },
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+          },
+          groupActivity: {
+            where: { isDeleted: false },
+            include: {
+              clues: true,
+              stacks: {
+                include: {
+                  elements: {
+                    orderBy: { order: 'asc' },
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+          },
+        },
+      })
+
+      let activityType: ActivityType | null = null
+      if (template?.liveQuiz) {
+        activityType = ActivityType.LIVE_QUIZ
+      } else if (template?.practiceQuiz) {
+        activityType = ActivityType.PRACTICE_QUIZ
+      } else if (template?.microLearning) {
+        activityType = ActivityType.MICRO_LEARNING
+      } else if (template?.groupActivity) {
+        activityType = ActivityType.GROUP_ACTIVITY
+      }
+
+      if (!template || activityType === null) {
+        return { activityTemplate: null }
+      }
+
+      return {
+        activityTemplate: {
+          __typename: 'ActivityTemplate' as const,
+          id: template.id,
+          activityType,
+          description: template.description,
+          instructions: template.instructions,
+          liveQuiz: toTemplateLiveQuizDto(template.liveQuiz),
+          practiceQuiz: toTemplatePracticeQuizDto(template.practiceQuiz),
+          microLearning: toTemplateMicroLearningDto(template.microLearning),
+          groupActivity: toTemplateGroupActivityDto(template.groupActivity),
+        },
       }
     }),
 

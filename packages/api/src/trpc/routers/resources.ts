@@ -150,7 +150,7 @@ async function getAnswerCollectionsInfo({
   })
 }
 
-async function isTemplateAccessible({
+export async function isTemplateAccessible({
   prisma,
   userId,
   templateId,
