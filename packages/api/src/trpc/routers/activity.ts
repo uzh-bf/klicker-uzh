@@ -10,18 +10,30 @@ import {
   type AnswerCollection,
   type AnswerCollectionEntry,
   type Element,
+  type ElementBlock,
+  type ElementInstance,
+  type ElementStack,
+  type GroupActivity,
+  type GroupActivityClue,
+  type GroupActivityParameter,
+  type LiveQuiz,
+  type MicroLearning,
+  type PracticeQuiz,
 } from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
   SortByType,
+  type CaseStudyElementData,
   type ElementData,
   type ElementManipulationInput,
   type ElementOptionsInput,
+  type SelectionElementData,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
+  propagateActivityToElements,
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
 } from '@klicker-uzh/util'
@@ -45,7 +57,10 @@ import {
   activityTemplateInput,
   applyActivityBatchOperationsInput,
   checkTemplateElementExistsInput,
+  checkTemplateInfoAvailableInput,
+  createActivityTemplateInput,
   createLiveQuizFromTemplateInput,
+  deleteActivityTemplateInput,
   editActivityTemplateInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
@@ -631,6 +646,857 @@ async function updateTemplateActivityName(
     where,
     data: { name },
   })
+}
+
+async function deleteActivityTemplate({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+  }
+}) {
+  const prisma = getPrisma(ctx)
+  const canAdmin = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.ADMIN
+  )
+
+  if (!canAdmin) return null
+
+  if (input.activityType === ActivityType.LIVE_QUIZ) {
+    const liveQuiz = await prisma.liveQuiz.findUnique({
+      where: {
+        id: input.activityId,
+        status: PublicationStatus.TEMPLATE,
+      },
+      include: {
+        blocks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!liveQuiz) return null
+
+    return await prisma.$transaction(
+      async (tx) => {
+        const deletedLiveQuiz = await tx.liveQuiz.delete({
+          where: { id: input.activityId },
+        })
+
+        await propagateActivityToElements(
+          { stacks: liveQuiz.blocks, updateAccessRequests: true },
+          tx
+        )
+
+        return deletedLiveQuiz.id
+      },
+      { timeout: 60000 }
+    )
+  }
+
+  if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+    const practiceQuiz = await prisma.practiceQuiz.findUnique({
+      where: {
+        id: input.activityId,
+        status: PublicationStatus.TEMPLATE,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!practiceQuiz) return null
+
+    return await prisma.$transaction(
+      async (tx) => {
+        const deletedPracticeQuiz = await tx.practiceQuiz.delete({
+          where: { id: input.activityId },
+        })
+
+        await propagateActivityToElements(
+          { stacks: practiceQuiz.stacks, updateAccessRequests: true },
+          tx
+        )
+
+        return deletedPracticeQuiz.id
+      },
+      { timeout: 60000 }
+    )
+  }
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    const microLearning = await prisma.microLearning.findUnique({
+      where: {
+        id: input.activityId,
+        status: PublicationStatus.TEMPLATE,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!microLearning) return null
+
+    return await prisma.$transaction(
+      async (tx) => {
+        const deletedMicroLearning = await tx.microLearning.delete({
+          where: { id: input.activityId },
+        })
+
+        await propagateActivityToElements(
+          { stacks: microLearning.stacks, updateAccessRequests: true },
+          tx
+        )
+
+        return deletedMicroLearning.id
+      },
+      { timeout: 60000 }
+    )
+  }
+
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: {
+      id: input.activityId,
+      status: PublicationStatus.TEMPLATE,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!groupActivity) return null
+
+  return await prisma.$transaction(
+    async (tx) => {
+      const deletedGroupActivity = await tx.groupActivity.delete({
+        where: { id: input.activityId },
+      })
+
+      await propagateActivityToElements(
+        { stacks: groupActivity.stacks, updateAccessRequests: true },
+        tx
+      )
+
+      return deletedGroupActivity.id
+    },
+    { timeout: 60000 }
+  )
+}
+
+type TemplateConversionLiveQuiz = LiveQuiz & {
+  blocks: (ElementBlock & { elements: ElementInstance[] })[]
+}
+
+type TemplateConversionAsyncActivity = {
+  stacks: (ElementStack & { elements: ElementInstance[] })[]
+}
+
+type TemplateConversionPracticeQuiz = PracticeQuiz &
+  TemplateConversionAsyncActivity
+
+type TemplateConversionMicroLearning = MicroLearning &
+  TemplateConversionAsyncActivity
+
+type TemplateConversionGroupActivity = GroupActivity &
+  TemplateConversionAsyncActivity & {
+    parameters: GroupActivityParameter[]
+    clues: GroupActivityClue[]
+  }
+
+type TemplateConversionActivity =
+  | TemplateConversionLiveQuiz
+  | TemplateConversionPracticeQuiz
+  | TemplateConversionMicroLearning
+  | TemplateConversionGroupActivity
+
+function getElementDataOptions(instance: ElementInstance) {
+  const elementData = instance.elementData as { options?: Record<string, any> }
+
+  return elementData.options ?? {}
+}
+
+function getTemplateAnswerCollectionIds(instances: ElementInstance[]) {
+  const answerCollectionIds = Array.from(
+    new Set(
+      instances.flatMap((instance) => {
+        if (instance.elementType === ElementType.SELECTION) {
+          const answerCollection = (
+            instance.elementData as SelectionElementData
+          ).options.answerCollection
+
+          return typeof answerCollection?.id === 'number'
+            ? [answerCollection.id]
+            : []
+        }
+
+        if (instance.elementType === ElementType.CASE_STUDY) {
+          const answerCollectionId = (
+            instance.elementData as CaseStudyElementData
+          ).options.answerCollectionId
+
+          return typeof answerCollectionId === 'number'
+            ? [answerCollectionId]
+            : []
+        }
+
+        return []
+      })
+    )
+  )
+
+  const answerCollectionEntryIds = Array.from(
+    new Set(
+      instances.flatMap((instance) => {
+        const options = getElementDataOptions(instance)
+
+        if (instance.elementType === ElementType.SELECTION) {
+          return Array.isArray(options.answerCollectionSolutionIds)
+            ? options.answerCollectionSolutionIds.flatMap((id) =>
+                typeof id === 'number' ? [id] : []
+              )
+            : []
+        }
+
+        if (instance.elementType === ElementType.CASE_STUDY) {
+          return Array.isArray(options.items)
+            ? options.items.flatMap((item) =>
+                typeof item.id === 'number' ? [item.id] : []
+              )
+            : []
+        }
+
+        return []
+      })
+    )
+  )
+
+  return { answerCollectionIds, answerCollectionEntryIds }
+}
+
+async function getActivityTemplateResourceInfo({
+  activityId,
+  activityType,
+  prisma,
+}: {
+  activityId: string
+  activityType: ActivityType
+  prisma: PrismaTransactionClient
+}): Promise<{
+  error: boolean
+  activity: TemplateConversionActivity | null
+  noInstances: boolean
+  answerCollectionIds: number[]
+  answerCollectionEntryIds: number[]
+}> {
+  let activity: TemplateConversionActivity | null = null
+  let instances: ElementInstance[] = []
+
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    const liveQuiz = await prisma.liveQuiz.findUnique({
+      where: { id: activityId },
+      include: {
+        blocks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!liveQuiz) {
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+        answerCollectionEntryIds: [],
+      }
+    }
+
+    activity = liveQuiz
+    instances = liveQuiz.blocks.flatMap((block) => block.elements)
+  } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+    const practiceQuiz = await prisma.practiceQuiz.findUnique({
+      where: { id: activityId },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!practiceQuiz) {
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+        answerCollectionEntryIds: [],
+      }
+    }
+
+    activity = practiceQuiz
+    instances = practiceQuiz.stacks.flatMap((stack) => stack.elements)
+  } else if (activityType === ActivityType.MICRO_LEARNING) {
+    const microLearning = await prisma.microLearning.findUnique({
+      where: { id: activityId },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!microLearning) {
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+        answerCollectionEntryIds: [],
+      }
+    }
+
+    activity = microLearning
+    instances = microLearning.stacks.flatMap((stack) => stack.elements)
+  } else {
+    const groupActivity = await prisma.groupActivity.findUnique({
+      where: { id: activityId },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+        parameters: true,
+        clues: true,
+      },
+    })
+
+    if (!groupActivity) {
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+        answerCollectionEntryIds: [],
+      }
+    }
+
+    activity = groupActivity
+    instances = groupActivity.stacks.flatMap((stack) => stack.elements)
+  }
+
+  if (instances.length === 0) {
+    return {
+      error: false,
+      activity,
+      noInstances: true,
+      answerCollectionIds: [],
+      answerCollectionEntryIds: [],
+    }
+  }
+
+  return {
+    error: false,
+    activity,
+    noInstances: false,
+    ...getTemplateAnswerCollectionIds(instances),
+  }
+}
+
+async function checkTemplateInfoAvailable({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+  }
+}) {
+  const prisma = getPrisma(ctx)
+  const canAdmin = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.ADMIN
+  )
+
+  if (!canAdmin) return null
+
+  const { error, noInstances, answerCollectionIds, answerCollectionEntryIds } =
+    await getActivityTemplateResourceInfo({
+      activityId: input.activityId,
+      activityType: input.activityType,
+      prisma,
+    })
+
+  if (error) return null
+
+  if (noInstances) {
+    return {
+      noInstances: true,
+      noResourcesRequired: false,
+      resourcesRequiredExist: false,
+      resourcesRequiredMissing: false,
+    }
+  }
+
+  if (answerCollectionIds.length === 0) {
+    return {
+      noInstances: false,
+      noResourcesRequired: true,
+      resourcesRequiredExist: false,
+      resourcesRequiredMissing: false,
+    }
+  }
+
+  const answerCollections = await prisma.answerCollection.findMany({
+    where: { id: { in: answerCollectionIds } },
+    select: { id: true },
+  })
+  const answerCollectionEntries = await prisma.answerCollectionEntry.findMany({
+    where: { id: { in: answerCollectionEntryIds } },
+    select: { id: true },
+  })
+  const resourcesRequiredExist =
+    answerCollections.length === answerCollectionIds.length &&
+    answerCollectionEntries.length === answerCollectionEntryIds.length
+
+  return {
+    noInstances: false,
+    noResourcesRequired: false,
+    resourcesRequiredExist,
+    resourcesRequiredMissing: !resourcesRequiredExist,
+  }
+}
+
+function getTemplateResourceConnections({
+  answerCollectionIds,
+  answerCollectionEntryIds,
+}: {
+  answerCollectionIds: number[]
+  answerCollectionEntryIds: number[]
+}) {
+  return {
+    answerCollections:
+      answerCollectionIds.length > 0
+        ? {
+            connect: answerCollectionIds.map((id) => ({ id })),
+          }
+        : undefined,
+    answerCollectionItems:
+      answerCollectionEntryIds.length > 0
+        ? {
+            connect: answerCollectionEntryIds.map((id) => ({ id })),
+          }
+        : undefined,
+  }
+}
+
+function createTemplateElementInstances({
+  elements,
+  type,
+  userId,
+}: {
+  elements: ElementInstance[]
+  type: ElementInstanceType
+  userId: string
+}) {
+  return elements.map((element) => ({
+    elementType: element.elementType,
+    order: element.order,
+    type,
+    elementData: element.elementData,
+    options: element.options,
+    results: element.results,
+    anonymousResults: element.anonymousResults,
+    instanceStatistics: {
+      create: getInitialInstanceStatistics(type),
+    },
+    element: {
+      connect: { id: element.elementId },
+    },
+    owner: {
+      connect: { id: userId },
+    },
+  }))
+}
+
+async function createActivityTemplate({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+    templateName: string
+    templateDescription: string
+    templateInstructions: string
+    copyBeforeConversion: boolean
+  }
+}) {
+  const prisma = getPrisma(ctx)
+  const canAdmin = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.ADMIN
+  )
+
+  if (!canAdmin) return null
+
+  const {
+    error,
+    activity,
+    noInstances,
+    answerCollectionIds,
+    answerCollectionEntryIds,
+  } = await getActivityTemplateResourceInfo({
+    activityId: input.activityId,
+    activityType: input.activityType,
+    prisma,
+  })
+
+  if (error || noInstances || !activity) return false
+
+  const templateResourceConnections = getTemplateResourceConnections({
+    answerCollectionIds,
+    answerCollectionEntryIds,
+  })
+
+  if (input.copyBeforeConversion) {
+    if (input.activityType === ActivityType.LIVE_QUIZ) {
+      const liveQuiz = activity as TemplateConversionLiveQuiz
+
+      await prisma.$transaction(async (tx) => {
+        const template = await tx.liveQuiz.create({
+          data: {
+            name: input.templateName,
+            displayName: liveQuiz.displayName,
+            description: liveQuiz.description,
+            status: PublicationStatus.TEMPLATE,
+            pointsMultiplier: Math.max(liveQuiz.pointsMultiplier, 1),
+            defaultPoints: Math.max(liveQuiz.defaultPoints, 0),
+            defaultCorrectPoints: Math.max(liveQuiz.defaultCorrectPoints, 0),
+            maxBonusPoints: Math.max(liveQuiz.maxBonusPoints, 0),
+            timeToZeroBonus: Math.max(liveQuiz.timeToZeroBonus, 1),
+            isGamificationEnabled: liveQuiz.isGamificationEnabled,
+            isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
+            isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
+            isModerationEnabled: liveQuiz.isModerationEnabled,
+            blocks: {
+              create: liveQuiz.blocks.map((block) => ({
+                order: block.order,
+                timeLimit: block.timeLimit,
+                elements: {
+                  create: createTemplateElementInstances({
+                    elements: block.elements,
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    userId: ctx.user.sub,
+                  }),
+                },
+              })),
+            },
+            templateInfo: {
+              create: {
+                description: input.templateDescription,
+                instructions: input.templateInstructions,
+                ...templateResourceConnections,
+              },
+            },
+            owner: {
+              connect: {
+                id: ctx.user.sub,
+              },
+            },
+          },
+        })
+
+        await recomputeDerivedPermissions(
+          {
+            liveQuizId: template.id,
+            userId: ctx.user.sub,
+          },
+          tx
+        )
+      })
+
+      return true
+    }
+
+    if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+      const practiceQuiz = activity as TemplateConversionPracticeQuiz
+
+      await prisma.$transaction(async (tx) => {
+        const template = await tx.practiceQuiz.create({
+          data: {
+            name: input.templateName,
+            displayName: practiceQuiz.displayName,
+            description: practiceQuiz.description,
+            status: PublicationStatus.TEMPLATE,
+            pointsMultiplier: practiceQuiz.pointsMultiplier,
+            orderType: practiceQuiz.orderType,
+            resetTimeDays: practiceQuiz.resetTimeDays,
+            stacks: {
+              create: practiceQuiz.stacks.map((stack) => ({
+                type: ElementStackType.PRACTICE_QUIZ,
+                order: stack.order,
+                displayName: stack.displayName,
+                description: stack.description,
+                elements: {
+                  create: createTemplateElementInstances({
+                    elements: stack.elements,
+                    type: ElementInstanceType.PRACTICE_QUIZ,
+                    userId: ctx.user.sub,
+                  }),
+                },
+              })),
+            },
+            templateInfo: {
+              create: {
+                description: input.templateDescription,
+                instructions: input.templateInstructions,
+                ...templateResourceConnections,
+              },
+            },
+            course: {
+              connect: { id: practiceQuiz.courseId },
+            },
+            owner: { connect: { id: ctx.user.sub } },
+          },
+        })
+
+        await recomputeDerivedPermissions(
+          {
+            practiceQuizId: template.id,
+            userId: ctx.user.sub,
+          },
+          tx
+        )
+      })
+
+      return true
+    }
+
+    if (input.activityType === ActivityType.MICRO_LEARNING) {
+      const microLearning = activity as TemplateConversionMicroLearning
+
+      await prisma.$transaction(async (tx) => {
+        const template = await tx.microLearning.create({
+          data: {
+            name: input.templateName,
+            displayName: microLearning.displayName,
+            description: microLearning.description,
+            status: PublicationStatus.TEMPLATE,
+            pointsMultiplier: microLearning.pointsMultiplier,
+            scheduledStartAt: microLearning.scheduledStartAt,
+            scheduledEndAt: microLearning.scheduledEndAt,
+            stacks: {
+              create: microLearning.stacks.map((stack) => ({
+                type: ElementStackType.MICROLEARNING,
+                order: stack.order,
+                displayName: stack.displayName,
+                description: stack.description,
+                elements: {
+                  create: createTemplateElementInstances({
+                    elements: stack.elements,
+                    type: ElementInstanceType.MICROLEARNING,
+                    userId: ctx.user.sub,
+                  }),
+                },
+              })),
+            },
+            templateInfo: {
+              create: {
+                description: input.templateDescription,
+                instructions: input.templateInstructions,
+                ...templateResourceConnections,
+              },
+            },
+            course: {
+              connect: { id: microLearning.courseId },
+            },
+            owner: { connect: { id: ctx.user.sub } },
+          },
+        })
+
+        await recomputeDerivedPermissions(
+          {
+            microLearningId: template.id,
+            userId: ctx.user.sub,
+          },
+          tx
+        )
+      })
+
+      return true
+    }
+
+    const groupActivity = activity as TemplateConversionGroupActivity
+
+    await prisma.$transaction(async (tx) => {
+      const template = await tx.groupActivity.create({
+        data: {
+          name: input.templateName,
+          displayName: groupActivity.displayName,
+          description: groupActivity.description,
+          status: PublicationStatus.TEMPLATE,
+          pointsMultiplier: groupActivity.pointsMultiplier,
+          scheduledStartAt: groupActivity.scheduledStartAt,
+          scheduledEndAt: groupActivity.scheduledEndAt,
+          parameters: {
+            create: groupActivity.parameters.map((parameter) => ({
+              name: parameter.name,
+              displayName: parameter.displayName,
+              type: parameter.type,
+              options: parameter.options,
+              unit: parameter.unit,
+            })),
+          },
+          clues: {
+            create: groupActivity.clues.map((clue) => ({
+              name: clue.name,
+              displayName: clue.displayName,
+              type: clue.type,
+              value: clue.value,
+              unit: clue.unit,
+            })),
+          },
+          stacks: {
+            create: groupActivity.stacks.map((stack) => ({
+              type: ElementStackType.GROUP_ACTIVITY,
+              order: stack.order,
+              displayName: stack.displayName,
+              description: stack.description,
+              elements: {
+                create: createTemplateElementInstances({
+                  elements: stack.elements,
+                  type: ElementInstanceType.GROUP_ACTIVITY,
+                  userId: ctx.user.sub,
+                }),
+              },
+            })),
+          },
+          templateInfo: {
+            create: {
+              description: input.templateDescription,
+              instructions: input.templateInstructions,
+              ...templateResourceConnections,
+            },
+          },
+          course: {
+            connect: { id: groupActivity.courseId },
+          },
+          owner: { connect: { id: ctx.user.sub } },
+        },
+      })
+
+      await recomputeDerivedPermissions(
+        {
+          groupActivityId: template.id,
+          userId: ctx.user.sub,
+        },
+        tx
+      )
+    })
+
+    return true
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.activityTemplate.create({
+      data: {
+        description: input.templateDescription,
+        instructions: input.templateInstructions,
+        liveQuiz:
+          input.activityType === ActivityType.LIVE_QUIZ
+            ? { connect: { id: input.activityId } }
+            : undefined,
+        practiceQuiz:
+          input.activityType === ActivityType.PRACTICE_QUIZ
+            ? { connect: { id: input.activityId } }
+            : undefined,
+        microLearning:
+          input.activityType === ActivityType.MICRO_LEARNING
+            ? { connect: { id: input.activityId } }
+            : undefined,
+        groupActivity:
+          input.activityType === ActivityType.GROUP_ACTIVITY
+            ? { connect: { id: input.activityId } }
+            : undefined,
+        ...templateResourceConnections,
+      },
+    })
+
+    if (input.activityType === ActivityType.LIVE_QUIZ) {
+      await tx.liveQuiz.update({
+        where: { id: input.activityId },
+        data: {
+          name: input.templateName,
+          status: PublicationStatus.TEMPLATE,
+        },
+      })
+    } else if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+      await tx.practiceQuiz.update({
+        where: { id: input.activityId },
+        data: {
+          name: input.templateName,
+          status: PublicationStatus.TEMPLATE,
+        },
+      })
+    } else if (input.activityType === ActivityType.MICRO_LEARNING) {
+      await tx.microLearning.update({
+        where: { id: input.activityId },
+        data: {
+          name: input.templateName,
+          status: PublicationStatus.TEMPLATE,
+        },
+      })
+    } else {
+      await tx.groupActivity.update({
+        where: { id: input.activityId },
+        data: {
+          name: input.templateName,
+          status: PublicationStatus.TEMPLATE,
+        },
+      })
+    }
+  })
+
+  return true
 }
 
 type TemplateLiveQuizRecord = {
@@ -1300,6 +2166,24 @@ export const activityRouter = router({
       return { templateInformation: toTemplateInformationDto(groupActivity) }
     }),
 
+  checkTemplateInfoAvailable: userProcedure
+    .input(checkTemplateInfoAvailableInput)
+    .query(async ({ ctx, input }) => ({
+      checkTemplateInfoAvailable: await checkTemplateInfoAvailable({
+        ctx,
+        input,
+      }),
+    })),
+
+  createActivityTemplate: userFullAccessProcedure
+    .input(createActivityTemplateInput)
+    .mutation(async ({ ctx, input }) => ({
+      createActivityTemplate: await createActivityTemplate({
+        ctx,
+        input,
+      }),
+    })),
+
   createLiveQuizFromTemplate: userFullAccessProcedure
     .input(createLiveQuizFromTemplateInput)
     .mutation(async ({ ctx, input }) => ({
@@ -1350,6 +2234,15 @@ export const activityRouter = router({
         return { editActivityTemplate: false }
       }
     }),
+
+  deleteTemplate: userFullAccessProcedure
+    .input(deleteActivityTemplateInput)
+    .mutation(async ({ ctx, input }) => ({
+      deleteActivityTemplate: await deleteActivityTemplate({
+        ctx,
+        input,
+      }),
+    })),
 
   template: userProcedure
     .input(activityTemplateInput)

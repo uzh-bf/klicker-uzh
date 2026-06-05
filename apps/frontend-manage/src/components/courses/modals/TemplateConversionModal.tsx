@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faCopy, faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -6,11 +5,8 @@ import {
   faArrowsRotate,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityType,
-  CheckTemplateInfoAvailableDocument,
-  CreateActivityTemplateDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import {
   Button,
   FormLabel,
@@ -21,6 +17,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ConversionTypeMonitor from './ConversionTypeMonitor'
 import TemplateFormFields from './TemplateFormFields'
@@ -34,6 +31,13 @@ interface TemplateConversionModalProps {
   refetchActivities?: () => Promise<void>
 }
 
+const trpcActivityTypeByGraphqlActivityType = {
+  [ActivityType.GroupActivity]: ApiActivityType.GROUP_ACTIVITY,
+  [ActivityType.LiveQuiz]: ApiActivityType.LIVE_QUIZ,
+  [ActivityType.MicroLearning]: ApiActivityType.MICRO_LEARNING,
+  [ActivityType.PracticeQuiz]: ApiActivityType.PRACTICE_QUIZ,
+} satisfies Record<ActivityType, ApiActivityType>
+
 function TemplateConversionModal({
   onClose,
   activityId,
@@ -43,6 +47,7 @@ function TemplateConversionModal({
   refetchActivities,
 }: TemplateConversionModalProps) {
   const t = useTranslations()
+  const trpcActivityType = trpcActivityTypeByGraphqlActivityType[activityType]
   const [currentStep, setCurrentStep] = useState(0)
   const [confirmations, setConfirmations] = useState({
     activityConversion: false,
@@ -52,18 +57,16 @@ function TemplateConversionModal({
   })
 
   // query if any question in the activity requires additional resources and if these exist
-  const { data, loading } = useQuery(CheckTemplateInfoAvailableDocument, {
-    variables: {
+  const { data, isLoading: loading } =
+    trpc.activity.checkTemplateInfoAvailable.useQuery({
       activityId,
-      activityType,
-    },
-    skip: !open,
-    fetchPolicy: 'cache-and-network',
-  })
+      activityType: trpcActivityType,
+    })
   const templateInfo = data?.checkTemplateInfoAvailable
 
   // mutation for template creation
-  const [createActivityTemplate] = useMutation(CreateActivityTemplateDocument)
+  const createActivityTemplate =
+    trpc.activity.createActivityTemplate.useMutation()
 
   // set corresponding confirmation to true if no resources are required
   useEffect(() => {
@@ -127,18 +130,16 @@ function TemplateConversionModal({
         })}
         onSubmit={async (values) => {
           try {
-            const result = await createActivityTemplate({
-              variables: {
-                activityId,
-                activityType,
-                templateName: values.name,
-                templateDescription: values.description,
-                templateInstructions: values.instructions,
-                copyBeforeConversion: values.conversionType === 'copy',
-              },
+            const result = await createActivityTemplate.mutateAsync({
+              activityId,
+              activityType: trpcActivityType,
+              templateName: values.name,
+              templateDescription: values.description,
+              templateInstructions: values.instructions,
+              copyBeforeConversion: values.conversionType === 'copy',
             })
 
-            if (result.data?.createActivityTemplate) {
+            if (result.createActivityTemplate) {
               await refetchActivities?.()
               onSuccess()
               handleModalClose()

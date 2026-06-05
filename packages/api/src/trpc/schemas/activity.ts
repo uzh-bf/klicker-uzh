@@ -41,6 +41,17 @@ export const activityDetailsInput = z.object({
 
 export const templateInformationInput = activityDetailsInput
 
+export const checkTemplateInfoAvailableInput = activityDetailsInput
+
+export const deleteActivityTemplateInput = activityDetailsInput
+
+export const createActivityTemplateInput = activityDetailsInput.extend({
+  templateName: z.string(),
+  templateDescription: z.string(),
+  templateInstructions: z.string(),
+  copyBeforeConversion: z.boolean(),
+})
+
 export const editActivityTemplateInput = activityDetailsInput.extend({
   templateId: z.string(),
   name: z.string(),

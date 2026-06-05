@@ -280,6 +280,132 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M20-S04M21 Manage Template Deletion and Conversion
+
+Status: complete for the final S04 manage-template slice. Scope was the
+remaining non-realtime template deletion and activity-to-template conversion
+workflow in the Manage activities overview. This intentionally keeps realtime
+subscriptions for S05 and GraphQL/Apollo cleanup for S06 out of scope.
+
+Operation mapping:
+
+```text
+Slice: S04M20 Manage Template Deletion Mutation
+GraphQL operation(s): DeleteActivityTemplate
+GraphQL resolver(s): Mutation.deleteActivityTemplate with asUserFullAccess and ADMIN activity access
+Behavior source: packages/graphql/src/services/templates.ts deleteActivityTemplate
+tRPC router.procedure: activity.deleteTemplate
+Input schema: { activityId: string; activityType: ActivityType }
+Output DTO: { deleteActivityTemplate: string | null }
+Active frontend consumers: apps/frontend-manage/src/components/courses/modals/TemplateDeletionModal.tsx
+Apollo cache/refetch/subscription behavior: Apollo cache update removes the template from GetSingleCourseDocument when courseId exists; caller also refetches activities on success
+React Query replacement: trpc.activity.deleteTemplate.useMutation(); preserve success/error callbacks and refetchActivities(); replace Apollo course cache update with query invalidation/refetch-compatible behavior
+Browser verification path: branch-local manage app; delegated login; create or fixture a template activity if seeded data lacks one; open deletion modal; submit; verify /api/trpc/activity.deleteTemplate resource timing and visible removal
+Cleanup blocked until: remaining manage template creation/conversion flows, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+
+Slice: S04M21 Manage Template Conversion Mutation and Info Read
+GraphQL operation(s): CheckTemplateInfoAvailable, CreateActivityTemplate
+GraphQL resolver(s): Query.checkTemplateInfoAvailable, Mutation.createActivityTemplate
+Behavior source: packages/graphql/src/services/templates.ts checkTemplateInfoAvailable and createActivityTemplate
+tRPC router.procedure: activity.checkTemplateInfoAvailable, activity.createActivityTemplate
+Input schema: { activityId: string; activityType: ActivityType } plus templateName/templateDescription/templateInstructions/copyBeforeConversion for creation
+Output DTO: { checkTemplateInfoAvailable: TemplateInfo | null }, { createActivityTemplate: boolean | null }
+Active frontend consumers: apps/frontend-manage/src/components/courses/modals/TemplateConversionModal.tsx
+Apollo cache/refetch/subscription behavior: Apollo mutation followed caller refetchActivities on success
+React Query replacement: trpc.activity.checkTemplateInfoAvailable.useQuery and trpc.activity.createActivityTemplate.useMutation; preserve success/error callbacks and refetchActivities
+Browser verification path: branch-local manage app; delegated login; open conversion modal; confirm direct conversion; fill metadata; submit; verify /api/trpc/activity.checkTemplateInfoAvailable and /api/trpc/activity.createActivityTemplate resource timing and converted template row
+Cleanup blocked until: realtime migration and S06 GraphQL/Apollo cleanup gates
+```
+
+Write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-template-delete.test.ts`
+- `packages/api/src/trpc/__tests__/manage-template-conversion.test.ts`
+- `apps/frontend-manage/src/components/courses/modals/TemplateDeletionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/TemplateConversionModal.tsx`
+- This plan file
+
+Implementation:
+
+- Added `activity.deleteTemplate` with ADMIN permission checking, GraphQL-parity
+  nullable return behavior, activity-type-specific deletion, and
+  `propagateActivityToElements({ updateAccessRequests: true })` after deleting
+  the template activity in the same transaction.
+- Migrated `TemplateDeletionModal` from Apollo `useMutation` to
+  `trpc.activity.deleteTemplate.useMutation()` while preserving loading state,
+  success/error callbacks, and `refetchActivities()` on success. The Apollo
+  `GetSingleCourseDocument` cache update was removed because the only active
+  caller is the activities overview and already passes `refetchActivities`.
+- Added focused API coverage in
+  `packages/api/src/trpc/__tests__/manage-template-delete.test.ts`.
+- Added `activity.checkTemplateInfoAvailable` and
+  `activity.createActivityTemplate` with ADMIN permission checks, nullable
+  unauthorized/missing behavior, resource-dependency detection, copy-before-
+  conversion branches for all supported activity types, direct conversion, and
+  derived-permission recomputation for copied template activities.
+- Migrated `TemplateConversionModal` from Apollo query/mutation to tRPC while
+  preserving the conversion confirmations, metadata validation, callbacks, and
+  activity refetch on success.
+- Added focused API coverage in
+  `packages/api/src/trpc/__tests__/manage-template-conversion.test.ts`.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/manage-template-delete.test.ts src/trpc/__tests__/manage-template-conversion.test.ts`: passed; package script ran all API tests, 300 tests across 30 files.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/backend-docker check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/module-type, next-intl, Browserslist, `MISSING_MESSAGE`, and large-page-data warnings.
+- Static audit `rg -n "CreateActivityTemplateDocument|CheckTemplateInfoAvailableDocument|DeleteActivityTemplateDocument" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n`: no matches.
+- Static audit confirmed only expected tRPC/procedure references for
+  `deleteTemplate`, `checkTemplateInfoAvailable`, and
+  `createActivityTemplate`.
+- Compact S04 coexistence audit:
+  `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`
+  returned `322`, confirming GraphQL/Apollo surfaces remain intentionally live
+  until later gates.
+- `git diff --check`: passed.
+- Browser/runtime verification:
+  - Branch-local backend/auth/manage ran on `3133/3136/3134` with local
+    `NEXT_PUBLIC_MANAGE_URL` / `NEXT_PUBLIC_AUTH_URL` overrides so delegated
+    auth redirected back to `127.0.0.1`.
+  - `npx agent-browser` opened
+    `http://127.0.0.1:3134/activities?status=template` and captured the
+    authenticated pre-smoke list screenshot
+    `/tmp/agent-browser-shots/s04m20m21-04-local-open.png`.
+  - Escalated Playwright smoke against the same local app completed deletion and
+    direct conversion: opened the delete menu, confirmed deletion, opened the
+    conversion modal, selected direct conversion, filled template metadata, and
+    submitted conversion.
+  - Runtime screenshots:
+    `/tmp/agent-browser-shots/s04m20m21-pw-04-delete-modal.png`,
+    `/tmp/agent-browser-shots/s04m20m21-pw-05-after-delete.png`,
+    `/tmp/agent-browser-shots/s04m20m21-pw-06-conversion-step1.png`,
+    `/tmp/agent-browser-shots/s04m20m21-pw-07-conversion-step2-filled.png`,
+    `/tmp/agent-browser-shots/s04m20m21-pw-08-after-conversion.png`.
+  - Browser resource timing included `/api/trpc/activity.deleteTemplate`,
+    `/api/trpc/activity.checkTemplateInfoAvailable`, and
+    `/api/trpc/activity.createActivityTemplate`.
+  - Temporary fixture cleanup verified
+    `{"action":"cleanup","liveQuizCount":0,"templateCount":0,"permissionCount":0}`.
+  - `agent-browser` was closed and branch-local backend/auth/manage processes
+    were stopped.
+
+Residual risk:
+
+- `ActivityType` is still imported from generated GraphQL ops in the two manage
+  modal prop boundaries because the surrounding activity overview still passes
+  generated enum values during coexistence. This is intentionally deferred to
+  S06 generated-type cleanup after active consumers are fully migrated.
+
+S04 status:
+
+- S04 non-realtime vertical migration work is complete. Pause here; do not start
+  S05 realtime or S06 GraphQL/Apollo cleanup without explicit user direction.
+
 ### 2026-06-05 Completed: S04M19 Manage Live Quiz Create From Template Mutation
 
 Status: complete for the scoped slice. Scope was the single
@@ -6675,9 +6801,8 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Implement S04E1: PWA participant identity and low-risk course reads.
-2. Keep PWA Apollo mounted for unmigrated flows.
-3. Use S04F/S04G/S04H for PWA mutations and activities.
-4. Move to manage read/write/reporting slices.
-5. Migrate realtime in S05.
-6. Request explicit S06 cleanup approval only after all active consumers and audits are clean.
+1. Pause after completed S04 non-realtime vertical migrations.
+2. Do not start S05 realtime migration or S06 GraphQL/Apollo cleanup until the
+   user explicitly resumes that scope.
+3. When resumed, begin with S05 realtime migration; request explicit S06 cleanup
+   approval only after active consumers and audits are clean.
