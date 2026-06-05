@@ -128,10 +128,7 @@ export function toManageCourseListItem(object: ManageCourseListObjectSource) {
   }
 }
 
-export function toActiveUserCourse(object: ActiveUserCourseObjectSource) {
-  const course = object.course
-  if (!course) return null
-
+function toActiveUserCourseBase(course: ActiveUserCourseSource) {
   return {
     id: course.id,
     name: course.name,
@@ -148,6 +145,15 @@ export function toActiveUserCourse(object: ActiveUserCourseObjectSource) {
     groupDeadlineDate: course.groupDeadlineDate,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
+  }
+}
+
+export function toActiveUserCourse(object: ActiveUserCourseObjectSource) {
+  const course = object.course
+  if (!course) return null
+
+  return {
+    ...toActiveUserCourseBase(course),
     isOwner: object.permissionLevel === PermissionLevel.OWNER,
     isManager:
       object.permissionLevel === PermissionLevel.OWNER ||
@@ -157,6 +163,20 @@ export function toActiveUserCourse(object: ActiveUserCourseObjectSource) {
       object.permissionLevel === PermissionLevel.ADMIN ||
       object.permissionLevel === PermissionLevel.WRITE,
     isShared: object.permissionLevel !== PermissionLevel.OWNER,
+  }
+}
+
+export function toActiveUserCourseWithoutPermissions(
+  course: ActiveUserCourseSource | null
+) {
+  if (!course) return null
+
+  return {
+    ...toActiveUserCourseBase(course),
+    isOwner: false,
+    isManager: false,
+    isEditor: false,
+    isShared: false,
   }
 }
 

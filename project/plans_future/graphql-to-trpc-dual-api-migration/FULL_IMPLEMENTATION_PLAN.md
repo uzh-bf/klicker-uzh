@@ -276,6 +276,68 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M14 Manage Activity Creation Active Course Read
+
+Status: complete for the scoped slice. Scope was the active-course read inside `ActivityCreation`, including the optional edit-mode activity context used to include the currently linked course when the user has write access to the edited activity. This slice intentionally leaves the other activity detail reads in `ActivityCreation`, the batch operations active-course read, activity mutations, Apollo provider cleanup, generated GraphQL type cleanup, realtime, and S06 cleanup live.
+
+Operation mapping:
+
+```text
+Slice: S04M14 Manage Activity Creation Active Course Read
+GraphQL operation(s): GetActiveUserCourses with optional activityId/activityType variables
+GraphQL resolver(s): Query.getActiveUserCourses
+Behavior source: packages/graphql/src/services/courses.ts getActiveUserCourses
+tRPC router.procedure: course.activeUserCourses
+Input schema: { activityId?: string | null; activityType?: ActivityType | null } | null
+Output DTO: { activeUserCourses: ActiveUserCourse[] }
+Active frontend consumers: apps/frontend-manage/src/components/activities/ActivityCreation.tsx
+Apollo cache/refetch/subscription behavior: cache-and-network read query; no cache writes, refetchQueries, polling, or subscriptions
+React Query replacement: trpc.course.activeUserCourses.useQuery(input)
+Browser verification path: branch-local manage app; delegated login; click Create live quiz so ActivityCreation mounts and verify /api/trpc/course.activeUserCourses
+Cleanup blocked until: batch-operations GetActiveUserCourses consumer, remaining ActivityCreation detail GraphQL reads, activity mutations, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Write scope:
+
+- `packages/api/src/trpc/dto/course.ts`
+- `packages/api/src/trpc/schemas/course.ts`
+- `packages/api/src/trpc/routers/course.ts`
+- `packages/api/src/trpc/__tests__/control-read.test.ts`
+- `apps/frontend-manage/src/components/activities/ActivityCreation.tsx`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Implementation notes:
+
+- Added `activeUserCoursesInput` with optional `activityId` and `activityType` to keep the no-argument S04M13 consumer compatible while supporting edit-mode activity context.
+- Added a shared active-course DTO base and `toActiveUserCourseWithoutPermissions` for the linked activity course GraphQL previously appended with all permission flags false.
+- Extended `course.activeUserCourses` to check `hasActivityPermission(..., WRITE)`, fetch the linked course for all four activity types, deduplicate it, and sort augmented results by `createdAt` descending to match `packages/graphql/src/services/courses.ts getActiveUserCourses`.
+- Replaced only `ActivityCreation`'s `GetActiveUserCoursesDocument` Apollo read with `trpc.course.activeUserCourses.useQuery(input)`. Other activity detail GraphQL reads in the same component intentionally remain live.
+- Added focused API tests for the activity-linked course augmentation path and the no-access short-circuit that must not fetch the activity course.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <touched files>` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- control-read` passed: 27 files, 278 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check` initially failed because `@klicker-uzh/api` dist types still exposed the old no-input router type; after the API build refreshed dist, rerun passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build` passed with existing Next/PWA/Browserslist/i18n/MISSING_MESSAGE and large-page-data warnings only.
+- Static audit passed: no `GetActiveUserCoursesDocument` or `GetActiveUserCourses` remains in `apps/frontend-manage/src/components/activities/ActivityCreation.tsx`.
+- Remaining frontend `GetActiveUserCoursesDocument` audit shows only `apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx`, as expected for a later slice.
+- Touched API files have no GraphQL runtime/type imports.
+- Browser verification used a branch-local stack on ports `3133` backend, `3134` manage, and `3136` auth. Screenshots: `/tmp/agent-browser-shots/s04m14-activity-creation-before.png`, `/tmp/agent-browser-shots/s04m14-login-retry.png`, and `/tmp/agent-browser-shots/s04m14-activity-creation-after.png`.
+- Browser resource timing showed `http://127.0.0.1:3133/api/trpc/course.activeUserCourses,user.profile?batch=1...` after opening the live-quiz creation wizard. `/api/graphql` also appeared for surrounding Apollo-backed calls that this slice intentionally leaves live.
+- Local auth gotcha: `apps/auth/.env.development` has no `DATABASE_URL`, so delegated login initially failed with `SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string`. Restarting auth with `DATABASE_URL` sourced from the existing ignored `apps/backend-docker/.env` allowed delegated `lecturer` login without editing env files.
+- Local verification cleanup closed `agent-browser`, stopped the local backend/auth/manage listeners, confirmed ports `3133`, `3134`, and `3136` were free, and left only the older pre-existing backend Rollup watcher `40246` untouched.
+
+Review / simplification:
+
+- Multi-agent review/simplification was not run because the exposed tool policy allows spawning subagents only when the user explicitly asks for them. Self-review kept the slice scoped to the existing course DTO/router patterns and removed one duplicate frontend mapping fragment before verification.
+
+Next candidate:
+
+- Migrate the remaining `GetActiveUserCoursesDocument` consumer in `apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx`, or continue into the template/activity creation mutation path such as `CreateLiveQuizFromTemplateDocument`.
+
 ### 2026-06-05 Completed: S04M13 Manage Live Quiz Template Settings Course Read
 
 Status: complete for the scoped slice. Scope was the live-quiz template settings read that populates the course selection while creating an activity from a template. This slice intentionally migrated only the no-argument `GetActiveUserCourses` usage in `LiveQuizTemplateSettings`; activity-specific active-course reads in activity creation / batch operations, create-from-template mutation, generated GraphQL type cleanup, Apollo providers, subscriptions, and S06 cleanup stay live.

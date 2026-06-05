@@ -6,6 +6,7 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import { ActivityType } from '@klicker-uzh/types'
 import { createHmac } from 'node:crypto'
 import { describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
@@ -359,6 +360,183 @@ describe('control read routers', () => {
         },
       },
     })
+  })
+
+  test('adds linked activity course when activity write access is valid', async () => {
+    const activeStartDate = new Date('2026-02-01T00:00:00.000Z')
+    const linkedStartDate = new Date('2026-04-01T00:00:00.000Z')
+    const activeEndDate = new Date('2026-08-01T00:00:00.000Z')
+    const linkedEndDate = new Date('2026-10-01T00:00:00.000Z')
+    const activeGroupDeadlineDate = new Date('2026-03-01T00:00:00.000Z')
+    const linkedGroupDeadlineDate = new Date('2026-05-01T00:00:00.000Z')
+    const activeUpdatedAt = new Date('2026-01-15T00:00:00.000Z')
+    const linkedUpdatedAt = new Date('2026-03-15T00:00:00.000Z')
+    const activeCourse = {
+      id: 'course-active',
+      name: 'Active Course',
+      displayName: 'Active Course',
+      color: '#0028a5',
+      pinCode: 123456789,
+      isArchived: false,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
+      isGroupCreationEnabled: true,
+      description: 'Active description',
+      startDate: activeStartDate,
+      endDate: activeEndDate,
+      groupDeadlineDate: activeGroupDeadlineDate,
+      createdAt: activeStartDate,
+      updatedAt: activeUpdatedAt,
+    }
+    const linkedCourse = {
+      id: 'course-linked',
+      name: 'Linked Course',
+      displayName: 'Linked Course',
+      color: '#dc6027',
+      pinCode: 987654321,
+      isArchived: false,
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      isGroupCreationEnabled: false,
+      description: 'Linked description',
+      startDate: linkedStartDate,
+      endDate: linkedEndDate,
+      groupDeadlineDate: linkedGroupDeadlineDate,
+      createdAt: linkedStartDate,
+      updatedAt: linkedUpdatedAt,
+    }
+    const userFindUnique = vi.fn().mockResolvedValue({
+      objects: [
+        {
+          course: activeCourse,
+          permissionLevel: PermissionLevel.OWNER,
+        },
+      ],
+    })
+    const derivedPermissionFindFirst = vi
+      .fn()
+      .mockResolvedValue({ id: 'permission-1' })
+    const liveQuizFindUnique = vi.fn().mockResolvedValue({
+      course: linkedCourse,
+    })
+    const prisma = {
+      user: {
+        findUnique: userFindUnique,
+      },
+      derivedPermission: {
+        findFirst: derivedPermissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.activeUserCourses({
+        activityId: 'live-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({
+      activeUserCourses: [
+        {
+          ...linkedCourse,
+          isOwner: false,
+          isManager: false,
+          isEditor: false,
+          isShared: false,
+        },
+        {
+          ...activeCourse,
+          isOwner: true,
+          isManager: true,
+          isEditor: true,
+          isShared: false,
+        },
+      ],
+    })
+
+    expect(derivedPermissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(liveQuizFindUnique).toHaveBeenCalledWith({
+      where: { id: 'live-1' },
+      select: {
+        course: {
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            color: true,
+            pinCode: true,
+            isArchived: true,
+            isGamificationEnabled: true,
+            isAssessmentEnabled: true,
+            isGroupCreationEnabled: true,
+            description: true,
+            startDate: true,
+            endDate: true,
+            groupDeadlineDate: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('does not fetch linked activity course without activity write access', async () => {
+    const userFindUnique = vi.fn().mockResolvedValue({
+      objects: [],
+    })
+    const derivedPermissionFindFirst = vi.fn().mockResolvedValue(null)
+    const liveQuizFindUnique = vi.fn()
+    const prisma = {
+      user: {
+        findUnique: userFindUnique,
+      },
+      derivedPermission: {
+        findFirst: derivedPermissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.activeUserCourses({
+        activityId: 'live-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({
+      activeUserCourses: [],
+    })
+
+    expect(derivedPermissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(liveQuizFindUnique).not.toHaveBeenCalled()
   })
 
   test('returns course activity ids grouped by activity type', async () => {

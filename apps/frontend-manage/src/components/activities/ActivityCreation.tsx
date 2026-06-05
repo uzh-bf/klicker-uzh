@@ -3,7 +3,6 @@ import {
   ActivityType,
   Course,
   Element,
-  GetActiveUserCoursesDocument,
   GetGroupActivityDocument,
   GetSingleLiveQuizDocument,
   GetSingleMicroLearningDocument,
@@ -16,6 +15,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
+import { trpc, type RouterInputs } from '../../lib/trpc'
 import GroupActivityWizard from './creation/groupActivity/GroupActivityWizard'
 import LiveQuizWizard from './creation/liveQuiz/LiveQuizWizard'
 import MicroLearningWizard from './creation/microLearning/MicroLearningWizard'
@@ -106,45 +106,27 @@ function ActivityCreation({
 
   // fetch all courses available to the user and the one linked to this activity (if not included in the former)
   const {
-    loading: loadingCourses,
+    isLoading: loadingCourses,
     error: errorCourses,
     data: dataCourses,
-  } = useQuery(GetActiveUserCoursesDocument, {
-    variables: {
-      activityId: typeof editMode !== 'undefined' ? activityId : undefined,
-      activityType: editMode,
-    },
-    fetchPolicy: 'cache-and-network',
-  })
+  } = trpc.course.activeUserCourses.useQuery({
+    activityId: typeof editMode !== 'undefined' ? activityId : undefined,
+    activityType: editMode,
+  } as RouterInputs['course']['activeUserCourses'])
 
   const courseSelection = useMemo(
     (): ElementSelectCourse[] =>
-      dataCourses?.getActiveUserCourses?.map(
-        (
-          course: Pick<
-            Course,
-            | 'id'
-            | 'name'
-            | 'isGamificationEnabled'
-            | 'isAssessmentEnabled'
-            | 'isGroupCreationEnabled'
-            | 'startDate'
-            | 'endDate'
-            | 'groupDeadlineDate'
-            | 'isManager'
-          >
-        ) => ({
-          label: course.name,
-          value: course.id,
-          isGamified: course.isGamificationEnabled,
-          isAssessmentEnabled: course.isAssessmentEnabled,
-          isGroupCreationEnabled: course.isGroupCreationEnabled,
-          startDate: course.startDate,
-          endDate: course.endDate,
-          groupDeadline: course.groupDeadlineDate,
-          isManager: course.isManager ?? false,
-        })
-      ) ?? [],
+      dataCourses?.activeUserCourses?.map((course) => ({
+        label: course.name,
+        value: course.id,
+        isGamified: course.isGamificationEnabled,
+        isAssessmentEnabled: course.isAssessmentEnabled,
+        isGroupCreationEnabled: course.isGroupCreationEnabled,
+        startDate: course.startDate,
+        endDate: course.endDate,
+        groupDeadline: course.groupDeadlineDate,
+        isManager: course.isManager ?? false,
+      })) ?? [],
     [dataCourses]
   )
 
