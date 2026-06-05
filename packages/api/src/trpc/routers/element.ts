@@ -3,6 +3,7 @@ import {
   ElementInstanceType,
   ElementStatus,
   ElementType,
+  ObjectAccess,
   ObjectType,
   PermissionLevel,
   Prisma,
@@ -21,6 +22,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
+  MISSING_CATALOG_COLLECTION_ID,
   processElementData,
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
@@ -809,7 +811,100 @@ async function hasAnswerCollectionReadAccess({
   return Boolean(permission)
 }
 
-async function manipulateElement(
+async function hasTemplateAnswerCollectionAccess({
+  prisma,
+  userId,
+  templateId,
+  answerCollectionId,
+}: {
+  prisma: PrismaTransactionClient
+  userId: string
+  templateId: string
+  answerCollectionId: number
+}) {
+  const template = await prisma.activityTemplate.findUnique({
+    where: { id: templateId },
+    include: {
+      answerCollections: { select: { id: true } },
+      liveQuiz: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+      practiceQuiz: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+      microLearning: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+      groupActivity: {
+        include: {
+          permissions: { where: { userId } },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: { permissions: { where: { userId } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (
+    !template?.answerCollections.some(
+      (collection) => collection.id === answerCollectionId
+    )
+  ) {
+    return false
+  }
+
+  const activity =
+    template.liveQuiz ??
+    template.practiceQuiz ??
+    template.microLearning ??
+    template.groupActivity
+
+  if (!activity) return false
+  if (activity.ownerId === userId) return true
+  if (activity.permissions.length > 0) return true
+
+  return activity.catalogAssignments.some(
+    (assignment) =>
+      assignment.access === ObjectAccess.PUBLIC &&
+      (assignment.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID ||
+        assignment.catalogCollection?.access === ObjectAccess.PUBLIC ||
+        (assignment.catalogCollection?.permissions.length ?? 0) > 0)
+  )
+}
+
+export async function manipulateElement(
   {
     id,
     status,
@@ -821,6 +916,7 @@ async function manipulateElement(
     basePoints,
     pointsMultiplier,
     tags,
+    templateId,
   }: ElementManipulationInput,
   ctx: TRPCContext & { user: { sub: string } }
 ) {
@@ -863,11 +959,18 @@ async function manipulateElement(
     (type === ElementType.SELECTION || type === ElementType.CASE_STUDY) &&
     options?.answerCollection
   ) {
-    const validAccess = await hasAnswerCollectionReadAccess({
-      prisma,
-      userId: ctx.user.sub,
-      answerCollectionId: options.answerCollection,
-    })
+    const validAccess = templateId
+      ? await hasTemplateAnswerCollectionAccess({
+          prisma,
+          userId: ctx.user.sub,
+          templateId,
+          answerCollectionId: options.answerCollection,
+        })
+      : await hasAnswerCollectionReadAccess({
+          prisma,
+          userId: ctx.user.sub,
+          answerCollectionId: options.answerCollection,
+        })
 
     if (!validAccess) return null
   }

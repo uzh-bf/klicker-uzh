@@ -280,6 +280,114 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-05 Completed: S04M19 Manage Live Quiz Create From Template Mutation
+
+Status: complete for the scoped slice. Scope was the single
+`CreateLiveQuizFromTemplateDocument` mutation in `LiveQuizTemplate`. This slice
+keeps template deletion/conversion, remaining generated GraphQL type imports,
+Apollo providers, GraphQL endpoint, subscriptions, codegen, and final cleanup
+live.
+
+Operation mapping:
+
+```text
+Slice: S04M19 Manage Live Quiz Create From Template Mutation
+GraphQL operation(s): CreateLiveQuizFromTemplate
+GraphQL resolver(s): Mutation.createLiveQuizFromTemplate with asUserFullAccess
+Behavior source: packages/graphql/src/services/templates.ts createLiveQuizFromTemplate
+tRPC router.procedure: activity.createLiveQuizFromTemplate
+Input schema: { templateId: string; name: string; displayName: string; description?: string | null; courseId?: string | null; isGamificationEnabled: boolean; blocks: TemplateBlockInput[] }
+Output DTO: { createLiveQuizFromTemplate: string | null }
+Active frontend consumers: apps/frontend-manage/src/components/activities/templates/LiveQuizTemplate.tsx
+Apollo cache/refetch/subscription behavior: no cache writes; caller removes local storage and redirects to /activities?highlight=<quizId> on success
+React Query replacement: trpc.activity.createLiveQuizFromTemplate.useMutation(); keep existing local-storage cleanup, success redirect, and error toast behavior
+Browser verification path: branch-local manage app; delegated login; open a live-quiz template page; complete or reuse processed template data; submit; verify /api/trpc/activity.createLiveQuizFromTemplate resource timing and redirect to highlighted activity
+Cleanup blocked until: remaining manage template deletion/conversion flows, generated GraphQL type cleanup, Apollo provider removal, realtime migration, and S06 cleanup gates
+```
+
+Completed write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/schemas/element.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/routers/element.ts`
+- `packages/api/src/trpc/__tests__/manage-template-create.test.ts`
+- `apps/frontend-manage/src/components/activities/templates/LiveQuizTemplate.tsx`
+- This plan file
+
+Implemented:
+
+- Added `activity.createLiveQuizFromTemplate` with a Zod input that mirrors the
+  GraphQL template block payload and returns `{ createLiveQuizFromTemplate }`.
+- Reused the GraphQL service behavior: inaccessible templates and unauthorized
+  valid course IDs return `null`; invalid course IDs are ignored; course
+  assessment and truthy course gamification behavior match GraphQL; transaction
+  failures still reject.
+- Exported the element manipulation helper and option schema fragments so the
+  template mutation can create new elements through the same tRPC-backed
+  element path when needed.
+- Extended answer-collection checks for template element creation to accept
+  answer collections attached to the accessible activity template.
+- Migrated `LiveQuizTemplate` from Apollo `useMutation` to
+  `trpc.activity.createLiveQuizFromTemplate.useMutation()` while preserving
+  local-storage cleanup, success redirect to `/activities?highlight=<quizId>`,
+  and error toast behavior.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/manage-template-create.test.ts`: passed; package script ran 291 API tests across 28 files.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after fixing the stale `creatingLiveQuiz` disabled-state reference.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/module-type, next-intl, Browserslist, `/qr/[...args] MISSING_MESSAGE`, and large-page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/backend-docker check`: passed.
+- Static audit `rg -n "CreateLiveQuizFromTemplateDocument|CreateLiveQuizFromTemplate\b" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n`: no matches.
+- Static audit confirmed only expected tRPC/procedure references for
+  `createLiveQuizFromTemplate`; S04 coexistence audits still show GraphQL
+  endpoint/generated/Apollo surfaces intentionally live until later cleanup
+  gates.
+- Browser verification used branch-local manage/auth/backend ports
+  `3134/3136/3133`, delegated login as `lecturer`, template fixture
+  `00000000-0000-4000-8000-000000000019`, and localStorage state with two
+  blocks / six existing elements.
+- Browser resource timing included
+  `http://127.0.0.1:3133/api/trpc/activity.createLiveQuizFromTemplate?batch=1`
+  and redirected to
+  `http://127.0.0.1:3134/activities?highlight=4b78ea55-b441-4255-8640-e68fd0706231`.
+- DB verification confirmed created quiz
+  `4b78ea55-b441-4255-8640-e68fd0706231` as `DRAFT`, name/display name
+  `S04M19 Created From Template`, template name `S04M19 Template Source`,
+  gamification `false`, assessment `false`.
+- Cleanup verification confirmed created quiz rows `0`, template fixture rows
+  `0`, temp permission rows `0`, and source live quiz restored to
+  `Live Quiz Instance Update|DRAFT`.
+- Screenshots:
+  `/tmp/agent-browser-shots/s04m19-01-template-page-before-localstorage.png`,
+  `/tmp/agent-browser-shots/s04m19-02-template-ready-submit.png`,
+  `/tmp/agent-browser-shots/s04m19-03-after-submit.png`.
+
+Review / simplification:
+
+- No subagents spawned. A subagent tool became discoverable, but its usage
+  policy requires explicit user authorization for delegation; local review was
+  used for this slice.
+- Local review focus: GraphQL parity for nullable returns and transaction
+  throws, frontend loading/error state, answer-collection authorization, and no
+  premature GraphQL/Apollo cleanup.
+
+Residual risk:
+
+- Browser verification used the existing-element template path. The new-element
+  branch is covered by shared `manipulateElement` tests and the template
+  answer-collection access helper, but not by a full browser creation of a new
+  template element.
+
+Next:
+
+- Candidate next slice: migrate manage activity-template deletion or activity
+  template creation/conversion flow. Keep generated GraphQL type cleanup,
+  Apollo provider removal, realtime, and S06 cleanup blocked until their gates.
+
 ### 2026-06-05 Completed: S04M18 Manage Template Edit Mutation
 
 Status: complete for the scoped slice. Scope was the single

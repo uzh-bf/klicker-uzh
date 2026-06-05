@@ -1,19 +1,16 @@
-import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faDeleteLeft,
   faDownLeftAndUpRightToCenter,
   faUpRightAndDownLeftFromCenter,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityTemplate,
-  CreateLiveQuizFromTemplateDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityTemplate } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H3, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import goToNextTemplateElement from './goToNextTemplateElement'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
 import LiveQuizTemplateSubmissionButton from './liveQuiz/LiveQuizTemplateSubmissionButton'
@@ -42,8 +39,8 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     useProcessLiveQuizTemplateBlocksData()
 
   // mutation for submission
-  const [createLiveQuizFromTemplate, { loading: creatingLiveQuiz }] =
-    useMutation(CreateLiveQuizFromTemplateDocument)
+  const createLiveQuizFromTemplate =
+    trpc.activity.createLiveQuizFromTemplate.useMutation()
 
   // reset modal and information toast if previous information was loaded into the template
   const [resetTemplatePrompt, setResetTemplatePrompt] = useState(false)
@@ -465,7 +462,9 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           <div className="flex flex-row gap-2">
             <Button
               destructive
-              disabled={creatingLiveQuiz || !initialTemplateFormData}
+              disabled={
+                createLiveQuizFromTemplate.isLoading || !initialTemplateFormData
+              }
               onClick={() => {
                 setResetTemplatePrompt(true)
               }}
@@ -478,7 +477,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
             </Button>
             <LiveQuizTemplateSubmissionButton
               quizData={quizData}
-              loading={creatingLiveQuiz}
+              loading={createLiveQuizFromTemplate.isLoading}
               onSubmit={async () => {
                 const inputsInvalid =
                   !quizData?.settingsProcessed ||
@@ -502,16 +501,14 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       data: quizData,
                     })
 
-                  const { data: res } = await createLiveQuizFromTemplate({
-                    variables: {
-                      templateId: template.id,
-                      name: quizData.name,
-                      displayName: quizData.displayName,
-                      description: quizData.description,
-                      courseId: quizData.courseId,
-                      isGamificationEnabled: quizData.isGamificationEnabled,
-                      blocks: processedBlocks,
-                    },
+                  const res = await createLiveQuizFromTemplate.mutateAsync({
+                    templateId: template.id,
+                    name: quizData.name,
+                    displayName: quizData.displayName,
+                    description: quizData.description,
+                    courseId: quizData.courseId,
+                    isGamificationEnabled: quizData.isGamificationEnabled,
+                    blocks: processedBlocks,
                   })
 
                   const quizId = res?.createLiveQuizFromTemplate

@@ -5,6 +5,14 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { ActivityType, SortByType } from '@klicker-uzh/types'
 import { z } from 'zod'
+import {
+  caseStudyOptionsInput,
+  choicesOptionsInput,
+  elementManipulationBaseInput,
+  freeTextOptionsInput,
+  numericalOptionsInput,
+  selectionOptionsInput,
+} from './element.js'
 
 export const userActivitiesInput = z.object({
   statusFilter: z.array(z.nativeEnum(PublicationStatus)).nullish(),
@@ -38,6 +46,39 @@ export const editActivityTemplateInput = activityDetailsInput.extend({
   name: z.string(),
   description: z.string(),
   instructions: z.string(),
+})
+
+const templateElementManipulationInput = elementManipulationBaseInput.extend({
+  type: z.nativeEnum(ElementType),
+  choicesOptions: choicesOptionsInput.nullish(),
+  numericalOptions: numericalOptionsInput.nullish(),
+  freeTextOptions: freeTextOptionsInput.nullish(),
+  selectionOptions: selectionOptionsInput.nullish(),
+  caseStudyOptions: caseStudyOptionsInput.nullish(),
+})
+
+const templateBlockElementInput = z.object({
+  order: z.number().int(),
+  useExistingElement: z.boolean(),
+  existingElementId: z.number().int().nullish(),
+  useNewElement: z.boolean(),
+  newElement: templateElementManipulationInput.nullish(),
+})
+
+export const createLiveQuizFromTemplateInput = z.object({
+  templateId: z.string(),
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string().nullish(),
+  courseId: z.string().nullish(),
+  isGamificationEnabled: z.boolean(),
+  blocks: z.array(
+    z.object({
+      timeLimit: z.number().int().nullish(),
+      order: z.number().int(),
+      elements: z.array(templateBlockElementInput),
+    })
+  ),
 })
 
 export const activityTemplateInput = z.object({

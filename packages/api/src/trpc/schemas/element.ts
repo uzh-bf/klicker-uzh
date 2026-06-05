@@ -37,7 +37,7 @@ const nullableInt = z.number().int().nullish()
 
 const tagNamesInput = z.array(z.string()).nullish()
 
-const elementManipulationBaseInput = z.object({
+export const elementManipulationBaseInput = z.object({
   id: z.number().int().nullish(),
   status: z.nativeEnum(ElementStatus).nullish(),
   name: nullableString,
@@ -55,14 +55,14 @@ const choiceInput = z.object({
   feedback: nullableString,
 })
 
-const choicesOptionsInput = z.object({
+export const choicesOptionsInput = z.object({
   hasSampleSolution: nullableBoolean,
   hasAnswerFeedbacks: nullableBoolean,
   displayMode: z.enum(['LIST', 'GRID']).nullish(),
   choices: z.array(choiceInput).nullish(),
 })
 
-const numericalOptionsInput = z.object({
+export const numericalOptionsInput = z.object({
   hasSampleSolution: nullableBoolean,
   accuracy: nullableInt,
   unit: nullableString,
@@ -84,7 +84,7 @@ const numericalOptionsInput = z.object({
   exactSolutions: z.array(z.number()).nullish(),
 })
 
-const freeTextOptionsInput = z.object({
+export const freeTextOptionsInput = z.object({
   hasSampleSolution: nullableBoolean,
   restrictions: z
     .object({
@@ -94,7 +94,7 @@ const freeTextOptionsInput = z.object({
   solutions: z.array(z.string()).nullish(),
 })
 
-const selectionOptionsInput = z.object({
+export const selectionOptionsInput = z.object({
   hasSampleSolution: nullableBoolean,
   answerCollection: nullableInt,
   numberOfInputs: nullableInt,
@@ -137,7 +137,7 @@ const caseStudyCaseInput = z.object({
   solutions: z.array(caseStudySolutionInput).nullish(),
 })
 
-const caseStudyOptionsInput = z.object({
+export const caseStudyOptionsInput = z.object({
   hasSampleSolution: nullableBoolean,
   answerCollection: nullableInt,
   collectionItemIds: z.array(z.number().int()).nullish(),
