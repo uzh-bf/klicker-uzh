@@ -68,6 +68,38 @@ export const SubscriptionObjectInput = SubscriptionObjectInputRef.implement({
   }),
 })
 
+export interface PushDeviceInputType {
+  token: string
+  platform: DB.PushDevicePlatform
+  provider?: DB.PushDeviceProvider | null
+  appId?: string | null
+  appVersion?: string | null
+  deviceId?: string | null
+  locale?: DB.Locale | null
+}
+
+export const PushDevicePlatform = builder.enumType('PushDevicePlatform', {
+  values: Object.values(DB.PushDevicePlatform),
+})
+
+export const PushDeviceProvider = builder.enumType('PushDeviceProvider', {
+  values: Object.values(DB.PushDeviceProvider),
+})
+
+export const PushDeviceInputRef =
+  builder.inputRef<PushDeviceInputType>('PushDeviceInput')
+export const PushDeviceInput = PushDeviceInputRef.implement({
+  fields: (t) => ({
+    token: t.string({ required: true }),
+    platform: t.field({ type: PushDevicePlatform, required: true }),
+    provider: t.field({ type: PushDeviceProvider, required: false }),
+    appId: t.string({ required: false }),
+    appVersion: t.string({ required: false }),
+    deviceId: t.string({ required: false }),
+    locale: t.field({ type: LocaleType, required: false }),
+  }),
+})
+
 export interface ILevel extends DB.Level {
   nextLevel?: ILevel | null
 }
@@ -296,6 +328,24 @@ export const PushSubscription = PushSubscriptionRef.implement({
     id: t.exposeInt('id'),
 
     endpoint: t.exposeString('endpoint', { nullable: false }),
+  }),
+})
+
+export const PushDeviceRef = builder.objectRef<DB.PushDevice>('PushDevice')
+export const PushDevice = PushDeviceRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    platform: t.expose('platform', { type: PushDevicePlatform }),
+    provider: t.expose('provider', { type: PushDeviceProvider }),
+    appId: t.exposeString('appId', { nullable: true }),
+    appVersion: t.exposeString('appVersion', { nullable: true }),
+    deviceId: t.exposeString('deviceId', { nullable: true }),
+    locale: t.expose('locale', { type: LocaleType, nullable: true }),
+    enabled: t.exposeBoolean('enabled'),
+    revokedAt: t.expose('revokedAt', { type: 'Date', nullable: true }),
+    lastSeenAt: t.expose('lastSeenAt', { type: 'Date' }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
 

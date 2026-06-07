@@ -599,7 +599,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 2 complete; ready to commit.
+Current: Slice 3 complete; ready to commit.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -626,7 +626,17 @@ Check: Android prod sync + release guard passed; generated prod config contains 
 Check: iOS prod `cap copy ios` + release guard passed; generated prod config contains only `.uzh.ch` app hosts.
 Check: `npx agent-browser` opened `http://localhost:3001/docs`; final screenshot saved at `/tmp/klicker-capacitor-docs-slice2-final.png`.
 Blocker: iOS full sync/native build still blocked by CocoaPods specs access and missing full Xcode/simctl; Android emulator build still blocked by missing Java runtime and emulator binary.
-Next: commit Slice 2, then start Slice 3 push device backend.
+Status: Slice 2 committed as `7ecfae497`.
+Status: Native push backend registration added: `PushDevice` Prisma model/migration, token hash uniqueness, participant relation, register/revoke GraphQL mutations, generated ops/schema/persisted query maps.
+Status: local review done. Finding: raw FCM/APNs tokens should not be unique-indexed directly; schema uses SHA-256 `tokenHash` and records the pattern in `AGENTS.md`.
+Status: simplification done. Kept native device registration global to the participant; did not add course-level notification preferences or a Firebase Admin dependency in this slice.
+Check: `pnpm --filter @klicker-uzh/prisma generate` passed.
+Check: `pnpm --filter @klicker-uzh/graphql generate` passed after rebuilding the stale Prisma dist.
+Check: `pnpm --filter @klicker-uzh/graphql exec vitest run test/pushDevices.test.ts` passed, 4 tests.
+Check: `pnpm --filter @klicker-uzh/graphql check` passed after building missing `@klicker-uzh/hatchet` dist.
+Check: `pnpm --filter @klicker-uzh/prisma check` passed.
+Blocker: actual FCM dispatch is not wired yet; it needs a Firebase Admin / Google OAuth credential decision and invalid-token handling in the send path.
+Next: commit Slice 3, then start Slice 4 native push frontend registration.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

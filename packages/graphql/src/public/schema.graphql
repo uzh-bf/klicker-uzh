@@ -1870,6 +1870,7 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  registerPushDevice(device: PushDeviceInput!): PushDevice
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
@@ -1882,6 +1883,7 @@ type Mutation {
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  revokePushDevice(token: String!): Boolean
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
@@ -2307,6 +2309,42 @@ enum PublicationStatus {
   PUBLISHED
   SCHEDULED
   TEMPLATE
+}
+
+type PushDevice {
+  appId: String
+  appVersion: String
+  createdAt: Date!
+  deviceId: String
+  enabled: Boolean!
+  id: ID!
+  lastSeenAt: Date!
+  locale: LocaleType
+  platform: PushDevicePlatform!
+  provider: PushDeviceProvider!
+  revokedAt: Date
+  updatedAt: Date!
+}
+
+input PushDeviceInput {
+  appId: String
+  appVersion: String
+  deviceId: String
+  locale: LocaleType
+  platform: PushDevicePlatform!
+  provider: PushDeviceProvider
+  token: String!
+}
+
+enum PushDevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
+enum PushDeviceProvider {
+  FCM
+  WEB_PUSH
 }
 
 type PushSubscription {

@@ -3,6 +3,17 @@ enum InvitationStatus {
   ACCEPTED
 }
 
+enum PushDevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum PushDeviceProvider {
+  FCM
+  WEB_PUSH
+}
+
 model ParticipantInvitation {
   id Int @id @default(autoincrement())
 
@@ -78,6 +89,7 @@ model Participant {
   elementFeedbacks                ElementFeedback[]
   leaderboards                    LeaderboardEntry[]
   subscriptions                   PushSubscription[]
+  pushDevices                     PushDevice[]
   clueAssignments                 GroupActivityClueAssignment[]
   awards                          AwardEntry[]
   achievements                    ParticipantAchievementInstance[]
@@ -255,4 +267,33 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@unique([participantId, courseId, endpoint])
+}
+
+model PushDevice {
+  id String @id @default(uuid()) @db.Uuid
+
+  platform PushDevicePlatform
+  provider PushDeviceProvider @default(FCM)
+
+  token     String
+  tokenHash String @unique @db.VarChar(64)
+
+  appId      String?
+  appVersion String?
+  deviceId   String?
+  locale     Locale?
+
+  enabled  Boolean   @default(true)
+  revokedAt DateTime?
+  lastSeenAt DateTime @default(now())
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, provider, deviceId])
+  @@index([participantId, enabled])
+  @@index([provider, platform, enabled])
 }

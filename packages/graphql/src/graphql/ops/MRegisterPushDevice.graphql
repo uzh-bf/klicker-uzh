@@ -1,0 +1,14 @@
+mutation RegisterPushDevice($device: PushDeviceInput!) {
+  registerPushDevice(device: $device) {
+    id
+    platform
+    provider
+    appId
+    appVersion
+    deviceId
+    locale
+    enabled
+    lastSeenAt
+    revokedAt
+  }
+}

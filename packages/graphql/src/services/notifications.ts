@@ -1,6 +1,8 @@
 // import webpush, { WebPushError } from 'web-push'
+import * as DB from '@klicker-uzh/prisma/client'
 import { HatchetHandlers } from '@klicker-uzh/types'
 import axios from 'axios'
+import { createHash } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 
 interface SubscriptionObjectInput {
@@ -78,6 +80,116 @@ export async function unsubscribeFromPush(
     )
     return false
   }
+}
+
+export interface RegisterPushDeviceArgs {
+  token: string
+  platform: DB.PushDevicePlatform
+  provider?: DB.PushDeviceProvider | null
+  appId?: string | null
+  appVersion?: string | null
+  deviceId?: string | null
+  locale?: DB.Locale | null
+}
+
+interface RevokePushDeviceArgs {
+  token: string
+}
+
+export function getPushDeviceTokenHash(token: string) {
+  return createHash('sha256').update(token).digest('hex')
+}
+
+function normalizePushDeviceString(value?: string | null) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
+export async function registerPushDevice(
+  args: RegisterPushDeviceArgs,
+  ctx: ContextWithUser
+) {
+  const token = normalizePushDeviceString(args.token)
+
+  if (!token) {
+    throw new Error('Push device token is required.')
+  }
+
+  const now = new Date()
+  const provider = args.provider ?? DB.PushDeviceProvider.FCM
+  const tokenHash = getPushDeviceTokenHash(token)
+  const deviceId = normalizePushDeviceString(args.deviceId)
+
+  if (deviceId) {
+    await ctx.prisma.pushDevice.updateMany({
+      where: {
+        participantId: ctx.user.sub,
+        provider,
+        deviceId,
+        tokenHash: { not: tokenHash },
+      },
+      data: {
+        enabled: false,
+        revokedAt: now,
+        lastSeenAt: now,
+      },
+    })
+  }
+
+  return ctx.prisma.pushDevice.upsert({
+    where: { tokenHash },
+    create: {
+      token,
+      tokenHash,
+      platform: args.platform,
+      provider,
+      appId: normalizePushDeviceString(args.appId),
+      appVersion: normalizePushDeviceString(args.appVersion),
+      deviceId,
+      locale: args.locale ?? null,
+      enabled: true,
+      lastSeenAt: now,
+      participant: { connect: { id: ctx.user.sub } },
+    },
+    update: {
+      token,
+      platform: args.platform,
+      provider,
+      appId: normalizePushDeviceString(args.appId),
+      appVersion: normalizePushDeviceString(args.appVersion),
+      deviceId,
+      locale: args.locale ?? null,
+      enabled: true,
+      revokedAt: null,
+      lastSeenAt: now,
+      participant: { connect: { id: ctx.user.sub } },
+    },
+  })
+}
+
+export async function revokePushDevice(
+  { token }: RevokePushDeviceArgs,
+  ctx: ContextWithUser
+) {
+  const normalizedToken = normalizePushDeviceString(token)
+
+  if (!normalizedToken) {
+    return false
+  }
+
+  const result = await ctx.prisma.pushDevice.updateMany({
+    where: {
+      participantId: ctx.user.sub,
+      tokenHash: getPushDeviceTokenHash(normalizedToken),
+      enabled: true,
+    },
+    data: {
+      enabled: false,
+      revokedAt: new Date(),
+    },
+  })
+
+  return result.count > 0
 }
 
 //TODO: how to address translation of the message when switching to multi language support?

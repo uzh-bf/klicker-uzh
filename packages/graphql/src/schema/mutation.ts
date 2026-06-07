@@ -58,6 +58,8 @@ import {
   ParticipantLearningData,
   ParticipantTokenData,
   Participation,
+  PushDevice,
+  PushDeviceInput,
   SubscriptionObjectInput,
 } from './participant.js'
 import {
@@ -475,6 +477,30 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await NotificationService.unsubscribeFromPush(args, ctx)
+        },
+      }),
+
+      registerPushDevice: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PushDevice,
+        args: {
+          device: t.arg({
+            type: PushDeviceInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await NotificationService.registerPushDevice(args.device, ctx)
+        },
+      }),
+
+      revokePushDevice: t.withAuth(asParticipant).boolean({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await NotificationService.revokePushDevice(args, ctx)
         },
       }),
 
