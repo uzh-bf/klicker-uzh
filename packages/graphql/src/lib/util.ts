@@ -15,6 +15,11 @@ dayjs.extend(utc)
 dayjs.extend(minMax)
 dayjs.extend(timezone)
 
+type StackOrderingResponse = Pick<
+  QuestionResponse,
+  'correctCount' | 'correctCountStreak' | 'lastCorrectAt' | 'nextDueAt'
+>
+
 // shuffle an array and return a new copy
 export function shuffle<T>(array: Array<T>): Array<T> {
   const a = [...array]
@@ -52,7 +57,7 @@ export function formatDate(dateTime: Date) {
 
 export const orderStacks = (
   stacks: (ElementStack & {
-    elements: (ElementInstance & { responses?: QuestionResponse[] })[]
+    elements: (ElementInstance & { responses?: StackOrderingResponse[] })[]
   })[]
 ) =>
   sort(stacks, (stackA, stackB) => {
@@ -101,7 +106,7 @@ export const orderStacks = (
   })
 
 const findEarliestDueDate = (
-  stackResponses: (QuestionResponse | undefined)[]
+  stackResponses: (StackOrderingResponse | undefined)[]
 ) => {
   return dayjs
     .min(

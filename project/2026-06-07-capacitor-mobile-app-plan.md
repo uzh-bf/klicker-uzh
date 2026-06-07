@@ -599,7 +599,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 4 complete; ready for Slice 5.
+Current: Slice 5 complete; ready for Slice 6.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -651,7 +651,19 @@ Check: Android prod sync + release guard passed.
 Check: iOS prod `cap copy ios` + release guard passed using Node 26 for Capacitor CLI.
 Check: `npx agent-browser` opened `http://localhost:3001/docs`; final screenshot saved at `/tmp/klicker-capacitor-slice4-docs-final-reviewed.png`.
 Blocker: real native push token registration still needs working Android/iOS emulator or device plus Firebase/APNs credentials; local full emulator status unchanged from Slice 1/2 blockers.
-Next: commit Slice 4, then start Slice 5 practice download API.
+Status: Slice 4 committed as `22174e8d9`.
+Status: Slice 5 practice download API added: participant-only `practiceQuizDownloadSnapshot`, metadata (`schemaVersion`, `quizRevision`, `downloadedAt`, `validUntil`), existing `PracticeQuizData` with solutions, and generated persisted operation.
+Status: Slice 5 authorization guard requires published, not deleted, non-assessment practice quiz, non-assessment course, and active participant enrollment.
+Status: Slice 5 asset manifest extracts allowlisted `http(s)` and root-relative media URLs from rendered markdown fields: quiz/stack descriptions, element content/explanation, choice values/feedback, and case descriptions.
+Status: correctness review done by Boyle. Fixed missing choice-value assets and switched URL filtering from denylist to allowlist. Broad `PracticeQuiz` snapshot object kept deliberately because this slice reuses existing schema/fragment and exposes only GraphQL-defined fields.
+Status: simplification review done by Zeno. Narrowed manifest scanning to known rendered text fields, selected only response fields needed for spaced-repetition ordering, and loosened brittle full Prisma query test assertions.
+Check: `pnpm --filter @klicker-uzh/graphql generate` passed.
+Check: `pnpm --filter @klicker-uzh/graphql exec vitest run test/practiceQuizDownloadSnapshot.test.ts` passed, 3 tests.
+Check: `pnpm --filter @klicker-uzh/graphql check` passed.
+Check: `pnpm exec prettier --check ...` on touched hand-written files passed.
+Check: `git diff --check` passed.
+Blocker: no full offline/emulator E2E yet; this slice is backend API + generated operation only. Device/offline verification starts in Slice 6/7 after frontend store and response adapter exist.
+Next: commit Slice 5, then start Slice 6 offline practice store.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

@@ -223,6 +223,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Native push token storage**: `packages/prisma/src/prisma/schema/participant.prisma` stores native push devices with raw `token` plus unique SHA-256 `tokenHash`; do not add a unique index on raw FCM/APNs token text, because token length is unbounded enough to be a poor database index key.
 - **Capacitor native UI and SSR**: In `apps/frontend-pwa`, derive Capacitor-native availability after mount (for example in `useEffect`) and keep native APIs in effects or user actions. Rendering native-only UI from `Capacitor.getPlatform()` during SSR/client initial render can create hydration mismatches.
 - **Native push local state**: Keep Capacitor push opt-in/token localStorage keys scoped by participant id in `apps/frontend-pwa/src/lib/nativePush.ts`; global opt-in state can make the next participant on a shared device inherit notification consent.
+- **Offline practice asset manifest**: `packages/graphql/src/services/practiceQuizzes.ts` only admits `http(s)` and single-slash root-relative media URLs into download manifests. Include assets from rendered markdown fields such as element content, explanations, choice values/feedback, and case descriptions; never add custom-scheme or filesystem URLs.
 - **Chat Vitest alias resolution**: `apps/chat/vitest.config.ts` mirrors the app `@/*` alias from `apps/chat/tsconfig.json`; keep this in sync when adding client tests for modules that import from `@/src/...`.
 
 ## Factory Skills (AI Assistance)

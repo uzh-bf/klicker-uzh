@@ -234,6 +234,7 @@
    "GetParticipation": "022c93b46aabd3a5f5376fc5870bb427343c98211d7d38364cee97e5016896a5",
    "GetPracticeCourses": "2002f1c020618cb9363909a9c4049d69b2a4ac93ab6e4db2e5b15a35222eeb18",
    "GetPracticeQuiz": "73ef72a42a30782fc8c7c2889b9b5ffda10ed4bce12a8221c959f56a333a7c87",
+   "GetPracticeQuizDownloadSnapshot": "913018b426622e10a273fe634da441a7fe36c82e00c9c408e4dceafeeeb3aa5e",
    "GetPracticeQuizEvaluation": "14d6405c5bb2833510ba20cb99111fd8589fa5e353fb5c77f2fb77252f102509",
    "GetPracticeQuizList": "7a5a039ecdd864a6e0cf0e18c5ad2a2c87ad610aa3cf286e746cac1ae444b85d",
    "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",

@@ -1,0 +1,12 @@
+query GetPracticeQuizDownloadSnapshot($id: String!) {
+  practiceQuizDownloadSnapshot(id: $id) {
+    schemaVersion
+    quizRevision
+    downloadedAt
+    validUntil
+    assetManifest
+    quiz {
+      ...PracticeQuizData
+    }
+  }
+}

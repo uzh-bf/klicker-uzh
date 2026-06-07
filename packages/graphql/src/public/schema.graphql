@@ -2302,6 +2302,15 @@ type PracticeQuiz {
   updatedAt: Date
 }
 
+type PracticeQuizDownloadSnapshot {
+  assetManifest: [String!]!
+  downloadedAt: Date!
+  quiz: PracticeQuiz!
+  quizRevision: String!
+  schemaVersion: Int!
+  validUntil: Date!
+}
+
 enum PublicationStatus {
   DRAFT
   ENDED
@@ -2449,6 +2458,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
+  practiceQuizDownloadSnapshot(id: String!): PracticeQuizDownloadSnapshot
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant

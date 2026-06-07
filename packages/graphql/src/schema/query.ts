@@ -89,6 +89,7 @@ import {
   ActivitySummary,
   ElementStack,
   PracticeQuiz,
+  PracticeQuizDownloadSnapshot,
   PublicationStatus,
   ReviewStatus,
   StackFeedback,
@@ -586,6 +587,18 @@ export const Query = builder.queryType({
         args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await PracticeQuizService.getPracticeQuizData(args, ctx)
+        },
+      }),
+
+      practiceQuizDownloadSnapshot: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PracticeQuizDownloadSnapshot,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await PracticeQuizService.getPracticeQuizDownloadSnapshot(
+            args,
+            ctx
+          )
         },
       }),
 

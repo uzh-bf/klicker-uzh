@@ -19,6 +19,116 @@ import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
+const OFFLINE_PRACTICE_SCHEMA_VERSION = 1
+const OFFLINE_PRACTICE_VALIDITY_DAYS = 30
+const MEDIA_ASSET_EXTENSION_PATTERN =
+  /\.(?:avif|bmp|gif|jpeg|jpg|m4a|mp3|mp4|ogg|pdf|png|svg|tiff|wav|webm|webp)(?:[?#].*)?$/i
+
+function isAllowedAssetUrl(url: string) {
+  if (url.startsWith('/') && !url.startsWith('//')) return true
+
+  try {
+    const parsedUrl = new URL(url)
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function addAssetUrl(url: string, assetUrls: Set<string>) {
+  const normalizedUrl = url.trim().replace(/^<|>$/g, '')
+
+  if (
+    !normalizedUrl ||
+    normalizedUrl.startsWith('#') ||
+    !isAllowedAssetUrl(normalizedUrl) ||
+    !MEDIA_ASSET_EXTENSION_PATTERN.test(normalizedUrl)
+  ) {
+    return
+  }
+
+  assetUrls.add(normalizedUrl)
+}
+
+function collectAssetUrlsFromText(text: string, assetUrls: Set<string>) {
+  const markdownUrlPattern = /!?\[[^\]]*]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g
+  const htmlSourceUrlPattern = /\b(?:poster|src)=["']([^"']+)["']/gi
+  const directMediaUrlPattern =
+    /(?:https?:\/\/|\/)[^\s"'<>)]*\.(?:avif|bmp|gif|jpeg|jpg|m4a|mp3|mp4|ogg|pdf|png|svg|tiff|wav|webm|webp)(?:[?#][^\s"'<>)]*)?/gi
+
+  for (const match of text.matchAll(markdownUrlPattern)) {
+    if (match[1]) addAssetUrl(match[1], assetUrls)
+  }
+
+  for (const match of text.matchAll(htmlSourceUrlPattern)) {
+    if (match[1]) addAssetUrl(match[1], assetUrls)
+  }
+
+  for (const match of text.matchAll(directMediaUrlPattern)) {
+    if (match[0]) addAssetUrl(match[0], assetUrls)
+  }
+}
+
+function collectAssetUrls(value: unknown, assetUrls: Set<string>) {
+  if (typeof value === 'string') {
+    collectAssetUrlsFromText(value, assetUrls)
+  }
+}
+
+function collectElementAssetUrls(elementData: unknown, assetUrls: Set<string>) {
+  if (!elementData || typeof elementData !== 'object') return
+
+  const { content, explanation, options } = elementData as Record<
+    string,
+    unknown
+  >
+
+  collectAssetUrls(content, assetUrls)
+  collectAssetUrls(explanation, assetUrls)
+
+  if (!options || typeof options !== 'object') return
+
+  const { cases, choices } = options as Record<string, unknown>
+
+  if (Array.isArray(cases)) {
+    for (const item of cases) {
+      if (!item || typeof item !== 'object') continue
+      collectAssetUrls((item as Record<string, unknown>).description, assetUrls)
+    }
+  }
+
+  if (Array.isArray(choices)) {
+    for (const item of choices) {
+      if (!item || typeof item !== 'object') continue
+      const choice = item as Record<string, unknown>
+      collectAssetUrls(choice.value, assetUrls)
+      collectAssetUrls(choice.feedback, assetUrls)
+    }
+  }
+}
+
+export function collectPracticeQuizAssetManifest(
+  quiz: Pick<DB.PracticeQuiz, 'description'> & {
+    stacks?: ({ description?: string | null } & {
+      elements?: { elementData: unknown }[]
+    })[]
+  }
+) {
+  const assetUrls = new Set<string>()
+
+  collectAssetUrls(quiz.description, assetUrls)
+
+  for (const stack of quiz.stacks ?? []) {
+    collectAssetUrls(stack.description, assetUrls)
+
+    for (const element of stack.elements ?? []) {
+      collectElementAssetUrls(element.elementData, assetUrls)
+    }
+  }
+
+  return [...assetUrls].sort()
+}
+
 export async function getPracticeQuizData(
   { id }: { id: string },
   ctx: Context
@@ -79,6 +189,74 @@ export async function getPracticeQuizData(
   }
 
   return { ...quiz, isOwner }
+}
+
+export async function getPracticeQuizDownloadSnapshot(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.practiceQuiz.findFirst({
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      isAssessmentEnabled: false,
+      course: {
+        isAssessmentEnabled: false,
+        participations: {
+          some: { participantId: ctx.user.sub, isActive: true },
+        },
+      },
+    },
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            include: {
+              responses: {
+                where: { participantId: ctx.user.sub },
+                select: {
+                  correctCount: true,
+                  correctCountStreak: true,
+                  lastCorrectAt: true,
+                  nextDueAt: true,
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!quiz) return null
+
+  const orderedStacks =
+    quiz.orderType === DB.ElementOrderType.SPACED_REPETITION
+      ? orderStacks(quiz.stacks)
+      : quiz.stacks
+  const downloadedAt = new Date()
+
+  return {
+    schemaVersion: OFFLINE_PRACTICE_SCHEMA_VERSION,
+    quizRevision: `${quiz.id}:${quiz.updatedAt.toISOString()}`,
+    downloadedAt,
+    validUntil: dayjs(downloadedAt)
+      .add(OFFLINE_PRACTICE_VALIDITY_DAYS, 'day')
+      .toDate(),
+    assetManifest: collectPracticeQuizAssetManifest({
+      ...quiz,
+      stacks: orderedStacks,
+    }),
+    quiz: {
+      ...quiz,
+      stacks: orderedStacks,
+      numOfStacks: orderedStacks.length,
+    },
+  }
 }
 
 export async function getPracticeQuizEvaluation(

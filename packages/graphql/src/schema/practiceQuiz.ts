@@ -228,6 +228,30 @@ export const PracticeQuiz = PracticeQuizRef.implement({
   }),
 })
 
+export interface IPracticeQuizDownloadSnapshot {
+  schemaVersion: number
+  quizRevision: string
+  downloadedAt: Date
+  validUntil: Date
+  assetManifest: string[]
+  quiz: IPracticeQuiz
+}
+export const PracticeQuizDownloadSnapshotRef =
+  builder.objectRef<IPracticeQuizDownloadSnapshot>(
+    'PracticeQuizDownloadSnapshot'
+  )
+export const PracticeQuizDownloadSnapshot =
+  PracticeQuizDownloadSnapshotRef.implement({
+    fields: (t) => ({
+      schemaVersion: t.exposeInt('schemaVersion'),
+      quizRevision: t.exposeString('quizRevision'),
+      downloadedAt: t.expose('downloadedAt', { type: 'Date' }),
+      validUntil: t.expose('validUntil', { type: 'Date' }),
+      assetManifest: t.exposeStringList('assetManifest'),
+      quiz: t.expose('quiz', { type: PracticeQuizRef }),
+    }),
+  })
+
 export interface IActivitySummary {
   numOfResponses: number
   numOfAnonymousResponses: number
