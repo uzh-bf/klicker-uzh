@@ -599,7 +599,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 1 complete; ready to commit.
+Current: Slice 2 complete; ready to commit.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -615,7 +615,18 @@ Check: Android prod sync + release guard passed.
 Check: iOS dev sync copied assets/config and found plugins, then failed at `pod install` due CocoaPods CDN TLS EOF.
 Check: iOS prod `cap copy ios` + release guard passed.
 Blocker: full emulator/native build verification blocked locally: no full Xcode/simctl, no Java runtime, no Android emulator binary; CocoaPods 1.16.2 present but specs fetch failed.
-Next: commit Slice 1, then start Slice 2 push registration bridge.
+Status: Slice 1 committed as `572782ecb`.
+Status: Native hardening added: environment-specific WebView navigation allowlist, native `appUrlOpen` handler, app resource links, iOS privacy manifest, and mobile build/release docs.
+Status: local review done. Finding: prod `allowNavigation` must not include dev `.com` hosts; changed allowlist to derive from selected `server.url`.
+Status: simplification done. Kept external link behavior on Capacitor defaults plus `target="_blank"` instead of adding a Browser plugin; kept deep-link parsing local to `_app.tsx`.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa build` passed.
+Check: Android dev sync passed; release guard intentionally failed against the dev-generated config because it contained `https://pwa.klicker.com`.
+Check: Android prod sync + release guard passed; generated prod config contains only `pwa.klicker.uzh.ch` and `assessment.klicker.uzh.ch` in `allowNavigation`.
+Check: iOS prod `cap copy ios` + release guard passed; generated prod config contains only `.uzh.ch` app hosts.
+Check: `npx agent-browser` opened `http://localhost:3001/docs`; final screenshot saved at `/tmp/klicker-capacitor-docs-slice2-final.png`.
+Blocker: iOS full sync/native build still blocked by CocoaPods specs access and missing full Xcode/simctl; Android emulator build still blocked by missing Java runtime and emulator binary.
+Next: commit Slice 2, then start Slice 3 push device backend.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

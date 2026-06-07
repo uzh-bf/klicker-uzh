@@ -685,6 +685,8 @@ In general, it is also possible to participate anonymously in all activities of 
 \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Practice quizzes and microlearnings are available via direct links provided by lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. Without a KlickerUZH account, your participation in embedded activities will remain anonymous.
 `,
       appSetupTitle: 'App Installation',
+      appLinksTitle: 'App resources',
+      supportEmail: 'Support email',
       appSetup: `
 In order to be able to access KlickerUZH from anywhere, we offer a KlickerUZH mobile application. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (challenge). In addition, you can activate the push notifications for microlearning in your courses.
 

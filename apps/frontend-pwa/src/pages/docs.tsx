@@ -2,6 +2,7 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { H3, TabContent, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import Layout from '../components/Layout'
 
 function StudentDocs() {
@@ -83,6 +84,31 @@ function StudentDocs() {
           </TabContent>
         </div>
       </Tabs>
+      <nav
+        aria-label={t('pwa.studentDocs.appLinksTitle')}
+        className="mx-auto mt-4 flex w-full max-w-5xl flex-col gap-2 text-sm text-slate-700 sm:flex-row sm:items-center sm:gap-4"
+      >
+        <span className="font-semibold">
+          {t('pwa.studentDocs.appLinksTitle')}
+        </span>
+        <a
+          href={t('auth.privacyUrl')}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary-80 hover:underline"
+        >
+          {t('auth.privacyPolicy')}
+        </a>
+        <a
+          href="mailto:klicker@df.uzh.ch"
+          className="text-primary-80 hover:underline"
+        >
+          {t('pwa.studentDocs.supportEmail')}
+        </a>
+        <Link href="/editProfile" className="text-primary-80 hover:underline">
+          {t('pwa.profile.deleteProfile')}
+        </Link>
+      </nav>
     </Layout>
   )
 }

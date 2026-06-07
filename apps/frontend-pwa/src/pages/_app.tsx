@@ -1,4 +1,6 @@
 import { ApolloProvider } from '@apollo/client'
+import type { URLOpenListenerEvent } from '@capacitor/app'
+import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import {
   ActionPerformed,
@@ -24,9 +26,32 @@ config.autoAddCss = false
 
 const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
+const KLICKER_APP_HOSTS = new Set([
+  'pwa.klicker.com',
+  'assessment.klicker.com',
+  'pwa.klicker.uzh.ch',
+  'assessment.klicker.uzh.ch',
+])
+
+function getInternalKlickerPath(url: string) {
+  try {
+    const parsedUrl = new URL(url)
+
+    if (!KLICKER_APP_HOSTS.has(parsedUrl.hostname)) {
+      return null
+    }
+
+    const pathname = parsedUrl.pathname.replace(/^\/+/, '/')
+
+    return `${pathname}${parsedUrl.search}${parsedUrl.hash}`
+  } catch {
+    return null
+  }
+}
 
 function App({ Component, pageProps }: AppProps) {
-  const { locale } = useRouter()
+  const router = useRouter()
+  const { locale } = router
 
   const apolloClient = useApollo(pageProps)
 
@@ -77,6 +102,38 @@ function App({ Component, pageProps }: AppProps) {
       )
     }
   }, [])
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      return
+    }
+
+    let listenerHandle: { remove: () => Promise<void> } | undefined
+    let removed = false
+
+    void CapacitorApp.addListener(
+      'appUrlOpen',
+      (event: URLOpenListenerEvent) => {
+        const path = getInternalKlickerPath(event.url)
+
+        if (path) {
+          void router.push(path)
+        }
+      }
+    ).then((handle) => {
+      if (removed) {
+        void handle.remove()
+        return
+      }
+
+      listenerHandle = handle
+    })
+
+    return () => {
+      removed = true
+      void listenerHandle?.remove()
+    }
+  }, [router])
 
   // ensure locale is one of the supported locales
   const validLocale = routing.locales.includes(locale as Locale)
