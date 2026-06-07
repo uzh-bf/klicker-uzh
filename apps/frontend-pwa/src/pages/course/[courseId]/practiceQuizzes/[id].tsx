@@ -67,11 +67,9 @@ import {
   GetPracticeQuizDocument,
   PublicationStatus,
   StackFeedbackStatus,
-  type GetPracticeQuizQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
-import type { KlickerChatContext } from '@klicker-uzh/types'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -88,6 +86,7 @@ import Layout, {
 import { CourseChatDrawer } from '../../../../components/chatbot/CourseChatDrawer'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
+import { buildPracticeQuizChatContext } from '../../../../lib/chatbot/chatContext'
 
 const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
 const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
@@ -449,135 +448,4 @@ function readStoredCompletion(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
-}
-
-type PracticeQuizForChatContext = NonNullable<
-  GetPracticeQuizQuery['practiceQuiz']
->
-
-function buildPracticeQuizChatContext({
-  courseId,
-  currentIx,
-  locale,
-  practiceQuiz,
-  totalSteps,
-}: {
-  courseId: string
-  currentIx: number
-  locale: string
-  practiceQuiz: PracticeQuizForChatContext | null
-  totalSteps: number
-}): KlickerChatContext {
-  const stack = currentIx >= 0 ? practiceQuiz?.stacks?.[currentIx] : undefined
-  const firstElement = stack?.elements?.[0]
-  const contentPreview = toContentPreview(firstElement?.elementData.content)
-
-  return {
-    version: 1,
-    source: 'pwa',
-    surface: 'practice-quiz',
-    locale,
-    courseId,
-    activity: practiceQuiz
-      ? {
-          type: 'practiceQuiz',
-          id: practiceQuiz.id,
-          displayName: practiceQuiz.displayName,
-        }
-      : undefined,
-    question: stack
-      ? {
-          stackId: String(stack.id),
-          elementInstanceId: firstElement?.id,
-          type: firstElement?.elementData.type ?? firstElement?.elementType,
-          contentPreview,
-          currentStep: currentIx + 1,
-          totalSteps,
-        }
-      : undefined,
-  }
-}
-
-function toContentPreview(
-  value: string | null | undefined
-): string | undefined {
-  if (!value) return undefined
-
-  const preview = stripHtmlTags(stripMarkdownImagesAndLinks(value))
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!preview) return undefined
-  return preview.length > 500 ? `${preview.slice(0, 497)}...` : preview
-}
-
-function stripMarkdownImagesAndLinks(value: string): string {
-  let output = ''
-  let index = 0
-
-  while (index < value.length) {
-    const char = value.charAt(index)
-
-    if (char === '!' && value.charAt(index + 1) === '[') {
-      const bounds = getMarkdownLinkBounds(value, index + 2)
-
-      if (bounds) {
-        index = bounds.urlEnd + 1
-        continue
-      }
-    }
-
-    if (char === '[') {
-      const bounds = getMarkdownLinkBounds(value, index + 1)
-
-      if (bounds) {
-        output += value.slice(index + 1, bounds.labelEnd)
-        index = bounds.urlEnd + 1
-        continue
-      }
-    }
-
-    output += char
-    index += 1
-  }
-
-  return output
-}
-
-function getMarkdownLinkBounds(
-  value: string,
-  labelStart: number
-): { labelEnd: number; urlEnd: number } | null {
-  const labelEnd = value.indexOf(']', labelStart)
-
-  if (labelEnd < 0 || value.charAt(labelEnd + 1) !== '(') {
-    return null
-  }
-
-  const urlEnd = value.indexOf(')', labelEnd + 2)
-  return urlEnd >= 0 ? { labelEnd, urlEnd } : null
-}
-
-function stripHtmlTags(value: string): string {
-  let output = ''
-  let insideTag = false
-
-  for (const char of value) {
-    if (char === '<') {
-      insideTag = true
-      output += ' '
-      continue
-    }
-
-    if (insideTag) {
-      if (char === '>') {
-        insideTag = false
-      }
-      continue
-    }
-
-    output += char
-  }
-
-  return output
 }

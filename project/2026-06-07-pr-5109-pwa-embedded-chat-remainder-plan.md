@@ -69,6 +69,8 @@
 ## Progress
 
 - 2026-06-07: Plan created. Scope/grill decisions locked. No implementation yet.
+- 2026-06-07: Slice 1 in progress. Extracting answer-safe PWA chat context helpers and keeping practice quiz behavior unchanged.
+- 2026-06-07: Slice 1 review/simplify done. Extracted pure client-safe helpers; tightened empty-string handling to match previous context serialization. Verification: `git diff --check` pass; changed-file Prettier pass. `pnpm --filter @klicker-uzh/frontend-pwa check` blocked by pnpm launcher `fetch failed` before package script execution, even with escalation and package-manager-version config attempts.
 
 ## Slices
 
