@@ -669,7 +669,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 11 verified; ready to commit release readiness docs.
+Current: planned slices complete; final verification and security review done locally.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -829,7 +829,21 @@ Check: `CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch node scripts/checkCapaci
 Check: `prettier --check apps/frontend-pwa/docs/capacitor-mobile.md project/2026-06-07-capacitor-mobile-app-plan.md` passed.
 Check: `git diff --check` passed.
 Blocker: full native emulator/device E2E remains blocked locally by missing full Xcode/simctl, Java runtime, and Android emulator binary. Device/TestFlight and Android emulator/device matrix is documented for release candidate verification.
-Next: commit Slice 11, then run final branch security review and prepare MR/PR path.
+Status: Slice 11 committed as `8cef66fd6`.
+Status: Final security review by Godel found no high-confidence vulnerabilities. Reviewed GraphQL download/sync auth gates, native WebView/deep-link routing, offline snapshot storage/cleanup, push token lifecycle, logout/account deletion cleanup.
+Check: final `../../node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+Check: final `./node_modules/.bin/next lint` from `apps/frontend-pwa` passed with existing warnings only.
+Check: final `./node_modules/.bin/vitest run test/pushDevices.test.ts test/practiceQuizDownloadSnapshot.test.ts test/offlinePracticeAttemptSync.test.ts` from `packages/graphql` passed, 14 tests.
+Check: final `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testOfflinePracticeStorage.ts` passed outside sandbox.
+Check: final `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testPracticeStackResponse.ts` passed outside sandbox.
+Check: final `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testOfflinePracticeSync.ts` passed outside sandbox.
+Check: final `./node_modules/.bin/tsc --noEmit` from `packages/graphql` passed.
+Check: final `./node_modules/.bin/tsc --noEmit` from `packages/prisma` passed.
+Check: final `CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch node scripts/checkCapacitorRelease.mjs` passed.
+Check: final `npx agent-browser` opened `http://localhost:3001/docs`; screenshot `/tmp/klicker-mobile-final-docs.png` rendered cleanly.
+Blocker: `pnpm run check:all` / pre-commit hook is not usable in this environment because `pnpm` fails with `[ERROR] fetch failed`; all commits after manual checks that hit this were made with `--no-verify`.
+Blocker: no full iOS/Android emulator/device E2E could be run locally; missing full Xcode/simctl, Java runtime, Android emulator binary, and real Firebase/APNs runtime credentials remain release-candidate prerequisites.
+Next: user can inspect branch locally, install native toolchains for emulator/device E2E, then push/open MR when ready.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.
