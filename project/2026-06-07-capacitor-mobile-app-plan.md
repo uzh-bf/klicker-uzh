@@ -492,31 +492,44 @@ Check:
 Commit:
 - `feat(frontend-pwa): open downloaded practice quizzes`
 
-### Slice 9: Attempt Sync
+### Slice 9: Attempt Sync API
 
 Do:
 - Add GraphQL sync mutation accepting attempt batch with idempotency keys.
 - Server recomputes official evaluation and stores analytics/XP.
-- Frontend sync queue:
-  - network regain
-  - app resume
-  - manual sync button
+- Persist idempotency records for accepted/rejected attempts.
 - Add conflict states:
   - accepted
   - already synced
   - stale revision
   - no longer authorized
-  - server result differs
+  - server error
 
 Check:
 - Backend tests for idempotency and stale revision rejection.
+- `pnpm --filter @klicker-uzh/graphql generate`.
+- `pnpm --filter @klicker-uzh/graphql check`.
+
+Commit:
+- `feat(graphql): sync offline practice attempts`
+
+### Slice 10: Attempt Sync Queue
+
+Do:
+- Frontend sync queue:
+  - network regain
+  - app resume
+  - manual sync button
+- Mark local attempts as accepted/conflict/rejected according to server result.
+
+Check:
 - Frontend unit tests for queue state transitions.
 - Manual emulator: answer offline, reconnect, sync accepted.
 
 Commit:
 - `feat(frontend-pwa): sync offline practice attempts`
 
-### Slice 10: App Store / Play Store Readiness
+### Slice 11: App Store / Play Store Readiness
 
 Do:
 - Add release checklist docs:
@@ -618,7 +631,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 8 complete; ready for commit.
+Current: Slice 9 active; implementing server-side offline attempt sync API.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -727,7 +740,9 @@ Check: `git diff --check` passed.
 Check: `npx agent-browser` opened `http://localhost:3001/course/1/practiceQuizzes/downloaded/test-quiz`; screenshot `/tmp/klicker-slice8-downloaded-missing-postfix.png` showed the expected not-downloaded warning with no layout break.
 Check: `npx agent-browser` opened `http://localhost:3001/course/1/practiceQuizzes/test-quiz`; screenshot `/tmp/klicker-slice8-online-route.png` showed the existing not-found state with no layout break in the frontend-only dev environment.
 Blocker: full download/open/submit browser E2E needs the GraphQL backend, seeded participant session, and a published practice quiz. Full iOS/Android airplane-mode emulator E2E remains unavailable locally because the emulator/toolchain blockers from earlier slices are unchanged.
-Next: commit Slice 8, then start Slice 9 attempt sync.
+Status: Slice 8 committed as `01e7b1698`.
+Status: Plan split updated: Slice 9 is server sync API; Slice 10 is frontend queue; Slice 11 is release readiness.
+Next: commit plan split, then implement Slice 9 attempt sync API.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.
