@@ -200,6 +200,44 @@ Review notes need:
 - Note: app has no purchases/payment CTAs.
 - Note: app contains instructor/course-scoped content, no public UGC marketplace.
 
+### Slice 11 Store Submission Package
+
+Do before first submission:
+
+- Create a dedicated demo participant in a demo course; do not use real student data.
+- Add at least one published practice quiz with downloadable content.
+- Add any published activity needed to demonstrate push routing.
+- Put demo credentials only into App Store Connect / Play Console review notes.
+- App Store Connect metadata must include the privacy policy URL.
+- App Store Connect App Privacy answers must include participant account data, device identifiers/push token, usage/course interaction data, diagnostics if collected, Firebase processing, and analytics where enabled.
+- Play Console Data Safety must match the same data categories.
+- Play Console Data deletion questions must be completed.
+- Play Console must include a web deletion URL that lets users request account/data deletion outside the app.
+- Store review notes must explain that the app reuses the hosted KlickerUZH PWA inside Capacitor, with native push notifications and downloaded offline practice as native app value.
+
+Review steps:
+
+1. Log in with the demo participant.
+2. Open the demo course.
+3. Enable notifications from the participant home screen.
+4. Open a published practice quiz.
+5. Download it for offline practice.
+6. Open the downloaded quiz.
+7. Disable network.
+8. Answer at least one stack and confirm local feedback.
+9. Re-enable network.
+10. Tap "Sync offline attempts" or resume the app and confirm sync.
+11. Open `/docs` and verify privacy, support, and account deletion links.
+
+Platform notes:
+
+- Apple Guideline 4.2 risk: review notes must point to native push and offline downloaded practice, not just the hosted website.
+- Apple push permission stays optional and user-initiated; core practice works without accepting notifications.
+- Apple Sign in with Apple is not added in this branch because KlickerUZH uses education/LMS/account-specific login flows.
+- iOS signing must use the production APNs environment for `ch.uzh.bf.klicker.pwa`.
+- Android 13+ notification runtime permission must be verified.
+- Android FCM token registration needs Google Play services in emulator/device builds.
+
 ## Data Model Draft
 
 ### PushDevice
@@ -631,7 +669,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 10 verified; ready to commit frontend offline attempt sync queue.
+Current: Slice 11 verified; ready to commit release readiness docs.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -771,7 +809,27 @@ Check: `./node_modules/.bin/prettier --check ...` on touched Slice 10 files pass
 Check: `git diff --check` passed.
 Check: `npx agent-browser` opened `http://localhost:3001/course/1/practiceQuizzes/downloaded/test-quiz`; screenshot `/tmp/klicker-slice10-downloaded-route-after-review.png` showed expected not-downloaded warning with no layout break.
 Blocker: full native emulator/device E2E remains blocked by the earlier local iOS/Android toolchain constraints; Slice 11 will document release/emulator readiness and remaining manual verification.
-Next: commit Slice 10, then start Slice 11 release readiness.
+Status: Slice 10 committed as `ac1d30c`.
+Status: Slice 11 started: release readiness docs, native URL/guard verification, and explicit emulator/device checklist.
+Status: Slice 11 release docs updated: `apps/frontend-pwa/docs/capacitor-mobile.md` now records stable release checklist, store metadata/deletion requirements, native emulator limits, and required iOS/Android E2E matrix.
+Status: Slice 11 plan updated with one-off App Store / Play Store review package: demo course, review steps, Apple 4.2 story, privacy metadata, Play web deletion URL, and platform push/signing notes.
+Status: Slice 11 correctness review by Volta found missing Apple privacy metadata, missing Google Play web deletion/Data deletion requirements, and missing plan verification evidence. Integrated all three.
+Status: Slice 11 simplification review by Kepler found too much ephemeral review material in durable app docs and duplicated checklist/matrix content. Moved detailed review steps to the plan and kept app docs concise.
+Check: official Apple App Review Guidelines checked on 2026-06-07; Guideline 5.1.1(i) requires privacy policy link in App Store Connect metadata and in the app.
+Check: official Google Play account deletion requirements checked on 2026-06-07; apps with account creation need in-app deletion, a web deletion URL, and Play Console Data deletion questions.
+Check: `xcodebuild -version` failed because active developer directory is CommandLineTools, not full Xcode.
+Check: `xcrun simctl list devices available` failed because `simctl` is unavailable.
+Check: `java -version` failed because no Java Runtime is installed.
+Check: `which emulator` failed; Android emulator binary is unavailable.
+Check: `CAPACITOR_SERVER_URL=https://pwa.klicker.com cap copy android` passed with Node 22; generated Android config used `https://pwa.klicker.com`, `cleartext: false`, and `.com` allowlist.
+Check: `CAPACITOR_SERVER_URL=https://pwa.klicker.com cap copy ios` passed with Node 22; generated iOS config used `https://pwa.klicker.com`, `cleartext: false`, `.com` allowlist, and native package list.
+Check: `CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch cap copy android` passed with Node 22; generated Android config restored `https://pwa.klicker.uzh.ch`, `cleartext: false`, and `.uzh.ch` allowlist.
+Check: `CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch cap copy ios` passed with Node 22; generated iOS config restored `https://pwa.klicker.uzh.ch`, `cleartext: false`, `.uzh.ch` allowlist, and native package list.
+Check: `CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch node scripts/checkCapacitorRelease.mjs` passed.
+Check: `prettier --check apps/frontend-pwa/docs/capacitor-mobile.md project/2026-06-07-capacitor-mobile-app-plan.md` passed.
+Check: `git diff --check` passed.
+Blocker: full native emulator/device E2E remains blocked locally by missing full Xcode/simctl, Java runtime, and Android emulator binary. Device/TestFlight and Android emulator/device matrix is documented for release candidate verification.
+Next: commit Slice 11, then run final branch security review and prepare MR/PR path.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.
