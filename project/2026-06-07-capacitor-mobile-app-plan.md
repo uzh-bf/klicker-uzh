@@ -473,7 +473,26 @@ Check:
 Commit:
 - `feat(frontend-pwa): support offline practice attempts`
 
-### Slice 8: Attempt Sync
+### Slice 8: Downloaded Practice UI
+
+Do:
+- Add download/delete/open controls for published practice quizzes.
+- Persist authorized download snapshots through the existing Filesystem store.
+- Add a downloaded-practice route that loads the local snapshot for the active participant.
+- Reuse `PracticeQuiz` / `ElementStack` and inject the offline submit adapter.
+- Show pending attempt count and clear stale/missing download states.
+- Keep online practice quiz path unchanged.
+
+Check:
+- Browser: online practice quiz still loads and submits online.
+- Browser/dev: download snapshot, open downloaded route, complete a local attempt.
+- Emulator as far as available: app loads downloaded route after network disabled.
+- Unit/script coverage for route-facing storage helpers if pure enough.
+
+Commit:
+- `feat(frontend-pwa): open downloaded practice quizzes`
+
+### Slice 9: Attempt Sync
 
 Do:
 - Add GraphQL sync mutation accepting attempt batch with idempotency keys.
@@ -497,7 +516,7 @@ Check:
 Commit:
 - `feat(frontend-pwa): sync offline practice attempts`
 
-### Slice 9: App Store / Play Store Readiness
+### Slice 10: App Store / Play Store Readiness
 
 Do:
 - Add release checklist docs:
@@ -692,7 +711,7 @@ Check: post-fix `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../no
 Check: post-fix `git diff --check` passed.
 Blocker: post-fix `pnpm --filter @klicker-uzh/frontend-pwa check` and `pnpm --filter @klicker-uzh/frontend-pwa lint` failed before executing scripts with `[ERROR] fetch failed`; direct installed binaries were used for equivalent checks.
 Blocker: full offline emulator E2E remains unavailable locally: no working iOS/Android emulator/toolchain, and no downloaded-practice UI route yet. Slice 7 provides the adapter/storage path; Slice 8/next UI work must wire a downloaded quiz route before airplane-mode practice can be exercised end-to-end.
-Next: commit Slice 7, then start attempt sync/downloaded-practice UI wiring for emulator-facing offline flow.
+Next: start Slice 8 downloaded-practice UI/local offline run; original attempt sync moved to Slice 9 because emulator-facing offline E2E needs a downloadable/openable local quiz first.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.
