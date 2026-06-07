@@ -869,6 +869,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This practice quiz is not downloaded on this device for your account.',
       pendingOfflineAttempts:
         '{count, plural, one {# offline attempt is saved on this device and waiting for sync.} other {# offline attempts are saved on this device and waiting for sync.}}',
+      syncOfflineAttempts: 'Sync offline attempts',
+      offlineAttemptsSynced: 'Offline attempts synced.',
+      offlineAttemptSyncConflicts: 'Some offline attempts could not be synced.',
+      offlineAttemptSyncFailed:
+        'Syncing offline attempts failed. Try again when online.',
       offlineAttemptSaved:
         'Your offline attempt is saved on this device and will be synced when sync is available.',
       offlineAttemptSaveFailed:

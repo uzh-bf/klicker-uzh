@@ -29,7 +29,13 @@ export interface OfflinePracticeIndexEntry {
   updatedAt: string
 }
 
-export type OfflinePracticeAttemptSyncStatus = 'pending'
+export type OfflinePracticeAttemptSyncStatus =
+  | 'pending'
+  | 'accepted'
+  | 'already_synced'
+  | 'stale_revision'
+  | 'no_longer_authorized'
+  | 'server_error'
 
 export type OfflinePracticeStackFeedback = NonNullable<
   RespondToElementStackMutation['respondToElementStack']
@@ -45,6 +51,8 @@ export interface OfflinePracticeAttempt {
   responses: StackResponseInput[]
   answerTime: number
   localEvaluation: OfflinePracticeStackFeedback
+  syncMessage?: string | null
+  syncedAt?: string | null
   createdAt: string
   updatedAt: string
   syncStatus: OfflinePracticeAttemptSyncStatus
@@ -438,6 +446,62 @@ export async function loadOfflinePracticeAttempt(
   if (!rawAttempt) return null
 
   return JSON.parse(rawAttempt) as OfflinePracticeAttempt
+}
+
+export async function updateOfflinePracticeAttemptSyncStatus(
+  participantId: string,
+  clientAttemptId: string,
+  {
+    syncStatus,
+    syncMessage,
+  }: {
+    syncStatus: OfflinePracticeAttemptSyncStatus
+    syncMessage?: string | null
+  },
+  storage = createCapacitorOfflinePracticeStorage()
+) {
+  const index = await readOfflinePracticeIndex(participantId, storage)
+  const entry = index.attempts.find(
+    (attempt) => attempt.clientAttemptId === clientAttemptId
+  )
+
+  if (!entry) return null
+
+  const rawAttempt = await storage.readText(entry.attemptPath)
+  if (!rawAttempt) return null
+
+  const now = new Date().toISOString()
+  const attempt = JSON.parse(rawAttempt) as OfflinePracticeAttempt
+  const updatedAttempt: OfflinePracticeAttempt = {
+    ...attempt,
+    syncStatus,
+    syncMessage: syncMessage ?? null,
+    syncedAt: now,
+    updatedAt: now,
+  }
+
+  await storage.writeText(
+    entry.attemptPath,
+    JSON.stringify(updatedAttempt, null, 2)
+  )
+  await writeOfflinePracticeIndex(
+    participantId,
+    storage,
+    withPendingAttemptCounts({
+      ...index,
+      attempts: index.attempts.map((attemptEntry) =>
+        attemptEntry.clientAttemptId === clientAttemptId
+          ? {
+              ...attemptEntry,
+              syncStatus,
+              updatedAt: now,
+            }
+          : attemptEntry
+      ),
+    })
+  )
+
+  return updatedAttempt
 }
 
 export async function listOfflinePracticeAttempts(

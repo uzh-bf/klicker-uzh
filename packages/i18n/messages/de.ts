@@ -872,6 +872,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Übungs-Quiz ist auf diesem Gerät für Ihr Konto nicht heruntergeladen.',
       pendingOfflineAttempts:
         '{count, plural, one {# Offline-Versuch ist auf diesem Gerät gespeichert und wartet auf die Synchronisation.} other {# Offline-Versuche sind auf diesem Gerät gespeichert und warten auf die Synchronisation.}}',
+      syncOfflineAttempts: 'Offline-Versuche synchronisieren',
+      offlineAttemptsSynced: 'Offline-Versuche synchronisiert.',
+      offlineAttemptSyncConflicts:
+        'Einige Offline-Versuche konnten nicht synchronisiert werden.',
+      offlineAttemptSyncFailed:
+        'Die Synchronisation der Offline-Versuche ist fehlgeschlagen. Versuchen Sie es erneut, wenn Sie online sind.',
       offlineAttemptSaved:
         'Ihr Offline-Versuch ist auf diesem Gerät gespeichert und wird synchronisiert, sobald die Synchronisation verfügbar ist.',
       offlineAttemptSaveFailed:

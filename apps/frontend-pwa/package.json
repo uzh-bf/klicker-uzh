@@ -100,6 +100,7 @@
     "start": "next start --port 3001",
     "start:test": "cross-env NODE_ENV=test pnpm start",
     "test:offline-practice-response": "tsx scripts/testPracticeStackResponse.ts",
+    "test:offline-practice-sync": "tsx scripts/testOfflinePracticeSync.ts",
     "test:offline-practice-store": "tsx scripts/testOfflinePracticeStorage.ts"
   },
   "engines": {

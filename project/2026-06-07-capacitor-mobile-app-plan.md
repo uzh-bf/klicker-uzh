@@ -631,7 +631,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 9 complete; Slice 10 frontend sync queue next.
+Current: Slice 10 verified; ready to commit frontend offline attempt sync queue.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -757,7 +757,21 @@ Check: `./node_modules/.bin/prettier --check ...` on touched Slice 9 files passe
 Check: `git diff --check` passed.
 Status: Slice 9 emulator E2E not applicable yet; frontend sync queue is Slice 10. Prior full iOS emulator validation remains blocked by local CocoaPods TLS/toolchain constraints until native app run is available.
 Status: Slice 9 committed in current branch history.
-Next: implement Slice 10 frontend sync queue.
+Status: Slice 10 started: frontend queue will sync pending attempts on manual action, network regain, and app resume using the Slice 9 mutation.
+Status: Slice 10 frontend queue added: local attempt sync statuses, pure batch sync runner, Capacitor network/resume hook, manual sync buttons on online/downloaded practice routes, and participant-scoped pending count refresh.
+Status: Slice 10 route sync uses fresh `SelfDocument` identity for server sync while downloaded offline mode can still load remembered local data; downloaded local attempts are not synced unless current auth confirms the participant.
+Status: Slice 10 review by Mendel found no Critical/Important blockers; sandbox blocked `pnpm --filter ... test:offline-practice-sync`, so direct installed binaries were used.
+Status: Slice 10 simplification review by Plato integrated wrong-account sync guard, partial-result pending behavior, multi-batch queue loop, single resume listener, removed unused hook state, softer conflict copy, and extra edge-case tests.
+Check: `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testOfflinePracticeSync.ts` from `apps/frontend-pwa` passed outside sandbox.
+Check: `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testOfflinePracticeStorage.ts` from `apps/frontend-pwa` passed outside sandbox.
+Check: `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testPracticeStackResponse.ts` from `apps/frontend-pwa` passed outside sandbox.
+Check: `../../node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+Check: `./node_modules/.bin/next lint` from `apps/frontend-pwa` passed with existing warnings only.
+Check: `./node_modules/.bin/prettier --check ...` on touched Slice 10 files passed.
+Check: `git diff --check` passed.
+Check: `npx agent-browser` opened `http://localhost:3001/course/1/practiceQuizzes/downloaded/test-quiz`; screenshot `/tmp/klicker-slice10-downloaded-route-after-review.png` showed expected not-downloaded warning with no layout break.
+Blocker: full native emulator/device E2E remains blocked by the earlier local iOS/Android toolchain constraints; Slice 11 will document release/emulator readiness and remaining manual verification.
+Next: commit Slice 10, then start Slice 11 release readiness.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

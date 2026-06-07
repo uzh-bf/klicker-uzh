@@ -1,10 +1,11 @@
 import { useQuery } from '@apollo/client'
+import { faRotate } from '@fortawesome/free-solid-svg-icons'
 import { SelfDocument, UserRole } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
@@ -14,6 +15,7 @@ import Layout, {
 } from '../../../../../components/Layout'
 import type { PracticeStackSubmitHandler } from '../../../../../components/practiceQuiz/ElementStack'
 import PracticeQuiz from '../../../../../components/practiceQuiz/PracticeQuiz'
+import { useOfflinePracticeSync } from '../../../../../lib/hooks/useOfflinePracticeSync'
 import {
   getDownloadedPracticeLocalStorageId,
   listDownloadedPracticeQuizzes,
@@ -47,6 +49,10 @@ function DownloadedPracticeQuizPage({
   const [loadingSnapshot, setLoadingSnapshot] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
   const [submitFailed, setSubmitFailed] = useState(false)
+  const [syncNotice, setSyncNotice] = useState<{
+    type: 'success' | 'warning' | 'error'
+    message: string
+  } | null>(null)
   const [isCompleted, setIsCompleted] = useState(false)
 
   useParticipantToken({
@@ -55,13 +61,29 @@ function DownloadedPracticeQuizPage({
   })
 
   const { data: selfData, loading: loadingSelf } = useQuery(SelfDocument, {
-    fetchPolicy: 'cache-first',
-    skip: !!rememberedParticipantId,
+    fetchPolicy: 'network-only',
   })
 
   const onlineParticipantId =
     selfData?.self?.role === UserRole.Participant ? selfData.self.id : null
-  const participantId = onlineParticipantId ?? rememberedParticipantId
+  const storageParticipantId = onlineParticipantId ?? rememberedParticipantId
+  const refreshDownloadedEntry = useCallback(async () => {
+    if (!storageParticipantId) {
+      setDownloadedEntry(null)
+      return
+    }
+
+    try {
+      const entries = await listDownloadedPracticeQuizzes(storageParticipantId)
+      setDownloadedEntry(entries.find((entry) => entry.quizId === id) ?? null)
+    } catch (error) {
+      console.warn('Failed to read downloaded practice quizzes', error)
+    }
+  }, [id, storageParticipantId])
+  const { syncNow, syncing } = useOfflinePracticeSync({
+    participantId: onlineParticipantId,
+    onSynced: refreshDownloadedEntry,
+  })
 
   useEffect(() => {
     if (!onlineParticipantId) return
@@ -72,7 +94,7 @@ function DownloadedPracticeQuizPage({
   useEffect(() => {
     let cancelled = false
 
-    if (!participantId) {
+    if (!storageParticipantId) {
       if (!loadingSelf) {
         setLoadingSnapshot(false)
       }
@@ -83,8 +105,8 @@ function DownloadedPracticeQuizPage({
     setLoadFailed(false)
 
     Promise.all([
-      loadDownloadedPracticeQuiz(participantId, id),
-      listDownloadedPracticeQuizzes(participantId),
+      loadDownloadedPracticeQuiz(storageParticipantId, id),
+      listDownloadedPracticeQuizzes(storageParticipantId),
     ])
       .then(([loadedSnapshot, entries]) => {
         if (cancelled) return
@@ -107,7 +129,7 @@ function DownloadedPracticeQuizPage({
     return () => {
       cancelled = true
     }
-  }, [id, loadingSelf, participantId])
+  }, [id, loadingSelf, storageParticipantId])
 
   const handleNextQuestion = () => {
     document.getElementById(LAYOUT_SCROLL_CONTAINER_ID)?.scrollTo({ top: 0 })
@@ -116,23 +138,27 @@ function DownloadedPracticeQuizPage({
 
   const handleSubmitStack = useCallback<PracticeStackSubmitHandler>(
     async ({ stack, responses, stackAnswerTime }) => {
-      if (!participantId || !snapshot) return null
+      if (!storageParticipantId || !snapshot) return null
 
       setSubmitFailed(false)
 
       try {
         const feedback = await submitPracticeStackOffline({
-          participantId,
+          participantId: storageParticipantId,
           snapshot,
           stack,
           responses,
           stackAnswerTime,
         })
-        const entries = await listDownloadedPracticeQuizzes(participantId)
+        const entries =
+          await listDownloadedPracticeQuizzes(storageParticipantId)
 
-        rememberOfflinePracticeParticipant(participantId)
+        if (onlineParticipantId) {
+          rememberOfflinePracticeParticipant(onlineParticipantId)
+        }
         setDownloadedEntry(entries.find((entry) => entry.quizId === id) ?? null)
         setSubmitFailed(false)
+        void syncNow()
 
         return feedback
       } catch (error) {
@@ -141,10 +167,39 @@ function DownloadedPracticeQuizPage({
         return null
       }
     },
-    [id, participantId, snapshot]
+    [id, onlineParticipantId, snapshot, storageParticipantId, syncNow]
   )
 
-  if (loadingSnapshot || (loadingSelf && !rememberedParticipantId)) {
+  const handleSyncOfflineAttempts = async () => {
+    setSyncNotice(null)
+
+    const result = await syncNow()
+    await refreshDownloadedEntry()
+
+    if (!result) {
+      setSyncNotice({
+        type: 'error',
+        message: t('pwa.practiceQuiz.offlineAttemptSyncFailed'),
+      })
+      return
+    }
+
+    if (result.attemptedCount === 0) {
+      return
+    }
+
+    const hasSyncConflicts =
+      result.rejectedCount > 0 || result.remainingPendingAttemptCount > 0
+
+    setSyncNotice({
+      type: hasSyncConflicts ? 'warning' : 'success',
+      message: hasSyncConflicts
+        ? t('pwa.practiceQuiz.offlineAttemptSyncConflicts')
+        : t('pwa.practiceQuiz.offlineAttemptsSynced'),
+    })
+  }
+
+  if (loadingSnapshot || (loadingSelf && !storageParticipantId)) {
     return (
       <Layout>
         <Loader />
@@ -152,7 +207,7 @@ function DownloadedPracticeQuizPage({
     )
   }
 
-  if (loadFailed || !participantId || !snapshot) {
+  if (loadFailed || !storageParticipantId || !snapshot) {
     return (
       <Layout>
         <UserNotification
@@ -171,13 +226,26 @@ function DownloadedPracticeQuizPage({
     >
       <div className="mb-4 flex w-full flex-col gap-2 md:mx-auto md:max-w-6xl md:px-8">
         {downloadedEntry && downloadedEntry.pendingAttemptCount > 0 && (
-          <UserNotification
-            type="info"
-            message={t('pwa.practiceQuiz.pendingOfflineAttempts', {
-              count: downloadedEntry.pendingAttemptCount,
-            })}
-            className={{ root: 'text-base' }}
-          />
+          <>
+            <UserNotification
+              type="info"
+              message={t('pwa.practiceQuiz.pendingOfflineAttempts', {
+                count: downloadedEntry.pendingAttemptCount,
+              })}
+              className={{ root: 'text-base' }}
+            />
+            <Button
+              onClick={handleSyncOfflineAttempts}
+              disabled={syncing}
+              className={{ root: 'justify-start gap-2 text-base' }}
+              data={{ cy: 'sync-offline-practice-attempts' }}
+            >
+              <Button.Icon icon={faRotate} loading={syncing} />
+              <Button.Label>
+                {t('pwa.practiceQuiz.syncOfflineAttempts')}
+              </Button.Label>
+            </Button>
+          </>
         )}
         {isCompleted && (
           <UserNotification
@@ -193,12 +261,19 @@ function DownloadedPracticeQuizPage({
             className={{ root: 'text-base' }}
           />
         )}
+        {syncNotice && (
+          <UserNotification
+            type={syncNotice.type}
+            message={syncNotice.message}
+            className={{ root: 'text-base' }}
+          />
+        )}
       </div>
       <PracticeQuiz
         showResetLocalStorage
         offlineMode
         storageId={getDownloadedPracticeLocalStorageId(
-          participantId,
+          storageParticipantId,
           snapshot.quiz.id
         )}
         quiz={{

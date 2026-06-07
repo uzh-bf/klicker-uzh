@@ -66,6 +66,7 @@ import { useLazyQuery, useQuery } from '@apollo/client'
 import {
   faDownload,
   faFolderOpen,
+  faRotate,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import {
@@ -86,13 +87,14 @@ import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
 } from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
 import LinkButton from '../../../../components/common/LinkButton'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
+import { useOfflinePracticeSync } from '../../../../lib/hooks/useOfflinePracticeSync'
 import {
   deleteDownloadedPracticeQuiz,
   listDownloadedPracticeQuizzes,
@@ -145,6 +147,10 @@ function PracticeQuizPage({
     type: 'success' | 'error'
     message: string
   } | null>(null)
+  const [syncNotice, setSyncNotice] = useState<{
+    type: 'success' | 'warning' | 'error'
+    message: string
+  } | null>(null)
   const [deletingDownload, setDeletingDownload] = useState(false)
 
   useParticipantToken({
@@ -157,6 +163,7 @@ function PracticeQuizPage({
   })
   const { data: selfData } = useQuery(SelfDocument, {
     skip: embedded,
+    fetchPolicy: 'network-only',
   })
   const [fetchDownloadSnapshot, { loading: downloadingSnapshot }] =
     useLazyQuery(GetPracticeQuizDownloadSnapshotDocument, {
@@ -166,6 +173,23 @@ function PracticeQuizPage({
   const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
   const participant =
     selfData?.self?.role === UserRole.Participant ? selfData.self : null
+  const refreshDownloadedEntry = useCallback(async () => {
+    if (!participant?.id || embedded) {
+      setDownloadedEntry(null)
+      return
+    }
+
+    try {
+      const entries = await listDownloadedPracticeQuizzes(participant.id)
+      setDownloadedEntry(entries.find((entry) => entry.quizId === id) ?? null)
+    } catch (error) {
+      console.warn('Failed to read downloaded practice quizzes', error)
+    }
+  }, [embedded, id, participant?.id])
+  const { syncNow, syncing } = useOfflinePracticeSync({
+    participantId: embedded ? undefined : participant?.id,
+    onSynced: refreshDownloadedEntry,
+  })
 
   useEffect(() => {
     if (!embedded) return
@@ -200,27 +224,8 @@ function PracticeQuizPage({
   }, [currentIx])
 
   useEffect(() => {
-    let cancelled = false
-
-    if (!participant?.id || embedded) {
-      setDownloadedEntry(null)
-      return
-    }
-
-    listDownloadedPracticeQuizzes(participant.id)
-      .then((entries) => {
-        if (cancelled) return
-
-        setDownloadedEntry(entries.find((entry) => entry.quizId === id) ?? null)
-      })
-      .catch((error) => {
-        console.warn('Failed to read downloaded practice quizzes', error)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [embedded, id, participant?.id])
+    void refreshDownloadedEntry()
+  }, [refreshDownloadedEntry])
 
   useEffect(() => {
     if (!embedded || !parentOrigin || loading || !data?.practiceQuiz) return
@@ -354,6 +359,35 @@ function PracticeQuizPage({
     }
   }
 
+  const handleSyncOfflineAttempts = async () => {
+    setSyncNotice(null)
+
+    const result = await syncNow()
+    await refreshDownloadedEntry()
+
+    if (!result) {
+      setSyncNotice({
+        type: 'error',
+        message: t('pwa.practiceQuiz.offlineAttemptSyncFailed'),
+      })
+      return
+    }
+
+    if (result.attemptedCount === 0) {
+      return
+    }
+
+    const hasSyncConflicts =
+      result.rejectedCount > 0 || result.remainingPendingAttemptCount > 0
+
+    setSyncNotice({
+      type: hasSyncConflicts ? 'warning' : 'success',
+      message: hasSyncConflicts
+        ? t('pwa.practiceQuiz.offlineAttemptSyncConflicts')
+        : t('pwa.practiceQuiz.offlineAttemptsSynced'),
+    })
+  }
+
   const showDownloadControls =
     !embedded && !!participant?.id && !data.practiceQuiz.isOwner
 
@@ -404,18 +438,38 @@ function PracticeQuizPage({
             )}
           </div>
           {downloadedEntry && downloadedEntry.pendingAttemptCount > 0 && (
-            <UserNotification
-              type="info"
-              message={t('pwa.practiceQuiz.pendingOfflineAttempts', {
-                count: downloadedEntry.pendingAttemptCount,
-              })}
-              className={{ root: 'text-base' }}
-            />
+            <>
+              <UserNotification
+                type="info"
+                message={t('pwa.practiceQuiz.pendingOfflineAttempts', {
+                  count: downloadedEntry.pendingAttemptCount,
+                })}
+                className={{ root: 'text-base' }}
+              />
+              <Button
+                onClick={handleSyncOfflineAttempts}
+                disabled={syncing}
+                className={{ root: 'justify-start gap-2 text-base' }}
+                data={{ cy: 'sync-offline-practice-attempts' }}
+              >
+                <Button.Icon icon={faRotate} loading={syncing} />
+                <Button.Label>
+                  {t('pwa.practiceQuiz.syncOfflineAttempts')}
+                </Button.Label>
+              </Button>
+            </>
           )}
           {downloadNotice && (
             <UserNotification
               type={downloadNotice.type}
               message={downloadNotice.message}
+              className={{ root: 'text-base' }}
+            />
+          )}
+          {syncNotice && (
+            <UserNotification
+              type={syncNotice.type}
+              message={syncNotice.message}
               className={{ root: 'text-base' }}
             />
           )}
