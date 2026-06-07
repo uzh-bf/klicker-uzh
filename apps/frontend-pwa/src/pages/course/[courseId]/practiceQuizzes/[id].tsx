@@ -287,17 +287,16 @@ function PracticeQuizPage({
         }
         previewOnly={data.practiceQuiz.isOwner ?? undefined}
       />
+      <CourseChatDrawer
+        courseId={courseId}
+        context={chatContext}
+        embedded={embedded}
+        enabled={Boolean(participantToken)}
+      />
       {!embedded && (
-        <>
-          <CourseChatDrawer
-            courseId={courseId}
-            context={chatContext}
-            enabled={Boolean(participantToken)}
-          />
-          <Footer
-            browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
-          />
-        </>
+        <Footer
+          browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
+        />
       )}
     </Layout>
   )
