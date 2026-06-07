@@ -31,5 +31,9 @@
     "**/*.tsx",
     "src/utils/generateAvatars.js"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "android/app/src/main/assets/public",
+    "ios/App/App/public"
+  ]
 }

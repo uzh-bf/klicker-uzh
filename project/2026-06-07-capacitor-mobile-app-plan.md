@@ -9,7 +9,8 @@ MR/PR: none yet.
 
 ## Goal
 
-Do: use latest Capacitor, pinned to `8.4.0` for core/platform/push/network/app/filesystem packages.
+Do: use latest Capacitor runtime, pinned to `8.4.0` for core/platform packages.
+Do: use latest stable official Capacitor plugins, pinned to exact published versions.
 Do: use one Capacitor app for iOS App Store and Android Play Store.
 Do: keep full hosted Next.js PWA as primary app experience.
 Do: keep local dev and emulation on `https://pwa.klicker.com`.
@@ -93,9 +94,10 @@ Found: `packages/grading` exports pure grading helpers usable for local evaluati
 
 ### Capacitor 8
 
-Evidence: npm registry on 2026-06-07 reports `@capacitor/core = 8.4.0`; matching `cli`, `ios`, `android`, `push-notifications`, `network`, `filesystem`, `app` also `8.4.0`.
+Evidence: npm registry on 2026-06-07 reports `@capacitor/core = 8.4.0`; matching `cli`, `ios`, `android` also `8.4.0`.
+Evidence: npm registry on 2026-06-07 reports latest stable official plugins as `@capacitor/app = 8.1.0`, `@capacitor/filesystem = 8.1.2`, `@capacitor/network = 8.0.1`, `@capacitor/push-notifications = 8.1.1`.
 Evidence: Capacitor 8 update docs require modern native toolchain: Node 22+, Xcode 26+, iOS target 15, Android SDK 36, min SDK 24, Gradle 8.14.3.
-Applicability: repo Node 24 OK; native iOS/Android project needs migration.
+Applicability: repo Node 20 is below Capacitor CLI engine; use Node 22+ for `cap` commands while keeping normal repo checks on the pinned Node 20 toolchain.
 Source:
 - https://capacitorjs.com/docs/updating/8-0
 - https://ionic.io/blog/announcing-capacitor-8
@@ -324,8 +326,9 @@ Commit:
 ### Slice 1: Capacitor 8 Migration + Build Profiles
 
 Do:
-- Upgrade `@capacitor/core`, `cli`, `ios`, `android`, `push-notifications` to `8.4.0`.
-- Add `@capacitor/network`, `@capacitor/filesystem`, `@capacitor/app` pinned `8.4.0`.
+- Upgrade `@capacitor/core`, `cli`, `ios`, `android` to `8.4.0`.
+- Upgrade `@capacitor/push-notifications` to `8.1.1`.
+- Add `@capacitor/network` pinned `8.0.1`, `@capacitor/filesystem` pinned `8.1.2`, `@capacitor/app` pinned `8.1.0`.
 - Run `pnpm install`.
 - Update iOS deployment target to 15.
 - Update Android min/compile/target SDK per Capacitor 8 docs.
@@ -596,9 +599,23 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 0 active.
+Current: Slice 1 complete; ready to commit.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
-Next: commit this plan file alone, then start Slice 1.
+Status: Slice 0 committed as `9c37102d8`.
+Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
+Status: Android/iOS native project config migrated to Capacitor 8 requirements.
+Status: dev profile defaults to `https://pwa.klicker.com`; prod profile uses `https://pwa.klicker.uzh.ch`.
+Status: release guard added for generated native configs; it rejects dev domain, missing generated config, cleartext, and iOS arbitrary loads.
+Status: local review done. Finding: nested `pnpm run` in prod scripts and `tsx` IPC failed under this sandbox; simplified guard to plain `node` script and duplicated prod env across chained commands.
+Status: simplification done. Added generated native asset excludes to PWA `tsconfig.json`; fixed Capacitor comment typo; recorded gotcha in `AGENTS.md`.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa check` passed after building missing workspace outputs.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa build` passed with network access for existing `next/font` Google Fonts fetch.
+Check: Android dev sync passed and found `@capacitor/app`, `filesystem`, `network`, `push-notifications`.
+Check: Android prod sync + release guard passed.
+Check: iOS dev sync copied assets/config and found plugins, then failed at `pod install` due CocoaPods CDN TLS EOF.
+Check: iOS prod `cap copy ios` + release guard passed.
+Blocker: full emulator/native build verification blocked locally: no full Xcode/simctl, no Java runtime, no Android emulator binary; CocoaPods 1.16.2 present but specs fetch failed.
+Next: commit Slice 1, then start Slice 2 push registration bridge.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

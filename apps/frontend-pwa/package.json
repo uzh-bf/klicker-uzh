@@ -6,10 +6,13 @@
   "dependencies": {
     "@apollo/client": "3.13.8",
     "@bigheads/core": "0.3.3",
-    "@capacitor/android": "5.3.0",
-    "@capacitor/core": "5.3.0",
-    "@capacitor/ios": "5.3.0",
-    "@capacitor/push-notifications": "5.0.6",
+    "@capacitor/android": "8.4.0",
+    "@capacitor/app": "8.1.0",
+    "@capacitor/core": "8.4.0",
+    "@capacitor/filesystem": "8.1.2",
+    "@capacitor/ios": "8.4.0",
+    "@capacitor/network": "8.0.1",
+    "@capacitor/push-notifications": "8.1.1",
     "@ducanh2912/next-pwa": "7.3.3",
     "@fortawesome/fontawesome-svg-core": "6.7.2",
     "@fortawesome/free-regular-svg-icons": "6.7.2",
@@ -51,7 +54,7 @@
     "yup": "1.6.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "~5.3.0",
+    "@capacitor/cli": "8.4.0",
     "@tailwindcss/aspect-ratio": "~0.4.2",
     "@tailwindcss/forms": "~0.5.10",
     "@tailwindcss/postcss": "~4.1.11",
@@ -78,6 +81,11 @@
   "scripts": {
     "build": "next build",
     "build:test": "cross-env NODE_ENV=test next build",
+    "cap:check:release": "cross-env CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch node scripts/checkCapacitorRelease.mjs",
+    "cap:sync:android:dev": "cross-env CAPACITOR_SERVER_URL=https://pwa.klicker.com cap sync android",
+    "cap:sync:android:prod": "cross-env CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch cap sync android && cross-env CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch node scripts/checkCapacitorRelease.mjs android",
+    "cap:sync:ios:dev": "cross-env CAPACITOR_SERVER_URL=https://pwa.klicker.com cap sync ios",
+    "cap:sync:ios:prod": "cross-env CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch cap sync ios && cross-env CAPACITOR_SERVER_URL=https://pwa.klicker.uzh.ch node scripts/checkCapacitorRelease.mjs ios",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development next dev --turbo --port 3001",
     "dev:assessment": "pnpm run dev",
