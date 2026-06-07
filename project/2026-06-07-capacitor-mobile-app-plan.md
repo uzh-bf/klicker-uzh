@@ -631,7 +631,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 9 active; implementing server-side offline attempt sync API.
+Current: Slice 9 complete; Slice 10 frontend sync queue next.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -742,7 +742,22 @@ Check: `npx agent-browser` opened `http://localhost:3001/course/1/practiceQuizze
 Blocker: full download/open/submit browser E2E needs the GraphQL backend, seeded participant session, and a published practice quiz. Full iOS/Android airplane-mode emulator E2E remains unavailable locally because the emulator/toolchain blockers from earlier slices are unchanged.
 Status: Slice 8 committed as `01e7b1698`.
 Status: Plan split updated: Slice 9 is server sync API; Slice 10 is frontend queue; Slice 11 is release readiness.
-Next: commit plan split, then implement Slice 9 attempt sync API.
+Status: Slice 9 attempt sync API added: `OfflinePracticeAttemptSync` idempotency table, participant relation, GraphQL mutation/input/result/status, persisted operation, and generated schema/ops/persisted query maps.
+Status: Slice 9 sync path uses server-derived `courseId`, participant authorization, published/non-assessment quiz guard, quiz revision check, stack membership/type/payload validation, idempotency hash, and official `respondToElementStack` write path inside one transaction.
+Status: Slice 9 replay stores only sanitized feedback `{ id, status, score }`; full evaluations still return on first accepted sync but are not retained in the idempotency row.
+Status: Slice 9 correctness review by Kant found atomicity, duplicate key, payload mismatch, duplicate response, and raw-error risks. Integrated single transaction, attempt hash, duplicate instance rejection, generic server errors, and validation before scoring.
+Status: Slice 9 follow-up correctness review by Mendel found no remaining findings after sanitized replay feedback and nested payload validation fixes.
+Status: Slice 9 simplification review by Plato integrated generic invalid-payload message and removed unused secondary DB indexes. Retained tx-aware response path, idempotency hash, and nested validation because they protect correctness/retry semantics.
+Check: `PATH=... ./node_modules/.bin/prisma generate` from `packages/prisma` passed.
+Check: `PATH=... ./node_modules/.bin/graphql-codegen --config codegen.ts` from `packages/graphql` passed.
+Check: `PATH=... ./node_modules/.bin/vitest run test/offlinePracticeAttemptSync.test.ts` from `packages/graphql` passed, 7 tests.
+Check: `PATH=... ./node_modules/.bin/tsc --noEmit` from `packages/graphql` passed.
+Check: `PATH=... ./node_modules/.bin/tsc --noEmit` from `packages/prisma` passed.
+Check: `./node_modules/.bin/prettier --check ...` on touched Slice 9 files passed.
+Check: `git diff --check` passed.
+Status: Slice 9 emulator E2E not applicable yet; frontend sync queue is Slice 10. Prior full iOS emulator validation remains blocked by local CocoaPods TLS/toolchain constraints until native app run is available.
+Status: Slice 9 committed in current branch history.
+Next: implement Slice 10 frontend sync queue.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

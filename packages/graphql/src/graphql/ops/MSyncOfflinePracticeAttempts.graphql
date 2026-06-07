@@ -1,0 +1,15 @@
+mutation SyncOfflinePracticeAttempts(
+  $attempts: [OfflinePracticeAttemptSyncInput!]!
+) {
+  syncOfflinePracticeAttempts(attempts: $attempts) {
+    clientAttemptId
+    status
+    message
+    feedback {
+      id
+      status
+      score
+      ...StackFeedbackEvaluations
+    }
+  }
+}

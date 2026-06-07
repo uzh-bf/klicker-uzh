@@ -66,6 +66,8 @@ import {
   ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
+  OfflinePracticeAttemptSyncInput,
+  OfflinePracticeAttemptSyncResultRef,
   PracticeQuiz,
   ReviewStatus,
   StackFeedback,
@@ -282,6 +284,19 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await StacksService.respondToElementStack(args, ctx)
+        },
+      }),
+
+      syncOfflinePracticeAttempts: t.withAuth(asParticipant).field({
+        type: [OfflinePracticeAttemptSyncResultRef],
+        args: {
+          attempts: t.arg({
+            type: [OfflinePracticeAttemptSyncInput],
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await StacksService.syncOfflinePracticeAttempts(args, ctx)
         },
       }),
 

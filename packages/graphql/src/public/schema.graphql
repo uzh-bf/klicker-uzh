@@ -1893,6 +1893,7 @@ type Mutation {
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  syncOfflinePracticeAttempts(attempts: [OfflinePracticeAttemptSyncInput!]!): [OfflinePracticeAttemptSyncResult!]!
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
   transferObjectOwnership(objectId: String!, objectType: ObjectType!, shortnameOrEmail: String!): PermissionInfo
@@ -2056,6 +2057,30 @@ enum ObjectType {
   LIVE_QUIZ
   MICRO_LEARNING
   PRACTICE_QUIZ
+}
+
+input OfflinePracticeAttemptSyncInput {
+  clientAttemptId: String!
+  quizId: String!
+  quizRevision: String!
+  responses: [StackResponseInput!]!
+  stackAnswerTime: Int!
+  stackId: Int!
+}
+
+type OfflinePracticeAttemptSyncResult {
+  clientAttemptId: String!
+  feedback: StackFeedback
+  message: String
+  status: OfflinePracticeAttemptSyncStatus!
+}
+
+enum OfflinePracticeAttemptSyncStatus {
+  ACCEPTED
+  ALREADY_SYNCED
+  NO_LONGER_AUTHORIZED
+  SERVER_ERROR
+  STALE_REVISION
 }
 
 input OptionsCaseStudyInput {

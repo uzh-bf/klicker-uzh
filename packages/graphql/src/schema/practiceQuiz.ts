@@ -44,6 +44,22 @@ export const StackFeedbackStatus = builder.enumType('StackFeedbackStatus', {
   values: Object.values(StackFeedbackStatusType),
 })
 
+const offlinePracticeAttemptSyncStatusValues = [
+  'ACCEPTED',
+  'ALREADY_SYNCED',
+  'STALE_REVISION',
+  'NO_LONGER_AUTHORIZED',
+  'SERVER_ERROR',
+] as const
+export type OfflinePracticeAttemptSyncStatusType =
+  (typeof offlinePracticeAttemptSyncStatusValues)[number]
+export const OfflinePracticeAttemptSyncStatus = builder.enumType(
+  'OfflinePracticeAttemptSyncStatus',
+  {
+    values: [...offlinePracticeAttemptSyncStatusValues],
+  }
+)
+
 export const ElementBlockInputRef =
   builder.inputRef<ElementBlockInputType>('ElementBlockInput')
 export const ElementBlockInput = ElementBlockInputRef.implement({
@@ -141,6 +157,31 @@ export const StackResponseInput = StackResponseInputRef.implement({
   }),
 })
 
+export interface OfflinePracticeAttemptSyncInputType {
+  clientAttemptId: string
+  quizId: string
+  quizRevision: string
+  stackId: number
+  stackAnswerTime: number
+  responses: StackResponseInputType[]
+}
+
+export const OfflinePracticeAttemptSyncInputRef =
+  builder.inputRef<OfflinePracticeAttemptSyncInputType>(
+    'OfflinePracticeAttemptSyncInput'
+  )
+export const OfflinePracticeAttemptSyncInput =
+  OfflinePracticeAttemptSyncInputRef.implement({
+    fields: (t) => ({
+      clientAttemptId: t.string({ required: true }),
+      quizId: t.string({ required: true }),
+      quizRevision: t.string({ required: true }),
+      stackId: t.int({ required: true }),
+      stackAnswerTime: t.int({ required: true }),
+      responses: t.field({ type: [StackResponseInput], required: true }),
+    }),
+  })
+
 export const StackFeedback = builder
   .objectRef<IStackFeedback>('StackFeedback')
   .implement({
@@ -152,6 +193,32 @@ export const StackFeedback = builder
         type: [InstanceEvaluation],
         nullable: true,
       }),
+    }),
+  })
+
+export interface IOfflinePracticeAttemptSyncResult {
+  clientAttemptId: string
+  status: OfflinePracticeAttemptSyncStatusType
+  feedback?: IStackFeedback | null
+  message?: string | null
+}
+
+export const OfflinePracticeAttemptSyncResult =
+  builder.objectRef<IOfflinePracticeAttemptSyncResult>(
+    'OfflinePracticeAttemptSyncResult'
+  )
+export const OfflinePracticeAttemptSyncResultRef =
+  OfflinePracticeAttemptSyncResult.implement({
+    fields: (t) => ({
+      clientAttemptId: t.exposeString('clientAttemptId'),
+      status: t.expose('status', {
+        type: OfflinePracticeAttemptSyncStatus,
+      }),
+      feedback: t.expose('feedback', {
+        type: StackFeedback,
+        nullable: true,
+      }),
+      message: t.exposeString('message', { nullable: true }),
     }),
   })
 

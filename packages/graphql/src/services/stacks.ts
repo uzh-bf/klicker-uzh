@@ -78,6 +78,13 @@ type ExistingInstanceType = DB.ElementInstance & {
 export const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
+const OFFLINE_PRACTICE_SYNC_BATCH_LIMIT = 25
+const OFFLINE_PRACTICE_SERVER_ERROR =
+  'Offline practice attempt could not be synced.'
+const OFFLINE_PRACTICE_ATTEMPT_MISMATCH_ERROR =
+  'Offline practice attempt id was reused with different data.'
+const OFFLINE_PRACTICE_INVALID_PAYLOAD_ERROR =
+  'Offline practice attempt payload is invalid.'
 
 const flashcardResultMap: Record<FlashcardCorrectness, StackFeedbackStatus> = {
   [FlashcardCorrectness.INCORRECT]: StackFeedbackStatus.INCORRECT,
@@ -658,6 +665,14 @@ async function upsertFlashcardResponse({
   })
 }
 
+async function runResponseTransaction<T>(
+  ctx: Context,
+  prisma: PrismaTransactionClient | undefined,
+  callback: (prisma: PrismaTransactionClient) => Promise<T>
+) {
+  return prisma ? callback(prisma) : ctx.prisma.$transaction(callback)
+}
+
 async function respondToFlashcard(
   {
     id,
@@ -674,7 +689,8 @@ async function respondToFlashcard(
     participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
   },
-  ctx: Context
+  ctx: Context,
+  prisma?: PrismaTransactionClient
 ) {
   // create result from flashcard response
   const result = {
@@ -691,119 +707,126 @@ async function respondToFlashcard(
   const answerPartial = response === FlashcardCorrectness.PARTIAL
   const answerIncorrect = response === FlashcardCorrectness.INCORRECT
 
-  const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
-    const existingInstance = await getValidateFlashcardInstance({
-      prisma,
-      id,
-      participantId:
-        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : undefined,
-      response,
-    })
-
-    if (
-      !existingInstance ||
-      !(FlashcardCorrectness.CORRECT in existingInstance.results) ||
-      !(FlashcardCorrectness.PARTIAL in existingInstance.anonymousResults)
-    ) {
-      return null
-    }
-
-    const existingResponse =
-      existingInstance.responses &&
-      existingInstance.responses.length > 0 &&
-      existingInstance.responses[0]
-        ? existingInstance.responses[0]
-        : null
-
-    // compute new aggregated results on element instance
-    const newResults = updateFlashcardResults({
-      previousResults: participation
-        ? existingInstance.results
-        : existingInstance.anonymousResults,
-      response,
-    })
-
-    // average answer time computations if participant is logged in
-    const { newAverageResponseTime, newAverageInstanceTime } = participation
-      ? computeNewAverageTimes({
-          existingInstance,
-          existingResponse,
-          answerTime,
-        })
-      : {
-          newAverageInstanceTime: undefined,
-          newAverageResponseTime: answerTime,
-        }
-
-    // compute updated instance statistics
-    const instanceInPracticeQuiz =
-      !!existingInstance.elementStack?.practiceQuizId
-    const statisticsUpdate = computeUpdatedInstanceStatistics({
-      participation,
-      existingResponse,
-      newAverageInstanceTime,
-      answerCorrect,
-      answerPartial,
-      answerIncorrect,
-      instanceInPracticeQuiz,
-    })
-
-    await prisma.elementInstance.update({
-      where: {
+  const transactionResult = await runResponseTransaction(
+    ctx,
+    prisma,
+    async (prisma) => {
+      const existingInstance = await getValidateFlashcardInstance({
+        prisma,
         id,
-      },
-      data: {
-        results: participation ? newResults : undefined,
-        anonymousResults: participation ? undefined : newResults,
-        instanceStatistics: statisticsUpdate,
-      },
-    })
+        participantId:
+          ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : undefined,
+        response,
+      })
 
-    // early return: anonymous submissions (no login or login without participation in this course)
-    if (
-      !ctx.user?.sub ||
-      ctx.user?.role !== DB.UserRole.PARTICIPANT ||
-      !participation
-    ) {
-      return result
-    }
+      if (
+        !existingInstance ||
+        !(FlashcardCorrectness.CORRECT in existingInstance.results) ||
+        !(FlashcardCorrectness.PARTIAL in existingInstance.anonymousResults)
+      ) {
+        return null
+      }
 
-    // create question detail response
-    createFlashcardResponseDetail({
-      prisma,
-      id,
-      response,
-      courseId,
-      answerTime,
-      existingInstance,
-      participantId: ctx.user.sub,
-    })
+      const existingResponse =
+        existingInstance.responses &&
+        existingInstance.responses.length > 0 &&
+        existingInstance.responses[0]
+          ? existingInstance.responses[0]
+          : null
 
-    // compute metrics for the aggregated user-specific response entry
-    const { responseCorrectness, aggregatedResponses, resultSpacedRepetition } =
-      computeFlashcardResponseContent({
+      // compute new aggregated results on element instance
+      const newResults = updateFlashcardResults({
+        previousResults: participation
+          ? existingInstance.results
+          : existingInstance.anonymousResults,
+        response,
+      })
+
+      // average answer time computations if participant is logged in
+      const { newAverageResponseTime, newAverageInstanceTime } = participation
+        ? computeNewAverageTimes({
+            existingInstance,
+            existingResponse,
+            answerTime,
+          })
+        : {
+            newAverageInstanceTime: undefined,
+            newAverageResponseTime: answerTime,
+          }
+
+      // compute updated instance statistics
+      const instanceInPracticeQuiz =
+        !!existingInstance.elementStack?.practiceQuizId
+      const statisticsUpdate = computeUpdatedInstanceStatistics({
+        participation,
+        existingResponse,
+        newAverageInstanceTime,
+        answerCorrect,
+        answerPartial,
+        answerIncorrect,
+        instanceInPracticeQuiz,
+      })
+
+      await prisma.elementInstance.update({
+        where: {
+          id,
+        },
+        data: {
+          results: participation ? newResults : undefined,
+          anonymousResults: participation ? undefined : newResults,
+          instanceStatistics: statisticsUpdate,
+        },
+      })
+
+      // early return: anonymous submissions (no login or login without participation in this course)
+      if (
+        !ctx.user?.sub ||
+        ctx.user?.role !== DB.UserRole.PARTICIPANT ||
+        !participation
+      ) {
+        return result
+      }
+
+      // create question detail response
+      await createFlashcardResponseDetail({
+        prisma,
+        id,
+        response,
+        courseId,
+        answerTime,
+        existingInstance,
+        participantId: ctx.user.sub,
+      })
+
+      // compute metrics for the aggregated user-specific response entry
+      const {
+        responseCorrectness,
+        aggregatedResponses,
+        resultSpacedRepetition,
+      } = computeFlashcardResponseContent({
         response,
         existingResponse,
       })
 
-    // upsert the user-specific response entry
-    await upsertFlashcardResponse({
-      prisma,
-      id,
-      participantId: ctx.user.sub,
-      courseId,
-      response,
-      newAverageResponseTime,
-      existingInstance,
-      existingResponse,
-      responseCorrectness,
-      aggregatedResponses,
-      resultSpacedRepetition,
-    })
+      // upsert the user-specific response entry
+      await upsertFlashcardResponse({
+        prisma,
+        id,
+        participantId: ctx.user.sub,
+        courseId,
+        response,
+        newAverageResponseTime,
+        existingInstance,
+        existingResponse,
+        responseCorrectness,
+        aggregatedResponses,
+        resultSpacedRepetition,
+      })
 
-    // return the results for evaluation illustration
-    return result
-  })
+      // return the results for evaluation illustration
+      return result
+    }
+  )
 
   return transactionResult
 }
@@ -1030,7 +1053,8 @@ async function respondToContent(
     participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
   },
-  ctx: Context
+  ctx: Context,
+  prisma?: PrismaTransactionClient
 ) {
   // context elements can only be "read" when submitted
   const result = {
@@ -1042,110 +1066,116 @@ async function respondToContent(
     return result
   }
 
-  const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
-    const existingInstance = await getValidateContentInstance({
-      prisma,
-      id,
-      participantId:
-        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
-    })
-
-    // check if the instance exists and the response is valid
-    if (!existingInstance) {
-      return null
-    }
-
-    const existingResponse =
-      existingInstance.responses &&
-      existingInstance.responses.length > 0 &&
-      existingInstance.responses[0]
-        ? existingInstance.responses[0]
-        : null
-
-    // average answer time computations if participant is logged in
-    const { newAverageResponseTime, newAverageInstanceTime } = participation
-      ? computeNewAverageTimes({
-          existingInstance,
-          existingResponse,
-          answerTime,
-        })
-      : {
-          newAverageInstanceTime: undefined,
-          newAverageResponseTime: answerTime,
-        }
-
-    // compute updated instance statistics
-    const instanceInPracticeQuiz =
-      !!existingInstance.elementStack?.practiceQuizId
-    const statisticsUpdate = computeUpdatedInstanceStatistics({
-      participation,
-      existingResponse,
-      newAverageInstanceTime,
-      answerCorrect: true,
-      answerPartial: false,
-      answerIncorrect: false,
-      instanceInPracticeQuiz,
-    })
-
-    // update results on element instance
-    const newResults = participation
-      ? { total: existingInstance.results.total + 1 }
-      : { total: existingInstance.anonymousResults.total + 1 }
-    await prisma.elementInstance.update({
-      where: {
+  const transactionResult = await runResponseTransaction(
+    ctx,
+    prisma,
+    async (prisma) => {
+      const existingInstance = await getValidateContentInstance({
+        prisma,
         id,
-      },
-      data: {
-        results: participation ? newResults : undefined,
-        anonymousResults: participation ? undefined : newResults,
-        instanceStatistics: statisticsUpdate,
-      },
-    })
+        participantId:
+          ctx.user?.role === DB.UserRole.PARTICIPANT
+            ? ctx.user?.sub
+            : undefined,
+      })
 
-    // early return: anonymous submissions (no login or login without participation in this course)
-    if (
-      !ctx.user?.sub ||
-      ctx.user?.role !== DB.UserRole.PARTICIPANT ||
-      !participation
-    ) {
+      // check if the instance exists and the response is valid
+      if (!existingInstance) {
+        return null
+      }
+
+      const existingResponse =
+        existingInstance.responses &&
+        existingInstance.responses.length > 0 &&
+        existingInstance.responses[0]
+          ? existingInstance.responses[0]
+          : null
+
+      // average answer time computations if participant is logged in
+      const { newAverageResponseTime, newAverageInstanceTime } = participation
+        ? computeNewAverageTimes({
+            existingInstance,
+            existingResponse,
+            answerTime,
+          })
+        : {
+            newAverageInstanceTime: undefined,
+            newAverageResponseTime: answerTime,
+          }
+
+      // compute updated instance statistics
+      const instanceInPracticeQuiz =
+        !!existingInstance.elementStack?.practiceQuizId
+      const statisticsUpdate = computeUpdatedInstanceStatistics({
+        participation,
+        existingResponse,
+        newAverageInstanceTime,
+        answerCorrect: true,
+        answerPartial: false,
+        answerIncorrect: false,
+        instanceInPracticeQuiz,
+      })
+
+      // update results on element instance
+      const newResults = participation
+        ? { total: existingInstance.results.total + 1 }
+        : { total: existingInstance.anonymousResults.total + 1 }
+      await prisma.elementInstance.update({
+        where: {
+          id,
+        },
+        data: {
+          results: participation ? newResults : undefined,
+          anonymousResults: participation ? undefined : newResults,
+          instanceStatistics: statisticsUpdate,
+        },
+      })
+
+      // early return: anonymous submissions (no login or login without participation in this course)
+      if (
+        !ctx.user?.sub ||
+        ctx.user?.role !== DB.UserRole.PARTICIPANT ||
+        !participation
+      ) {
+        return result
+      }
+
+      // create question detail response
+      await createContentResponseDetail({
+        prisma,
+        id,
+        courseId,
+        answerTime,
+        existingInstance,
+        participantId: ctx.user.sub,
+      })
+
+      const aggregatedResponses = existingResponse?.aggregatedResponses ?? {
+        total: 0,
+      }
+
+      const resultSpacedRepetition = updateSpacedRepetition({
+        eFactor: existingResponse?.eFactor ?? 2.5,
+        interval: existingResponse?.interval ?? 1,
+        streak: (existingResponse?.correctCountStreak ?? 0) + 1,
+        grade: 1,
+      })
+
+      // create / update question response
+      await upsertContentResponse({
+        prisma,
+        id,
+        participantId: ctx.user.sub,
+        courseId,
+        newAverageResponseTime,
+        existingInstance,
+        aggregatedResponses,
+        resultSpacedRepetition,
+      })
+
       return result
     }
-
-    // create question detail response
-    await createContentResponseDetail({
-      prisma,
-      id,
-      courseId,
-      answerTime,
-      existingInstance,
-      participantId: ctx.user.sub,
-    })
-
-    const aggregatedResponses = existingResponse?.aggregatedResponses ?? {
-      total: 0,
-    }
-
-    const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor ?? 2.5,
-      interval: existingResponse?.interval ?? 1,
-      streak: (existingResponse?.correctCountStreak ?? 0) + 1,
-      grade: 1,
-    })
-
-    // create / update question response
-    await upsertContentResponse({
-      prisma,
-      id,
-      participantId: ctx.user.sub,
-      courseId,
-      newAverageResponseTime,
-      existingInstance,
-      aggregatedResponses,
-      resultSpacedRepetition,
-    })
-
-    return result
-  })
+  )
 
   return transactionResult
 }
@@ -2615,9 +2645,10 @@ export async function respondToQuestion(
     participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
   },
-  ctx: Context
+  ctx: Context,
+  prisma?: PrismaTransactionClient
 ) {
-  const result = await ctx.prisma.$transaction(async (prisma) => {
+  const result = await runResponseTransaction(ctx, prisma, async (prisma) => {
     const existingInstance = await getValidateElementInstance({
       prisma,
       id,
@@ -2894,12 +2925,14 @@ interface ElementResponseInput {
 
 async function respondToElement({
   ctx,
+  prisma,
   response,
   courseId,
   answerTime,
   skipTracking = false,
 }: {
   ctx: Context
+  prisma?: PrismaTransactionClient
   response: ElementResponseInput
   courseId: string
   answerTime: number
@@ -2909,9 +2942,10 @@ async function respondToElement({
   score: number | null
   evaluation: InstanceEvaluation | null
 }> {
+  const responsePrisma = prisma ?? ctx.prisma
   const participation =
     ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
-      ? await ctx.prisma.participation.findUnique({
+      ? await responsePrisma.participation.findUnique({
           where: {
             courseId_participantId: {
               courseId,
@@ -2934,7 +2968,8 @@ async function respondToElement({
         participation,
         skipTracking,
       },
-      ctx
+      ctx,
+      prisma
     )
 
     // only update status as no points are awarded for flashcards
@@ -2968,7 +3003,8 @@ async function respondToElement({
         participation,
         skipTracking,
       },
-      ctx
+      ctx,
+      prisma
     )
 
     // only update status as no points are awarded for content elements
@@ -3004,7 +3040,8 @@ async function respondToElement({
         participation,
         skipTracking,
       },
-      ctx
+      ctx,
+      prisma
     )
 
     if (result) {
@@ -3033,7 +3070,8 @@ async function respondToElement({
         participation,
         skipTracking,
       },
-      ctx
+      ctx,
+      prisma
     )
 
     if (result) {
@@ -3062,7 +3100,8 @@ async function respondToElement({
         participation,
         skipTracking,
       },
-      ctx
+      ctx,
+      prisma
     )
 
     if (result) {
@@ -3095,7 +3134,8 @@ async function respondToElement({
         participation,
         skipTracking,
       },
-      ctx
+      ctx,
+      prisma
     )
 
     if (result) {
@@ -3126,7 +3166,8 @@ async function respondToElement({
         participation,
         skipTracking,
       },
-      ctx
+      ctx,
+      prisma
     )
 
     if (result) {
@@ -3161,6 +3202,660 @@ export interface RespondToElementStackInput {
   isOwner?: boolean
 }
 
+type OfflinePracticeAttemptSyncStatus =
+  | DB.OfflinePracticeAttemptSyncStatus
+  | 'ALREADY_SYNCED'
+
+interface OfflinePracticeAttemptSyncInput {
+  clientAttemptId: string
+  quizId: string
+  quizRevision: string
+  stackId: number
+  responses: ElementResponseInput[]
+  stackAnswerTime: number
+}
+
+interface SyncOfflinePracticeAttemptsInput {
+  attempts: OfflinePracticeAttemptSyncInput[]
+}
+
+interface OfflinePracticeAttemptSyncResult {
+  clientAttemptId: string
+  status: OfflinePracticeAttemptSyncStatus
+  feedback?: {
+    id: number
+    status: StackFeedbackStatus
+    score?: number
+    evaluations?: InstanceEvaluation[]
+  } | null
+  message?: string | null
+}
+
+type OfflinePracticeAttemptStoredFeedback = Pick<
+  NonNullable<OfflinePracticeAttemptSyncResult['feedback']>,
+  'id' | 'status' | 'score'
+>
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  )
+}
+
+function toInputJson(value: unknown): DB.Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as DB.Prisma.InputJsonValue
+}
+
+function toStableJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => toStableJsonValue(item))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => [key, toStableJsonValue(item)])
+    )
+  }
+
+  return value
+}
+
+function getOfflinePracticeAttemptHash(
+  attempt: OfflinePracticeAttemptSyncInput
+) {
+  return createHash('sha256')
+    .update(
+      JSON.stringify(
+        toStableJsonValue({
+          quizId: attempt.quizId,
+          quizRevision: attempt.quizRevision,
+          stackId: attempt.stackId,
+          stackAnswerTime: attempt.stackAnswerTime,
+          responses: attempt.responses,
+        })
+      )
+    )
+    .digest('hex')
+}
+
+function getOfflinePracticeRevision({
+  id,
+  updatedAt,
+}: Pick<DB.PracticeQuiz, 'id' | 'updatedAt'>) {
+  return `${id}:${updatedAt.toISOString()}`
+}
+
+function mapExistingOfflinePracticeAttemptSync(
+  record: DB.OfflinePracticeAttemptSync,
+  attemptHash: string
+): OfflinePracticeAttemptSyncResult {
+  if (record.attemptHash !== attemptHash) {
+    return {
+      clientAttemptId: record.clientAttemptId,
+      status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+      message: OFFLINE_PRACTICE_ATTEMPT_MISMATCH_ERROR,
+    }
+  }
+
+  return {
+    clientAttemptId: record.clientAttemptId,
+    status:
+      record.status === DB.OfflinePracticeAttemptSyncStatus.ACCEPTED
+        ? 'ALREADY_SYNCED'
+        : record.status,
+    feedback: record.serverFeedback
+      ? (record.serverFeedback as OfflinePracticeAttemptSyncResult['feedback'])
+      : null,
+    message: record.errorMessage,
+  }
+}
+
+function toStoredOfflinePracticeFeedback(
+  feedback: NonNullable<OfflinePracticeAttemptSyncResult['feedback']>
+): OfflinePracticeAttemptStoredFeedback {
+  return {
+    id: feedback.id,
+    status: feedback.status,
+    ...(typeof feedback.score === 'number' ? { score: feedback.score } : {}),
+  }
+}
+
+function hasOnlyExpectedOfflinePracticePayload(
+  response: ElementResponseInput,
+  expectedKey: keyof ElementResponseInput
+) {
+  const payloadKeys: (keyof ElementResponseInput)[] = [
+    'flashcardResponse',
+    'contentReponse',
+    'choicesResponse',
+    'numericalResponse',
+    'freeTextResponse',
+    'selectionResponse',
+    'caseStudyResponse',
+  ]
+
+  return payloadKeys.every(
+    (key) => key === expectedKey || response[key] == null
+  )
+}
+
+function isUniqueNumberArray(values: number[]) {
+  return new Set(values).size === values.length
+}
+
+function hasValidOfflinePracticeChoicesResponse(
+  response: ElementResponseInput,
+  elementData: ChoicesElementData
+) {
+  if (
+    !hasOnlyExpectedOfflinePracticePayload(response, 'choicesResponse') ||
+    !Array.isArray(response.choicesResponse)
+  ) {
+    return false
+  }
+
+  const validChoiceIxs = new Set(
+    elementData.options.choices.map((choice) => choice.ix)
+  )
+  const responseIxs = response.choicesResponse.map((choice) => choice.ix)
+
+  return (
+    isUniqueNumberArray(responseIxs) &&
+    response.choicesResponse.every(
+      (choice) =>
+        Number.isInteger(choice.ix) &&
+        validChoiceIxs.has(choice.ix) &&
+        choice.selected === true
+    )
+  )
+}
+
+function hasValidOfflinePracticeNumericalResponse(
+  response: ElementResponseInput,
+  elementData: NumericalElementData
+) {
+  if (
+    !hasOnlyExpectedOfflinePracticePayload(response, 'numericalResponse') ||
+    typeof response.numericalResponse !== 'number' ||
+    !Number.isFinite(response.numericalResponse) ||
+    response.numericalResponse > 1e30 ||
+    response.numericalResponse < -1e30
+  ) {
+    return false
+  }
+
+  const restrictions = elementData.options.restrictions
+  return (
+    (typeof restrictions?.min !== 'number' ||
+      response.numericalResponse >= restrictions.min) &&
+    (typeof restrictions?.max !== 'number' ||
+      response.numericalResponse <= restrictions.max)
+  )
+}
+
+function hasValidOfflinePracticeFreeTextResponse(
+  response: ElementResponseInput,
+  elementData: FreeTextElementData
+) {
+  if (
+    !hasOnlyExpectedOfflinePracticePayload(response, 'freeTextResponse') ||
+    typeof response.freeTextResponse !== 'string' ||
+    response.freeTextResponse.trim() === ''
+  ) {
+    return false
+  }
+
+  const maxLength = elementData.options.restrictions?.maxLength
+  return (
+    typeof maxLength !== 'number' ||
+    response.freeTextResponse.length <= maxLength
+  )
+}
+
+function hasValidOfflinePracticeSelectionResponse(
+  response: ElementResponseInput,
+  elementData: SelectionElementData
+) {
+  if (
+    !hasOnlyExpectedOfflinePracticePayload(response, 'selectionResponse') ||
+    !Array.isArray(response.selectionResponse)
+  ) {
+    return false
+  }
+
+  const validAnswerIds = new Set(
+    elementData.options.answerCollection?.entries.map((entry) => entry.id) ?? []
+  )
+  const selectedAnswerIds = response.selectionResponse.filter(
+    (answerId) => answerId !== -1
+  )
+
+  return (
+    validAnswerIds.size > 0 &&
+    selectedAnswerIds.length <= elementData.options.numberOfInputs &&
+    isUniqueNumberArray(selectedAnswerIds) &&
+    response.selectionResponse.every(
+      (answerId) =>
+        Number.isInteger(answerId) &&
+        (answerId === -1 || validAnswerIds.has(answerId))
+    )
+  )
+}
+
+function hasValidOfflinePracticeCaseStudyResponse(
+  response: ElementResponseInput,
+  elementData: CaseStudyElementData
+) {
+  if (
+    !hasOnlyExpectedOfflinePracticePayload(response, 'caseStudyResponse') ||
+    !Array.isArray(response.caseStudyResponse) ||
+    !Array.isArray(elementData.options.items)
+  ) {
+    return false
+  }
+
+  const validCaseIds = new Set(
+    elementData.options.cases.map((caseItem) => caseItem.id)
+  )
+  const validItemIds = new Set(elementData.options.items.map((item) => item.id))
+  const validCriteriaById = new Map(
+    elementData.options.criteria.map((criterion) => [criterion.id, criterion])
+  )
+  const caseIds = response.caseStudyResponse.map(
+    (caseResponse) => caseResponse.caseId
+  )
+
+  if (new Set(caseIds).size !== caseIds.length) {
+    return false
+  }
+
+  return response.caseStudyResponse.every((caseResponse) => {
+    if (!validCaseIds.has(caseResponse.caseId)) {
+      return false
+    }
+
+    const itemIds = caseResponse.itemResponses.map(
+      (itemResponse) => itemResponse.itemId
+    )
+    if (!isUniqueNumberArray(itemIds)) {
+      return false
+    }
+
+    return caseResponse.itemResponses.every((itemResponse) => {
+      if (!validItemIds.has(itemResponse.itemId)) {
+        return false
+      }
+
+      const criterionIds = itemResponse.criterionResponses.map(
+        (criterionResponse) => criterionResponse.criterionId
+      )
+      if (new Set(criterionIds).size !== criterionIds.length) {
+        return false
+      }
+
+      return itemResponse.criterionResponses.every((criterionResponse) => {
+        const criterion = validCriteriaById.get(criterionResponse.criterionId)
+
+        return (
+          !!criterion &&
+          Number.isFinite(criterionResponse.response) &&
+          criterionResponse.response >= criterion.min &&
+          criterionResponse.response <= criterion.max
+        )
+      })
+    })
+  })
+}
+
+function hasExpectedOfflinePracticeResponsePayload(
+  response: ElementResponseInput,
+  elementData: ElementData
+) {
+  if (elementData.type !== response.type) {
+    return false
+  }
+
+  switch (response.type) {
+    case DB.ElementType.FLASHCARD:
+      return (
+        hasOnlyExpectedOfflinePracticePayload(response, 'flashcardResponse') &&
+        Object.values(FlashcardCorrectness).includes(
+          response.flashcardResponse!
+        )
+      )
+    case DB.ElementType.CONTENT:
+      return (
+        hasOnlyExpectedOfflinePracticePayload(response, 'contentReponse') &&
+        response.contentReponse === true
+      )
+    case DB.ElementType.SC:
+    case DB.ElementType.MC:
+    case DB.ElementType.KPRIM:
+      return hasValidOfflinePracticeChoicesResponse(
+        response,
+        elementData as ChoicesElementData
+      )
+    case DB.ElementType.NUMERICAL:
+      return hasValidOfflinePracticeNumericalResponse(
+        response,
+        elementData as NumericalElementData
+      )
+    case DB.ElementType.FREE_TEXT:
+      return hasValidOfflinePracticeFreeTextResponse(
+        response,
+        elementData as FreeTextElementData
+      )
+    case DB.ElementType.SELECTION:
+      return hasValidOfflinePracticeSelectionResponse(
+        response,
+        elementData as SelectionElementData
+      )
+    case DB.ElementType.CASE_STUDY:
+      return hasValidOfflinePracticeCaseStudyResponse(
+        response,
+        elementData as CaseStudyElementData
+      )
+    default:
+      return false
+  }
+}
+
+async function validateOfflinePracticeAttempt(
+  attempt: OfflinePracticeAttemptSyncInput,
+  participantId: string,
+  prisma: PrismaTransactionClient
+): Promise<
+  | {
+      courseId: string
+    }
+  | {
+      status: DB.OfflinePracticeAttemptSyncStatus
+      message: string
+    }
+> {
+  if (attempt.responses.length === 0) {
+    return {
+      status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+      message: 'Offline practice attempt does not contain responses.',
+    }
+  }
+
+  if (attempt.stackAnswerTime < 0) {
+    return {
+      status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+      message: 'Offline practice attempt answer time is invalid.',
+    }
+  }
+
+  const quiz = await prisma.practiceQuiz.findFirst({
+    where: {
+      id: attempt.quizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      isAssessmentEnabled: false,
+      course: {
+        isAssessmentEnabled: false,
+        participations: {
+          some: {
+            participantId,
+            isActive: true,
+          },
+        },
+      },
+      stacks: {
+        some: { id: attempt.stackId },
+      },
+    },
+    select: {
+      id: true,
+      courseId: true,
+      updatedAt: true,
+      stacks: {
+        where: { id: attempt.stackId },
+        select: {
+          id: true,
+          elements: {
+            select: {
+              id: true,
+              elementType: true,
+              elementData: true,
+            },
+          },
+        },
+        take: 1,
+      },
+    },
+  })
+
+  if (!quiz) {
+    return {
+      status: DB.OfflinePracticeAttemptSyncStatus.NO_LONGER_AUTHORIZED,
+      message: 'Practice quiz is no longer available for this participant.',
+    }
+  }
+
+  if (getOfflinePracticeRevision(quiz) !== attempt.quizRevision) {
+    return {
+      status: DB.OfflinePracticeAttemptSyncStatus.STALE_REVISION,
+      message: 'Downloaded practice quiz revision is stale.',
+    }
+  }
+
+  const stackElements = new Map(
+    quiz.stacks[0]!.elements.map((element) => [
+      element.id,
+      {
+        type: element.elementType,
+        elementData: element.elementData as ElementData,
+      },
+    ])
+  )
+  const responseInstanceIds = attempt.responses.map(
+    (response) => response.instanceId
+  )
+  const hasOnlyStackResponses = attempt.responses.every((response) => {
+    const stackElement = stackElements.get(response.instanceId)
+
+    return (
+      stackElement?.type === response.type &&
+      hasExpectedOfflinePracticeResponsePayload(
+        response,
+        stackElement.elementData
+      )
+    )
+  })
+
+  if (
+    !hasOnlyStackResponses ||
+    new Set(responseInstanceIds).size !== responseInstanceIds.length
+  ) {
+    return {
+      status: DB.OfflinePracticeAttemptSyncStatus.NO_LONGER_AUTHORIZED,
+      message: OFFLINE_PRACTICE_INVALID_PAYLOAD_ERROR,
+    }
+  }
+
+  return { courseId: quiz.courseId }
+}
+
+async function updateOfflinePracticeAttemptSync(
+  {
+    id,
+    status,
+    feedback,
+    message,
+  }: {
+    id: number
+    status: DB.OfflinePracticeAttemptSyncStatus
+    feedback?: NonNullable<OfflinePracticeAttemptSyncResult['feedback']>
+    message?: string | null
+  },
+  prisma: PrismaTransactionClient
+) {
+  await prisma.offlinePracticeAttemptSync.update({
+    where: { id },
+    data: {
+      status,
+      serverFeedback:
+        typeof feedback === 'undefined'
+          ? undefined
+          : toInputJson(toStoredOfflinePracticeFeedback(feedback)),
+      errorMessage: message ?? null,
+    },
+  })
+}
+
+async function syncOfflinePracticeAttempt(
+  attempt: OfflinePracticeAttemptSyncInput,
+  ctx: Context
+): Promise<OfflinePracticeAttemptSyncResult> {
+  const clientAttemptId = attempt.clientAttemptId.trim()
+  const attemptHash = getOfflinePracticeAttemptHash(attempt)
+
+  if (!clientAttemptId) {
+    return {
+      clientAttemptId,
+      status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+      message: 'Offline practice attempt id is required.',
+    }
+  }
+
+  try {
+    return await ctx.prisma.$transaction(async (prisma) => {
+      const record = await prisma.offlinePracticeAttemptSync.create({
+        data: {
+          clientAttemptId,
+          attemptHash,
+          participantId: ctx.user!.sub,
+          practiceQuizId: attempt.quizId,
+          quizRevision: attempt.quizRevision,
+          stackId: attempt.stackId,
+          status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+          errorMessage: null,
+        },
+      })
+
+      const validation = await validateOfflinePracticeAttempt(
+        { ...attempt, clientAttemptId },
+        ctx.user!.sub,
+        prisma
+      )
+
+      if ('status' in validation) {
+        await updateOfflinePracticeAttemptSync(
+          {
+            id: record.id,
+            status: validation.status,
+            message: validation.message,
+          },
+          prisma
+        )
+
+        return {
+          clientAttemptId,
+          status: validation.status,
+          message: validation.message,
+        }
+      }
+
+      const feedback = await respondToElementStack(
+        {
+          stackId: attempt.stackId,
+          courseId: validation.courseId,
+          responses: attempt.responses,
+          stackAnswerTime: attempt.stackAnswerTime,
+          isOwner: false,
+        },
+        ctx,
+        prisma
+      )
+
+      if (!feedback) {
+        await updateOfflinePracticeAttemptSync(
+          {
+            id: record.id,
+            status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+            message: OFFLINE_PRACTICE_SERVER_ERROR,
+          },
+          prisma
+        )
+
+        return {
+          clientAttemptId,
+          status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+          message: OFFLINE_PRACTICE_SERVER_ERROR,
+        }
+      }
+
+      await updateOfflinePracticeAttemptSync(
+        {
+          id: record.id,
+          status: DB.OfflinePracticeAttemptSyncStatus.ACCEPTED,
+          feedback,
+        },
+        prisma
+      )
+
+      return {
+        clientAttemptId,
+        status: DB.OfflinePracticeAttemptSyncStatus.ACCEPTED,
+        feedback,
+      }
+    })
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      const existing = await ctx.prisma.offlinePracticeAttemptSync.findUnique({
+        where: {
+          participantId_clientAttemptId: {
+            participantId: ctx.user!.sub,
+            clientAttemptId,
+          },
+        },
+      })
+
+      if (existing) {
+        return mapExistingOfflinePracticeAttemptSync(existing, attemptHash)
+      }
+    } else {
+      console.error('Offline practice attempt sync failed:', error)
+    }
+
+    return {
+      clientAttemptId,
+      status: DB.OfflinePracticeAttemptSyncStatus.SERVER_ERROR,
+      message: OFFLINE_PRACTICE_SERVER_ERROR,
+    }
+  }
+}
+
+export async function syncOfflinePracticeAttempts(
+  { attempts }: SyncOfflinePracticeAttemptsInput,
+  ctx: Context
+) {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    throw new Error('Only participants can sync offline practice attempts.')
+  }
+
+  if (attempts.length > OFFLINE_PRACTICE_SYNC_BATCH_LIMIT) {
+    throw new Error(
+      `Offline practice sync batches are limited to ${OFFLINE_PRACTICE_SYNC_BATCH_LIMIT} attempts.`
+    )
+  }
+
+  const results: OfflinePracticeAttemptSyncResult[] = []
+
+  for (const attempt of attempts) {
+    results.push(await syncOfflinePracticeAttempt(attempt, ctx))
+  }
+
+  return results
+}
+
 export async function respondToElementStack(
   {
     stackId,
@@ -3169,11 +3864,13 @@ export async function respondToElementStack(
     stackAnswerTime,
     isOwner,
   }: RespondToElementStackInput,
-  ctx: Context
+  ctx: Context,
+  prisma?: PrismaTransactionClient
 ) {
+  const responsePrisma = prisma ?? ctx.prisma
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
-    const stack = await ctx.prisma.elementStack.findUnique({
+    const stack = await responsePrisma.elementStack.findUnique({
       where: { id: stackId },
       include: {
         microLearning: true,
@@ -3210,6 +3907,7 @@ export async function respondToElementStack(
   for (const response of responses) {
     const { grading, score, evaluation } = await respondToElement({
       ctx,
+      prisma,
       response,
       courseId,
       answerTime: elementAnswerTime,

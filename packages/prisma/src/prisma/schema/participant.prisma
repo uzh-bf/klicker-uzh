@@ -90,6 +90,7 @@ model Participant {
   leaderboards                    LeaderboardEntry[]
   subscriptions                   PushSubscription[]
   pushDevices                     PushDevice[]
+  offlinePracticeAttemptSyncs     OfflinePracticeAttemptSync[]
   clueAssignments                 GroupActivityClueAssignment[]
   awards                          AwardEntry[]
   achievements                    ParticipantAchievementInstance[]
