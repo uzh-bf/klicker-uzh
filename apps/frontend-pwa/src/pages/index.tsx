@@ -14,6 +14,7 @@ import {
   SelfDocument,
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
@@ -27,6 +28,7 @@ import { useEffect } from 'react'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
+import NativePushSettings from '../components/common/NativePushSettings'
 import MicroLearningListSubscriber from '../components/microLearning/MicroLearningListSubscriber'
 import useStudentOverviewSplit from '../lib/hooks/useStudentOverviewSplit'
 
@@ -222,6 +224,15 @@ function Index() {
         className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
         data-cy="homepage"
       >
+        <NativePushSettings
+          participantId={
+            selfData?.self?.role === UserRole.Participant
+              ? selfData.self.id
+              : undefined
+          }
+          locale={selfData?.self?.locale}
+        />
+
         {/* {hasSeenSurvey === 'false' && (
           <Link
             href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"

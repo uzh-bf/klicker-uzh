@@ -553,6 +553,15 @@ Other participants will only see your public **participant profile**, including 
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
+    push: {
+      nativeTitle: 'App notifications',
+      nativeEnabled: 'Notifications are enabled for this device.',
+      nativeDisabled: 'Enable app notifications for course updates.',
+      nativeDenied: 'Notifications are blocked for this device.',
+      nativeError: 'Notifications could not be updated.',
+      enableNative: 'Enable',
+      disableNative: 'Disable',
+    },
     chatbot: {
       loginRequiredMessage:
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',

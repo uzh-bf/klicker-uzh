@@ -599,7 +599,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 3 complete; ready to commit.
+Current: Slice 4 complete; ready for Slice 5.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -636,7 +636,22 @@ Check: `pnpm --filter @klicker-uzh/graphql exec vitest run test/pushDevices.test
 Check: `pnpm --filter @klicker-uzh/graphql check` passed after building missing `@klicker-uzh/hatchet` dist.
 Check: `pnpm --filter @klicker-uzh/prisma check` passed.
 Blocker: actual FCM dispatch is not wired yet; it needs a Firebase Admin / Google OAuth credential decision and invalid-token handling in the send path.
-Next: commit Slice 3, then start Slice 4 native push frontend registration.
+Status: Slice 3 committed as `8f231e46a`.
+Status: Native push frontend registration added: app-level Capacitor notification opt-in on participant home, FCM/APNs token registration through GraphQL, native unregister/backend revoke on participant logout/account deletion/remaining live-quiz logout links.
+Status: Native push local opt-in/token state is participant-scoped; registration includes a stable local installation id as `deviceId` so backend same-device token rotation cleanup can run.
+Status: `_app.tsx` no longer prompts for push on startup; it only handles native app URL and notification action routing to internal Klicker paths.
+Status: browser Web Push hook and existing browser course subscription path unchanged.
+Status: local review done. Finding: native availability must be discovered after mount to avoid SSR/client hydration mismatch; hook now renders unavailable initially and updates in `useEffect`.
+Status: simplification done. Fixed dropped async registration errors, centralized stored-token revoke/unregister cleanup, added remaining logout paths, removed unused hook error state, and made native listener setup clean up already-attached listeners if later listener registration fails. Notification tap routing kept because it is explicit Slice 4 scope, but push-tap paths reject login-style redirect parameters.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with existing warnings only.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa build` passed.
+Check: `git diff --check` passed.
+Check: Android prod sync + release guard passed.
+Check: iOS prod `cap copy ios` + release guard passed using Node 26 for Capacitor CLI.
+Check: `npx agent-browser` opened `http://localhost:3001/docs`; final screenshot saved at `/tmp/klicker-capacitor-slice4-docs-final-reviewed.png`.
+Blocker: real native push token registration still needs working Android/iOS emulator or device plus Firebase/APNs credentials; local full emulator status unchanged from Slice 1/2 blockers.
+Next: commit Slice 4, then start Slice 5 practice download API.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

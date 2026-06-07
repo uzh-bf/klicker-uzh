@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   GetLiveQuizLeaderboardDocument,
   LogoutParticipantDocument,
+  RevokePushDeviceDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -17,6 +18,7 @@ import { useRouter } from 'next/router'
 import Rank1Img from '../../../public/rank1.svg'
 import Rank2Img from '../../../public/rank2.svg'
 import Rank3Img from '../../../public/rank3.svg'
+import { revokeStoredNativePushRegistration } from '../../lib/nativePush'
 
 type BlockResult = {
   score: number
@@ -59,6 +61,17 @@ function LiveQuizLeaderboard({
 
   // logout mutation in case user decides not to participate in gamification
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
+  const [revokePushDevice] = useMutation(RevokePushDeviceDocument)
+
+  async function logoutParticipantWithNativePushCleanup() {
+    await revokeStoredNativePushRegistration({
+      participantId: selfData?.self?.id,
+      revokeToken: async (token) => {
+        await revokePushDevice({ variables: { token } })
+      },
+    })
+    await logoutParticipant()
+  }
 
   // save the current leaderboard to local storage
   useEffect(() => {
@@ -150,7 +163,7 @@ function LiveQuizLeaderboard({
                 logout: (text) => (
                   <span
                     onClick={async () => {
-                      await logoutParticipant()
+                      await logoutParticipantWithNativePushCleanup()
                       router.reload()
                     }}
                     className="cursor-pointer underline"
@@ -184,7 +197,7 @@ function LiveQuizLeaderboard({
                   logout: (text) => (
                     <span
                       onClick={async () => {
-                        await logoutParticipant()
+                        await logoutParticipantWithNativePushCleanup()
                         router.reload()
                       }}
                       className="cursor-pointer underline"

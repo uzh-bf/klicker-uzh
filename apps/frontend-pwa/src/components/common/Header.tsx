@@ -14,6 +14,7 @@ import {
   LogoutParticipantDocument,
   LogoutTemporaryParticipantDocument,
   Participant,
+  RevokePushDeviceDocument,
   SelfDocument,
   StudentCourse,
   UserRole,
@@ -25,6 +26,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import { revokeStoredNativePushRegistration } from '../../lib/nativePush'
 import AvatarWithLevel from './AvatarWithLevel'
 
 interface HeaderProps {
@@ -52,6 +54,7 @@ function Header({
   const [logoutParticipant, { loading: loggingOut }] = useMutation(
     LogoutParticipantDocument
   )
+  const [revokePushDevice] = useMutation(RevokePushDeviceDocument)
   const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
     useMutation(LogoutTemporaryParticipantDocument)
 
@@ -63,6 +66,15 @@ function Header({
     participant.role === UserRole.Participant &&
     process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
     (!participant?.avatar || !participant?.email)
+
+  async function revokeNativePushOnLogout() {
+    await revokeStoredNativePushRegistration({
+      participantId: participant?.id,
+      revokeToken: async (token) => {
+        await revokePushDevice({ variables: { token } })
+      },
+    })
+  }
 
   return (
     <div
@@ -314,6 +326,7 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
+                      await revokeNativePushOnLogout()
                       await logoutParticipant()
                       router.push('/login')
                     },

@@ -555,6 +555,15 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
+    push: {
+      nativeTitle: 'App-Benachrichtigungen',
+      nativeEnabled: 'Benachrichtigungen sind auf diesem Gerät aktiviert.',
+      nativeDisabled: 'App-Benachrichtigungen für Kursupdates aktivieren.',
+      nativeDenied: 'Benachrichtigungen sind auf diesem Gerät blockiert.',
+      nativeError: 'Benachrichtigungen konnten nicht aktualisiert werden.',
+      enableNative: 'Aktivieren',
+      disableNative: 'Deaktivieren',
+    },
     chatbot: {
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',

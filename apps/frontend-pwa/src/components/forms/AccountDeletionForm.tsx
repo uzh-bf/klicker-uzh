@@ -2,10 +2,12 @@ import { useMutation } from '@apollo/client'
 import {
   DeleteParticipantAccountDocument,
   LogoutParticipantDocument,
+  RevokePushDeviceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { revokeStoredNativePushRegistration } from '../../lib/nativePush'
 
 function AccountDeletionForm() {
   const t = useTranslations()
@@ -17,6 +19,15 @@ function AccountDeletionForm() {
   const [logoutParticipant, { loading: loggingOut }] = useMutation(
     LogoutParticipantDocument
   )
+  const [revokePushDevice] = useMutation(RevokePushDeviceDocument)
+
+  async function revokeNativePushOnLogout() {
+    await revokeStoredNativePushRegistration({
+      revokeToken: async (token) => {
+        await revokePushDevice({ variables: { token } })
+      },
+    })
+  }
 
   return (
     <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
@@ -48,6 +59,7 @@ function AccountDeletionForm() {
               primaryButtonStyle="destructive"
               primaryLoading={deletingAccount || loggingOut}
               onPrimaryAction={async () => {
+                await revokeNativePushOnLogout()
                 await deleteParticipantAccount()
                 try {
                   await logoutParticipant()

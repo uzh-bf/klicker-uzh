@@ -2,12 +2,8 @@ import { ApolloProvider } from '@apollo/client'
 import type { URLOpenListenerEvent } from '@capacitor/app'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
-import {
-  ActionPerformed,
-  PushNotificationSchema,
-  PushNotifications,
-  Token,
-} from '@capacitor/push-notifications'
+import type { ActionPerformed } from '@capacitor/push-notifications'
+import { PushNotifications } from '@capacitor/push-notifications'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
@@ -33,9 +29,34 @@ const KLICKER_APP_HOSTS = new Set([
   'assessment.klicker.uzh.ch',
 ])
 
-function getInternalKlickerPath(url: string) {
+function hasRedirectParam(search: string) {
+  const searchParams = new URLSearchParams(search)
+
+  return searchParams.has('redirect_to') || searchParams.has('redirectTo')
+}
+
+function getInternalKlickerPath(
+  url: string,
+  {
+    rejectRedirectParams = false,
+  }: {
+    rejectRedirectParams?: boolean
+  } = {}
+) {
+  const trimmedUrl = url.trim()
+
+  if (trimmedUrl.startsWith('/') && !trimmedUrl.startsWith('//')) {
+    const [, search = ''] = trimmedUrl.split('?')
+
+    if (rejectRedirectParams && hasRedirectParam(search.split('#')[0] ?? '')) {
+      return null
+    }
+
+    return trimmedUrl.replace(/^\/+/, '/')
+  }
+
   try {
-    const parsedUrl = new URL(url)
+    const parsedUrl = new URL(trimmedUrl)
 
     if (!KLICKER_APP_HOSTS.has(parsedUrl.hostname)) {
       return null
@@ -43,10 +64,26 @@ function getInternalKlickerPath(url: string) {
 
     const pathname = parsedUrl.pathname.replace(/^\/+/, '/')
 
+    if (rejectRedirectParams && hasRedirectParam(parsedUrl.search)) {
+      return null
+    }
+
     return `${pathname}${parsedUrl.search}${parsedUrl.hash}`
   } catch {
     return null
   }
+}
+
+function getPushActionUrl(notification: ActionPerformed) {
+  const data = notification.notification.data
+
+  if (!data || typeof data !== 'object') {
+    return null
+  }
+
+  const targetUrl = data.url ?? data.deepLink ?? data.link
+
+  return typeof targetUrl === 'string' ? targetUrl : null
 }
 
 function App({ Component, pageProps }: AppProps) {
@@ -59,48 +96,6 @@ function App({ Component, pageProps }: AppProps) {
     if (MATOMO_URL && MATOMO_SITE_ID) {
       init({ url: MATOMO_URL, siteId: MATOMO_SITE_ID })
     }
-
-    // if we are on iOS or android, register for push notifications
-    if (
-      Capacitor.getPlatform() === 'ios' ||
-      Capacitor.getPlatform() === 'android'
-    ) {
-      PushNotifications.requestPermissions().then((result) => {
-        if (result.receive === 'granted') {
-          // Register with Apple / Google to receive push via APNS/FCM
-          PushNotifications.register()
-        } else {
-          // Show some error
-          console.error(result)
-        }
-      })
-
-      // On success, we should be able to receive notifications
-      PushNotifications.addListener('registration', (token: Token) => {
-        console.log('Push registration success, token: ' + token.value)
-      })
-
-      // Some issue with our setup and push will not work
-      PushNotifications.addListener('registrationError', (error: any) => {
-        console.log('Error on registration: ' + JSON.stringify(error))
-      })
-
-      // Show us the notification payload if the app is open on our device
-      PushNotifications.addListener(
-        'pushNotificationReceived',
-        (notification: PushNotificationSchema) => {
-          console.log('Push received: ' + JSON.stringify(notification))
-        }
-      )
-
-      // Method called when tapping on a notification
-      PushNotifications.addListener(
-        'pushNotificationActionPerformed',
-        (notification: ActionPerformed) => {
-          console.log('Push action performed: ' + JSON.stringify(notification))
-        }
-      )
-    }
   }, [])
 
   useEffect(() => {
@@ -108,30 +103,66 @@ function App({ Component, pageProps }: AppProps) {
       return
     }
 
-    let listenerHandle: { remove: () => Promise<void> } | undefined
+    let listenerHandles: { remove: () => Promise<void> }[] = []
     let removed = false
 
-    void CapacitorApp.addListener(
-      'appUrlOpen',
-      (event: URLOpenListenerEvent) => {
-        const path = getInternalKlickerPath(event.url)
+    async function setupNativeRoutingListeners() {
+      const handles: { remove: () => Promise<void> }[] = []
 
-        if (path) {
-          void router.push(path)
-        }
+      try {
+        const appUrlHandle = await CapacitorApp.addListener(
+          'appUrlOpen',
+          (event: URLOpenListenerEvent) => {
+            const path = getInternalKlickerPath(event.url)
+
+            if (path) {
+              void router.push(path)
+            }
+          }
+        )
+        handles.push(appUrlHandle)
+
+        const notificationActionHandle = await PushNotifications.addListener(
+          'pushNotificationActionPerformed',
+          (event: ActionPerformed) => {
+            const targetUrl = getPushActionUrl(event)
+
+            if (!targetUrl) {
+              return
+            }
+
+            const path = getInternalKlickerPath(targetUrl, {
+              rejectRedirectParams: true,
+            })
+
+            if (path) {
+              void router.push(path)
+            }
+          }
+        )
+        handles.push(notificationActionHandle)
+      } catch (e) {
+        await Promise.all(handles.map((handle) => handle.remove()))
+        throw e
       }
-    ).then((handle) => {
+
       if (removed) {
-        void handle.remove()
+        await Promise.all(handles.map((handle) => handle.remove()))
         return
       }
 
-      listenerHandle = handle
+      listenerHandles = handles
+    }
+
+    void setupNativeRoutingListeners().catch((e) => {
+      console.error('Failed to setup native routing listeners:', e)
     })
 
     return () => {
       removed = true
-      void listenerHandle?.remove()
+      listenerHandles.forEach((handle) => {
+        void handle.remove()
+      })
     }
   }, [router])
 
