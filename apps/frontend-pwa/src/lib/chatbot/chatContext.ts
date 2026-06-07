@@ -105,7 +105,7 @@ export function buildPracticeQuizChatContext({
       ? buildActivity({
           type: 'practiceQuiz',
           id: practiceQuiz.id,
-          displayName: practiceQuiz.displayName,
+          displayName: practiceQuiz.displayName ?? undefined,
         })
       : undefined,
   })
@@ -143,7 +143,7 @@ export function buildMicroLearningChatContext({
       ? buildActivity({
           type: 'microLearning',
           id: microLearning.id,
-          displayName: microLearning.displayName,
+          displayName: microLearning.displayName ?? undefined,
         })
       : undefined,
   })

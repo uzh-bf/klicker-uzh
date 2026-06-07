@@ -196,9 +196,9 @@ export function CourseChatDrawer({
           role="dialog"
           aria-label={t('pwa.chatbot.courseChat')}
           className={twMerge(
-            'fixed z-40 flex flex-col overflow-hidden border-gray-200 bg-white shadow-2xl',
+            'fixed z-[60] flex flex-col overflow-hidden border-gray-200 bg-white shadow-2xl',
             embedded
-              ? 'inset-x-2 bottom-2 h-[min(82dvh,34rem)] max-h-[calc(100dvh-1rem)] rounded-md border'
+              ? 'inset-x-0 bottom-0 h-[min(82dvh,34rem)] max-h-[100dvh] rounded-t-md border-t sm:inset-x-2 sm:bottom-2 sm:max-h-[calc(100dvh-1rem)] sm:rounded-md sm:border'
               : 'inset-x-0 bottom-0 h-[min(85dvh,44rem)] min-h-[28rem] border-t md:inset-x-auto md:bottom-6 md:right-4 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[27rem] md:rounded-md md:border'
           )}
           data-cy="course-chatbot-drawer"

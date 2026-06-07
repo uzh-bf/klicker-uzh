@@ -65,6 +65,7 @@ type ThreadProps = {
   chatbotFallbackIcon?: ComponentType<{ className?: string }>
   chatbotName: string
   contextLabel?: string | null
+  contextualSuggestions?: boolean
   suggestionMode?: 'student' | 'manage'
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
@@ -218,6 +219,7 @@ export const Thread: FC<ThreadProps> = ({
   chatbotFallbackIcon,
   chatbotName,
   contextLabel,
+  contextualSuggestions,
   suggestionMode = 'student',
 }) => {
   const { embedded } = useChatUi()
@@ -242,6 +244,7 @@ export const Thread: FC<ThreadProps> = ({
           chatbotFallbackIcon={chatbotFallbackIcon}
           chatbotName={chatbotName}
           contextLabel={contextLabel}
+          contextualSuggestions={contextualSuggestions ?? Boolean(contextLabel)}
           suggestionMode={suggestionMode}
         />
 
@@ -294,12 +297,14 @@ const ThreadWelcome: FC<{
   chatbotFallbackIcon?: ComponentType<{ className?: string }>
   chatbotName: string
   contextLabel?: string | null
+  contextualSuggestions: boolean
   suggestionMode: 'student' | 'manage'
 }> = ({
   chatbotAvatar,
   chatbotFallbackIcon,
   chatbotName,
   contextLabel,
+  contextualSuggestions,
   suggestionMode,
 }) => {
   const { embedded } = useChatUi()
@@ -336,7 +341,7 @@ const ThreadWelcome: FC<{
             </p>
           )}
           <ThreadWelcomeSuggestions
-            contextual={Boolean(contextLabel)}
+            contextual={contextualSuggestions}
             mode={suggestionMode}
           />
         </div>

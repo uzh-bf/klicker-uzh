@@ -3,11 +3,11 @@ import { describe, expect, test, vi } from 'vitest'
 import { getParticipantCourseChatbots } from '../src/services/chatbots.js'
 
 describe('participant course chatbots', () => {
-  test('returns only public chatbot fields for active course participants', async () => {
+  test('returns only public chatbot fields for enrolled course participants', async () => {
     const ctx = {
       prisma: {
         participation: {
-          findUnique: vi.fn().mockResolvedValue({ id: 1, isActive: true }),
+          findUnique: vi.fn().mockResolvedValue({ id: 1 }),
         },
         chatbot: {
           findMany: vi.fn().mockResolvedValue([
@@ -31,7 +31,7 @@ describe('participant course chatbots', () => {
     )
 
     expect(ctx.prisma.participation.findUnique).toHaveBeenCalledWith({
-      select: { id: true, isActive: true },
+      select: { id: true },
       where: {
         courseId_participantId: {
           courseId: 'course-1',

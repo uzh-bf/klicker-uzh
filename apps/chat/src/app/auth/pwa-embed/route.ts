@@ -28,6 +28,28 @@ function noLoginRedirect(req: NextRequest, chatbotId: string | null) {
   return NextResponse.redirect(noLoginUrl)
 }
 
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+}
+
+function embedBootstrapResponse(chatbotUrl: URL) {
+  const destination = `${chatbotUrl.pathname}${chatbotUrl.search}`
+  return new NextResponse(
+    `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${escapeHtmlAttribute(destination)}"><script>window.location.replace(${JSON.stringify(destination)})</script></head><body></body></html>`,
+    {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Referrer-Policy': 'no-referrer',
+      },
+    }
+  )
+}
+
 export async function GET(req: NextRequest) {
   const queryResult = querySchema.safeParse({
     token: req.nextUrl.searchParams.get('token'),
@@ -118,7 +140,7 @@ export async function GET(req: NextRequest) {
     chatbotUrl.searchParams.set(PWA_CHAT_EMBED_QUERY_KEY, sessionToken)
   }
 
-  const response = NextResponse.redirect(chatbotUrl)
+  const response = embedBootstrapResponse(chatbotUrl)
   const isProduction =
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1'

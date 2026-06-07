@@ -23,7 +23,6 @@ import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
-import { ChatbotAvatar } from './chatbot-avatar'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedSettings } from './embedded-settings'
 import { Thread } from './thread'
@@ -382,6 +381,7 @@ function AssistantLayout({
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextLabel = getKlickerChatContextLabel(context)
+  const hasQuestionContext = Boolean(context?.question)
 
   if (showSidebar) {
     return (
@@ -393,21 +393,8 @@ function AssistantLayout({
   }
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-white px-3 py-2.5 sm:px-4">
-        <ChatbotAvatar
-          avatar={chatbot.avatar}
-          className="text-uzh-blue size-9 border border-gray-200 bg-gray-50"
-          iconClassName="size-4"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">{chatbot.name}</div>
-          {contextLabel && (
-            <div className="mt-1 inline-flex max-w-full items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800">
-              <span className="truncate">{contextLabel}</span>
-            </div>
-          )}
-        </div>
+    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
+      <div className="absolute right-3 top-3 z-10">
         <EmbeddedSettings />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
@@ -415,6 +402,7 @@ function AssistantLayout({
           chatbotAvatar={chatbot.avatar ?? ''}
           chatbotName={chatbot.name}
           contextLabel={contextLabel}
+          contextualSuggestions={hasQuestionContext}
         />
         {showFooter && <Footer />}
       </div>

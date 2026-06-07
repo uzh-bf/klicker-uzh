@@ -50,7 +50,7 @@ export async function getParticipantCourseChatbots(
   ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.findUnique({
-    select: { id: true, isActive: true },
+    select: { id: true },
     where: {
       courseId_participantId: {
         courseId,
@@ -59,7 +59,7 @@ export async function getParticipantCourseChatbots(
     },
   })
 
-  if (!participation?.isActive) {
+  if (!participation) {
     return []
   }
 
