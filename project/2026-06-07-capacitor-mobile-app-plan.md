@@ -599,7 +599,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 6 complete; ready for Slice 7.
+Current: Slice 7 verified after late review fix; ready for commit.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -674,7 +674,25 @@ Check: `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with existing warni
 Check: `npx agent-browser` opened `http://localhost:3001/docs`; screenshot saved at `/tmp/klicker-capacitor-slice6-docs.png` and looked clean.
 Blocker: `pnpm --filter @klicker-uzh/frontend-pwa build` is currently blocked by `getaddrinfo ENOTFOUND fonts.googleapis.com` while fetching existing `next/font/google` fonts, even outside the sandbox. Earlier Slice 6 build passed before the final participant-scoping changes; typecheck/lint/storage-script cover the changed code.
 Blocker: full iOS/Android emulator verification remains unavailable locally: no working full Xcode/simctl, Android emulator/Java gap, and prior CocoaPods network failures. Offline download UI and attempt adapter start in Slice 7, so airplane-mode practice E2E is still not possible in Slice 6.
-Next: commit Slice 6, then start Slice 7 practice response adapter / offline attempt path.
+Status: Slice 6 committed as `16cf53002`.
+Status: Slice 7 practice response adapter added: ElementStack response serialization extracted, online submit wrapped, optional offline submit seam added, local grading/evaluation implemented with `@klicker-uzh/grading`, and pending attempt files stored under participant/quiz-scoped paths.
+Status: Slice 7 pending attempt storage added to offline practice store; index schema upgraded to include pending attempts and derived pending counts. Deleting a downloaded quiz removes its participant-scoped pending attempts.
+Status: Slice 7 simplification review done by Carson. Integrated practical simplifications: offline adapter accepts serialized responses, sync state narrowed to pending-only, and attempt index helper kept private. Deferred removal of `submitStack` seam because the slice explicitly prepares PracticeQuiz/ElementStack reuse for the downloaded/offline route.
+Status: Slice 7 correctness review done by Noether. No Critical/Important blockers; verified online submit variables/storage parity, serializer parity across element types, local evaluation fields used by current UI, and participant-scoped attempt deletion.
+Status: Slice 7 late correctness review by Rawls found an offline parity bug for no-sample-solution Choices/Numerical/FreeText. Fixed local feedback to mirror server behavior: grade only when `hasSampleSolution === true`, otherwise treat correctness as `1`; also hide solution payloads in no-sample local evaluations.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa test:offline-practice-store` passed outside sandbox; sandbox blocks `tsx` IPC pipes.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa test:offline-practice-response` passed outside sandbox; covers serializer across SC/MC/KPRIM/Numerical/FreeText/Selection/CaseStudy/Flashcard/Content, local grading/evaluation, online wrapper variables, and pending offline attempt persistence.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with existing warnings only.
+Check: `git diff --check` passed.
+Check: post-fix `../../node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+Check: post-fix `./node_modules/.bin/next lint` from `apps/frontend-pwa` passed with existing warnings only.
+Check: post-fix `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testOfflinePracticeStorage.ts` passed outside sandbox.
+Check: post-fix `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testPracticeStackResponse.ts` passed outside sandbox, including no-sample-solution regression assertions.
+Check: post-fix `git diff --check` passed.
+Blocker: post-fix `pnpm --filter @klicker-uzh/frontend-pwa check` and `pnpm --filter @klicker-uzh/frontend-pwa lint` failed before executing scripts with `[ERROR] fetch failed`; direct installed binaries were used for equivalent checks.
+Blocker: full offline emulator E2E remains unavailable locally: no working iOS/Android emulator/toolchain, and no downloaded-practice UI route yet. Slice 7 provides the adapter/storage path; Slice 8/next UI work must wire a downloaded quiz route before airplane-mode practice can be exercised end-to-end.
+Next: commit Slice 7, then start attempt sync/downloaded-practice UI wiring for emulator-facing offline flow.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

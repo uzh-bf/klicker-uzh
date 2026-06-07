@@ -1,12 +1,18 @@
+import { ElementType, StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
 import assert from 'node:assert/strict'
 import {
   clearOfflinePracticeData,
   createMemoryOfflinePracticeStorage,
+  deleteDownloadedPracticeQuiz,
   getOfflinePracticeStoragePaths,
   listDownloadedPracticeQuizzes,
+  listOfflinePracticeAttempts,
   loadDownloadedPracticeQuiz,
+  loadOfflinePracticeAttempt,
   readOfflinePracticeIndex,
   saveDownloadedPracticeQuiz,
+  saveOfflinePracticeAttempt,
+  type OfflinePracticeAttempt,
   type OfflinePracticeSnapshot,
 } from '../src/lib/offlinePracticeStorage'
 
@@ -42,8 +48,9 @@ async function run() {
   )
 
   assert.deepEqual(await readOfflinePracticeIndex(participantId, storage), {
-    schemaVersion: 1,
+    schemaVersion: 2,
     quizzes: [],
+    attempts: [],
   })
 
   const savedEntry = await saveDownloadedPracticeQuiz(
@@ -58,12 +65,67 @@ async function run() {
   assert.equal(savedEntry.assetCount, 1)
   assert.equal(savedEntry.pendingAttemptCount, 0)
 
+  const attempt = {
+    clientAttemptId: 'attempt-id',
+    participantId,
+    courseId: 'course-id',
+    quizId: 'quiz-id',
+    quizRevision: snapshot.quizRevision,
+    stackId: 1,
+    responses: [
+      {
+        instanceId: 10,
+        type: ElementType.Content,
+        contentReponse: true,
+      },
+    ],
+    answerTime: 12,
+    localEvaluation: {
+      __typename: 'StackFeedback',
+      id: 1,
+      status: StackFeedbackStatus.Correct,
+      score: null,
+      evaluations: [],
+    },
+    createdAt: '2026-06-07T10:01:00.000Z',
+    updatedAt: '2026-06-07T10:01:00.000Z',
+    syncStatus: 'pending',
+  } satisfies OfflinePracticeAttempt
+
+  const attemptEntry = await saveOfflinePracticeAttempt(
+    participantId,
+    attempt,
+    storage
+  )
+  assert.equal(
+    attemptEntry.attemptPath,
+    'offline-practice/participants/participant-id/attempts/quiz-id/attempt-id.json'
+  )
+  assert.deepEqual(
+    await loadOfflinePracticeAttempt(participantId, 'attempt-id', storage),
+    attempt
+  )
+  assert.equal(
+    (await listOfflinePracticeAttempts(participantId, storage, 'pending'))
+      .length,
+    1
+  )
+  assert.equal(
+    (await listDownloadedPracticeQuizzes(participantId, storage))[0]
+      ?.pendingAttemptCount,
+    1
+  )
+
   const entries = await listDownloadedPracticeQuizzes(participantId, storage)
   assert.equal(entries.length, 1)
   assert.equal(entries[0]?.snapshotPath, savedEntry.snapshotPath)
 
   assert.deepEqual(
     await listDownloadedPracticeQuizzes(otherParticipantId, storage),
+    []
+  )
+  assert.deepEqual(
+    await listOfflinePracticeAttempts(otherParticipantId, storage),
     []
   )
 
@@ -99,10 +161,22 @@ async function run() {
     'quiz-id:2026-06-02T12:00:00.000Z'
   )
 
+  await deleteDownloadedPracticeQuiz(participantId, 'quiz-id', storage)
+  assert.equal(
+    await loadOfflinePracticeAttempt(participantId, 'attempt-id', storage),
+    null
+  )
+  assert.equal(
+    storage.files.has(attemptEntry.attemptPath),
+    false,
+    'attempt files should be removed with the downloaded quiz'
+  )
+
   await storage.writeText(paths.index, '{')
   assert.deepEqual(await readOfflinePracticeIndex(participantId, storage), {
-    schemaVersion: 1,
+    schemaVersion: 2,
     quizzes: [],
+    attempts: [],
   })
 
   await clearOfflinePracticeData(participantId, storage)

@@ -1,6 +1,10 @@
-import type { GetPracticeQuizDownloadSnapshotQuery } from '@klicker-uzh/graphql/dist/ops'
+import type {
+  GetPracticeQuizDownloadSnapshotQuery,
+  RespondToElementStackMutation,
+  StackResponseInput,
+} from '@klicker-uzh/graphql/dist/ops'
 
-const OFFLINE_PRACTICE_INDEX_SCHEMA_VERSION = 1
+const OFFLINE_PRACTICE_INDEX_SCHEMA_VERSION = 2
 const OFFLINE_PRACTICE_ROOT = 'offline-practice'
 
 export type OfflinePracticeSnapshot = NonNullable<
@@ -23,9 +27,42 @@ export interface OfflinePracticeIndexEntry {
   updatedAt: string
 }
 
+export type OfflinePracticeAttemptSyncStatus = 'pending'
+
+export type OfflinePracticeStackFeedback = NonNullable<
+  RespondToElementStackMutation['respondToElementStack']
+>
+
+export interface OfflinePracticeAttempt {
+  clientAttemptId: string
+  participantId: string
+  courseId: string
+  quizId: string
+  quizRevision: string
+  stackId: number
+  responses: StackResponseInput[]
+  answerTime: number
+  localEvaluation: OfflinePracticeStackFeedback
+  createdAt: string
+  updatedAt: string
+  syncStatus: OfflinePracticeAttemptSyncStatus
+}
+
+export interface OfflinePracticeAttemptIndexEntry {
+  clientAttemptId: string
+  quizId: string
+  quizRevision: string
+  stackId: number
+  attemptPath: string
+  syncStatus: OfflinePracticeAttemptSyncStatus
+  createdAt: string
+  updatedAt: string
+}
+
 export interface OfflinePracticeIndex {
   schemaVersion: number
   quizzes: OfflinePracticeIndexEntry[]
+  attempts: OfflinePracticeAttemptIndexEntry[]
 }
 
 export interface OfflinePracticeStorageAdapter {
@@ -86,11 +123,34 @@ function getQuizDirectory(participantId: string, quizId: string) {
   )}`
 }
 
+function getAttemptsDirectory(participantId: string) {
+  return `${getParticipantRoot(participantId)}/attempts`
+}
+
+function getQuizAttemptsDirectory(participantId: string, quizId: string) {
+  return `${getAttemptsDirectory(participantId)}/${encodedPathSegment(quizId)}`
+}
+
+function getAttemptPath(
+  participantId: string,
+  quizId: string,
+  clientAttemptId: string
+) {
+  return `${getQuizAttemptsDirectory(participantId, quizId)}/${encodedPathSegment(
+    clientAttemptId
+  )}.json`
+}
+
 export function getOfflinePracticeStoragePaths(participantId: string) {
   return {
     root: OFFLINE_PRACTICE_ROOT,
     participantRoot: getParticipantRoot(participantId),
     index: getIndexPath(participantId),
+    attemptsDirectory: getAttemptsDirectory(participantId),
+    quizAttemptsDirectory: (quizId: string) =>
+      getQuizAttemptsDirectory(participantId, quizId),
+    attempt: (quizId: string, clientAttemptId: string) =>
+      getAttemptPath(participantId, quizId, clientAttemptId),
     quizDirectory: (quizId: string) => getQuizDirectory(participantId, quizId),
     snapshot: (quizId: string, quizRevision: string) =>
       getSnapshotPath(participantId, quizId, quizRevision),
@@ -133,6 +193,36 @@ function getDefaultIndex(): OfflinePracticeIndex {
   return {
     schemaVersion: OFFLINE_PRACTICE_INDEX_SCHEMA_VERSION,
     quizzes: [],
+    attempts: [],
+  }
+}
+
+function isPendingAttemptStatus(status: OfflinePracticeAttemptSyncStatus) {
+  return status === 'pending'
+}
+
+function countPendingAttemptsForQuiz(
+  attempts: OfflinePracticeAttemptIndexEntry[],
+  quizId: string
+) {
+  return attempts.filter(
+    (attempt) =>
+      attempt.quizId === quizId && isPendingAttemptStatus(attempt.syncStatus)
+  ).length
+}
+
+function withPendingAttemptCounts(
+  index: OfflinePracticeIndex
+): OfflinePracticeIndex {
+  return {
+    ...index,
+    quizzes: index.quizzes.map((entry) => ({
+      ...entry,
+      pendingAttemptCount: countPendingAttemptsForQuiz(
+        index.attempts,
+        entry.quizId
+      ),
+    })),
   }
 }
 
@@ -173,11 +263,12 @@ export async function readOfflinePracticeIndex(
     return getDefaultIndex()
   }
 
-  return {
+  return withPendingAttemptCounts({
     schemaVersion:
       parsed.schemaVersion ?? OFFLINE_PRACTICE_INDEX_SCHEMA_VERSION,
     quizzes: Array.isArray(parsed.quizzes) ? parsed.quizzes : [],
-  }
+    attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
+  })
 }
 
 async function writeOfflinePracticeIndex(
@@ -214,6 +305,10 @@ export async function saveDownloadedPracticeQuiz(
   const entry = {
     ...createOfflinePracticeIndexEntry(snapshot, snapshotPath, previousEntry),
     sizeBytes: jsonSizeBytes(serializedSnapshot),
+    pendingAttemptCount: countPendingAttemptsForQuiz(
+      index.attempts,
+      snapshot.quiz.id
+    ),
   }
 
   await writeOfflinePracticeIndex(participantId, storage, {
@@ -224,9 +319,105 @@ export async function saveDownloadedPracticeQuiz(
     ].sort((itemA, itemB) =>
       itemA.displayName.localeCompare(itemB.displayName)
     ),
+    attempts: index.attempts,
   })
 
   return entry
+}
+
+function createOfflinePracticeAttemptIndexEntry(
+  participantId: string,
+  attempt: OfflinePracticeAttempt
+): OfflinePracticeAttemptIndexEntry {
+  return {
+    clientAttemptId: attempt.clientAttemptId,
+    quizId: attempt.quizId,
+    quizRevision: attempt.quizRevision,
+    stackId: attempt.stackId,
+    attemptPath: getAttemptPath(
+      participantId,
+      attempt.quizId,
+      attempt.clientAttemptId
+    ),
+    syncStatus: attempt.syncStatus,
+    createdAt: toIsoString(attempt.createdAt),
+    updatedAt: toIsoString(attempt.updatedAt),
+  }
+}
+
+export async function saveOfflinePracticeAttempt(
+  participantId: string,
+  attempt: OfflinePracticeAttempt,
+  storage = createCapacitorOfflinePracticeStorage()
+) {
+  const attemptPath = getAttemptPath(
+    participantId,
+    attempt.quizId,
+    attempt.clientAttemptId
+  )
+  const serializedAttempt = JSON.stringify(attempt, null, 2)
+  const index = await readOfflinePracticeIndex(participantId, storage)
+  const attemptEntry = createOfflinePracticeAttemptIndexEntry(
+    participantId,
+    attempt
+  )
+  const attempts = [
+    attemptEntry,
+    ...index.attempts.filter(
+      (entry) => entry.clientAttemptId !== attempt.clientAttemptId
+    ),
+  ].sort((itemA, itemB) => itemB.createdAt.localeCompare(itemA.createdAt))
+
+  await storage.writeText(attemptPath, serializedAttempt)
+  await writeOfflinePracticeIndex(
+    participantId,
+    storage,
+    withPendingAttemptCounts({
+      ...index,
+      schemaVersion: OFFLINE_PRACTICE_INDEX_SCHEMA_VERSION,
+      attempts,
+    })
+  )
+
+  return attemptEntry
+}
+
+export async function loadOfflinePracticeAttempt(
+  participantId: string,
+  clientAttemptId: string,
+  storage = createCapacitorOfflinePracticeStorage()
+): Promise<OfflinePracticeAttempt | null> {
+  const index = await readOfflinePracticeIndex(participantId, storage)
+  const entry = index.attempts.find(
+    (attempt) => attempt.clientAttemptId === clientAttemptId
+  )
+  if (!entry) return null
+
+  const rawAttempt = await storage.readText(entry.attemptPath)
+  if (!rawAttempt) return null
+
+  return JSON.parse(rawAttempt) as OfflinePracticeAttempt
+}
+
+export async function listOfflinePracticeAttempts(
+  participantId: string,
+  storage = createCapacitorOfflinePracticeStorage(),
+  syncStatus?: OfflinePracticeAttemptSyncStatus
+): Promise<OfflinePracticeAttempt[]> {
+  const index = await readOfflinePracticeIndex(participantId, storage)
+  const entries =
+    typeof syncStatus === 'undefined'
+      ? index.attempts
+      : index.attempts.filter((attempt) => attempt.syncStatus === syncStatus)
+  const attempts = await Promise.all(
+    entries.map((entry) =>
+      loadOfflinePracticeAttempt(participantId, entry.clientAttemptId, storage)
+    )
+  )
+
+  return attempts.filter((attempt): attempt is OfflinePracticeAttempt =>
+    Boolean(attempt)
+  )
 }
 
 export async function listDownloadedPracticeQuizzes(
@@ -266,9 +457,11 @@ export async function deleteDownloadedPracticeQuiz(
   const index = await readOfflinePracticeIndex(participantId, storage)
 
   await storage.deleteDirectory(getQuizDirectory(participantId, quizId))
+  await storage.deleteDirectory(getQuizAttemptsDirectory(participantId, quizId))
   await writeOfflinePracticeIndex(participantId, storage, {
     ...index,
     quizzes: index.quizzes.filter((entry) => entry.quizId !== quizId),
+    attempts: index.attempts.filter((entry) => entry.quizId !== quizId),
   })
 }
 

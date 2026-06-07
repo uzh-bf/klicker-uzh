@@ -1111,6 +1111,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.2)
+      '@klicker-uzh/grading':
+        specifier: workspace:*
+        version: link:../../packages/grading
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
