@@ -16,6 +16,7 @@ import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
 import { useEmbedded } from '../hooks/useEmbedded'
 import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
+import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
 import { authedFetch } from '../lib/client/authedFetch'
 import { getKlickerChatContextLabel } from '../services/chatContext'
 import { useChatContextStore } from '../stores/chatContextStore'
@@ -50,9 +51,9 @@ export const Assistant = ({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) => {
-  // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
-  // sessionStorage and strip it from the URL on first render.
+  // Stuff CHIPS fallback tokens into sessionStorage and strip them from the URL.
   useChatGuestTokenBootstrap()
+  usePwaEmbedTokenBootstrap()
   const embedded = useEmbedded()
   const { participationRequired, participationMessage } = useChatStore()
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)

@@ -104,6 +104,26 @@ describe('Client auth helpers', () => {
         'Bearer caller-token'
       )
     })
+
+    it('accepts multiple storage keys and uses the first available token', async () => {
+      ;(globalThis as { sessionStorage: StorageLike }).sessionStorage.setItem(
+        'secondary_token',
+        'token-2'
+      )
+      const fetchMock = vi.fn().mockResolvedValue(new Response('ok'))
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch
+      const authedFetch = createAuthedFetch([
+        'primary_token',
+        'secondary_token',
+      ])
+
+      await authedFetch('/api/test')
+
+      const init = fetchMock.mock.calls[0]![1] as RequestInit
+      expect(new Headers(init.headers).get('authorization')).toBe(
+        'Bearer token-2'
+      )
+    })
   })
 
   describe('bootstrapTokenFromUrl', () => {

@@ -3,6 +3,7 @@
 import { bootstrapTokenFromUrl } from '@klicker-uzh/util/client-auth'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
+import { PWA_CHAT_EMBED_SESSION_STORAGE_KEY } from '../lib/pwaEmbedAuth'
 
 export const CHAT_GUEST_SESSION_STORAGE_KEY = 'chat_participant_token'
 export const CHAT_GUEST_QUERY_KEY = '_t'
@@ -33,6 +34,10 @@ export function useChatGuestTokenBootstrap(): void {
       }
     )
     if (!next) return
+
+    try {
+      window.sessionStorage.removeItem(PWA_CHAT_EMBED_SESSION_STORAGE_KEY)
+    } catch {}
 
     const qs = next.toString()
     router.replace(qs ? `${pathname}?${qs}` : pathname)

@@ -15,12 +15,15 @@ export function getStoredAuthToken(key: string): string | null {
   }
 }
 
-export function createAuthedFetch(key: string): typeof fetch {
+export function createAuthedFetch(key: string | string[]): typeof fetch {
   return function authedFetch(
     input: Parameters<typeof fetch>[0],
     init: Parameters<typeof fetch>[1] = {}
   ): ReturnType<typeof fetch> {
-    const token = getStoredAuthToken(key)
+    const keys = Array.isArray(key) ? key : [key]
+    const token =
+      keys.map((storageKey) => getStoredAuthToken(storageKey)).find(Boolean) ??
+      null
     if (!token) {
       return fetch(input, init)
     }
