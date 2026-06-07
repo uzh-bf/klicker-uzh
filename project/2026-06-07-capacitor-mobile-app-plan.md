@@ -599,7 +599,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 5 complete; ready for Slice 6.
+Current: Slice 6 complete; ready for Slice 7.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -663,7 +663,18 @@ Check: `pnpm --filter @klicker-uzh/graphql check` passed.
 Check: `pnpm exec prettier --check ...` on touched hand-written files passed.
 Check: `git diff --check` passed.
 Blocker: no full offline/emulator E2E yet; this slice is backend API + generated operation only. Device/offline verification starts in Slice 6/7 after frontend store and response adapter exist.
-Next: commit Slice 5, then start Slice 6 offline practice store.
+Status: Slice 5 committed as `2e4441e5e`.
+Status: Slice 6 offline practice store added: Capacitor `Directory.Data` JSON snapshot/index adapter, memory adapter, participant-scoped paths, stale revision cleanup, corrupt index recovery, list/load/save/delete/clear operations, and package script `test:offline-practice-store`.
+Status: Slice 6 logout/account deletion cleanup added for participant-scoped offline practice data in header, live-quiz leaderboard logout, and account deletion path.
+Status: correctness review done by Darwin. Fixed old revision files, participant scoping, and script wiring. Emulator restart/airplane-mode verification remains blocked until a working emulator/device is available and UI download/list entry points exist.
+Status: simplification review done by Gauss. Fixed stale revision cleanup, corrupt index recovery, participant scoping, package script wiring, and removed future-facing adapter surface (`deleteFile`, attempts path).
+Check: `pnpm --filter @klicker-uzh/frontend-pwa test:offline-practice-store` passed outside sandbox; sandbox blocks `tsx` IPC pipes.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+Check: `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with existing warnings only.
+Check: `npx agent-browser` opened `http://localhost:3001/docs`; screenshot saved at `/tmp/klicker-capacitor-slice6-docs.png` and looked clean.
+Blocker: `pnpm --filter @klicker-uzh/frontend-pwa build` is currently blocked by `getaddrinfo ENOTFOUND fonts.googleapis.com` while fetching existing `next/font/google` fonts, even outside the sandbox. Earlier Slice 6 build passed before the final participant-scoping changes; typecheck/lint/storage-script cover the changed code.
+Blocker: full iOS/Android emulator verification remains unavailable locally: no working full Xcode/simctl, Android emulator/Java gap, and prior CocoaPods network failures. Offline download UI and attempt adapter start in Slice 7, so airplane-mode practice E2E is still not possible in Slice 6.
+Next: commit Slice 6, then start Slice 7 practice response adapter / offline attempt path.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

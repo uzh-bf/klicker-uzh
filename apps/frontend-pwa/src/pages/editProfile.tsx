@@ -76,7 +76,7 @@ function EditProfile({
           </div>
         </div>
         <div className="flex flex-col gap-4 md:flex-row">
-          <AccountDeletionForm />
+          <AccountDeletionForm participantId={data.self.id} />
         </div>
       </div>
     </Layout>

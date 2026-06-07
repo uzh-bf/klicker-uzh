@@ -224,6 +224,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Capacitor native UI and SSR**: In `apps/frontend-pwa`, derive Capacitor-native availability after mount (for example in `useEffect`) and keep native APIs in effects or user actions. Rendering native-only UI from `Capacitor.getPlatform()` during SSR/client initial render can create hydration mismatches.
 - **Native push local state**: Keep Capacitor push opt-in/token localStorage keys scoped by participant id in `apps/frontend-pwa/src/lib/nativePush.ts`; global opt-in state can make the next participant on a shared device inherit notification consent.
 - **Offline practice asset manifest**: `packages/graphql/src/services/practiceQuizzes.ts` only admits `http(s)` and single-slash root-relative media URLs into download manifests. Include assets from rendered markdown fields such as element content, explanations, choice values/feedback, and case descriptions; never add custom-scheme or filesystem URLs.
+- **Offline practice storage scope**: Downloaded practice snapshots include solutions, so `apps/frontend-pwa/src/lib/offlinePracticeStorage.ts` keeps files under participant-scoped paths and removes the old quiz directory before saving a new revision. Do not move snapshots back to a global index or leave old revisions behind.
 - **Chat Vitest alias resolution**: `apps/chat/vitest.config.ts` mirrors the app `@/*` alias from `apps/chat/tsconfig.json`; keep this in sync when adding client tests for modules that import from `@/src/...`.
 
 ## Factory Skills (AI Assistance)

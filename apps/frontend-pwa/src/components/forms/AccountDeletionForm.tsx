@@ -8,8 +8,9 @@ import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { revokeStoredNativePushRegistration } from '../../lib/nativePush'
+import { clearOfflinePracticeDataBestEffort } from '../../lib/offlinePracticeStorage'
 
-function AccountDeletionForm() {
+function AccountDeletionForm({ participantId }: { participantId: string }) {
   const t = useTranslations()
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -60,6 +61,7 @@ function AccountDeletionForm() {
               primaryLoading={deletingAccount || loggingOut}
               onPrimaryAction={async () => {
                 await revokeNativePushOnLogout()
+                await clearOfflinePracticeDataBestEffort(participantId)
                 await deleteParticipantAccount()
                 try {
                   await logoutParticipant()

@@ -19,6 +19,7 @@ import Rank1Img from '../../../public/rank1.svg'
 import Rank2Img from '../../../public/rank2.svg'
 import Rank3Img from '../../../public/rank3.svg'
 import { revokeStoredNativePushRegistration } from '../../lib/nativePush'
+import { clearOfflinePracticeDataBestEffort } from '../../lib/offlinePracticeStorage'
 
 type BlockResult = {
   score: number
@@ -70,6 +71,7 @@ function LiveQuizLeaderboard({
         await revokePushDevice({ variables: { token } })
       },
     })
+    await clearOfflinePracticeDataBestEffort(selfData?.self?.id)
     await logoutParticipant()
   }
 

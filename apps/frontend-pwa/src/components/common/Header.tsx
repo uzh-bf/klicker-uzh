@@ -27,6 +27,7 @@ import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { revokeStoredNativePushRegistration } from '../../lib/nativePush'
+import { clearOfflinePracticeDataBestEffort } from '../../lib/offlinePracticeStorage'
 import AvatarWithLevel from './AvatarWithLevel'
 
 interface HeaderProps {
@@ -327,6 +328,7 @@ function Header({
                     ),
                     onClick: async () => {
                       await revokeNativePushOnLogout()
+                      await clearOfflinePracticeDataBestEffort(participant?.id)
                       await logoutParticipant()
                       router.push('/login')
                     },

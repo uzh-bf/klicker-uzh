@@ -97,7 +97,8 @@
     "lint": "next lint",
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test:offline-practice-store": "tsx scripts/testOfflinePracticeStorage.ts"
   },
   "engines": {
     "node": "=20"
