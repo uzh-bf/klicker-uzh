@@ -1,0 +1,244 @@
+# PR 5109 PWA Embedded Chat Remainder Plan
+
+## Goal
+
+- Surface course chatbots in more student PWA surfaces.
+- Support normal PWA and LMS/OLAT embedded PWA mode.
+- Keep context answer-safe and course-scoped.
+- Keep current practice quiz chatbot behavior working.
+- Validate locally end to end before review.
+
+## Non-Goals
+
+- No live quiz chatbot in this slice.
+- No group activity chatbot in this slice.
+- No autonomous student answer submission beyond existing student MCP practice-card flow.
+- No broad rewrite of assistant-ui thread/runtime.
+- No new external dependency.
+
+## Identity
+
+- Plan path: `project/2026-06-07-pr-5109-pwa-embedded-chat-remainder-plan.md`
+- Branch: `codex/manage-assistant-mcp-v3-ai`
+- Target: `v3-ai`
+- PR: #5109, `https://github.com/uzh-bf/klicker-uzh/pull/5109`
+- Related old plan: `project/plans_wip/PLAN-chat-pwa-integration.md`
+
+## Current State
+
+- `CourseChatDrawer` exists and is mounted only on practice quiz detail.
+- Chat context schema already supports `course-home`, `practice-quiz`, `live-quiz`, `microlearning`.
+- Chat route already sanitizes page context and drops context if `courseId` mismatches chatbot course.
+- Chat app embedded mode and assistant-ui runtime already work.
+- PWA embedded activity pages already use parent-origin `postMessage` patterns.
+- PWA has participant-token fallback for cookie-blocked LMS iframes.
+- Chat has chat-guest fallback, but not account-mode PWA-to-chat embed handoff.
+
+## Grill Findings
+
+- Scope: course home, practice quiz, microlearning.
+- Exclude: live quiz, temporary live quiz users, group activity.
+- Embedded LMS mode: include.
+- Embedded UX: open inside embedded PWA iframe by default.
+- Fallback: open assistant in new tab.
+- Auth: no raw `participant_token` in chat iframe URL.
+- Threads: keep normal chat history; send fresh page context on every message.
+
+## Research Notes
+
+- assistant-ui docs: current `AssistantRuntimeProvider` + `useChatRuntime` + AI SDK transport pattern is correct. PWA work should focus on embedding, auth handoff, context, and layout.
+- Local code: `CourseChatDrawer` already handles chatbot discovery, selected chatbot, avatar, context postMessage, ack retry, and new-tab link.
+- Local code: practice quiz page has page-local preview cleanup; duplicate use on microlearning should be extracted.
+- Local code: chat `apiGuards.ts` only supports account auth via `participant_token` cookie and guest auth via `chat_participant_token` cookie/header. Account-mode header fallback is intentionally absent today.
+- Local code: nested iframe risk is mostly CSP and cookie behavior, not React UI.
+
+## Security Decisions
+
+- Add scoped embed auth, not raw token sharing.
+- Proposed flow:
+  1. PWA server mints short-lived exchange token after existing participant/course checks.
+  2. Token claims: `participantId`, `courseId`, `chatbotId`, `purpose: pwa-chat-embed`, `exp`.
+  3. Chat iframe opens with exchange token.
+  4. Chat verifies token, mints chat-owned scoped embed session token.
+  5. Chat stores embed session in host-only cookie when possible and sessionStorage/header fallback when cookies fail.
+  6. Chat API guard accepts only scoped embed session for matching chatbot/course.
+- Token logging: avoid raw token logs; strip URL query after bootstrap.
+- Context: no solutions, no explanations, no submitted answers, no group data.
+- CSP: confirm chat can be framed by PWA and by the full LMS ancestor chain where required.
+
+## Progress
+
+- 2026-06-07: Plan created. Scope/grill decisions locked. No implementation yet.
+
+## Slices
+
+### Slice 1: Shared PWA Chat Context Helpers
+
+Do:
+- Add small helper module for answer-safe chat context construction.
+- Move practice quiz content preview cleanup out of the page.
+- Add helpers for:
+  - course home context
+  - activity context
+  - stack/question preview context
+- Keep preview cap at 500 chars.
+
+Likely files:
+- `apps/frontend-pwa/src/lib/chatbot/chatContext.ts`
+- `apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/[id].tsx`
+
+Check:
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- Focused unit checks only if a local PWA test harness is added; otherwise typecheck plus browser.
+
+Commit:
+- `refactor(pwa): share course chatbot context helpers`
+
+### Slice 2: Scoped Embedded Chat Auth Handoff
+
+Do:
+- Add PWA server-side embed exchange token minting for course chatbot iframe URLs.
+- Add chat-side verification and scoped embed session bootstrap.
+- Extend chat auth guards to accept scoped embed session only for matching chatbot/course.
+- Add client bootstrap to store fallback token and strip URL query.
+- Keep normal cookie path unchanged.
+
+Likely files:
+- `apps/frontend-pwa/src/components/chatbot/CourseChatDrawer.tsx`
+- `apps/frontend-pwa/src/lib/chatbot/*`
+- `apps/chat/src/lib/server/apiGuards.ts`
+- `apps/chat/src/lib/server/*`
+- `apps/chat/src/hooks/*`
+- `apps/chat/src/lib/client/authedFetch.ts`
+- `apps/chat/src/middleware.ts`
+- `apps/chat/test/*`
+- `turbo.json` if new env var is introduced.
+
+Check:
+- `pnpm --filter @klicker-uzh/chat test:run`
+- `pnpm --filter @klicker-uzh/chat check`
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+
+Commit:
+- `feat(chat): add scoped pwa embed auth`
+
+### Slice 3: Embedded-Aware Drawer Layout
+
+Do:
+- Make `CourseChatDrawer` render in normal and embedded PWA pages.
+- Normal PWA: keep current bottom-right bubble/drawer.
+- Embedded PWA: use compact bottom sheet inside iframe; avoid wide side panel.
+- Preserve avatar, title, current context chip, close button, and new-tab fallback.
+- Ensure mobile menu and embedded content are not covered incoherently.
+
+Likely files:
+- `apps/frontend-pwa/src/components/chatbot/CourseChatDrawer.tsx`
+- `packages/i18n/messages/en.ts`
+- `packages/i18n/messages/de.ts`
+
+Check:
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- Browser screenshots normal and embedded practice quiz.
+
+Commit:
+- `feat(pwa): support embedded course chat drawer`
+
+### Slice 4: Course Home Mount
+
+Do:
+- Mount drawer on course overview.
+- Context: `surface: course-home`, course id, locale.
+- Show only when participant token is present and course has at least one chatbot.
+- Keep no-chatbot behavior silent on page; direct chatbot route still shows message.
+
+Likely files:
+- `apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`
+- `apps/frontend-pwa/src/lib/chatbot/chatContext.ts`
+
+Check:
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- Browser screenshot normal course home.
+- Browser screenshot embedded course home in harness.
+
+Commit:
+- `feat(pwa): surface course chatbot on course home`
+
+### Slice 5: Microlearning Mount
+
+Do:
+- Mount drawer on microlearning intro page.
+- Mount drawer on microlearning question page.
+- Mount drawer on microlearning evaluation page if participant/course context is available.
+- Context:
+  - intro/evaluation: activity only.
+  - question: current stack/question preview, step, total steps.
+- Do not include solutions/explanations/submitted answers.
+
+Likely files:
+- `apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/index.tsx`
+- `apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/[ix].tsx`
+- `apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/evaluation.tsx`
+- `apps/frontend-pwa/src/lib/chatbot/chatContext.ts`
+
+Check:
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- Browser screenshots normal + embedded microlearning question.
+
+Commit:
+- `feat(pwa): surface course chatbot in microlearning`
+
+### Slice 6: End-to-End Browser Validation
+
+Do:
+- Run local app stack needed for PWA/chat.
+- Verify:
+  - normal course home drawer
+  - embedded course home drawer
+  - normal practice quiz drawer
+  - embedded practice quiz drawer
+  - normal microlearning drawer
+  - embedded microlearning drawer
+  - chat sends current page context after route/question changes
+  - fallback new-tab link works
+- Capture desktop/mobile-ish screenshots.
+- Add screenshots to PR description/comment if UI changed.
+
+Check:
+- `agent-browser` screenshots.
+- Cypress smoke where feasible:
+  - focused practice quiz path
+  - focused microlearning path
+  - no live quiz chatbot assertions.
+
+Commit:
+- Usually no code commit unless screenshots/docs/PR body change.
+
+### Slice 7: Final Review And PR Refresh
+
+Do:
+- Run review pass for correctness and regressions.
+- Run simplification pass.
+- Run security review focused on scoped token handoff, iframe ancestors, and context leakage.
+- Refresh PR description using whole branch diff and new screenshots.
+
+Check:
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- `pnpm --filter @klicker-uzh/chat check`
+- `pnpm --filter @klicker-uzh/chat test:run`
+- Relevant Cypress smoke or full CI depending risk.
+- `gh pr checks 5109 -R uzh-bf/klicker-uzh`
+
+Commit:
+- `docs(pr): refresh pwa embedded chat plan` only if docs/PR evidence changes.
+
+## Open Risks
+
+- Nested iframe CSP may require deployment config changes beyond app code.
+- LMS third-party cookie behavior varies by browser; sessionStorage fallback must be validated.
+- Short-lived exchange token alone is not enough for long chat sessions; chat-owned embed session token is needed.
+- Course home and microlearning pages may lack `participantToken` props in some redirect paths; verify before mounting.
+- Evaluation page may have weaker course context; avoid mounting there if course id cannot be proven.
+
+## Goal Prompt
+
+Work in `/private/tmp/klicker-pr5109-simplify` on branch `codex/manage-assistant-mcp-v3-ai` for PR #5109 against `v3-ai`. Use `project/2026-06-07-pr-5109-pwa-embedded-chat-remainder-plan.md` as current plan. Implement one slice at a time. Before each slice, update `Progress`. After each slice, verify, run review and simplification passes, integrate accepted findings, update `Progress`, then commit only that slice. Preserve current practice quiz chatbot behavior. Exclude live quiz and group activity. For embedded LMS mode, use scoped chat embed token handoff; never pass raw `participant_token` to chat. Finish with security review, browser screenshots for normal and embedded PWA, PR description refresh, and `gh pr checks`.
