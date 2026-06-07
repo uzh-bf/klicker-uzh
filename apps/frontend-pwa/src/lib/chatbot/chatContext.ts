@@ -25,6 +25,8 @@ export type PracticeQuizChatActivity = {
   stacks?: readonly ChatStack[] | null
 }
 
+export type MicroLearningChatActivity = PracticeQuizChatActivity
+
 export function buildCourseChatContext({
   courseId,
   locale,
@@ -111,6 +113,44 @@ export function buildPracticeQuizChatContext({
   return buildStackQuestionChatContext({
     baseContext,
     currentStep: currentIx + 1,
+    stack,
+    totalSteps,
+  })
+}
+
+export function buildMicroLearningChatContext({
+  courseId,
+  currentIx,
+  locale,
+  microLearning,
+  totalSteps,
+}: {
+  courseId: string
+  currentIx?: number
+  locale: string
+  microLearning: MicroLearningChatActivity | null
+  totalSteps: number
+}): KlickerChatContext {
+  const stack =
+    currentIx != null && currentIx >= 0
+      ? microLearning?.stacks?.[currentIx]
+      : undefined
+  const baseContext = buildActivityChatContext({
+    courseId,
+    locale,
+    surface: 'microlearning',
+    activity: microLearning
+      ? buildActivity({
+          type: 'microLearning',
+          id: microLearning.id,
+          displayName: microLearning.displayName,
+        })
+      : undefined,
+  })
+
+  return buildStackQuestionChatContext({
+    baseContext,
+    currentStep: currentIx != null ? currentIx + 1 : 0,
     stack,
     totalSteps,
   })
