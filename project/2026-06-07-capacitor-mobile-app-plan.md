@@ -618,7 +618,7 @@ Recommendation: dedicated demo participant in demo course, no real student data.
 
 ## Progress
 
-Current: Slice 7 verified after late review fix; ready for commit.
+Current: Slice 8 complete; ready for commit.
 Status: implementation worktree created from `v3` at `/private/tmp/klicker-capacitor-mobile`.
 Status: Slice 0 committed as `9c37102d8`.
 Status: Capacitor runtime upgraded to 8.4.0; official plugins added at latest stable package versions discovered on 2026-06-07.
@@ -711,7 +711,23 @@ Check: post-fix `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../no
 Check: post-fix `git diff --check` passed.
 Blocker: post-fix `pnpm --filter @klicker-uzh/frontend-pwa check` and `pnpm --filter @klicker-uzh/frontend-pwa lint` failed before executing scripts with `[ERROR] fetch failed`; direct installed binaries were used for equivalent checks.
 Blocker: full offline emulator E2E remains unavailable locally: no working iOS/Android emulator/toolchain, and no downloaded-practice UI route yet. Slice 7 provides the adapter/storage path; Slice 8/next UI work must wire a downloaded quiz route before airplane-mode practice can be exercised end-to-end.
-Next: start Slice 8 downloaded-practice UI/local offline run; original attempt sync moved to Slice 9 because emulator-facing offline E2E needs a downloadable/openable local quiz first.
+Status: Slice 7 committed as `67c4236e5`.
+Status: Plan split committed as `4bc5977f3`; Slice 8 now covers downloaded-practice UI/local offline run before original sync work in Slice 9.
+Status: Slice 8 downloaded-practice UI added: normal practice quiz pages can download/update/delete local snapshots, open a downloaded route, and show pending local attempt counts.
+Status: Slice 8 downloaded route added: loads participant-scoped local snapshots, reuses `PracticeQuiz` / `ElementStack` in offline mode, saves local pending attempts through `submitPracticeStackOffline`, and keeps downloaded progress/responses in participant-scoped localStorage keys.
+Status: Slice 8 route uses remembered participant id for local snapshot loading and skips client `SelfDocument` when the remembered id is available. Limitation: first cold navigation to the remote Next.js route still depends on the hosted app shell / SSR path.
+Status: Slice 8 correctness review done by Carver. Fixed important participant-scoping bug in downloaded localStorage keys and skipped avoidable client auth query when remembered participant id exists. Staged route explicitly before commit.
+Status: Slice 8 simplification review done by Parfit. Integrated lazy remembered participant id loading and ICU plural copy. Deferred merging `offlineMode` and `submitStack` props because `offlineMode` explicitly disables network features beyond submission.
+Status: Slice 8 visible save failure added for offline attempt write errors.
+Check: `../../node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+Check: `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testOfflinePracticeStorage.ts` passed outside sandbox; includes participant-scoped downloaded localStorage id assertions.
+Check: `/Users/roland/.volta/tools/image/node/20.19.4/bin/node ../../node_modules/.pnpm/tsx@4.19.4/node_modules/tsx/dist/cli.mjs scripts/testPracticeStackResponse.ts` passed outside sandbox.
+Check: `./node_modules/.bin/next lint` from `apps/frontend-pwa` passed with existing warnings only.
+Check: `git diff --check` passed.
+Check: `npx agent-browser` opened `http://localhost:3001/course/1/practiceQuizzes/downloaded/test-quiz`; screenshot `/tmp/klicker-slice8-downloaded-missing-postfix.png` showed the expected not-downloaded warning with no layout break.
+Check: `npx agent-browser` opened `http://localhost:3001/course/1/practiceQuizzes/test-quiz`; screenshot `/tmp/klicker-slice8-online-route.png` showed the existing not-found state with no layout break in the frontend-only dev environment.
+Blocker: full download/open/submit browser E2E needs the GraphQL backend, seeded participant session, and a published practice quiz. Full iOS/Android airplane-mode emulator E2E remains unavailable locally because the emulator/toolchain blockers from earlier slices are unchanged.
+Next: commit Slice 8, then start Slice 9 attempt sync.
 Evidence: user approved decisions Q4-Q13:
 - full remote PWA, least new code.
 - Capacitor same path both platforms.

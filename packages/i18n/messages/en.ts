@@ -858,6 +858,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       correctAnswerOptions: 'Correct answer options',
       topNAnswers: 'Top {number} answers',
+      downloadForOffline: 'Download for offline practice',
+      updateDownload: 'Update download',
+      openDownloaded: 'Open downloaded quiz',
+      deleteDownload: 'Delete download',
+      downloadReady: 'Practice quiz downloaded.',
+      downloadFailed: 'Downloading this practice quiz failed.',
+      deleteDownloadFailed: 'Deleting this download failed.',
+      downloadedNotFound:
+        'This practice quiz is not downloaded on this device for your account.',
+      pendingOfflineAttempts:
+        '{count, plural, one {# offline attempt is saved on this device and waiting for sync.} other {# offline attempts are saved on this device and waiting for sync.}}',
+      offlineAttemptSaved:
+        'Your offline attempt is saved on this device and will be synced when sync is available.',
+      offlineAttemptSaveFailed:
+        'Saving your offline attempt failed. Please check device storage and try again.',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

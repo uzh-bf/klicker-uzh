@@ -860,6 +860,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       correctAnswerOptions: 'Richtige Antwortoptionen',
       topNAnswers: 'Top {number} Antworten',
+      downloadForOffline: 'Für Offline-Übung herunterladen',
+      updateDownload: 'Download aktualisieren',
+      openDownloaded: 'Heruntergeladenes Quiz öffnen',
+      deleteDownload: 'Download löschen',
+      downloadReady: 'Übungs-Quiz heruntergeladen.',
+      downloadFailed:
+        'Das Herunterladen dieses Übungs-Quiz ist fehlgeschlagen.',
+      deleteDownloadFailed: 'Das Löschen dieses Downloads ist fehlgeschlagen.',
+      downloadedNotFound:
+        'Dieses Übungs-Quiz ist auf diesem Gerät für Ihr Konto nicht heruntergeladen.',
+      pendingOfflineAttempts:
+        '{count, plural, one {# Offline-Versuch ist auf diesem Gerät gespeichert und wartet auf die Synchronisation.} other {# Offline-Versuche sind auf diesem Gerät gespeichert und warten auf die Synchronisation.}}',
+      offlineAttemptSaved:
+        'Ihr Offline-Versuch ist auf diesem Gerät gespeichert und wird synchronisiert, sobald die Synchronisation verfügbar ist.',
+      offlineAttemptSaveFailed:
+        'Das Speichern Ihres Offline-Versuchs ist fehlgeschlagen. Bitte prüfen Sie den Gerätespeicher und versuchen Sie es erneut.',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

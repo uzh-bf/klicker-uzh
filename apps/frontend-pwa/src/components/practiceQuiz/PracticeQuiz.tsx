@@ -13,7 +13,7 @@ import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
-import ElementStack from './ElementStack'
+import ElementStack, { type PracticeStackSubmitHandler } from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
@@ -29,8 +29,11 @@ export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
 
 export function resetPracticeQuizLocalStorage(id: string) {
   const localStorageKeys = Object.keys(localStorage)
+  const progressKey = `pq-${id}`
+  const stackKeyPrefix = `qi-${id}-`
+
   localStorageKeys.forEach((key) => {
-    if (key.includes(id)) {
+    if (key === progressKey || key.startsWith(stackKeyPrefix)) {
       localStorage.removeItem(key)
     }
   })
@@ -43,8 +46,11 @@ interface PracticeQuizProps {
   handleNextElement: () => void
   onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
+  storageId?: string
   embedded?: boolean
   previewOnly?: boolean
+  offlineMode?: boolean
+  submitStack?: PracticeStackSubmitHandler
 }
 
 function PracticeQuiz({
@@ -54,14 +60,18 @@ function PracticeQuiz({
   handleNextElement,
   onAllStacksCompletion,
   showResetLocalStorage = false,
+  storageId,
   embedded = false,
   previewOnly = false,
+  offlineMode = false,
+  submitStack,
 }: PracticeQuizProps) {
   const router = useRouter()
   const t = useTranslations()
   const currentStack = quiz.stacks?.[currentIx]
+  const practiceStorageId = storageId ?? quiz.id
   const { data: dataParticipant } = useQuery(SelfDocument, {
-    skip: previewOnly,
+    skip: previewOnly || offlineMode,
   })
 
   const handleAllStacksCompletion = () => {
@@ -83,7 +93,7 @@ function PracticeQuiz({
       }
     >
   >(
-    `pq-${quiz.id}`,
+    `pq-${practiceStorageId}`,
     quiz.stacks?.reduce(
       (acc, stack) => ({
         ...acc,
@@ -103,6 +113,7 @@ function PracticeQuiz({
     },
     skip:
       previewOnly ||
+      offlineMode ||
       !router.query.courseId ||
       !dataParticipant?.self ||
       dataParticipant?.self.role !== UserRole.Participant,
@@ -138,7 +149,7 @@ function PracticeQuiz({
           resetLocalStorage={
             showResetLocalStorage
               ? () => {
-                  resetPracticeQuizLocalStorage(quiz.id)
+                  resetPracticeQuizLocalStorage(practiceStorageId)
                   window.location.reload()
                 }
               : undefined
@@ -171,7 +182,7 @@ function PracticeQuiz({
         {currentStack && (
           <ElementStack
             key={currentStack.id}
-            parentId={quiz.id}
+            parentId={practiceStorageId}
             courseId={quiz.course!.id}
             embedded={embedded}
             stack={currentStack}
@@ -186,12 +197,15 @@ function PracticeQuiz({
             }}
             handleNextElement={handleNextElement}
             withParticipant={
+              !offlineMode &&
               !!dataParticipant?.self &&
               dataParticipant.self.role !== UserRole.TemporaryParticipant
             }
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
+            hideBookmark={offlineMode}
             previewOnly={previewOnly}
+            submitStack={submitStack}
           />
         )}
       </div>

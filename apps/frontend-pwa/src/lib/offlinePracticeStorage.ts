@@ -6,6 +6,8 @@ import type {
 
 const OFFLINE_PRACTICE_INDEX_SCHEMA_VERSION = 2
 const OFFLINE_PRACTICE_ROOT = 'offline-practice'
+const OFFLINE_PRACTICE_PARTICIPANT_ID_KEY =
+  'klicker-offline-practice-participant-id'
 
 export type OfflinePracticeSnapshot = NonNullable<
   GetPracticeQuizDownloadSnapshotQuery['practiceQuizDownloadSnapshot']
@@ -93,8 +95,47 @@ export class OfflinePracticeStorageError extends Error {
   }
 }
 
+function getLocalStorage() {
+  return typeof window === 'undefined' ? null : window.localStorage
+}
+
+export function rememberOfflinePracticeParticipant(participantId: string) {
+  getLocalStorage()?.setItem(OFFLINE_PRACTICE_PARTICIPANT_ID_KEY, participantId)
+}
+
+export function readRememberedOfflinePracticeParticipant() {
+  return getLocalStorage()?.getItem(OFFLINE_PRACTICE_PARTICIPANT_ID_KEY) ?? null
+}
+
+export function forgetRememberedOfflinePracticeParticipant(
+  participantId?: string | null
+) {
+  const localStorage = getLocalStorage()
+  if (!localStorage) return
+
+  const rememberedParticipantId = localStorage.getItem(
+    OFFLINE_PRACTICE_PARTICIPANT_ID_KEY
+  )
+  if (
+    typeof participantId === 'undefined' ||
+    participantId === null ||
+    rememberedParticipantId === participantId
+  ) {
+    localStorage.removeItem(OFFLINE_PRACTICE_PARTICIPANT_ID_KEY)
+  }
+}
+
 function encodedPathSegment(value: string) {
   return encodeURIComponent(value)
+}
+
+export function getDownloadedPracticeLocalStorageId(
+  participantId: string,
+  quizId: string
+) {
+  return `downloaded-${encodedPathSegment(participantId)}-${encodedPathSegment(
+    quizId
+  )}`
 }
 
 function getParticipantRoot(participantId: string) {
@@ -470,6 +511,7 @@ export async function clearOfflinePracticeData(
   storage = createCapacitorOfflinePracticeStorage()
 ) {
   await storage.deleteDirectory(getParticipantRoot(participantId))
+  forgetRememberedOfflinePracticeParticipant(participantId)
 }
 
 export async function clearOfflinePracticeDataBestEffort(

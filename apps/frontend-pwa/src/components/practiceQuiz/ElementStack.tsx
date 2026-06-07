@@ -27,6 +27,13 @@ import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
 
+export type PracticeStackSubmitHandler = (args: {
+  stack: ElementStackType
+  studentResponse: StackStudentResponseType
+  responses: ReturnType<typeof serializePracticeStackResponses>
+  stackAnswerTime: number
+}) => Promise<PracticeStackFeedback | null>
+
 interface ElementStackProps {
   parentId: string
   courseId: string
@@ -50,12 +57,7 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
-  submitStack?: (args: {
-    stack: ElementStackType
-    studentResponse: StackStudentResponseType
-    responses: ReturnType<typeof serializePracticeStackResponses>
-    stackAnswerTime: number
-  }) => Promise<PracticeStackFeedback | null>
+  submitStack?: PracticeStackSubmitHandler
 }
 
 function ElementStack({
@@ -326,7 +328,7 @@ function ElementStack({
           />
         )}
 
-        {!previewOnly && !hideBookmark && !embedded ? (
+        {!previewOnly && !hideBookmark && withParticipant && !embedded ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
             <Bookmark

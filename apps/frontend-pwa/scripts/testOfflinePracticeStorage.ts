@@ -4,12 +4,16 @@ import {
   clearOfflinePracticeData,
   createMemoryOfflinePracticeStorage,
   deleteDownloadedPracticeQuiz,
+  forgetRememberedOfflinePracticeParticipant,
+  getDownloadedPracticeLocalStorageId,
   getOfflinePracticeStoragePaths,
   listDownloadedPracticeQuizzes,
   listOfflinePracticeAttempts,
   loadDownloadedPracticeQuiz,
   loadOfflinePracticeAttempt,
   readOfflinePracticeIndex,
+  readRememberedOfflinePracticeParticipant,
+  rememberOfflinePracticeParticipant,
   saveDownloadedPracticeQuiz,
   saveOfflinePracticeAttempt,
   type OfflinePracticeAttempt,
@@ -45,6 +49,14 @@ async function run() {
   assert.equal(
     paths.snapshot(snapshot.quiz.id, snapshot.quizRevision),
     'offline-practice/participants/participant-id/quizzes/quiz-id/quiz-id%3A2026-06-01T12%3A00%3A00.000Z.json'
+  )
+  assert.equal(
+    getDownloadedPracticeLocalStorageId(participantId, snapshot.quiz.id),
+    'downloaded-participant-id-quiz-id'
+  )
+  assert.notEqual(
+    getDownloadedPracticeLocalStorageId(participantId, snapshot.quiz.id),
+    getDownloadedPracticeLocalStorageId(otherParticipantId, snapshot.quiz.id)
   )
 
   assert.deepEqual(await readOfflinePracticeIndex(participantId, storage), {
@@ -181,9 +193,52 @@ async function run() {
 
   await clearOfflinePracticeData(participantId, storage)
   assert.equal(storage.files.size, 0)
+
+  const mockWindow = installMockWindow()
+  try {
+    assert.equal(readRememberedOfflinePracticeParticipant(), null)
+    rememberOfflinePracticeParticipant(participantId)
+    assert.equal(readRememberedOfflinePracticeParticipant(), participantId)
+    forgetRememberedOfflinePracticeParticipant(otherParticipantId)
+    assert.equal(readRememberedOfflinePracticeParticipant(), participantId)
+    forgetRememberedOfflinePracticeParticipant(participantId)
+    assert.equal(readRememberedOfflinePracticeParticipant(), null)
+  } finally {
+    mockWindow.restore()
+  }
 }
 
 run().catch((error) => {
   console.error(error)
   process.exitCode = 1
 })
+
+function installMockWindow() {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const values = new Map<string, string>()
+
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        removeItem: (key: string) => {
+          values.delete(key)
+        },
+        setItem: (key: string, value: string) => {
+          values.set(key, value)
+        },
+      },
+    },
+  })
+
+  return {
+    restore() {
+      if (previousWindow) {
+        Object.defineProperty(globalThis, 'window', previousWindow)
+      } else {
+        Reflect.deleteProperty(globalThis, 'window')
+      }
+    },
+  }
+}

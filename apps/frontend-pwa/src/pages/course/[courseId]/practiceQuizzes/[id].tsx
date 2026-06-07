@@ -62,18 +62,26 @@
  *   const quizState = useKlickerQuizState(iframeElement, 'https://pwa.klicker.uzh.ch')
  *   {quizState.status === 'completed' && <button>Weiter</button>}
  */
-import { useQuery } from '@apollo/client'
+import { useLazyQuery, useQuery } from '@apollo/client'
+import {
+  faDownload,
+  faFolderOpen,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   GetPracticeQuizDocument,
+  GetPracticeQuizDownloadSnapshotDocument,
   PublicationStatus,
+  SelfDocument,
   StackFeedbackStatus,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -83,7 +91,15 @@ import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
 } from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
+import LinkButton from '../../../../components/common/LinkButton'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
+import {
+  deleteDownloadedPracticeQuiz,
+  listDownloadedPracticeQuizzes,
+  rememberOfflinePracticeParticipant,
+  saveDownloadedPracticeQuiz,
+  type OfflinePracticeIndexEntry,
+} from '../../../../lib/offlinePracticeStorage'
 
 const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
 const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
@@ -123,6 +139,13 @@ function PracticeQuizPage({
   const [currentIx, setCurrentIx] = useState(-1)
   const [parentOrigin, setParentOrigin] = useState<string | null>(null)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [downloadedEntry, setDownloadedEntry] =
+    useState<OfflinePracticeIndexEntry | null>(null)
+  const [downloadNotice, setDownloadNotice] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+  const [deletingDownload, setDeletingDownload] = useState(false)
 
   useParticipantToken({
     participantToken,
@@ -132,8 +155,17 @@ function PracticeQuizPage({
   const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
   })
+  const { data: selfData } = useQuery(SelfDocument, {
+    skip: embedded,
+  })
+  const [fetchDownloadSnapshot, { loading: downloadingSnapshot }] =
+    useLazyQuery(GetPracticeQuizDownloadSnapshotDocument, {
+      fetchPolicy: 'network-only',
+    })
 
   const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const participant =
+    selfData?.self?.role === UserRole.Participant ? selfData.self : null
 
   useEffect(() => {
     if (!embedded) return
@@ -166,6 +198,29 @@ function PracticeQuizPage({
       setIsCompleted(false)
     }
   }, [currentIx])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!participant?.id || embedded) {
+      setDownloadedEntry(null)
+      return
+    }
+
+    listDownloadedPracticeQuizzes(participant.id)
+      .then((entries) => {
+        if (cancelled) return
+
+        setDownloadedEntry(entries.find((entry) => entry.quizId === id) ?? null)
+      })
+      .catch((error) => {
+        console.warn('Failed to read downloaded practice quizzes', error)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [embedded, id, participant?.id])
 
   useEffect(() => {
     if (!embedded || !parentOrigin || loading || !data?.practiceQuiz) return
@@ -246,12 +301,126 @@ function PracticeQuizPage({
     setCurrentIx((ix) => ix + 1)
   }
 
+  const handleDownloadPracticeQuiz = async () => {
+    if (!participant?.id) return
+
+    setDownloadNotice(null)
+
+    try {
+      const result = await fetchDownloadSnapshot({ variables: { id } })
+      const snapshot = result.data?.practiceQuizDownloadSnapshot
+
+      if (!snapshot) {
+        setDownloadNotice({
+          type: 'error',
+          message: t('pwa.practiceQuiz.downloadFailed'),
+        })
+        return
+      }
+
+      const entry = await saveDownloadedPracticeQuiz(participant.id, snapshot)
+      rememberOfflinePracticeParticipant(participant.id)
+      setDownloadedEntry(entry)
+      setDownloadNotice({
+        type: 'success',
+        message: t('pwa.practiceQuiz.downloadReady'),
+      })
+    } catch (error) {
+      console.error('Failed to download practice quiz', error)
+      setDownloadNotice({
+        type: 'error',
+        message: t('pwa.practiceQuiz.downloadFailed'),
+      })
+    }
+  }
+
+  const handleDeleteDownloadedPracticeQuiz = async () => {
+    if (!participant?.id) return
+
+    setDeletingDownload(true)
+    setDownloadNotice(null)
+
+    try {
+      await deleteDownloadedPracticeQuiz(participant.id, id)
+      setDownloadedEntry(null)
+    } catch (error) {
+      console.error('Failed to delete downloaded practice quiz', error)
+      setDownloadNotice({
+        type: 'error',
+        message: t('pwa.practiceQuiz.deleteDownloadFailed'),
+      })
+    } finally {
+      setDeletingDownload(false)
+    }
+  }
+
+  const showDownloadControls =
+    !embedded && !!participant?.id && !data.practiceQuiz.isOwner
+
   return (
     <Layout
       embedded={embedded}
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
+      {showDownloadControls && (
+        <div className="mb-4 flex w-full flex-col gap-2 md:mx-auto md:max-w-6xl md:px-8">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button
+              onClick={handleDownloadPracticeQuiz}
+              disabled={downloadingSnapshot}
+              className={{ root: 'justify-start gap-2 text-base' }}
+              data={{ cy: 'download-practice-quiz' }}
+            >
+              <Button.Icon icon={faDownload} loading={downloadingSnapshot} />
+              <Button.Label>
+                {downloadedEntry
+                  ? t('pwa.practiceQuiz.updateDownload')
+                  : t('pwa.practiceQuiz.downloadForOffline')}
+              </Button.Label>
+            </Button>
+            {downloadedEntry && (
+              <LinkButton
+                href={`/course/${courseId}/practiceQuizzes/downloaded/${id}`}
+                icon={faFolderOpen}
+                className={{ root: 'gap-2 text-base', icon: 'h-5 w-5' }}
+                data={{ cy: 'open-downloaded-practice-quiz' }}
+              >
+                {t('pwa.practiceQuiz.openDownloaded')}
+              </LinkButton>
+            )}
+            {downloadedEntry && (
+              <Button
+                onClick={handleDeleteDownloadedPracticeQuiz}
+                disabled={deletingDownload}
+                className={{ root: 'justify-start gap-2 text-base' }}
+                data={{ cy: 'delete-downloaded-practice-quiz' }}
+              >
+                <Button.Icon icon={faTrash} loading={deletingDownload} />
+                <Button.Label>
+                  {t('pwa.practiceQuiz.deleteDownload')}
+                </Button.Label>
+              </Button>
+            )}
+          </div>
+          {downloadedEntry && downloadedEntry.pendingAttemptCount > 0 && (
+            <UserNotification
+              type="info"
+              message={t('pwa.practiceQuiz.pendingOfflineAttempts', {
+                count: downloadedEntry.pendingAttemptCount,
+              })}
+              className={{ root: 'text-base' }}
+            />
+          )}
+          {downloadNotice && (
+            <UserNotification
+              type={downloadNotice.type}
+              message={downloadNotice.message}
+              className={{ root: 'text-base' }}
+            />
+          )}
+        </div>
+      )}
       <PracticeQuiz
         showResetLocalStorage
         embedded={embedded}
