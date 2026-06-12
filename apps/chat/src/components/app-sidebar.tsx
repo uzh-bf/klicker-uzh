@@ -9,12 +9,13 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@uzh-bf/design-system'
-import { Plus } from 'lucide-react'
+import { Network, Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { ChatbotGraphDrawer } from './chatbot-graph-drawer'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -26,6 +27,7 @@ export function AppSidebar({
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
+  const [graphOpen, setGraphOpen] = React.useState(false)
 
   const handleNewThread = async () => {
     if (participationRequired) return
@@ -58,6 +60,19 @@ export function AppSidebar({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>New Chat</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setGraphOpen(true)}
+                    disabled={participationRequired}
+                    className="text-muted-foreground hover:text-foreground mr-1 inline-flex size-4 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    <Network className="size-4" />
+                    <span className="sr-only">Knowledge graph</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Knowledge graph</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -96,6 +111,11 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <ChatbotGraphDrawer
+        chatbotId={chatbotId}
+        onOpenChange={setGraphOpen}
+        open={graphOpen}
+      />
     </Sidebar>
   )
 }

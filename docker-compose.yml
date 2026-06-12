@@ -230,6 +230,27 @@ services:
     networks:
       - klicker
 
+  falkordb:
+    image: docker.io/falkordb/falkordb:latest
+    environment:
+      ENCRYPTION_KEY: local-falkordb-browser-development-key
+      REDIS_ARGS: '--requirepass falkordb --appendonly yes'
+    ports:
+      # Host applications use 127.0.0.1:6382. The bundled Browser UI runs
+      # inside this container, so it should connect to localhost:6379.
+      - 6382:6379
+      - 3005:3000
+    networks:
+      - klicker
+    volumes:
+      - falkordb_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'falkordb', 'ping']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   # fake smtp server for catching email during development
   mailhog:
     image: docker.io/mailhog/mailhog:latest
@@ -293,4 +314,5 @@ volumes:
   klicker_data_lti:
   redis_data:
   redis_data_assessment:
+  falkordb_data:
   hatchet_lite_config:
