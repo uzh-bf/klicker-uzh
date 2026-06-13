@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mastra Chat Prototype — harness</title>
+    <style>
+      body { font: 14px/1.5 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+      #messages { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; min-height: 240px; }
+      .msg { margin: 0 0 1rem; }
+      .msg .role { font-weight: 600; font-size: 12px; color: #666; text-transform: uppercase; }
+      .msg.assistant .text { white-space: pre-wrap; }
+      .reasoning { color: #8855aa; font-style: italic; white-space: pre-wrap; border-left: 2px solid #c9a; padding-left: .5rem; margin:.25rem 0; }
+      .tool { color: #197; font-size: 13px; }
+      #finish-meta { margin-top: .5rem; font-size: 12px; color: #444; background: #f6f6f6; padding: .5rem; border-radius: 6px; }
+      form { display: flex; gap: .5rem; margin-top: 1rem; }
+      input[type=text] { flex: 1; padding: .5rem; }
+      button { padding: .5rem 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Mastra Chat Prototype</h1>
+    <p>Chatbot: <code id="chatbot-id">11111111-1111-4111-8111-111111111111</code> · mode <code id="mode">tutor</code></p>
+    <div id="messages" data-testid="messages"></div>
+    <div id="finish-meta" data-testid="finish-meta">finish metadata: (none yet)</div>
+    <form id="composer">
+      <input id="input" data-testid="input" type="text" autocomplete="off"
+             placeholder="Ask the tutor…" />
+      <button id="send" data-testid="send" type="submit">Send</button>
+    </form>
+
+    <script type="module">
+      const messagesEl = document.getElementById('messages')
+      const finishMetaEl = document.getElementById('finish-meta')
+      const chatbotId = document.getElementById('chatbot-id').textContent.trim()
+      const mode = document.getElementById('mode').textContent.trim()
+      const history = []
+
+      function addMessage(role) {
+        const wrap = document.createElement('div')
+        wrap.className = `msg ${role}`
+        wrap.dataset.role = role
+        wrap.innerHTML = `<div class="role">${role}</div><div class="reasoning" hidden></div><div class="tools"></div><div class="text"></div>`
+        messagesEl.appendChild(wrap)
+        return wrap
+      }
+
+      async function send(text) {
+        addMessage('user').querySelector('.text').textContent = text
+        history.push({ role: 'user', parts: [{ type: 'text', text }] })
+        const assistant = addMessage('assistant')
+        const textEl = assistant.querySelector('.text')
+        const reasoningEl = assistant.querySelector('.reasoning')
+        const toolsEl = assistant.querySelector('.tools')
+
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ chatbotId, mode, messages: history }),
+        })
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buf = ''
+        let assistantText = ''
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buf += decoder.decode(value, { stream: true })
+          const lines = buf.split('\n')
+          buf = lines.pop() ?? ''
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const payload = line.slice(6).trim()
+            if (payload === '[DONE]') continue
+            let evt
+            try { evt = JSON.parse(payload) } catch { continue }
+            // AI SDK v6 UIMessage stream part types
+            if (evt.type === 'text-delta' && evt.delta) { assistantText += evt.delta; textEl.textContent = assistantText }
+            else if (evt.type === 'reasoning-delta' && evt.delta) { reasoningEl.hidden = false; reasoningEl.textContent += evt.delta }
+            else if (evt.type && evt.type.startsWith('tool-')) { toolsEl.innerHTML += `<div class="tool">⚙ ${evt.type} ${evt.toolName ?? ''}</div>` }
+            else if (evt.type === 'message-metadata' || evt.type === 'finish') {
+              const meta = evt.messageMetadata ?? evt.metadata ?? {}
+              if (Object.keys(meta).length) {
+                finishMetaEl.dataset.creditsUsed = meta.creditsUsed ?? ''
+                finishMetaEl.dataset.modelId = meta.modelId ?? ''
+                finishMetaEl.textContent = `finish metadata: ${JSON.stringify(meta)}`
+              }
+            }
+          }
+        }
+        if (assistantText) history.push({ role: 'assistant', parts: [{ type: 'text', text: assistantText }] })
+      }
+
+      document.getElementById('composer').addEventListener('submit', (e) => {
+        e.preventDefault()
+        const input = document.getElementById('input')
+        const text = input.value.trim()
+        if (!text) return
+        input.value = ''
+        send(text).catch((err) => { finishMetaEl.textContent = 'ERROR: ' + err.message })
+      })
+    </script>
+  </body>
+</html>
