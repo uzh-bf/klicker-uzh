@@ -2,10 +2,9 @@
 // We OWN message persistence — Mastra never touches mastra_messages.
 // Prototype-only tables (profile, embeddings, summaries) live in the
 // `mastra_proto` schema; Klicker tables are read/written in `public`.
-import pg from 'pg'
-import { env } from './env.js'
+import { pool } from './pool.js'
 
-export const pool = new pg.Pool({ connectionString: env.DATABASE_URL })
+export { pool }
 
 export type ChatbotConfig = {
   id: string
