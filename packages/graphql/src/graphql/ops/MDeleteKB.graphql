@@ -1,0 +1,3 @@
+mutation DeleteKB($id: String!) {
+  deleteKB(id: $id)
+}

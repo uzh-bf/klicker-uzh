@@ -9,6 +9,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
@@ -41,6 +42,16 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
+import {
+  CreateKBInputRef,
+  CreateKBResourceInputRef,
+  KB,
+  KBRefreshPolicyInputRef,
+  KBResourceRef,
+  KBResourceRefreshPolicyInputRef,
+  UpdateKBInputRef,
+  UpdateKBResourceInputRef,
+} from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -612,6 +623,168 @@ export const Mutation = builder.mutationType({
         args: { locale: t.arg({ type: LocaleType, required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeUserLocale(args, ctx)
+        },
+      }),
+
+      createKB: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          input: t.arg({ type: CreateKBInputRef, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.createKB(args.input, ctx)
+        },
+      }),
+
+      updateKB: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          id: t.arg.string({ required: true }),
+          input: t.arg({ type: UpdateKBInputRef, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKB(
+            { id: args.id, input: args.input },
+            ctx
+          )
+        },
+      }),
+
+      deleteKB: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKB({ id: args.id }, ctx)
+        },
+      }),
+
+      createKBResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResourceRef,
+        args: {
+          kbId: t.arg.string({ required: true }),
+          input: t.arg({ type: CreateKBResourceInputRef, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.createKBResource(
+            { kbId: args.kbId, input: args.input },
+            ctx
+          )
+        },
+      }),
+
+      updateKBResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResourceRef,
+        args: {
+          resourceId: t.arg.string({ required: true }),
+          input: t.arg({ type: UpdateKBResourceInputRef, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKBResource(
+            { resourceId: args.resourceId, input: args.input },
+            ctx
+          )
+        },
+      }),
+
+      deleteKBResources: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          resourceIds: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKBResources(
+            { resourceIds: args.resourceIds },
+            ctx
+          )
+        },
+      }),
+
+      updateKBRefreshPolicy: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          kbId: t.arg.string({ required: true }),
+          input: t.arg({ type: KBRefreshPolicyInputRef, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKBRefreshPolicy(
+            { kbId: args.kbId, input: args.input },
+            ctx
+          )
+        },
+      }),
+
+      updateKBResourceRefreshPolicy: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResourceRef,
+        args: {
+          resourceId: t.arg.string({ required: true }),
+          input: t.arg({
+            type: KBResourceRefreshPolicyInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKBResourceRefreshPolicy(
+            { resourceId: args.resourceId, input: args.input },
+            ctx
+          )
+        },
+      }),
+
+      linkKBCourse: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          kbId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.linkKBCourse(args, ctx)
+        },
+      }),
+
+      unlinkKBCourse: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          kbId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.unlinkKBCourse(args, ctx)
+        },
+      }),
+
+      linkKBChatbot: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          kbId: t.arg.string({ required: true }),
+          chatbotId: t.arg.string({ required: true }),
+          isEnabled: t.arg.boolean({ required: false }),
+          priority: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.linkKBChatbot(args, ctx)
+        },
+      }),
+
+      unlinkKBChatbot: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          kbId: t.arg.string({ required: true }),
+          chatbotId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.unlinkKBChatbot(args, ctx)
         },
       }),
 

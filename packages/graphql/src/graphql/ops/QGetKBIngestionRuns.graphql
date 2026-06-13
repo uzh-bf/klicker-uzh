@@ -1,0 +1,12 @@
+query GetKBIngestionRuns($kbId: String!, $resourceId: String, $limit: Int) {
+  getKBIngestionRuns(kbId: $kbId, resourceId: $resourceId, limit: $limit) {
+    id
+    status
+    startedAt
+    finishedAt
+    errorMessage
+    kbId
+    resourceId
+    createdAt
+  }
+}

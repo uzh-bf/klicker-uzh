@@ -1,0 +1,235 @@
+// ----- KNOWLEDGE BASES -----
+// #region
+
+enum KBStatus {
+  READY
+  INDEXING
+  QUEUED
+  STALE
+  ERROR
+  DISABLED
+}
+
+enum KBResourceKind {
+  DOCUMENT
+  WEBSITE
+  SNIPPET
+  KLICKER_OBJECT
+}
+
+enum KBWebsiteStrategy {
+  SCRAPE_SUBSITES
+  INDEX_PAGE
+  REFERENCE_ONLY
+}
+
+enum KBMetadataProfile {
+  COURSE_KB
+  AI_BUDDY
+  AI_INFRA
+}
+
+enum KBGraphInclusionMode {
+  INHERIT
+  INCLUDE
+  EXCLUDE
+}
+
+enum KBIngestionStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model KB {
+  id String @id @default(uuid()) @db.Uuid
+
+  name          String
+  description   String?
+  status        KBStatus @default(READY)
+  statusMessage String?
+
+  metadataProfile KBMetadataProfile @default(COURSE_KB)
+  /// [PrismaKBMetadata]
+  metadata        Json?
+  /// [PrismaKBSettings]
+  settings        Json?
+
+  externalNamespaceId   String?
+  externalVectorStoreId String?
+  externalGraphId       String?
+
+  graphEnabled       Boolean          @default(false)
+  graphResourceKinds KBResourceKind[] @default([])
+
+  resourceCount Int     @default(0)
+  chunkCount    Int     @default(0)
+  sizeBytes     BigInt?
+
+  refreshIntervalMinutes Int?
+
+  lastIndexedAt DateTime?
+  nextRefreshAt DateTime?
+
+  resources     KBResource[]
+  ingestionRuns KBIngestionRun[]
+  courses       KBCourse[]
+  chatbots      KBChatbot[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, status])
+  @@index([ownerId, metadataProfile])
+  @@index([nextRefreshAt])
+  @@index([graphEnabled])
+}
+
+model KBResource {
+  id String @id @default(uuid()) @db.Uuid
+
+  title        String
+  description  String?
+  kind         KBResourceKind
+  status       KBStatus       @default(QUEUED)
+  statusDetail String?
+
+  graphInclusion KBGraphInclusionMode @default(INHERIT)
+
+  /// [PrismaKBResourceMetadata]
+  metadata Json?
+
+  refreshIntervalMinutes Int?
+
+  lastIndexedAt DateTime?
+  nextRefreshAt DateTime?
+
+  externalResourceId String?
+
+  websiteUrl      String?
+  websiteStrategy KBWebsiteStrategy?
+
+  snippetText String? @db.Text
+
+  ingestionRuns KBIngestionRun[]
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  elementId Int?
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
+
+  answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  answerCollectionId Int?
+
+  mediaFile   MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  mediaFileId String?    @db.Uuid
+
+  deletedAt   DateTime?
+  deletedBy   User?     @relation("KBResourceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  deletedById String?   @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, status])
+  @@index([kbId, kind])
+  @@index([graphInclusion])
+  @@index([nextRefreshAt])
+  @@index([deletedAt])
+  @@index([elementId])
+  @@index([practiceQuizId])
+  @@index([liveQuizId])
+  @@index([microLearningId])
+  @@index([groupActivityId])
+  @@index([answerCollectionId])
+  @@index([mediaFileId])
+  @@index([deletedById])
+}
+
+model KBIngestionRun {
+  id String @id @default(uuid()) @db.Uuid
+
+  status KBIngestionStatus @default(QUEUED)
+
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  errorMessage String?   @db.Text
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  resource   KBResource? @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceId String?     @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@index([kbId, createdAt(sort: Desc)])
+  @@index([resourceId, createdAt(sort: Desc)])
+  @@index([status])
+}
+
+model KBWebhookInbox {
+  eventId    String   @id
+  eventType  String
+  receivedAt DateTime @default(now())
+  /// [PrismaKBWebhookPayload]
+  payload    Json?
+
+  @@index([receivedAt])
+  @@index([eventType])
+}
+
+model KBCourse {
+  id String @id @default(uuid()) @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kbId, courseId])
+  @@index([courseId])
+}
+
+model KBChatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  priority  Int     @default(0)
+  isEnabled Boolean @default(true)
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kbId, chatbotId])
+  @@index([chatbotId])
+  @@index([isEnabled, priority])
+}
+
+// #endregion

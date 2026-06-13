@@ -1,0 +1,5 @@
+mutation UpdateKB($id: String!, $input: UpdateKBInput!) {
+  updateKB(id: $id, input: $input) {
+    ...KBData
+  }
+}

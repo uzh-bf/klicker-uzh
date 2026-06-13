@@ -10,6 +10,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
@@ -69,6 +70,12 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
+import {
+  KB,
+  KBIngestionRunRef,
+  KBResourceFilterInputRef,
+  KBResourceRef,
+} from './knowledge.js'
 import {
   Feedback,
   LiveQuiz,
@@ -210,6 +217,60 @@ export const Query = builder.queryType({
           if (!user) return []
 
           return user.mediaFiles
+        },
+      }),
+
+      getKBs: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KB],
+        resolve: async (_, __, ctx) => {
+          return await KnowledgeService.getKBs(ctx)
+        },
+      }),
+
+      getKB: t.withAuth(asUser).field({
+        nullable: true,
+        type: KB,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKB({ id: args.id }, ctx)
+        },
+      }),
+
+      getKBResources: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KBResourceRef],
+        args: {
+          kbId: t.arg.string({ required: true }),
+          filter: t.arg({ type: KBResourceFilterInputRef, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKBResources(
+            { kbId: args.kbId, filter: args.filter },
+            ctx
+          )
+        },
+      }),
+
+      getKBIngestionRuns: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KBIngestionRunRef],
+        args: {
+          kbId: t.arg.string({ required: true }),
+          resourceId: t.arg.string({ required: false }),
+          limit: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKBIngestionRuns(
+            {
+              kbId: args.kbId,
+              resourceId: args.resourceId,
+              limit: args.limit,
+            },
+            ctx
+          )
         },
       }),
 

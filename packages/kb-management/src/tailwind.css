@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+
+@font-face {
+  font-display: swap;
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 400;
+  src: url('@fontsource/source-sans-3/files/source-sans-3-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 500;
+  src: url('@fontsource/source-sans-3/files/source-sans-3-latin-500-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 600;
+  src: url('@fontsource/source-sans-3/files/source-sans-3-latin-600-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 700;
+  src: url('@fontsource/source-sans-3/files/source-sans-3-latin-700-normal.woff2')
+    format('woff2');
+}
+
+@source "../node_modules/@uzh-bf/design-system/src";
+@source "../../../node_modules/@uzh-bf/design-system/src";
+@source "./**/*.{ts,tsx}";
+
+@theme {
+  --font-sans: var(--kb-font-family, var(--theme-font-primary, 'Source Sans 3')),
+    'Source Sans Pro', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  --color-uzh-blue: #0028a5;
+  --color-uzh-blue-80: #3353b7;
+  --color-uzh-blue-20: #ccd4ed;
+  --color-uzh-red: #dc6027;
+  --color-uzh-yellow: #fede00;
+  --color-uzh-lightgreen: #91c34a;
+  --color-uzh-darkgreen: #2a7f62;
+  --color-uzh-turqoise: #0b82a0;
+
+  --theme-color-primary: var(--kb-accent, #0028a5);
+  --theme-color-primary-20: color-mix(
+    in srgb,
+    var(--kb-accent, #0028a5) 20%,
+    white
+  );
+  --color-primary-100: var(--theme-color-primary);
+  --color-primary-20: var(--theme-color-primary-20);
+
+  --color-kb-ready: var(--kb-ready, #4f7419);
+  --color-kb-indexing: var(--kb-indexing, #123ab5);
+  --color-kb-warning: var(--kb-warning, #8a6500);
+  --color-kb-error: var(--kb-error, #b6451c);
+}
+
+@layer base {
+  html,
+  body,
+  #storybook-root {
+    min-height: 100%;
+    font-family: var(
+        --kb-font-family,
+        var(--theme-font-primary, 'Source Sans 3')
+      ),
+      'Source Sans Pro', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}

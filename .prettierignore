@@ -5,6 +5,7 @@ node_modules/
 dist/
 out/
 build/
+**/storybook-static/
 email/
 .claude/
 .serena/

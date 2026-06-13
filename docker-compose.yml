@@ -141,6 +141,15 @@ services:
     networks:
       - klicker
 
+  frontend_kb:
+    profiles:
+      - full
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend-kb:v3
+    ports:
+      - 3005:3000
+    networks:
+      - klicker
+
   frontend_control:
     profiles:
       - full

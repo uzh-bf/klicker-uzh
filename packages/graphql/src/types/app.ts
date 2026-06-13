@@ -8,6 +8,10 @@ import type {
   ElementOptions,
   GroupActivityDecisions,
   GroupActivityResults,
+  KBMetadata,
+  KBResourceMetadata,
+  KBSettings,
+  KBWebhookPayload,
   SingleQuestionResponse,
   SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
@@ -41,6 +45,10 @@ declare global {
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
+    type PrismaKBMetadata = KBMetadata
+    type PrismaKBResourceMetadata = KBResourceMetadata
+    type PrismaKBSettings = KBSettings
+    type PrismaKBWebhookPayload = KBWebhookPayload
   }
 }
 // #endregion

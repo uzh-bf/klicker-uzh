@@ -15,8 +15,13 @@ export const DEFAULT_LECTURER_HOSTS = [
   'manage.klicker.uzh.ch',
   'manage.klicker-qa.bf-app.ch',
   'manage.klicker.com',
+  'kb.klicker.uzh.ch',
+  'kb.klicker-qa.bf-app.ch',
+  'kb.klicker.com',
   'localhost:3002',
   '127.0.0.1:3002',
+  'localhost:3005',
+  '127.0.0.1:3005',
 ]
 export const DEFAULT_PWA_HOSTS = [
   'pwa.klicker.uzh.ch',

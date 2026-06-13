@@ -16,6 +16,7 @@ model AnswerCollection {
     entries AnswerCollectionEntry[]
 
     linkedElements Element[] // elements that use this answer collection
+    kbResources    KBResource[]
 
     linkedTemplates ActivityTemplate[] @relation("TemplateAnswerCollectionUsages") // templates that contain elements using this answer collection
 
@@ -64,6 +65,8 @@ model MediaFile {
 
     owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     ownerId String @db.Uuid
+
+    kbResources KBResource[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

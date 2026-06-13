@@ -103,6 +103,23 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "chart.fullname" . }}-frontend-kb
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.frontendKb.service.type }}
+  ports:
+    - port: {{ .Values.frontendKb.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-kb
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: {{ include "chart.fullname" . }}-backend-graphql
   labels:
     {{- include "chart.labels" . | nindent 4 }}

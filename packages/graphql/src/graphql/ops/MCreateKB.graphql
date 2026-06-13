@@ -1,0 +1,5 @@
+mutation CreateKB($input: CreateKBInput!) {
+  createKB(input: $input) {
+    ...KBData
+  }
+}

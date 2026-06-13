@@ -41,6 +41,7 @@ model PracticeQuiz {
   isDeleted             Boolean @default(false)
 
   stacks ElementStack[]
+  kbResources KBResource[]
 
   responses               QuestionResponse[]
   responseDetails         QuestionResponseDetail[]
@@ -116,6 +117,7 @@ model LiveQuiz {
   activeBlockId Int?
 
   blocks               ElementBlock[]
+  kbResources          KBResource[]
   leaderboard          LeaderboardEntry[]
   temporaryLeaderboard TemporaryLeaderboardEntry[]
 
@@ -170,6 +172,7 @@ model MicroLearning {
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this microlearning are outdated due to changes in the corresponding element
 
   stacks ElementStack[]
+  kbResources KBResource[]
 
   responses               QuestionResponse[]
   responseDetails         QuestionResponseDetail[]
@@ -278,6 +281,7 @@ model GroupActivity {
   isDeleted             Boolean @default(false)
 
   stacks ElementStack[]
+  kbResources KBResource[]
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]

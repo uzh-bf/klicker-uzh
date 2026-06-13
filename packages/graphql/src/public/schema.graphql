@@ -1008,6 +1008,40 @@ type CourseSummary {
   numOfPracticeQuizzes: Int!
 }
 
+input CreateKBInput {
+  description: String
+  externalGraphId: String
+  externalNamespaceId: String
+  externalVectorStoreId: String
+  graphEnabled: Boolean
+  graphResourceKinds: [KBResourceKind!]
+  metadata: Json
+  metadataProfile: KBMetadataProfile
+  name: String!
+  refreshIntervalMinutes: Int
+  settings: Json
+}
+
+input CreateKBResourceInput {
+  answerCollectionId: Int
+  description: String
+  elementId: Int
+  externalResourceId: String
+  graphInclusion: KBGraphInclusionMode
+  groupActivityId: String
+  kind: KBResourceKind!
+  liveQuizId: String
+  mediaFileId: String
+  metadata: Json
+  microLearningId: String
+  practiceQuizId: String
+  refreshIntervalMinutes: Int
+  snippetText: String
+  title: String!
+  websiteStrategy: KBWebsiteStrategy
+  websiteUrl: String
+}
+
 enum CreditResetPeriod {
   BIWEEKLY
   DAILY
@@ -1600,6 +1634,155 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar Json
 
+type KB {
+  chatbots: [KBChatbot!]!
+  chunkCount: Int!
+  courses: [KBCourse!]!
+  createdAt: Date!
+  description: String
+  externalGraphId: String
+  externalNamespaceId: String
+  externalVectorStoreId: String
+  graphEnabled: Boolean!
+  graphResourceKinds: [KBResourceKind!]!
+  id: ID!
+  ingestionRuns: [KBIngestionRun!]!
+  lastIndexedAt: Date
+  metadata: Json
+  metadataProfile: KBMetadataProfile!
+  name: String!
+  nextRefreshAt: Date
+  ownerId: ID!
+  refreshIntervalMinutes: Int
+  resourceCount: Int!
+  resources: [KBResource!]!
+  settings: Json
+  sizeBytes: String
+  status: KBStatus!
+  statusMessage: String
+  updatedAt: Date!
+}
+
+type KBChatbot {
+  chatbotDescription: String
+  chatbotId: ID!
+  chatbotName: String
+  createdAt: Date!
+  id: ID!
+  isEnabled: Boolean!
+  kbId: ID!
+  priority: Int!
+  updatedAt: Date!
+}
+
+type KBCourse {
+  courseId: ID!
+  courseName: String
+  createdAt: Date!
+  id: ID!
+  kbId: ID!
+  updatedAt: Date!
+}
+
+enum KBGraphInclusionMode {
+  EXCLUDE
+  INCLUDE
+  INHERIT
+}
+
+type KBIngestionRun {
+  createdAt: Date!
+  errorMessage: String
+  finishedAt: Date
+  id: ID!
+  kbId: ID!
+  resourceId: ID
+  startedAt: Date
+  status: KBIngestionStatus!
+}
+
+enum KBIngestionStatus {
+  FAILED
+  QUEUED
+  RUNNING
+  SUCCEEDED
+}
+
+enum KBMetadataProfile {
+  AI_BUDDY
+  AI_INFRA
+  COURSE_KB
+}
+
+input KBRefreshPolicyInput {
+  refreshIntervalMinutes: Int
+}
+
+type KBResource {
+  answerCollectionId: Int
+  createdAt: Date!
+  deletedAt: Date
+  deletedById: ID
+  description: String
+  elementId: Int
+  externalResourceId: String
+  graphInclusion: KBGraphInclusionMode!
+  groupActivityId: ID
+  id: ID!
+  ingestionRuns: [KBIngestionRun!]!
+  kbId: ID!
+  kind: KBResourceKind!
+  lastIndexedAt: Date
+  liveQuizId: ID
+  mediaFileId: ID
+  metadata: Json
+  microLearningId: ID
+  nextRefreshAt: Date
+  practiceQuizId: ID
+  refreshIntervalMinutes: Int
+  snippetText: String
+  status: KBStatus!
+  statusDetail: String
+  title: String!
+  updatedAt: Date!
+  websiteStrategy: KBWebsiteStrategy
+  websiteUrl: String
+}
+
+input KBResourceFilterInput {
+  graphInclusion: KBGraphInclusionMode
+  includeDeleted: Boolean
+  kinds: [KBResourceKind!]
+  query: String
+  statuses: [KBStatus!]
+}
+
+enum KBResourceKind {
+  DOCUMENT
+  KLICKER_OBJECT
+  SNIPPET
+  WEBSITE
+}
+
+input KBResourceRefreshPolicyInput {
+  refreshIntervalMinutes: Int
+}
+
+enum KBStatus {
+  DISABLED
+  ERROR
+  INDEXING
+  QUEUED
+  READY
+  STALE
+}
+
+enum KBWebsiteStrategy {
+  INDEX_PAGE
+  REFERENCE_ONLY
+  SCRAPE_SUBSITES
+}
+
 type LeaderboardEntry {
   avatar: String
   email: String
@@ -1787,6 +1970,8 @@ type Mutation {
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
+  createKB(input: CreateKBInput!): KB!
+  createKBResource(input: CreateKBResourceInput!, kbId: String!): KBResource!
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
@@ -1807,6 +1992,8 @@ type Mutation {
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
+  deleteKB(id: String!): Boolean!
+  deleteKBResources(resourceIds: [String!]!): Boolean!
   deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
@@ -1845,6 +2032,8 @@ type Mutation {
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   leaveUserGroup(groupId: Int!): Boolean!
+  linkKBChatbot(chatbotId: String!, isEnabled: Boolean, kbId: String!, priority: Int): KB!
+  linkKBCourse(courseId: String!, kbId: String!): KB!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
@@ -1894,6 +2083,8 @@ type Mutation {
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
   transferObjectOwnership(objectId: String!, objectType: ObjectType!, shortnameOrEmail: String!): PermissionInfo
+  unlinkKBChatbot(chatbotId: String!, kbId: String!): KB!
+  unlinkKBCourse(courseId: String!, kbId: String!): KB!
   unpublishGroupActivity(id: String!): GroupActivity
   unpublishLiveQuiz(id: String!): LiveQuizMeta
   unpublishMicroLearning(id: String!): MicroLearning
@@ -1902,6 +2093,10 @@ type Mutation {
   updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
+  updateKB(id: String!, input: UpdateKBInput!): KB!
+  updateKBRefreshPolicy(input: KBRefreshPolicyInput!, kbId: String!): KB!
+  updateKBResource(input: UpdateKBResourceInput!, resourceId: String!): KBResource!
+  updateKBResourceRefreshPolicy(input: KBResourceRefreshPolicyInput!, resourceId: String!): KBResource!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
@@ -2372,6 +2567,10 @@ type Query {
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
+  getKB(id: String!): KB
+  getKBIngestionRuns(kbId: String!, limit: Int, resourceId: String): [KBIngestionRun!]!
+  getKBResources(filter: KBResourceFilterInput, kbId: String!): [KBResource!]!
+  getKBs: [KB!]!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -2843,6 +3042,43 @@ input TemplateElementManipulationInput {
 
 type Title {
   id: Int!
+}
+
+input UpdateKBInput {
+  description: String
+  externalGraphId: String
+  externalNamespaceId: String
+  externalVectorStoreId: String
+  graphEnabled: Boolean
+  graphResourceKinds: [KBResourceKind!]
+  metadata: Json
+  metadataProfile: KBMetadataProfile
+  name: String
+  refreshIntervalMinutes: Int
+  settings: Json
+  status: KBStatus
+  statusMessage: String
+}
+
+input UpdateKBResourceInput {
+  answerCollectionId: Int
+  description: String
+  elementId: Int
+  externalResourceId: String
+  graphInclusion: KBGraphInclusionMode
+  groupActivityId: String
+  kind: KBResourceKind
+  liveQuizId: String
+  mediaFileId: String
+  metadata: Json
+  microLearningId: String
+  practiceQuizId: String
+  refreshIntervalMinutes: Int
+  snippetText: String
+  statusDetail: String
+  title: String
+  websiteStrategy: KBWebsiteStrategy
+  websiteUrl: String
 }
 
 type User {

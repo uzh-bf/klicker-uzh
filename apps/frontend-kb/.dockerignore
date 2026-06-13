@@ -1,0 +1,15 @@
+.**
+
+__**
+
+cypress/
+deploy/
+docs/
+legacy/
+newsletter/
+**/.next/
+**/node_modules/
+**/.turbo/
+util/
+
+Dockerfile

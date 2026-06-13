@@ -1,0 +1,5 @@
+mutation UnlinkKBCourse($kbId: String!, $courseId: String!) {
+  unlinkKBCourse(kbId: $kbId, courseId: $courseId) {
+    ...KBData
+  }
+}

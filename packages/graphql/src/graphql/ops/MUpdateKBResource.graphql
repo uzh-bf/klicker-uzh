@@ -1,0 +1,8 @@
+mutation UpdateKBResource(
+  $resourceId: String!
+  $input: UpdateKBResourceInput!
+) {
+  updateKBResource(resourceId: $resourceId, input: $input) {
+    ...KBResourceData
+  }
+}

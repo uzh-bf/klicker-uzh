@@ -14,6 +14,7 @@ import type {
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './hatchet.js'
+export * from './kb.js'
 
 // ----- ACTIVITY LOG TYPES -----
 // #region

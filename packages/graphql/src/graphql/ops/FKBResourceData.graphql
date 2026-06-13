@@ -1,0 +1,34 @@
+fragment KBResourceData on KBResource {
+  id
+  kbId
+  title
+  description
+  kind
+  status
+  statusDetail
+  metadata
+  graphInclusion
+  refreshIntervalMinutes
+  lastIndexedAt
+  nextRefreshAt
+  externalResourceId
+  websiteUrl
+  websiteStrategy
+  snippetText
+  elementId
+  practiceQuizId
+  liveQuizId
+  microLearningId
+  groupActivityId
+  answerCollectionId
+  mediaFileId
+  ingestionRuns {
+    id
+    status
+    startedAt
+    finishedAt
+    errorMessage
+  }
+  createdAt
+  updatedAt
+}

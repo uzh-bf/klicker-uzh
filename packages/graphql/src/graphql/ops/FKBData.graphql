@@ -1,0 +1,36 @@
+fragment KBData on KB {
+  id
+  name
+  description
+  status
+  statusMessage
+  metadataProfile
+  metadata
+  settings
+  externalNamespaceId
+  externalVectorStoreId
+  externalGraphId
+  graphEnabled
+  graphResourceKinds
+  resourceCount
+  chunkCount
+  sizeBytes
+  refreshIntervalMinutes
+  lastIndexedAt
+  nextRefreshAt
+  courses {
+    id
+    courseId
+    courseName
+  }
+  chatbots {
+    id
+    chatbotId
+    chatbotName
+    chatbotDescription
+    priority
+    isEnabled
+  }
+  createdAt
+  updatedAt
+}

@@ -1,0 +1,5 @@
+mutation UnlinkKBChatbot($kbId: String!, $chatbotId: String!) {
+  unlinkKBChatbot(kbId: $kbId, chatbotId: $chatbotId) {
+    ...KBData
+  }
+}

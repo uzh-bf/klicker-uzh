@@ -1,0 +1,5 @@
+mutation CreateKBResource($kbId: String!, $input: CreateKBResourceInput!) {
+  createKBResource(kbId: $kbId, input: $input) {
+    ...KBResourceData
+  }
+}

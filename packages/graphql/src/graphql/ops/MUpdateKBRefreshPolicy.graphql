@@ -1,0 +1,5 @@
+mutation UpdateKBRefreshPolicy($kbId: String!, $input: KBRefreshPolicyInput!) {
+  updateKBRefreshPolicy(kbId: $kbId, input: $input) {
+    ...KBData
+  }
+}

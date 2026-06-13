@@ -1,0 +1,15 @@
+query GetKB($id: String!) {
+  getKB(id: $id) {
+    ...KBData
+    resources {
+      ...KBResourceData
+    }
+    ingestionRuns {
+      id
+      status
+      startedAt
+      finishedAt
+      errorMessage
+    }
+  }
+}
