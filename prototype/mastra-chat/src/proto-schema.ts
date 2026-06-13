@@ -57,6 +57,22 @@ async function main() {
     CREATE INDEX IF NOT EXISTS message_embedding_thread_idx
       ON mastra_proto.message_embedding (thread_id)`)
 
+  // S2 — DB-backed skill source. Mastra's SkillSource is a filesystem-like
+  // interface (exists/stat/readFile/readdir), so a DB-backed source is just a
+  // virtual filesystem: each row is a file at a path under a skill directory
+  // (e.g. `/exam-coaching/SKILL.md`). This is the lecturer-authoring + versioning
+  // store; the skill-search processor reads SKILL.md frontmatter for progressive
+  // disclosure at model-time.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS mastra_proto.skill_file (
+      skill_name text NOT NULL,
+      path       text NOT NULL,
+      content    text NOT NULL,
+      version    int  NOT NULL DEFAULT 1,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (path)
+    )`)
+
   const { rows } = await pool.query(
     `SELECT table_name FROM information_schema.tables
      WHERE table_schema = 'mastra_proto' ORDER BY table_name`
