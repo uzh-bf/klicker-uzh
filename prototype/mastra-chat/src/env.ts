@@ -24,6 +24,12 @@ export const env = {
   APP_SECRET: optional('APP_SECRET'),
   // Prototype knobs
   PORT: Number(process.env.PORT ?? 7100),
+  // Local stub doc_query MCP server (the real KB backend is not running in dev).
+  // The rebind reads auth/header config from the DB KB row but connects here.
+  PROTO_MCP_PORT: Number(process.env.PROTO_MCP_PORT ?? 7110),
+  PROTO_MCP_URL: process.env.PROTO_MCP_URL ?? 'http://localhost:7110/mcp',
+  // Guardrail processors need a classifier model (LLM-backed). Reuse the cheap one.
+  GUARDRAIL_MODEL_ID: process.env.GUARDRAIL_MODEL_ID ?? 'openai/gpt-4.1-mini',
   // Default model ids (override per chatbot row). Primary deliberately swappable
   // to a bad id to exercise fallback in S0.
   PRIMARY_MODEL_ID: process.env.PRIMARY_MODEL_ID ?? 'openai/gpt-4.1',

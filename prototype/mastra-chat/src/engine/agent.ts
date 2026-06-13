@@ -3,9 +3,17 @@
 // is an OpenAI-compatible provider instance (OpenRouter/Azure via env) passed
 // directly — no Mastra model-router string required.
 import { Agent } from '@mastra/core/agent'
+import type { ToolsInput } from '@mastra/core/agent'
 import { createOpenAI } from '@ai-sdk/openai'
 import { env } from '../env.js'
 import type { ChatbotConfig } from '../db.js'
+
+// Optional engine add-ons layered on by later slices (S1 tools + guardrails).
+export type AgentExtras = {
+  tools?: ToolsInput
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inputProcessors?: any[]
+}
 
 // One provider per (baseURL, apiKey). Per-chatbot key/url override is supported
 // by building a provider from the chatbot row when present.
@@ -33,7 +41,12 @@ export function resolveInstructions(chatbot: ChatbotConfig, mode: string): strin
 // entry (ModelWithRetries) on provider errors (5xx/429/timeout). A deliberately
 // wrong primary id exercises the fallback path in S0. Single-entry when the
 // requested model already is the fallback (avoids a redundant retry tier).
-export function buildAgent(chatbot: ChatbotConfig, mode: string, primaryModelId: string) {
+export function buildAgent(
+  chatbot: ChatbotConfig,
+  mode: string,
+  primaryModelId: string,
+  extras: AgentExtras = {}
+) {
   const provider = providerFor(chatbot)
   const primary = provider(primaryModelId)
   const fallback = provider(env.FALLBACK_MODEL_ID)
@@ -45,5 +58,7 @@ export function buildAgent(chatbot: ChatbotConfig, mode: string, primaryModelId:
       primaryModelId === env.FALLBACK_MODEL_ID
         ? primary
         : [{ model: primary }, { model: fallback }],
+    ...(extras.tools ? { tools: extras.tools } : {}),
+    ...(extras.inputProcessors ? { inputProcessors: extras.inputProcessors } : {}),
   })
 }

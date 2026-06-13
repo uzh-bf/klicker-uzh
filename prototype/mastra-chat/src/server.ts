@@ -8,6 +8,10 @@ import { Hono } from 'hono'
 import { createUIMessageStreamResponse } from 'ai'
 import { toAISdkStream } from '@mastra/ai-sdk'
 import { buildAgent } from './engine/agent.js'
+import type { AgentExtras } from './engine/agent.js'
+import { buildMcpToolset, loadKbServerConfig } from './engine/mcp.js'
+import { buildInputProcessors, DEFAULT_GUARDRAILS } from './engine/guardrails.js'
+import type { GuardrailConfig } from './engine/guardrails.js'
 import { getChatbot } from './db.js'
 import { env } from './env.js'
 
@@ -21,13 +25,39 @@ app.post('/api/chat', async (c) => {
     mode?: string
     model?: string
     messages: unknown[]
+    mcp?: boolean // S1: attach the doc_query toolset
+    guardrails?: GuardrailConfig | false // S1: override the per-mode guardrail policy
   }>()
   const mode = body.mode ?? 'tutor'
   const chatbot = await getChatbot(body.chatbotId)
   if (!chatbot) return c.json({ error: 'chatbot not found' }, 404)
 
   const modelId = body.model ?? env.PRIMARY_MODEL_ID
-  const agent = buildAgent(chatbot, mode, modelId)
+  const extras: AgentExtras = {}
+  let disconnectMcp: (() => Promise<void>) | null = null
+
+  // S1a — retrieval: rebind the DB-driven KB config onto Mastra's MCP client.
+  if (body.mcp) {
+    const kb = await loadKbServerConfig()
+    if (kb) {
+      const toolset = await buildMcpToolset(
+        { ...kb, url: env.PROTO_MCP_URL }, // real backend down: connect to the stub
+        chatbot.id,
+        ['doc_query']
+      )
+      extras.tools = toolset.tools
+      disconnectMcp = toolset.disconnect
+      console.log('[chat] MCP tools attached:', toolset.toolNames.join(', '))
+    }
+  }
+
+  // S1b — guardrails: build input processors from the (overridable) policy.
+  const guardrailCfg = body.guardrails === false ? null : body.guardrails ?? DEFAULT_GUARDRAILS
+  if (guardrailCfg) {
+    extras.inputProcessors = buildInputProcessors(guardrailCfg)
+  }
+
+  const agent = buildAgent(chatbot, mode, modelId, extras)
 
   const stream = await agent.stream(body.messages as never, {
     abortSignal: c.req.raw.signal,
@@ -47,11 +77,31 @@ app.post('/api/chat', async (c) => {
   // Cast bridges a known version skew: Mastra vendors its own ai-v6 chunk types
   // whose finish chunk allows finishReason 'unknown', while the app's `ai`
   // package narrows it out. Runtime chunks are identical; only the types differ.
-  return createUIMessageStreamResponse({
+  const response = createUIMessageStreamResponse({
     stream: uiStream as unknown as Parameters<
       typeof createUIMessageStreamResponse
     >[0]['stream'],
   })
+
+  // Release the per-request MCP client once the response body is fully drained
+  // (or the client aborts). Avoids leaking a connection per request.
+  if (disconnectMcp && response.body) {
+    const cleanup = disconnectMcp
+    const monitored = response.body.pipeThrough(
+      new TransformStream({
+        flush() {
+          void cleanup()
+        },
+      })
+    )
+    c.req.raw.signal.addEventListener('abort', () => void cleanup(), { once: true })
+    return new Response(monitored, {
+      status: response.status,
+      headers: response.headers,
+    })
+  }
+
+  return response
 })
 
 // Serve the harness
