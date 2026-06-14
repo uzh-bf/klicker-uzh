@@ -73,6 +73,19 @@ async function main() {
       PRIMARY KEY (path)
     )`)
 
+  // S6 — sub-agent roster. DB-driven: each row is a specialist the supervisor can
+  // delegate to (exposed as an `ask_<key>` tool). Depth held at two
+  // (supervisor -> specialist); specialists carry no further roster.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS mastra_proto.subagent (
+      key          text PRIMARY KEY,
+      name         text NOT NULL,
+      description  text NOT NULL,
+      instructions text NOT NULL,
+      chatbot_id   uuid,
+      updated_at   timestamptz NOT NULL DEFAULT now()
+    )`)
+
   const { rows } = await pool.query(
     `SELECT table_name FROM information_schema.tables
      WHERE table_schema = 'mastra_proto' ORDER BY table_name`
