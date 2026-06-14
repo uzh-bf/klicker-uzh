@@ -30,6 +30,10 @@ export const env = {
   PROTO_MCP_URL: process.env.PROTO_MCP_URL ?? 'http://localhost:7110/mcp',
   // Guardrail processors need a classifier model (LLM-backed). Reuse the cheap one.
   GUARDRAIL_MODEL_ID: process.env.GUARDRAIL_MODEL_ID ?? 'openai/gpt-4.1-mini',
+  // A1 observability: 'console' prints Mastra spans to stdout (offline emission
+  // proof); 'off' (default) keeps local runs quiet. Production would point an
+  // OTLP/Langfuse-compatible exporter here instead.
+  OBSERVABILITY: process.env.OBSERVABILITY ?? 'off',
   // Default model ids (override per chatbot row). Primary deliberately swappable
   // to a bad id to exercise fallback in S0.
   PRIMARY_MODEL_ID: process.env.PRIMARY_MODEL_ID ?? 'openai/gpt-4.1',

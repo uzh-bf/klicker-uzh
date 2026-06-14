@@ -15,6 +15,7 @@ import type { GuardrailConfig } from './engine/guardrails.js'
 import { buildProfileTool, profileContext } from './engine/profileTools.js'
 import { buildSkillTools } from './engine/skillTools.js'
 import { calcCost, costForModel } from './engine/cost.js'
+import { withObservability } from './engine/observability.js'
 import { getChatbot } from './db.js'
 import { env } from './env.js'
 
@@ -77,7 +78,7 @@ app.post('/api/chat', async (c) => {
       'course skill applies; if one does, call skill to load it and follow its instructions.'
   }
 
-  const agent = buildAgent(chatbot, mode, modelId, extras)
+  const agent = withObservability(buildAgent(chatbot, mode, modelId, extras))
 
   const stream = await agent.stream(body.messages as never, {
     abortSignal: c.req.raw.signal,
