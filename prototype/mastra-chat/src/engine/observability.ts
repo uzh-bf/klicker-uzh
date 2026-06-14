@@ -17,21 +17,31 @@ import { env } from '../env.js'
 
 // Build the container once at startup. Observability must never take the chat
 // server down: if construction fails, we log and run without tracing.
+//
+// "off" skips the container entirely (mastra stays null) rather than building one
+// with no exporters: Mastra's Observability rejects an empty exporter set
+// (OBSERVABILITY_INVALID_INSTANCE_CONFIG, "At least one exporter or a bridge is
+// required"), so the empty-exporter path would throw and log an error on EVERY
+// default startup. A null container makes withObservability a no-op — exactly the
+// "off" behaviour — so only the exporter-bearing "console" mode constructs one.
 let mastra: Mastra | null = null
-try {
-  const mode = env.OBSERVABILITY
-  if (mode !== 'console' && mode !== 'off') {
-    console.warn(`[observability] unknown OBSERVABILITY="${mode}", treating as "off"`)
+const mode = env.OBSERVABILITY
+if (mode !== 'console' && mode !== 'off') {
+  console.warn(`[observability] unknown OBSERVABILITY="${mode}", treating as "off"`)
+}
+if (mode === 'console') {
+  try {
+    mastra = new Mastra({
+      observability: new Observability({
+        configs: {
+          default: { serviceName: 'mastra-chat-prototype', exporters: [new ConsoleExporter()] },
+        },
+      }),
+    })
+  } catch (err) {
+    console.error('[observability] init failed; continuing without tracing:', err)
+    mastra = null
   }
-  const exporters = mode === 'console' ? [new ConsoleExporter()] : []
-  mastra = new Mastra({
-    observability: new Observability({
-      configs: { default: { serviceName: 'mastra-chat-prototype', exporters } },
-    }),
-  })
-} catch (err) {
-  console.error('[observability] init failed; continuing without tracing:', err)
-  mastra = null
 }
 
 // Attach a per-request agent to the observability container so its model calls
