@@ -81,3 +81,44 @@ instruction nudge to consult skills before how-to/coaching answers.
 **Verdict.** DB-backed skill source + progressive disclosure → **adopt-with-changes**
 (custom thin tools until `WorkspaceSkillsImpl` is exported or a DB source adapter
 lands upstream). Lecturer authoring/versioning in our DB → **adopt**.
+
+---
+
+## S5 — Compression (DIY, branch-correct, conditional) — ✅ DONE
+
+**What ran.** Two halves. (1) **Selection** (`src/engine/summary.ts`, pure graph
+logic): a summary covers a thread up to an *anchor message*; a leaf may reuse only
+summaries whose anchor lies on its root→leaf path, and the **deepest** such anchor
+wins — so a summary built on an abandoned fork is provably never reused. (2)
+**Generation** (`src/engine/summarize.ts`, model-time): summarize a run of on-path
+turns into dense bullets, and measure the input-token cost of any context array
+with the provider's own tokenizer (`usage.prompt_tokens`).
+
+**Evidence.**
+- Offline (`check-summary.ts`): on the forked Thread A, the active (graph) leaf
+  selects the shared-ancestor summary and **never** the abandoned quicksort-fork
+  summary; the abandoned leaf selects the deeper fork summary. Deepest-on-path +
+  fork isolation proven with hand-written strings.
+- Live (`check-summary-live.ts`, model): on the 40-turn `PROTO::long-linear`
+  thread, the model summarized the first 30 turns into a faithful 10-bullet
+  summary, stored it anchored at the head boundary, the leaf selected it, and the
+  **measured** input-token cost dropped from **3288 → 1096** prompt tokens
+  (summary + last 10 turns) = **2192 saved, 67%** on this thread — provider
+  tokenizer, not an estimate.
+
+**Findings / caveats.**
+- **Branch-correct compression is ours, not Mastra's.** Anchoring summaries to a
+  *message id* (not a thread) is what survives forks. Mastra's managed memory is
+  thread-linear and cannot express "deepest summary on *this* branch".
+- **The saving is real; the trigger is the open question.** 67% is the saving
+  *when* compression fires. WHEN to fire (thread-length / token-budget threshold)
+  needs the production thread-length distribution, which dev's synthetic fixture
+  cannot supply (S0.5). Ship the mechanism; gate it on a config threshold and tune
+  against prod telemetry.
+- **Cost of compression:** one extra model call to summarize, amortized across all
+  later turns on the branch. Net-positive only past a break-even thread length —
+  another reason the gate is a prod-tuned threshold, not always-on.
+
+**Verdict.** Branch-correct selection → **adopt**. Model summarization + measured
+savings → **adopt**. Always-on triggering → **drop** in favour of a config-gated
+threshold tuned on production telemetry → **adopt-with-changes**.
