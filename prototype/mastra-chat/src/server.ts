@@ -7,7 +7,7 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import { createUIMessageStreamResponse } from 'ai'
 import { toAISdkStream } from '@mastra/ai-sdk'
-import { buildAgent, reasoningProviderOptions } from './engine/agent.js'
+import { buildAgent, responsesProviderOptions } from './engine/agent.js'
 import type { AgentExtras } from './engine/agent.js'
 import { buildMcpToolset, loadKbServerConfig } from './engine/mcp.js'
 import { buildInputProcessors, DEFAULT_GUARDRAILS } from './engine/guardrails.js'
@@ -18,6 +18,10 @@ import { costForTokens } from './engine/cost.js'
 import { withObservability } from './engine/observability.js'
 import { getChatbot } from './db.js'
 import { env } from './env.js'
+
+// Minimal structural view of a converted v6 UI part (the reasoning accumulator
+// inspects type + delta and patches the finish part's metadata).
+type UiPart = { type: string; delta?: string; messageMetadata?: Record<string, unknown> }
 
 const app = new Hono()
 
@@ -81,20 +85,15 @@ app.post('/api/chat', async (c) => {
 
   const agent = withObservability(buildAgent(chatbot, mode, modelId, extras))
 
-  // A2 — reasoning: the engine owns the capability→provider→options mapping, so
-  // we just hand the resulting providerOptions to agent.stream (undefined turns
-  // reasoning off). reasoningContent is accumulated from step results
-  // (onStepFinish, a side-effect collector) so we never re-read the
-  // single-consumer stream, then surfaced in the finish metadata.
-  const reasoningOpts = reasoningProviderOptions(modelId, body.reasoningEffort)
-  let reasoningContent = ''
+  // A2 — Responses API options: the engine owns the provider→options mapping
+  // (store:true always; reasoningEffort/reasoningSummary when reasoning is
+  // engaged), so we just hand the result to agent.stream. reasoningOn gates the
+  // reasoning finish metadata.
+  const { options: providerOptions, reasoningOn } = responsesProviderOptions(modelId, body.reasoningEffort)
 
   const stream = await agent.stream(body.messages as never, {
     abortSignal: c.req.raw.signal,
-    providerOptions: reasoningOpts,
-    onStepFinish: ({ reasoningText }: { reasoningText?: string }) => {
-      if (reasoningText) reasoningContent += reasoningText
-    },
+    providerOptions,
   })
 
   const uiStream = toAISdkStream(stream, {
@@ -107,7 +106,8 @@ app.post('/api/chat', async (c) => {
     // as the production chat route. (Production also adds an imageDescriptionCost
     // term; the prototype has no image pipeline, so that term is always zero here.)
     // Null when the model price or usage is unavailable — we never silently
-    // charge zero.
+    // charge zero. reasoningContent is NOT built here — it is injected race-free by
+    // the accumulator below (see there for why a finish-time read would drop it).
     messageMetadata: ({
       part,
     }: {
@@ -118,24 +118,50 @@ app.post('/api/chat', async (c) => {
       const creditsUsed = usage
         ? costForTokens(modelId, usage.inputTokens ?? 0, usage.outputTokens ?? 0)
         : null
-      // A2: mirror what apps/chat emits — the requested effort and the reasoning
-      // text accumulated above. Null when reasoning was not actually engaged
-      // (non-reasoning model, or no/`none` effort — reasoningOpts is undefined).
+      // A2: mirror what apps/chat emits — the requested effort. Null when reasoning
+      // was not engaged (non-reasoning model, or no/`none` effort).
       return {
         modelId,
         chatMode: mode,
         creditsUsed,
-        reasoningEffort: reasoningOpts ? body.reasoningEffort : null,
-        reasoningContent: reasoningContent || null,
+        reasoningEffort: reasoningOn ? body.reasoningEffort : null,
       }
     },
   })
+
+  // A2 — reasoning accumulator: every reasoning-delta is emitted BEFORE the finish
+  // chunk (stream ordering), so accumulating here and patching the finish part's
+  // metadata is race-free. Reading a shared var populated by Mastra's onStepFinish
+  // instead would intermittently drop the summary: under HTTP backpressure the
+  // finish chunk can be built before that step callback runs, leaving the metadata
+  // empty even though the reasoning streamed to the client.
+  let reasoningContent = ''
+  const withReasoning = (uiStream as unknown as ReadableStream<UiPart>).pipeThrough(
+    new TransformStream<UiPart, UiPart>({
+      transform(part, controller) {
+        if (part.type === 'reasoning-delta') reasoningContent += part.delta ?? ''
+        // Patch reasoningContent onto a COPY of the finish part — never mutate the
+        // chunk object toAISdkStream emitted (it owns that reference).
+        controller.enqueue(
+          part.type === 'finish'
+            ? {
+                ...part,
+                messageMetadata: {
+                  ...(part.messageMetadata ?? {}),
+                  reasoningContent: reasoningOn ? reasoningContent || null : null,
+                },
+              }
+            : part
+        )
+      },
+    })
+  )
 
   // Cast bridges a known version skew: Mastra vendors its own ai-v6 chunk types
   // whose finish chunk allows finishReason 'unknown', while the app's `ai`
   // package narrows it out. Runtime chunks are identical; only the types differ.
   const response = createUIMessageStreamResponse({
-    stream: uiStream as unknown as Parameters<
+    stream: withReasoning as unknown as Parameters<
       typeof createUIMessageStreamResponse
     >[0]['stream'],
   })

@@ -6,12 +6,17 @@
 export type CostBase = { input: number; output: number }
 
 // Mirrors DEFAULT_MODEL_REGISTRY cost values in
-// apps/chat/src/lib/server/chatModelRegistry.ts. Keyed by bare model id; the
-// prototype uses provider-prefixed ids (e.g. "openai/gpt-4.1"), so lookups
-// strip the provider prefix.
+// apps/chat/src/lib/server/chatModelRegistry.ts. Keyed by bare model id. Model
+// ids are bare deployment names ("gpt-4.1"); the lastIndexOf strip in
+// costForModel also tolerates an optional provider prefix, just in case.
 const MODEL_COST: Record<string, CostBase> = {
   'gpt-4.1': { input: 2.0, output: 8.0 },
   'gpt-4.1-mini': { input: 0.4, output: 1.6 },
+  // gpt-5 reasoning family — prod registry prices (deploy/env-uzh-prd/values.yaml).
+  // Reasoning tokens are billed as output tokens, so they flow through `output`.
+  'gpt-5.1': { input: 1.25, output: 10.0 },
+  'gpt-5.4': { input: 1.25, output: 10.0 },
+  'gpt-5.5': { input: 1.25, output: 10.0 },
   // Embedding model (input-only) for A3 background-cost attribution.
   'text-embedding-3-small': { input: 0.02, output: 0 },
 }

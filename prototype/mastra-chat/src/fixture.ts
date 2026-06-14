@@ -58,7 +58,7 @@ async function msg(
       role,
       JSON.stringify(text(body)),
       mode,
-      role === 'assistant' ? 'openai/gpt-4.1' : null,
+      role === 'assistant' ? 'gpt-4.1' : null,
       role === 'assistant' ? 1 : null,
       String(clock),
     ]

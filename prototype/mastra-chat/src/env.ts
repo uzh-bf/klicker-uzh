@@ -13,7 +13,9 @@ function optional(name: string): string | undefined {
 }
 
 export const env = {
-  // Model provider (OpenRouter / Azure / OpenAI-compatible) — mirrors the chat app
+  // Model provider (Azure AI Foundry / OpenAI-compatible) — mirrors the chat app,
+  // which builds @ai-sdk/openai against an OpenAI-compatible base URL (LiteLLM ->
+  // Azure in prod; Azure's /openai/v1 surface directly in dev).
   OPENAI_API_KEY: required('OPENAI_API_KEY'),
   OPENAI_BASE_URL: required('OPENAI_BASE_URL'),
   // Legacy doc_query MCP server (used by the chat app via getMCPTools)
@@ -29,17 +31,20 @@ export const env = {
   PROTO_MCP_PORT: Number(process.env.PROTO_MCP_PORT ?? 7110),
   PROTO_MCP_URL: process.env.PROTO_MCP_URL ?? 'http://localhost:7110/mcp',
   // Guardrail processors need a classifier model (LLM-backed). Reuse the cheap one.
-  GUARDRAIL_MODEL_ID: process.env.GUARDRAIL_MODEL_ID ?? 'openai/gpt-4.1-mini',
+  GUARDRAIL_MODEL_ID: process.env.GUARDRAIL_MODEL_ID ?? 'gpt-4.1-mini',
   // A1 observability: 'console' prints Mastra spans to stdout (offline emission
   // proof); 'off' (default) keeps local runs quiet. Production would point an
   // OTLP/Langfuse-compatible exporter here instead.
   OBSERVABILITY: process.env.OBSERVABILITY ?? 'off',
-  // Default model ids (override per chatbot row). Primary deliberately swappable
-  // to a bad id to exercise fallback in S0.
-  PRIMARY_MODEL_ID: process.env.PRIMARY_MODEL_ID ?? 'openai/gpt-4.1',
-  FALLBACK_MODEL_ID: process.env.FALLBACK_MODEL_ID ?? 'openai/gpt-4.1-mini',
-  // A2 reasoning validation: a reasoning-capable model. The step-1 transport
-  // check confirmed OpenRouter surfaces reasoning over Chat Completions (under a
-  // `reasoning` delta field) for o4-mini. Override to test another reasoning model.
-  REASONING_MODEL_ID: process.env.REASONING_MODEL_ID ?? 'openai/o4-mini',
+  // Default model ids — bare deployment names (Azure / standard OpenAI; no
+  // provider prefix). Override per chatbot row. Primary deliberately swappable to
+  // a bad id to exercise fallback in S0.
+  PRIMARY_MODEL_ID: process.env.PRIMARY_MODEL_ID ?? 'gpt-4.1',
+  FALLBACK_MODEL_ID: process.env.FALLBACK_MODEL_ID ?? 'gpt-4.1-mini',
+  // A2 reasoning validation: a reasoning-capable model. Reasoning summaries are
+  // surfaced via the Responses API (providerOptions.openai.reasoningSummary) — not
+  // Chat Completions, which hides reasoning as opaque reasoning_tokens. gpt-5.1 is
+  // the prod primary reasoning model and is deployed on the dev Azure resource;
+  // override to test another (e.g. gpt-5-mini, also deployed).
+  REASONING_MODEL_ID: process.env.REASONING_MODEL_ID ?? 'gpt-5.1',
 }

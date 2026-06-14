@@ -1,11 +1,12 @@
 // S0 engine spine: a per-request dynamic Mastra agent built from a Klicker
 // chatbot row. Instructions come from the DB (systemPrompts[mode]); the model
-// is an OpenAI-compatible provider instance (OpenRouter/Azure via env) passed
-// directly — no Mastra model-router string required.
+// is a standard OpenAI provider instance (@ai-sdk/openai) pointed at an
+// OpenAI-compatible endpoint via env — Azure AI Foundry in prod (through the same
+// /openai/v1 surface the chat app uses via LiteLLM), no Mastra model-router
+// string required.
 import { Agent } from '@mastra/core/agent'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createOpenAI } from '@ai-sdk/openai'
-import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { env } from '../env.js'
 import type { ChatbotConfig } from '../db.js'
 
@@ -31,57 +32,47 @@ function providerFor(chatbot: ChatbotConfig) {
   return defaultProvider
 }
 
-// Reasoning models use the OpenRouter AI SDK provider instead of @ai-sdk/openai.
-// A2 validated that @ai-sdk/openai's Chat Completions parser DROPS OpenRouter's
-// `reasoning` delta field — the reasoning bytes arrive over the wire but never
-// become AI-SDK reasoning parts. The OpenRouter provider surfaces them as
-// reasoning-start / reasoning-delta / reasoning-end. Non-reasoning models stay on
-// @ai-sdk/openai .chat(), which round-trips tool results correctly under
-// store:false (the S0 reason for choosing Chat Completions over the Responses API).
-// Reasoning effort is requested per call via providerOptions.openrouter.reasoning.
-//
-// LIMITATION (prototype): reasoning models always use the default OpenRouter creds
-// (env), NOT a chatbot row's openaiApiKey/openaiBaseUrl override. A per-chatbot
-// override may point at a non-OpenRouter endpoint (e.g. Azure), which this provider
-// cannot drive — production would resolve the capability×provider matrix properly.
-const reasoningProvider = createOpenRouter({
-  apiKey: env.OPENAI_API_KEY,
-  baseURL: env.OPENAI_BASE_URL,
-})
+// Reasoning-capable model ids: the o-series (o1/o3/o4/…, anchored to id start or
+// after the provider slash so `gpt-4o` is NOT matched), the entire gpt-5 family
+// (gpt-5, gpt-5-mini, gpt-5.1, … — all reasoning models; the `(?!\d)` keeps a
+// hypothetical `gpt-50` from matching), deepseek-r1, and the `:thinking` suffix
+// (un-anchored — it marks a thinking variant of an otherwise non-reasoning id,
+// e.g. claude-…:thinking).
+const REASONING_MODEL_RE = /(^|\/)(o\d|gpt-5(?!\d)|deepseek-r1)|:thinking/i
 
-// Provider-prefixed reasoning-model ids: the o-series (o1/o3/o4/…, anchored to id
-// start or after the provider slash so `gpt-4o` is NOT matched), gpt-5 *thinking*
-// variants, deepseek-r1, and the `:thinking` suffix (un-anchored — it marks a
-// thinking variant of an otherwise non-reasoning id, e.g. claude-…:thinking).
-const REASONING_MODEL_RE = /(^|\/)(o\d|gpt-5[.\-].*think|deepseek-r1)|:thinking/i
-
-export function isReasoningModel(modelId: string): boolean {
+function isReasoningModel(modelId: string): boolean {
   return REASONING_MODEL_RE.test(modelId)
 }
 
-// Build a language model for an id, routing reasoning models to the OpenRouter
-// provider and everything else to the (override-aware) @ai-sdk/openai provider.
-function modelFor(chatbot: ChatbotConfig, modelId: string) {
-  // Use the Chat Completions API (`.chat`), NOT the default Responses API.
-  // The Responses API references prior response items by call_id across tool-call
-  // steps; stateless via OpenRouter/Azure (store:false) the continuation step
-  // fails with "No tool call found for function call output". Chat Completions is
-  // stateless per request and round-trips tool results correctly. Matches the
-  // chat app's documented gotcha (CHAT_OPENAI_STORE_RESPONSES).
-  return isReasoningModel(modelId)
-    ? reasoningProvider.chat(modelId)
-    : providerFor(chatbot).chat(modelId)
-}
-
-// The agent.stream `providerOptions` that turn reasoning on for a model — owned
-// here because this module also owns which provider a model id routes to, and the
-// reasoning toggle is provider-specific (the OpenRouter provider keys it under
-// `openrouter`). Returns undefined when the model is not reasoning-capable or no
-// effort (or 'none') is requested, so the HTTP layer passes it straight to
-// agent.stream without hard-coding any provider key or re-deciding capability.
-export function reasoningProviderOptions(modelId: string, effort: string | undefined) {
-  if (!effort || effort === 'none' || !isReasoningModel(modelId)) return undefined
-  return { openrouter: { reasoning: { effort } } }
+// Build the Responses-API `providerOptions` for a request AND report whether
+// reasoning is engaged — decided once here (single source of truth) and consumed
+// by the HTTP layer for both agent.stream (`options`) and the finish metadata
+// (`reasoningOn`). store:true is always set (tool-call round-tripping, matches the
+// chat app); reasoningEffort + reasoningSummary are added only when reasoning is
+// engaged — non-reasoning models like gpt-4.1-mini ignore them, but we omit them to
+// avoid provider 400s on strict backends. Keyed under `openai` (the provider
+// namespace), so the HTTP layer passes `options` straight to agent.stream.
+//
+// reasoningSummary is 'detailed' (the chat app uses 'auto'): Azure's reasoning
+// summaries are bursty — a response streams either a full summary or none, and the
+// non-empty rate swings window to window (a provider quirk, not a pipeline drop;
+// see check-reasoning.ts). 'detailed' biases toward richer summaries when one is
+// emitted, but does NOT guarantee non-empty on any single call; a UI must tolerate
+// reasoning tokens arriving with no human-readable summary.
+export function responsesProviderOptions(modelId: string, effort: string | undefined) {
+  // Reasoning is engaged only for a reasoning-capable model AND a non-empty effort
+  // other than 'none' (effort 'none' disables reasoning even on a gpt-5/o-series
+  // model, matching the chat app).
+  const reasoningOn = !!effort && effort !== 'none' && isReasoningModel(modelId)
+  return {
+    reasoningOn,
+    options: {
+      openai: {
+        store: true,
+        ...(reasoningOn ? { reasoningEffort: effort, reasoningSummary: 'detailed' } : {}),
+      },
+    },
+  }
 }
 
 const DEFAULT_INSTRUCTIONS =
@@ -102,8 +93,16 @@ export function buildAgent(
   primaryModelId: string,
   extras: AgentExtras = {}
 ) {
-  const primary = modelFor(chatbot, primaryModelId)
-  const fallback = modelFor(chatbot, env.FALLBACK_MODEL_ID)
+  const provider = providerFor(chatbot)
+  // Use the Responses API (`.responses`), matching the chat app. With store:true
+  // (set in responsesProviderOptions) the server retains response items, so tool-call
+  // continuation steps can reference prior items by id — the S0 "No tool call found
+  // for function call output" failure was store:false, not the Responses API itself
+  // (see the chat app's CHAT_OPENAI_STORE_RESPONSES gotcha). It is also the ONLY
+  // standard-OpenAI path that surfaces reasoning summaries; Chat Completions hides
+  // reasoning as opaque reasoning_tokens. Works identically against Azure's /openai/v1.
+  const primary = provider.responses(primaryModelId)
+  const fallback = provider.responses(env.FALLBACK_MODEL_ID)
   return new Agent({
     id: `chatbot-${chatbot.id}`,
     name: chatbot.name || 'Course Tutor',
