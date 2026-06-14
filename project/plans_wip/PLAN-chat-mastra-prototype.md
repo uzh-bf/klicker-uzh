@@ -46,23 +46,25 @@ The prototype is a small standalone service plus a thin UI, both pointed at a co
 
 ## 5. Feature evaluation matrix
 
-Each feature gets built, then judged. "Owner" = whether the prototype uses Mastra-native or our own DIY implementation.
+Each feature gets built, then judged. "Owner" = whether the prototype uses Mastra-native or our own DIY implementation. **Verdict** column filled from the prototype run; per-slice evidence + caveats live in `prototype/mastra-chat/RESULTS.md`.
 
-| Feature | Owner | Question it answers | Success signal |
-| --- | --- | --- | --- |
-| Engine swap | Mastra | Can a dynamic Mastra agent fully replace our `streamText` call with per-request DB-driven instructions/model/tools? | Behaviour parity with current chat on a seeded thread |
-| Model fallback | Mastra | Does a provider error transparently fall to the next model mid-request? | Forced primary failure recovers without user-visible error |
-| Finish-metadata shim | DIY | Can we re-attach creditsUsed/modelId/chatMode/reasoningEffort to the stream finish so our UI keeps working? | Harness reads all four fields on finish |
-| Reasoning streaming | Mastra | Do reasoning deltas round-trip to assistant-ui as today? | Reasoning panel renders incrementally |
-| `doc_query` MCP toolset | Mastra | Does our DB-driven per-mode MCP config (auth, namespacing, chatbot-id header) rebind cleanly onto Mastra's MCP client? | Agent retrieves course content via `doc_query` |
-| Guardrails | Mastra | Are prompt-injection / moderation / PII / token-limit processors usable on a stateless agent, per-request configurable? | Each processor fires on a crafted input |
-| Skills | Mastra | Can lecturer-authored, DB-backed, versioned skill packages replace the flat per-mode prompt, with progressive disclosure? | Agent loads a skill on demand and applies it |
-| Student profile | DIY | Can persistent per-student facts live in our schema, branch-agnostic, with a transparency view and deletion hook? | Profile updates across threads; student-facing read view works |
-| Semantic recall | DIY | Can pgvector recall over our messages be filtered to active branches and deduped across forks? | Recall returns relevant prior content, excludes abandoned branches |
-| Conversation compression | DIY | Can a summary anchored to a message be reused by every descendant leaf, cutting context cost branch-correctly? | Long seeded thread answers from summary + tail, lower input tokens |
-| Sub-agents | Mastra | Can a two-level supervisor with a DB-driven roster delegate and stream delegation progress to the UI? | Harness renders sub-agent execution; routing works |
-| Evals | Mastra | Can scorers run on sampled runs + a small CI dataset to give a prompt-quality signal? | Scores recorded for a course-question set |
-| Observability | Mastra | Does Langfuse tracing coexist with our own token/credit accounting? | Traces appear; credits still computed in callbacks |
+| Feature | Owner | Question it answers | Success signal | Verdict |
+| --- | --- | --- | --- | --- |
+| Engine swap | Mastra | Can a dynamic Mastra agent fully replace our `streamText` call with per-request DB-driven instructions/model/tools? | Behaviour parity with current chat on a seeded thread | **adopt** (S0; one type-skew cast) |
+| Model fallback | Mastra | Does a provider error transparently fall to the next model mid-request? | Forced primary failure recovers without user-visible error | **adopt** (S0) |
+| Finish-metadata shim | DIY | Can we re-attach creditsUsed/modelId/chatMode/reasoningEffort to the stream finish so our UI keeps working? | Harness reads all four fields on finish | **adopt-with-changes** (S0; surface resolved model id on fallback) |
+| Reasoning streaming | Mastra | Do reasoning deltas round-trip to assistant-ui as today? | Reasoning panel renders incrementally | **wired, not separately validated** (S0 `sendReasoning:true`; gpt-4.1 emits no reasoning to assert against) |
+| `doc_query` MCP toolset | Mastra | Does our DB-driven per-mode MCP config (auth, namespacing, chatbot-id header) rebind cleanly onto Mastra's MCP client? | Agent retrieves course content via `doc_query` | **adopt** (S1; `Chatbot-ID` reaches backend, cited answer) |
+| Guardrails | Mastra | Are prompt-injection / moderation / PII / token-limit processors usable on a stateless agent, per-request configurable? | Each processor fires on a crafted input | **adopt** (S1; injection → `data-tripwire`, no output) |
+| Skills | Mastra | Can lecturer-authored, DB-backed, versioned skill packages replace the flat per-mode prompt, with progressive disclosure? | Agent loads a skill on demand and applies it | **adopt-with-changes** (S2; thin tools until `WorkspaceSkillsImpl` exported) |
+| Student profile | DIY | Can persistent per-student facts live in our schema, branch-agnostic, with a transparency view and deletion hook? | Profile updates across threads; student-facing read view works | **adopt** (S3) |
+| Semantic recall | DIY | Can pgvector recall over our messages be filtered to active branches and deduped across forks? | Recall returns relevant prior content, excludes abandoned branches | **adopt** (S4; branch-correct, the thesis. pgvector deferred — float8[] suffices at branch scale) |
+| Conversation compression | DIY | Can a summary anchored to a message be reused by every descendant leaf, cutting context cost branch-correctly? | Long seeded thread answers from summary + tail, lower input tokens | **adopt** (S5; measured 67% token cut. Trigger config-gated on prod) |
+| Sub-agents | Mastra | Can a two-level supervisor with a DB-driven roster delegate and stream delegation progress to the UI? | Harness renders sub-agent execution; routing works | **adopt** (S6; depth held at 2 per bug #15013) |
+| Evals | Mastra | Can scorers run on sampled runs + a small CI dataset to give a prompt-quality signal? | Scores recorded for a course-question set | **adopt** (S7; 6/8 keyword baseline. LLM-graded scorers later) |
+| Observability | Mastra | Does Langfuse tracing coexist with our own token/credit accounting? | Traces appear; credits still computed in callbacks | **not evaluated** (no slice built; defer to integration phase) |
+
+**Decision: GO on Scope A+** — Mastra as engine, our store, DIY branch-correct memory. Conditions: pin `provider.chat` (Responses API breaks multi-step tool calls), surface resolved model id on fallback, and run the S0.5 measurement queries against **production** to set the compression gate and confirm branching demand. Full reasoning in `RESULTS.md` → "Go / no-go".
 
 ## 6. Environment & data setup
 
