@@ -48,8 +48,14 @@ export function buildAgent(
   extras: AgentExtras = {}
 ) {
   const provider = providerFor(chatbot)
-  const primary = provider(primaryModelId)
-  const fallback = provider(env.FALLBACK_MODEL_ID)
+  // Use the Chat Completions API (`.chat`), NOT the default Responses API.
+  // The Responses API references prior response items by call_id across tool-call
+  // steps; stateless via OpenRouter/Azure (store:false) the continuation step
+  // fails with "No tool call found for function call output". Chat Completions is
+  // stateless per request and round-trips tool results correctly. Matches the
+  // chat app's documented gotcha (CHAT_OPENAI_STORE_RESPONSES).
+  const primary = provider.chat(primaryModelId)
+  const fallback = provider.chat(env.FALLBACK_MODEL_ID)
   return new Agent({
     id: `chatbot-${chatbot.id}`,
     name: chatbot.name || 'Course Tutor',

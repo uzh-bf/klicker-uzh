@@ -20,7 +20,8 @@ const guardrailProvider = createOpenAI({
   baseURL: env.OPENAI_BASE_URL,
   apiKey: env.OPENAI_API_KEY,
 })
-const classifier = guardrailProvider(env.GUARDRAIL_MODEL_ID)
+// Chat Completions API (see agent.ts note on the Responses-API tool-call gotcha).
+const classifier = guardrailProvider.chat(env.GUARDRAIL_MODEL_ID)
 
 export type GuardrailConfig = {
   promptInjection?: boolean
