@@ -13,6 +13,7 @@ export type AgentExtras = {
   tools?: ToolsInput
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   inputProcessors?: any[]
+  instructionsSuffix?: string // S3: injected profile context, etc.
 }
 
 // One provider per (baseURL, apiKey). Per-chatbot key/url override is supported
@@ -59,7 +60,7 @@ export function buildAgent(
   return new Agent({
     id: `chatbot-${chatbot.id}`,
     name: chatbot.name || 'Course Tutor',
-    instructions: resolveInstructions(chatbot, mode),
+    instructions: resolveInstructions(chatbot, mode) + (extras.instructionsSuffix ?? ''),
     model:
       primaryModelId === env.FALLBACK_MODEL_ID
         ? primary

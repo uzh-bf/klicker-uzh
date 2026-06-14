@@ -12,6 +12,7 @@ import type { AgentExtras } from './engine/agent.js'
 import { buildMcpToolset, loadKbServerConfig } from './engine/mcp.js'
 import { buildInputProcessors, DEFAULT_GUARDRAILS } from './engine/guardrails.js'
 import type { GuardrailConfig } from './engine/guardrails.js'
+import { buildProfileTool, profileContext } from './engine/profileTools.js'
 import { getChatbot } from './db.js'
 import { env } from './env.js'
 
@@ -27,6 +28,7 @@ app.post('/api/chat', async (c) => {
     messages: unknown[]
     mcp?: boolean // S1: attach the doc_query toolset
     guardrails?: GuardrailConfig | false // S1: override the per-mode guardrail policy
+    participantId?: string // S3: attach update_profile tool + inject profile context
   }>()
   const mode = body.mode ?? 'tutor'
   const chatbot = await getChatbot(body.chatbotId)
@@ -55,6 +57,12 @@ app.post('/api/chat', async (c) => {
   const guardrailCfg = body.guardrails === false ? null : body.guardrails ?? DEFAULT_GUARDRAILS
   if (guardrailCfg) {
     extras.inputProcessors = buildInputProcessors(guardrailCfg)
+  }
+
+  // S3 — student profile: attach the update_profile tool and inject stored facts.
+  if (body.participantId) {
+    extras.tools = { ...(extras.tools ?? {}), update_profile: buildProfileTool(body.participantId, chatbot.id) }
+    extras.instructionsSuffix = await profileContext(body.participantId, chatbot.id)
   }
 
   const agent = buildAgent(chatbot, mode, modelId, extras)
