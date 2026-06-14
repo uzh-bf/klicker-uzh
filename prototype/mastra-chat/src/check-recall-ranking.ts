@@ -8,6 +8,7 @@
 import { pool } from './pool.js'
 import { getActiveBranchPath, getThreadLeaves } from './engine/branch.js'
 import { rankRecall } from './engine/embeddings.js'
+import { costForTokens, formatCost } from './engine/cost.js'
 
 function textOf(content: unknown): string {
   return Array.isArray(content)
@@ -26,6 +27,13 @@ async function main() {
     `SELECT id FROM "ChatThread" WHERE title = 'PROTO::branched-recall' LIMIT 1`
   )
   const threadId = tr[0].id as string
+
+  // Clear this thread's cached embeddings so the cost below reflects a full cold
+  // recall pass (every candidate re-embedded + the query), not just whatever a
+  // prior run left warm. Deterministic, and the honest "build recall from
+  // scratch" number — mirrors how check-summary-live clears prior summaries.
+  await pool.query(`DELETE FROM mastra_proto.message_embedding WHERE thread_id = $1`, [threadId])
+
   const leaves = await getThreadLeaves(threadId)
   let activeLeaf = ''
   for (const leaf of leaves) {
@@ -33,10 +41,21 @@ async function main() {
     if (joined.includes('dijkstra')) activeLeaf = leaf
   }
 
-  const ranked = await rankRecall(activeLeaf, 'finding the shortest path in a weighted graph from a source', 3)
+  const { results: ranked, embedTokens, embedModel } = await rankRecall(
+    activeLeaf,
+    'finding the shortest path in a weighted graph from a source',
+    3
+  )
   console.log('--- ranked recall (active/graph branch) ---')
   for (const r of ranked) console.log(`${r.score.toFixed(3)}  [${r.role}] ${r.text.slice(0, 70)}`)
   console.log('-------------------------------------------')
+
+  // Background cost attribution: semantic recall spends embedding tokens that the
+  // live chat creditsUsed never sees (it runs out-of-band). Surface it here.
+  const embedCost = costForTokens(embedModel, embedTokens, 0)
+  console.log(
+    `embedding cost: ${formatCost(embedCost, 8)}  (${embedTokens} input tokens @ ${embedModel}, cold pass)`
+  )
 
   const joined = ranked.map((r) => r.text.toLowerCase()).join(' ')
   assert(ranked.length > 0, 'recall returned ranked candidates')

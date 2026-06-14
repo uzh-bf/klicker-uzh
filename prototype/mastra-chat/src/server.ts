@@ -14,7 +14,7 @@ import { buildInputProcessors, DEFAULT_GUARDRAILS } from './engine/guardrails.js
 import type { GuardrailConfig } from './engine/guardrails.js'
 import { buildProfileTool, profileContext } from './engine/profileTools.js'
 import { buildSkillTools } from './engine/skillTools.js'
-import { calcCost, costForModel } from './engine/cost.js'
+import { costForTokens } from './engine/cost.js'
 import { withObservability } from './engine/observability.js'
 import { getChatbot } from './db.js'
 import { env } from './env.js'
@@ -101,10 +101,10 @@ app.post('/api/chat', async (c) => {
       part: { type: string; totalUsage?: { inputTokens?: number; outputTokens?: number } }
     }) => {
       if (part.type !== 'finish') return undefined
-      const cost = costForModel(modelId)
       const usage = part.totalUsage
-      const creditsUsed =
-        cost && usage ? calcCost(cost, usage.inputTokens ?? 0, usage.outputTokens ?? 0) : null
+      const creditsUsed = usage
+        ? costForTokens(modelId, usage.inputTokens ?? 0, usage.outputTokens ?? 0)
+        : null
       return { modelId, chatMode: mode, creditsUsed }
     },
   })

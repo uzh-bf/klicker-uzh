@@ -33,8 +33,14 @@ async function postChat(messages: { role: string; content: string }[], maxTokens
   }
 }
 
-// Generate a real summary of a run of turns.
-export async function summarizeMessages(turns: Turn[]): Promise<string> {
+// Usage for one summarization call, self-describing (carries its own model id)
+// so callers can attribute the background cost without knowing which model ran.
+export type SummaryUsage = { inputTokens: number; outputTokens: number; modelId: string }
+
+// Generate a real summary of a run of turns, with the token cost it incurred.
+export async function summarizeMessages(
+  turns: Turn[]
+): Promise<{ summary: string; usage: SummaryUsage }> {
   const transcript = turns.map((t) => `${t.role.toUpperCase()}: ${t.text}`).join('\n\n')
   const json = await postChat(
     [
@@ -43,7 +49,14 @@ export async function summarizeMessages(turns: Turn[]): Promise<string> {
     ],
     400
   )
-  return json.choices[0].message.content.trim()
+  return {
+    summary: json.choices[0].message.content.trim(),
+    usage: {
+      inputTokens: json.usage.prompt_tokens,
+      outputTokens: json.usage.completion_tokens,
+      modelId: MODEL,
+    },
+  }
 }
 
 // Measured prompt-token count for a candidate context, from the provider's own

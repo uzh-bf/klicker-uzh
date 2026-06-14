@@ -36,3 +36,24 @@ export function costForModel(modelId: string): CostBase | null {
 export function calcCost(costBase: CostBase, inputTokens: number, outputTokens: number): number {
   return (costBase.input * (inputTokens || 0) + costBase.output * (outputTokens || 0)) / 1_000_000
 }
+
+// Token-count -> USD in one step, returning null for an unknown model (never a
+// silent zero). The single cost-from-tokens path shared by the live chat route
+// (creditsUsed) and the background-operation cost attribution (embeddings +
+// summarization in the A3 check scripts).
+export function costForTokens(
+  modelId: string,
+  inputTokens: number,
+  outputTokens: number
+): number | null {
+  const base = costForModel(modelId)
+  return base ? calcCost(base, inputTokens, outputTokens) : null
+}
+
+// Render a nullable USD cost for display: a `$`-prefixed fixed-decimal string, or
+// an explicit marker when the model price is unknown — never a bare "0" that
+// reads as free. Embedding prices are sub-microcent per call, so those callers
+// pass higher precision (8 dp) than the chat default (6 dp).
+export function formatCost(cost: number | null, decimals = 6): string {
+  return cost === null ? 'n/a (unknown model)' : `$${cost.toFixed(decimals)}`
+}

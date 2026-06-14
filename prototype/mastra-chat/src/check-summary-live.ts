@@ -17,6 +17,7 @@ import { pool } from './pool.js'
 import { getActiveBranchPath, getThreadLeaves } from './engine/branch.js'
 import { insertSummary, selectSummaryForLeaf } from './engine/summary.js'
 import { summarizeMessages, promptTokensOf, type Turn } from './engine/summarize.js'
+import { costForTokens, formatCost } from './engine/cost.js'
 
 let failures = 0
 function assert(cond: boolean, msg: string) {
@@ -55,9 +56,16 @@ async function main() {
   const anchor = head[head.length - 1]
 
   const headTurns: Turn[] = head.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', text: textOf(m.content) }))
-  const summary = await summarizeMessages(headTurns)
+  const { summary, usage } = await summarizeMessages(headTurns)
   assert(summary.length > 0, 'model produced a non-empty summary of the head')
   console.log('\n--- generated summary ---\n' + summary + '\n-------------------------')
+
+  // Background cost attribution: generating the summary is itself a model call,
+  // billed out-of-band from the live chat turn. Surface its USD cost.
+  const summaryCost = costForTokens(usage.modelId, usage.inputTokens, usage.outputTokens)
+  console.log(
+    `summarization cost: ${formatCost(summaryCost)}  (in=${usage.inputTokens} out=${usage.outputTokens} @ ${usage.modelId})`
+  )
 
   const id = await insertSummary({ threadId, anchorMessageId: anchor.id, summary, coversCount: head.length })
   assert(!!id, 'summary stored, anchored at the head boundary')
