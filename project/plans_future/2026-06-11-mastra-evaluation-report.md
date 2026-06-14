@@ -405,3 +405,32 @@ Beyond fixing current gaps, Mastra opens product directions that are impractical
 3. **Pin versions and schedule upgrades.** Treat Mastra upgrades as planned maintenance (every 4–6 weeks), never automatic.
 4. **Keep the MCP seam.** Both the RAG pilot and any future agent services should communicate with the chat app via MCP — it keeps every Mastra component independently replaceable and preserves the fork/exit option that Apache 2.0 gives us.
 5. **Re-evaluate the EE boundary annually.** Core primitives are safely Apache today; if production-relevant features start migrating into `ee/`, revisit this assessment.
+
+## 12. Prototype outcome (Scope A+ evaluation harness, June 2026)
+
+The recommendation above was **validated empirically** by a tracer-bullet prototype (`prototype/mastra-chat/`, plan: `project/plans_wip/PLAN-chat-mastra-prototype.md`). Eight slices (S0–S7) were each built to something runnable and resolved to a verdict. Full per-slice evidence and caveats live in `prototype/mastra-chat/RESULTS.md`; this section is the decision trail required by the plan's §10 exit criterion.
+
+**Decision: GO on Scope A+** — Mastra as the engine only, our Prisma message store retained, the three memory features (recall, compression, profile) built ourselves with branch-correct semantics. The central thesis held end-to-end and live: **we keep our branching message tree and gain branch-correct memory that Mastra's thread-linear managed memory cannot express.** S4 recall and S5 summary-selection provably exclude abandoned-fork content (offline graph proofs); the model-time halves work against a real model (live recall ranking, a real summary with a **measured 67% input-token reduction**, skills discovered-and-applied via progressive disclosure, guardrails blocking prompt injection, two-level sub-agent delegation).
+
+| Slice | Capability | Verdict |
+| --- | --- | --- |
+| S0 | Mastra engine swap (our store) + model fallback | **adopt** |
+| S0.5 | Measurement queries | **adopt** (run against prod; dev data non-representative) |
+| S1 | MCP retrieval rebind + native guardrails | **adopt** |
+| S1 | Provider API default | **adopt-with-changes** — pin `provider.chat` |
+| S2 | DB-backed skills + progressive disclosure | **adopt-with-changes** (thin tools until `WorkspaceSkillsImpl` exported) |
+| S3 | DIY person-level profile (branch-agnostic) | **adopt** |
+| S4 | Branch-restricted semantic recall | **adopt** (the thesis) |
+| S5 | Branch-correct compression + summarization | **adopt** (trigger config-gated on prod) |
+| S6 | Two-level supervisor + DB roster | **adopt** (depth held at 2 per bug #15013) |
+| S7 | Eval dataset + keyword runner | **adopt** (6/8 baseline) |
+| — | Reasoning streaming | wired, not separately validated |
+| — | Observability / Langfuse | not evaluated (no slice; defer to integration) |
+
+**Conditions on GO** (carried into Stage 1 extraction):
+1. **Pin `provider.chat` (Chat Completions).** The `@ai-sdk/openai` default `provider(modelId)` uses the Responses API, which breaks stateless multi-step tool calls over OpenRouter/Azure ("No tool call found for function call output"). Non-negotiable; matches the existing `CHAT_OPENAI_STORE_RESPONSES` learning.
+2. **Surface the resolved model id into finish-metadata on fallback** (S0) — today the shim reports the *requested* model.
+3. **Run the S0.5 measurement queries against production** to confirm branching demand and set the S5 compression threshold — do not size features off the synthetic dev fixture (dev showed 40% branched / 80% < 2k tokens, but those are authored, not observed).
+4. **Hold skills on thin custom tools** until `WorkspaceSkillsImpl` is exported upstream (S2); **hold sub-agent depth at two** pending bug #15013 (S6).
+
+**The moat stays ours:** the message store and every branch-aware feature on top of it (profile, recall, compression). Mastra provides the agent loop, streaming, model fallback, MCP client, guardrail processors, sub-agent delegation, and eval scorers. Clean seam, no data-model lock-in.
