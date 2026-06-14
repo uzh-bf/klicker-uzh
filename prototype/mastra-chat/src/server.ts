@@ -14,6 +14,7 @@ import { buildInputProcessors, DEFAULT_GUARDRAILS } from './engine/guardrails.js
 import type { GuardrailConfig } from './engine/guardrails.js'
 import { buildProfileTool, profileContext } from './engine/profileTools.js'
 import { buildSkillTools } from './engine/skillTools.js'
+import { calcCost, costForModel } from './engine/cost.js'
 import { getChatbot } from './db.js'
 import { env } from './env.js'
 
@@ -87,10 +88,24 @@ app.post('/api/chat', async (c) => {
     version: 'v6',
     sendReasoning: true,
     // Finish-metadata shim: our UI depends on these on the finish chunk.
-    messageMetadata: ({ part }: { part: { type: string } }) =>
-      part.type === 'finish'
-        ? { modelId, chatMode: mode, creditsUsed: 0 }
-        : undefined,
+    // creditsUsed is computed from the real token usage Mastra's bridge attaches
+    // to the finish part (totalUsage), using the same token-cost calcCost formula
+    // as the production chat route. (Production also adds an imageDescriptionCost
+    // term; the prototype has no image pipeline, so that term is always zero here.)
+    // Null when the model price or usage is unavailable — we never silently
+    // charge zero.
+    messageMetadata: ({
+      part,
+    }: {
+      part: { type: string; totalUsage?: { inputTokens?: number; outputTokens?: number } }
+    }) => {
+      if (part.type !== 'finish') return undefined
+      const cost = costForModel(modelId)
+      const usage = part.totalUsage
+      const creditsUsed =
+        cost && usage ? calcCost(cost, usage.inputTokens ?? 0, usage.outputTokens ?? 0) : null
+      return { modelId, chatMode: mode, creditsUsed }
+    },
   })
 
   // Cast bridges a known version skew: Mastra vendors its own ai-v6 chunk types
