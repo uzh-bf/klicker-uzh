@@ -7,7 +7,7 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import { createUIMessageStreamResponse } from 'ai'
 import { toAISdkStream } from '@mastra/ai-sdk'
-import { buildAgent } from './engine/agent.js'
+import { buildAgent, reasoningProviderOptions } from './engine/agent.js'
 import type { AgentExtras } from './engine/agent.js'
 import { buildMcpToolset, loadKbServerConfig } from './engine/mcp.js'
 import { buildInputProcessors, DEFAULT_GUARDRAILS } from './engine/guardrails.js'
@@ -33,6 +33,7 @@ app.post('/api/chat', async (c) => {
     guardrails?: GuardrailConfig | false // S1: override the per-mode guardrail policy
     participantId?: string // S3: attach update_profile tool + inject profile context
     skills?: boolean // S2: attach skill_search + skill (progressive disclosure)
+    reasoningEffort?: string // A2: request reasoning tokens ('low'|'medium'|'high'|'none')
   }>()
   const mode = body.mode ?? 'tutor'
   const chatbot = await getChatbot(body.chatbotId)
@@ -80,8 +81,20 @@ app.post('/api/chat', async (c) => {
 
   const agent = withObservability(buildAgent(chatbot, mode, modelId, extras))
 
+  // A2 — reasoning: the engine owns the capability→provider→options mapping, so
+  // we just hand the resulting providerOptions to agent.stream (undefined turns
+  // reasoning off). reasoningContent is accumulated from step results
+  // (onStepFinish, a side-effect collector) so we never re-read the
+  // single-consumer stream, then surfaced in the finish metadata.
+  const reasoningOpts = reasoningProviderOptions(modelId, body.reasoningEffort)
+  let reasoningContent = ''
+
   const stream = await agent.stream(body.messages as never, {
     abortSignal: c.req.raw.signal,
+    providerOptions: reasoningOpts,
+    onStepFinish: ({ reasoningText }: { reasoningText?: string }) => {
+      if (reasoningText) reasoningContent += reasoningText
+    },
   })
 
   const uiStream = toAISdkStream(stream, {
@@ -105,7 +118,16 @@ app.post('/api/chat', async (c) => {
       const creditsUsed = usage
         ? costForTokens(modelId, usage.inputTokens ?? 0, usage.outputTokens ?? 0)
         : null
-      return { modelId, chatMode: mode, creditsUsed }
+      // A2: mirror what apps/chat emits — the requested effort and the reasoning
+      // text accumulated above. Null when reasoning was not actually engaged
+      // (non-reasoning model, or no/`none` effort — reasoningOpts is undefined).
+      return {
+        modelId,
+        chatMode: mode,
+        creditsUsed,
+        reasoningEffort: reasoningOpts ? body.reasoningEffort : null,
+        reasoningContent: reasoningContent || null,
+      }
     },
   })
 

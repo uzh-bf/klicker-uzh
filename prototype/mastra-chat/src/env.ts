@@ -38,4 +38,8 @@ export const env = {
   // to a bad id to exercise fallback in S0.
   PRIMARY_MODEL_ID: process.env.PRIMARY_MODEL_ID ?? 'openai/gpt-4.1',
   FALLBACK_MODEL_ID: process.env.FALLBACK_MODEL_ID ?? 'openai/gpt-4.1-mini',
+  // A2 reasoning validation: a reasoning-capable model. The step-1 transport
+  // check confirmed OpenRouter surfaces reasoning over Chat Completions (under a
+  // `reasoning` delta field) for o4-mini. Override to test another reasoning model.
+  REASONING_MODEL_ID: process.env.REASONING_MODEL_ID ?? 'openai/o4-mini',
 }

@@ -26,6 +26,9 @@ importers:
       '@mastra/observability':
         specifier: 1.14.1
         version: 1.14.1(@mastra/core@1.41.0(ai@6.0.91(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(zod@3.25.76)
+      '@openrouter/ai-sdk-provider':
+        specifier: 2.9.1
+        version: 2.9.1(ai@6.0.91(zod@3.25.76))(zod@3.25.76)
       ai:
         specifier: 6.0.91
         version: 6.0.91(zod@3.25.76)
@@ -340,6 +343,13 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@openrouter/ai-sdk-provider@2.9.1':
+    resolution: {integrity: sha512-okgq07Vdkro4CB5INbfhwa0e6VR1HS7sidNcfHN/MeXLJvX1JmQCff/vem6tcxwT9r1avyFrXSlfv9B28D/Pag==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      ai: ^6.0.0
+      zod: ^3.25.0 || ^4.0.0
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -1469,6 +1479,11 @@ snapshots:
       zod-to-json-schema: 3.25.2(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
+
+  '@openrouter/ai-sdk-provider@2.9.1(ai@6.0.91(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      ai: 6.0.91(zod@3.25.76)
+      zod: 3.25.76
 
   '@opentelemetry/api@1.9.0': {}
 
