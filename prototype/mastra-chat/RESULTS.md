@@ -51,9 +51,15 @@ bucket, count branched vs linear threads, and estimate the share of conversation
 long enough to benefit from compression — the inputs to the S5 trigger and the
 "is branching real?" question.
 
-**Evidence.**
-- Queries execute cleanly and produce the intended shape against the seeded copy +
-  synthetic fixture (branch counts, length buckets, per-thread message totals).
+**Evidence.** Both queries run; the numbers below are from the **synthetic
+fixture only** (5 `PROTO::` threads) — recorded for completeness, NOT a demand
+estimate.
+- `s05-branch-usage.sql`: 5 threads, 2 branched = **40% branched**, avg 1.40
+  leaves/thread, max 2 leaves.
+- `s05-thread-length.sql`: **80%** of threads `< 2k tokens` (avg 4.5 msgs),
+  **20%** in the `2k–10k` bucket (avg 40 msgs).
+- These reflect what we *authored* (one deliberately long thread for S5, two
+  branched threads for S4), so the shape is by-construction, not observed demand.
 
 **Findings / caveats.**
 - **The queries are correct; the *answer* is not available in dev.** The seeded
