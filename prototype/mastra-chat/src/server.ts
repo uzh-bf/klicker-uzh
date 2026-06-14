@@ -13,6 +13,7 @@ import { buildMcpToolset, loadKbServerConfig } from './engine/mcp.js'
 import { buildInputProcessors, DEFAULT_GUARDRAILS } from './engine/guardrails.js'
 import type { GuardrailConfig } from './engine/guardrails.js'
 import { buildProfileTool, profileContext } from './engine/profileTools.js'
+import { buildSkillTools } from './engine/skillTools.js'
 import { getChatbot } from './db.js'
 import { env } from './env.js'
 
@@ -29,6 +30,7 @@ app.post('/api/chat', async (c) => {
     mcp?: boolean // S1: attach the doc_query toolset
     guardrails?: GuardrailConfig | false // S1: override the per-mode guardrail policy
     participantId?: string // S3: attach update_profile tool + inject profile context
+    skills?: boolean // S2: attach skill_search + skill (progressive disclosure)
   }>()
   const mode = body.mode ?? 'tutor'
   const chatbot = await getChatbot(body.chatbotId)
@@ -63,6 +65,15 @@ app.post('/api/chat', async (c) => {
   if (body.participantId) {
     extras.tools = { ...(extras.tools ?? {}), update_profile: buildProfileTool(body.participantId, chatbot.id) }
     extras.instructionsSuffix = await profileContext(body.participantId, chatbot.id)
+  }
+
+  // S2 — skills: attach the discovery+activation tools and nudge progressive disclosure.
+  if (body.skills) {
+    extras.tools = { ...(extras.tools ?? {}), ...buildSkillTools() }
+    extras.instructionsSuffix =
+      (extras.instructionsSuffix ?? '') +
+      '\n\nBefore answering a how-to, study, or coaching request, call skill_search to see if a ' +
+      'course skill applies; if one does, call skill to load it and follow its instructions.'
   }
 
   const agent = buildAgent(chatbot, mode, modelId, extras)
