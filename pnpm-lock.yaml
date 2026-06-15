@@ -391,6 +391,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.2)
+      '@klicker-uzh/markdown':
+        specifier: workspace:*
+        version: link:../../packages/markdown
       '@klicker-uzh/next-config':
         specifier: workspace:*
         version: link:../../packages/next-config

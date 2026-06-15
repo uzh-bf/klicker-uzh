@@ -39,6 +39,10 @@ import {
 } from 'react'
 
 import {
+  MarkdownText,
+  normalizeCustomMathTags,
+} from '@/src/components/markdown-text'
+import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
 } from '@/src/lib/attachments/attachmentState'
@@ -51,13 +55,13 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
-import { MarkdownText } from './markdown-text'
 import { MessageAttachments } from './message-attachments'
 import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
 
+import { Markdown } from '@klicker-uzh/markdown'
 import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
@@ -177,7 +181,13 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
   const reasoningEffort =
     typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
 
-  if (!text || text.trim().length === 0) {
+  // insert a paragraph break before any title (**Title**\n)
+  const normalizedText = text?.replace(
+    /([^\n])(\*\*[^*\n]+\*\*\n)/g,
+    '$1\n\n$2'
+  )
+
+  if (!normalizedText || normalizedText.trim().length === 0) {
     return null
   }
 
@@ -199,9 +209,12 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
       </button>
 
       {isOpen ? (
-        <pre className="text-muted-foreground mt-1 whitespace-pre-wrap border-l-2 border-slate-200 pl-3 text-xs leading-5">
-          {text}
-        </pre>
+        <div className="text-muted-foreground mb-2 border-l-2 border-slate-200 pl-3 text-sm">
+          <Markdown
+            content={normalizeCustomMathTags(normalizedText)}
+            singleDollarTextMath
+          />
+        </div>
       ) : null}
     </div>
   )
@@ -270,11 +283,18 @@ const ThreadScrollToBottom: FC = () => {
 const ThreadWelcome: FC = () => {
   return (
     <ThreadPrimitive.Empty>
-      <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">How can I help you today?</p>
+      <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
+        <div className="aui-thread-welcome-center flex w-full flex-grow flex-col items-center justify-center">
+          <div className="aui-thread-welcome-message flex size-full flex-col items-center justify-center px-8 text-center">
+            <div className="aui-thread-welcome-message-motion-1 text-2xl font-semibold">
+              Hello there!
+            </div>
+            <div className="aui-thread-welcome-message-motion-2 text-muted-foreground/65 text-2xl">
+              How can I help you?
+            </div>
+          </div>
         </div>
-        {/* <ThreadWelcomeSuggestions /> */}
+        {/* <ThreadWelcomeSuggestions />  */}
       </div>
     </ThreadPrimitive.Empty>
   )
@@ -351,7 +371,7 @@ const Composer: FC = () => {
             autoFocus
             placeholder="Write a message..."
             className={twMerge(
-              'placeholder:text-muted-foreground text-md flex-grow resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+              'placeholder:text-muted-foreground text-md flex-grow cursor-text resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />

@@ -542,6 +542,28 @@ const normalizeReasoningContent = (
 ): string | null =>
   typeof value === 'string' && value.trim().length > 0 ? value : null
 
+const extractReasoningTextPart = (rawPart: unknown): string | null => {
+  if (!rawPart || typeof rawPart !== 'object') return null
+
+  const part = rawPart as { type?: unknown; text?: unknown }
+  if (part.type !== 'reasoning' || typeof part.text !== 'string') return null
+
+  return normalizeReasoningContent(part.text.trimEnd())
+}
+
+const joinReasoningFromSteps = (
+  steps: Array<{ content?: unknown[] }> | undefined
+): string =>
+  (steps ?? [])
+    .flatMap((step) =>
+      Array.isArray(step.content)
+        ? step.content
+            .map(extractReasoningTextPart)
+            .filter((value): value is string => value !== null)
+        : []
+    )
+    .join('\n\n')
+
 type PersistedAssistantContentPart =
   | { type: 'text'; text: string }
   | { type: 'reasoning'; text: string }
@@ -1293,13 +1315,15 @@ export async function POST(
           ) + imageDescriptionCost
         : null
       const finishedReasoningContent =
+        normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
         normalizeReasoningContent(
           result.reasoningText ||
             result.steps
               .map((step) => step.reasoningText || '')
               .filter((value) => value.length > 0)
-              .join('')
-        ) ?? normalizeReasoningContent(partialReasoningContent)
+              .join('\n\n')
+        ) ??
+        normalizeReasoningContent(partialReasoningContent)
       assistantReasoningContent = finishedReasoningContent
       const providerReasoningTokens = extractReasoningTokens(
         asObject(result)?.providerMetadata
@@ -1481,13 +1505,17 @@ export async function POST(
 
       const abortedReasoningContent =
         normalizeReasoningContent(
+          Array.isArray(steps?.steps) ? joinReasoningFromSteps(steps.steps) : ''
+        ) ??
+        normalizeReasoningContent(
           Array.isArray(steps?.steps)
             ? steps.steps
                 .map((step) => step.reasoningText || '')
                 .filter((value) => value.length > 0)
-                .join('')
+                .join('\n\n')
             : ''
-        ) ?? normalizeReasoningContent(partialReasoningContent)
+        ) ??
+        normalizeReasoningContent(partialReasoningContent)
       assistantReasoningContent = abortedReasoningContent
 
       logEvent('stream.abort', {
