@@ -94,18 +94,14 @@ export const CreditResetPeriod = builder.enumType('CreditResetPeriod', {
   values: Object.values(DB.CreditResetPeriod),
 })
 
-export const ReasoningEffort = builder.enumType('ReasoningEffort', {
-  values: ['none', 'minimal', 'low', 'medium', 'high'] as const,
-})
-
 export interface IChatbotReasoningConfig {
   modelId: string
-  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+  efforts: string[]
 }
 
 export type ChatbotReasoningConfigInputType = {
   modelId: string
-  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+  efforts: string[]
 }
 
 export const ChatbotReasoningConfigInputRef =
@@ -116,7 +112,7 @@ export const ChatbotReasoningConfigInput =
   ChatbotReasoningConfigInputRef.implement({
     fields: (t) => ({
       modelId: t.string({ required: true }),
-      efforts: t.field({ type: [ReasoningEffort], required: true }),
+      efforts: t.stringList({ required: true }),
     }),
   })
 
@@ -125,10 +121,7 @@ export const ChatbotReasoningConfigRef =
 export const ChatbotReasoningConfig = ChatbotReasoningConfigRef.implement({
   fields: (t) => ({
     modelId: t.exposeString('modelId'),
-    efforts: t.field({
-      type: [ReasoningEffort],
-      resolve: (config) => config.efforts,
-    }),
+    efforts: t.exposeStringList('efforts'),
   }),
 })
 
@@ -138,9 +131,7 @@ export interface IChatModelCapability {
   description: string
   fallback: boolean
   supportsReasoning: boolean
-  supportedReasoningEfforts: Array<
-    'none' | 'minimal' | 'low' | 'medium' | 'high'
-  >
+  supportedReasoningEfforts: string[]
 }
 
 export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
@@ -153,10 +144,7 @@ export const ChatModelCapability = ChatModelCapabilityRef.implement({
     description: t.exposeString('description'),
     fallback: t.exposeBoolean('fallback'),
     supportsReasoning: t.exposeBoolean('supportsReasoning'),
-    supportedReasoningEfforts: t.field({
-      type: [ReasoningEffort],
-      resolve: (model) => model.supportedReasoningEfforts,
-    }),
+    supportedReasoningEfforts: t.exposeStringList('supportedReasoningEfforts'),
   }),
 })
 

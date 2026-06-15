@@ -43,6 +43,7 @@ interface PracticeQuizProps {
   handleNextElement: () => void
   onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
+  embedded?: boolean
   previewOnly?: boolean
 }
 
@@ -53,6 +54,7 @@ function PracticeQuiz({
   handleNextElement,
   onAllStacksCompletion,
   showResetLocalStorage = false,
+  embedded = false,
   previewOnly = false,
 }: PracticeQuizProps) {
   const router = useRouter()
@@ -110,7 +112,8 @@ function PracticeQuiz({
     <div className="flex-1">
       <div
         className={twMerge(
-          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:border md:p-8 md:pt-6'
+          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
+          !embedded ? 'md:border' : ''
         )}
       >
         <StepProgressWithScoring
@@ -170,6 +173,7 @@ function PracticeQuiz({
             key={currentStack.id}
             parentId={quiz.id}
             courseId={quiz.course!.id}
+            embedded={embedded}
             stack={currentStack}
             currentStep={currentIx + 1}
             totalSteps={quiz.stacks?.length ?? 0}

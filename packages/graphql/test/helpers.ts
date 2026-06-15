@@ -67,6 +67,15 @@ import {
   userTwo,
 } from './userData.js'
 
+type TestInitializationResult = {
+  userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
+  userThreeCtx: ContextWithUser
+  userFourCtx: ContextWithUser
+  userFiveCtx: ContextWithUser
+  userSixCtx: ContextWithUser
+}
+
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
 type TestInitializationResult = {
