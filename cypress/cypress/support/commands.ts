@@ -117,6 +117,18 @@ Cypress.Commands.add('cleanup', () => {
   cy.reload()
 })
 
+const clearPersistedClientState = () => {
+  return cy.wrap(null, { log: false }).then(async () => {
+    await localforage.clear()
+  })
+}
+
+const assertManageSession = () => {
+  cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
+  cy.location('pathname').should('not.eq', '/login')
+  cy.location('search').should('not.contain', 'expired=true')
+}
+
 const loginFactory = (
   tokenData: {
     email: string
@@ -158,6 +170,10 @@ const loginFactory = (
     })
 
     cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
+
+    if (!redirectUrl) {
+      assertManageSession()
+    }
   }
 }
 
@@ -277,6 +293,9 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add('logoutUser', () => {
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+  clearPersistedClientState()
   cy.clearCookie('next-auth.session-token')
 })
 
@@ -289,7 +308,18 @@ Cypress.Commands.add(
   ({ username }: { username: string }) => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'), {
+      onBeforeLoad: (win) => {
+        win.localStorage.clear()
+        win.sessionStorage.clear()
+        try {
+          win.indexedDB?.deleteDatabase('localforage')
+        } catch {
+          // Fall back to the regular localforage clear after load.
+        }
+      },
+    })
+    clearPersistedClientState()
     cy.get('[data-cy="username-field"]').click().type(username)
     cy.get('[data-cy="password-field"]')
       .click()

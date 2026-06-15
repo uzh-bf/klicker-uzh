@@ -3,6 +3,7 @@ import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
+  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
@@ -101,7 +102,16 @@ type ModelRouting = {
   baseUrl: string | undefined
 }
 
-function getModel(chatbot: Chatbot, modelId: string) {
+function getOpenAIModel(
+  provider: ReturnType<typeof createOpenAI>,
+  modelConfig: ChatModelConfig
+) {
+  return modelConfig.supportsReasoning
+    ? provider.responses(modelConfig.deploymentId)
+    : provider.chat(modelConfig.deploymentId)
+}
+
+function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
   // Use per-chatbot configuration if available
   const hasCustomKey =
     typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
@@ -136,11 +146,14 @@ function getModel(chatbot: Chatbot, modelId: string) {
     }
 
     return {
-      model: createOpenAI({
-        baseURL: baseUrl,
-        apiKey: apiKey || 'no-key',
-        fetch: responsesApiFetch,
-      })(modelId),
+      model: getOpenAIModel(
+        createOpenAI({
+          baseURL: baseUrl,
+          apiKey: apiKey || 'no-key',
+          fetch: responsesApiFetch,
+        }),
+        modelConfig
+      ),
       routing,
     }
   }
@@ -153,11 +166,14 @@ function getModel(chatbot: Chatbot, modelId: string) {
   }
 
   return {
-    model: createOpenAI({
-      baseURL: process.env.OPENAI_BASE_URL,
-      apiKey: process.env.OPENAI_API_KEY || 'no-key',
-      fetch: responsesApiFetch,
-    })(modelId),
+    model: getOpenAIModel(
+      createOpenAI({
+        baseURL: process.env.OPENAI_BASE_URL,
+        apiKey: process.env.OPENAI_API_KEY || 'no-key',
+        fetch: responsesApiFetch,
+      }),
+      modelConfig
+    ),
     routing,
   }
 }
@@ -923,7 +939,7 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
+  const { model, routing } = getModel(chatbot, selectedModelConfig)
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1233,7 +1249,9 @@ export async function POST(
     experimental_telemetry: { isEnabled: true },
     providerOptions: {
       openai: {
-        store: getOpenAIResponsesStore(),
+        ...(selectedModelConfig.supportsReasoning && {
+          store: getOpenAIResponsesStore(),
+        }),
         ...(providerReasoningEffort && {
           reasoningEffort: providerReasoningEffort,
           reasoningSummary: 'auto',
