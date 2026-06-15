@@ -56,6 +56,19 @@ if (!process.env.OPENAI_API_KEY) {
     '[chat] OPENAI_API_KEY is not set — model requests without per-chatbot keys will fail'
   )
 }
+
+// When CHAT_USE_MASTRA_ENGINE is on, the POST handler proxies to the standalone
+// @klicker-uzh/chat-api Hono service (the Mastra engine) instead of running the
+// in-process streamText path below. The flag is read once at module load —
+// flipping it requires a restart (a deliberate constraint: no per-request or
+// mid-thread flip). CHAT_API_BASE_URL is where that service is reachable.
+const USE_MASTRA_ENGINE = ['true', '1', 'yes', 'on'].includes(
+  (process.env.CHAT_USE_MASTRA_ENGINE ?? '').trim().toLowerCase()
+)
+const CHAT_API_BASE_URL = (
+  process.env.CHAT_API_BASE_URL ?? 'https://chat-api.klicker.com'
+).replace(/\/+$/, '')
+
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
@@ -623,6 +636,30 @@ export async function POST(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
+
+  // Flag-gated proxy to the Mastra chat-api service. That service owns auth (it
+  // verifies the forwarded participant_token cookie), the disclaimer gate, the
+  // engine call, persistence, and credit metering — so this branch does NOT
+  // re-auth or run any of the legacy path below. It forwards the request body +
+  // cookies and returns the upstream Response directly (no `await res.text()`, no
+  // re-wrapping) so the SSE body streams token-by-token. `req.signal` propagates
+  // a client abort so the service's abort path (partial credits) still fires.
+  if (USE_MASTRA_ENGINE) {
+    const target = `${CHAT_API_BASE_URL}/api/chatbots/${encodeURIComponent(
+      chatbotId
+    )}/chat`
+    const cookie = req.headers.get('cookie')
+    return fetch(target, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(cookie ? { cookie } : {}),
+      },
+      body: await req.text(),
+      signal: req.signal,
+    })
+  }
+
   const requestId = randomUUID()
   const requestStartedAtMs = Date.now()
   const authResult = await withChatbotAuth(req, chatbotId)
