@@ -542,24 +542,27 @@ const normalizeReasoningContent = (
 ): string | null =>
   typeof value === 'string' && value.trim().length > 0 ? value : null
 
-// join reasoning blocks with "\n\n"
+const extractReasoningTextPart = (rawPart: unknown): string | null => {
+  if (!rawPart || typeof rawPart !== 'object') return null
+
+  const part = rawPart as { type?: unknown; text?: unknown }
+  if (part.type !== 'reasoning' || typeof part.text !== 'string') return null
+
+  return normalizeReasoningContent(part.text.trimEnd())
+}
+
 const joinReasoningFromSteps = (
   steps: Array<{ content?: unknown[] }> | undefined
-): string => {
-  const blocks: string[] = []
-  for (const step of steps ?? []) {
-    if (!Array.isArray(step.content)) continue
-    for (const rawPart of step.content) {
-      if (!rawPart || typeof rawPart !== 'object') continue
-      const part = rawPart as { type?: unknown; text?: unknown }
-      if (part.type === 'reasoning' && typeof part.text === 'string') {
-        const trimmed = part.text.replace(/\s+$/, '')
-        if (trimmed.length > 0) blocks.push(trimmed)
-      }
-    }
-  }
-  return blocks.join('\n\n')
-}
+): string =>
+  (steps ?? [])
+    .flatMap((step) =>
+      Array.isArray(step.content)
+        ? step.content
+            .map(extractReasoningTextPart)
+            .filter((value): value is string => value !== null)
+        : []
+    )
+    .join('\n\n')
 
 type PersistedAssistantContentPart =
   | { type: 'text'; text: string }
