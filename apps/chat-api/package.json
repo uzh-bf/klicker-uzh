@@ -38,8 +38,8 @@
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file=.env src/index.ts",
-    "start:test": "node --env-file=.env dist/index.js"
+    "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file-if-exists=.env src/index.ts",
+    "start:test": "node --env-file-if-exists=.env dist/index.js"
   },
   "engines": {
     "node": "=20"
