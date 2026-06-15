@@ -1,15 +1,16 @@
-# Self-contained dev stack for the klicker-uzh devcontainer (PHASE 1: core apps).
-# Intentionally does NOT extend the root docker-compose.yml (which carries the
-# legacy per-repo Traefik + the `full`-profile prebuilt images). A single compose
+# Self-contained dev stack for the klicker-uzh devcontainer (core apps + Phase 2
+# Tier 1). Intentionally does NOT extend the root docker-compose.yml (which carries
+# the legacy per-repo Traefik + the `full`-profile prebuilt images). A single compose
 # project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
 #
 # Routing is delegated to devrouter over the shared external `devnet` network: NO
 # published host ports. The monorepo runs ALL apps in the ONE `app` container via
 # `turbo dev`; devrouter routes each hostname to that container's internal port
-# (api->3000, auth->3010, pwa->3001, manage->3002, control->3003). Infra
-# (postgres, redis x3, mailhog, hatchet) is reached BY COMPOSE DNS from the app
-# container — only postgres also joins devnet (for host tooling via db.*.localhost).
-# `dev up` must run before this stack starts so `devnet` exists. (GOTCHAS #11, #15)
+# (api->3000, auth->3010, pwa->3001, manage->3002, control->3003, olat-api->3030,
+# response-api->7078; the 2 hatchet workers have no port). Infra (postgres, redis
+# x3, mailhog, hatchet) is reached BY COMPOSE DNS from the app container — only
+# postgres also joins devnet (for host tooling via db.*.localhost). `dev up` must
+# run before this stack starts so `devnet` exists. (GOTCHAS #11, #15)
 services:
   # --- main database (klicker-prod + shadow/lti/qa/hatchet DBs via init.sql) ---
   postgres:
@@ -135,6 +136,8 @@ services:
       - 'pwa.klicker.localhost:host-gateway'
       - 'manage.klicker.localhost:host-gateway'
       - 'control.klicker.localhost:host-gateway'
+      - 'olat-api.klicker.localhost:host-gateway'
+      - 'response-api.klicker.localhost:host-gateway'
     networks:
       default: {}
       devnet:
