@@ -39,6 +39,10 @@ import {
 } from 'react'
 
 import {
+  MarkdownText,
+  normalizeCustomMathTags,
+} from '@/src/components/markdown-text'
+import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
 } from '@/src/lib/attachments/attachmentState'
@@ -51,7 +55,6 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
-import { MarkdownText } from './markdown-text'
 import { MessageAttachments } from './message-attachments'
 import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -60,7 +63,6 @@ import Image from 'next/image'
 
 import { Markdown } from '@klicker-uzh/markdown'
 import { twMerge } from 'tailwind-merge'
-import { normalizeCustomMathTags } from './markdown-text'
 
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []

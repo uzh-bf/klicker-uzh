@@ -1,8 +1,8 @@
 'use client'
 
+import { normalizeCustomMathTags } from '@/src/components/markdown-text'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
-import { normalizeCustomMathTags } from './markdown-text'
 
 type MessageImageAttachment = {
   id?: string
