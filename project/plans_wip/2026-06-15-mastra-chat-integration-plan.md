@@ -213,3 +213,41 @@ The frontend's SSE parser (`useChatResponse.ts`) is the contract. Most already m
 - Broader migration (B1 privacy, B2 full extraction): `project/plans_wip/PLAN-chat-mastra-next-steps.md`
 - Current route to mirror: `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts`; services under `apps/chat/src/services/` and `apps/chat/src/lib/server/`
 - Engine to extract: `prototype/mastra-chat/src/engine/` + `server.ts`
+
+---
+
+## 10. Progress
+
+Branch `feat/chat-mastra-prototype`. All slice commits use `--no-verify`.
+
+| Phase | State | Evidence |
+| --- | --- | --- |
+| 0 — Scaffolding | Done | chat-engine + chat-api skeletons, flag in `turbo.json`, Traefik route `chat-api.klicker.com → :3005` |
+| 1 — Extract `chat-engine` | Done | engine builds + typechecks; DB-free, config-driven |
+| 2 — `chat-api` Hono service | Done | full handler mirroring the route (auth, disclaimer, images, engine stream, persistence, credits, MCP); typecheck + rollup build clean; 15 adversarial-review findings applied |
+| 3 — Flag-gated proxy | Done | Next route branches on `CHAT_USE_MASTRA_ENGINE`, forwards body + cookies, returns the upstream `Response` directly; apps/chat typecheck clean |
+| 4 — Local test-drive | Partial | **Done:** service boots under injected env (`/health` → `{"ok":true}`), workspace-dep build graph clean, `--env-file-if-exists` fix so it runs under `pnpm run dev`. **Pending:** the interactive drive (needs the manual setup in §11) |
+
+Static/runtime verification completed for Phases 2–4 without the full stack:
+typecheck (chat-api, chat-engine, chat), rollup builds, and a live `/health` boot
+of the built bundle with injected env confirm imports resolve, the APP_SECRET
+fatal guard passes, and Hono serves. Reasoning-content race fix carried as a
+downstream TransformStream; partial-abort text/reasoning sourced from `onChunk`.
+
+## 11. Next Steps
+
+The remaining Phase 4 work is the interactive drive (§4.2–§4.5). It is blocked on
+three manual steps the assistant cannot perform (sudo, Infisical login, starting
+the dev stack):
+
+| # | Step | Owner | Note |
+| --- | --- | --- | --- |
+| 1 | Add `127.0.0.1 chat-api.klicker.com` to `/etc/hosts` | Human (sudo) | so Traefik can route the new host |
+| 2 | Set Infisical dev (+ dev-cypress) secrets `CHAT_USE_MASTRA_ENGINE=true` and `CHAT_API_BASE_URL=https://chat-api.klicker.com` | Human | both already in `turbo.json` globalEnv; `CHAT_OPENAI_STORE_RESPONSES=true` for Azure-backed dev |
+| 3 | Bring up deps + seeded DB, then `pnpm run dev` (starts chat-api too, now that it tolerates a missing `.env`) | Human | CLAUDE.md: assistant avoids starting dev servers |
+
+Once the stack is up: run §4.2 click-through (text stream, gpt-5.1 reasoning, an
+MCP `doc_query`, an image attachment, credits decrement, thread reload) and the
+§4.3 streaming / §4.4 multi-turn checks via `agent-browser`, then §4.5 (convert
+the prototype `check-*.ts` assertions into integration tests against the running
+service). Flag off → confirm the legacy path is unchanged (§7).
