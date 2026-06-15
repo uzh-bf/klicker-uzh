@@ -48,6 +48,7 @@ dumps/**/*.dump.gpg
 *.log
 NOCOMMIT*
 20??-??-??_chatbot*.csv
+output/
 
 # Environment-specific files
 .env.*
