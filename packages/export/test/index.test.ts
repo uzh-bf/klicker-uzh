@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import ExcelJS from 'exceljs'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { CliUsageError, parseExportCourseArgs } from '../src/cli.js'
 import { writeCsv } from '../src/csv.js'
 import {
   type CourseExportResult,
@@ -46,6 +47,31 @@ function createCourseExportResult(courseName: string): CourseExportResult {
 }
 
 describe('@klicker-uzh/export', () => {
+  it('parses repeated course ids and output directory', () => {
+    expect(
+      parseExportCourseArgs([
+        '--courseId',
+        'course-1',
+        '--courseId',
+        'course-2',
+        '--outputDir',
+        '/tmp/export',
+      ])
+    ).toEqual({
+      courseIds: ['course-1', 'course-2'],
+      outputDir: '/tmp/export',
+    })
+  })
+
+  it('rejects malformed CLI arguments before export starts', () => {
+    expect(() => parseExportCourseArgs([])).toThrow(CliUsageError)
+    expect(() => parseExportCourseArgs(['--courseId'])).toThrow(CliUsageError)
+    expect(() => parseExportCourseArgs(['--courseId', '--outputDir'])).toThrow(
+      CliUsageError
+    )
+    expect(() => parseExportCourseArgs(['--unknown'])).toThrow(CliUsageError)
+  })
+
   it('writes distinct combined workbook sheet names for colliding course prefixes', async () => {
     const outputDir = await createTempDir()
 

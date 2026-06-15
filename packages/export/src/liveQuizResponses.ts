@@ -1,3 +1,12 @@
+import type {
+  ElementType,
+  ResponseCorrectness,
+} from '@klicker-uzh/prisma/client'
+import type {
+  ElementData,
+  SingleQuestionResponseLiveQuiz,
+} from '@klicker-uzh/types'
+
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const LIVE_QUIZ_RESPONSE_HEADERS = [
@@ -21,10 +30,32 @@ export const LIVE_QUIZ_RESPONSE_HEADERS = [
   'submittedAt',
 ]
 
+type LiveQuizResponseRow = {
+  id: number
+  response: SingleQuestionResponseLiveQuiz | null
+  correctness: ResponseCorrectness
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+  submittedAt: Date
+  correctionOnly: boolean
+  elementBlockExecution: number
+  participant: { id: string; email: string | null }
+  instance: {
+    id: number
+    elementType: ElementType
+    elementData: ElementData
+    elementBlock: {
+      liveQuiz: { id: string; name: string; displayName: string | null }
+    } | null
+  }
+  _count: { appliedCorrections: number }
+}
+
 export async function fetchLiveQuizResponses(
   prisma: ReadonlyPrismaClient,
   courseId: string
-) {
+): Promise<LiveQuizResponseRow[]> {
   return prisma.liveQuizResponse.findMany({
     where: {
       instance: {
@@ -69,12 +100,8 @@ export async function fetchLiveQuizResponses(
       { elementBlockExecution: 'asc' },
       { instance: { order: 'asc' } },
     ],
-  })
+  }) as Promise<LiveQuizResponseRow[]>
 }
-
-type LiveQuizResponseRow = Awaited<
-  ReturnType<typeof fetchLiveQuizResponses>
->[number]
 
 export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
   const block = row.instance.elementBlock
@@ -96,7 +123,7 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
       ? elementData.content.substring(0, 200) + '...'
       : elementData.content,
     liveQuiz?.id ?? '',
-    liveQuiz?.displayName ?? '',
+    liveQuiz?.displayName ?? liveQuiz?.name ?? '',
     row.elementBlockExecution,
     row.response != null ? JSON.stringify(row.response) : '',
     row.correctness,

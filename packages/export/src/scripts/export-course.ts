@@ -1,6 +1,11 @@
 import { prisma } from '@klicker-uzh/prisma'
 
 import {
+  CliUsageError,
+  EXPORT_COURSE_USAGE,
+  parseExportCourseArgs,
+} from '../cli.js'
+import {
   type CourseExportResult,
   exportCourseData,
   writeCombinedWorkbook,
@@ -10,30 +15,8 @@ import { createReadonlyClient } from '../readonlyPrisma.js'
 
 const readonlyPrisma = createReadonlyClient(prisma)
 
-const args = process.argv.slice(2)
-
-// Collect all --courseId values
-const courseIds: string[] = []
-for (let i = 0; i < args.length; i++) {
-  if (args[i] === '--courseId' && i + 1 < args.length) {
-    courseIds.push(args[i + 1]!)
-    i++
-  }
-}
-
-const outputDirIdx = args.indexOf('--outputDir')
-const outputDir =
-  (outputDirIdx !== -1 ? args[outputDirIdx + 1] : undefined) ??
-  './export-output'
-
-if (courseIds.length === 0) {
-  console.error(
-    'Usage: tsx src/scripts/export-course.ts --courseId <uuid> [--courseId <uuid2> ...] [--outputDir <path>]'
-  )
-  process.exit(1)
-}
-
 try {
+  const { courseIds, outputDir } = parseExportCourseArgs(process.argv.slice(2))
   const results: CourseExportResult[] = []
 
   for (const courseId of courseIds) {
@@ -52,6 +35,16 @@ try {
   }
 
   console.log(`\nDone. Exported ${results.length} course(s).`)
+} catch (error) {
+  if (error instanceof CliUsageError) {
+    console.error(error.message)
+    if (error.message !== EXPORT_COURSE_USAGE) {
+      console.error(EXPORT_COURSE_USAGE)
+    }
+    process.exit(1)
+  }
+
+  throw error
 } finally {
   await prisma.$disconnect()
 }

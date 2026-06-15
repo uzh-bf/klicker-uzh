@@ -1,3 +1,6 @@
+import type { PointCorrectionType } from '@klicker-uzh/prisma/client'
+import type { ElementData } from '@klicker-uzh/types'
+
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const CORRECTION_HEADERS = [
@@ -20,10 +23,36 @@ export const CORRECTION_HEADERS = [
   'createdAt',
 ]
 
+type CorrectionRow = {
+  id: number
+  awardedBasePoints: number
+  awardedCorrectnessPoints: number
+  awardedBonusPoints: number
+  deductedBasePoints: number
+  deductedCorrectnessPoints: number
+  deductedBonusPoints: number
+  createdAt: Date
+  pointCorrection: {
+    type: PointCorrectionType
+    reason: string
+    studentReason: string
+  }
+  response: {
+    participant: { id: string; email: string | null }
+    instance: {
+      id: number
+      elementData: ElementData
+      elementBlock: {
+        liveQuiz: { id: string; name: string; displayName: string | null }
+      } | null
+    }
+  }
+}
+
 export async function fetchCorrections(
   prisma: ReadonlyPrismaClient,
   courseId: string
-) {
+): Promise<CorrectionRow[]> {
   return prisma.appliedPointCorrection.findMany({
     where: {
       response: {
@@ -62,7 +91,7 @@ export async function fetchCorrections(
               elementBlock: {
                 select: {
                   liveQuiz: {
-                    select: { id: true, displayName: true },
+                    select: { id: true, name: true, displayName: true },
                   },
                 },
               },
@@ -72,10 +101,8 @@ export async function fetchCorrections(
       },
     },
     orderBy: [{ createdAt: 'desc' }],
-  })
+  }) as Promise<CorrectionRow[]>
 }
-
-type CorrectionRow = Awaited<ReturnType<typeof fetchCorrections>>[number]
 
 export function transformCorrection(row: CorrectionRow): unknown[] {
   const liveQuiz = row.response.instance.elementBlock?.liveQuiz
@@ -86,7 +113,7 @@ export function transformCorrection(row: CorrectionRow): unknown[] {
     row.response.participant.id,
     row.response.participant.email ?? '',
     liveQuiz?.id ?? '',
-    liveQuiz?.displayName ?? '',
+    liveQuiz?.displayName ?? liveQuiz?.name ?? '',
     row.response.instance.id,
     elementData.name,
     row.pointCorrection.type,

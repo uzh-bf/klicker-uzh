@@ -58,4 +58,7 @@ MR/PR: unknown
 
 - 2026-06-15: Worktree created. Latest `v3` merged. Lock regenerated.
 - 2026-06-15: Review found duplicate `TestInitializationResult` type in `packages/graphql/test/helpers.ts` and stale export package version.
-- Next: commit plan, apply readiness fixes, run focused checks.
+- 2026-06-15: Plan committed in `d4a2bcfbd`.
+- 2026-06-15: Readiness fixes applied: duplicate type removed, export version aligned to alpha.62, CLI parser hardened, export row DTOs added for Prisma relation typing, quiz-name fallbacks added.
+- 2026-06-15: Checks so far: `pnpm --filter @klicker-uzh/export check` passed; `pnpm --filter @klicker-uzh/export test` passed (6 tests); `pnpm --filter @klicker-uzh/export build` passed; `pnpm run check:syncpack` passed. Local pnpm uses standalone Node v26.3.0 and reports repo engine warnings; Volta Node 20.19.4 is installed.
+- Next: commit readiness fixes, run final focused checks, then Cypress/export validation.

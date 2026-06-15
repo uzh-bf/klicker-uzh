@@ -220,6 +220,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Local embed harness target**: `util/embed-harness/` is for local verification only and should target the branch-local PWA (`http://127.0.0.1:3101/...`), not `https://pwa.klicker.com/...`, because production CSP / `frame-ancestors` blocks localhost embedding. (`util/embed-harness/`)
 - **Chat PWA login redirects**: `apps/chat/src/app/noLogin/page.tsx` must pass an absolute chat URL to the PWA login `redirect_to`; a relative chatbot path makes the PWA redirect to its own domain and 404. Local chat dev also needs ignored local env values for the backend `APP_SECRET` and `DATABASE_URL` so participant cookies verify and Prisma can load chatbot data.
 - **Chat Vitest alias resolution**: `apps/chat/vitest.config.ts` mirrors the app `@/*` alias from `apps/chat/tsconfig.json`; keep this in sync when adding client tests for modules that import from `@/src/...`.
+- **Export package Prisma row typing**: `packages/export` selects nested `ElementInstance` / `ElementBlock` relations through Prisma, but generated relation inference can collapse those nested fields to `never`; keep explicit row DTOs at the query boundary and cast the read result there instead of spreading casts through transforms. (`packages/export/src/`)
 
 ## Factory Skills (AI Assistance)
 

@@ -93,7 +93,9 @@ export async function exportCourseData(
   const outputPath = join(outputDir, folderName)
   mkdirSync(outputPath, { recursive: true })
 
-  console.log(`Exporting course "${course.displayName}" (${course.id})...`)
+  const courseName = course.displayName || course.name
+
+  console.log(`Exporting course "${courseName}" (${course.id})...`)
 
   const [liveQuizResponses, participants, invitations, corrections] =
     await Promise.all([
@@ -153,7 +155,7 @@ export async function exportCourseData(
 
   return {
     outputPath,
-    courseName: course.displayName || course.name,
+    courseName,
     counts,
     data: { liveQuizRows, participantRows, invitationRows, correctionRows },
   }

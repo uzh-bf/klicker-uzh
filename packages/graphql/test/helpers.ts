@@ -78,15 +78,6 @@ type TestInitializationResult = {
 
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
-type TestInitializationResult = {
-  userOneCtx: ContextWithUser
-  userTwoCtx: ContextWithUser
-  userThreeCtx: ContextWithUser
-  userFourCtx: ContextWithUser
-  userFiveCtx: ContextWithUser
-  userSixCtx: ContextWithUser
-}
-
 export async function testInitialization(
   prisma: PrismaClient,
   hatchet: Hatchet,
