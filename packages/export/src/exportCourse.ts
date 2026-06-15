@@ -406,10 +406,16 @@ function addSheet(
     sheet.addRow(mapped)
   }
 
-  // Freeze the header row and enable per-column filtering.
+  // Freeze the header row.
   sheet.views = [{ state: 'frozen', ySplit: 1 }]
-  sheet.autoFilter = {
-    from: { row: 1, column: 1 },
-    to: { row: 1, column: headers.length },
+
+  // Enable per-column filtering across the FULL data range. The range must
+  // include the data rows: a header-only range (to.row === 1) or a filter on
+  // an empty sheet makes Excel flag the workbook as needing repair on open.
+  if (rows.length > 0) {
+    sheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: rows.length + 1, column: headers.length },
+    }
   }
 }

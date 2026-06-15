@@ -504,7 +504,14 @@ describe('@klicker-uzh/export', () => {
     await workbook.xlsx.readFile(outputPath)
     for (const sheet of workbook.worksheets) {
       expect(sheet.views?.[0]?.state).toBe('frozen')
-      expect(sheet.autoFilter).toBeTruthy()
+      // autoFilter is only set on sheets with data; when present its range must
+      // span the data rows (not header-only), else Excel flags it for repair.
+      if (sheet.rowCount > 1) {
+        const ref = String(sheet.autoFilter)
+        expect(ref).toBeTruthy()
+        const lastRow = Number(ref.match(/(\d+)$/)?.[1])
+        expect(lastRow).toBe(sheet.rowCount)
+      }
     }
   })
 
