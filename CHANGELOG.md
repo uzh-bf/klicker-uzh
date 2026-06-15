@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.63...v3.4.0-alpha.64) (2026-06-15)
+
+
+### Features
+
+* **packages/export:** add @klicker-uzh/export package for assessment course data export ([#5043](https://github.com/uzh-bf/klicker-uzh/issues/5043)) ([7d51542](https://github.com/uzh-bf/klicker-uzh/commit/7d5154210c33c11ac9f4f7c0bba6024e566cbaf8))
+
+
+### Bug Fixes
+
+* **chat:** route fallback models through chat completions ([#5121](https://github.com/uzh-bf/klicker-uzh/issues/5121)) ([b6ed437](https://github.com/uzh-bf/klicker-uzh/commit/b6ed43799a29428d5f9e6cbd0c0c298b04f99281))
+* **packages/graphql:** authenticate against every email candidate ([#5069](https://github.com/uzh-bf/klicker-uzh/issues/5069)) ([059d348](https://github.com/uzh-bf/klicker-uzh/commit/059d348dd6e1546008ba7ea3208f66b0ab73f996))
+
+
+### Refactors
+
+* add Playwright PoC workspace and draft PR CI workflow ([#5008](https://github.com/uzh-bf/klicker-uzh/issues/5008)) ([c638d9b](https://github.com/uzh-bf/klicker-uzh/commit/c638d9b393742b8d4507d0aea7c2bd38f287f137))
+
+
+### Documentation
+
+* slim AGENTS.md to a high-level overview + consolidate skills under .agents ([#5122](https://github.com/uzh-bf/klicker-uzh/issues/5122)) ([1f35b4a](https://github.com/uzh-bf/klicker-uzh/commit/1f35b4a85b263bd9f64f3ca1622daea5cba88128))
+
 ## [3.4.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.61...v3.4.0-alpha.62) (2026-05-05)
 
 
