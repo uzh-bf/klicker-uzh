@@ -2,7 +2,10 @@ import { createWriteStream } from 'node:fs'
 
 function escapeCsvValue(val: unknown): string {
   if (val == null) return ''
-  const str = String(val)
+  // Normalize embedded newlines to spaces so every logical row is one physical
+  // line (line tools / naive editors stay correct); rich multi-line content
+  // remains intact in the XLSX. The CR/LF quoting below is kept as a backstop.
+  const str = String(val).replace(/\r\n|\r|\n/g, ' ')
   const sanitized = /^\s*[=+\-@]/.test(str) ? `'${str}` : str
   if (
     sanitized.includes(',') ||
@@ -28,6 +31,8 @@ export async function writeCsv(
       mode: 0o600,
     })
     stream.on('error', reject)
+    // UTF-8 BOM so Excel (esp. DE/Windows locale) opens with correct encoding.
+    stream.write('﻿')
     stream.write(headers.map(escapeCsvValue).join(',') + '\n')
     for (const row of rows) {
       stream.write(row.map(escapeCsvValue).join(',') + '\n')

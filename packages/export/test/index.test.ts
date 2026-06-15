@@ -388,7 +388,27 @@ describe('@klicker-uzh/export', () => {
     )
 
     await expect(readFile(filePath, 'utf8')).resolves.toBe(
-      "value\n'=2+2\n'+SUM(A1:A2)\n'-10\n'@cmd\n' =2+2\n'\t=2+2\n"
+      "﻿value\n'=2+2\n'+SUM(A1:A2)\n'-10\n'@cmd\n' =2+2\n'\t=2+2\n"
     )
+  })
+
+  it('prepends a UTF-8 BOM to CSV output', async () => {
+    const outputDir = await createTempDir()
+    const filePath = join(outputDir, 'bom.csv')
+    await writeCsv(filePath, ['value'], [['1']])
+    const buf = await readFile(filePath)
+    expect([buf[0], buf[1], buf[2]]).toEqual([0xef, 0xbb, 0xbf])
+  })
+
+  it('normalizes embedded newlines so each row is one physical line', async () => {
+    const outputDir = await createTempDir()
+    const filePath = join(outputDir, 'newlines.csv')
+    await writeCsv(filePath, ['value'], [['line1\nline2'], ['a\r\nb']])
+    const text = await readFile(filePath, 'utf8')
+    // BOM+header line, row1, row2, trailing newline -> 3 physical lines + ''
+    expect(text.split('\n')).toHaveLength(4)
+    expect(text).not.toMatch(/[\r]/)
+    expect(text).toContain('line1 line2')
+    expect(text).toContain('a b')
   })
 })
