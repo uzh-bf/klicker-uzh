@@ -548,12 +548,42 @@ importers:
 
   apps/chat-api:
     dependencies:
+      '@ai-sdk/openai':
+        specifier: 3.0.30
+        version: 3.0.30(zod@3.25.76)
       '@hono/node-server':
         specifier: 1.19.14
         version: 1.19.14(hono@4.12.25)
+      '@klicker-uzh/chat-engine':
+        specifier: workspace:*
+        version: link:../../packages/chat-engine
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../../packages/util
+      '@mastra/ai-sdk':
+        specifier: 1.4.4
+        version: 1.4.4(@mastra/core@1.41.0(@grpc/grpc-js@1.13.4)(ai@6.0.91(zod@3.25.76))(express@5.2.1)(rxjs@7.8.2)(zod@3.25.76))(zod@3.25.76)
+      '@mastra/core':
+        specifier: 1.41.0
+        version: 1.41.0(@grpc/grpc-js@1.13.4)(ai@6.0.91(zod@3.25.76))(express@5.2.1)(rxjs@7.8.2)(zod@3.25.76)
+      ai:
+        specifier: 6.0.91
+        version: 6.0.91(zod@3.25.76)
       hono:
         specifier: 4.12.25
         version: 4.12.25
+      jose:
+        specifier: 5.9.4
+        version: 5.9.4
+      sharp:
+        specifier: 0.33.5
+        version: 0.33.5
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -6037,6 +6067,13 @@ packages:
   '@lukeed/uuid@2.0.1':
     resolution: {integrity: sha512-qC72D4+CDdjGqJvkFMMEAtancHUQ7/d/tAiHf64z8MopFDmcrtbcJuerDtFceuAfQJ2pDSfCKCtbqoGBNnwg0w==}
     engines: {node: '>=8'}
+
+  '@mastra/ai-sdk@1.4.4':
+    resolution: {integrity: sha512-03Mt0wQLK/80phsEM7P0BilIpXAW776vYxAb74qpBBRkuxP3WtHT2HThWMTqiLEV9v7P1c8iJ99VtLqXas44Gg==}
+    engines: {node: '>=22.13.0'}
+    peerDependencies:
+      '@mastra/core': '>=1.5.0-0 <2.0.0-0'
+      zod: ^3.25.0 || ^4.0.0
 
   '@mastra/core@1.41.0':
     resolution: {integrity: sha512-A3gV8kdyO3xf4zIFgzUYutVIOhN4595mGoz0IpMrQPuGTYSVTMwSoUhqpKhvyRXt1UYZAOCt88qqI66lscNQtQ==}
@@ -14050,9 +14087,6 @@ packages:
   jose@5.9.4:
     resolution: {integrity: sha512-WBBl6au1qg6OHj67yCffCgFR3BADJBXN8MdRvCgJDuMv3driV2nHr7jdGvaKX9IolosAsn+M0XRArqLXUhyJHQ==}
 
-  jose@6.1.0:
-    resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
-
   jose@6.2.3:
     resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
 
@@ -20126,18 +20160,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.18.3:
-    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.21.0:
     resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
     engines: {node: '>=10.0.0'}
@@ -20422,26 +20444,40 @@ snapshots:
       eventsource-parser: 3.0.6
       zod: 3.25.76
 
+  '@ai-sdk/provider-utils@3.0.25(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.3
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.1.0
+      zod: 3.25.76
+
   '@ai-sdk/provider-utils@3.0.25(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 2.0.3
       '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.1.0
       zod: 4.3.6
 
   '@ai-sdk/provider-utils@4.0.15(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.1.0
       zod: 3.25.76
 
   '@ai-sdk/provider-utils@4.0.15(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.1.0
       zod: 4.3.6
+
+  '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.10
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.1.0
+      zod: 3.25.76
 
   '@ai-sdk/provider-utils@4.0.27(zod@4.3.6)':
     dependencies:
@@ -20862,7 +20898,7 @@ snapshots:
   '@auth/core@0.40.0(nodemailer@6.9.15)':
     dependencies:
       '@panva/hkdf': 1.2.1
-      jose: 6.1.0
+      jose: 6.2.3
       oauth4webapi: 3.8.1
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
@@ -24700,10 +24736,10 @@ snapshots:
       '@graphql-tools/utils': 10.9.1(graphql@16.11.0)
       '@whatwg-node/disposablestack': 0.0.6
       graphql: 16.11.0
-      graphql-ws: 6.0.6(graphql@16.11.0)(ws@8.18.3)
-      isomorphic-ws: 5.0.0(ws@8.18.3)
+      graphql-ws: 6.0.6(graphql@16.11.0)(ws@8.21.0)
+      isomorphic-ws: 5.0.0(ws@8.21.0)
       tslib: 2.8.1
-      ws: 8.18.3
+      ws: 8.21.0
     transitivePeerDependencies:
       - '@fastify/websocket'
       - bufferutil
@@ -25611,6 +25647,53 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
+  '@mastra/ai-sdk@1.4.4(@mastra/core@1.41.0(@grpc/grpc-js@1.13.4)(ai@6.0.91(zod@3.25.76))(express@5.2.1)(rxjs@7.8.2)(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@mastra/core': 1.41.0(@grpc/grpc-js@1.13.4)(ai@6.0.91(zod@3.25.76))(express@5.2.1)(rxjs@7.8.2)(zod@3.25.76)
+      zod: 3.25.76
+
+  '@mastra/core@1.41.0(@grpc/grpc-js@1.13.4)(ai@6.0.91(zod@3.25.76))(express@5.2.1)(rxjs@7.8.2)(zod@3.25.76)':
+    dependencies:
+      '@a2a-js/sdk': 0.3.13(@grpc/grpc-js@1.13.4)(express@5.2.1)
+      '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.25(zod@3.25.76)'
+      '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)'
+      '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
+      '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.10'
+      '@isaacs/ttlcache': 2.1.5
+      '@lukeed/uuid': 2.0.1
+      '@mastra/schema-compat': 1.2.11(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.29.0(zod@3.25.76)
+      '@sindresorhus/slugify': 2.2.1
+      '@standard-schema/spec': 1.1.0
+      ajv: 8.18.0
+      chat: 4.30.0(ai@6.0.91(zod@3.25.76))(zod@3.25.76)
+      croner: 10.0.1
+      dotenv: 17.4.2
+      execa: 9.6.1
+      fastq: 1.19.1
+      gray-matter: 4.0.3
+      ignore: 7.0.5
+      json-schema: 0.4.0
+      lru-cache: 11.5.1
+      p-map: 7.0.4
+      p-retry: 7.1.1
+      picomatch: 4.0.3
+      posthog-node: 5.37.1(rxjs@7.8.2)
+      tokenx: 1.3.0
+      ws: 8.21.0
+      xxhash-wasm: 1.1.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@bufbuild/protobuf'
+      - '@cfworker/json-schema'
+      - '@grpc/grpc-js'
+      - ai
+      - bufferutil
+      - express
+      - rxjs
+      - supports-color
+      - utf-8-validate
+
   '@mastra/core@1.41.0(@grpc/grpc-js@1.13.4)(express@5.2.1)(rxjs@7.8.2)(zod@4.3.6)':
     dependencies:
       '@a2a-js/sdk': 0.3.13(@grpc/grpc-js@1.13.4)(express@5.2.1)
@@ -25671,6 +25754,14 @@ snapshots:
     dependencies:
       '@mastra/core': 1.41.0(@grpc/grpc-js@1.13.4)(express@5.2.1)(rxjs@7.8.2)(zod@4.3.6)
       zod: 4.3.6
+
+  '@mastra/schema-compat@1.2.11(zod@3.25.76)':
+    dependencies:
+      json-schema-to-zod: 2.8.1
+      zod: 3.25.76
+      zod-from-json-schema: 0.5.3
+      zod-from-json-schema-v3: zod-from-json-schema@0.0.5
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
 
   '@mastra/schema-compat@1.2.11(zod@4.3.6)':
     dependencies:
@@ -25914,6 +26005,28 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
+    dependencies:
+      '@hono/node-server': 1.19.14(hono@4.12.25)
+      ajv: 8.18.0
+      ajv-formats: 3.0.1(ajv@8.18.0)
+      content-type: 1.0.5
+      cors: 2.8.5
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.0
+      express: 5.2.1
+      express-rate-limit: 8.5.2(express@5.2.1)
+      hono: 4.12.25
+      jose: 6.2.3
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.0
+      raw-body: 3.0.2
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    transitivePeerDependencies:
+      - supports-color
+
   '@modelcontextprotocol/sdk@1.29.0(zod@4.3.6)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.25)
@@ -25923,14 +26036,14 @@ snapshots:
       cors: 2.8.5
       cross-spawn: 7.0.6
       eventsource: 3.0.7
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.1.0
       express: 5.2.1
       express-rate-limit: 8.5.2(express@5.2.1)
       hono: 4.12.25
       jose: 6.2.3
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.0
-      raw-body: 3.0.1
+      raw-body: 3.0.2
       zod: 4.3.6
       zod-to-json-schema: 3.25.2(zod@4.3.6)
     transitivePeerDependencies:
@@ -31019,6 +31132,21 @@ snapshots:
 
   charenc@0.0.2: {}
 
+  chat@4.30.0(ai@6.0.91(zod@3.25.76))(zod@3.25.76):
+    dependencies:
+      '@workflow/serde': 4.1.0-beta.2
+      mdast-util-to-string: 4.0.0
+      remark-gfm: 4.0.1
+      remark-parse: 11.0.0
+      remark-stringify: 11.0.0
+      remend: 1.3.0
+      unified: 11.0.5
+    optionalDependencies:
+      ai: 6.0.91(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
   chat@4.30.0(zod@4.3.6):
     dependencies:
       '@workflow/serde': 4.1.0-beta.2
@@ -33357,13 +33485,13 @@ snapshots:
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.7
-      qs: 6.14.0
+      qs: 6.15.2
       range-parser: 1.2.1
       router: 2.2.0
       send: 1.2.0
       serve-static: 2.2.0
       statuses: 2.0.2
-      type-is: 2.0.1
+      type-is: 2.1.0
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
@@ -34176,11 +34304,11 @@ snapshots:
     dependencies:
       graphql: 16.11.0
 
-  graphql-ws@6.0.6(graphql@16.11.0)(ws@8.18.3):
+  graphql-ws@6.0.6(graphql@16.11.0)(ws@8.21.0):
     dependencies:
       graphql: 16.11.0
     optionalDependencies:
-      ws: 8.18.3
+      ws: 8.21.0
 
   graphql-yoga@3.9.1(graphql@16.11.0):
     dependencies:
@@ -35122,9 +35250,9 @@ snapshots:
     dependencies:
       ws: 8.18.0
 
-  isomorphic-ws@5.0.0(ws@8.18.3):
+  isomorphic-ws@5.0.0(ws@8.21.0):
     dependencies:
-      ws: 8.18.3
+      ws: 8.21.0
 
   isstream@0.1.2: {}
 
@@ -35338,8 +35466,6 @@ snapshots:
   jose@4.15.9: {}
 
   jose@5.9.4: {}
-
-  jose@6.1.0: {}
 
   jose@6.2.3: {}
 
@@ -43155,8 +43281,6 @@ snapshots:
 
   ws@8.18.0: {}
 
-  ws@8.18.3: {}
-
   ws@8.21.0: {}
 
   wsl-utils@0.1.0:
@@ -43300,6 +43424,10 @@ snapshots:
       zod: 4.3.6
 
   zod-to-json-schema@3.24.6(zod@3.25.76):
+    dependencies:
+      zod: 3.25.76
+
+  zod-to-json-schema@3.25.2(zod@3.25.76):
     dependencies:
       zod: 3.25.76
 

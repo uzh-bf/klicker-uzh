@@ -32,10 +32,18 @@ export function buildAuthHeaders(
     headers['Authorization'] =
       `Basic ${Buffer.from(cfg.secret).toString('base64')}`
   } else if (cfg.authType === 'custom' && cfg.secret) {
-    Object.assign(
-      headers,
-      (JSON.parse(cfg.secret).headers as Record<string, string>) ?? {}
-    )
+    // Guard JSON.parse: a malformed secret (e.g. an admin stored a raw bearer
+    // token here) must not leak its plaintext into the SyntaxError message,
+    // which the host logs. Throw a generic error that omits the input.
+    let parsed: { headers?: Record<string, string> }
+    try {
+      parsed = JSON.parse(cfg.secret)
+    } catch {
+      throw new Error(
+        'custom MCP auth secret is not valid JSON — expected {"headers":{...}}'
+      )
+    }
+    Object.assign(headers, parsed.headers ?? {})
   }
   if (cfg.passChatbotId) {
     headers[cfg.chatbotIdHeader || 'Chatbot-ID'] = chatbotId

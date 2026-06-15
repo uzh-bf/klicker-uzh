@@ -31,10 +31,14 @@ const defaultProvider = createOpenAI({
 })
 
 function providerFor(chatbot: ChatbotConfig) {
-  if (chatbot.openaiApiKey && chatbot.openaiBaseUrl) {
+  // Mirror apps/chat getModel: a per-chatbot provider is used when EITHER a
+  // custom key OR a custom base URL is set, with the missing field falling back
+  // to the env default. (Using `&&` here would route a base-URL-only chatbot
+  // through the env provider, ignoring its configured endpoint.)
+  if (chatbot.openaiApiKey || chatbot.openaiBaseUrl) {
     return createOpenAI({
-      baseURL: chatbot.openaiBaseUrl,
-      apiKey: chatbot.openaiApiKey,
+      baseURL: chatbot.openaiBaseUrl ?? env.OPENAI_BASE_URL,
+      apiKey: chatbot.openaiApiKey ?? env.OPENAI_API_KEY,
       fetch: responsesApiFetch,
     })
   }
@@ -70,7 +74,12 @@ function isReasoningModel(modelId: string): boolean {
 // arriving with no human-readable summary.
 export function responsesProviderOptions(
   modelId: string,
-  effort: string | undefined
+  effort: string | undefined,
+  // store defaults to true (tool-call round-tripping on Azure needs it), but the
+  // host can override per its CHAT_OPENAI_STORE_RESPONSES env so local
+  // OpenRouter-style backends that reject stored items can set false — matching
+  // apps/chat's getOpenAIResponsesStore().
+  store = true
 ) {
   // Reasoning is engaged only for a reasoning-capable model AND a non-empty
   // effort other than 'none' (effort 'none' disables reasoning even on a
@@ -80,7 +89,7 @@ export function responsesProviderOptions(
     reasoningOn,
     options: {
       openai: {
-        store: true,
+        store,
         ...(reasoningOn
           ? { reasoningEffort: effort, reasoningSummary: 'detailed' }
           : {}),
