@@ -107,34 +107,11 @@ cypress/                   # E2E tests
 
 ## GraphQL Workflow
 
-Schema is defined code-first with **Pothos** in `packages/graphql/src/`.
-
-1. Define/modify types and resolvers in `packages/graphql/src/graphql/`
-2. Write `.graphql` operation files in `packages/graphql/src/graphql/ops/`
-3. Run codegen: `pnpm --filter @klicker-uzh/graphql generate`
-4. Codegen outputs:
-   - `src/ops.ts` - typed document nodes + fragment matchers
-   - `src/ops.schema.json` - introspection result
-   - `src/public/schema.graphql` - SDL schema
-   - `src/public/client.json` + `src/public/server.json` - persisted query IDs (SHA-256)
-
-### Operation naming
-
-- `Q` prefix = query (`QGetUserCourses`)
-- `M` prefix = mutation (`MCreateCourse`)
-- `S` prefix = subscription (`SFeedbackCreated`)
-- `F` prefix = fragment (`FElementData`)
+Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment.
 
 ## Database Workflow
 
-Prisma schema is split across multiple files in `packages/prisma/src/prisma/schema/`:
-`analytics`, `chat`, `course`, `element`, `gamification`, `participant`, `quiz`, `resources`, `response`, `sharing`, `user`, `other`, `datasource`, `js`.
-
-1. Edit the relevant `.prisma` file
-2. `pnpm run prisma:migrate` - create + apply migration
-3. `pnpm run prisma:sync` - copy schema to `apps/analytics/prisma/schema/` (excludes `js.prisma`)
-4. `pnpm --filter @klicker-uzh/prisma generate` - regenerate Prisma client
-5. Update GraphQL types/resolvers if schema change affects the API
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate`, then `pnpm run prisma:sync` (mirrors the schema into `apps/analytics`, excluding `js.prisma`) and regenerate the client. Update GraphQL types/resolvers if the change affects the API.
 
 ## Auth Model
 
@@ -144,22 +121,7 @@ Prisma schema is split across multiple files in `packages/prisma/src/prisma/sche
 
 ## Local Dev Setup
 
-Local dev uses Traefik reverse proxy with `*.klicker.com` custom domains (requires `/etc/hosts` entries + mkcert certs). Docker Compose runs PostgreSQL, Redis, Traefik, and Hatchet-lite.
-
-| URL                                         | App                          | Port |
-| ------------------------------------------- | ---------------------------- | ---: |
-| https://pwa.klicker.com                     | Student PWA                  | 3001 |
-| https://manage.klicker.com                  | Lecturer UI                  | 3002 |
-| https://control.klicker.com                 | Controller                   | 3003 |
-| https://chat.klicker.com                    | Chat                         | 3004 |
-| https://auth.klicker.com                    | Auth                         | 3010 |
-| https://api.klicker.com                     | Backend/GraphQL              | 3000 |
-| https://assessment.klicker.com              | Assessment PWA (same as PWA) | 3001 |
-| https://assessment-api.klicker.com          | Assessment API (same as API) | 3000 |
-| https://response-api.klicker.com            | Response API                 | 7078 |
-| https://response-api-assessment.klicker.com | Response API (assessment)    | 7078 |
-
-Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` domains better mirror production cookie/domain behavior.
+Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/hosts` entries + mkcert certs; Docker Compose runs Postgres, Redis, Traefik, Hatchet-lite). Without Traefik, hit `http://localhost:<port>` directly — per-app ports are in [Repo Layout](#repo-layout). The `*.klicker.com` domains better mirror production cookie/domain behavior.
 
 ### Test credentials (local seeded DB only)
 
