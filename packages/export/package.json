@@ -4,6 +4,9 @@
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "klicker-export": "dist/scripts/export-course.js"
+  },
   "files": [
     "dist"
   ],
@@ -26,10 +29,11 @@
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c && chmod +x dist/scripts/export-course.js",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
-    "export": "tsx src/scripts/export-course.ts",
+    "export": "node dist/scripts/export-course.js",
+    "export:dev": "tsx src/scripts/export-course.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

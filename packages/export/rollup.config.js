@@ -4,7 +4,7 @@ import { defineConfig } from 'rollup'
 
 const config = defineConfig([
   {
-    // Main build configuration
+    // Main build configuration (library entry)
     input: ['src/index.ts'],
     output: {
       dir: 'dist',
@@ -17,6 +17,28 @@ const config = defineConfig([
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
+      }),
+    ],
+    external: [/@klicker-uzh*/, /node_modules/],
+  },
+  {
+    // CLI binary: compile the export script so production runs need no tsx/esbuild
+    input: ['src/scripts/export-course.ts'],
+    output: {
+      dir: 'dist/scripts',
+      format: 'esm',
+      sourcemap: true,
+      entryFileNames: '[name].js',
+      banner: '#!/usr/bin/env node',
+    },
+    plugins: [
+      nodeResolve(),
+      typescript({
+        tsconfig: './tsconfig.json',
+        rootDir: 'src',
+        outDir: 'dist/scripts',
+        declaration: false,
+        declarationMap: false,
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/],
