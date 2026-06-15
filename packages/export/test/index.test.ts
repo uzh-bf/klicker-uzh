@@ -50,6 +50,7 @@ describe('@klicker-uzh/export', () => {
   it('parses repeated course ids and output directory', () => {
     expect(
       parseExportCourseArgs([
+        '--',
         '--courseId',
         'course-1',
         '--courseId',
