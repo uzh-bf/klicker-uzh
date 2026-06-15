@@ -21,7 +21,10 @@ harness (`public/index.html`) renders it.
   text-delta* → finish-step → finish` AI-SDK-v6 UIMessage chunks.
 - Finish-metadata shim: finish chunk carries
   `{"modelId":"openai/gpt-4.1","chatMode":"tutor","creditsUsed":0}` — all shim
-  fields round-trip.
+  fields round-trip. Note: the model id and `creditsUsed:0` in this evidence are
+  from the initial OpenRouter-backed run and are now stale. Validated backend is
+  Azure klicker-ai; `creditsUsed` is populated with real provider values (see cost
+  table in A2 findings).
 - Model fallback: request with bogus primary `openai/this-model-does-not-exist-zzz`
   errored 400 on the primary tier, Mastra retried the fallback tier, user got a
   clean answer with no user-visible error. Fallback array shape is
@@ -38,6 +41,13 @@ harness (`public/index.html`) renders it.
   *requested* model, not the tier that actually answered. When fallback fires, the
   UI would show the failed primary's id. Production needs the resolved model id
   surfaced from Mastra (telemetry/step metadata) into the shim. Minor, fixable.
+- **`sendReasoning:true` confirmed working (A2).** Initially wired but unexercised
+  (baseline model `openai/gpt-4.1` emits no reasoning). Validated end-to-end
+  against Azure klicker-ai with gpt-5.1: 71–89 `reasoning-delta` parts stream to
+  the client when the provider emits a summary. Requires a downstream passthrough
+  `TransformStream` in `server.ts` to avoid a `reasoningContent=null` race where
+  `onStepFinish` fires after the finish chunk under HTTP backpressure (race fix
+  `72036c005`; post-fix drop rate: 0/11 reasoning runs).
 
 **Verdict.** Engine swap → **adopt**. Model fallback → **adopt**. Finish-metadata
 shim → **adopt-with-changes** (wire the resolved model id on fallback).
@@ -97,17 +107,23 @@ input processors (`PromptInjectionDetector` etc.) attached as agent
 
 **Findings / caveats.**
 - **Critical API gotcha (fixed):** the `@ai-sdk/openai` default `provider(modelId)`
-  uses the **Responses** API, which breaks stateless multi-step tool calls over
-  OpenRouter/Azure ("No tool call found for function call output"). Switched to
-  `provider.chat(modelId)` (Chat Completions) in `agent.ts`/`guardrails.ts`. This
-  matches the existing `CHAT_OPENAI_STORE_RESPONSES` codebase learning — record as
-  a required-config landmine for any Mastra adoption.
+  uses the **Responses** API. Multi-step tool calls fail with "No tool call found
+  for function call output" when `store:false` is set — the Responses API requires
+  `store:true` so that continuation steps can reference prior response items by id.
+  Use `provider.responses(modelId)` (the default) with `store:true` always set in
+  `providerOptions.openai`. Pinning `provider.chat` is not the fix and must not be
+  carried forward — it suppresses reasoning summaries while leaving the `store:false`
+  root cause unaddressed. Record `store:true` as a required-config invariant for
+  any Mastra adoption. OpenRouter has been dropped; validated transport is Azure
+  klicker-ai via Responses API with `store:true`.
 - **LLM-backed guardrails need a classifier model** (cost/latency per request);
   the deterministic `TokenLimiterProcessor` does not. Mix accordingly in prod.
 
 **Verdict.** MCP rebind (keep DB-driven KB config, gain Mastra's client) →
-**adopt**. Native guardrail processors → **adopt**. Responses-vs-Chat default →
-**adopt-with-changes** (pin `provider.chat`; document the landmine).
+**adopt**. Native guardrail processors → **adopt**. Responses API transport →
+**adopt-with-changes** (use `provider.responses()` with `store:true`; `store:false`
+breaks multi-step tool calls and suppresses reasoning summaries; document the
+landmine).
 
 ---
 
@@ -327,7 +343,7 @@ prompt-quality signal.
 | S0.5 | Demand estimate from dev | **drop** | synthetic fixture ≠ real demand |
 | S1 | MCP retrieval rebind (DB-driven KB) | **adopt** | `Chatbot-ID` header reaches backend |
 | S1 | Native guardrails (block strategy) | **adopt** | injection → `data-tripwire`, no output |
-| S1 | Provider API default | **adopt-with-changes** | pin `provider.chat` (Responses breaks tool calls) |
+| S1 | Provider API default | **adopt-with-changes** | use Responses API with `store:true`; `store:false` breaks multi-step tool calls and suppresses reasoning summaries |
 | S2 | DB-backed skill source + progressive disclosure | **adopt-with-changes** | thin tools until `WorkspaceSkillsImpl` exported |
 | S2 | Lecturer authoring/versioning in our DB | **adopt** | discovered + applied live |
 | S3 | DIY person-level profile (branch-agnostic) | **adopt** | tool + context + erasure; Mastra can't model it |
@@ -340,6 +356,10 @@ prompt-quality signal.
 | S6 | Sub-agent depth > 2 | **drop** | blocked on upstream bug #15013 |
 | S7 | Eval dataset + keyword runner | **adopt** | 6/8 baseline; surfaces prompt gaps |
 | S7 | LLM-graded scorers | **adopt-with-changes** | layer on as suite matures |
+| A2 | Responses API + `store:true` | **adopt** | required for reasoning summaries and multi-step tool calls |
+| A2 | `sendReasoning:true` + downstream `TransformStream` | **adopt-with-changes** | race fix `72036c005`; post-fix: 0 drops across 11 reasoning runs |
+| A2 | Bursty summary emission (gpt-5.1) | — | provider behavior; not a pipeline bug; tolerate empty `reasoningContent` as a valid outcome |
+| A2 | Non-reasoning models | **adopt** | 0 reasoning parts, `reasoningContent=null` — correct; no spurious injection |
 
 ## Go / no-go
 
@@ -356,8 +376,10 @@ sub-agent delegation). Every slice reached a runnable check with a recorded
 verdict.
 
 **Conditions on GO:**
-1. Pin `provider.chat` (Chat Completions) — the Responses default breaks multi-step
-   tool calls (S1). Non-negotiable.
+1. Use `provider.responses(modelId)` (Responses API) with `store:true` always set
+   in `providerOptions.openai` — the `store:false` flag breaks multi-step tool calls
+   (S1), not the API family. Pinning `provider.chat` (Chat Completions) would
+   suppress reasoning summaries while leaving the root cause unresolved. Required.
 2. Surface the resolved model id into finish-metadata on fallback (S0).
 3. Run the S0.5 measurement queries against **production** to (a) confirm branching
    demand and (b) set the S5 compression threshold — do not size features off dev.

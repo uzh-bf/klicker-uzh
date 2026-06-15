@@ -45,7 +45,7 @@ This report consolidates four investigations:
 | RAG | Externalized to an opaque MCP server (`KB.doc_query`); no vector store, embeddings, or chunking in our repo |
 | Conversation state | Custom Prisma schema: branching message tree via `parentId`, per-message `creditsUsed`, `chatMode`, `modelId`, `reasoningEffort`, `reasoningContent`; base64 image attachments with AI-generated descriptions |
 | Billing | Custom `ChatUsageCredits` with period-aligned resets and atomic decrement transactions; credit balance drives primary-vs-fallback model selection |
-| Providers | Single OpenAI-compatible base URL (Azure / OpenRouter), per-chatbot key/URL override, custom fetch workaround for an AI SDK Responses-API bug |
+| Providers | Single OpenAI-compatible base URL (Azure klicker-ai), per-chatbot key/URL override, Responses API (`store:true`) as standard path. `@openrouter/ai-sdk-provider` removed. |
 | Frontend | `@assistant-ui/react` + `useExternalStoreRuntime` + Zustand; hand-written SSE parser handling `text-delta`, `reasoning-delta`, tool events, and a custom `finish` event carrying credits/model metadata |
 | Observability | Langfuse via OpenTelemetry + AI SDK telemetry; custom token/cost accounting |
 | Evals | None |
@@ -105,7 +105,7 @@ Every claim below was individually verified against live documentation, GitHub, 
 | 6 | DB-driven dynamic agents | Confirmed | `instructions`, `model`, and `tools` can all be async functions of `RuntimeContext` resolved per request — maps directly to our chatbot-as-DB-row model |
 | 7 | Model fallback arrays + custom base URLs | Confirmed | Fallback on 5xx/429/timeout after `maxRetries`; dynamic functions can return full fallback arrays; OpenAI-compatible gateways (Azure, OpenRouter) supported via custom base URL |
 | 8 | MCPClient with per-request headers | Confirmed | `requestInit` headers per server; `getToolsets()` for per-request multi-tenant configs (our per-chatbot auth case); streamable HTTP with SSE fallback |
-| 9 | Reasoning passthrough | Confirmed | Native `reasoning-delta` chunk type; `sendReasoning: true` on `toAISdkStream()`; OpenAI `reasoningEffort` via provider options. Removes an earlier concern |
+| 9 | Reasoning passthrough | Confirmed | Native `reasoning-delta` chunk type; `sendReasoning: true` on `toAISdkStream()`; OpenAI `reasoningEffort` via provider options. Validated empirically against Azure klicker-ai. gpt-5.1: 71–89 `reasoning-delta` parts when provider emits a summary; bursty/non-stationary (provider). gpt-4.1-mini: 0 reasoning parts, null `reasoningContent`. Race bug found and fixed (`72036c005`). |
 | 10 | Workflow suspend/resume streaming | Partially confirmed | Stream ends at suspend; `resumeStream` API and `workflows.resumeWorkflow()` exist; arbitrary mid-stream reconnect for agent streams is a known open gap (GitHub #11579) |
 | 11 | Stateless agent with caller-supplied history | Confirmed | Explicitly documented mode: with no `memory` configured, the agent sees only the messages passed per call (`CoreMessage[]` / `UIMessageWithMetadata[]` accepted). Our load-history-from-Prisma pattern is first-class |
 | 12 | Full per-call execution options | Confirmed | `AgentExecutionOptions` carries per-call `instructions`/`system` override, `toolsets` (dynamic MCP), `modelSettings.maxOutputTokens`, `providerOptions` (e.g. `openai.reasoningEffort`/`store`), `stopWhen`/`maxSteps`, `abortSignal` — everything our route passes today |
@@ -417,18 +417,18 @@ The recommendation above was **validated empirically** by a tracer-bullet protot
 | S0 | Mastra engine swap (our store) + model fallback | **adopt** |
 | S0.5 | Measurement queries | **adopt** (run against prod; dev data non-representative) |
 | S1 | MCP retrieval rebind + native guardrails | **adopt** |
-| S1 | Provider API default | **adopt-with-changes** — pin `provider.chat` |
+| S1 | Provider API default | **adopt-with-changes** — use Responses API with `store:true`; root cause of S0 failure was `store:false`, not the API family |
 | S2 | DB-backed skills + progressive disclosure | **adopt-with-changes** (thin tools until `WorkspaceSkillsImpl` exported) |
 | S3 | DIY person-level profile (branch-agnostic) | **adopt** |
 | S4 | Branch-restricted semantic recall | **adopt** (the thesis) |
 | S5 | Branch-correct compression + summarization | **adopt** (trigger config-gated on prod) |
 | S6 | Two-level supervisor + DB roster | **adopt** (depth held at 2 per bug #15013) |
 | S7 | Eval dataset + keyword runner | **adopt** (6/8 baseline) |
-| — | Reasoning streaming | wired, not separately validated |
+| — | Reasoning streaming | validated — gpt-5.1 emits 71–89 `reasoning-delta` parts when provider emits a summary; non-stationary (provider behavior confirmed by bisection). Race bug found and fixed (`72036c005`); 0 drops post-fix across 11 runs. |
 | — | Observability / Langfuse | not evaluated (no slice; defer to integration) |
 
 **Conditions on GO** (carried into Stage 1 extraction):
-1. **Pin `provider.chat` (Chat Completions).** The `@ai-sdk/openai` default `provider(modelId)` uses the Responses API, which breaks stateless multi-step tool calls over OpenRouter/Azure ("No tool call found for function call output"). Non-negotiable; matches the existing `CHAT_OPENAI_STORE_RESPONSES` learning.
+1. **Use Responses API (`provider.responses()`) with `store:true`.** The S0 "No tool call found for function call output" failure was caused by `store:false`, not the Responses API family. Chat Completions hides reasoning as opaque `reasoning_tokens` — no summary is ever emitted. `@openrouter/ai-sdk-provider` has been dropped. Fix committed as `72036c005`.
 2. **Surface the resolved model id into finish-metadata on fallback** (S0) — today the shim reports the *requested* model.
 3. **Run the S0.5 measurement queries against production** to confirm branching demand and set the S5 compression threshold — do not size features off the synthetic dev fixture (dev showed 40% branched / 80% < 2k tokens, but those are authored, not observed).
 4. **Hold skills on thin custom tools** until `WorkspaceSkillsImpl` is exported upstream (S2); **hold sub-agent depth at two** pending bug #15013 (S6).
