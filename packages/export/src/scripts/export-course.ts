@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+
 import { prisma } from '@klicker-uzh/prisma'
 
 import {
@@ -22,12 +24,18 @@ try {
   )
   // One salt for the whole run so a participant maps to the same token across courses.
   const piiSalt = pseudonymize ? makePiiSalt() : undefined
+  const exportedAt = new Date().toISOString()
+  const { version: packageVersion } = createRequire(import.meta.url)(
+    '../../package.json'
+  ) as { version: string }
   const results: CourseExportResult[] = []
 
   for (const courseId of courseIds) {
     const result = await exportCourseData(readonlyPrisma, courseId, outputDir, {
       piiMode: pseudonymize ? 'pseudonymize' : 'full',
       piiSalt,
+      exportedAt,
+      packageVersion,
     })
     console.log(`Export complete: ${result.outputPath}`)
     console.log(`  LiveQuiz responses: ${result.counts.liveQuizResponses}`)

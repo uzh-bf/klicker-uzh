@@ -1,5 +1,5 @@
 import { statSync } from 'node:fs'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -23,6 +23,7 @@ import {
   transformLiveQuizResponse,
 } from '../src/liveQuizResponses.js'
 import { LIVE_QUIZ_HEADERS, transformLiveQuiz } from '../src/liveQuizzes.js'
+import { computeSha256, writeManifest } from '../src/manifest.js'
 import { transformParticipant } from '../src/participants.js'
 import { makePiiSalt, pseudonymize } from '../src/pii.js'
 
@@ -44,6 +45,7 @@ function createCourseExportResult(courseName: string): CourseExportResult {
   return {
     outputPath: `/tmp/${courseName}`,
     courseName,
+    manifestPath: `/tmp/${courseName}/manifest.json`,
     counts: {
       liveQuizResponses: 0,
       participants: 0,
@@ -504,6 +506,53 @@ describe('@klicker-uzh/export', () => {
       expect(sheet.views?.[0]?.state).toBe('frozen')
       expect(sheet.autoFilter).toBeTruthy()
     }
+  })
+
+  it('writes a manifest with checksums, counts, scope, and data dictionary', async () => {
+    const outputDir = await createTempDir()
+    await writeFile(join(outputDir, 'responses.csv'), 'a\n1\n')
+    await writeFile(join(outputDir, 'export.xlsx'), 'binary')
+
+    const manifestPath = await writeManifest(outputDir, {
+      courseId: 'course-1',
+      courseName: 'Course',
+      exportedAt: '2026-01-01T00:00:00.000Z',
+      packageVersion: '3.4.0',
+      piiMode: 'full',
+      counts: {
+        liveQuizResponses: 1,
+        participants: 0,
+        invitations: 0,
+        corrections: 0,
+        liveQuizzes: 0,
+        elementInstances: 0,
+      },
+      files: ['responses.csv', 'export.xlsx'],
+    })
+
+    expect(manifestPath.endsWith('manifest.json')).toBe(true)
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+    expect(manifest.schemaVersion).toBe(1)
+    expect(manifest.piiMode).toBe('full')
+    expect(Object.keys(manifest.files)).toEqual([
+      'responses.csv',
+      'export.xlsx',
+    ])
+    expect(manifest.files['responses.csv'].sha256).toMatch(/^[0-9a-f]{64}$/)
+    expect(manifest.counts.liveQuizResponses).toBe(1)
+    expect(manifest.dataDictionary.responses.blockExecution).toBeTruthy()
+    expect(manifest.scope.excluded.length).toBeGreaterThan(0)
+    expect(statSync(manifestPath).mode & 0o777).toBe(0o600)
+  })
+
+  it('computeSha256 matches the known digest of file content', async () => {
+    const outputDir = await createTempDir()
+    const filePath = join(outputDir, 'hello.txt')
+    await writeFile(filePath, 'hello')
+    // echo -n hello | sha256sum
+    expect(await computeSha256(filePath)).toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+    )
   })
 
   it('writes CSV files with owner-only (0600) permissions', async () => {

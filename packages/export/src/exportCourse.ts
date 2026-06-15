@@ -34,6 +34,7 @@ import {
   fetchLiveQuizzes,
   transformLiveQuiz,
 } from './liveQuizzes.js'
+import { writeManifest } from './manifest.js'
 import {
   PARTICIPANT_HEADERS,
   fetchParticipants,
@@ -50,11 +51,16 @@ export interface ExportOptions {
   piiMode?: PiiMode
   /** Optional per-run salt so identifiers stay joinable across courses in one run. */
   piiSalt?: string
+  /** ISO-8601 export timestamp recorded in the manifest (defaults to now). */
+  exportedAt?: string
+  /** Package version recorded in the manifest (defaults to 'unknown'). */
+  packageVersion?: string
 }
 
 export interface CourseExportResult {
   outputPath: string
   courseName: string
+  manifestPath: string
   counts: {
     liveQuizResponses: number
     participants: number
@@ -116,11 +122,17 @@ export async function exportCourseData(
   options: ExportOptions = {}
 ): Promise<CourseExportResult> {
   const piiMode: PiiMode = options.piiMode ?? 'full'
+  const exportedAt = options.exportedAt ?? new Date().toISOString()
+  const packageVersion = options.packageVersion ?? 'unknown'
   const piiCtx: PiiContext =
     piiMode === 'pseudonymize'
       ? { mode: 'pseudonymize', salt: options.piiSalt ?? makePiiSalt() }
       : FULL_PII
 
+  console.log(
+    'Scope: live-quiz responses, participants, invitations, corrections only ' +
+      '(no practice-quiz / microlearning / group-activity responses).'
+  )
   if (piiMode === 'full') {
     console.warn(
       'WARNING: export contains PII (email, sso id/email, matriculation number, free-text answers, raw response JSON). ' +
@@ -277,9 +289,21 @@ export async function exportCourseData(
     `Wrote ${counts.liveQuizResponses} responses, ${counts.participants} participants, ${counts.invitations} invitations, ${counts.corrections} corrections, ${counts.liveQuizzes} live quizzes, ${counts.elementInstances} element instances`
   )
 
+  const manifestPath = await writeManifest(outputPath, {
+    courseId: course.id,
+    courseName,
+    exportedAt,
+    packageVersion,
+    piiMode,
+    counts,
+    files: [...csvFiles, 'export.xlsx'],
+  })
+  console.log(`  Manifest: ${manifestPath}`)
+
   return {
     outputPath,
     courseName,
+    manifestPath,
     counts,
     data: {
       liveQuizRows,

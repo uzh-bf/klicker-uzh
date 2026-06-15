@@ -10,6 +10,18 @@ import type {
 import { type PiiContext, FULL_PII, applyPii } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
+/**
+ * Column headers for the responses CSV / RESPONSES sheet.
+ *
+ * - blockExecution: execution/run index of the enclosing block for this
+ *   participant (increments when a block is replayed).
+ * - correctionOnly: true when the row was created by a lecturer correction
+ *   rather than a real participant submission.
+ * - appliedCorrectionsCount: count of point corrections linked to this row.
+ *
+ * Full untruncated element content lives in the ELEMENT_INSTANCES sheet,
+ * joinable via elementInstanceId.
+ */
 export const LIVE_QUIZ_RESPONSE_HEADERS = [
   'liveQuizResponseId',
   'elementBlockId',
