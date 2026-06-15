@@ -1066,8 +1066,11 @@ describe('Different live-quiz workflows', function () {
     // login student again on mobile, test navigation and answer second question
     cy.viewport('iphone-x')
     cy.loginStudent()
-    cy.findByText(this.data.course2.quiz.displayName).click()
-    cy.findByText(this.data.NR.content).should('exist')
+    cy.findByText(this.data.course2.quiz.displayName).should('exist').click()
+    cy.findByText(this.data.NR.content, { timeout: 10000 }).should('exist')
+    cy.findByText(messages.pwa.liveQuiz.allQuestionsAnswered).should(
+      'not.exist'
+    )
 
     cy.get('[data-cy="mobile-menu-leaderboard"]').click()
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
@@ -1142,7 +1145,13 @@ describe('Different live-quiz workflows', function () {
     // make both feedbacks visible and respond to one of them (moderation enabled)
     cy.get(
       `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackDesktop}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackDesktop}"]`
     ).click()
+    cy.get(
+      `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackMobile}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackMobile}"]`
     ).click()
