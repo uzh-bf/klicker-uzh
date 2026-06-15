@@ -21,7 +21,6 @@ export const LIVE_QUIZ_RESPONSE_HEADERS = [
   'elementInstanceId',
   'elementType',
   'elementName',
-  'elementContent',
   'liveQuizId',
   'liveQuizName',
   'blockExecution',
@@ -34,7 +33,16 @@ export const LIVE_QUIZ_RESPONSE_HEADERS = [
   'correctionOnly',
   'appliedCorrectionsCount',
   'submittedAt',
+  // Type-specific flattened views of `response` so analysts avoid parsing JSON.
+  'response_choices',
+  'response_value',
+  'response_selection',
+  'response_assessment',
 ]
+
+// 0-based index of the single date column above (consumed by addSheet).
+// Full untruncated element content lives in the ELEMENT_INSTANCES sheet.
+export const LIVE_QUIZ_RESPONSE_DATE_COLUMNS = [21]
 
 type LiveQuizResponseRow = {
   id: number
@@ -117,6 +125,47 @@ export async function fetchLiveQuizResponses(
   }) as Promise<LiveQuizResponseRow[]>
 }
 
+function flattenChoices(resp: SingleQuestionResponseLiveQuiz | null): string {
+  if (resp != null && 'choices' in resp) {
+    return resp.choices
+      .filter((c) => c.selected)
+      .map((c) => c.ix)
+      .join(',')
+  }
+  return ''
+}
+
+function flattenValue(
+  resp: SingleQuestionResponseLiveQuiz | null,
+  elementType: ElementType,
+  ctx: PiiContext
+): string {
+  if (resp != null && 'value' in resp) {
+    // Free-text answers can carry PII; gate them behind pseudonymize mode.
+    if (elementType === 'FREE_TEXT' && ctx.mode === 'pseudonymize') {
+      return '[redacted]'
+    }
+    return resp.value
+  }
+  return ''
+}
+
+function flattenSelection(resp: SingleQuestionResponseLiveQuiz | null): string {
+  if (resp != null && 'selection' in resp) {
+    return resp.selection.join(',')
+  }
+  return ''
+}
+
+function flattenAssessment(
+  resp: SingleQuestionResponseLiveQuiz | null
+): string {
+  if (resp != null && 'assessment' in resp) {
+    return JSON.stringify(resp.assessment)
+  }
+  return ''
+}
+
 export function transformLiveQuizResponse(
   row: LiveQuizResponseRow,
   ctx: PiiContext = FULL_PII
@@ -141,9 +190,6 @@ export function transformLiveQuizResponse(
     row.instance.id,
     row.instance.elementType,
     elementData.name,
-    elementData.content.length > 200
-      ? elementData.content.substring(0, 200) + '...'
-      : elementData.content,
     liveQuiz?.id ?? '',
     liveQuiz?.displayName ?? liveQuiz?.name ?? '',
     row.elementBlockExecution,
@@ -160,5 +206,9 @@ export function transformLiveQuizResponse(
     row.correctionOnly,
     row._count.appliedCorrections,
     row.submittedAt.toISOString(),
+    flattenChoices(row.response),
+    flattenValue(row.response, row.instance.elementType, ctx),
+    flattenSelection(row.response),
+    flattenAssessment(row.response),
   ]
 }

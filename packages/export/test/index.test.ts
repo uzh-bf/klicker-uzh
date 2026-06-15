@@ -10,11 +10,19 @@ import { CliUsageError, parseExportCourseArgs } from '../src/cli.js'
 import { transformCorrection } from '../src/corrections.js'
 import { writeCsv } from '../src/csv.js'
 import {
+  ELEMENT_INSTANCE_HEADERS,
+  transformElementInstance,
+} from '../src/elementInstances.js'
+import {
   type CourseExportResult,
   writeCombinedWorkbook,
 } from '../src/exportCourse.js'
 import { transformInvitation } from '../src/invitations.js'
-import { transformLiveQuizResponse } from '../src/liveQuizResponses.js'
+import {
+  LIVE_QUIZ_RESPONSE_HEADERS,
+  transformLiveQuizResponse,
+} from '../src/liveQuizResponses.js'
+import { LIVE_QUIZ_HEADERS, transformLiveQuiz } from '../src/liveQuizzes.js'
 import { transformParticipant } from '../src/participants.js'
 import { makePiiSalt, pseudonymize } from '../src/pii.js'
 
@@ -41,12 +49,16 @@ function createCourseExportResult(courseName: string): CourseExportResult {
       participants: 0,
       invitations: 0,
       corrections: 0,
+      liveQuizzes: 0,
+      elementInstances: 0,
     },
     data: {
       liveQuizRows: [],
       participantRows: [],
       invitationRows: [],
       correctionRows: [],
+      liveQuizDimRows: [],
+      elementInstanceRows: [],
     },
   }
 }
@@ -106,8 +118,10 @@ describe('@klicker-uzh/export', () => {
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.readFile(outputPath)
 
-    expect(workbook.worksheets).toHaveLength(8)
-    expect(new Set(workbook.worksheets.map((sheet) => sheet.name)).size).toBe(8)
+    expect(workbook.worksheets).toHaveLength(12)
+    expect(new Set(workbook.worksheets.map((sheet) => sheet.name)).size).toBe(
+      12
+    )
   })
 
   it('writes distinct combined workbook sheet names for case-only collisions', async () => {
@@ -121,10 +135,10 @@ describe('@klicker-uzh/export', () => {
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.readFile(outputPath)
 
-    expect(workbook.worksheets).toHaveLength(8)
+    expect(workbook.worksheets).toHaveLength(12)
     expect(
       new Set(workbook.worksheets.map((sheet) => sheet.name.toLowerCase())).size
-    ).toBe(8)
+    ).toBe(12)
   })
 
   it('prefers the primary participant account over array order when exporting participants', () => {
@@ -340,7 +354,7 @@ describe('@klicker-uzh/export', () => {
     } as unknown as Parameters<typeof transformLiveQuizResponse>[0]
     const rRow = transformLiveQuizResponse(response, ctx)
     expect(rRow[6]).toMatch(/^[0-9a-f]{16}$/) // email hashed (index 6)
-    expect(rRow[14]).toBe('[redacted]') // response JSON redacted (index 14)
+    expect(rRow[13]).toBe('[redacted]') // response JSON redacted (index 13)
 
     const correction = {
       id: 555,
@@ -368,6 +382,128 @@ describe('@klicker-uzh/export', () => {
     const cRow = transformCorrection(correction, ctx)
     expect(cRow[4]).toMatch(/^[0-9a-f]{16}$/) // email hashed
     expect(cRow[11]).toBe('[redacted]') // studentReason redacted
+  })
+
+  it('flattens type-specific answers and drops the truncated content column', () => {
+    expect(LIVE_QUIZ_RESPONSE_HEADERS).not.toContain('elementContent')
+    expect(LIVE_QUIZ_RESPONSE_HEADERS.slice(-4)).toEqual([
+      'response_choices',
+      'response_value',
+      'response_selection',
+      'response_assessment',
+    ])
+
+    const base = {
+      id: 1,
+      correctness: 'CORRECT',
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      submittedAt: new Date('2026-01-02T03:04:05.000Z'),
+      correctionOnly: false,
+      elementBlockExecution: 0,
+      participant: { id: 'p', email: null },
+      instance: {
+        id: 1,
+        order: 0,
+        elementId: 1,
+        elementType: 'SC',
+        elementData: { name: 'n', content: 'c' },
+        elementBlock: {
+          id: 1,
+          order: 0,
+          liveQuiz: { id: 'lq', name: 'q', displayName: null },
+        },
+      },
+      _count: { appliedCorrections: 0 },
+    }
+
+    const choices = transformLiveQuizResponse({
+      ...base,
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 2, selected: true },
+          { ix: 3, selected: true },
+        ],
+      },
+    } as unknown as Parameters<typeof transformLiveQuizResponse>[0])
+    expect(choices).toHaveLength(LIVE_QUIZ_RESPONSE_HEADERS.length)
+    expect(choices[22]).toBe('2,3') // response_choices: selected ix only
+
+    const numerical = transformLiveQuizResponse({
+      ...base,
+      instance: { ...base.instance, elementType: 'NUMERICAL' },
+      response: { value: '42' },
+    } as unknown as Parameters<typeof transformLiveQuizResponse>[0])
+    expect(numerical[23]).toBe('42') // response_value
+
+    const selection = transformLiveQuizResponse({
+      ...base,
+      instance: { ...base.instance, elementType: 'SELECTION' },
+      response: { selection: [1, 4, 5] },
+    } as unknown as Parameters<typeof transformLiveQuizResponse>[0])
+    expect(selection[24]).toBe('1,4,5') // response_selection
+  })
+
+  it('exports live quizzes and element instances with full untruncated content', () => {
+    const quiz = {
+      id: 'lq-1',
+      name: 'Quiz',
+      displayName: 'Quiz Display',
+      status: 'PUBLISHED',
+      isAssessmentEnabled: true,
+      isGamificationEnabled: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      maxBonusPoints: 45,
+      pointsMultiplier: 1,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+    } as unknown as Parameters<typeof transformLiveQuiz>[0]
+    expect(transformLiveQuiz(quiz)).toHaveLength(LIVE_QUIZ_HEADERS.length)
+
+    const longContent = 'x'.repeat(250)
+    const instance = {
+      id: 7,
+      order: 2,
+      elementId: 99,
+      elementType: 'SC',
+      elementData: {
+        name: 'Element',
+        content: longContent,
+        options: { choices: [{ ix: 0, value: 'a', correct: true }] },
+      },
+      options: { basePoints: false, pointsMultiplier: 3 },
+      isVersionOutdated: false,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      elementBlock: {
+        id: 5,
+        order: 1,
+        liveQuiz: { id: 'lq-1', name: 'Quiz', displayName: null },
+      },
+    } as unknown as Parameters<typeof transformElementInstance>[0]
+    const out = transformElementInstance(instance)
+    expect(out).toHaveLength(ELEMENT_INSTANCE_HEADERS.length)
+    expect(out[9]).toBe(longContent) // elementContent untruncated (250 chars)
+    expect(out[10]).toBe(false) // instanceBasePointsEnabled
+    expect(out[11]).toBe(3) // instancePointsMultiplier
+  })
+
+  it('freezes the header row and enables filters on workbook sheets', async () => {
+    const outputDir = await createTempDir()
+    const outputPath = await writeCombinedWorkbook(
+      [createCourseExportResult('Course A 2026')],
+      outputDir
+    )
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.readFile(outputPath)
+    for (const sheet of workbook.worksheets) {
+      expect(sheet.views?.[0]?.state).toBe('frozen')
+      expect(sheet.autoFilter).toBeTruthy()
+    }
   })
 
   it('writes CSV files with owner-only (0600) permissions', async () => {

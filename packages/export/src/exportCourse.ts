@@ -12,20 +12,38 @@ import {
 } from './corrections.js'
 import { writeCsv } from './csv.js'
 import {
+  ELEMENT_INSTANCE_DATE_COLUMNS,
+  ELEMENT_INSTANCE_HEADERS,
+  fetchElementInstances,
+  transformElementInstance,
+} from './elementInstances.js'
+import {
   INVITATION_HEADERS,
   fetchInvitations,
   transformInvitation,
 } from './invitations.js'
 import {
+  LIVE_QUIZ_RESPONSE_DATE_COLUMNS,
   LIVE_QUIZ_RESPONSE_HEADERS,
   fetchLiveQuizResponses,
   transformLiveQuizResponse,
 } from './liveQuizResponses.js'
 import {
+  LIVE_QUIZ_DATE_COLUMNS,
+  LIVE_QUIZ_HEADERS,
+  fetchLiveQuizzes,
+  transformLiveQuiz,
+} from './liveQuizzes.js'
+import {
   PARTICIPANT_HEADERS,
   fetchParticipants,
   transformParticipant,
 } from './participants.js'
+
+// 0-based date-column indices for sheets whose headers live in this file's flow.
+const PARTICIPANT_DATE_COLUMNS = [3, 7]
+const INVITATION_DATE_COLUMNS = [4, 5]
+const CORRECTION_DATE_COLUMNS = [18]
 
 export interface ExportOptions {
   /** `full` (default) writes identifiers verbatim; `pseudonymize` hashes them. */
@@ -42,12 +60,16 @@ export interface CourseExportResult {
     participants: number
     invitations: number
     corrections: number
+    liveQuizzes: number
+    elementInstances: number
   }
   data: {
     liveQuizRows: unknown[][]
     participantRows: unknown[][]
     invitationRows: unknown[][]
     correctionRows: unknown[][]
+    liveQuizDimRows: unknown[][]
+    elementInstanceRows: unknown[][]
   }
 }
 
@@ -121,13 +143,21 @@ export async function exportCourseData(
 
   console.log(`Exporting course "${courseName}" (${course.id})...`)
 
-  const [liveQuizResponses, participants, invitations, corrections] =
-    await Promise.all([
-      fetchLiveQuizResponses(prisma, courseId),
-      fetchParticipants(prisma, courseId),
-      fetchInvitations(prisma, courseId),
-      fetchCorrections(prisma, courseId),
-    ])
+  const [
+    liveQuizResponses,
+    participants,
+    invitations,
+    corrections,
+    liveQuizzes,
+    elementInstances,
+  ] = await Promise.all([
+    fetchLiveQuizResponses(prisma, courseId),
+    fetchParticipants(prisma, courseId),
+    fetchInvitations(prisma, courseId),
+    fetchCorrections(prisma, courseId),
+    fetchLiveQuizzes(prisma, courseId),
+    fetchElementInstances(prisma, courseId),
+  ])
 
   const liveQuizRows = liveQuizResponses.map((r) =>
     transformLiveQuizResponse(r, piiCtx)
@@ -137,6 +167,9 @@ export async function exportCourseData(
   )
   const invitationRows = invitations.map((r) => transformInvitation(r, piiCtx))
   const correctionRows = corrections.map((r) => transformCorrection(r, piiCtx))
+  // Dimension sheets carry no participant PII, so they need no pii context.
+  const liveQuizDimRows = liveQuizzes.map(transformLiveQuiz)
+  const elementInstanceRows = elementInstances.map(transformElementInstance)
 
   // Write CSVs (created 0600; chmod backstop below in case of a permissive umask)
   const csvFiles = [
@@ -144,6 +177,8 @@ export async function exportCourseData(
     'participants.csv',
     'invitations.csv',
     'corrections.csv',
+    'live_quizzes.csv',
+    'element_instances.csv',
   ]
   await Promise.all([
     writeCsv(
@@ -166,17 +201,65 @@ export async function exportCourseData(
       CORRECTION_HEADERS,
       correctionRows
     ),
+    writeCsv(
+      join(outputPath, 'live_quizzes.csv'),
+      LIVE_QUIZ_HEADERS,
+      liveQuizDimRows
+    ),
+    writeCsv(
+      join(outputPath, 'element_instances.csv'),
+      ELEMENT_INSTANCE_HEADERS,
+      elementInstanceRows
+    ),
   ])
   for (const f of csvFiles) {
     chmodSync(join(outputPath, f), 0o600)
   }
 
-  // Write XLSX workbook
+  // Write XLSX workbook (RESPONSES stays the primary tab; dimensions trail)
   const workbook = new ExcelJS.Workbook()
-  addSheet(workbook, 'RESPONSES', LIVE_QUIZ_RESPONSE_HEADERS, liveQuizRows)
-  addSheet(workbook, 'PARTICIPANTS', PARTICIPANT_HEADERS, participantRows)
-  addSheet(workbook, 'INVITATIONS', INVITATION_HEADERS, invitationRows)
-  addSheet(workbook, 'CORRECTIONS', CORRECTION_HEADERS, correctionRows)
+  addSheet(
+    workbook,
+    'RESPONSES',
+    LIVE_QUIZ_RESPONSE_HEADERS,
+    liveQuizRows,
+    LIVE_QUIZ_RESPONSE_DATE_COLUMNS
+  )
+  addSheet(
+    workbook,
+    'PARTICIPANTS',
+    PARTICIPANT_HEADERS,
+    participantRows,
+    PARTICIPANT_DATE_COLUMNS
+  )
+  addSheet(
+    workbook,
+    'INVITATIONS',
+    INVITATION_HEADERS,
+    invitationRows,
+    INVITATION_DATE_COLUMNS
+  )
+  addSheet(
+    workbook,
+    'CORRECTIONS',
+    CORRECTION_HEADERS,
+    correctionRows,
+    CORRECTION_DATE_COLUMNS
+  )
+  addSheet(
+    workbook,
+    'LIVE_QUIZZES',
+    LIVE_QUIZ_HEADERS,
+    liveQuizDimRows,
+    LIVE_QUIZ_DATE_COLUMNS
+  )
+  addSheet(
+    workbook,
+    'ELEMENT_INSTANCES',
+    ELEMENT_INSTANCE_HEADERS,
+    elementInstanceRows,
+    ELEMENT_INSTANCE_DATE_COLUMNS
+  )
   const xlsxPath = join(outputPath, 'export.xlsx')
   await workbook.xlsx.writeFile(xlsxPath)
   chmodSync(xlsxPath, 0o600)
@@ -186,17 +269,26 @@ export async function exportCourseData(
     participants: participants.length,
     invitations: invitations.length,
     corrections: corrections.length,
+    liveQuizzes: liveQuizzes.length,
+    elementInstances: elementInstances.length,
   }
 
   console.log(
-    `Wrote ${counts.liveQuizResponses} responses, ${counts.participants} participants, ${counts.invitations} invitations, ${counts.corrections} corrections`
+    `Wrote ${counts.liveQuizResponses} responses, ${counts.participants} participants, ${counts.invitations} invitations, ${counts.corrections} corrections, ${counts.liveQuizzes} live quizzes, ${counts.elementInstances} element instances`
   )
 
   return {
     outputPath,
     courseName,
     counts,
-    data: { liveQuizRows, participantRows, invitationRows, correctionRows },
+    data: {
+      liveQuizRows,
+      participantRows,
+      invitationRows,
+      correctionRows,
+      liveQuizDimRows,
+      elementInstanceRows,
+    },
   }
 }
 
@@ -212,25 +304,43 @@ export async function writeCombinedWorkbook(
       workbook,
       createUniqueSheetName(usedSheetNames, result.courseName, 'RESP'),
       LIVE_QUIZ_RESPONSE_HEADERS,
-      result.data.liveQuizRows
+      result.data.liveQuizRows,
+      LIVE_QUIZ_RESPONSE_DATE_COLUMNS
     )
     addSheet(
       workbook,
       createUniqueSheetName(usedSheetNames, result.courseName, 'PART'),
       PARTICIPANT_HEADERS,
-      result.data.participantRows
+      result.data.participantRows,
+      PARTICIPANT_DATE_COLUMNS
     )
     addSheet(
       workbook,
       createUniqueSheetName(usedSheetNames, result.courseName, 'INV'),
       INVITATION_HEADERS,
-      result.data.invitationRows
+      result.data.invitationRows,
+      INVITATION_DATE_COLUMNS
     )
     addSheet(
       workbook,
       createUniqueSheetName(usedSheetNames, result.courseName, 'CORR'),
       CORRECTION_HEADERS,
-      result.data.correctionRows
+      result.data.correctionRows,
+      CORRECTION_DATE_COLUMNS
+    )
+    addSheet(
+      workbook,
+      createUniqueSheetName(usedSheetNames, result.courseName, 'LQ'),
+      LIVE_QUIZ_HEADERS,
+      result.data.liveQuizDimRows,
+      LIVE_QUIZ_DATE_COLUMNS
+    )
+    addSheet(
+      workbook,
+      createUniqueSheetName(usedSheetNames, result.courseName, 'EI'),
+      ELEMENT_INSTANCE_HEADERS,
+      result.data.elementInstanceRows,
+      ELEMENT_INSTANCE_DATE_COLUMNS
     )
   }
 
@@ -244,7 +354,8 @@ function addSheet(
   workbook: ExcelJS.Workbook,
   sheetName: string,
   headers: string[],
-  rows: unknown[][]
+  rows: unknown[][],
+  dateColumnIndices: number[] = []
 ) {
   const sheet = workbook.addWorksheet(sheetName)
   sheet.columns = headers.map((header) => ({
@@ -252,7 +363,29 @@ function addSheet(
     key: header,
     width: Math.max(header.length + 2, 15),
   }))
+
+  const dateCols = new Set(dateColumnIndices)
+  for (const idx of dateColumnIndices) {
+    sheet.getColumn(idx + 1).numFmt = 'yyyy-mm-dd hh:mm:ss'
+  }
+
   for (const row of rows) {
-    sheet.addRow(row)
+    // Convert ISO date strings to Date objects for the configured columns so
+    // Excel treats them as real dates; the CSV path keeps the ISO strings.
+    const mapped = dateCols.size
+      ? row.map((value, i) =>
+          dateCols.has(i) && typeof value === 'string' && value !== ''
+            ? new Date(value)
+            : value
+        )
+      : row
+    sheet.addRow(mapped)
+  }
+
+  // Freeze the header row and enable per-column filtering.
+  sheet.views = [{ state: 'frozen', ySplit: 1 }]
+  sheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: headers.length },
   }
 }
