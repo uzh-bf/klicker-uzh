@@ -46,6 +46,8 @@ dumps/**/*.dump.gpg
 # Temporary files
 *.tmp
 *.log
+NOCOMMIT*
+20??-??-??_chatbot*.csv
 
 # Environment-specific files
 .env.*
