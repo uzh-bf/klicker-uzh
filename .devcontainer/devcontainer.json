@@ -1,0 +1,28 @@
+{
+  "name": "klicker-uzh",
+  "dockerComposeFile": ["docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces/klicker-uzh",
+  "overrideCommand": false,
+  "runServices": [
+    "app",
+    "postgres",
+    "redis_exec",
+    "redis_assessment",
+    "redis_cache",
+    "mailhog",
+    "hatchet",
+    "hatchet_token"
+  ],
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma"
+      ]
+    }
+  }
+}

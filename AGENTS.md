@@ -144,6 +144,28 @@ Prisma schema is split across multiple files in `packages/prisma/src/prisma/sche
 
 ## Local Dev Setup
 
+### Self-contained devcontainer (recommended)
+
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 20 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+
+```bash
+devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
+devpod ssh klicker-uzh # shell inside the container
+```
+
+The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. Phase 1 covers the core apps (backend, auth, frontend-pwa/manage/control); see `.devcontainer/README.md`.
+
+**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.21) fronts the stack over the shared `devnet` network and routes each `*.klicker.localhost` host to the one container's internal port. One-time host setup **before** the container starts:
+
+```bash
+dev up && dev tls install                                       # Traefik + devnet + mkcert CA
+for a in api auth pwa manage control db; do dev app run "$a"; done
+```
+
+Apps at `https://{api,auth,pwa,manage,control}.klicker.localhost`; Postgres for host tooling at `db.klicker.localhost:5432` (`sslmode=require sslnegotiation=direct`). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+
+### Legacy host-based stack
+
 Local dev uses Traefik reverse proxy with `*.klicker.com` custom domains (requires `/etc/hosts` entries + mkcert certs). Docker Compose runs PostgreSQL, Redis, Traefik, and Hatchet-lite.
 
 | URL                                         | App                          | Port |

@@ -54,3 +54,6 @@ dumps/**/*.dump.gpg
 /apps/docs/docs/.obsidian/
 
 .claude/worktrees
+
+# Devcontainer: runtime-minted Hatchet client token (post-create writes it)
+.devcontainer/.hatchet.env
