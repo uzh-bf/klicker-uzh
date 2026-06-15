@@ -26,6 +26,7 @@ import { LIVE_QUIZ_HEADERS, transformLiveQuiz } from '../src/liveQuizzes.js'
 import { computeSha256, writeManifest } from '../src/manifest.js'
 import { transformParticipant } from '../src/participants.js'
 import { makePiiSalt, pseudonymize } from '../src/pii.js'
+import { createReadonlyClient } from '../src/readonlyPrisma.js'
 
 const tempDirs: string[] = []
 
@@ -104,6 +105,46 @@ describe('@klicker-uzh/export', () => {
       CliUsageError
     )
     expect(() => parseExportCourseArgs(['--unknown'])).toThrow(CliUsageError)
+  })
+
+  it('read-only client allows reads but blocks model writes and raw queries', async () => {
+    let intercept:
+      | ((p: {
+          operation: string
+          args: unknown
+          query: (a: unknown) => Promise<unknown>
+        }) => Promise<unknown>)
+      | undefined
+    const fakePrisma = {
+      $extends: (ext: {
+        query: { $allOperations: NonNullable<typeof intercept> }
+      }) => {
+        intercept = ext.query.$allOperations
+        return {}
+      },
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    createReadonlyClient(fakePrisma as any)
+    const run = (operation: string) =>
+      intercept!({ operation, args: {}, query: async () => 'ok' })
+
+    await expect(run('findMany')).resolves.toBe('ok')
+    await expect(run('findUniqueOrThrow')).resolves.toBe('ok')
+    await expect(run('count')).resolves.toBe('ok')
+    await expect(run('create')).rejects.toThrow('Write blocked')
+    await expect(run('deleteMany')).rejects.toThrow('Write blocked')
+    await expect(run('$queryRaw')).rejects.toThrow('Write blocked')
+    await expect(run('$executeRaw')).rejects.toThrow('Write blocked')
+  })
+
+  it('locks the combined workbook dir to 0700 and file to 0600', async () => {
+    const outputDir = await createTempDir()
+    const outputPath = await writeCombinedWorkbook(
+      [createCourseExportResult('Course A 2026')],
+      outputDir
+    )
+    expect(statSync(outputPath).mode & 0o777).toBe(0o600)
+    expect(statSync(outputDir).mode & 0o777).toBe(0o700)
   })
 
   it('writes distinct combined workbook sheet names for colliding course prefixes', async () => {

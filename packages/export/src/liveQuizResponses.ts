@@ -169,6 +169,9 @@ function flattenSelection(resp: SingleQuestionResponseLiveQuiz | null): string {
   return ''
 }
 
+// CASE_STUDY assessment is criterion IDs + numeric scores only (structural,
+// not personal data), so it is emitted verbatim even in pseudonymize mode. If
+// the assessment object ever gains a free-text field, gate it on `ctx` here.
 function flattenAssessment(
   resp: SingleQuestionResponseLiveQuiz | null
 ): string {

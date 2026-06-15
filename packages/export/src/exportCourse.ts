@@ -368,6 +368,12 @@ export async function writeCombinedWorkbook(
     )
   }
 
+  // The combined workbook sits directly in outputDir (not a per-course 0700
+  // subdir), so lock outputDir to owner-only first. That closes the umask
+  // window between writeFile (default mode) and the chmod backstop below.
+  mkdirSync(outputDir, { recursive: true, mode: 0o700 })
+  chmodSync(outputDir, 0o700)
+
   const outputPath = join(outputDir, 'combined-export.xlsx')
   await workbook.xlsx.writeFile(outputPath)
   chmodSync(outputPath, 0o600)

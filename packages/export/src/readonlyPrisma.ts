@@ -44,15 +44,17 @@ const ALLOWED_OPERATIONS = new Set([
 export function createReadonlyClient(
   prisma: PrismaClient
 ): ReadonlyPrismaClient {
+  // Top-level $allOperations intercepts BOTH model operations and top-level
+  // raw queries ($queryRaw/$executeRaw/$queryRawUnsafe/$executeRawUnsafe), so
+  // raw writes (and raw reads, which could mutate) are blocked too — not just
+  // model-level writes. Only the read operations in ALLOWED_OPERATIONS pass.
   return prisma.$extends({
     query: {
-      $allModels: {
-        async $allOperations({ operation, query, args }) {
-          if (!ALLOWED_OPERATIONS.has(operation)) {
-            throw new Error(`${WRITE_BLOCKED_MSG} (attempted: ${operation})`)
-          }
-          return query(args)
-        },
+      async $allOperations({ operation, query, args }) {
+        if (!ALLOWED_OPERATIONS.has(operation)) {
+          throw new Error(`${WRITE_BLOCKED_MSG} (attempted: ${operation})`)
+        }
+        return query(args)
       },
     },
   }) as unknown as ReadonlyPrismaClient
