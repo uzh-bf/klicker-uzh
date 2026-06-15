@@ -251,3 +251,22 @@ MCP `doc_query`, an image attachment, credits decrement, thread reload) and the
 §4.3 streaming / §4.4 multi-turn checks via `agent-browser`, then §4.5 (convert
 the prototype `check-*.ts` assertions into integration tests against the running
 service). Flag off → confirm the legacy path is unchanged (§7).
+
+## 12. Final security review (Phase 2–3 diff)
+
+Adversarial review of `6e2ac0faa..HEAD` (5 dimensions × 3 refute-by-default
+verifiers). 8 raw findings → 3 confirmed (3/3 each); 5 rejected.
+
+| # | Severity | Issue | Origin | Disposition |
+| --- | --- | --- | --- | --- |
+| 1 | High | Concurrent credit-decrement race: `atomicDecrementCredits` reads-then-writes under ReadCommitted with no row lock, so simultaneous requests converge to one decrement | **Pre-existing** — byte-identical to `apps/chat/src/utils/transactions.ts` in production | Flagged (task chip `task_c4c2931c`); fix the live route + the chat-api copy, not buried here |
+| 2 | Medium | `imageDescriptionCost` not charged on early abort (`if (hasUsage)` gates it; abort before first step → image cost lost) | **Pre-existing** — identical `onAbort` gating in the legacy route (`route.ts:1480`) | Flagged (task chip `task_f711d01f`) |
+| 3 | Medium | No HTTP body-size limit on the new Hono service — `c.req.json()` buffers unbounded | **Net-new**: legacy gets an implicit platform cap; Hono has none | **Fixed** (`b45cd6e5c`): `hono/body-limit` 32 MB → 413; runtime-verified |
+
+Rejected (≤1/3): JWT alg-not-pinned and issuer-not-validated (HS256/jose
+verification adequate for the shared-secret model), `CHAT_API_BASE_URL` SSRF
+(operator-set env, not attacker-controlled; `chatbotId` is `encodeURIComponent`'d),
+verbatim response-header forwarding, proxy double-buffering.
+
+Net: the only diff-introduced security gap (body limit) is fixed; the two
+confirmed credit issues are pre-existing production bugs to fix at the source.
