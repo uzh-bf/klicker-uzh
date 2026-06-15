@@ -57,6 +57,13 @@ http:
       middlewares:
         - 'csp-frame-ancestors'
 
+    chat-api:
+      rule: 'Host(`chat-api.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'chat-api'
+
     auth:
       rule: 'Host(`auth.klicker.com`)'
       entrypoints:
@@ -109,6 +116,11 @@ http:
       loadBalancer:
         servers:
           - url: 'http://172.25.8.0:3004'
+
+    chat-api:
+      loadBalancer:
+        servers:
+          - url: 'http://172.25.8.0:3005'
 
     auth:
       loadBalancer:

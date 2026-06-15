@@ -84,7 +84,9 @@
     "UPSTREAM_OPENAI_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
-    "LANGFUSE_HOST"
+    "LANGFUSE_HOST",
+    "CHAT_USE_MASTRA_ENGINE",
+    "CHAT_API_BASE_URL"
   ],
   "tasks": {
     "lint": {
