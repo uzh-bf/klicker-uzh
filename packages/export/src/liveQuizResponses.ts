@@ -10,6 +10,11 @@ import type {
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const LIVE_QUIZ_RESPONSE_HEADERS = [
+  'liveQuizResponseId',
+  'elementBlockId',
+  'elementBlockOrder',
+  'instanceOrder',
+  'elementId',
   'participantId',
   'email',
   'elementInstanceId',
@@ -43,9 +48,13 @@ type LiveQuizResponseRow = {
   participant: { id: string; email: string | null }
   instance: {
     id: number
+    order: number
+    elementId: number
     elementType: ElementType
     elementData: ElementData
     elementBlock: {
+      id: number
+      order: number
       liveQuiz: { id: string; name: string; displayName: string | null }
     } | null
   }
@@ -80,10 +89,14 @@ export async function fetchLiveQuizResponses(
       instance: {
         select: {
           id: true,
+          order: true,
+          elementId: true,
           elementType: true,
           elementData: true,
           elementBlock: {
             select: {
+              id: true,
+              order: true,
               liveQuiz: {
                 select: { id: true, name: true, displayName: true },
               },
@@ -114,6 +127,11 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
   const totalPoints = basePoints + correctnessPoints + bonusPoints
 
   return [
+    row.id,
+    block?.id ?? '',
+    block?.order ?? '',
+    row.instance.order,
+    row.instance.elementId,
     row.participant.id,
     row.participant.email ?? '',
     row.instance.id,

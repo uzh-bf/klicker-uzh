@@ -5,6 +5,8 @@ import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const CORRECTION_HEADERS = [
   'correctionId',
+  'liveQuizResponseId',
+  'elementBlockExecution',
   'participantId',
   'email',
   'liveQuizId',
@@ -38,6 +40,8 @@ type CorrectionRow = {
     studentReason: string
   }
   response: {
+    id: number
+    elementBlockExecution: number
     participant: { id: string; email: string | null }
     instance: {
       id: number
@@ -81,6 +85,8 @@ export async function fetchCorrections(
       },
       response: {
         select: {
+          id: true,
+          elementBlockExecution: true,
           participant: {
             select: { id: true, email: true },
           },
@@ -110,6 +116,8 @@ export function transformCorrection(row: CorrectionRow): unknown[] {
 
   return [
     row.id,
+    row.response.id,
+    row.response.elementBlockExecution,
     row.response.participant.id,
     row.response.participant.email ?? '',
     liveQuiz?.id ?? '',
