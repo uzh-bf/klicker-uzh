@@ -201,8 +201,8 @@ Non-obvious patterns, per-area gotchas, and architectural decisions are collecte
 
 ## AI Assistance (Skills)
 
-Skills live in `.factory/skills/` (mirrored to `.github/skills/`; `.claude/skills` symlinks to `.factory/skills/`, so Claude Code stays in sync).
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync.
 
-- **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.factory/skills/agent-browser/SKILL.md](.factory/skills/agent-browser/SKILL.md).
-- **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.factory/skills/web-design-guidelines/SKILL.md)).
-- **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.factory/skills/vercel-react-best-practices/SKILL.md)).
+- **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
+- **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
+- **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).
