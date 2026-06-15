@@ -6,7 +6,7 @@
  */
 
 import { prisma } from '@klicker-uzh/prisma'
-import { Prisma } from '@klicker-uzh/prisma/client'
+import { type Prisma } from '@klicker-uzh/prisma/client'
 
 /**
  * Execute a function within a Prisma transaction with retry logic
