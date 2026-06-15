@@ -186,10 +186,7 @@ export function transformLiveQuizResponse(
   const liveQuiz = block?.liveQuiz
   const elementData = row.instance.elementData
 
-  const basePoints = row.basePoints
-  const correctnessPoints = row.correctnessPoints
-  const bonusPoints = row.bonusPoints
-  const totalPoints = basePoints + correctnessPoints + bonusPoints
+  const totalPoints = row.basePoints + row.correctnessPoints + row.bonusPoints
 
   return [
     row.id,
@@ -211,9 +208,9 @@ export function transformLiveQuizResponse(
         ? JSON.stringify(row.response)
         : '',
     row.correctness,
-    basePoints,
-    correctnessPoints,
-    bonusPoints,
+    row.basePoints,
+    row.correctnessPoints,
+    row.bonusPoints,
     totalPoints,
     row.correctionOnly,
     row._count.appliedCorrections,

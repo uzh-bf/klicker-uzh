@@ -29,6 +29,7 @@ export function parseExportCourseArgs(args: string[]): {
 } {
   const courseIds: string[] = []
   let outputDir = './export-output'
+  let outputDirSet = false
   let pseudonymize = false
 
   for (let i = 0; i < args.length; i++) {
@@ -50,10 +51,11 @@ export function parseExportCourseArgs(args: string[]): {
     }
 
     if (arg === '--outputDir') {
-      if (outputDir !== './export-output') {
+      if (outputDirSet) {
         throw new CliUsageError('Duplicate --outputDir')
       }
       outputDir = readOptionValue(args, i, arg)
+      outputDirSet = true
       i++
       continue
     }

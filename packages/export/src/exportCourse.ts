@@ -389,7 +389,7 @@ function addSheet(
   }))
 
   const dateCols = new Set(dateColumnIndices)
-  for (const idx of dateColumnIndices) {
+  for (const idx of dateCols) {
     sheet.getColumn(idx + 1).numFmt = 'yyyy-mm-dd hh:mm:ss'
   }
 
