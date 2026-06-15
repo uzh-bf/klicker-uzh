@@ -10,17 +10,25 @@ import {
   exportCourseData,
   writeCombinedWorkbook,
 } from '../exportCourse.js'
+import { makePiiSalt } from '../pii.js'
 import '../prismaTypes.js'
 import { createReadonlyClient } from '../readonlyPrisma.js'
 
 const readonlyPrisma = createReadonlyClient(prisma)
 
 try {
-  const { courseIds, outputDir } = parseExportCourseArgs(process.argv.slice(2))
+  const { courseIds, outputDir, pseudonymize } = parseExportCourseArgs(
+    process.argv.slice(2)
+  )
+  // One salt for the whole run so a participant maps to the same token across courses.
+  const piiSalt = pseudonymize ? makePiiSalt() : undefined
   const results: CourseExportResult[] = []
 
   for (const courseId of courseIds) {
-    const result = await exportCourseData(readonlyPrisma, courseId, outputDir)
+    const result = await exportCourseData(readonlyPrisma, courseId, outputDir, {
+      piiMode: pseudonymize ? 'pseudonymize' : 'full',
+      piiSalt,
+    })
     console.log(`Export complete: ${result.outputPath}`)
     console.log(`  LiveQuiz responses: ${result.counts.liveQuizResponses}`)
     console.log(`  Participants: ${result.counts.participants}`)

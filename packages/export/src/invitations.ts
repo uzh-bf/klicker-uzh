@@ -1,3 +1,4 @@
+import { type PiiContext, FULL_PII, applyPii } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const INVITATION_HEADERS = [
@@ -31,11 +32,14 @@ export async function fetchInvitations(
 
 type InvitationRow = Awaited<ReturnType<typeof fetchInvitations>>[number]
 
-export function transformInvitation(row: InvitationRow): unknown[] {
+export function transformInvitation(
+  row: InvitationRow,
+  ctx: PiiContext = FULL_PII
+): unknown[] {
   return [
     row.id,
-    row.email,
-    row.matriculationNumber ?? '',
+    applyPii(row.email, ctx),
+    applyPii(row.matriculationNumber, ctx),
     row.status,
     row.invitedAt.toISOString(),
     row.acceptedAt?.toISOString() ?? '',

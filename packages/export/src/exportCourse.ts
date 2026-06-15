@@ -1,7 +1,8 @@
-import { mkdirSync } from 'node:fs'
+import { chmodSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import ExcelJS from 'exceljs'
+import { type PiiContext, type PiiMode, FULL_PII, makePiiSalt } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 import {
@@ -25,6 +26,13 @@ import {
   fetchParticipants,
   transformParticipant,
 } from './participants.js'
+
+export interface ExportOptions {
+  /** `full` (default) writes identifiers verbatim; `pseudonymize` hashes them. */
+  piiMode?: PiiMode
+  /** Optional per-run salt so identifiers stay joinable across courses in one run. */
+  piiSalt?: string
+}
 
 export interface CourseExportResult {
   outputPath: string
@@ -82,8 +90,24 @@ function createUniqueSheetName(
 export async function exportCourseData(
   prisma: ReadonlyPrismaClient,
   courseId: string,
-  outputDir: string
+  outputDir: string,
+  options: ExportOptions = {}
 ): Promise<CourseExportResult> {
+  const piiMode: PiiMode = options.piiMode ?? 'full'
+  const piiCtx: PiiContext =
+    piiMode === 'pseudonymize'
+      ? { mode: 'pseudonymize', salt: options.piiSalt ?? makePiiSalt() }
+      : FULL_PII
+
+  if (piiMode === 'full') {
+    console.warn(
+      'WARNING: export contains PII (email, sso id/email, matriculation number, free-text answers, raw response JSON). ' +
+        'Output is restricted to owner-only (0600/0700). Pass --pseudonymize to de-identify direct identifiers.'
+    )
+  } else {
+    console.log('PII mode: pseudonymize (per-run HMAC-SHA256 salt).')
+  }
+
   const course = await prisma.course.findUniqueOrThrow({
     where: { id: courseId },
     select: { id: true, name: true, displayName: true },
@@ -91,7 +115,7 @@ export async function exportCourseData(
 
   const folderName = `${sanitizeName(course.displayName || course.name)}_${course.id}`
   const outputPath = join(outputDir, folderName)
-  mkdirSync(outputPath, { recursive: true })
+  mkdirSync(outputPath, { recursive: true, mode: 0o700 })
 
   const courseName = course.displayName || course.name
 
@@ -105,12 +129,22 @@ export async function exportCourseData(
       fetchCorrections(prisma, courseId),
     ])
 
-  const liveQuizRows = liveQuizResponses.map(transformLiveQuizResponse)
-  const participantRows = participants.map(transformParticipant)
-  const invitationRows = invitations.map(transformInvitation)
-  const correctionRows = corrections.map(transformCorrection)
+  const liveQuizRows = liveQuizResponses.map((r) =>
+    transformLiveQuizResponse(r, piiCtx)
+  )
+  const participantRows = participants.map((r) =>
+    transformParticipant(r, piiCtx)
+  )
+  const invitationRows = invitations.map((r) => transformInvitation(r, piiCtx))
+  const correctionRows = corrections.map((r) => transformCorrection(r, piiCtx))
 
-  // Write CSVs
+  // Write CSVs (created 0600; chmod backstop below in case of a permissive umask)
+  const csvFiles = [
+    'responses.csv',
+    'participants.csv',
+    'invitations.csv',
+    'corrections.csv',
+  ]
   await Promise.all([
     writeCsv(
       join(outputPath, 'responses.csv'),
@@ -133,6 +167,9 @@ export async function exportCourseData(
       correctionRows
     ),
   ])
+  for (const f of csvFiles) {
+    chmodSync(join(outputPath, f), 0o600)
+  }
 
   // Write XLSX workbook
   const workbook = new ExcelJS.Workbook()
@@ -140,7 +177,9 @@ export async function exportCourseData(
   addSheet(workbook, 'PARTICIPANTS', PARTICIPANT_HEADERS, participantRows)
   addSheet(workbook, 'INVITATIONS', INVITATION_HEADERS, invitationRows)
   addSheet(workbook, 'CORRECTIONS', CORRECTION_HEADERS, correctionRows)
-  await workbook.xlsx.writeFile(join(outputPath, 'export.xlsx'))
+  const xlsxPath = join(outputPath, 'export.xlsx')
+  await workbook.xlsx.writeFile(xlsxPath)
+  chmodSync(xlsxPath, 0o600)
 
   const counts = {
     liveQuizResponses: liveQuizResponses.length,
@@ -197,6 +236,7 @@ export async function writeCombinedWorkbook(
 
   const outputPath = join(outputDir, 'combined-export.xlsx')
   await workbook.xlsx.writeFile(outputPath)
+  chmodSync(outputPath, 0o600)
   return outputPath
 }
 

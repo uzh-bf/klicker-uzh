@@ -1,3 +1,4 @@
+import { type PiiContext, FULL_PII, applyPii } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const PARTICIPANT_HEADERS = [
@@ -60,16 +61,19 @@ function pickParticipantAccount(accounts: ParticipantAccountRow[]) {
   })[0]
 }
 
-export function transformParticipant(row: ParticipationRow): unknown[] {
+export function transformParticipant(
+  row: ParticipationRow,
+  ctx: PiiContext = FULL_PII
+): unknown[] {
   const account = pickParticipantAccount(row.participant.accounts)
   return [
     row.participant.id,
-    row.participant.email ?? '',
+    applyPii(row.participant.email, ctx),
     row.isActive,
     row.createdAt.toISOString(),
     account?.ssoType ?? '',
-    account?.ssoId ?? '',
-    account?.ssoEmail ?? '',
+    applyPii(account?.ssoId, ctx),
+    applyPii(account?.ssoEmail, ctx),
     row.participant.createdAt.toISOString(),
   ]
 }

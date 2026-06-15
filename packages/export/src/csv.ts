@@ -21,7 +21,12 @@ export async function writeCsv(
   rows: unknown[][]
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const stream = createWriteStream(filePath, 'utf-8')
+    // mode 0o600 at creation time: PII-bearing files are owner-only even on
+    // hosts with a permissive umask (the chmod in exportCourse.ts is a backstop).
+    const stream = createWriteStream(filePath, {
+      encoding: 'utf-8',
+      mode: 0o600,
+    })
     stream.on('error', reject)
     stream.write(headers.map(escapeCsvValue).join(',') + '\n')
     for (const row of rows) {

@@ -1,6 +1,7 @@
 import type { PointCorrectionType } from '@klicker-uzh/prisma/client'
 import type { ElementData } from '@klicker-uzh/types'
 
+import { type PiiContext, FULL_PII, applyPii } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const CORRECTION_HEADERS = [
@@ -110,7 +111,10 @@ export async function fetchCorrections(
   }) as Promise<CorrectionRow[]>
 }
 
-export function transformCorrection(row: CorrectionRow): unknown[] {
+export function transformCorrection(
+  row: CorrectionRow,
+  ctx: PiiContext = FULL_PII
+): unknown[] {
   const liveQuiz = row.response.instance.elementBlock?.liveQuiz
   const elementData = row.response.instance.elementData
 
@@ -119,14 +123,16 @@ export function transformCorrection(row: CorrectionRow): unknown[] {
     row.response.id,
     row.response.elementBlockExecution,
     row.response.participant.id,
-    row.response.participant.email ?? '',
+    applyPii(row.response.participant.email, ctx),
     liveQuiz?.id ?? '',
     liveQuiz?.displayName ?? liveQuiz?.name ?? '',
     row.response.instance.id,
     elementData.name,
     row.pointCorrection.type,
     row.pointCorrection.reason,
-    row.pointCorrection.studentReason,
+    ctx.mode === 'pseudonymize'
+      ? '[redacted]'
+      : row.pointCorrection.studentReason,
     row.awardedBasePoints,
     row.awardedCorrectnessPoints,
     row.awardedBonusPoints,

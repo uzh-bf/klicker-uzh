@@ -7,6 +7,7 @@ import type {
   SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
 
+import { type PiiContext, FULL_PII, applyPii } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const LIVE_QUIZ_RESPONSE_HEADERS = [
@@ -116,7 +117,10 @@ export async function fetchLiveQuizResponses(
   }) as Promise<LiveQuizResponseRow[]>
 }
 
-export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
+export function transformLiveQuizResponse(
+  row: LiveQuizResponseRow,
+  ctx: PiiContext = FULL_PII
+): unknown[] {
   const block = row.instance.elementBlock
   const liveQuiz = block?.liveQuiz
   const elementData = row.instance.elementData
@@ -133,7 +137,7 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
     row.instance.order,
     row.instance.elementId,
     row.participant.id,
-    row.participant.email ?? '',
+    applyPii(row.participant.email, ctx),
     row.instance.id,
     row.instance.elementType,
     elementData.name,
@@ -143,7 +147,11 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
     liveQuiz?.id ?? '',
     liveQuiz?.displayName ?? liveQuiz?.name ?? '',
     row.elementBlockExecution,
-    row.response != null ? JSON.stringify(row.response) : '',
+    ctx.mode === 'pseudonymize'
+      ? '[redacted]'
+      : row.response != null
+        ? JSON.stringify(row.response)
+        : '',
     row.correctness,
     basePoints,
     correctnessPoints,
