@@ -4,9 +4,6 @@
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": {
-    "klicker-export": "dist/scripts/export-course.js"
-  },
   "files": [
     "dist"
   ],
@@ -42,6 +39,9 @@
   },
   "volta": {
     "extends": "../../package.json"
+  },
+  "bin": {
+    "klicker-export": "dist/scripts/export-course.js"
   },
   "type": "module"
 }
