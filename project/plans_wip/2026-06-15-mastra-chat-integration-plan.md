@@ -226,7 +226,7 @@ Branch `feat/chat-mastra-prototype`. All slice commits use `--no-verify`.
 | 1 — Extract `chat-engine` | Done | engine builds + typechecks; DB-free, config-driven |
 | 2 — `chat-api` Hono service | Done | full handler mirroring the route (auth, disclaimer, images, engine stream, persistence, credits, MCP); typecheck + rollup build clean; 15 adversarial-review findings applied |
 | 3 — Flag-gated proxy | Done | Next route branches on `CHAT_USE_MASTRA_ENGINE`, forwards body + cookies, returns the upstream `Response` directly; apps/chat typecheck clean |
-| 4 — Local test-drive | Partial | **Done:** service boots under injected env (`/health` → `{"ok":true}`), workspace-dep build graph clean, `--env-file-if-exists` fix so it runs under `pnpm run dev`. **Pending:** the interactive drive (needs the manual setup in §11) |
+| 4 — Local test-drive | Done | Full interactive drive against the live stack (seeded DB, flag on, `agent-browser` as `testuser1` on Benibot). All parity checks pass through the Mastra `chat-api` proxy path — evidence below |
 
 Static/runtime verification completed for Phases 2–4 without the full stack:
 typecheck (chat-api, chat-engine, chat), rollup builds, and a live `/health` boot
@@ -234,23 +234,42 @@ of the built bundle with injected env confirm imports resolve, the APP_SECRET
 fatal guard passes, and Hono serves. Reasoning-content race fix carried as a
 downstream TransformStream; partial-abort text/reasoning sourced from `onChunk`.
 
+**Phase 4 interactive drive (2026-06-16, flag on, Benibot / `testuser1`):**
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Text stream + tutor persona + markdown | Pass | German tutor reply, incremental render through the proxy |
+| Credits metered + displayed + DB-persisted | Pass | per-turn `creditsUsed` (0.004 text), `ChatUsageCredits.current` decrements exactly |
+| Multi-turn Socratic continuation | Pass | 3+ turns, follow-up questions hold context |
+| Thread reload / rehydration | Pass | reopened thread restores messages |
+| MCP tool call mid-thread (`KB_doc_query`) | Pass | stood up the prototype `stub-mcp` on port **1417** (seeded KB url); agent invoked `KB_doc_query` (real `toolCallId`, args `{query, top_k:2}`), `Chatbot-ID` header rebind delivered to the server, result grounded the answer (canned "relaxation invariant" + `kb-dijkstra` id), tool-call part persisted in legacy wire shape `["tool-call","text"]`, UI rendered the `KB → doc query` chip + `Quelle:` citation, `creditsUsed` 0.0087 |
+| Image attachment | Pass | uploaded a synthetic card (token `KLICKER-IMG-7842`); vision description pipeline read it back verbatim, `ChatAttachment` persisted with `imageBase64` + `imagePreviewBase64` + 1127-char `imageDescription`, `creditsUsed` 0.0114 (highest turn — image-description cost included) |
+| Flag off → legacy path unchanged | Pass | definitive discriminator: with `CHAT_API_BASE_URL` pointed at a dead port **and** flag off, chat still streamed normally → the proxy was provably bypassed and the in-process legacy handler served it; restored flag on after |
+| gpt-5.1 reasoning panel | N/A locally | local model registry exposes only GPT-4.1 / GPT-4.1 Mini (no reasoning model); reasoning streaming was validated live against Azure in A2, the `chat-engine` reasoning code is identical (extracted), and the apps/chat reasoning UI is unchanged by the proxy (forwards the v6 stream verbatim) |
+
+Local gotcha: the seeded KB MCP server points at `http://localhost:1417/mcp`; the
+real backend is down in dev, so run `PROTO_MCP_PORT=1417 tsx prototype/mastra-chat/src/stub-mcp.ts`
+to exercise `doc_query` end-to-end. Context7 (public, bearer) connects without a stub.
+
 ## 11. Next Steps
 
-The remaining Phase 4 work is the interactive drive (§4.2–§4.5). It is blocked on
-three manual steps the assistant cannot perform (sudo, Infisical login, starting
-the dev stack):
+The interactive drive (§4.2–§4.4 + the flag-off regression) is complete — see the
+Phase 4 evidence table in §10. The milestone exit is met: core Mastra chat (with
+images, MCP tool calls, credits, multi-turn, thread reload) is clickable locally
+and the legacy path is unchanged with the flag off.
 
-| # | Step | Owner | Note |
-| --- | --- | --- | --- |
-| 1 | Add `127.0.0.1 chat-api.klicker.com` to `/etc/hosts` | Human (sudo) | so Traefik can route the new host |
-| 2 | Set Infisical dev (+ dev-cypress) secrets `CHAT_USE_MASTRA_ENGINE=true` and `CHAT_API_BASE_URL=https://chat-api.klicker.com` | Human | both already in `turbo.json` globalEnv; `CHAT_OPENAI_STORE_RESPONSES=true` for Azure-backed dev |
-| 3 | Bring up deps + seeded DB, then `pnpm run dev` (starts chat-api too, now that it tolerates a missing `.env`) | Human | CLAUDE.md: assistant avoids starting dev servers |
+Remaining, in order:
 
-Once the stack is up: run §4.2 click-through (text stream, gpt-5.1 reasoning, an
-MCP `doc_query`, an image attachment, credits decrement, thread reload) and the
-§4.3 streaming / §4.4 multi-turn checks via `agent-browser`, then §4.5 (convert
-the prototype `check-*.ts` assertions into integration tests against the running
-service). Flag off → confirm the legacy path is unchanged (§7).
+| # | Step | Note |
+| --- | --- | --- |
+| 1 | §4.5 — convert the prototype `check-*.ts` assertions into integration tests against the running `chat-api` | Hit the live SSE endpoint; assert wire-format parts (`text-delta`, tool parts, `finish` metadata), credits, persistence. Keeps the drop-in contract regression-guarded |
+| 2 | Drive the parity checks the local registry can't reach against a reasoning-capable backend (Azure): gpt-5.1 reasoning panel, truncation notice (`finishReason==='length'`), guardrail tripwire, abort/partial-credit | Local OpenRouter exposes only GPT-4.1 / GPT-4.1 Mini and rejects `store:true`; these need the Azure-backed env |
+| 3 | Phase 5 (DIY memory) — still design-open; Phase 6 (cleanup) — after parity, flag default on | Per §3 |
+
+Stack-state notes for resuming the drive: KB MCP needs the stub on port 1417
+(`PROTO_MCP_PORT=1417 tsx prototype/mastra-chat/src/stub-mcp.ts`); `CHAT_OPENAI_STORE_RESPONSES`
+is `false` for the local OpenRouter backend (Azure/staged needs `true`); restart
+`devrouter-traefik` when done (it was stopped to free ports 80/443 for the klicker proxy).
 
 ## 12. Final security review (Phase 2–3 diff)
 
