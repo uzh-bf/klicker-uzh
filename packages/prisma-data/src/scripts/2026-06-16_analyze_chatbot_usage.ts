@@ -76,6 +76,7 @@ type TopicAssignment = {
   clusterLabel: string
   clusterId: string
   topTerms: string
+  clusterSimilarity: number | null
 }
 
 type TopicClusterRow = {
@@ -89,13 +90,44 @@ type TopicClusterRow = {
   lastMessageAt: Date | null
   avgUserMessageWords: number
   estimatedVisibleTokens: number
+  avgClusterSimilarity: number | null
   topTerms: string
 }
 
 type TopicTermRow = {
   chatbotId: string
+  clusterId: string
+  clusterLabel: string
   term: string
   kind: string
+  rank: number
+  score: number
+  userMessages: number
+  participants: number
+  threads: number
+}
+
+type TopicDocument = {
+  message: MessageRecord
+  weightedTerms: Map<string, number>
+  labelTerms: Map<string, number>
+  vector: Map<string, number>
+}
+
+type TopicCluster = {
+  chatbotId: string
+  clusterId: string
+  label: string
+  documents: TopicDocument[]
+  centroid: Map<string, number>
+  topTerms: ClusterTerm[]
+}
+
+type ClusterTerm = {
+  termKey: string
+  label: string
+  kind: string
+  score: number
   userMessages: number
   participants: number
   threads: number
@@ -124,26 +156,64 @@ const DEFAULT_MODEL_REGISTRY: ModelConfig[] = [
 
 const STOPWORDS = new Set([
   'aber',
+  'abschnitt',
   'about',
   'after',
   'again',
   'all',
+  'alle',
+  'aller',
+  'als',
   'also',
+  'auch',
+  'an',
+  'are',
   'and',
+  'any',
+  'anything',
   'answer',
+  'average',
   'antwort',
+  'antworten',
+  'angaben',
   'auf',
   'aufgabe',
+  'aufgaben',
   'aus',
   'bei',
   'beim',
   'beispiel',
+  'beispiele',
+  'beispielsweise',
+  'beantwor',
+  'bedeutet',
+  'bekannt',
+  'bekomme',
   'berechnen',
+  'berechnet',
+  'berechnung',
+  'berechne',
+  'berechn',
+  'berech',
+  'bestimmt',
+  'bis',
   'bitte',
+  'but',
+  'because',
+  'between',
+  'both',
   'can',
+  'chapter',
+  'che',
+  'come',
+  'con',
   'could',
+  'cosa',
   'das',
+  'darf',
   'dass',
+  'data',
+  'daten',
   'dem',
   'den',
   'der',
@@ -153,64 +223,248 @@ const STOPWORDS = new Set([
   'diese',
   'dieser',
   'dieses',
+  'different',
   'do',
   'does',
+  'don',
+  'dazu',
+  'dann',
+  'danke',
   'durch',
+  'each',
+  'ein',
   'eine',
   'einem',
   'einen',
   'einer',
   'eines',
+  'einfach',
+  'folgend',
+  'folgende',
+  'folgenden',
+  'folge',
+  'folg',
+  'gegeben',
   'erkläre',
   'erklären',
+  'erklar',
+  'erklart',
+  'erklär',
+  'erklärt',
+  'etwas',
+  'equal',
+  'every',
   'explain',
+  'exercises',
+  'falsch',
+  'for',
+  'frac',
+  'formula',
+  'formel',
+  'formeln',
   'für',
   'from',
   'frage',
   'fragen',
+  'finde',
+  'find',
+  'first',
+  'ganz',
+  'genau',
+  'genauer',
+  'gebe',
+  'geben',
+  'geht',
+  'gehen',
+  'gemacht',
+  'get',
+  'give',
   'gibt',
+  'gib',
+  'gross',
   'habe',
   'haben',
   'hat',
+  'has',
+  'have',
+  'hätte',
   'hello',
+  'heisst',
+  'heißt',
   'help',
+  'helfen',
+  'hilf',
   'hier',
+  'here',
   'how',
   'ich',
   'im',
   'in',
+  'ihnen',
+  'immer',
+  'intuitiv',
   'ist',
+  'just',
   'kann',
   'kannst',
+  'kapitel',
+  'kein',
+  'keine',
+  'keinen',
+  'klein',
+  'know',
+  'kommt',
   'können',
+  'könntest',
+  'korrekt',
+  'kurze',
+  'left',
+  'large',
+  'let',
+  'like',
+  'lös',
+  'löse',
+  'lösung',
+  'loesung',
+  'lösen',
+  'loese',
+  'mal',
+  'mathcal',
+  'mache',
   'machen',
   'man',
+  'mat',
+  'macht',
+  'mehr',
+  'meine',
+  'meinen',
+  'meiner',
+  'mir',
   'mit',
+  'more',
+  'muss',
+  'nehme',
+  'nächste',
+  'nächsten',
+  'need',
+  'nein',
   'nicht',
+  'noch',
+  'non',
+  'not',
+  'nun',
+  'nur',
+  'nummer',
+  'number',
+  'now',
   'oder',
+  'oben',
+  'okay',
+  'one',
+  'only',
+  'ora',
+  'other',
+  'per',
   'please',
+  'point',
+  'punkt',
+  'prozent',
+  'potresti',
+  'quell',
+  'quelle',
+  'quellen',
+  'quindi',
   'question',
+  'reichen',
+  'recht',
+  'right',
+  'richtig',
+  'really',
+  'sagt',
+  'seconds',
+  'sei',
+  'sein',
+  'seite',
+  'script',
   'sich',
   'sie',
   'sind',
   'so',
+  'soll',
+  'sollen',
+  'some',
+  'sorry',
+  'stimmt',
+  'sqrt',
+  'should',
+  'solution',
+  'tipp',
+  'tipps',
+  'test',
   'the',
+  'that',
+  'than',
+  'them',
+  'they',
+  'then',
+  'think',
   'this',
+  'thema',
+  'topic',
   'und',
+  'unterschied',
+  'unten',
+  'una',
   'uns',
+  'unter',
+  'understand',
+  'über',
+  'use',
+  'used',
+  'value',
+  'values',
+  'verwendet',
+  'versteh',
+  'verstehe',
+  'verstehen',
   'von',
   'was',
+  'weiss',
   'wenn',
   'wer',
   'what',
+  'which',
+  'where',
+  'why',
   'wie',
   'wieso',
+  'wichtig',
+  'wichtigsten',
   'wir',
   'with',
   'would',
+  'würde',
+  'wäre',
+  'warum',
+  'weshalb',
+  'wert',
+  'welche',
+  'welcher',
+  'welches',
+  'wird',
+  'werden',
+  'wollen',
+  'wurde',
+  'weil',
+  'wann',
+  'zwischen',
+  'zusammen',
+  'zeichen',
+  'zwei',
   'you',
   'zum',
   'zur',
+  'zurück',
 ])
 
 const chatbotSelect = {
@@ -596,324 +850,759 @@ function parseModelRegistry() {
   }
 }
 
+const TOPIC_MAX_FEATURES = 4500
+const TOPIC_CANDIDATE_NEIGHBORS = 18
+const TOPIC_GRAPH_NEIGHBORS = 8
+const TOPIC_SIMILARITY_THRESHOLD = 0.22
+const TOPIC_LABEL_ITERATIONS = 14
+
 function normalizeTermText(value: string) {
   return value
     .toLowerCase()
+    .replace(/\\"a/g, 'ä')
+    .replace(/\\"o/g, 'ö')
+    .replace(/\\"u/g, 'ü')
+    .replace(/\\"s/g, 'ss')
+    .replace(/(\p{L})"a/gu, '$1ä')
+    .replace(/(\p{L})"o/gu, '$1ö')
+    .replace(/(\p{L})"u/gu, '$1ü')
+    .replace(/(\p{L})"s/gu, '$1ss')
+    .replace(/\\([äöü])/g, '$1')
     .replace(/https?:\/\/\S+/g, ' ')
     .replace(/\S+@\S+\.\S+/g, ' ')
     .replace(/[’']/g, ' ')
+    .replace(/[^\p{L}\p{M}\s-]/gu, ' ')
+}
+
+function stemTopicToken(value: string) {
+  return value.replace(/^-+|-+$/g, '')
+}
+
+function mergeBrokenTopicTokens(tokens: string[]) {
+  const merged: string[] = []
+  const phraseMerges = new Map([
+    ['gr osse', 'grösse'],
+    ['gr ossen', 'grössen'],
+    ['gr osser', 'grösser'],
+    ['l osung', 'lösung'],
+    ['m oglich', 'möglich'],
+    ['zufallsgr osse', 'zufallsgrösse'],
+    ['zufallsgr ossen', 'zufallsgrössen'],
+    ['zufallsgr osser', 'zufallsgrösser'],
+    ['unabh angig', 'unabhängig'],
+    ['unabh angige', 'unabhängige'],
+    ['zuf allig', 'zufällig'],
+    ['wahrschein lichkeit', 'wahrscheinlichkeit'],
+    ['wahrschein lichkeiten', 'wahrscheinlichkeiten'],
+  ])
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index]
+    const next = tokens[index + 1]
+    const mergedToken =
+      token && next ? phraseMerges.get(`${token} ${next}`) : undefined
+
+    if (mergedToken) {
+      merged.push(mergedToken)
+      index += 1
+      continue
+    }
+
+    if (token) merged.push(token)
+  }
+
+  return merged
 }
 
 function tokenizeForTopics(text: string) {
-  const tokens =
-    normalizeTermText(text).match(/\p{L}[\p{L}\p{M}-]{2,31}/gu) ?? []
+  const rawTokens =
+    normalizeTermText(text).match(/\p{L}[\p{L}\p{M}-]{1,31}/gu) ?? []
+  const tokens = mergeBrokenTopicTokens(
+    rawTokens.map((token) => stemTopicToken(token))
+  )
 
-  return tokens
-    .map((token) => token.replace(/^-+|-+$/g, ''))
-    .filter((token) => {
-      if (token.length < 3 || token.length > 32) return false
-      if (STOPWORDS.has(token)) return false
-      if (/\d/.test(token)) return false
-      if (/^[-]+$/.test(token)) return false
-      return true
-    })
+  return tokens.filter((token) => {
+    if (token.length < 3 || token.length > 32) return false
+    if (STOPWORDS.has(token)) return false
+    if (/\d/.test(token)) return false
+    if (/^[-]+$/.test(token)) return false
+    return true
+  })
 }
 
-function topicTermsForMessage(text: string) {
+function topicTermsForText(text: string) {
   const tokens = tokenizeForTopics(text)
-  const terms = new Set<string>()
+  const terms: string[] = []
 
   for (const token of tokens) {
-    terms.add(`unigram:${token}`)
+    terms.push(`unigram:${token}`)
   }
 
   for (let index = 0; index < tokens.length - 1; index += 1) {
     const first = tokens[index]
     const second = tokens[index + 1]
     if (first && second && first !== second) {
-      terms.add(`bigram:${first} ${second}`)
+      terms.push(`bigram:${first} ${second}`)
     }
   }
 
-  return Array.from(terms)
+  for (let index = 0; index < tokens.length - 2; index += 1) {
+    const first = tokens[index]
+    const second = tokens[index + 1]
+    const third = tokens[index + 2]
+    if (
+      first &&
+      second &&
+      third &&
+      new Set([first, second, third]).size === 3
+    ) {
+      terms.push(`trigram:${first} ${second} ${third}`)
+    }
+  }
+
+  return terms
 }
 
 function topicLabel(termKey: string) {
-  return termKey.replace(/^(unigram|bigram):/, '')
+  return termKey.replace(/^(unigram|bigram|trigram):/, '')
 }
 
 function topicKind(termKey: string) {
+  if (termKey.startsWith('trigram:')) return 'trigram'
   return termKey.startsWith('bigram:') ? 'bigram' : 'unigram'
+}
+
+function termKindBoost(termKey: string) {
+  if (termKey.startsWith('trigram:')) return 1.65
+  if (termKey.startsWith('bigram:')) return 1.35
+  return 1
+}
+
+function termKindRank(kind: string) {
+  if (kind === 'trigram') return 3
+  if (kind === 'bigram') return 2
+  return 1
+}
+
+function addWeightedTerms(
+  target: Map<string, number>,
+  text: string,
+  weight: number
+) {
+  const counts = new Map<string, number>()
+  for (const term of topicTermsForText(text)) {
+    counts.set(term, (counts.get(term) ?? 0) + 1)
+  }
+
+  for (const [term, count] of counts.entries()) {
+    target.set(term, (target.get(term) ?? 0) + count * weight)
+  }
+}
+
+function topThreadTerms(messages: MessageRecord[]) {
+  const counts = new Map<string, number>()
+  for (const message of messages) {
+    if (message.role !== 'user') continue
+    addWeightedTerms(counts, message.text, 1)
+  }
+
+  return Array.from(counts.entries())
+    .filter(([term]) => topicKind(term) !== 'trigram')
+    .sort(
+      (a, b) => b[1] - a[1] || topicLabel(a[0]).localeCompare(topicLabel(b[0]))
+    )
+    .slice(0, 18)
+}
+
+function buildTopicDocuments(messages: MessageRecord[]) {
+  const allMessagesByThread = groupBy(messages, (message) => message.threadKey)
+  const documents: TopicDocument[] = []
+
+  for (const threadMessages of allMessagesByThread.values()) {
+    const ordered = [...threadMessages].sort(
+      (a, b) =>
+        a.messageCreatedAt.getTime() - b.messageCreatedAt.getTime() ||
+        a.messageKey.localeCompare(b.messageKey)
+    )
+    const userMessages = ordered.filter(
+      (message) => message.role === 'user' && message.text.trim().length > 0
+    )
+    const threadTerms = topThreadTerms(ordered)
+
+    for (const [userIndex, message] of userMessages.entries()) {
+      const weightedTerms = new Map<string, number>()
+      const labelTerms = new Map<string, number>()
+      addWeightedTerms(weightedTerms, message.text, 4)
+      addWeightedTerms(labelTerms, message.text, 1)
+
+      for (let offset = 1; offset <= 2; offset += 1) {
+        const previous = userMessages[userIndex - offset]
+        if (previous) {
+          addWeightedTerms(weightedTerms, previous.text, offset === 1 ? 1.8 : 1)
+        }
+      }
+
+      const next = userMessages[userIndex + 1]
+      if (next) {
+        addWeightedTerms(weightedTerms, next.text, 0.75)
+      }
+
+      const lowerBound =
+        userMessages[Math.max(0, userIndex - 2)]?.messageCreatedAt ??
+        message.messageCreatedAt
+      const upperBound =
+        userMessages[Math.min(userMessages.length - 1, userIndex + 1)]
+          ?.messageCreatedAt ?? message.messageCreatedAt
+
+      for (const nearby of ordered) {
+        if (nearby.role !== 'assistant' || nearby.text.trim().length === 0) {
+          continue
+        }
+        if (
+          nearby.messageCreatedAt.getTime() < lowerBound.getTime() ||
+          nearby.messageCreatedAt.getTime() > upperBound.getTime()
+        ) {
+          continue
+        }
+        addWeightedTerms(weightedTerms, nearby.text.slice(0, 1200), 0.05)
+      }
+
+      for (const [term, count] of threadTerms) {
+        weightedTerms.set(term, (weightedTerms.get(term) ?? 0) + count * 0.04)
+      }
+
+      documents.push({
+        message,
+        weightedTerms,
+        labelTerms,
+        vector: new Map<string, number>(),
+      })
+    }
+  }
+
+  return documents
+}
+
+function selectTopicFeatures(documents: TopicDocument[]) {
+  const documentFrequency = new Map<string, number>()
+  const totalWeight = new Map<string, number>()
+
+  for (const document of documents) {
+    for (const term of document.weightedTerms.keys()) {
+      documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1)
+    }
+    for (const [term, weight] of document.weightedTerms.entries()) {
+      totalWeight.set(term, (totalWeight.get(term) ?? 0) + weight)
+    }
+  }
+
+  const maxDocumentFrequency = Math.max(3, Math.floor(documents.length * 0.55))
+  const features = Array.from(documentFrequency.entries())
+    .filter(([, df]) => df >= 2 && df <= maxDocumentFrequency)
+    .map(([term, df]) => {
+      const idf = Math.log((documents.length + 1) / (df + 1)) + 1
+      const score =
+        idf *
+        Math.sqrt(df) *
+        Math.log1p(totalWeight.get(term) ?? 0) *
+        termKindBoost(term)
+      return { term, df, idf, score }
+    })
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        topicLabel(a.term).localeCompare(topicLabel(b.term))
+    )
+    .slice(0, TOPIC_MAX_FEATURES)
+
+  return {
+    features: new Set(features.map((feature) => feature.term)),
+    idfByTerm: new Map(features.map((feature) => [feature.term, feature.idf])),
+    documentFrequency,
+  }
+}
+
+function normalizeVector(vector: Map<string, number>) {
+  const norm = Math.sqrt(
+    Array.from(vector.values()).reduce((total, value) => total + value ** 2, 0)
+  )
+  if (norm === 0) return vector
+
+  for (const [term, value] of vector.entries()) {
+    vector.set(term, value / norm)
+  }
+  return vector
+}
+
+function vectorizeTopicDocuments(documents: TopicDocument[]) {
+  const { features, idfByTerm, documentFrequency } =
+    selectTopicFeatures(documents)
+
+  for (const document of documents) {
+    const vector = new Map<string, number>()
+
+    for (const [term, count] of document.weightedTerms.entries()) {
+      if (!features.has(term)) continue
+
+      const idf = idfByTerm.get(term) ?? 1
+      const value = Math.log1p(count) * idf * termKindBoost(term)
+      if (value > 0) {
+        vector.set(term, value)
+      }
+    }
+
+    document.vector = normalizeVector(vector)
+  }
+
+  return { documentFrequency }
+}
+
+function dotVectors(a: Map<string, number>, b: Map<string, number>) {
+  let score = 0
+  const [small, large] = a.size <= b.size ? [a, b] : [b, a]
+
+  for (const [term, value] of small.entries()) {
+    score += value * (large.get(term) ?? 0)
+  }
+
+  return score
+}
+
+function buildSimilarityGraph(documents: TopicDocument[]) {
+  const candidates = documents.map(() => new Map<number, number>())
+  const postings = new Map<string, Array<{ index: number; weight: number }>>()
+
+  for (const [index, document] of documents.entries()) {
+    const scores = new Map<number, number>()
+
+    for (const [term, weight] of document.vector.entries()) {
+      const termPostings = postings.get(term) ?? []
+      for (const posting of termPostings) {
+        scores.set(
+          posting.index,
+          (scores.get(posting.index) ?? 0) + weight * posting.weight
+        )
+      }
+    }
+
+    const topNeighbors = Array.from(scores.entries())
+      .filter(([, score]) => score >= TOPIC_SIMILARITY_THRESHOLD)
+      .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+      .slice(0, TOPIC_CANDIDATE_NEIGHBORS)
+
+    for (const [neighbor, weight] of topNeighbors) {
+      candidates[index]!.set(
+        neighbor,
+        Math.max(candidates[index]!.get(neighbor) ?? 0, weight)
+      )
+      candidates[neighbor]!.set(
+        index,
+        Math.max(candidates[neighbor]!.get(index) ?? 0, weight)
+      )
+    }
+
+    for (const [term, weight] of document.vector.entries()) {
+      const termPostings = postings.get(term) ?? []
+      termPostings.push({ index, weight })
+      postings.set(term, termPostings)
+    }
+  }
+
+  const topByDocument = candidates.map(
+    (candidate) =>
+      new Map(
+        Array.from(candidate.entries())
+          .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+          .slice(0, TOPIC_GRAPH_NEIGHBORS)
+      )
+  )
+  const edges = documents.map(() => [] as Array<{ to: number; weight: number }>)
+  const addedEdges = new Set<string>()
+
+  for (const [index, neighbors] of topByDocument.entries()) {
+    for (const [neighbor, weight] of neighbors.entries()) {
+      const from = Math.min(index, neighbor)
+      const to = Math.max(index, neighbor)
+      const edgeKey = `${from}:${to}`
+
+      if (from === to || addedEdges.has(edgeKey)) {
+        continue
+      }
+
+      const edgeWeight = Math.max(
+        weight,
+        topByDocument[neighbor]?.get(index) ?? 0
+      )
+      edges[from]!.push({ to, weight: edgeWeight })
+      edges[to]!.push({ to: from, weight: edgeWeight })
+      addedEdges.add(edgeKey)
+    }
+  }
+
+  return edges
+}
+
+function clusterLabelsWithChineseWhispers(
+  documents: TopicDocument[],
+  edges: Array<Array<{ to: number; weight: number }>>
+) {
+  const labels = documents.map((_, index) => index)
+
+  for (let iteration = 0; iteration < TOPIC_LABEL_ITERATIONS; iteration += 1) {
+    let changed = 0
+    const order = documents.map((_, index) => index)
+    if (iteration % 2 === 1) order.reverse()
+
+    for (const index of order) {
+      if (edges[index]!.length === 0) continue
+
+      const scores = new Map<number, number>([[labels[index]!, 0.08]])
+      for (const edge of edges[index]!) {
+        const label = labels[edge.to]!
+        scores.set(label, (scores.get(label) ?? 0) + edge.weight)
+      }
+
+      const [bestLabel] = Array.from(scores.entries()).sort(
+        (a, b) => b[1] - a[1] || a[0] - b[0]
+      )[0]!
+
+      if (bestLabel !== labels[index]) {
+        labels[index] = bestLabel
+        changed += 1
+      }
+    }
+
+    if (changed === 0) break
+  }
+
+  return labels
+}
+
+function centroidForDocuments(documents: TopicDocument[]) {
+  const centroid = new Map<string, number>()
+
+  for (const document of documents) {
+    for (const [term, value] of document.vector.entries()) {
+      centroid.set(term, (centroid.get(term) ?? 0) + value)
+    }
+  }
+
+  if (documents.length > 0) {
+    for (const [term, value] of centroid.entries()) {
+      centroid.set(term, value / documents.length)
+    }
+  }
+
+  return normalizeVector(centroid)
+}
+
+function clusterSimilarity(document: TopicDocument, cluster: TopicCluster) {
+  const similarity = dotVectors(document.vector, cluster.centroid)
+  return Number.isFinite(similarity) ? round(similarity, 4) : null
+}
+
+function clusterTopTerms(
+  documents: TopicDocument[],
+  centroid: Map<string, number>,
+  allDocumentFrequency: Map<string, number>,
+  totalDocuments: number
+) {
+  const clusterParticipants = new Set(
+    documents.map((document) => document.message.participantKey)
+  )
+  const minTermParticipants = Math.min(2, clusterParticipants.size)
+  const termDocuments = new Map<string, Set<string>>()
+  const termParticipants = new Map<string, Set<string>>()
+  const termThreads = new Map<string, Set<string>>()
+  const termScores = new Map<string, number>()
+
+  for (const document of documents) {
+    for (const [term, value] of document.labelTerms.entries()) {
+      const centroidWeight = centroid.get(term) ?? 0.03
+
+      termScores.set(
+        term,
+        (termScores.get(term) ?? 0) + Math.log1p(value) * centroidWeight
+      )
+      const documentKeys = termDocuments.get(term) ?? new Set<string>()
+      documentKeys.add(document.message.messageKey)
+      termDocuments.set(term, documentKeys)
+
+      const participants = termParticipants.get(term) ?? new Set<string>()
+      participants.add(document.message.participantKey)
+      termParticipants.set(term, participants)
+
+      const threads = termThreads.get(term) ?? new Set<string>()
+      threads.add(document.message.threadKey)
+      termThreads.set(term, threads)
+    }
+  }
+
+  return Array.from(termScores.entries())
+    .map(([termKey, score]) => {
+      const df = allDocumentFrequency.get(termKey) ?? 0
+      const idf = Math.log((totalDocuments + 1) / (df + 1)) + 1
+      const userMessages = termDocuments.get(termKey)?.size ?? 0
+      return {
+        termKey,
+        label: topicLabel(termKey),
+        kind: topicKind(termKey),
+        score: round(
+          (score / Math.max(documents.length, 1)) *
+            idf *
+            termKindBoost(termKey) *
+            Math.log1p(userMessages),
+          4
+        ),
+        userMessages,
+        participants: termParticipants.get(termKey)?.size ?? 0,
+        threads: termThreads.get(termKey)?.size ?? 0,
+      }
+    })
+    .filter(
+      (term) =>
+        term.userMessages >= Math.min(3, documents.length) &&
+        term.participants >= minTermParticipants
+    )
+    .sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score
+      if (a.kind !== b.kind) {
+        return termKindRank(b.kind) - termKindRank(a.kind)
+      }
+      return a.label.localeCompare(b.label)
+    })
+}
+
+function selectReadableTopicTerms(terms: ClusterTerm[], limit: number) {
+  const selected: ClusterTerm[] = []
+
+  for (const term of terms) {
+    if (
+      selected.some(
+        (existing) =>
+          existing.label.includes(term.label) ||
+          term.label.includes(existing.label)
+      )
+    ) {
+      continue
+    }
+
+    selected.push(term)
+    if (selected.length >= limit) break
+  }
+
+  return selected
 }
 
 function buildTopicAnalysis(
   messages: MessageRecord[],
   options: Pick<CliOptions, 'minTopicMessages' | 'minTopicParticipants'>
 ) {
-  const userMessages = messages.filter(
-    (message) => message.role === 'user' && message.text.trim().length > 0
+  const documentsByChatbot = groupBy(
+    buildTopicDocuments(messages),
+    (document) => document.message.chatbotId
   )
-  const termStats = new Map<
-    string,
-    {
-      chatbotId: string
-      termKey: string
-      messageKeys: Set<string>
-      participantKeys: Set<string>
-      threadKeys: Set<string>
-      count: number
-    }
-  >()
-  const termsByMessageKey = new Map<string, string[]>()
+  const assignments: TopicAssignment[] = []
+  const clusters: TopicClusterRow[] = []
+  const terms: TopicTermRow[] = []
 
-  for (const message of userMessages) {
-    const terms = topicTermsForMessage(message.text)
-    termsByMessageKey.set(message.messageKey, terms)
+  for (const [chatbotId, documents] of documentsByChatbot.entries()) {
+    if (documents.length === 0) continue
 
-    for (const term of terms) {
-      const key = `${message.chatbotId}:${term}`
-      const stats = termStats.get(key) ?? {
-        chatbotId: message.chatbotId,
-        termKey: term,
-        messageKeys: new Set<string>(),
-        participantKeys: new Set<string>(),
-        threadKeys: new Set<string>(),
-        count: 0,
-      }
-      stats.messageKeys.add(message.messageKey)
-      stats.participantKeys.add(message.participantKey)
-      stats.threadKeys.add(message.threadKey)
-      stats.count += 1
-      termStats.set(key, stats)
-    }
-  }
+    const { documentFrequency } = vectorizeTopicDocuments(documents)
+    const graph = buildSimilarityGraph(documents)
+    const labels = clusterLabelsWithChineseWhispers(documents, graph)
+    const documentsByLabel = new Map<number, TopicDocument[]>()
 
-  const eligibleTerms = Array.from(termStats.values()).filter(
-    (stats) =>
-      stats.messageKeys.size >= options.minTopicMessages &&
-      stats.participantKeys.size >= options.minTopicParticipants
-  )
-  const eligibleTermByChatbot = groupBy(
-    eligibleTerms,
-    (stats) => stats.chatbotId
-  )
-  const initialAssignments = new Map<string, string | null>()
-
-  for (const message of userMessages) {
-    const terms = new Set(termsByMessageKey.get(message.messageKey) ?? [])
-    const candidates = eligibleTermByChatbot
-      .get(message.chatbotId)
-      ?.filter((stats) => terms.has(stats.termKey))
-
-    if (!candidates || candidates.length === 0) {
-      initialAssignments.set(message.messageKey, null)
-      continue
-    }
-
-    candidates.sort((a, b) => {
-      const scoreA =
-        a.messageKeys.size * 2 +
-        a.participantKeys.size * 3 +
-        (topicKind(a.termKey) === 'bigram' ? 5 : 0)
-      const scoreB =
-        b.messageKeys.size * 2 +
-        b.participantKeys.size * 3 +
-        (topicKind(b.termKey) === 'bigram' ? 5 : 0)
-      if (scoreA !== scoreB) return scoreB - scoreA
-      return topicLabel(a.termKey).localeCompare(topicLabel(b.termKey))
+    labels.forEach((label, index) => {
+      const clusterDocuments = documentsByLabel.get(label) ?? []
+      clusterDocuments.push(documents[index]!)
+      documentsByLabel.set(label, clusterDocuments)
     })
 
-    initialAssignments.set(message.messageKey, candidates[0]!.termKey)
-  }
+    const eligibleClusters: TopicCluster[] = []
+    const unclusteredDocuments: TopicDocument[] = []
 
-  const clusterStats = new Map<
-    string,
-    {
-      chatbotId: string
-      termKey: string | null
-      messages: MessageRecord[]
-    }
-  >()
+    for (const clusterDocuments of documentsByLabel.values()) {
+      const participants = new Set(
+        clusterDocuments.map((document) => document.message.participantKey)
+      )
+      if (
+        clusterDocuments.length < options.minTopicMessages ||
+        participants.size < options.minTopicParticipants
+      ) {
+        unclusteredDocuments.push(...clusterDocuments)
+        continue
+      }
 
-  for (const message of userMessages) {
-    const term = initialAssignments.get(message.messageKey) ?? null
-    const key = `${message.chatbotId}:${term ?? 'unclustered'}`
-    const stats = clusterStats.get(key) ?? {
-      chatbotId: message.chatbotId,
-      termKey: term,
-      messages: [],
-    }
-    stats.messages.push(message)
-    clusterStats.set(key, stats)
-  }
+      const centroid = centroidForDocuments(clusterDocuments)
+      const topTerms = selectReadableTopicTerms(
+        clusterTopTerms(
+          clusterDocuments,
+          centroid,
+          documentFrequency,
+          documents.length
+        ),
+        12
+      )
+      if (topTerms.length === 0) {
+        unclusteredDocuments.push(...clusterDocuments)
+        continue
+      }
 
-  const eligibleClusterTerms = new Set(
-    Array.from(clusterStats.values())
-      .filter((cluster) => cluster.termKey !== null)
-      .filter((cluster) => {
-        const participantCount = new Set(
-          cluster.messages.map((message) => message.participantKey)
-        ).size
-        return (
-          cluster.messages.length >= options.minTopicMessages &&
-          participantCount >= options.minTopicParticipants
-        )
+      const label =
+        topTerms
+          .slice(0, 3)
+          .map((term) => term.label)
+          .join(' / ') || 'topic'
+
+      eligibleClusters.push({
+        chatbotId,
+        clusterId: '',
+        label,
+        documents: clusterDocuments,
+        centroid,
+        topTerms,
       })
-      .map((cluster) => `${cluster.chatbotId}:${cluster.termKey}`)
-  )
-
-  const assignments: TopicAssignment[] = []
-  const finalClusterStats = new Map<
-    string,
-    {
-      chatbotId: string
-      label: string
-      messages: MessageRecord[]
     }
-  >()
 
-  for (const message of userMessages) {
-    const term = initialAssignments.get(message.messageKey) ?? null
-    const isEligible =
-      term !== null && eligibleClusterTerms.has(`${message.chatbotId}:${term}`)
-    const label = isEligible
-      ? topicLabel(term)
-      : 'unclustered_or_below_threshold'
-    const key = `${message.chatbotId}:${label}`
-    const stats = finalClusterStats.get(key) ?? {
-      chatbotId: message.chatbotId,
-      label,
-      messages: [],
-    }
-    stats.messages.push(message)
-    finalClusterStats.set(key, stats)
-  }
-
-  const clustersByChatbot = groupBy(
-    Array.from(finalClusterStats.values()),
-    (cluster) => cluster.chatbotId
-  )
-  const clusterIdByKey = new Map<string, string>()
-  const clusters: TopicClusterRow[] = []
-
-  for (const [chatbotId, chatbotClusters] of clustersByChatbot.entries()) {
-    chatbotClusters.sort((a, b) => {
-      if (a.label === 'unclustered_or_below_threshold') return 1
-      if (b.label === 'unclustered_or_below_threshold') return -1
-      if (a.messages.length !== b.messages.length) {
-        return b.messages.length - a.messages.length
+    eligibleClusters.sort((a, b) => {
+      if (a.documents.length !== b.documents.length) {
+        return b.documents.length - a.documents.length
       }
       return a.label.localeCompare(b.label)
     })
 
-    chatbotClusters.forEach((cluster, index) => {
-      const clusterId =
-        cluster.label === 'unclustered_or_below_threshold'
-          ? 'unclustered'
-          : `topic_${String(index + 1).padStart(3, '0')}`
-      clusterIdByKey.set(`${chatbotId}:${cluster.label}`, clusterId)
-
+    eligibleClusters.forEach((cluster, index) => {
+      cluster.clusterId = `topic_${String(index + 1).padStart(3, '0')}`
+      const clusterMessages = cluster.documents.map(
+        (document) => document.message
+      )
       const participants = new Set(
-        cluster.messages.map((message) => message.participantKey)
+        clusterMessages.map((message) => message.participantKey)
       )
       const threads = new Set(
-        cluster.messages.map((message) => message.threadKey)
+        clusterMessages.map((message) => message.threadKey)
       )
-      const dates = cluster.messages.map((message) =>
+      const dates = clusterMessages.map((message) =>
         message.messageCreatedAt.getTime()
       )
-      const topTerms = topTermsForMessages(cluster.messages, eligibleTerms)
+      const similarities = cluster.documents
+        .map((document) => clusterSimilarity(document, cluster))
+        .filter((value): value is number => value !== null)
 
       clusters.push({
         chatbotId,
-        clusterId,
+        clusterId: cluster.clusterId,
         label: cluster.label,
-        userMessages: cluster.messages.length,
+        userMessages: cluster.documents.length,
         participants: participants.size,
         threads: threads.size,
         firstMessageAt: dates.length > 0 ? new Date(Math.min(...dates)) : null,
         lastMessageAt: dates.length > 0 ? new Date(Math.max(...dates)) : null,
         avgUserMessageWords: round(
-          average(cluster.messages.map((message) => message.textWordCount)),
+          average(clusterMessages.map((message) => message.textWordCount)),
           2
         ),
         estimatedVisibleTokens: sum(
-          cluster.messages.map((message) => message.estimatedTextTokens)
+          clusterMessages.map((message) => message.estimatedTextTokens)
         ),
-        topTerms: cluster.label.startsWith('unclustered')
-          ? ''
-          : topTerms.join('|'),
+        avgClusterSimilarity:
+          similarities.length > 0 ? round(average(similarities), 4) : null,
+        topTerms: cluster.topTerms.map((term) => term.label).join('|'),
       })
+
+      cluster.topTerms.forEach((term, termIndex) => {
+        terms.push({
+          chatbotId,
+          clusterId: cluster.clusterId,
+          clusterLabel: cluster.label,
+          term: term.label,
+          kind: term.kind,
+          rank: termIndex + 1,
+          score: term.score,
+          userMessages: term.userMessages,
+          participants: term.participants,
+          threads: term.threads,
+        })
+      })
+
+      for (const document of cluster.documents) {
+        assignments.push({
+          messageKey: document.message.messageKey,
+          chatbotId,
+          clusterLabel: cluster.label,
+          clusterId: cluster.clusterId,
+          topTerms: cluster.topTerms.map((term) => term.label).join('|'),
+          clusterSimilarity: clusterSimilarity(document, cluster),
+        })
+      }
     })
+
+    if (unclusteredDocuments.length > 0) {
+      const clusterMessages = unclusteredDocuments.map(
+        (document) => document.message
+      )
+      const participants = new Set(
+        clusterMessages.map((message) => message.participantKey)
+      )
+      const threads = new Set(
+        clusterMessages.map((message) => message.threadKey)
+      )
+      const dates = clusterMessages.map((message) =>
+        message.messageCreatedAt.getTime()
+      )
+
+      clusters.push({
+        chatbotId,
+        clusterId: 'unclustered',
+        label: 'unclustered_or_below_threshold',
+        userMessages: unclusteredDocuments.length,
+        participants: participants.size,
+        threads: threads.size,
+        firstMessageAt: dates.length > 0 ? new Date(Math.min(...dates)) : null,
+        lastMessageAt: dates.length > 0 ? new Date(Math.max(...dates)) : null,
+        avgUserMessageWords: round(
+          average(clusterMessages.map((message) => message.textWordCount)),
+          2
+        ),
+        estimatedVisibleTokens: sum(
+          clusterMessages.map((message) => message.estimatedTextTokens)
+        ),
+        avgClusterSimilarity: null,
+        topTerms: '',
+      })
+
+      for (const document of unclusteredDocuments) {
+        assignments.push({
+          messageKey: document.message.messageKey,
+          chatbotId,
+          clusterLabel: 'unclustered_or_below_threshold',
+          clusterId: 'unclustered',
+          topTerms: '',
+          clusterSimilarity: null,
+        })
+      }
+    }
   }
 
-  for (const message of userMessages) {
-    const term = initialAssignments.get(message.messageKey) ?? null
-    const isEligible =
-      term !== null && eligibleClusterTerms.has(`${message.chatbotId}:${term}`)
-    const label = isEligible
-      ? topicLabel(term)
-      : 'unclustered_or_below_threshold'
-    const clusterId =
-      clusterIdByKey.get(`${message.chatbotId}:${label}`) ?? 'unclustered'
-    assignments.push({
-      messageKey: message.messageKey,
-      chatbotId: message.chatbotId,
-      clusterLabel: label,
-      clusterId,
-      topTerms:
-        label === 'unclustered_or_below_threshold'
-          ? ''
-          : topTermsForMessages([message], eligibleTerms).join('|'),
-    })
-  }
+  clusters.sort((a, b) => {
+    if (a.chatbotId !== b.chatbotId)
+      return a.chatbotId.localeCompare(b.chatbotId)
+    if (a.clusterId === 'unclustered') return 1
+    if (b.clusterId === 'unclustered') return -1
+    return a.clusterId.localeCompare(b.clusterId)
+  })
 
-  const terms: TopicTermRow[] = eligibleTerms
-    .map((stats) => ({
-      chatbotId: stats.chatbotId,
-      term: topicLabel(stats.termKey),
-      kind: topicKind(stats.termKey),
-      userMessages: stats.messageKeys.size,
-      participants: stats.participantKeys.size,
-      threads: stats.threadKeys.size,
-    }))
-    .sort((a, b) => {
-      if (a.chatbotId !== b.chatbotId)
-        return a.chatbotId.localeCompare(b.chatbotId)
-      if (a.userMessages !== b.userMessages)
-        return b.userMessages - a.userMessages
-      return a.term.localeCompare(b.term)
-    })
+  terms.sort((a, b) => {
+    if (a.chatbotId !== b.chatbotId)
+      return a.chatbotId.localeCompare(b.chatbotId)
+    if (a.clusterId !== b.clusterId)
+      return a.clusterId.localeCompare(b.clusterId)
+    return a.rank - b.rank
+  })
 
   return { assignments, clusters, terms }
-}
-
-function topTermsForMessages(
-  messages: MessageRecord[],
-  eligibleTerms: Array<{
-    chatbotId: string
-    termKey: string
-    messageKeys: Set<string>
-    participantKeys: Set<string>
-  }>
-) {
-  const messageKeys = new Set(messages.map((message) => message.messageKey))
-  return eligibleTerms
-    .map((term) => ({
-      label: topicLabel(term.termKey),
-      kind: topicKind(term.termKey),
-      count: Array.from(term.messageKeys).filter((key) => messageKeys.has(key))
-        .length,
-      participants: Array.from(term.participantKeys).length,
-    }))
-    .filter((term) => term.count > 0)
-    .sort((a, b) => {
-      if (a.count !== b.count) return b.count - a.count
-      if (a.kind !== b.kind) return a.kind === 'bigram' ? -1 : 1
-      return a.label.localeCompare(b.label)
-    })
-    .slice(0, 8)
-    .map((term) => term.label)
 }
 
 async function loadChatbots(options: CliOptions) {
@@ -1137,7 +1826,7 @@ function buildSheets(
         ],
         [
           'topics',
-          `Keyword-based local topic clustering; labels require at least ${options.minTopicMessages} user messages and ${options.minTopicParticipants} participants.`,
+          `Context-window TF-IDF clustering over current user turns, nearby conversation turns, and lightweight thread terms; labels require at least ${options.minTopicMessages} user messages and ${options.minTopicParticipants} participants.`,
         ],
       ],
     },
@@ -1632,6 +2321,7 @@ function buildSheets(
       'lastMessageAt',
       'avgUserMessageWords',
       'estimatedVisibleUserTokens',
+      'avgClusterSimilarity',
       'topTerms',
     ],
     rows: topicAnalysis.clusters.map((cluster) => {
@@ -1649,6 +2339,7 @@ function buildSheets(
         cluster.lastMessageAt,
         cluster.avgUserMessageWords,
         cluster.estimatedVisibleTokens,
+        cluster.avgClusterSimilarity,
         cluster.topTerms,
       ]
     }),
@@ -1660,8 +2351,12 @@ function buildSheets(
       'courseName',
       'chatbotKey',
       'chatbotName',
+      'clusterId',
+      'clusterLabel',
+      'rank',
       'term',
       'kind',
+      'score',
       'userMessages',
       'participants',
       'conversations',
@@ -1672,8 +2367,12 @@ function buildSheets(
         chatbot?.course.name,
         chatbot ? chatbotKeyById.get(chatbot.id) : null,
         chatbot?.name,
+        term.clusterId,
+        term.clusterLabel,
+        term.rank,
         term.term,
         term.kind,
+        term.score,
         term.userMessages,
         term.participants,
         term.threads,
@@ -1695,6 +2394,7 @@ function buildSheets(
       'topicLabel',
       'userMessageWords',
       'estimatedVisibleUserTokens',
+      'clusterSimilarity',
       'topTerms',
     ],
     rows: userMessages.map((message) => {
@@ -1711,6 +2411,7 @@ function buildSheets(
         assignment?.clusterLabel ?? 'unclustered_or_below_threshold',
         message.textWordCount,
         message.estimatedTextTokens,
+        assignment?.clusterSimilarity ?? null,
         assignment?.topTerms ?? '',
       ]
     }),
