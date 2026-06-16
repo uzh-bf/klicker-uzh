@@ -165,6 +165,9 @@ chat:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
     storeResponses: true
 
+  telemetry:
+    enabled: false
+
   automaticModels:
     primaryId: gpt-5.1
     fallbackId: gpt-4.1-mini

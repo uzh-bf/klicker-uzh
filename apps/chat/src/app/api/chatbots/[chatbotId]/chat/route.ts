@@ -59,6 +59,7 @@ if (!process.env.OPENAI_API_KEY) {
 }
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
+const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
@@ -1268,7 +1269,7 @@ export async function POST(
   const result = streamText({
     model,
     maxOutputTokens,
-    experimental_telemetry: { isEnabled: true },
+    experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
     providerOptions: {
       openai: {
         ...(selectedModelConfig.supportsReasoning && {
@@ -1691,6 +1692,20 @@ export async function POST(
 
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
+    onError: (error) => {
+      const serializedError = serializeStreamError(error)
+      const classification = classifyStreamError(serializedError)
+
+      console.error('Error while streaming UI message response:', {
+        requestId,
+        error: serializedError,
+        classification: classification.classification,
+        retryable: classification.retryable,
+        suggestedAction: classification.suggestedAction,
+      })
+
+      return 'An error occurred while processing the request.'
+    },
     messageMetadata: ({ part }) => {
       if (part.type !== 'finish') {
         return undefined
