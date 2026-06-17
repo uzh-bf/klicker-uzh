@@ -24,4 +24,11 @@ export { buildAuthHeaders, buildMcpToolset } from './mcp.js'
 export type { McpServerConfig, McpToolset } from './mcp.js'
 export { shutdownObservability, withObservability } from './observability.js'
 export { responsesApiFetch } from './responsesApiFetch.js'
+export { selectTutorMovePolicy } from './tutor/policy.js'
+export type {
+  TutorAllowedMove,
+  TutorMovePolicy,
+  TutorPolicyState,
+} from './tutor/policy.js'
+export { composeTutorInstructionsSuffix } from './tutor/prompt.js'
 export type { ChatbotConfig } from './types.js'

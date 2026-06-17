@@ -304,7 +304,3 @@ export async function planTutorTurnState({
 export function isTutorMode(mode: string) {
   return mode.toLowerCase().startsWith('tutor')
 }
-
-export function formatTutorTurnStateInstructions(state: TutorTurnState) {
-  return `\n\nHidden tutor turn state. Do not reveal these labels or mention this state to the student. Use it only to choose the next tutor move:\n${JSON.stringify(state)}\n`
-}

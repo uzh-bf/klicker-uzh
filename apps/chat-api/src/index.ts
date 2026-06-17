@@ -15,6 +15,7 @@ import { serve } from '@hono/node-server'
 import {
   buildAgent,
   calcCost,
+  composeTutorInstructionsSuffix,
   responsesProviderOptions,
   shutdownObservability,
   withObservability,
@@ -48,11 +49,7 @@ import {
 } from './lib/persistedContent.js'
 import { DEFAULT_PROMPT } from './lib/prompts.js'
 import { type ReasoningEffort } from './lib/reasoning.js'
-import {
-  formatTutorTurnStateInstructions,
-  isTutorMode,
-  planTutorTurnState,
-} from './lib/tutorState.js'
+import { isTutorMode, planTutorTurnState } from './lib/tutorState.js'
 import { CreditsService } from './services/credits.js'
 import { DisclaimersService } from './services/disclaimers.js'
 import { ThreadService } from './services/threads.js'
@@ -673,7 +670,7 @@ app.post(
         : {}),
       ...(tutorStateResult
         ? {
-            instructionsSuffix: formatTutorTurnStateInstructions(
+            instructionsSuffix: composeTutorInstructionsSuffix(
               tutorStateResult.state
             ),
           }
