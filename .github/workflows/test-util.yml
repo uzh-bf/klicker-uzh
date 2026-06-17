@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v3
       - uses: pnpm/action-setup@v4
         with:
-          version: 9.15.4
+          version: 11.5.0
           run_install: true
       - name: Build dependencies
         shell: bash
