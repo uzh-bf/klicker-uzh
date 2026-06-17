@@ -54,6 +54,13 @@ import {
 import { DEFAULT_PROMPT } from './lib/prompts.js'
 import { type ReasoningEffort } from './lib/reasoning.js'
 import { loadTutorArtifactContext } from './lib/tutorArtifacts.js'
+import {
+  detectTutorFeedbackUptake,
+  loadLatestTutorFeedbackEvent,
+  logTutorEvent,
+  summarizeTutorUserMessage,
+  tutorStateEventPayload,
+} from './lib/tutorEvents.js'
 import { isTutorMode, planTutorTurnState } from './lib/tutorState.js'
 import { CreditsService } from './services/credits.js'
 import { DisclaimersService } from './services/disclaimers.js'
@@ -636,6 +643,57 @@ app.post(
               )
               .join('\n'),
     }))
+    const tutorModeSelected = isTutorMode(selectedMode)
+    const latestTutorUserMessage =
+      [...tutorPlannerMessages]
+        .reverse()
+        .find((message) => message.role === 'user')?.content ?? ''
+    const previousTutorFeedbackEvent = tutorModeSelected
+      ? await loadLatestTutorFeedbackEvent({
+          prisma,
+          requestId,
+          chatbotId,
+          threadId: currentThreadId,
+        })
+      : null
+
+    if (tutorModeSelected && latestTutorUserMessage) {
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'student_attempt_received',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload: {
+          selectedMode,
+          modelId: selectedModelConfig.id,
+          messageSummary: summarizeTutorUserMessage(latestTutorUserMessage),
+        },
+      })
+
+      const uptake = detectTutorFeedbackUptake({
+        latestUserMessage: latestTutorUserMessage,
+        previousFeedbackEvent: previousTutorFeedbackEvent,
+      })
+      if (uptake) {
+        await logTutorEvent({
+          prisma,
+          requestId,
+          eventType: 'feedback_uptake_detected',
+          participantId,
+          chatbotId,
+          threadId: currentThreadId,
+          messageId: userMessageId,
+          payload: {
+            selectedMode,
+            ...uptake,
+          },
+        })
+      }
+    }
+
     const tutorArtifacts = isTutorMode(selectedMode)
       ? await loadTutorArtifactContext({
           prisma,
@@ -665,10 +723,6 @@ app.post(
         })
       : null
 
-    const latestTutorUserMessage =
-      [...tutorPlannerMessages]
-        .reverse()
-        .find((message) => message.role === 'user')?.content ?? ''
     const tutorVerifierPreflight = tutorStateResult
       ? runTutorVerifierPreflight({
           state: tutorStateResult.state,
@@ -688,6 +742,43 @@ app.post(
         ...(tutorStateResult.errorMessage
           ? { error: tutorStateResult.errorMessage }
           : {}),
+      })
+    }
+
+    if (tutorStateResult) {
+      const payload = {
+        selectedMode,
+        source: tutorStateResult.source,
+        ...tutorStateEventPayload(tutorStateResult.state),
+      }
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'tutor_state_planned',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload,
+      })
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'tutor_move_selected',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload: {
+          selectedMode,
+          source: tutorStateResult.source,
+          allowedMove: tutorStateResult.state.allowedMove,
+          hintDepth: tutorStateResult.state.hintDepth,
+          leakageAllowed: tutorStateResult.state.leakageAllowed,
+          retrievalNeeded: tutorStateResult.state.retrievalNeeded,
+          misconceptionLabel:
+            tutorStateResult.state.misconception?.label ?? null,
+        },
       })
     }
 
@@ -903,6 +994,41 @@ app.post(
             text: partialContent,
             retrievedEvidenceIds,
           })
+          await logTutorEvent({
+            prisma,
+            requestId,
+            eventType: 'feedback_delivered',
+            participantId,
+            chatbotId,
+            threadId: currentThreadId,
+            messageId: assistantMessageId,
+            payload: {
+              selectedMode,
+              modelId: modelConfig.id,
+              textLength: partialContent.length,
+              verifierPassed: outputVerification.passed,
+              verifierFailures: outputVerification.failures,
+              verifierStats: outputVerification.stats,
+              ...tutorStateEventPayload(tutorStateResult.state),
+              retrievedEvidenceIds,
+            },
+          })
+          if (outputVerification.failures.includes('unsupported_citation')) {
+            await logTutorEvent({
+              prisma,
+              requestId,
+              eventType: 'citation_fidelity_failed',
+              participantId,
+              chatbotId,
+              threadId: currentThreadId,
+              messageId: assistantMessageId,
+              payload: {
+                selectedMode,
+                retrievedEvidenceIds,
+                verifierFailures: outputVerification.failures,
+              },
+            })
+          }
           if (
             !outputVerification.passed ||
             process.env.CHAT_TUTOR_VERIFIER_LOG === '1'
