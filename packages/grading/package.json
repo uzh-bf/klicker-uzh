@@ -21,7 +21,8 @@
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "run-s build:ts",
+    "build": "run-s build:clean build:ts",
+    "build:clean": "rm -rf dist",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production tsc -p tsconfig.json",
     "check": "tsc --noEmit",

@@ -56,3 +56,5 @@ dumps/**/*.dump.gpg
 
 .claude/worktrees
 .claude/scheduled_tasks.lock
+.agents/
+.devcontainer/*.env

@@ -44,7 +44,8 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "build": "run-s build:ts build:copy",
+    "build": "run-s build:clean build:ts build:copy",
+    "build:clean": "rm -rf dist",
     "build:copy": "mkdir -p dist && cp src/public/styles.css dist/styles.css",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production tsc -p tsconfig.json",
