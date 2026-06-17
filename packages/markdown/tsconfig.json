@@ -1,7 +1,9 @@
 {
-  "include": ["**/**/*"],
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"],
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "src",
     "jsx": "react",
     /* Base Options: */
     "esModuleInterop": true,

@@ -22,6 +22,10 @@ const config = defineConfig([
       nodeResolve(),
       typescript({
         tsconfig: './tsconfig.json',
+        compilerOptions: {
+          module: 'ESNext',
+          moduleResolution: 'Bundler',
+        },
         rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
       }),
       copy({

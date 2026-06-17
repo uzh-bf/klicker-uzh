@@ -37,6 +37,8 @@ Risks:
 
 Progress:
 - 2026-06-17: Plan active. Next: Slice 1 package dependency/config cleanup.
+- 2026-06-17: Slice 1 active. Removing package-local Rollup deps/config from converted plain packages.
+- 2026-06-17: Slice 1 verified. `rg` found no Rollup refs in converted packages. Focused package `build` and `check` passed for `grading`, `hatchet`, `markdown`, `prisma`, `util`; GraphQL `build` and `check` passed with Rollup override. Subagent review skipped because tool policy only allows subagents when user explicitly asks delegation; local review found no slice issues.
 
 Slices:
 

@@ -2,7 +2,11 @@
   "include": ["src/index.ts", "src/client.ts", "src/prisma/client/**/*.ts"],
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": ".",
+    "rootDir": "src",
+    "paths": {
+      "@klicker-uzh/prisma": ["src/index.ts"],
+      "@klicker-uzh/prisma/client": ["src/client.ts"]
+    },
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
