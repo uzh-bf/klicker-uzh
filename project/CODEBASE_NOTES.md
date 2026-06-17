@@ -7,6 +7,7 @@ This is a **living document**: when you discover such a pattern during a task, a
 ## GraphQL & data
 
 - **Prisma Decimal nullish check**: `Decimal` fields are objects, not numbers. `Decimal(0)` is truthy, so never use truthy checks for Decimal-to-number conversions -- always use `!= null`. (`packages/graphql/src/`)
+- **Analytics Python Prisma Decimal support**: `apps/analytics` copies the shared Prisma schema into its Python client generation; keep `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` whenever shared schema Decimal fields are present.
 - **Participant email uniqueness across auth modes**: Prisma enforces `Participant @@unique([email, isSSOAccount])`, so the same normalized email can exist once as manual and once as SSO. To block new cross-mode duplicates, account creation must explicitly check normalized email collisions in service logic. (`packages/graphql/src/services/accounts.ts`)
 
 ## Export package
