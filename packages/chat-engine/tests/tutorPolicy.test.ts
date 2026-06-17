@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  composeTutorMemoryInstructionsSuffix,
+  evaluateTutorMemoryGate,
+} from '../src/tutor/memoryGate.js'
+import {
   selectTutorMovePolicy,
   type TutorPolicyState,
 } from '../src/tutor/policy.js'
@@ -102,5 +106,24 @@ describe('tutor move policy', () => {
         retrievedEvidenceIds: ids,
       }).passed
     ).toBe(true)
+  })
+
+  it('blocks persistent memory when privacy requirements are incomplete', () => {
+    const decision = evaluateTutorMemoryGate({
+      enabled: true,
+      privacyApproved: false,
+      deletionSupported: true,
+      studentTransparencyEnabled: false,
+      embeddingEndpointApproved: true,
+    })
+
+    expect(decision.status).toBe('blocked')
+    expect(decision.missingRequirements).toEqual([
+      'privacy_approval',
+      'student_view_delete_ui',
+    ])
+    expect(composeTutorMemoryInstructionsSuffix(decision)).toContain(
+      'Persistent learner memory is blocked.'
+    )
   })
 })

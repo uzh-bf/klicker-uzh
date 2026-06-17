@@ -16,7 +16,9 @@ import {
   buildAgent,
   calcCost,
   composeTutorInstructionsSuffix,
+  composeTutorMemoryInstructionsSuffix,
   composeTutorVerifierInstructionsSuffix,
+  evaluateTutorMemoryGate,
   extractEvidenceIdsFromToolPayload,
   responsesProviderOptions,
   runTutorVerifierPreflight,
@@ -24,6 +26,7 @@ import {
   verifyTutorOutputText,
   withObservability,
   type ChatbotConfig,
+  type TutorMemoryGateConfig,
 } from '@klicker-uzh/chat-engine'
 import { prisma } from '@klicker-uzh/prisma'
 import { toAISdkStream } from '@mastra/ai-sdk'
@@ -75,6 +78,28 @@ const PORT = Number(process.env.PORT ?? 3005)
 // chat-api has no ingress body cap yet). 32 MB covers the schema's worst case
 // (3 image data URLs at ~7 MB each) plus message history and headroom.
 const MAX_BODY_BYTES = 32 * 1024 * 1024
+
+function envFlag(name: string) {
+  return process.env[name] === '1' || process.env[name] === 'true'
+}
+
+function resolveTutorMemoryGateConfig(): TutorMemoryGateConfig {
+  const retentionDays = Number(process.env.CHAT_TUTOR_MEMORY_RETENTION_DAYS)
+  return {
+    enabled: envFlag('CHAT_TUTOR_MEMORY_ENABLED'),
+    privacyApproved: envFlag('CHAT_TUTOR_MEMORY_PRIVACY_APPROVED'),
+    deletionSupported: envFlag('CHAT_TUTOR_MEMORY_DELETION_SUPPORTED'),
+    studentTransparencyEnabled: envFlag(
+      'CHAT_TUTOR_MEMORY_STUDENT_TRANSPARENCY_ENABLED'
+    ),
+    embeddingEndpointApproved: envFlag(
+      'CHAT_TUTOR_MEMORY_EMBEDDING_ENDPOINT_APPROVED'
+    ),
+    ...(Number.isFinite(retentionDays) && retentionDays > 0
+      ? { retentionDays }
+      : {}),
+  }
+}
 
 // APP_SECRET is required to verify participant_token JWTs and decrypt per-chatbot
 // secrets. Without it, jose.jwtVerify runs with an empty key (rejecting every
@@ -704,6 +729,9 @@ app.post(
       : null
     const tutorSkillPackVersion =
       tutorArtifacts?.skillPackVersion ?? selectedMode
+    const tutorMemoryGate = tutorModeSelected
+      ? evaluateTutorMemoryGate(resolveTutorMemoryGateConfig())
+      : null
 
     const tutorStateResult = isTutorMode(selectedMode)
       ? await planTutorTurnState({
@@ -781,6 +809,34 @@ app.post(
         },
       })
     }
+    if (tutorMemoryGate) {
+      if (
+        tutorMemoryGate.status === 'blocked' &&
+        process.env.CHAT_TUTOR_MEMORY_ENABLED
+      ) {
+        console.warn('[chat-api] tutor memory blocked by privacy gate', {
+          requestId,
+          missingRequirements: tutorMemoryGate.missingRequirements,
+        })
+      }
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'tutor_memory_gate_decision',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload: {
+          selectedMode,
+          status: tutorMemoryGate.status,
+          scope: tutorMemoryGate.scope,
+          allowedCategories: tutorMemoryGate.allowedCategories,
+          missingRequirements: tutorMemoryGate.missingRequirements,
+          retentionDays: tutorMemoryGate.retentionDays ?? null,
+        },
+      })
+    }
 
     if (
       tutorVerifierPreflight &&
@@ -804,6 +860,9 @@ app.post(
               composeTutorInstructionsSuffix(tutorStateResult.state),
               tutorArtifacts?.summary
                 ? `\n\nPrivate lecturer-approved tutor artifacts:\n${tutorArtifacts.summary}\n\nUse validated misconception and hint-ladder artifacts when they match the student. Do not reveal artifact labels, IDs, or private policy text.\n`
+                : '',
+              tutorMemoryGate
+                ? composeTutorMemoryInstructionsSuffix(tutorMemoryGate)
                 : '',
               tutorVerifierPreflight
                 ? composeTutorVerifierInstructionsSuffix(tutorVerifierPreflight)

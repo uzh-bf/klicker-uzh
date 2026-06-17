@@ -24,6 +24,16 @@ export { buildAuthHeaders, buildMcpToolset } from './mcp.js'
 export type { McpServerConfig, McpToolset } from './mcp.js'
 export { shutdownObservability, withObservability } from './observability.js'
 export { responsesApiFetch } from './responsesApiFetch.js'
+export {
+  TUTOR_MEMORY_CATEGORIES,
+  composeTutorMemoryInstructionsSuffix,
+  evaluateTutorMemoryGate,
+} from './tutor/memoryGate.js'
+export type {
+  TutorMemoryCategory,
+  TutorMemoryGateConfig,
+  TutorMemoryGateDecision,
+} from './tutor/memoryGate.js'
 export { selectTutorMovePolicy } from './tutor/policy.js'
 export type {
   TutorAllowedMove,
