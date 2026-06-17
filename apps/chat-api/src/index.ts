@@ -16,8 +16,11 @@ import {
   buildAgent,
   calcCost,
   composeTutorInstructionsSuffix,
+  composeTutorVerifierInstructionsSuffix,
   responsesProviderOptions,
+  runTutorVerifierPreflight,
   shutdownObservability,
+  verifyTutorOutputText,
   withObservability,
   type ChatbotConfig,
 } from '@klicker-uzh/chat-engine'
@@ -649,6 +652,17 @@ app.post(
         })
       : null
 
+    const latestTutorUserMessage =
+      [...tutorPlannerMessages]
+        .reverse()
+        .find((message) => message.role === 'user')?.content ?? ''
+    const tutorVerifierPreflight = tutorStateResult
+      ? runTutorVerifierPreflight({
+          state: tutorStateResult.state,
+          latestUserMessage: latestTutorUserMessage,
+        })
+      : null
+
     if (
       tutorStateResult &&
       (process.env.NODE_ENV !== 'production' ||
@@ -664,6 +678,18 @@ app.post(
       })
     }
 
+    if (
+      tutorVerifierPreflight &&
+      (process.env.NODE_ENV !== 'production' ||
+        process.env.CHAT_TUTOR_VERIFIER_LOG === '1')
+    ) {
+      console.info('[chat-api] tutor verifier preflight', {
+        requestId,
+        risk: tutorVerifierPreflight.risk,
+        failures: tutorVerifierPreflight.failures,
+      })
+    }
+
     const agentExtras = {
       ...(mcpToolset.toolNames.length > 0
         ? { tools: mcpToolset.tools as never }
@@ -672,6 +698,10 @@ app.post(
         ? {
             instructionsSuffix: composeTutorInstructionsSuffix(
               tutorStateResult.state
+            ).concat(
+              tutorVerifierPreflight
+                ? composeTutorVerifierInstructionsSuffix(tutorVerifierPreflight)
+                : ''
             ),
           }
         : {}),
@@ -835,6 +865,24 @@ app.post(
             )
           } catch (error) {
             console.error('Failed to deduct credits:', { requestId, error })
+          }
+        }
+
+        if (tutorStateResult && partialContent.trim()) {
+          const outputVerification = verifyTutorOutputText({
+            state: tutorStateResult.state,
+            text: partialContent,
+          })
+          if (
+            !outputVerification.passed ||
+            process.env.CHAT_TUTOR_VERIFIER_LOG === '1'
+          ) {
+            console.warn('[chat-api] tutor verifier posthoc', {
+              requestId,
+              passed: outputVerification.passed,
+              failures: outputVerification.failures,
+              stats: outputVerification.stats,
+            })
           }
         }
       },

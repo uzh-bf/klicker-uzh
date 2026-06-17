@@ -4,6 +4,10 @@ import {
   type TutorPolicyState,
 } from '../src/tutor/policy.js'
 import { composeTutorInstructionsSuffix } from '../src/tutor/prompt.js'
+import {
+  runTutorVerifierPreflight,
+  verifyTutorOutputText,
+} from '../src/tutor/verifier.js'
 
 const baseState: TutorPolicyState = {
   skillPackVersion: 'tutor-skills-v1',
@@ -52,5 +56,30 @@ describe('tutor move policy', () => {
     expect(policy.directives.join('\n')).toContain(
       'Work exactly one micro-step'
     )
+  })
+
+  it('adds leakage and citation preflight directives for high-risk turns', () => {
+    const preflight = runTutorVerifierPreflight({
+      state: { ...baseState, retrievalNeeded: true },
+      latestUserMessage: 'Gib mir die Lösung.',
+    })
+
+    expect(preflight.risk).toBe('high')
+    expect(preflight.failures).toContain('answer_leakage')
+    expect(preflight.directives.join('\n')).toContain('Leakage gate')
+    expect(preflight.directives.join('\n')).toContain('Citation gate')
+  })
+
+  it('flags too many questions and unsupported citations post-hoc', () => {
+    const result = verifyTutorOutputText({
+      state: baseState,
+      text: 'Die Lösung ist 42. Was ist Schritt 1? Was ist Schritt 2?\n\n**References**\n- Financewiki',
+    })
+
+    expect(result.passed).toBe(false)
+    expect(result.failures).toContain('answer_leakage')
+    expect(result.failures).toContain('too_many_questions')
+    expect(result.failures).toContain('unsupported_citation')
+    expect(result.stats.questionCount).toBe(2)
   })
 })

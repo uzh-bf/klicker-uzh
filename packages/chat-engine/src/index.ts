@@ -31,4 +31,14 @@ export type {
   TutorPolicyState,
 } from './tutor/policy.js'
 export { composeTutorInstructionsSuffix } from './tutor/prompt.js'
+export {
+  composeTutorVerifierInstructionsSuffix,
+  runTutorVerifierPreflight,
+  verifyTutorOutputText,
+} from './tutor/verifier.js'
+export type {
+  TutorOutputVerification,
+  TutorVerifierFailure,
+  TutorVerifierPreflight,
+} from './tutor/verifier.js'
 export type { ChatbotConfig } from './types.js'
