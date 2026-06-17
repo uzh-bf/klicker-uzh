@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.4.0-alpha.62",
+  "version": "3.4.0-alpha.64",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,7 +35,7 @@
     "@sentry/tracing": "7.114.0",
     "cookie-parser": "1.4.7",
     "cors": "2.8.6",
-    "express": "4.21.1",
+    "express": "4.21.2",
     "graphql": "16.11.0",
     "graphql-ws": "5.16.0",
     "graphql-yoga": "3.9.1",

@@ -1,5 +1,6 @@
 'use client'
 
+import { normalizeCustomMathTags } from '@/src/components/markdown-text'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
 
@@ -74,8 +75,9 @@ export function ThreadImageViewerModal({
 
         {description ? (
           <Markdown
-            content={description}
+            content={normalizeCustomMathTags(description)}
             withProse
+            singleDollarTextMath
             className={{
               root: 'prose prose-sm text-foreground max-w-none',
             }}
