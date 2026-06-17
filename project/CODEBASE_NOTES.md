@@ -49,6 +49,7 @@ This is a **living document**: when you discover such a pattern during a task, a
 
 - **Test environment caveats**: `pnpm run test:run` triggers Cypress which needs a running DB + seeded data. `pnpm --filter @klicker-uzh/graphql test` needs `HATCHET_CLIENT_TOKEN`. For verifying non-DB changes locally, target specific packages (e.g., `pnpm --filter @klicker-uzh/grading test`, `pnpm --filter @klicker-uzh/util test`).
 - **Cypress CI signal timing**: `cypress: default-group (merge)` can report an increasing failed-test count while `cypress-run-cloud` is still in progress; wait for `cypress-run-cloud` completion before expecting downloadable GitHub job logs. (`.github/workflows/cypress-testing.yml`)
+- **Cypress student login state**: `cy.loginStudent()` and `cy.loginStudentPassword()` clear localforage by default for test isolation. Live quiz continuation tests that intentionally rely on stored unanswered-question state should pass `{ preserveClientState: true }`. (`cypress/cypress/support/commands.ts`, `cypress/cypress/e2e/O-live-quiz-workflow.cy.ts`)
 
 ## Process & tooling
 
