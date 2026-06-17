@@ -1,0 +1,127 @@
+name: Chat API OpenRouter smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'apps/chat-api/**'
+      - 'packages/chat-engine/**'
+      - 'packages/prisma/**'
+      - 'packages/prisma-data/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/chat-api-openrouter-smoke.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_DB: klicker-prod
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      APP_SECRET: local-dev-only
+      CHAT_MODEL_REGISTRY_JSON: >-
+        [{"id":"deepseek-v4-flash","deploymentId":"deepseek/deepseek-v4-flash","name":"DeepSeek V4 Flash","description":"OpenRouter smoke test model","fallback":true,"supportsReasoning":false,"supportsImageAttachments":false,"maxOutputTokens":256,"cost":{"input":0.27,"output":0.41}}]
+      CHAT_OPENAI_STORE_RESPONSES: 'false'
+      CHAT_SMOKE_API_BASE_URL: http://127.0.0.1:3305
+      CHAT_SMOKE_TIMEOUT_MS: '120000'
+      DATABASE_URL: postgresql://klicker@localhost:5432/klicker-prod?sslmode=disable
+      FALLBACK_MODEL_ID: deepseek/deepseek-v4-flash
+      OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY || 'ci-placeholder' }}
+      OPENAI_BASE_URL: https://openrouter.ai/api/v1
+      PORT: '3305'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.4
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build smoke dependencies
+        run: |
+          pnpm --filter @klicker-uzh/prisma build
+          pnpm --filter @klicker-uzh/types build
+          pnpm --filter @klicker-uzh/grading build
+          pnpm --filter @klicker-uzh/util build
+          pnpm --filter @klicker-uzh/chat-engine build
+
+      - name: Prepare seeded database
+        run: |
+          pnpm --filter @klicker-uzh/prisma prisma:push:raw
+          pnpm --filter @klicker-uzh/prisma-data seed:raw
+
+      - name: Typecheck chat-api
+        run: pnpm --filter @klicker-uzh/chat-api check
+
+      - name: Start chat-api
+        run: |
+          pnpm --filter @klicker-uzh/chat-api exec tsx src/index.ts > /tmp/chat-api-openrouter-smoke.log 2>&1 &
+          echo "$!" > /tmp/chat-api-openrouter-smoke.pid
+
+          for attempt in {1..30}; do
+            if curl -fsS "http://127.0.0.1:${PORT}/health" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          cat /tmp/chat-api-openrouter-smoke.log
+          exit 1
+
+      - name: Run OpenRouter DeepSeek V4 Flash smoke
+        continue-on-error: true
+        run: pnpm --filter @klicker-uzh/chat-api smoke:openrouter
+
+      - name: Publish smoke status note
+        if: always()
+        run: |
+          {
+            echo '### Chat API OpenRouter smoke'
+            echo
+            echo 'This workflow executes the real chat-api OpenRouter smoke path against DeepSeek V4 Flash.'
+            echo
+            echo 'The smoke step is currently non-blocking because the workflow falls back to an invalid placeholder when `OPENROUTER_API_KEY` is not configured as a repository secret.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Print chat-api logs
+        if: always()
+        run: |
+          if [[ -f /tmp/chat-api-openrouter-smoke.log ]]; then
+            cat /tmp/chat-api-openrouter-smoke.log
+          fi
+
+      - name: Stop chat-api
+        if: always()
+        run: |
+          if [[ -f /tmp/chat-api-openrouter-smoke.pid ]]; then
+            kill "$(cat /tmp/chat-api-openrouter-smoke.pid)" >/dev/null 2>&1 || true
+          fi

@@ -262,9 +262,40 @@ Remaining, in order:
 
 | # | Step | Note |
 | --- | --- | --- |
-| 1 | §4.5 — convert the prototype `check-*.ts` assertions into integration tests against the running `chat-api` | Hit the live SSE endpoint; assert wire-format parts (`text-delta`, tool parts, `finish` metadata), credits, persistence. Keeps the drop-in contract regression-guarded |
+| 1 | §4.5 — extend the live smoke suite against the running `chat-api` | First OpenRouter text smoke is done; next slices cover MCP tool parts, image attachments, and multi-turn/thread reload |
 | 2 | Drive the parity checks the local registry can't reach against a reasoning-capable backend (Azure): gpt-5.1 reasoning panel, truncation notice (`finishReason==='length'`), guardrail tripwire, abort/partial-credit | Local OpenRouter exposes only GPT-4.1 / GPT-4.1 Mini and rejects `store:true`; these need the Azure-backed env |
 | 3 | Phase 5 (DIY memory) — still design-open; Phase 6 (cleanup) — after parity, flag default on | Per §3 |
+
+§4.5 test strategy decision (2026-06-17): use a real LLM smoke test, not a
+mocked structural test. First smoke target is OpenRouter with DeepSeek V4 Flash
+(`deploymentId: deepseek/deepseek-v4-flash`) against the live `chat-api` SSE
+endpoint. The opt-in runner lives at `apps/chat-api`:
+`pnpm --filter @klicker-uzh/chat-api smoke:openrouter`. Required runtime:
+`OPENAI_BASE_URL=https://openrouter.ai/api/v1`,
+`OPENAI_API_KEY=$OPENROUTER_API_KEY`,
+`CHAT_OPENAI_STORE_RESPONSES=false`,
+`FALLBACK_MODEL_ID=deepseek/deepseek-v4-flash`, and a
+`CHAT_MODEL_REGISTRY_JSON` entry with `id: deepseek-v4-flash`,
+`deploymentId: deepseek/deepseek-v4-flash`, `fallback: true`, and cost
+`{ input: 0.27, output: 0.41 }`. The runner prepares seeded `testuser1` /
+Benibot disclaimer+credits, posts one real message, parses streamed UI parts,
+and asserts text-delta, finish metadata, persistence, and credit decrement.
+
+Live run evidence (2026-06-17, post-simplification): passed against `chat-api`
+on `PORT=3305` with OpenRouter DeepSeek V4 Flash, `textDeltaParts=9`,
+`creditsUsed=0.00058458`, and persisted
+`threadId=b89bda77-bbe6-4685-a03f-21098018c8a9`. The KB MCP stub was not
+running, so tool loading logged connection warnings; this smoke targets core
+text streaming / metadata / persistence / credits, not MCP tool execution.
+
+Next §4.5 smoke slices:
+
+| Slice | What | Env |
+| --- | --- | --- |
+| MCP tool smoke | Run KB stub on 1417, ask a retrieval prompt, assert tool input/output parts and persisted legacy `tool-call` content | OpenRouter + stub MCP |
+| Image smoke | Attach a tiny synthetic PNG, assert description path, `ChatAttachment`, and image-description cost in `creditsUsed` | OpenRouter vision-capable model or Azure |
+| Multi-turn smoke | Reuse the persisted thread, send a follow-up with prior messages, assert context continuation + same-thread persistence | OpenRouter |
+| Azure parity smoke | Reasoning panel, truncation notice, guardrail tripwire, abort/partial-credit | Azure-backed env |
 
 Stack-state notes for resuming the drive: KB MCP needs the stub on port 1417
 (`PROTO_MCP_PORT=1417 tsx prototype/mastra-chat/src/stub-mcp.ts`); `CHAT_OPENAI_STORE_RESPONSES`

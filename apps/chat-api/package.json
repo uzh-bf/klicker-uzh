@@ -39,6 +39,7 @@
     "dev": "run-p dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file-if-exists=.env src/index.ts",
+    "smoke:openrouter": "tsx src/smoke/openrouterDeepseekV4Flash.ts",
     "start:test": "node --env-file-if-exists=.env dist/index.js"
   },
   "engines": {
