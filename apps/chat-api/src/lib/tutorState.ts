@@ -272,11 +272,13 @@ export async function planTutorTurnState({
   model,
   providerOptions,
   skillPackVersion,
+  tutorArtifactContext,
 }: {
   messages: TutorPlannerMessage[]
   model: PlannerModel
   providerOptions?: Parameters<typeof generateText>[0]['providerOptions']
   skillPackVersion: string
+  tutorArtifactContext?: string
 }): Promise<TutorTurnStateResult> {
   try {
     const result = await generateText({
@@ -284,6 +286,9 @@ export async function planTutorTurnState({
       system: PLANNER_SYSTEM_PROMPT,
       prompt: [
         `Skill pack version: ${skillPackVersion}`,
+        tutorArtifactContext
+          ? `Lecturer-approved tutor artifacts:\n${tutorArtifactContext}`
+          : 'Lecturer-approved tutor artifacts: none loaded',
         'Recent conversation:',
         formatPlannerMessages(messages),
       ].join('\n\n'),

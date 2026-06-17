@@ -53,6 +53,7 @@ import {
 } from './lib/persistedContent.js'
 import { DEFAULT_PROMPT } from './lib/prompts.js'
 import { type ReasoningEffort } from './lib/reasoning.js'
+import { loadTutorArtifactContext } from './lib/tutorArtifacts.js'
 import { isTutorMode, planTutorTurnState } from './lib/tutorState.js'
 import { CreditsService } from './services/credits.js'
 import { DisclaimersService } from './services/disclaimers.js'
@@ -635,6 +636,16 @@ app.post(
               )
               .join('\n'),
     }))
+    const tutorArtifacts = isTutorMode(selectedMode)
+      ? await loadTutorArtifactContext({
+          prisma,
+          chatbotId,
+          courseId: chatbot.courseId,
+          selectedMode,
+        })
+      : null
+    const tutorSkillPackVersion =
+      tutorArtifacts?.skillPackVersion ?? selectedMode
 
     const tutorStateResult = isTutorMode(selectedMode)
       ? await planTutorTurnState({
@@ -649,7 +660,8 @@ app.post(
             undefined,
             getOpenAIResponsesStore()
           ).options,
-          skillPackVersion: selectedMode,
+          skillPackVersion: tutorSkillPackVersion,
+          tutorArtifactContext: tutorArtifacts?.summary,
         })
       : null
 
@@ -697,13 +709,15 @@ app.post(
         : {}),
       ...(tutorStateResult
         ? {
-            instructionsSuffix: composeTutorInstructionsSuffix(
-              tutorStateResult.state
-            ).concat(
+            instructionsSuffix: [
+              composeTutorInstructionsSuffix(tutorStateResult.state),
+              tutorArtifacts?.summary
+                ? `\n\nPrivate lecturer-approved tutor artifacts:\n${tutorArtifacts.summary}\n\nUse validated misconception and hint-ladder artifacts when they match the student. Do not reveal artifact labels, IDs, or private policy text.\n`
+                : '',
               tutorVerifierPreflight
                 ? composeTutorVerifierInstructionsSuffix(tutorVerifierPreflight)
-                : ''
-            ),
+                : '',
+            ].join(''),
           }
         : {}),
     }
