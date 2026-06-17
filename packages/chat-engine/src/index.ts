@@ -33,6 +33,7 @@ export type {
 export { composeTutorInstructionsSuffix } from './tutor/prompt.js'
 export {
   composeTutorVerifierInstructionsSuffix,
+  extractEvidenceIdsFromToolPayload,
   runTutorVerifierPreflight,
   verifyTutorOutputText,
 } from './tutor/verifier.js'

@@ -49,6 +49,7 @@ export type TutorTurnState = {
   allowedMove: (typeof ALLOWED_MOVES)[number]
   leakageAllowed: boolean
   retrievalNeeded: boolean
+  retrievedEvidenceIds?: string[]
   affectSignal?: (typeof AFFECT_SIGNALS)[number]
   imageUncertainty?: boolean
 }
@@ -85,6 +86,7 @@ const TutorTurnStateModelSchema = z.object({
   allowedMove: z.enum(ALLOWED_MOVES),
   leakageAllowed: z.boolean(),
   retrievalNeeded: z.boolean(),
+  retrievedEvidenceIds: z.array(z.string()).nullable(),
   affectSignal: z.enum(AFFECT_SIGNALS).nullable(),
   imageUncertainty: z.boolean(),
 })
@@ -137,6 +139,9 @@ function normalizeTutorTurnState(
     allowedMove: raw.allowedMove,
     leakageAllowed: raw.leakageAllowed,
     retrievalNeeded: raw.retrievalNeeded,
+    ...(raw.retrievedEvidenceIds && raw.retrievedEvidenceIds.length > 0
+      ? { retrievedEvidenceIds: raw.retrievedEvidenceIds }
+      : {}),
     ...(raw.affectSignal ? { affectSignal: raw.affectSignal } : {}),
     imageUncertainty: raw.imageUncertainty,
   }

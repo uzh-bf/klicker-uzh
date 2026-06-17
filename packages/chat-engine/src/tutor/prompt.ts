@@ -13,6 +13,11 @@ function formatPrivateState(state: TutorPolicyState) {
     `- hint_depth: ${state.hintDepth}`,
     `- leakage_allowed: ${state.leakageAllowed}`,
     `- retrieval_needed: ${state.retrievalNeeded}`,
+    `- retrieved_evidence_ids: ${
+      state.retrievedEvidenceIds?.length
+        ? state.retrievedEvidenceIds.join(', ')
+        : 'none'
+    }`,
     `- image_uncertainty: ${state.imageUncertainty === true}`,
     ...(state.firstError
       ? [

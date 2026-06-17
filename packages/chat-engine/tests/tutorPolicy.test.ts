@@ -5,6 +5,7 @@ import {
 } from '../src/tutor/policy.js'
 import { composeTutorInstructionsSuffix } from '../src/tutor/prompt.js'
 import {
+  extractEvidenceIdsFromToolPayload,
   runTutorVerifierPreflight,
   verifyTutorOutputText,
 } from '../src/tutor/verifier.js'
@@ -81,5 +82,25 @@ describe('tutor move policy', () => {
     expect(result.failures).toContain('too_many_questions')
     expect(result.failures).toContain('unsupported_citation')
     expect(result.stats.questionCount).toBe(2)
+  })
+
+  it('extracts evidence ids from nested tool payloads for citation fidelity', () => {
+    const ids = extractEvidenceIdsFromToolPayload({
+      toolResult: {
+        chunks: [
+          { chunk_id: 'chunk-wacc-1', text: 'Weighted cost of capital.' },
+          'see source-financewiki-wacc for details',
+        ],
+      },
+    })
+
+    expect(ids).toEqual(['chunk-wacc-1', 'source-financewiki-wacc'])
+    expect(
+      verifyTutorOutputText({
+        state: { ...baseState, retrievalNeeded: true },
+        text: '**References**\n- Financewiki',
+        retrievedEvidenceIds: ids,
+      }).passed
+    ).toBe(true)
   })
 })

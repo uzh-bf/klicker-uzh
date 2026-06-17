@@ -17,6 +17,7 @@ import {
   calcCost,
   composeTutorInstructionsSuffix,
   composeTutorVerifierInstructionsSuffix,
+  extractEvidenceIdsFromToolPayload,
   responsesProviderOptions,
   runTutorVerifierPreflight,
   shutdownObservability,
@@ -869,9 +870,24 @@ app.post(
         }
 
         if (tutorStateResult && partialContent.trim()) {
+          const retrievedEvidenceIds = extractEvidenceIdsFromToolPayload(
+            event.steps ?? []
+          )
+          if (
+            retrievedEvidenceIds.length > 0 &&
+            (process.env.NODE_ENV !== 'production' ||
+              process.env.CHAT_TUTOR_VERIFIER_LOG === '1')
+          ) {
+            console.info('[chat-api] tutor retrieved evidence ids', {
+              requestId,
+              retrievedEvidenceIds,
+            })
+          }
+
           const outputVerification = verifyTutorOutputText({
             state: tutorStateResult.state,
             text: partialContent,
+            retrievedEvidenceIds,
           })
           if (
             !outputVerification.passed ||

@@ -28,6 +28,7 @@ export type TutorPolicyState = {
   allowedMove: TutorAllowedMove
   leakageAllowed: boolean
   retrievalNeeded: boolean
+  retrievedEvidenceIds?: string[]
   affectSignal?: string
   imageUncertainty?: boolean
 }
@@ -78,6 +79,9 @@ export function selectTutorMovePolicy(
     citationRule === 'cite_retrieved_evidence_only'
       ? 'Cite only retrieved course evidence; never invent references.'
       : 'Do not add course citations unless retrieved evidence is present.',
+    state.retrievalNeeded
+      ? 'Paraphrase retrieved evidence with source attribution; quote only short spans from retrieved chunks.'
+      : 'If course evidence is weak or missing, ask a clarification or mark the answer as general background.',
   ]
 
   if (imageConfirmationRequired) {

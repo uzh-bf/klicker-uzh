@@ -23,6 +23,11 @@ export type TutorOutputVerification = {
   }
 }
 
+const EVIDENCE_KEY_RE =
+  /^(id|chunk_id|chunkId|document_id|documentId|source_id|sourceId|evidence_id|evidenceId)$/i
+const EVIDENCE_VALUE_RE =
+  /\b(?:chunk|doc|kb|source|evidence)[-_][A-Za-z0-9_.:-]+\b/g
+
 function asksForFinalAnswer(text: string) {
   return /lösung|answer|final|resultat|ergebnis|solve|gib mir|tell me/.test(
     text.toLowerCase()
@@ -43,6 +48,40 @@ function hasAnswerLeakageLikeText(text: string) {
   return /die lösung ist|the answer is|final answer|das ergebnis ist|resultat ist/i.test(
     text
   )
+}
+
+function collectEvidenceIds(value: unknown, ids: Set<string>) {
+  if (typeof value === 'string') {
+    for (const match of value.matchAll(EVIDENCE_VALUE_RE)) {
+      ids.add(match[0])
+    }
+    try {
+      collectEvidenceIds(JSON.parse(value), ids)
+    } catch {
+      // Plain text tool output.
+    }
+    return
+  }
+
+  if (Array.isArray(value)) {
+    for (const entry of value) collectEvidenceIds(entry, ids)
+    return
+  }
+
+  if (value && typeof value === 'object') {
+    for (const [key, entry] of Object.entries(value)) {
+      if (EVIDENCE_KEY_RE.test(key) && typeof entry === 'string') {
+        ids.add(entry)
+      }
+      collectEvidenceIds(entry, ids)
+    }
+  }
+}
+
+export function extractEvidenceIdsFromToolPayload(payload: unknown): string[] {
+  const ids = new Set<string>()
+  collectEvidenceIds(payload, ids)
+  return [...ids].sort()
 }
 
 export function runTutorVerifierPreflight({
@@ -100,9 +139,11 @@ export function composeTutorVerifierInstructionsSuffix(
 export function verifyTutorOutputText({
   state,
   text,
+  retrievedEvidenceIds = state.retrievedEvidenceIds ?? [],
 }: {
   state: TutorPolicyState
   text: string
+  retrievedEvidenceIds?: string[]
 }): TutorOutputVerification {
   const questionCount = countQuestions(text)
   const citationLike = hasCitationLikeText(text)
@@ -113,7 +154,7 @@ export function verifyTutorOutputText({
   if (!state.leakageAllowed && answerLeakageLike) {
     failures.push('answer_leakage')
   }
-  if (!state.retrievalNeeded && citationLike) {
+  if (citationLike && retrievedEvidenceIds.length === 0) {
     failures.push('unsupported_citation')
   }
 
