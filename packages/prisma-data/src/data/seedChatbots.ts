@@ -11,10 +11,30 @@ const tutorPrompt = readFileSync(
   'utf-8'
 ).trim()
 
+const tutorSkillsV1Prompt = readFileSync(
+  './src/data/data/tutorModeSkillsV1.txt',
+  'utf-8'
+).trim()
+
 const explainerPrompt = readFileSync(
   './src/data/data/explainerMode.txt',
   'utf-8'
 ).trim()
+
+const systemPrompts = {
+  tutor: {
+    prompt: tutorPrompt,
+    description: 'Acts as a patient and knowledgeable tutor.',
+  },
+  'tutor-skills-v1': {
+    prompt: tutorSkillsV1Prompt,
+    description: 'Research-backed tutor skills prompt for A/B evaluation.',
+  },
+  explainer: {
+    prompt: explainerPrompt,
+    description: 'Act as an expert explainer.',
+  },
+}
 
 export async function seedChatbots(prisma: Prisma.PrismaClient) {
   const testDisclaimer = await prisma.chatbotDisclaimer.upsert({
@@ -50,6 +70,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
     where: { id: CHATBOT_ID_TEST },
     update: {
       modelSelection: true,
+      systemPrompts,
     },
     create: {
       id: CHATBOT_ID_TEST,
@@ -59,16 +80,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       avatar: CHATBOT_AVATAR_HASH,
       ownerId: USER_ID_TEST,
       courseId: COURSE_ID_TEST,
-      systemPrompts: {
-        tutor: {
-          prompt: tutorPrompt,
-          description: 'Acts as a patient and knowledgeable tutor.',
-        },
-        explainer: {
-          prompt: explainerPrompt,
-          description: 'Act as an expert explainer.',
-        },
-      },
+      systemPrompts,
       creditInitialCredits: 100, // Generous amount for testing
       creditResetPeriod: 'WEEKLY', // Weekly reset for testing
       creditResetAmount: 50, // Add 50 credits on reset
