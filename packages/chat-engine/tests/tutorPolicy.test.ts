@@ -17,6 +17,11 @@ import {
   runTutorVerifierPreflight,
   verifyTutorOutputText,
 } from '../src/tutor/verifier.js'
+import {
+  TUTOR_TURN_WORKFLOW_STEPS,
+  TutorWorkflowOutputSchema,
+  tutorTurnWorkflow,
+} from '../src/tutor/workflow.js'
 
 const baseState: TutorPolicyState = {
   skillPackVersion: 'tutor-skills-v1',
@@ -150,5 +155,46 @@ describe('tutor move policy', () => {
 
     expect(runtime.status).toBe('inactive')
     expect(TUTOR_WORKING_MEMORY_TEMPLATE).toContain('# Course Learner State')
+  })
+
+  it('declares the Mastra tutor workflow stages in order', () => {
+    expect(tutorTurnWorkflow.id).toBe('tutor-turn-workflow')
+    expect(TUTOR_TURN_WORKFLOW_STEPS).toEqual([
+      'collect_context',
+      'retrieve_evidence',
+      'select_move',
+      'verify_candidate',
+      'persist_and_log',
+    ])
+    expect(
+      TutorWorkflowOutputSchema.safeParse({
+        requestId: 'req',
+        chatbotId: 'chatbot',
+        courseId: 'course',
+        participantId: 'participant',
+        selectedMode: 'tutor-skills-v1',
+        messageCount: 2,
+        retrievalNeeded: true,
+        retrievedEvidenceIds: ['chunk-wacc-1'],
+        tutorState: {
+          skillPackVersion: 'tutor-skills-v1',
+          studentState: 'partial',
+          allowedMove: 'hint',
+          hintDepth: 1,
+          leakageAllowed: false,
+          misconceptionLabel: 'wacc_book_value_weights',
+        },
+        verifierFailures: [],
+        workflowStages: [...TUTOR_TURN_WORKFLOW_STEPS],
+        retrievalStatus: 'evidence_present',
+        moveDecision: {
+          allowedMove: 'hint',
+          hintDepth: 1,
+          leakageAllowed: false,
+        },
+        verifierStatus: 'passed',
+        eventTypes: ['tutor_state_planned'],
+      }).success
+    ).toBe(true)
   })
 })

@@ -60,4 +60,9 @@ export type {
   TutorVerifierFailure,
   TutorVerifierPreflight,
 } from './tutor/verifier.js'
+export {
+  TUTOR_TURN_WORKFLOW_STEPS,
+  TutorWorkflowOutputSchema,
+  tutorTurnWorkflow,
+} from './tutor/workflow.js'
 export type { ChatbotConfig } from './types.js'
