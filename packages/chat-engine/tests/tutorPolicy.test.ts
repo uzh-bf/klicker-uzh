@@ -7,6 +7,7 @@ import {
   composeTutorMemoryInstructionsSuffix,
   evaluateTutorMemoryGate,
 } from '../src/tutor/memoryGate.js'
+import { buildTutorObservabilityAttributes } from '../src/tutor/observability.js'
 import {
   selectTutorMovePolicy,
   type TutorPolicyState,
@@ -196,5 +197,20 @@ describe('tutor move policy', () => {
         eventTypes: ['tutor_state_planned'],
       }).success
     ).toBe(true)
+  })
+
+  it('builds stable tutor observability attributes', () => {
+    const attrs = buildTutorObservabilityAttributes({
+      chatbotId: 'chatbot-1',
+      courseId: 'course-1',
+      selectedMode: 'tutor-skills-v1',
+      modelId: 'gpt-test',
+      state: baseState,
+      retrievedEvidenceIds: ['chunk-wacc-1'],
+    })
+
+    expect(attrs['tutor.move']).toBe('hint')
+    expect(attrs['tutor.retrieved_evidence_count']).toBe(1)
+    expect(attrs['tutor.memory_status']).toBe('disabled')
   })
 })

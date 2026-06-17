@@ -15,6 +15,7 @@ import { serve } from '@hono/node-server'
 import {
   buildAgent,
   buildTutorMastraMemoryRuntime,
+  buildTutorObservabilityAttributes,
   calcCost,
   composeTutorInstructionsSuffix,
   composeTutorMemoryInstructionsSuffix,
@@ -779,6 +780,15 @@ app.post(
         requestId,
         source: tutorStateResult.source,
         state: tutorStateResult.state,
+        attributes: buildTutorObservabilityAttributes({
+          chatbotId,
+          courseId: chatbot.courseId,
+          selectedMode,
+          modelId: selectedModelConfig.id,
+          state: tutorStateResult.state,
+          verifierPreflight: tutorVerifierPreflight,
+          memoryGate: tutorMemoryGate,
+        }),
         ...(tutorStateResult.errorMessage
           ? { error: tutorStateResult.errorMessage }
           : {}),
@@ -1073,6 +1083,17 @@ app.post(
             text: partialContent,
             retrievedEvidenceIds,
           })
+          const tutorAttributes = buildTutorObservabilityAttributes({
+            chatbotId,
+            courseId: chatbot.courseId,
+            selectedMode,
+            modelId: modelConfig.id,
+            state: tutorStateResult.state,
+            verifierPreflight: tutorVerifierPreflight,
+            outputVerification,
+            memoryGate: tutorMemoryGate,
+            retrievedEvidenceIds,
+          })
           await logTutorEvent({
             prisma,
             requestId,
@@ -1088,6 +1109,7 @@ app.post(
               verifierPassed: outputVerification.passed,
               verifierFailures: outputVerification.failures,
               verifierStats: outputVerification.stats,
+              attributes: tutorAttributes,
               ...tutorStateEventPayload(tutorStateResult.state),
               retrievedEvidenceIds,
             },
@@ -1117,6 +1139,7 @@ app.post(
               passed: outputVerification.passed,
               failures: outputVerification.failures,
               stats: outputVerification.stats,
+              attributes: tutorAttributes,
             })
           }
         }

@@ -42,6 +42,8 @@ export type {
   TutorMemoryGateConfig,
   TutorMemoryGateDecision,
 } from './tutor/memoryGate.js'
+export { buildTutorObservabilityAttributes } from './tutor/observability.js'
+export type { TutorObservabilityInput } from './tutor/observability.js'
 export { selectTutorMovePolicy } from './tutor/policy.js'
 export type {
   TutorAllowedMove,
