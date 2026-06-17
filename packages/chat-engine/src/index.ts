@@ -25,6 +25,14 @@ export type { McpServerConfig, McpToolset } from './mcp.js'
 export { shutdownObservability, withObservability } from './observability.js'
 export { responsesApiFetch } from './responsesApiFetch.js'
 export {
+  TUTOR_WORKING_MEMORY_TEMPLATE,
+  buildTutorMastraMemoryRuntime,
+} from './tutor/mastraMemory.js'
+export type {
+  TutorMastraMemoryOptions,
+  TutorMastraMemoryRuntime,
+} from './tutor/mastraMemory.js'
+export {
   TUTOR_MEMORY_CATEGORIES,
   composeTutorMemoryInstructionsSuffix,
   evaluateTutorMemoryGate,

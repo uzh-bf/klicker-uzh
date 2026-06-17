@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  TUTOR_WORKING_MEMORY_TEMPLATE,
+  buildTutorMastraMemoryRuntime,
+} from '../src/tutor/mastraMemory.js'
+import {
   composeTutorMemoryInstructionsSuffix,
   evaluateTutorMemoryGate,
 } from '../src/tutor/memoryGate.js'
@@ -125,5 +129,26 @@ describe('tutor move policy', () => {
     expect(composeTutorMemoryInstructionsSuffix(decision)).toContain(
       'Persistent learner memory is blocked.'
     )
+  })
+
+  it('keeps Mastra memory inactive unless the privacy gate is enabled', () => {
+    const decision = evaluateTutorMemoryGate({
+      enabled: false,
+      privacyApproved: false,
+      deletionSupported: false,
+      studentTransparencyEnabled: false,
+      embeddingEndpointApproved: false,
+    })
+    const runtime = buildTutorMastraMemoryRuntime({
+      decision,
+      participantId: 'participant-1',
+      chatbotId: 'chatbot-1',
+      courseId: 'course-1',
+      threadId: 'thread-1',
+      connectionString: 'postgresql://example',
+    })
+
+    expect(runtime.status).toBe('inactive')
+    expect(TUTOR_WORKING_MEMORY_TEMPLATE).toContain('# Course Learner State')
   })
 })

@@ -7,6 +7,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import type { ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
+import type { MastraMemory } from '@mastra/core/memory'
 import { env } from './env.js'
 import { responsesApiFetch } from './responsesApiFetch.js'
 import type { ChatbotConfig } from './types.js'
@@ -18,6 +19,7 @@ export type AgentExtras = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   inputProcessors?: any[]
   instructionsSuffix?: string
+  memory?: MastraMemory
 }
 
 // One provider per (baseURL, apiKey). Per-chatbot key/url override is supported
@@ -142,5 +144,6 @@ export function buildAgent(
     ...(extras.inputProcessors
       ? { inputProcessors: extras.inputProcessors }
       : {}),
+    ...(extras.memory ? { memory: extras.memory } : {}),
   })
 }

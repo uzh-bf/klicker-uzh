@@ -14,6 +14,7 @@
 import { serve } from '@hono/node-server'
 import {
   buildAgent,
+  buildTutorMastraMemoryRuntime,
   calcCost,
   composeTutorInstructionsSuffix,
   composeTutorMemoryInstructionsSuffix,
@@ -732,6 +733,17 @@ app.post(
     const tutorMemoryGate = tutorModeSelected
       ? evaluateTutorMemoryGate(resolveTutorMemoryGateConfig())
       : null
+    const tutorMastraMemory =
+      tutorMemoryGate && tutorModeSelected
+        ? buildTutorMastraMemoryRuntime({
+            decision: tutorMemoryGate,
+            connectionString: process.env.DATABASE_URL,
+            participantId,
+            chatbotId,
+            courseId: chatbot.courseId,
+            threadId: currentThreadId,
+          })
+        : null
 
     const tutorStateResult = isTutorMode(selectedMode)
       ? await planTutorTurnState({
@@ -834,6 +846,8 @@ app.post(
           allowedCategories: tutorMemoryGate.allowedCategories,
           missingRequirements: tutorMemoryGate.missingRequirements,
           retentionDays: tutorMemoryGate.retentionDays ?? null,
+          mastraMemoryStatus: tutorMastraMemory?.status ?? 'inactive',
+          mastraMemoryReason: tutorMastraMemory?.reason ?? null,
         },
       })
     }
@@ -869,6 +883,9 @@ app.post(
                 : '',
             ].join(''),
           }
+        : {}),
+      ...(tutorMastraMemory?.agentMemory
+        ? { memory: tutorMastraMemory.agentMemory }
         : {}),
     }
 
@@ -958,6 +975,9 @@ app.post(
       providerOptions,
       toolChoice: 'auto',
       maxSteps: 5,
+      ...(tutorMastraMemory?.runMemory
+        ? { memory: tutorMastraMemory.runMemory }
+        : {}),
       ...(maxOutputTokens ? { modelSettings: { maxOutputTokens } } : {}),
 
       // Accumulate partial text/reasoning synchronously inside the Mastra loop so
