@@ -240,6 +240,12 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
           path: '/microLearnings',
         },
         {
+          id: 'CHATBOT',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'chatbot',
+          path: '/chatbot',
+        },
+        {
           id: 'COURSE_LEADERBOARD',
           isEmailTransferRequired: false,
           olatConfigurationKey: 'course-leaderboard',
