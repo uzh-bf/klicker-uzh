@@ -2,7 +2,7 @@
 
 Date: 2026-06-17
 
-Status: planning
+Status: implementation complete, validation in progress
 
 Inputs:
 
@@ -12,6 +12,32 @@ Inputs:
 - Current Benibot prompt: `packages/prisma-data/src/data/data/tutorMode.txt`
 - Mastra worktree reviewed: `/Users/roland/.codex/worktrees/f891/klicker-uzh`, branch `codex/mastra-chat-openrouter-smoke` / `feat/chat-mastra-prototype`, head `6146ebfc14`
 - Mastra docs checked via Context7: `/mastra-ai/mastra`, covering `Agent`, tools, memory, workflows, observability, and evals
+
+## Progress
+
+Implemented on branch `codex/tutor-research-mastra-plan`:
+
+- Slice 0: merged latest Mastra branch and verified focused baseline.
+- Slice 1: added `tutor-skills-v1` prompt variant.
+- Slice 2: added MathTutorBench wrapper and ignored result artifacts.
+- Slice 3: added hidden tutor turn-state planner with heuristic fallback.
+- Slice 4: added move policy and prompt composer.
+- Slice 5: added verifier preflight and posthoc checks.
+- Slice 6: added evidence-id extraction and citation-fidelity tracking.
+- Slice 7: added lecturer-authored tutor artifact schema, migration, seed data, and chat-api lookup.
+- Slice 8: added payload-minimized tutor events and feedback uptake detection.
+- Slice 9: added privacy gate for persistent tutor memory.
+- Slice 10: wired dormant Mastra Memory with Postgres storage behind the privacy gate.
+- Slice 11: added a Mastra tutor workflow skeleton for the deterministic stage contract.
+- Slice 12: added local structural tutor evals and a GitHub Actions workflow.
+- Slice 13: added stable tutor observability attributes and dashboard notes.
+- Slice 14: added rollout flags, gates, and env tracking.
+
+Known validation caveats:
+
+- Root pre-commit remains blocked by unrelated generated-output gaps in the monorepo.
+- Local Rollup builds emit `dist` and then hang in this environment; dist generation is complete before interruption.
+- Persistent memory remains disabled unless all privacy gate flags pass.
 
 ## 1. Objective
 
