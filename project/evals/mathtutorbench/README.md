@@ -1,0 +1,53 @@
+# MathTutorBench Harness
+
+This folder wires Klicker tutor prompt variants into [MathTutorBench](https://eth-lre.github.io/mathtutorbench/) without vendoring the benchmark. MathTutorBench evaluates open-ended math tutor behavior across three high-level skills and concrete tasks such as mistake location, mistake correction, Socratic questioning, scaffolding generation, and pedagogy following.
+
+Upstream sources:
+
+- Benchmark site: <https://eth-lre.github.io/mathtutorbench/>
+- Benchmark repo: <https://github.com/eth-lre/mathtutorbench>
+- Paper: <https://arxiv.org/abs/2502.18940>
+
+## Prompt Variants
+
+- `current`: `packages/prisma-data/src/data/data/tutorMode.txt`
+- `tutor-skills-v1`: `packages/prisma-data/src/data/data/tutorModeSkillsV1.txt`
+
+The runner copies a local MathTutorBench checkout into a run folder, prepends the selected Klicker prompt to each task config, adds a short benchmark bridge instruction, then calls upstream `main.py`. This keeps upstream files unchanged and makes each prompt version visible in `project/evals/results/<run>/<variant>/manifest.json`.
+
+## Smoke Run
+
+```bash
+pnpm --dir apps/chat-api exec tsx ../../scripts/eval/run_mathtutorbench.ts --dry-run --run-id smoke
+```
+
+This creates manifests only. It verifies prompt paths, task selection, output layout, and command generation without requiring Python packages, Hugging Face access, or model API credentials.
+
+## Real Run
+
+```bash
+git clone https://github.com/eth-lre/mathtutorbench /tmp/mathtutorbench
+cd /tmp/mathtutorbench
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+cd /path/to/klicker-uzh
+MATHTUTORBENCH_DIR=/tmp/mathtutorbench pnpm --dir apps/chat-api exec tsx ../../scripts/eval/run_mathtutorbench.ts \
+  --model-args "model=gpt-4o-mini-2024-07-18,is_chat=true,api_key=$OPENAI_API_KEY,temperature=0,max_tokens=2048"
+```
+
+Use `--tasks` to run a subset:
+
+```bash
+pnpm --dir apps/chat-api exec tsx ../../scripts/eval/run_mathtutorbench.ts \
+  --dry-run \
+  --tasks mistake_location.yaml,scaffolding_generation.yaml
+```
+
+## Outputs
+
+- `manifest.json`: prompt hash, selected tasks, redacted model args, command, and source URLs.
+- `upstream-results/`: files emitted by MathTutorBench `main.py`.
+- `mathtutorbench/`: temporary copied benchmark checkout for reproducibility of generated task configs.
+
+Generated outputs under `project/evals/results/` are ignored by git except `.gitkeep`.
