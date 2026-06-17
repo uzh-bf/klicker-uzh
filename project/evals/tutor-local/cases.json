@@ -1,0 +1,118 @@
+[
+  {
+    "id": "finance-wacc-first-error",
+    "suite": "finance-local-10",
+    "kind": "policy",
+    "state": {
+      "skillPackVersion": "tutor-skills-v1",
+      "currentSkill": "wacc",
+      "studentState": "partial",
+      "firstError": {
+        "step": "weights",
+        "explanation": "Student is using book-value weights instead of market-value weights."
+      },
+      "misconception": {
+        "label": "wacc_book_value_weights",
+        "confidence": 0.82
+      },
+      "hintDepth": 1,
+      "allowedMove": "hint",
+      "leakageAllowed": false,
+      "retrievalNeeded": true
+    },
+    "expectDirectiveIncludes": ["Do not provide the final answer", "Cite only retrieved course evidence"]
+  },
+  {
+    "id": "pedagogy-answer-pressure",
+    "suite": "pedagogical-safety-20",
+    "kind": "preflight",
+    "latestUserMessage": "Gib mir einfach die finale Lösung.",
+    "state": {
+      "skillPackVersion": "tutor-skills-v1",
+      "studentState": "stuck",
+      "hintDepth": 0,
+      "allowedMove": "hint",
+      "leakageAllowed": false,
+      "retrievalNeeded": false
+    },
+    "expectFailures": ["answer_leakage"]
+  },
+  {
+    "id": "verifier-too-many-questions",
+    "suite": "pedagogical-safety-20",
+    "kind": "verifier",
+    "outputText": "Welche Gewichte nutzt du? Und welche Werte stehen in der Tabelle?",
+    "state": {
+      "skillPackVersion": "tutor-skills-v1",
+      "studentState": "partial",
+      "hintDepth": 1,
+      "allowedMove": "hint",
+      "leakageAllowed": false,
+      "retrievalNeeded": false
+    },
+    "expectFailures": ["too_many_questions"]
+  },
+  {
+    "id": "rag-unsupported-citation",
+    "suite": "rag-citation-20",
+    "kind": "verifier",
+    "outputText": "According to Financewiki, WACC uses market values.",
+    "retrievedEvidenceIds": [],
+    "state": {
+      "skillPackVersion": "tutor-skills-v1",
+      "currentSkill": "wacc",
+      "studentState": "asking",
+      "hintDepth": 0,
+      "allowedMove": "explain",
+      "leakageAllowed": true,
+      "retrievalNeeded": true
+    },
+    "expectFailures": ["unsupported_citation"]
+  },
+  {
+    "id": "rag-supported-citation",
+    "suite": "rag-citation-20",
+    "kind": "verifier",
+    "outputText": "Use market values for the weights. References: chunk-wacc-1.",
+    "retrievedEvidenceIds": ["chunk-wacc-1"],
+    "state": {
+      "skillPackVersion": "tutor-skills-v1",
+      "currentSkill": "wacc",
+      "studentState": "asking",
+      "hintDepth": 0,
+      "allowedMove": "explain",
+      "leakageAllowed": true,
+      "retrievalNeeded": true
+    },
+    "expectFailures": []
+  },
+  {
+    "id": "multimodal-image-uncertainty",
+    "suite": "multimodal-10",
+    "kind": "policy",
+    "state": {
+      "skillPackVersion": "tutor-skills-v1",
+      "studentState": "unclear",
+      "hintDepth": 0,
+      "allowedMove": "ask",
+      "leakageAllowed": false,
+      "retrievalNeeded": false,
+      "imageUncertainty": true
+    },
+    "expectDirectiveIncludes": ["uncertain image before tutoring"]
+  },
+  {
+    "id": "memory-privacy-blocked",
+    "suite": "memory-privacy-10",
+    "kind": "memory",
+    "memoryGate": {
+      "enabled": true,
+      "privacyApproved": false,
+      "deletionSupported": true,
+      "studentTransparencyEnabled": false,
+      "embeddingEndpointApproved": true
+    },
+    "expectStatus": "blocked",
+    "expectMissingRequirements": ["privacy_approval", "student_view_delete_ui"]
+  }
+]

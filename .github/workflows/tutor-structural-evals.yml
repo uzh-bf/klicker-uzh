@@ -1,0 +1,48 @@
+name: Tutor structural evals
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/chat-api/**'
+      - 'packages/chat-engine/**'
+      - 'project/evals/tutor-local/**'
+      - 'scripts/eval/run_tutor_structural.ts'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/tutor-structural-evals.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  tutor-structural-evals:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.4
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build tutor eval dependencies
+        run: pnpm --filter @klicker-uzh/chat-engine build
+
+      - name: Typecheck tutor structural eval runner
+        run: pnpm --filter @klicker-uzh/chat-engine exec tsc --noEmit --skipLibCheck --moduleResolution Bundler --module ESNext --target ES2022 --strict ../../scripts/eval/run_tutor_structural.ts
+
+      - name: Run tutor structural evals
+        run: pnpm --dir apps/chat-api exec tsx ../../scripts/eval/run_tutor_structural.ts --no-write --run-id ci
