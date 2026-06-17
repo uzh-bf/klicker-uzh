@@ -48,6 +48,11 @@ import {
 } from './lib/persistedContent.js'
 import { DEFAULT_PROMPT } from './lib/prompts.js'
 import { type ReasoningEffort } from './lib/reasoning.js'
+import {
+  formatTutorTurnStateInstructions,
+  isTutorMode,
+  planTutorTurnState,
+} from './lib/tutorState.js'
 import { CreditsService } from './services/credits.js'
 import { DisclaimersService } from './services/disclaimers.js'
 import { ThreadService } from './services/threads.js'
@@ -618,16 +623,69 @@ app.post(
       openaiBaseUrl: providerConfig.baseUrl ?? null,
     }
 
+    const tutorPlannerMessages = modelMessages.map((message) => ({
+      role: message.role,
+      content:
+        typeof message.content === 'string'
+          ? message.content
+          : message.content
+              .map((part) =>
+                part.type === 'text' ? part.text : '[Attached image]'
+              )
+              .join('\n'),
+    }))
+
+    const tutorStateResult = isTutorMode(selectedMode)
+      ? await planTutorTurnState({
+          messages: tutorPlannerMessages,
+          model: buildImageDescriptionModel(
+            providerConfig,
+            process.env.CHAT_TUTOR_STATE_MODEL_ID ??
+              selectedModelConfig.deploymentId
+          ),
+          providerOptions: responsesProviderOptions(
+            selectedModelConfig.deploymentId,
+            undefined,
+            getOpenAIResponsesStore()
+          ).options,
+          skillPackVersion: selectedMode,
+        })
+      : null
+
+    if (
+      tutorStateResult &&
+      (process.env.NODE_ENV !== 'production' ||
+        process.env.CHAT_TUTOR_STATE_LOG === '1')
+    ) {
+      console.info('[chat-api] tutor turn state', {
+        requestId,
+        source: tutorStateResult.source,
+        state: tutorStateResult.state,
+        ...(tutorStateResult.errorMessage
+          ? { error: tutorStateResult.errorMessage }
+          : {}),
+      })
+    }
+
+    const agentExtras = {
+      ...(mcpToolset.toolNames.length > 0
+        ? { tools: mcpToolset.tools as never }
+        : {}),
+      ...(tutorStateResult
+        ? {
+            instructionsSuffix: formatTutorTurnStateInstructions(
+              tutorStateResult.state
+            ),
+          }
+        : {}),
+    }
+
     const agent = withObservability(
       buildAgent(
         chatbotConfig,
         selectedMode,
         selectedModelConfig.deploymentId,
-        // Cast bridges the engine's deep ToolsInput type (see lib/mcp.ts); the
-        // runtime value is the merged Mastra toolset.
-        mcpToolset.toolNames.length > 0
-          ? { tools: mcpToolset.tools as never }
-          : {}
+        agentExtras
       )
     )
 
