@@ -280,6 +280,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Course Deletion Mutation
+
+Status: complete for the scoped slice. Scope was limited to migrating the
+Manage course-list deletion modal from Apollo `DeleteCourseDocument` to tRPC
+while preserving the existing course summary tRPC read and course-list
+invalidation. Course detail reads, course settings updates, activity
+deletion/publishing/scheduling modals, generated cleanup, S05, and S06 were out
+of scope.
+
+Operation mapping:
+
+```text
+Slice: S04L Course Deletion Mutation
+
+GraphQL operations:
+- DeleteCourse
+
+tRPC procedures:
+- course.delete
+
+GraphQL behavior source:
+- packages/graphql/src/schema/mutation.ts deleteCourse
+- packages/graphql/src/services/courses.ts deleteCourse
+
+React Query replacement:
+- trpc.course.delete.useMutation()
+- utils.course.userCourses.invalidate()
+```
+
+Completed write scope:
+
+- Added a narrow `deleteCourseInput` schema.
+- Added `course.delete` with the same ADMIN permission guard, assessment-course
+  refusal, hard-delete behavior, derived-permission recomputation, scheduled
+  Hatchet job cleanup, and course invalidation event as the GraphQL behavior
+  source.
+- Replaced `CourseDeletionModal` Apollo mutation/cache update with tRPC mutation
+  and `course.userCourses` invalidation.
+- Added focused API tests for missing permission, missing/non-deletable course,
+  and successful side-effect cleanup.
+
+Verification:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write ...`: passed for touched
+  API/frontend files.
+- `pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/course-mutations.test.ts`:
+  passed. The API script ran the full API suite: 36 files, 344 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing repository warnings only (`MODULE_TYPELESS_PACKAGE_JSON`,
+  next-intl `i18n`, PWA logs, stale Browserslist, `/qr/[...args]`
+  `MISSING_MESSAGE`, and large page-data warnings).
+- Focused audit
+  `rg -n "@apollo/client|DeleteCourseDocument|GetUserCoursesDocument|@klicker-uzh/graphql" apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx packages/api/src/trpc/schemas/course.ts packages/api/src/trpc/routers/course.ts packages/api/src/trpc/__tests__/course-mutations.test.ts`:
+  no matches.
+- `git diff --check`: passed.
+
+Browser verification:
+
+- Used the already-running local compose backing services plus branch backend
+  and auth on `3103`/`3106`; restarted branch Manage on `3104` after the
+  production build invalidated the previous dev `.next` output.
+- Logged in with seeded delegated lecturer credentials and opened
+  `http://localhost:3104/courses`.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04-course-delete-04-courses-auth.png`
+  - `/tmp/agent-browser-shots/s04-course-delete-06-delete-modal.png`
+- Browser evidence: the course list rendered, the first course deletion modal
+  opened, the final destructive confirm stayed disabled until sub-confirmations,
+  and the recent resource trace included `course.summary` via `/api/trpc`.
+- The destructive delete action was intentionally not confirmed in the browser;
+  mutation behavior is covered by API tests.
+
+Next: continue remaining S04-only pre-realtime manage findings. Pause before
+S05/S06.
+
 ### 2026-06-19 Completed: S04J Manage Header Running Live Quiz Read
 
 Status: complete for the scoped slice. Scope was limited to the Manage header's

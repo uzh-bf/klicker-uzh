@@ -49,3 +49,7 @@ export const toggleArchiveCourseInput = z.object({
   id: z.string(),
   isArchived: z.boolean(),
 })
+
+export const deleteCourseInput = z.object({
+  id: z.string(),
+})

@@ -1,8 +1,3 @@
-import { useMutation } from '@apollo/client'
-import {
-  DeleteCourseDocument,
-  GetUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -49,8 +44,7 @@ function CourseDeletionModal({
     { enabled: Boolean(courseId) }
   )
 
-  const [deleteCourse, { loading: courseDeleting }] =
-    useMutation(DeleteCourseDocument)
+  const deleteCourse = trpc.course.delete.useMutation()
 
   // skip confirmation for the elements where none are present
   useEffect(() => {
@@ -87,33 +81,13 @@ function CourseDeletionModal({
       title={t('manage.courseList.deleteCourse')}
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
-      primaryLoading={courseDeleting}
+      primaryLoading={deleteCourse.isLoading}
       primaryDisabled={
         queryLoading ||
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        await deleteCourse({
-          variables: { id: courseId },
-          optimisticResponse: {
-            __typename: 'Mutation',
-            deleteCourse: {
-              __typename: 'Course',
-              id: courseId,
-            },
-          },
-          update: (cache, { data }) => {
-            // check if the deletion was successful
-            if (!data?.deleteCourse) return
-
-            // remove the course from the queries list
-            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
-              userCourses: qData?.userCourses?.filter(
-                (course) => course.id !== data.deleteCourse!.id
-              ),
-            }))
-          },
-        })
+        await deleteCourse.mutateAsync({ id: courseId })
         await utils.course.userCourses.invalidate()
         onClose()
         setConfirmations({ ...initialConfirmations })

@@ -4,7 +4,7 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 
 const recomputeDerivedPermissions = vi.hoisted(() => vi.fn())
@@ -32,6 +32,10 @@ function createContext(prisma: TRPCContext['prisma']): TRPCContext {
 }
 
 describe('course mutation routers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('creates a course and recomputes owner permissions', async () => {
     const startDate = new Date('2026-09-01T00:00:00.000Z')
     const endDate = new Date('2027-02-01T00:00:00.000Z')
@@ -190,6 +194,160 @@ describe('course mutation routers', () => {
         id: true,
         isArchived: true,
       },
+    })
+  })
+
+  test('returns null when delete permission is missing', async () => {
+    const findUnique = vi.fn()
+    const transaction = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      course: {
+        findUnique,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.course.delete({ id: 'course-1' })).resolves.toEqual({
+      course: null,
+    })
+    expect(findUnique).not.toHaveBeenCalled()
+    expect(transaction).not.toHaveBeenCalled()
+  })
+
+  test('rejects course deletion when the course cannot be deleted', async () => {
+    const transaction = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      course: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.course.delete({ id: 'course-1' })).rejects.toThrow(
+      'Course not found or permission denied'
+    )
+    expect(transaction).not.toHaveBeenCalled()
+  })
+
+  test('deletes courses and cleans up derived side effects', async () => {
+    const courseDelete = vi.fn().mockResolvedValue({ id: 'course-1' })
+    const tx = {
+      course: {
+        delete: courseDelete,
+      },
+    }
+    const transaction = vi.fn(
+      async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx)
+    )
+    const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+    const emit = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      course: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'course-1',
+          liveQuizzes: [{ id: 'live-quiz-1' }],
+          practiceQuizzes: [
+            {
+              id: 'practice-quiz-1',
+              scheduledPublicationTaskId: 'task-pq-publication',
+              stacks: [
+                {
+                  elements: [{ elementId: 1 }, { elementId: 2 }],
+                },
+              ],
+            },
+          ],
+          microLearnings: [
+            {
+              id: 'microlearning-1',
+              scheduledPublicationTaskId: 'task-ml-publication',
+              scheduledCompletionTaskId: 'task-ml-completion',
+              stacks: [
+                {
+                  elements: [{ elementId: 2 }, { elementId: 3 }],
+                },
+              ],
+            },
+          ],
+          groupActivities: [
+            {
+              id: 'group-activity-1',
+              scheduledPublicationTaskId: null,
+              scheduledCompletionTaskId: 'task-ga-completion',
+              stacks: [
+                {
+                  elements: [{ elementId: 3 }, { elementId: 4 }],
+                },
+              ],
+            },
+          ],
+        }),
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({
+      ...createContext(prisma),
+      hatchet: {
+        scheduled: {
+          delete: scheduledDelete,
+        },
+      },
+      emitter: {
+        emit,
+      } as unknown as TRPCContext['emitter'],
+    })
+
+    await expect(caller.course.delete({ id: 'course-1' })).resolves.toEqual({
+      course: { id: 'course-1' },
+    })
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: 60000,
+    })
+    expect(courseDelete).toHaveBeenCalledWith({ where: { id: 'course-1' } })
+    expect(recomputeDerivedPermissions).toHaveBeenNthCalledWith(
+      1,
+      { liveQuizId: 'live-quiz-1' },
+      tx
+    )
+    expect(recomputeDerivedPermissions).toHaveBeenNthCalledWith(
+      2,
+      { elementId: 1 },
+      tx
+    )
+    expect(recomputeDerivedPermissions).toHaveBeenNthCalledWith(
+      3,
+      { elementId: 2 },
+      tx
+    )
+    expect(recomputeDerivedPermissions).toHaveBeenNthCalledWith(
+      4,
+      { elementId: 3 },
+      tx
+    )
+    expect(recomputeDerivedPermissions).toHaveBeenNthCalledWith(
+      5,
+      { elementId: 4 },
+      tx
+    )
+    expect(scheduledDelete).toHaveBeenNthCalledWith(1, 'task-pq-publication')
+    expect(scheduledDelete).toHaveBeenNthCalledWith(2, 'task-ml-publication')
+    expect(scheduledDelete).toHaveBeenNthCalledWith(3, 'task-ml-completion')
+    expect(scheduledDelete).toHaveBeenNthCalledWith(4, 'task-ga-completion')
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'Course',
+      id: 'course-1',
     })
   })
 })

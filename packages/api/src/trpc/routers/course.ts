@@ -27,6 +27,7 @@ import {
   courseActivityIdsInput,
   courseSummaryInput,
   createCourseInput,
+  deleteCourseInput,
   toggleArchiveCourseInput,
 } from '../schemas/course.js'
 
@@ -54,6 +55,137 @@ const activeUserCourseSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.CourseSelect
+
+type ScheduledHatchetClient = {
+  scheduled: {
+    delete: (taskId: string) => Promise<unknown>
+  }
+}
+
+async function deleteScheduledHatchetTask({
+  ctx,
+  taskId,
+  failureMessage,
+}: {
+  ctx: TRPCContextWithUser
+  taskId: string
+  failureMessage: string
+}) {
+  const hatchet = ctx.hatchet as ScheduledHatchetClient | undefined
+
+  if (!hatchet?.scheduled?.delete) {
+    throw new Error('Hatchet client unavailable')
+  }
+
+  try {
+    await hatchet.scheduled.delete(taskId)
+  } catch {
+    console.log(failureMessage)
+  }
+}
+
+async function deleteCourseById(ctx: TRPCContextWithUser, id: string) {
+  const prisma = getPrisma(ctx)
+  const course = await prisma.course.findUnique({
+    where: { id, isAssessmentEnabled: false },
+    include: {
+      liveQuizzes: true,
+      practiceQuizzes: { include: { stacks: { include: { elements: true } } } },
+      microLearnings: { include: { stacks: { include: { elements: true } } } },
+      groupActivities: { include: { stacks: { include: { elements: true } } } },
+    },
+  })
+
+  if (!course) {
+    throw new Error('Course not found or permission denied')
+  }
+
+  const deletedCourse = await prisma.$transaction(
+    async (tx) => {
+      const deleted = await tx.course.delete({ where: { id } })
+
+      for (const liveQuiz of course.liveQuizzes) {
+        await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, tx)
+      }
+
+      const elementIds = [
+        ...new Set([
+          ...course.practiceQuizzes.flatMap((quiz) =>
+            quiz.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+          ...course.microLearnings.flatMap((microLearning) =>
+            microLearning.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+          ...course.groupActivities.flatMap((groupActivity) =>
+            groupActivity.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+        ]),
+      ]
+
+      for (const elementId of elementIds) {
+        await recomputeDerivedPermissions({ elementId }, tx)
+      }
+
+      return deleted
+    },
+    { timeout: 60000 }
+  )
+
+  for (const practiceQuiz of course.practiceQuizzes) {
+    if (practiceQuiz.scheduledPublicationTaskId) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: practiceQuiz.scheduledPublicationTaskId,
+        failureMessage: `Failed to delete scheduled publication hatchet job for practice quiz ${practiceQuiz.id}`,
+      })
+    }
+  }
+
+  for (const microLearning of course.microLearnings) {
+    if (microLearning.scheduledPublicationTaskId) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: microLearning.scheduledPublicationTaskId,
+        failureMessage: `Failed to delete scheduled publication hatchet job for micro learning ${microLearning.id}`,
+      })
+    }
+
+    if (microLearning.scheduledCompletionTaskId) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: microLearning.scheduledCompletionTaskId,
+        failureMessage: `Failed to delete scheduled completion hatchet job for micro learning ${microLearning.id}`,
+      })
+    }
+  }
+
+  for (const groupActivity of course.groupActivities) {
+    if (groupActivity.scheduledPublicationTaskId) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: groupActivity.scheduledPublicationTaskId,
+        failureMessage: `Failed to delete scheduled publication hatchet job for group activity ${groupActivity.id}`,
+      })
+    }
+
+    if (groupActivity.scheduledCompletionTaskId) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: groupActivity.scheduledCompletionTaskId,
+        failureMessage: `Failed to delete scheduled completion hatchet job for group activity ${groupActivity.id}`,
+      })
+    }
+  }
+
+  ctx.emitter?.emit('invalidate', { typename: 'Course', id })
+  return deletedCourse
+}
 
 async function getActivityCourse(
   prisma: TRPCContextWithUser['prisma'],
@@ -281,6 +413,27 @@ export const courseRouter = router({
       })
 
       return { course }
+    }),
+
+  delete: userProcedure
+    .input(deleteCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.id,
+          PermissionLevel.ADMIN
+        ))
+      ) {
+        return { course: null }
+      }
+
+      const course = await deleteCourseById(
+        ctx as TRPCContextWithUser,
+        input.id
+      )
+
+      return { course: { id: course.id } }
     }),
 
   activeUserCourses: userProcedure
