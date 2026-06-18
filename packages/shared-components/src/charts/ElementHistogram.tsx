@@ -1,6 +1,5 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 import { ElementType, type Statistics } from '@klicker-uzh/graphql/dist/ops'
-import { CHART_SOLUTION_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import { Button, NumberField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
@@ -16,6 +15,7 @@ import {
   YAxis,
 } from 'recharts'
 import { twMerge } from 'tailwind-merge'
+import { CHART_SOLUTION_COLORS } from '../constants'
 import useEvaluationHistogramData from '../hooks/useEvaluationHistogramData'
 
 interface ElementHistogramProps {

@@ -1065,7 +1065,7 @@ describe('Different live-quiz workflows', function () {
   it('Test the live quiz functionalities on mobile devices', function () {
     // login student again on mobile, test navigation and answer second question
     cy.viewport('iphone-x')
-    cy.loginStudent()
+    cy.loginStudent({ preserveClientState: true })
     cy.findByText(this.data.course2.quiz.displayName).should('exist').click()
     cy.findByText(this.data.NR.content, { timeout: 10000 }).should('exist')
     cy.findByText(messages.pwa.liveQuiz.allQuestionsAnswered).should(
