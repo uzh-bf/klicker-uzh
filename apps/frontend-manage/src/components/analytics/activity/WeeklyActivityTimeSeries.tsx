@@ -1,11 +1,8 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetCourseWeeklyActivityDocument,
-  ParticipantActivityTimestamp,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ParticipantActivityTimestamp } from '@lib/analyticsTypes'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ActivityTimeSeriesPlot from './ActivityTimeSeriesPlot'
 import SuspendedCourseComparison from './SuspendedCourseComparison'
 
@@ -23,13 +20,13 @@ function WeeklyActivityTimeSeries({
     { id: string; name: string } | undefined
   >(undefined)
 
-  const { data, loading } = useQuery(GetCourseWeeklyActivityDocument, {
-    variables: { courseId: courseComparison?.id },
-    skip: typeof courseComparison === 'undefined',
-  })
-  const secondParticipants =
-    data?.getCourseWeeklyActivity?.totalParticipants ?? 0
-  const secondActivity = data?.getCourseWeeklyActivity?.weeklyActivity ?? []
+  const comparisonCourseId = courseComparison?.id
+  const { data, isLoading } = trpc.analytics.courseWeeklyActivity.useQuery(
+    { courseId: comparisonCourseId ?? '' },
+    { enabled: typeof comparisonCourseId !== 'undefined' }
+  )
+  const secondParticipants = data?.courseWeeklyActivity?.totalParticipants ?? 0
+  const secondActivity = data?.courseWeeklyActivity?.weeklyActivity ?? []
 
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
@@ -76,7 +73,7 @@ function WeeklyActivityTimeSeries({
             <SuspendedCourseComparison
               courseComparison={courseComparison}
               setCourseComparison={setCourseComparison}
-              comparisonCourseLoading={loading}
+              comparisonCourseLoading={isLoading}
             />
           </Suspense>
         </div>

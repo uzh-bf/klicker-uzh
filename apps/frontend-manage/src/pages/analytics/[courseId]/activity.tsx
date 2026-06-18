@@ -1,5 +1,3 @@
-import { useQuery } from '@apollo/client'
-import { GetCourseActivityAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -13,26 +11,24 @@ import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
 import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
+import { trpc } from '../../../lib/trpc'
 
 function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
   const courseId = router.query.courseId
 
-  const { data, loading, error } = useQuery(
-    GetCourseActivityAnalyticsDocument,
-    {
-      variables: { courseId: courseId as string },
-      skip: !courseId,
-    }
+  const { data, isLoading, error } = trpc.analytics.courseActivity.useQuery(
+    { courseId: courseId as string },
+    { enabled: !!courseId }
   )
-  const course = data?.getCourseActivityAnalytics
+  const course = data?.courseActivityAnalytics
   const navigation = (
     <ActivityAnalyticsNavigation courseId={courseId as string} />
   )
 
   // loading state
-  if (loading || !courseId) {
+  if (isLoading || !courseId) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.activityDashboard')}

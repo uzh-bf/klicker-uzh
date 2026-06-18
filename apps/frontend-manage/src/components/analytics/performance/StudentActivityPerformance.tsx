@@ -1,8 +1,8 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
-import { ParticipantActivityPerformances } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
+import type { ParticipantActivityPerformances } from '@lib/analyticsTypes'
 import {
   Button,
   Checkbox,

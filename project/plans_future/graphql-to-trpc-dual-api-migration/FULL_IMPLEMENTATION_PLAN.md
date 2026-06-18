@@ -280,6 +280,127 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+
+### 2026-06-18 Completed: S04N3 Manage Course Analytics Reads
+
+Status: complete for the scoped slice. Scope was the course-level manage
+analytics activity/performance pages and the weekly course comparison query used
+inside the activity dashboard. This was S04N/S04P mixed-state work only; S05
+realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04N3 Manage Course Analytics Reads
+GraphQL operation(s): GetCourseActivityAnalytics, GetCourseWeeklyActivity, GetCoursePerformanceAnalytics
+GraphQL resolver(s): Query.getCourseActivityAnalytics, Query.getCourseWeeklyActivity, Query.getCoursePerformanceAnalytics with >= READ course permission checks
+Behavior source: packages/graphql/src/services/analytics.ts getCourseActivityAnalytics/getCourseWeeklyActivity/getCoursePerformanceAnalytics
+tRPC router.procedure: analytics.courseActivity, analytics.courseWeeklyActivity, analytics.coursePerformance
+Input schema: { courseId: string }
+Output DTO: course activity timestamps/weekday/activity rows; weekly comparison rows; course performance progress/rates/participant/feedback rows with existing UI discriminator fields
+Active frontend consumers: apps/frontend-manage/src/pages/analytics/[courseId]/activity.tsx; apps/frontend-manage/src/pages/analytics/[courseId]/performance.tsx; directly used analytics activity/performance chart/table components and hooks
+Apollo cache/refetch/subscription behavior: read-only Apollo queries, no cache writes, no subscriptions
+React Query replacement: trpc.analytics.courseActivity.useQuery, trpc.analytics.courseWeeklyActivity.useQuery, trpc.analytics.coursePerformance.useQuery
+Browser verification path: branch-local backend/auth/manage on 3133/3136/3134; delegated login; activity and performance dashboards for Testkurs; verify /api/trpc analytics.courseActivity and analytics.coursePerformance resource timing and screenshots
+Cleanup blocked until: remaining S04N evaluation/grading/reporting reads, S04O secondary runtime consumers, S04P generated GraphQL type leak cleanup outside the migrated analytics path, S04Q API no-GraphQL runtime gate, S05 realtime, and S06 cleanup gates
+```
+
+Intended write scope:
+
+- `packages/api/src/trpc/schemas/analytics.ts`
+- `packages/api/src/trpc/dto/analytics.ts`
+- `packages/api/src/trpc/routers/analytics.ts`
+- `packages/api/src/trpc/__tests__/analytics-read.test.ts`
+- `apps/frontend-manage/src/lib/analyticsTypes.ts`
+- `apps/frontend-manage/src/pages/analytics/[courseId]/activity.tsx`
+- `apps/frontend-manage/src/pages/analytics/[courseId]/performance.tsx`
+- Directly affected `apps/frontend-manage/src/components/analytics/activity/**` and `apps/frontend-manage/src/components/analytics/performance/**` files that consumed the migrated payloads
+- This plan file
+
+Implementation:
+
+- Added `analytics.courseActivity`, `analytics.courseWeeklyActivity`, and
+  `analytics.coursePerformance` procedures behind `hasCoursePermission(...,
+  PermissionLevel.READ)`, returning nullable DTOs on missing permission or
+  missing course data to mirror the GraphQL contract.
+- Mirrored the existing GraphQL analytics aggregation behavior in
+  `packages/api/src/trpc/dto/analytics.ts`, including course week calculation,
+  activity/performance rate fallbacks, feedback aggregation, and sorted feedback
+  lists.
+- Preserved current UI-facing discriminator fields such as
+  `__typename: 'ActivityPerformance' | 'InstancePerformance' | 'ActivityFeedback' | 'InstanceFeedback'`
+  where existing chart/filter hooks branch on them during the mixed state.
+- Migrated the activity and performance analytics pages from Apollo queries to
+  tRPC queries.
+- Migrated the weekly activity comparison query inside
+  `WeeklyActivityTimeSeries` from Apollo to `analytics.courseWeeklyActivity`.
+- Replaced generated GraphQL type imports in the directly affected analytics
+  page/component path with tRPC-derived local structural types in
+  `apps/frontend-manage/src/lib/analyticsTypes.ts`, shared `ActivityType`, and
+  narrow `ElementType` type usage.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/analytics-read.test.ts`: passed; package script ran all API tests, 309 tests across 31 files.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/module-type, next-intl, Browserslist, `MISSING_MESSAGE`, and large-page-data warnings.
+- Focused audit `rg -n "GetCourseActivityAnalyticsDocument|GetCourseActivityAnalytics|GetCoursePerformanceAnalyticsDocument|GetCoursePerformanceAnalytics|GetCourseWeeklyActivityDocument|GetCourseWeeklyActivity" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n packages/api/src`: no matches.
+- Focused generated-type audit over the migrated analytics page/component path found no `@klicker-uzh/graphql/dist/ops` imports.
+- Compact S04 coexistence audit `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`: `294`, confirming GraphQL/Apollo remain intentionally live for later S04/S05/S06 gates.
+- `git diff --check`: passed.
+
+Browser/runtime verification:
+
+- Branch-local backend/auth/manage ran on `3133/3136/3134`.
+- Backend used the local Hatchet token syntax, `APP_MANAGE_SUBDOMAIN=127.0.0.1`,
+  and branch-local URL overrides. Auth/manage sourced the backend local
+  `APP_SECRET` and `DATABASE_URL` plus branch-local URL overrides.
+- Auth middleware initially redirected to PWA because `127.0.0.1` was included
+  in `AUTH_PWA_HOSTS`; restarting auth with `127.0.0.1` only in
+  `AUTH_LECTURER_ALLOWED_HOSTS` fixed delegated lecturer login.
+- Delegated login as `lecturer`, then opened
+  `http://127.0.0.1:3134/analytics/7c12e44e-d083-4acf-845e-4c34aaff6b49/activity`.
+- Activity dashboard rendered `Activity Dashboard: Testkurs`, course participant
+  count, weekly/daily activity sections, daily activity section, and overall
+  student activity section. Browser resource timing included
+  `/api/trpc/user.profile,analytics.courseActivity?batch=1...courseId=7c12e44e-d083-4acf-845e-4c34aaff6b49`.
+- Opened
+  `http://127.0.0.1:3134/analytics/7c12e44e-d083-4acf-845e-4c34aaff6b49/performance`.
+- Performance dashboard rendered `Performance and Progress Dashboard: Testkurs`,
+  performance/activity/student/feedback tabs, and the default performance-rate
+  state. Browser resource timing included
+  `/api/trpc/user.profile,analytics.coursePerformance?batch=1...courseId=7c12e44e-d083-4acf-845e-4c34aaff6b49`.
+- Student Performance, Feedback Overview, and Activity Progress tabs rendered
+  without runtime errors. Student Performance also triggered the expected
+  surrounding tRPC `course.activities` request. `/api/graphql` remained visible
+  for surrounding still-migrating manage app data.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04n3-05-auth-local-fixed.png`
+  - `/tmp/agent-browser-shots/s04n3-06-delegated-form.png`
+  - `/tmp/agent-browser-shots/s04n3-07-activity-dashboard.png`
+  - `/tmp/agent-browser-shots/s04n3-08-performance-dashboard.png`
+  - `/tmp/agent-browser-shots/s04n3-09-student-performance-tab.png`
+  - `/tmp/agent-browser-shots/s04n3-10-feedback-overview-tab.png`
+  - `/tmp/agent-browser-shots/s04n3-11-activity-progress-tab.png`
+- Cleanup closed `agent-browser`, stopped only the temporary branch-local
+  backend/auth/manage processes, and confirmed ports `3133`, `3134`, and
+  `3136` had no listeners afterward.
+
+Residual risk / next S04 work:
+
+- S04N remains open for evaluation, grading, point-correction, and reporting
+  reads such as practice quiz evaluation, microlearning evaluation, live quiz
+  evaluation, and group activity grading/reporting surfaces.
+- S04O secondary runtime consumers remain open; current audit still shows
+  `apps/hatchet-worker-general/src/index.ts` importing `@klicker-uzh/graphql`.
+- S04P generated GraphQL type leak cleanup remains open outside the migrated
+  analytics path.
+- S04Q API no-GraphQL runtime dependency gate remains open.
+- Stop remains before S05; do not begin realtime migration without explicit user
+  direction.
+
 ### 2026-06-18 Completed: S04N2 Manage Quiz Detail Analytics Read
 
 Status: complete for the scoped slice. Scope was the

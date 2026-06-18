@@ -1,4 +1,4 @@
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -18,11 +18,11 @@ function ActivityTypeFilter({
       items={[
         { value: 'all', label: t('manage.analytics.allActivityTypes') },
         {
-          value: ActivityType.PracticeQuiz,
+          value: ActivityType.PRACTICE_QUIZ,
           label: t('shared.generic.practiceQuizzes'),
         },
         {
-          value: ActivityType.MicroLearning,
+          value: ActivityType.MICRO_LEARNING,
           label: t('shared.generic.microlearnings'),
         },
       ]}

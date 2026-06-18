@@ -1,12 +1,16 @@
-import { MicroLearning, PracticeQuiz } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
+
+type ActivityListItem = {
+  id: string
+  name: string
+}
 
 function useActivityMap({
   practiceQuizzes,
   microLearnings,
 }: {
-  practiceQuizzes?: Pick<PracticeQuiz, 'id' | 'name'>[] | null
-  microLearnings?: Pick<MicroLearning, 'id' | 'name'>[] | null
+  practiceQuizzes?: ActivityListItem[] | null
+  microLearnings?: ActivityListItem[] | null
 }) {
   const activityNameMap = useMemo(
     () => ({

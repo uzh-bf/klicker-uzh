@@ -1,7 +1,7 @@
-import {
+import type {
   ActivityPerformance,
   InstancePerformance,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '@lib/analyticsTypes'
 import * as JsSearch from 'js-search'
 import { useMemo } from 'react'
 

@@ -1,7 +1,4 @@
-import {
-  ActivityFeedback,
-  InstanceFeedback,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ActivityFeedback, InstanceFeedback } from '@lib/analyticsTypes'
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import StackedBarChartLabel from '../StackedBarChartLabel'
 

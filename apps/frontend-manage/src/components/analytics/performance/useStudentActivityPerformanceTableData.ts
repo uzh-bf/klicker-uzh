@@ -1,4 +1,4 @@
-import { ParticipantActivityPerformances } from '@klicker-uzh/graphql/dist/ops'
+import type { ParticipantActivityPerformances } from '@lib/analyticsTypes'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 

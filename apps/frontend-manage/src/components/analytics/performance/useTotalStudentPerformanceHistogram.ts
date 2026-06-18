@@ -1,4 +1,4 @@
-import { ParticipantPerformance } from '@klicker-uzh/graphql/dist/ops'
+import type { ParticipantPerformance } from '@lib/analyticsTypes'
 import { useMemo } from 'react'
 import computeHistogramStatistics from '../computeHistogramStatistics'
 

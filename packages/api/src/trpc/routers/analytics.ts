@@ -1,11 +1,19 @@
-import { PermissionLevel } from '@klicker-uzh/prisma/client'
+import { PermissionLevel, type Prisma } from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
-import { toActivityAnalytics } from '../dto/analytics.js'
+import {
+  toActivityAnalytics,
+  toCourseActivityAnalytics,
+  toCoursePerformanceAnalytics,
+  toCourseWeeklyActivity,
+} from '../dto/analytics.js'
 import { router } from '../init.js'
-import { hasActivityPermission } from '../permissions.js'
+import { hasActivityPermission, hasCoursePermission } from '../permissions.js'
 import { userProcedure } from '../procedures.js'
-import { activityAnalyticsInput } from '../schemas/analytics.js'
+import {
+  activityAnalyticsInput,
+  courseAnalyticsInput,
+} from '../schemas/analytics.js'
 
 const activityAnalyticsInclude = {
   stacks: {
@@ -64,7 +72,134 @@ const activityAnalyticsInclude = {
   },
 }
 
+const courseActivityAnalyticsInclude = {
+  participations: true,
+  aggregatedAnalytics: {
+    orderBy: { timestamp: 'asc' },
+  },
+  aggregatedCourseAnalytics: true,
+  participantCourseAnalytics: true,
+} satisfies Prisma.CourseInclude
+
+const courseWeeklyActivityInclude = {
+  participations: true,
+  aggregatedAnalytics: {
+    where: { type: 'WEEKLY' },
+    orderBy: { timestamp: 'asc' },
+  },
+} satisfies Prisma.CourseInclude
+
+const coursePerformanceAnalyticsInclude = {
+  _count: { select: { participations: true } },
+  practiceQuizzes: {
+    include: {
+      progress: true,
+      performance: true,
+      participantPerformances: { include: { participant: true } },
+      stacks: {
+        include: {
+          elements: {
+            include: { instancePerformance: true, feedbacks: true },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  },
+  microLearnings: {
+    include: {
+      progress: true,
+      performance: true,
+      participantPerformances: { include: { participant: true } },
+      stacks: {
+        include: {
+          elements: {
+            include: { instancePerformance: true, feedbacks: true },
+          },
+        },
+      },
+    },
+    orderBy: { scheduledStartAt: 'desc' },
+  },
+  participantPerformances: true,
+} satisfies Prisma.CourseInclude
+
 export const analyticsRouter = router({
+  courseActivity: userProcedure
+    .input(courseAnalyticsInput)
+    .query(async ({ ctx, input }) => {
+      const trpcCtx = ctx as TRPCContextWithUser
+      const canReadCourse = await hasCoursePermission(
+        trpcCtx,
+        input.courseId,
+        PermissionLevel.READ
+      )
+
+      if (!canReadCourse) {
+        return { courseActivityAnalytics: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        include: courseActivityAnalyticsInclude,
+      })
+
+      return {
+        courseActivityAnalytics: toCourseActivityAnalytics(course),
+      }
+    }),
+
+  courseWeeklyActivity: userProcedure
+    .input(courseAnalyticsInput)
+    .query(async ({ ctx, input }) => {
+      const trpcCtx = ctx as TRPCContextWithUser
+      const canReadCourse = await hasCoursePermission(
+        trpcCtx,
+        input.courseId,
+        PermissionLevel.READ
+      )
+
+      if (!canReadCourse) {
+        return { courseWeeklyActivity: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        include: courseWeeklyActivityInclude,
+      })
+
+      return {
+        courseWeeklyActivity: toCourseWeeklyActivity(course),
+      }
+    }),
+
+  coursePerformance: userProcedure
+    .input(courseAnalyticsInput)
+    .query(async ({ ctx, input }) => {
+      const trpcCtx = ctx as TRPCContextWithUser
+      const canReadCourse = await hasCoursePermission(
+        trpcCtx,
+        input.courseId,
+        PermissionLevel.READ
+      )
+
+      if (!canReadCourse) {
+        return { coursePerformanceAnalytics: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        include: coursePerformanceAnalyticsInclude,
+      })
+
+      return {
+        coursePerformanceAnalytics: toCoursePerformanceAnalytics(course),
+      }
+    }),
+
   activity: userProcedure
     .input(activityAnalyticsInput)
     .query(async ({ ctx, input }) => {

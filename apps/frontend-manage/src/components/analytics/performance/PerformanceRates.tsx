@@ -1,10 +1,10 @@
 import { faX } from '@fortawesome/free-solid-svg-icons'
-import {
+import type { ElementType } from '@klicker-uzh/prisma/client'
+import { ActivityType } from '@klicker-uzh/types'
+import type {
   ActivityPerformance,
-  ActivityType,
-  ElementType,
   InstancePerformance,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '@lib/analyticsTypes'
 import usePerformanceRates from '@lib/hooks/usePerformanceRates'
 import usePerformanceSearch from '@lib/hooks/usePerformanceSearch'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'

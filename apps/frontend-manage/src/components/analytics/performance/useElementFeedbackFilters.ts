@@ -1,9 +1,6 @@
-import {
-  ActivityFeedback,
-  ActivityType,
-  ElementType,
-  InstanceFeedback,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ElementType } from '@klicker-uzh/prisma/client'
+import { ActivityType } from '@klicker-uzh/types'
+import type { ActivityFeedback, InstanceFeedback } from '@lib/analyticsTypes'
 import type { Search } from 'js-search'
 import { useMemo } from 'react'
 

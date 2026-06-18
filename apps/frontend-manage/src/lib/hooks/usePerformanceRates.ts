@@ -1,9 +1,9 @@
-import {
+import type { ElementType } from '@klicker-uzh/prisma/client'
+import { ActivityType } from '@klicker-uzh/types'
+import type {
   ActivityPerformance,
-  ActivityType,
-  ElementType,
   InstancePerformance,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '@lib/analyticsTypes'
 import { useMemo } from 'react'
 
 interface PerformanceEntry {

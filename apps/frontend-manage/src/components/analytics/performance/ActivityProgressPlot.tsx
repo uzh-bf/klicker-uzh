@@ -1,4 +1,5 @@
-import { ActivityProgress, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
+import type { ActivityProgress } from '@lib/analyticsTypes'
 import { H2, H4, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import StackedProgress from './StackedProgress'
@@ -12,10 +13,10 @@ function ActivityProgressPlot({
 }) {
   const t = useTranslations()
   const pqProgresses = activityProgresses.filter(
-    (progress) => progress.activityType === ActivityType.PracticeQuiz
+    (progress) => progress.activityType === ActivityType.PRACTICE_QUIZ
   )
   const mlProgresses = activityProgresses.filter(
-    (progress) => progress.activityType === ActivityType.MicroLearning
+    (progress) => progress.activityType === ActivityType.MICRO_LEARNING
   )
 
   const chartColors = {
