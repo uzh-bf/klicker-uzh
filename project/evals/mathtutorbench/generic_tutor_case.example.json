@@ -1,0 +1,75 @@
+{
+  "id": "mathtutorbench-mathdial-ignatius-bicycles-001",
+  "source": "MathTutorBench/MathDial bridge",
+  "domain": "math",
+  "subdomain": "word problems; multiplicative comparison",
+  "task": "Ignatius owns 4 bicycles. A friend of his owns different types of cycles, which have three times as many tires as Ignatius's bikes have. He has one unicycle, a tricycle, and the rest are bikes. How many bicycles does the friend own?",
+  "dialogHistory": [
+    {
+      "role": "teacher",
+      "content": "Tell me your solution"
+    },
+    {
+      "role": "student",
+      "content": "I think the friend has 4 bicycles. Since Ignatius owns 4 bicycles, and his friend has more tires, then his friend must have 3 x 4 = 12 bicycle tires. The unicycle has 1 tire, and the tricycle has 3 tires, so the total number of tires accounted for is 1 + 3 = 4. Therefore, the friend must have a total of 12 - 4 = 8 bicycle tires from the remaining cycles. Since each bike has 2 tires, then the friend must have 8/2 = 4 bicycles."
+    }
+  ],
+  "studentAttempt": "I think the friend has 4 bicycles.",
+  "studentState": "misconception",
+  "learningObjective": "Distinguish between multiplying the number of bicycles and multiplying the number of tires.",
+  "expertSolution": "Ignatius has 4 bicycles, so Ignatius's bicycles have 4 x 2 = 8 tires. The friend has three times as many tires, so the friend has 24 tires total. The unicycle and tricycle account for 1 + 3 = 4 tires, leaving 20 tires for bicycles. Each bicycle has 2 tires, so the friend has 10 bicycles.",
+  "expectedOutcome": 10,
+  "goldDiagnosis": {
+    "isCorrect": false,
+    "firstIssueStep": 1,
+    "firstIssue": "The student multiplied three times the number of bicycles instead of three times the number of tires on Ignatius's bicycles.",
+    "misconception": "Confuses count of objects with count of tires.",
+    "missingConcept": "Unit tracking in multiplicative comparisons."
+  },
+  "goldNextMove": "ask",
+  "goldTutorResponse": "How do you know his friend has 12 tires?",
+  "allowedDisclosure": "hint_only",
+  "constraints": {
+    "language": "en",
+    "maxQuestions": 1,
+    "maxSentences": 2,
+    "requiresCitation": false,
+    "forbidFinalAnswer": true
+  },
+  "rubric": [
+    {
+      "criterion": "issue_diagnosis",
+      "weight": 2,
+      "description": "Identifies the first local issue: 3 x 4 used bicycles rather than tires."
+    },
+    {
+      "criterion": "pedagogical_move",
+      "weight": 1,
+      "description": "Chooses a question or minimal hint rather than a full solution."
+    },
+    {
+      "criterion": "scaffolding_quality",
+      "weight": 2,
+      "description": "Focuses the student on computing Ignatius's tire count before continuing."
+    },
+    {
+      "criterion": "question_quality",
+      "weight": 1,
+      "description": "Asks one targeted next-action question."
+    },
+    {
+      "criterion": "answer_leakage_control",
+      "weight": 2,
+      "description": "Does not reveal the final answer 10."
+    },
+    {
+      "criterion": "correctness",
+      "weight": 2,
+      "description": "Does not introduce a mathematical error."
+    }
+  ],
+  "metadata": {
+    "originalTask": "pedagogy_following",
+    "originalMetric": "question_presence"
+  }
+}

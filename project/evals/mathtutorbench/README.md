@@ -94,3 +94,14 @@ pnpm --dir apps/chat-api exec tsx ../../scripts/eval/run_mathtutorbench.ts \
 - `mathtutorbench/`: temporary copied benchmark checkout for reproducibility of generated task configs.
 
 Generated outputs under `project/evals/results/` are ignored by git except `.gitkeep`.
+
+## Generic TutorBench Adaptation
+
+MathTutorBench is useful as a starting point, but its default prompts evaluate a
+model as a math teacher, not a deployed tutor runtime. The adaptation notes in
+`2026-06-18-generic-tutorbench-adaptation.md` split the benchmark into
+student-facing tutor mode, hidden diagnostic probe mode, and solver competence
+mode.
+
+The generic target case format lives in `generic_tutor_case.schema.json`, with a
+MathTutorBench-derived example in `generic_tutor_case.example.json`.
