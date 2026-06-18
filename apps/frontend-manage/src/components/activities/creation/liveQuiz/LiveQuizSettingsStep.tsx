@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import {
   faCheck,
   faGears,
@@ -8,7 +7,6 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -27,6 +25,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../../lib/trpc'
 import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
@@ -51,10 +50,7 @@ function LiveQuizSettingsStep({
   closeWizard,
 }: LiveQuizWizardStepProps) {
   const t = useTranslations()
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const { data: user } = trpc.user.profile.useQuery()
 
   const [customizedGradingModal, setCustomizedGradingModal] = useState(false)
   const groupedCourses = useLiveQuizCourseGrouping({

@@ -280,6 +280,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04J Activity Creation Profile Reads
+
+Status: complete for the scoped slice. Scope was limited to remaining manage
+activity-creation `UserProfileDocument` reads in `SuspendedCreationButtons` and
+`LiveQuizSettingsStep`. This did not migrate activity creation mutations,
+activity edit reads, live-quiz cockpit realtime, Apollo providers, generated
+type cleanup, S05, or S06.
+
+Operation mapping:
+
+```text
+Slice: S04J Activity Creation Profile Reads
+
+GraphQL operations:
+- UserProfileDocument cache reads in activity creation controls
+
+tRPC procedures:
+- existing user.profile
+
+GraphQL behavior source:
+- packages/graphql/src/services/accounts.ts getUserProfile
+
+React Query replacement:
+- use existing trpc.user.profile.useQuery()
+```
+
+Completed write scope:
+
+- Migrated `SuspendedCreationButtons` from Apollo `UserProfileDocument` to
+  `trpc.user.profile` for catalyst-gated creation buttons.
+- Migrated `LiveQuizSettingsStep` from Apollo `UserProfileDocument` to
+  `trpc.user.profile` for private-preview gated live-quiz settings.
+- Left generated `ActivityType` imports in place where the broader
+  activity-creation workflow still uses generated GraphQL types.
+
+Verification:
+
+- Prettier for touched files and this plan.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed with the existing
+  Node 26 engine warnings.
+- Focused audit `rg -n "@apollo/client|UserProfileDocument|userProfile" ...`:
+  no matches in the two migrated files.
+- Browser smoke with the existing local stack and clean delegated lecturer
+  browser session:
+  - `/activities` rendered and resource trace included
+    `user.profile,activity.userActivitiesCourses,activity.userActivities` via
+    tRPC.
+  - `/` rendered all four creation buttons and resource trace included
+    `user.profile,element.list` via tRPC.
+  - Screenshots:
+    - `/tmp/agent-browser-shots/s04-activity-profile-01-activities.png`
+    - `/tmp/agent-browser-shots/s04-activity-profile-02-library.png`
+
+Next: continue remaining S04-only pre-realtime manage findings. Pause before
+S05/S06.
+
 ### 2026-06-19 Completed: S04J Course List Create and Archive
 
 Status: complete for the scoped slice. Scope was limited to the manage
