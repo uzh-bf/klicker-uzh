@@ -1,6 +1,7 @@
 import {
   Locale,
   PermissionLevel,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
@@ -348,6 +349,162 @@ describe('course mutation routers', () => {
     expect(emit).toHaveBeenCalledWith('invalidate', {
       typename: 'Course',
       id: 'course-1',
+    })
+  })
+
+  test('returns null when course settings update permission is missing', async () => {
+    const findUnique = vi.fn()
+    const update = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      course: {
+        findUnique,
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.updateSettings({ id: 'course-1', language: Locale.en })
+    ).resolves.toEqual({ course: null })
+    expect(findUnique).not.toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  test('returns null when course settings target is missing', async () => {
+    const update = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      course: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.updateSettings({ id: 'course-1', language: Locale.en })
+    ).resolves.toEqual({ course: null })
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  test('updates course settings with guarded side effects', async () => {
+    const startDate = new Date('2099-09-01T00:00:00.000Z')
+    const endDate = new Date('2100-02-01T00:00:00.000Z')
+    const groupDeadlineDate = new Date('2099-10-01T00:00:00.000Z')
+    const updatedAt = new Date('2026-06-02T00:00:00.000Z')
+    const createdAt = new Date('2026-06-01T00:00:00.000Z')
+    const updatedCourse = {
+      id: 'course-1',
+      name: 'Updated Course',
+      displayName: 'Updated Course Display',
+      description: null,
+      color: '#0028A5',
+      startDate,
+      endDate,
+      groupDeadlineDate,
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
+      language: Locale.de,
+      notificationEmail: 'lecturer@example.com',
+      isArchived: false,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
+      isGroupCreationEnabled: false,
+      randomAssignmentFinalized: false,
+      createdAt,
+      updatedAt,
+    }
+    const update = vi.fn().mockResolvedValue(updatedCourse)
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      course: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'course-1',
+          startDate,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: false,
+          _count: {
+            liveQuizzes: 0,
+            practiceQuizzes: 0,
+            microLearnings: 0,
+            groupActivities: 0,
+            participantGroups: 0,
+          },
+        }),
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.updateSettings({
+        id: 'course-1',
+        name: 'Updated Course',
+        displayName: 'Updated Course Display',
+        description: null,
+        color: '#0028A5',
+        startDate,
+        endDate,
+        isGroupCreationEnabled: false,
+        groupDeadlineDate,
+        language: Locale.de,
+        notificationEmail: 'lecturer@example.com',
+        isGamificationEnabled: true,
+      })
+    ).resolves.toEqual({ course: updatedCourse })
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      data: expect.objectContaining({
+        name: 'Updated Course',
+        displayName: 'Updated Course Display',
+        description: null,
+        language: Locale.de,
+        color: '#0028A5',
+        startDate,
+        endDate,
+        isGroupCreationEnabled: false,
+        groupDeadlineDate,
+        notificationEmail: 'lecturer@example.com',
+        isGamificationEnabled: true,
+        isAssessmentEnabled: undefined,
+        pinCode: undefined,
+        randomAssignmentFinalized: false,
+        groupAssignmentPoolEntries: { deleteMany: {} },
+        liveQuizzes: {
+          updateMany: {
+            where: {
+              isDeleted: false,
+              status: {
+                in: [
+                  PublicationStatus.DRAFT,
+                  PublicationStatus.SCHEDULED,
+                  PublicationStatus.PUBLISHED,
+                ],
+              },
+            },
+            data: {
+              isGamificationEnabled: true,
+              isAssessmentEnabled: undefined,
+            },
+          },
+        },
+        practiceQuizzes: expect.any(Object),
+        microLearnings: expect.any(Object),
+        groupActivities: expect.any(Object),
+      }),
+      select: expect.objectContaining({
+        id: true,
+        name: true,
+        displayName: true,
+        randomAssignmentFinalized: true,
+      }),
     })
   })
 })

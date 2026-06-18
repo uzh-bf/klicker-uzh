@@ -53,3 +53,23 @@ export const toggleArchiveCourseInput = z.object({
 export const deleteCourseInput = z.object({
   id: z.string(),
 })
+
+export const updateCourseSettingsInput = z.object({
+  id: z.string(),
+  name: z.string().nullish(),
+  displayName: z.string().nullish(),
+  description: z.string().nullish(),
+  color: z.string().nullish(),
+  startDate: z.date().nullish(),
+  endDate: z.date().nullish(),
+  isGroupCreationEnabled: z.boolean().nullish(),
+  groupDeadlineDate: z.date().nullish(),
+  language: z.nativeEnum(Locale),
+  notificationEmail: z.string().nullish(),
+  isGamificationEnabled: z.boolean().nullish(),
+  isAssessmentEnabled: z.boolean().nullish(),
+})
+
+export type UpdateCourseSettingsInput = z.infer<
+  typeof updateCourseSettingsInput
+>

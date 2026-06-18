@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
@@ -11,9 +11,7 @@ import {
 import {
   Course,
   GetSingleCourseDocument,
-  LocaleType as GraphQLLocaleType,
   ObjectType,
-  UpdateCourseSettingsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -58,7 +56,8 @@ function CourseOverviewHeader({
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
-  const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
+  const apolloClient = useApolloClient()
+  const updateCourseSettings = trpc.course.updateSettings.useMutation()
   const { data: user } = trpc.user.profile.useQuery()
 
   const ltiDropdownItems = [
@@ -224,56 +223,56 @@ function CourseOverviewHeader({
           ) => {
             try {
               // convert dates to UTC
-              const startDateUTC = dayjs(values.startDate).utc().toISOString()
-              const endDateUTC = dayjs(values.endDate).utc().toISOString()
+              const startDateUTC = dayjs(values.startDate).utc().toDate()
+              const endDateUTC = dayjs(values.endDate).utc().toDate()
               const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
                 .utc()
-                .toISOString()
+                .toDate()
 
-              const result = await updateCourseSettings({
-                variables: {
-                  id: course.id,
-                  name: values.name,
-                  displayName: values.displayName,
-                  description:
-                    !values.description?.match(/^(<br>(\n)*)$/g) &&
-                    values.description !== ''
-                      ? values.description
-                      : null,
-                  language: values.language as GraphQLLocaleType,
-                  color: values.color,
-                  startDate: startDateUTC,
-                  endDate: endDateUTC,
-                  notificationEmail: values.notificationEmail,
-                  isGamificationEnabled: values.isGamificationEnabled,
-                  isGroupCreationEnabled: values.isGroupCreationEnabled,
-                  groupDeadlineDate: groupDeadlineDateUTC,
-                },
-                update: (cache, { data }) => {
-                  // check if the update was successful
-                  if (!data?.updateCourseSettings) return
-
-                  // update the cached list of catalog collections
-                  cache.updateQuery(
-                    {
-                      query: GetSingleCourseDocument,
-                      variables: { courseId: course.id },
-                    },
-                    (qData) => {
-                      if (!qData?.course) return qData
-
-                      return {
-                        course: {
-                          ...qData.course,
-                          ...data.updateCourseSettings!,
-                        },
-                      }
-                    }
-                  )
-                },
+              const result = await updateCourseSettings.mutateAsync({
+                id: course.id,
+                name: values.name,
+                displayName: values.displayName,
+                description:
+                  !values.description?.match(/^(<br>(\n)*)$/g) &&
+                  values.description !== ''
+                    ? values.description
+                    : null,
+                language: values.language,
+                color: values.color,
+                startDate: startDateUTC,
+                endDate: endDateUTC,
+                notificationEmail: values.notificationEmail,
+                isGamificationEnabled: values.isGamificationEnabled,
+                isGroupCreationEnabled: values.isGroupCreationEnabled,
+                groupDeadlineDate: groupDeadlineDateUTC,
               })
 
-              if (result.data?.updateCourseSettings) {
+              const updatedCourseResult = result.course
+
+              if (updatedCourseResult) {
+                apolloClient.cache.updateQuery(
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: { courseId: course.id },
+                  },
+                  (qData) => {
+                    if (!qData?.course) return qData
+
+                    const updatedCourse = {
+                      ...updatedCourseResult,
+                      language:
+                        updatedCourseResult.language as typeof qData.course.language,
+                    }
+
+                    return {
+                      course: {
+                        ...qData.course,
+                        ...updatedCourse,
+                      },
+                    }
+                  }
+                )
                 setCourseSettingsModal(false)
               } else {
                 onError()

@@ -280,6 +280,90 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Course Settings Mutation
+
+Status: complete for the scoped slice. Scope was limited to migrating the
+Manage course detail settings mutation from Apollo
+`UpdateCourseSettingsDocument` to tRPC while preserving the surrounding Apollo
+`GetSingleCourseDocument` detail read, sharing modal/activity-log generated
+enum usage, S05, and S06 for later slices.
+
+Operation mapping:
+
+```text
+Slice: S04L Course Settings Mutation
+
+GraphQL operations:
+- UpdateCourseSettings
+
+tRPC procedures:
+- course.updateSettings
+
+GraphQL behavior source:
+- packages/graphql/src/schema/mutation.ts updateCourseSettings
+- packages/graphql/src/services/courses.ts updateCourseSettings
+
+React Query replacement:
+- trpc.course.updateSettings.useMutation()
+```
+
+Completed write scope:
+
+- Added a narrow `updateCourseSettingsInput` schema.
+- Added `course.updateSettings` with the same full-access plus WRITE permission
+  guard, date/group/gamification/assessment guard semantics, random-assignment
+  reset, assignment-pool cleanup, and activity flag propagation as the GraphQL
+  behavior source.
+- Replaced `CourseOverviewHeader` Apollo mutation usage with the tRPC mutation
+  while keeping the Apollo detail cache update until `GetSingleCourseDocument`
+  itself is migrated.
+- Added focused API tests for missing permission, missing course, and update data
+  side effects.
+- Added a narrow Prisma-locale to generated-locale bridge in the temporary
+  Apollo cache update; this should disappear when the course detail read moves
+  off GraphQL.
+
+Verification:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write ...`: passed for touched
+  files.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/course-mutations.test.ts`:
+  passed. The API script ran the full API suite: 36 files, 347 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  failed once on the temporary Apollo cache bridge because tRPC returned Prisma
+  `Locale`; passed after adding a narrow local cast.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing repository warnings only (`MODULE_TYPELESS_PACKAGE_JSON`,
+  next-intl `i18n`, PWA logs, stale Browserslist, `/qr/[...args]`
+  `MISSING_MESSAGE`, and large page-data warnings).
+- Focused audit
+  `rg -n "UpdateCourseSettingsDocument|UpdateCourseSettings\\b" apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx packages/api/src/trpc/schemas/course.ts packages/api/src/trpc/routers/course.ts packages/api/src/trpc/__tests__/course-mutations.test.ts`:
+  no matches.
+- `git diff --check`: passed.
+
+Browser verification:
+
+- Reused the authenticated local Manage session against branch backend/auth on
+  `3103`/`3106` and Manage on `3104`.
+- Opened
+  `http://localhost:3104/courses/b8b1305e-bfe8-458b-bf26-9082fdca953f`.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04-course-settings-02-course-detail.png`
+  - `/tmp/agent-browser-shots/s04-course-settings-03-modal.png`
+- Browser evidence: the course detail page rendered, the `Modify course` modal
+  opened, existing course values populated, and Save stayed disabled for
+  unchanged data. The destructive/data-changing update was intentionally not
+  submitted in the browser; mutation behavior is covered by API tests.
+- Resource trace still included `/api/graphql` for the surrounding course detail
+  read, which is expected until that read is migrated in a later S04 slice.
+
+Next: continue remaining S04-only pre-realtime manage findings. Pause before
+S05/S06.
+
 ### 2026-06-19 Completed: S04L Course Deletion Mutation
 
 Status: complete for the scoped slice. Scope was limited to migrating the

@@ -29,6 +29,8 @@ import {
   createCourseInput,
   deleteCourseInput,
   toggleArchiveCourseInput,
+  updateCourseSettingsInput,
+  type UpdateCourseSettingsInput,
 } from '../schemas/course.js'
 
 const courseExecutePermissionLevels = [
@@ -52,6 +54,28 @@ const activeUserCourseSelect = {
   startDate: true,
   endDate: true,
   groupDeadlineDate: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.CourseSelect
+
+const courseSettingsSelect = {
+  id: true,
+  name: true,
+  displayName: true,
+  description: true,
+  color: true,
+  startDate: true,
+  endDate: true,
+  groupDeadlineDate: true,
+  maxGroupSize: true,
+  preferredGroupSize: true,
+  language: true,
+  notificationEmail: true,
+  isArchived: true,
+  isGamificationEnabled: true,
+  isAssessmentEnabled: true,
+  isGroupCreationEnabled: true,
+  randomAssignmentFinalized: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.CourseSelect
@@ -185,6 +209,155 @@ async function deleteCourseById(ctx: TRPCContextWithUser, id: string) {
 
   ctx.emitter?.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
+}
+
+async function updateCourseSettingsById(
+  ctx: TRPCContextWithUser,
+  input: UpdateCourseSettingsInput
+) {
+  const prisma = getPrisma(ctx)
+  const course = await prisma.course.findUnique({
+    where: { id: input.id },
+    include: {
+      _count: {
+        select: {
+          liveQuizzes: { where: { isDeleted: false } },
+          practiceQuizzes: { where: { isDeleted: false } },
+          microLearnings: { where: { isDeleted: false } },
+          groupActivities: { where: { isDeleted: false } },
+          participantGroups: true,
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  const currentStartDatePast = course.startDate < new Date()
+  const newGroupDeadlinePast = input.groupDeadlineDate
+    ? input.groupDeadlineDate < new Date()
+    : false
+  const containsActivities =
+    course._count.liveQuizzes > 0 ||
+    course._count.practiceQuizzes > 0 ||
+    course._count.microLearnings > 0 ||
+    course._count.groupActivities > 0
+  const containsGroups = course._count.participantGroups > 0
+
+  const newGamificationSetting =
+    course.isGamificationEnabled !== input.isGamificationEnabled &&
+    (input.isGamificationEnabled || (!containsActivities && !containsGroups))
+      ? (input.isGamificationEnabled ?? false)
+      : undefined
+  const newAssessmentSetting =
+    course.isAssessmentEnabled !== input.isAssessmentEnabled
+      ? (input.isAssessmentEnabled ?? undefined)
+      : undefined
+
+  return prisma.course.update({
+    where: { id: input.id },
+    data: {
+      name: input.name ?? undefined,
+      displayName: input.displayName ?? undefined,
+      description: input.description,
+      language: input.language,
+      color: input.color ?? undefined,
+      startDate:
+        currentStartDatePast || !input.startDate ? undefined : input.startDate,
+      endDate: input.endDate ?? undefined,
+      isGroupCreationEnabled:
+        input.isGroupCreationEnabled || !containsGroups
+          ? (input.isGroupCreationEnabled ?? false)
+          : undefined,
+      groupDeadlineDate: input.groupDeadlineDate ?? undefined,
+      notificationEmail: input.notificationEmail ?? undefined,
+      isGamificationEnabled: newGamificationSetting,
+      isAssessmentEnabled: input.isAssessmentEnabled ?? undefined,
+      pinCode: input.isAssessmentEnabled ? null : undefined,
+      randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+      groupAssignmentPoolEntries:
+        !input.isGroupCreationEnabled && !containsGroups
+          ? { deleteMany: {} }
+          : undefined,
+      ...(newGamificationSetting || newAssessmentSetting
+        ? {
+            liveQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      PublicationStatus.DRAFT,
+                      PublicationStatus.SCHEDULED,
+                      PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            practiceQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      PublicationStatus.DRAFT,
+                      PublicationStatus.SCHEDULED,
+                      PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            microLearnings: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      PublicationStatus.DRAFT,
+                      PublicationStatus.SCHEDULED,
+                      PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            groupActivities: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      PublicationStatus.DRAFT,
+                      PublicationStatus.SCHEDULED,
+                      PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+          }
+        : {}),
+    },
+    select: courseSettingsSelect,
+  })
 }
 
 async function getActivityCourse(
@@ -434,6 +607,27 @@ export const courseRouter = router({
       )
 
       return { course: { id: course.id } }
+    }),
+
+  updateSettings: userFullAccessProcedure
+    .input(updateCourseSettingsInput)
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.id,
+          PermissionLevel.WRITE
+        ))
+      ) {
+        return { course: null }
+      }
+
+      return {
+        course: await updateCourseSettingsById(
+          ctx as TRPCContextWithUser,
+          input
+        ),
+      }
     }),
 
   activeUserCourses: userProcedure
