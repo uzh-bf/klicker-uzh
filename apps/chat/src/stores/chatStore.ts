@@ -53,6 +53,7 @@ export interface Thread {
   isRunning: boolean
   title?: string
   createdAt: Date
+  updatedAt: Date
 }
 
 interface ChatState {
@@ -483,6 +484,7 @@ export const useChatStore = create<ChatState>((set, get) => {
                 ...thread,
                 messages: [...thread.messages, message],
                 allMessages: [...thread.allMessages, message],
+                updatedAt: new Date(),
               }
             : thread
         ),
