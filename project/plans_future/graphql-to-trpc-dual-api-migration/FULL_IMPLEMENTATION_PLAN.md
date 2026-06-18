@@ -280,6 +280,43 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-18 Completed: S04O/S04Q Hatchet Worker GraphQL Handler Decoupling
+
+Status: complete for the scoped secondary-runtime slice. Scope was limited to
+the S04O audit finding that `apps/hatchet-worker-general` imported `handlers`
+from `@klicker-uzh/graphql`. S05 realtime and S06 cleanup were not started.
+
+Completed write scope:
+
+- Added API-owned Hatchet handler exports in `packages/api`, preserving the
+  existing scheduled publication, expiry, random group assignment, timeline,
+  notification, and live-quiz block aggregation behavior.
+- Repointed GraphQL to re-export the API-owned handler set while GraphQL remains
+  live for schema/Yoga during coexistence.
+- Repointed the general Hatchet worker to `@klicker-uzh/api` handlers and
+  removed its direct `@klicker-uzh/graphql` package dependency.
+- Updated the worker Dockerfile to copy `packages/api/dist` instead of
+  `packages/graphql/dist`.
+- Kept GraphQL Yoga pub/sub in the worker intentionally; S05 owns realtime
+  transport decoupling.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm install --frozen-lockfile --offline`: passed, confirming package manifests and `pnpm-lock.yaml` are in sync.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/graphql check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/graphql build`: passed with existing Rollup TypeScript warning noise and circular-dependency warnings; no new build failure.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/hatchet-worker-general check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/hatchet-worker-general build`: passed.
+- Focused audit `rg -n "@klicker-uzh/graphql|packages/graphql|graphql/dist" apps/hatchet-worker-general packages/api`: no matches.
+- Secondary consumer audit `rg -n "/api/graphql|graphql" cypress util apps/auth apps/chat apps/lti apps/office-addin apps/response-api apps/hatchet-worker-general apps/analytics apps/olat-api`: remaining matches are GraphQL Yoga pub/sub in the Hatchet worker (S05 realtime scope), `apps/olat-api`'s `graphql` package dependency, the GraphQL package token helper, and local-only embed harness mock GraphQL docs/server. No Cypress or hidden active secondary `/api/graphql` caller was found.
+- `git diff --check`: passed.
+
+Next: continue S04P generated type leak classification/cleanup and S04Q final
+audit. Pause before S05 realtime; do not start S05 or S06 without explicit user
+direction.
+
 ### 2026-06-18 Completed: S04N6 Manage Assessment Results and Point Corrections
 
 Status: complete for the scoped slice. Scope was limited to manage assessment

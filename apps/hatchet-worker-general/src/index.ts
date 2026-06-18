@@ -1,7 +1,7 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { handlers } from '@klicker-uzh/graphql'
+import { hatchetHandlers } from '@klicker-uzh/api'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import EventEmitter from 'events'
@@ -118,7 +118,7 @@ async function main() {
     redisExec,
     redisAssessmentExec,
     redisCache,
-    handlers,
+    handlers: hatchetHandlers,
   })
 
   const workflows = selectWorkflows(preparedWorkflows)

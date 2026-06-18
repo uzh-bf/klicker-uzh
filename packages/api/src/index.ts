@@ -1,3 +1,4 @@
+export { hatchetHandlers } from './services/hatchetHandlers.js'
 export {
   activateLiveQuizBlock,
   deactivateLiveQuizBlock,

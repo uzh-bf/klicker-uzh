@@ -1316,9 +1316,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
-      '@klicker-uzh/graphql':
+      '@klicker-uzh/api':
         specifier: workspace:*
-        version: link:../../packages/graphql
+        version: link:../../packages/api
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
@@ -1796,6 +1796,9 @@ importers:
       superjson:
         specifier: 2.2.6
         version: 2.2.6
+      unique-names-generator:
+        specifier: 4.7.1
+        version: 4.7.1
       zod:
         specifier: 3.25.76
         version: 3.25.76
