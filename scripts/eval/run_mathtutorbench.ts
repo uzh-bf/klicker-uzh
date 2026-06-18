@@ -18,6 +18,7 @@ const DEFAULT_TASKS = [
 const PROMPT_VARIANTS = {
   current: 'packages/prisma-data/src/data/data/tutorMode.txt',
   'tutor-skills-v1': 'packages/prisma-data/src/data/data/tutorModeSkillsV1.txt',
+  'chat-api-runtime': null,
 }
 
 const BENCHMARK_BRIDGE = [
@@ -108,7 +109,7 @@ function generateConfigs({
 }: {
   benchmarkDir: string
   tasks: string[]
-  prompt: string
+  prompt: string | null
 }) {
   for (const task of tasks) {
     const configPath = join(benchmarkDir, 'configs', task)
@@ -124,15 +125,66 @@ function generateConfigs({
       throw new Error(`Task config has no system_prompt: ${configPath}`)
     }
 
-    config.system_prompt = [
-      prompt.trim(),
-      '',
-      BENCHMARK_BRIDGE,
-      '',
-      config.system_prompt.trim(),
-    ].join('\n')
+    if (prompt !== null) {
+      config.system_prompt = [
+        prompt.trim(),
+        '',
+        BENCHMARK_BRIDGE,
+        '',
+        config.system_prompt.trim(),
+      ].join('\n')
+    }
 
     writeFileSync(configPath, stringify(config), 'utf-8')
+  }
+}
+
+function patchBenchmarkMaxExamples({
+  benchmarkDir,
+  maxExamples,
+}: {
+  benchmarkDir: string
+  maxExamples: number | null
+}) {
+  if (maxExamples === null) return
+
+  const mainPath = join(benchmarkDir, 'main.py')
+  let source = readFileSync(mainPath, 'utf-8')
+
+  if (!source.includes('import os\n')) {
+    source = source.replace('import json\n', 'import json\nimport os\n')
+  }
+
+  const needle =
+    '        for example in tqdm(task.get_test_examples(), desc=f"Evaluating {task_config.name}"):\n'
+  const replacement = [
+    '        examples = task.get_test_examples()',
+    '        max_examples = int(os.environ.get("MATHTUTORBENCH_MAX_EXAMPLES", "0"))',
+    '        if max_examples > 0:',
+    '            examples = examples[:max_examples]',
+    '        for example in tqdm(examples, desc=f"Evaluating {task_config.name}"):',
+    '',
+  ].join('\n')
+
+  if (!source.includes(needle)) {
+    throw new Error('Could not patch MathTutorBench main.py for --max-examples')
+  }
+
+  source = source.replace(needle, replacement)
+  writeFileSync(mainPath, source, 'utf-8')
+}
+
+function patchBenchmarkCompatibility(benchmarkDir: string) {
+  for (const task of ['problem_solving.yaml', 'socratic_questioning.yaml']) {
+    const configPath = join(benchmarkDir, 'configs', task)
+    if (!existsSync(configPath)) continue
+
+    const source = readFileSync(configPath, 'utf-8')
+    writeFileSync(
+      configPath,
+      source.replace(/^dataset_path: gsm8k$/m, 'dataset_path: openai/gsm8k'),
+      'utf-8'
+    )
   }
 }
 
@@ -148,18 +200,20 @@ function writeManifest({
   command,
   benchmarkSource,
   outputDir,
+  maxExamples,
 }: {
   manifestPath: string
   dryRun: boolean
   variant: string
-  promptPath: string
-  prompt: string
+  promptPath: string | null
+  prompt: string | null
   tasks: string[]
   provider: string
   modelArgs: string
   command: string[]
   benchmarkSource: string | null
   outputDir: string
+  maxExamples: number | null
 }) {
   writeFileSync(
     manifestPath,
@@ -168,14 +222,15 @@ function writeManifest({
         dryRun,
         variant,
         promptPath,
-        promptSha256: sha256(prompt),
-        promptChars: prompt.length,
+        promptSha256: prompt === null ? null : sha256(prompt),
+        promptChars: prompt === null ? null : prompt.length,
         tasks,
         provider,
         modelArgs: redactModelArgs(modelArgs),
         command,
         benchmarkSource,
         outputDir,
+        maxExamples,
         sources: {
           benchmarkSite: 'https://eth-lre.github.io/mathtutorbench/',
           benchmarkRepo: 'https://github.com/eth-lre/mathtutorbench',
@@ -198,6 +253,7 @@ function runVariant({
   modelArgs,
   python,
   dryRun,
+  maxExamples,
 }: {
   repoRoot: string
   variant: string
@@ -208,9 +264,10 @@ function runVariant({
   modelArgs: string
   python: string
   dryRun: boolean
+  maxExamples: number | null
 }) {
   const promptPath = PROMPT_VARIANTS[variant as keyof typeof PROMPT_VARIANTS]
-  if (!promptPath) {
+  if (promptPath === undefined) {
     throw new Error(
       `Unknown prompt variant "${variant}". Known: ${Object.keys(
         PROMPT_VARIANTS
@@ -218,8 +275,10 @@ function runVariant({
     )
   }
 
-  const promptAbsPath = join(repoRoot, promptPath)
-  const prompt = readFileSync(promptAbsPath, 'utf-8').trim()
+  const prompt =
+    promptPath === null
+      ? null
+      : readFileSync(join(repoRoot, promptPath), 'utf-8').trim()
   const variantDir = join(outputRoot, variant)
   mkdirSync(variantDir, { recursive: true })
 
@@ -255,17 +314,27 @@ function runVariant({
     }
 
     copyBenchmark(benchmarkDir, benchmarkRunDir!)
+    patchBenchmarkCompatibility(benchmarkRunDir!)
     generateConfigs({
       benchmarkDir: benchmarkRunDir!,
       tasks,
       prompt,
+    })
+    patchBenchmarkMaxExamples({
+      benchmarkDir: benchmarkRunDir!,
+      maxExamples,
     })
 
     mkdirSync(upstreamOutputDir, { recursive: true })
     const child = spawnSync(command[0], command.slice(1), {
       cwd: benchmarkRunDir!,
       stdio: 'inherit',
-      env: process.env,
+      env: {
+        ...process.env,
+        ...(maxExamples === null
+          ? {}
+          : { MATHTUTORBENCH_MAX_EXAMPLES: String(maxExamples) }),
+      },
     })
 
     if (child.status !== 0) {
@@ -285,6 +354,7 @@ function runVariant({
     command: manifestCommand,
     benchmarkSource: benchmarkDir,
     outputDir: upstreamOutputDir,
+    maxExamples,
   })
 }
 
@@ -317,6 +387,17 @@ function main() {
       ? args['model-args']
       : 'model=gpt-4o-mini-2024-07-18,is_chat=true,temperature=0,max_tokens=2048'
   const python = typeof args.python === 'string' ? args.python : 'python'
+  const maxExamples =
+    typeof args['max-examples'] === 'string'
+      ? Number(args['max-examples'])
+      : null
+
+  if (
+    maxExamples !== null &&
+    (!Number.isInteger(maxExamples) || maxExamples < 1)
+  ) {
+    throw new Error('--max-examples must be a positive integer')
+  }
 
   mkdirSync(outputRoot, { recursive: true })
 
@@ -331,6 +412,7 @@ function main() {
       modelArgs,
       python,
       dryRun,
+      maxExamples,
     })
   }
 
