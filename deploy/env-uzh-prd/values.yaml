@@ -201,7 +201,7 @@ chat:
     enabled: false
 
   automaticModels:
-    primaryId: gpt-5.1
+    primaryId: gpt-5.5
     fallbackId: gpt-4.1-mini
 
   modelRegistry:
@@ -288,7 +288,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.63
+    tag: v3.4.0-alpha.64
 
   ingress:
     annotations:

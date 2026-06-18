@@ -233,7 +233,7 @@ const defaultComponents = memoizeMarkdownComponents({
   CodeHeader,
 })
 
-function normalizeCustomMathTags(input: string): string {
+export function normalizeCustomMathTags(input: string): string {
   return (
     input
       // Convert [/math]...[/math] to $$...$$

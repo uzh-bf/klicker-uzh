@@ -1,7 +1,7 @@
-FROM node:20
+FROM node:24.16.0
 
 # Enable the repo-pinned package manager
-RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
 
 WORKDIR /app
 
