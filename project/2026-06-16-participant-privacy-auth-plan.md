@@ -1,0 +1,717 @@
+# Participant Privacy Authentication Plan
+
+Goal: remove participant email as a global identifier, keep non-assessment participation pseudonymous, and store assessment identity only where it is legally/functionally required.
+
+Date: 2026-06-16
+Branch/MR: not started
+Target branch: `v3`
+
+## Recommendation
+
+Use this target model:
+
+- **Non-assessment participants**: no persisted email, no persisted email hash, no LTI email, no affiliation email. Login uses passkeys, username/password, LTI, and recovery codes/files. Email may be used only inside short-lived verification challenges, then discarded.
+- **Assessment participants**: email is stored per assessment course/participation, encrypted at application layer, with a keyed lookup hash only for matching invitations and verified SSO claims. The global `Participant.email` and `ParticipantAccount.ssoEmail` stay empty.
+- **LTI participants**: trust the signed LTI launch. Persist a keyed hash of the external subject, not the email. If an LTI-origin account later sets a password, password reset must happen after a fresh LTI launch or with recovery codes/passkeys, not by email.
+- **Existing participants**: run a time-boxed migration. Keep legacy email login/claim only long enough to help users who do not remember usernames, then purge legacy emails.
+
+Important caveat: this makes participant data pseudonymous, not mathematically anonymous. Responses, usernames, course participation, IP/proxy logs, and stable login identifiers can still link activity over time. The concrete improvement is removing email as a global identifier and making assessment identity course-scoped, encrypted, and access-controlled.
+
+## External Guidance Checked
+
+- NIST SP 800-63B draft/current docs: recovery codes are an accepted recovery authenticator pattern when issued and managed carefully. Source: https://pages.nist.gov/800-63-4/sp800-63b.html
+- OWASP Forgot Password Cheat Sheet: reset flows must avoid account enumeration, use single-use expiring tokens, avoid sending passwords by email, and notify users after reset. Source: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+- FIDO Alliance passkeys guidance: passkeys are phishing-resistant credentials; multiple authenticators reduce account-recovery dependence. Sources: https://fidoalliance.org/passkeys/ and https://fidoalliance.org/white-paper-multiple-authenticators-for-reducing-account-recovery-needs-for-fido-enabled-consumer-accounts/
+- W3C WebAuthn Level 3: browser API for scoped public-key credentials. Source: https://www.w3.org/TR/webauthn-3/
+- GDPR Articles 25 and 32: data protection by design/default, pseudonymisation, and encryption are explicitly relevant controls. Sources: https://gdpr-info.eu/art-25-gdpr/ and https://gdpr-info.eu/art-32-gdpr/
+
+## Research Addendum
+
+### Privacy Positioning
+
+The product language should change from "truly anonymous account data" to a more precise claim:
+
+- **Non-assessment account profile**: no stored email or direct contact identifier.
+- **Learning activity data**: pseudonymous because it remains tied to a stable participant id, username, course participation, groups, points, and responses.
+- **Assessment data**: identified, but purpose-limited and encrypted because lecturers need a real identity to administer assessments.
+- **Anonymous participation**: still only applies to temporary/no-account flows or participation modes where no persistent account/course history is linked.
+
+Why this matters:
+
+- EDPB pseudonymisation guidance treats pseudonymisation as a safeguard, not anonymisation, when re-identification is still possible with additional information. Source: https://www.edpb.europa.eu/system/files/2025-01/edpb_guidelines_202501_pseudonymisation_en.pdf
+- ICO anonymisation guidance frames anonymisation as reducing identifiability to a sufficiently remote level; stable per-user account data normally does not meet that bar. Source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-sharing/anonymisation/how-do-we-ensure-anonymisation-is-effective/
+- Swiss FADP purpose/proportionality framing means the design should avoid collecting email where it is not necessary, and keep the assessment exception narrow. Official law source: https://www.fedlex.admin.ch/eli/cc/2022/491/en
+- GDPR transparency rules require communication that is concise, intelligible, and specific about what changes for students. Source: https://gdpr-info.eu/art-12-gdpr/
+- EDPB data-protection-by-design guidance supports making privacy the default, not an optional advanced setting. Source: https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-42019-article-25-data-protection-design-and_en
+
+### Authentication and Recovery
+
+Research conclusion: if non-assessment email is not persisted, email cannot remain a normal password-reset factor. A future "enter your email and reset password" flow would require either a participant-linked email, a participant-linked email hash, or a separate identity provider. All three reintroduce a durable contact identifier.
+
+Recommended recovery hierarchy:
+
+1. **Passkey** as the best user experience and strongest recovery/authenticator option. Use discoverable credentials so students do not need to remember a generated username.
+2. **Recovery codes/file** as mandatory fallback for non-LTI manual accounts. Store only code hashes. Show/download once.
+3. **Active session** can add/rotate passkeys, password, and recovery codes.
+4. **Fresh LTI launch** can recover an LTI-origin account because the external platform is the trusted verifier.
+5. **Legacy email claim** only during migration, not as steady-state recovery.
+
+Implementation notes:
+
+- `@simplewebauthn/browser` and `@simplewebauthn/server` are present in `pnpm-lock.yaml` as transitive dependencies but are not declared in package manifests. Add direct pinned dependencies in the app/package that owns passkeys before implementation. Official docs: https://simplewebauthn.dev/docs/packages/server and https://simplewebauthn.dev/docs/advanced/passkeys
+- Context7 lookup for SimpleWebAuthn failed due quota; official SimpleWebAuthn docs were used instead.
+
+### Communication Surfaces in Current Code
+
+Current broad communication channels are weaker than the product goal implies:
+
+- Existing participant email templates can send one-time migration notices while legacy emails still exist.
+- PWA login/profile/create-account screens already have i18n privacy text and can show blocking setup steps.
+- Course docs and lecturer communication can explain course-level changes.
+- `PushSubscription` exists, but `handleSendPushNotifications` currently returns `true` with delivery code commented out; push is not a reliable migration channel today.
+- `GroupMessage` exists only inside participant groups, not as a course-wide participant inbox.
+- There is no general participant notification/inbox model in Prisma.
+
+Product implication: build a small in-app migration notice/checklist surface or notification table before relying on in-app notices for existing students.
+
+## Current Codebase Findings
+
+### Data Model
+
+- `packages/prisma/src/prisma/schema/participant.prisma`
+  - `Participant.email String?`, `isEmailValid Boolean`, `@@unique([email, isSSOAccount])`.
+  - `ParticipantAccount.ssoEmail String?`.
+  - `ParticipantInvitation.email String`, `matriculationNumber String?`, `@@unique([email, courseId])`.
+- `packages/prisma/src/prisma/schema/course.prisma`
+  - `Course.authType` is `SSO | PIN`.
+  - `Course.isAssessmentEnabled` gates assessment behavior.
+
+### LTI
+
+- `apps/lti/src/index.ts`
+  - LTI 1.3 launch creates `lti-token` JWT with `sub`, `email: token.userInfo.email`, and `scope`.
+  - `/info` exposes token `email` if present.
+- `apps/frontend-pwa/src/lib/getParticipantToken.ts`
+  - Verifies `lti-token` and sends `signedLtiData` to `loginParticipantWithLti`.
+  - LTI 1.1 path signs `lis_person_contact_email_primary`.
+  - LTI 1.1 has a TODO to verify the body is valid.
+- `apps/frontend-pwa/src/pages/createAccount.tsx`
+  - Reads LTI token email and pre-fills `CreateAccountForm`.
+  - Generates a random username with `generate-password`.
+
+### Participant Account Service
+
+- `packages/graphql/src/services/accounts.ts`
+  - `loginParticipant` accepts username or email.
+  - `sendMagicLink` finds participants by username or email and sends login email to stored `Participant.email`.
+  - `createParticipantAccount` requires email, stores it, sends activation email, and marks non-LTI accounts `isEmailValid=false`.
+  - `resolveOrCreateParticipantForLti` links by `ssoId`, then by normalized email, creates new participants with `email`, `isEmailValid=true`, `isSSOAccount=true`, and stores `ssoEmail`.
+  - `loginParticipantWithLti` refuses assessment courses and handles only non-assessment LTI.
+- `packages/graphql/src/services/participants.ts`
+  - `getSelf` exposes `email` and `institutionalEmail` from `ParticipantAccount.ssoEmail`.
+  - `updateParticipantProfile` validates and writes `email`.
+
+### Assessment Auth
+
+- `apps/auth/src/pages/api/auth/[...nextauth].ts`
+  - Participant Edu-ID requests `email` and affiliation mail claims.
+  - JWT callback stores `token.email`.
+- `apps/auth/src/lib/helpers.ts`
+  - `createOrLinkParticipant` stores `profile.email` into `Participant.email` and `ParticipantAccount.ssoEmail`.
+  - Affiliation emails are stored in `ParticipantAccount.ssoEmail`.
+  - `autoAcceptInvitations` matches raw invitation emails and participant emails.
+- `apps/backend-docker/src/app.ts`
+  - In assessment mode, backend accepts `next-auth.participant-session-token` from assessment origin.
+
+### Email Exposure
+
+- `packages/graphql/src/schema/participant.ts`
+  - `Participant.email` and `institutionalEmail` are public GraphQL fields.
+- `packages/graphql/src/schema/course.ts`
+  - `LeaderboardEntry.email` and `AssessmentParticipant.email` are exposed.
+- `packages/graphql/src/schema/assessment.ts`
+  - `participantEmail` is exposed in assessment result rows.
+- `packages/graphql/src/services/courses.ts`
+  - Assessment result aggregation reads `accounts[0].ssoEmail ?? participant.email`.
+  - `getAssessmentCourseParticipants` returns email.
+  - Course leaderboard returns participant email for lecturer views.
+- `packages/export/src/*`
+  - Export package writes participant email, SSO id/email, invitation email, matriculation number, and correction email. It supports pseudonymization in the export artifact, but the database still stores the source PII.
+
+## Target Data Model
+
+### Global Participant
+
+Keep global participant identity free of direct contact identifiers:
+
+```prisma
+model Participant {
+  id String @id @default(uuid()) @db.Uuid
+
+  username String @unique
+  password String? // nullable after passkey-first migration
+  avatar String?
+  xp Int @default(0)
+  isActive Boolean @default(true)
+  isProfilePublic Boolean @default(true)
+  locale Locale @default(en)
+  lastLoginAt DateTime?
+
+  // legacy during migration only; remove in final cleanup migration
+  email String?
+  isEmailValid Boolean @default(false)
+}
+```
+
+Implementation note: do not drop fields in the first migration. Make writes stop first, backfill/read from new tables, then drop after the legacy claim window.
+
+### External Login Identity
+
+Replace raw SSO/LTI identifiers with keyed subject hashes for matching:
+
+```prisma
+model ParticipantExternalIdentity {
+  id String @id @default(uuid()) @db.Uuid
+  participantId String @db.Uuid
+  provider ParticipantIdentityProvider // LTI13, LTI11, EDUID, ...
+  issuer String?
+  clientId String?
+  deploymentId String?
+  subjectHash String @unique // HMAC(provider|issuer|clientId|deploymentId|sub)
+  subjectHashKeyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+}
+```
+
+Keep `ParticipantAccount` as a compatibility facade during migration, or migrate it directly if the blast radius is manageable.
+
+### Non-Assessment Email Challenge
+
+Use email only transiently:
+
+```prisma
+model ParticipantEmailChallenge {
+  id String @id @default(uuid()) @db.Uuid
+  purpose ParticipantEmailChallengePurpose // SIGNUP, ACCOUNT_CLAIM_NOTICE
+  tokenHash String @unique
+  emailRateLimitHash String // HMAC(normalizedEmail), no lookup after expiry
+  consumedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([emailRateLimitHash, purpose, createdAt])
+}
+```
+
+Do not store raw email. Do not store a long-lived email hash on non-assessment participants. Send the email immediately after creating the challenge token; the callback only proves possession of the mailbox for that one action.
+
+### Recovery Codes / Recovery File
+
+```prisma
+model ParticipantRecoveryCode {
+  id String @id @default(uuid()) @db.Uuid
+  participantId String @db.Uuid
+  codeHash String
+  label String?
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+}
+```
+
+Recovery file contents:
+
+```json
+{
+  "type": "klicker-participant-recovery",
+  "version": 1,
+  "username": "chosen-name",
+  "participantRecoveryId": "public-random-id",
+  "codes": ["single-use-code-1", "..."]
+}
+```
+
+Store only hashes. Show/download once. Require recovery code or passkey to reset password if the user is outside LTI.
+
+### Passkeys
+
+```prisma
+model ParticipantPasskeyCredential {
+  id String @id @default(uuid()) @db.Uuid
+  participantId String @db.Uuid
+  credentialId String @unique
+  credentialPublicKey Bytes
+  counter BigInt
+  transports String[]
+  backedUp Boolean?
+  deviceType String?
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+}
+```
+
+Use discoverable credentials so users can sign in with passkey without remembering a username.
+
+### Assessment Identity
+
+Store assessment identity per course/participation, not globally:
+
+```prisma
+model AssessmentParticipantIdentity {
+  id String @id @default(uuid()) @db.Uuid
+  courseId String @db.Uuid
+  participantId String @db.Uuid
+
+  emailCiphertext Bytes
+  emailNonce Bytes
+  emailTag Bytes
+  emailLookupHash String // HMAC(normalizedEmail), keyed separately from encryption
+  emailKeyId String
+
+  matriculationCiphertext Bytes?
+  matriculationNonce Bytes?
+  matriculationTag Bytes?
+  matriculationLookupHash String?
+
+  source AssessmentIdentitySource // EDUID_PRIMARY, EDUID_AFFILIATION, LTI, INVITATION
+  verifiedAt DateTime
+  retentionUntil DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, participantId])
+  @@unique([courseId, emailLookupHash])
+}
+```
+
+Use Node `crypto` AES-256-GCM for app-layer encryption unless there is an existing internal crypto helper. Keys come from Infisical:
+
+- `PARTICIPANT_PII_ENCRYPTION_KEYS_JSON`: keyring with active key id.
+- `PARTICIPANT_PII_LOOKUP_HMAC_KEYS_JSON`: separate keyring for lookup hashes.
+- Add both to `turbo.json` `globalEnv`.
+
+### Assessment Invitations
+
+Migrate `ParticipantInvitation.email` and `matriculationNumber` to encrypted + lookup-hash columns. Keep GraphQL/export fields named `email` only as resolver/output fields for authorized assessment course managers.
+
+```prisma
+model ParticipantInvitation {
+  id Int @id @default(autoincrement())
+  courseId String @db.Uuid
+  participantId String? @db.Uuid
+  status InvitationStatus @default(PENDING)
+
+  emailCiphertext Bytes
+  emailNonce Bytes
+  emailTag Bytes
+  emailLookupHash String
+  emailKeyId String
+
+  matriculationCiphertext Bytes?
+  matriculationNonce Bytes?
+  matriculationTag Bytes?
+  matriculationLookupHash String?
+
+  invitedAt DateTime @default(now())
+  acceptedAt DateTime?
+
+  @@unique([emailLookupHash, courseId])
+  @@index([emailLookupHash])
+}
+```
+
+## Target Flows
+
+### Non-Assessment Manual Signup
+
+1. User enters email only on a verification screen.
+2. Backend creates `ParticipantEmailChallenge` with token hash and short expiry, sends link, stores no raw email.
+3. Link opens account creation.
+4. User chooses username manually. Do not pre-fill random username.
+5. User registers at least one recovery method:
+   - Preferred: passkey.
+   - Required fallback: downloadable recovery codes.
+   - Optional: password.
+6. Create `Participant` with no email.
+7. Delete/consume challenge.
+
+Why no email reset: without storing at least an email hash linked to the participant, email cannot prove ownership of an existing account. Email can verify a mailbox for signup, but not recover an account later. The recovery contract must be passkey/recovery file/LTI.
+
+### Non-Assessment Password Login
+
+- Login accepts username + password only.
+- Remove email from `usernameOrEmail` labels and GraphQL arg names.
+- If password reset is needed:
+  - passkey-authenticated session can set new password;
+  - recovery code can set new password and rotates remaining codes;
+  - LTI-origin account can reset only after fresh LTI launch;
+  - no email-only reset.
+
+### Non-Assessment Passkey Login
+
+- Add passkey button on login page.
+- Use discoverable credential flow so username is optional.
+- On successful assertion, map credential to participant and issue existing `participant_token`.
+
+### LTI Non-Assessment Login
+
+1. `apps/lti` verifies LTI launch through ltijs.
+2. JWT contains `sub`, `scope`, `issuer`, `clientId`, `deploymentId`, and target metadata. It does not contain email.
+3. PWA sends `signedLtiData` to GraphQL.
+4. GraphQL hashes external subject and finds/creates `ParticipantExternalIdentity`.
+5. If no account exists:
+   - create participant with generated internal username only if username is not required for login;
+   - prompt user to choose public username before using social/profile features;
+   - do not prefill email.
+6. If user sets password from an LTI session, mark password recovery policy as `LTI_OR_RECOVERY_ONLY`.
+
+LTI 1.1 needs a hard decision:
+
+- Preferred: route all LTI 1.1 launches through a verifier equivalent to `apps/lti` or retire LTI 1.1 account creation.
+- Minimum acceptable: implement signature validation before trusting `lis_person_sourcedid`. Current TODO is not acceptable for the new trust model.
+
+### Assessment Login
+
+1. Assessment auth continues through Edu-ID / trusted SSO.
+2. `createOrLinkParticipant` links by external subject hash, not by email.
+3. Email/affiliation mail from Edu-ID is used only to:
+   - match `ParticipantInvitation.emailLookupHash`;
+   - populate/update `AssessmentParticipantIdentity` for the matched assessment course.
+4. `Participant.email` and `ParticipantAccount.ssoEmail` remain empty.
+5. Assessment GraphQL resolvers decrypt email only for authorized lecturers/managers of that assessment course and only for assessment queries/exports.
+6. Student self view can display masked email from decrypted assessment identity only inside assessment context if needed.
+
+### Non-Assessment Leaderboard Prizes
+
+Remove email from non-assessment leaderboard APIs and exports. Add privacy-preserving prize workflows instead:
+
+- **Winner announcement**: lecturer selects leaderboard entries and sends in-app notification with free text, e.g. "Contact prizes@example.uzh.ch with claim code".
+- **Claim code**: system generates course-scoped one-time code visible to participant and lecturer verification UI. Participant contacts lecturer externally and provides the code. Klicker stores no email.
+- **Optional encrypted claim contact**: if product wants in-app claim submission, store contact email in `CoursePrizeClaimContact` encrypted with retention (e.g. 30-90 days), scoped to a course/prize, never on `Participant`.
+
+Recommendation: implement claim code first. It solves prize verification without reintroducing global email.
+
+## Migration Plan
+
+### Slice 0 - Inventory, Flags, and Policy
+
+- Add metrics script:
+  - participants with `email`;
+  - participants with `isEmailValid=false`;
+  - participants with `ParticipantAccount.ssoEmail`;
+  - participants in assessment courses missing any email source;
+  - duplicate emails across `isSSOAccount`;
+  - accounts with random-looking usernames from prior generation.
+- Add flags:
+  - `PARTICIPANT_PRIVACY_AUTH_ENABLED=false`;
+  - `PARTICIPANT_LEGACY_EMAIL_LOGIN_ENABLED=true`;
+  - `PARTICIPANT_LEGACY_EMAIL_LOGIN_UNTIL=<date>`.
+- Define retention:
+  - email challenges: 15-60 minutes;
+  - legacy claim contacts: fixed cutover window;
+  - assessment identity: course/legal retention.
+- Add `ParticipantPrivacyMigrationState` or equivalent:
+  - `participantId`;
+  - `legacyEmailNoticeSentAt`;
+  - `legacyEmailNoticeBouncedAt`;
+  - `migrationPromptDismissedAt`;
+  - `usernameConfirmedAt`;
+  - `passkeyRegisteredAt`;
+  - `recoveryCodesIssuedAt`;
+  - `legacyEmailPurgedAt`;
+  - `blockedUntilSetup` boolean for staged enforcement.
+
+### Slice 1 - Schema Foundations
+
+- Add `ParticipantEmailChallenge`, `ParticipantRecoveryCode`, `ParticipantPasskeyCredential`, `ParticipantExternalIdentity`.
+- Add `AssessmentParticipantIdentity`.
+- Add encrypted/hash columns to `ParticipantInvitation`.
+- Add crypto helper with key id, AES-GCM encrypt/decrypt, HMAC lookup hash, and tests.
+- Do not remove old fields yet.
+
+### Slice 2 - Stop New Non-Assessment Email Writes
+
+- Change `createParticipantAccount` mutation:
+  - replace required email argument with challenge token;
+  - create participant with `email=null`;
+  - require user-chosen username;
+  - issue recovery codes.
+- Change `UpdateAccountInfoForm` and mutation:
+  - remove email field for non-assessment participants;
+  - keep password/profile/username only.
+- Change login:
+  - username/password only;
+  - passkey entry point;
+  - recovery-code reset flow.
+- Regenerate GraphQL operations.
+
+### Slice 3 - LTI Email Removal
+
+- `apps/lti/src/index.ts`: remove `email` from signed LTI 1.3 JWT and `/info` unless explicitly in assessment debug/admin-only path.
+- `apps/frontend-pwa/src/lib/getParticipantToken.ts`: update signed LTI data type to no email.
+- `apps/frontend-pwa/src/pages/createAccount.tsx`: no LTI email prefill; no random username prefill for user-facing username.
+- `packages/graphql/src/services/accounts.ts`:
+  - resolve LTI by subject hash;
+  - remove link-by-email logic for new launches;
+  - create/link `ParticipantExternalIdentity`;
+  - do not write `Participant.email` or `ParticipantAccount.ssoEmail`.
+- Decide and implement LTI 1.1 validation/retirement.
+
+### Slice 4 - Assessment Identity Encryption
+
+- `apps/auth/src/lib/helpers.ts`:
+  - create/link participant by Edu-ID subject hash;
+  - no global email writes;
+  - collect Edu-ID emails only in memory for invitation matching.
+- `packages/graphql/src/services/participantInvitations.ts`:
+  - import invitations to encrypted/hash columns;
+  - match on HMAC lookup hash;
+  - auto-accept without raw DB email.
+- `packages/graphql/src/services/courses.ts` and assessment schema:
+  - resolve assessment email by decrypting `AssessmentParticipantIdentity`;
+  - fail closed for non-assessment courses.
+- `packages/export/src/*`:
+  - assessment exports decrypt through explicit PII access path;
+  - non-assessment exports omit email.
+
+### Slice 5 - Legacy Migration
+
+Backfill:
+
+1. For each assessment participation:
+   - pick best source: `ParticipantAccount.ssoEmail` preferred, else `Participant.email`, else invitation email;
+   - create `AssessmentParticipantIdentity`;
+   - flag missing identity rows.
+2. For each `ParticipantInvitation`:
+   - encrypt email/matriculation;
+   - populate lookup hashes.
+3. For each `ParticipantAccount`:
+   - create `ParticipantExternalIdentity` from raw `ssoId`;
+   - leave old row for compatibility until reads switch.
+
+Legacy claim window:
+
+- Keep old `Participant.email` available only to a dedicated legacy login/claim flow.
+- Existing unverified emails are risky, but current system already permits magic link to them. Use the legacy flow only for migration and show minimal account data before user confirms/rotates recovery.
+- On successful legacy email magic link or password login:
+  - require choosing a memorable username if generated/random-looking;
+  - require passkey or recovery file;
+  - set `Participant.email=null`;
+  - clear `ParticipantAccount.ssoEmail` if no assessment identity needs it.
+- Before cutover, optionally send one-time migration notices to stored emails. After cutover, purge unclaimed legacy emails.
+
+Cutover:
+
+- Disable legacy email login.
+- Null all remaining non-assessment `Participant.email` and `ParticipantAccount.ssoEmail`.
+- Keep encrypted assessment identity only for assessment participations.
+- Drop old unique constraint and eventually drop columns in a later migration.
+
+Clean migration runbook:
+
+1. **Measure**: run inventory script in production read-only mode. Produce counts by auth type, course type, active in last 6/12/24 months, email-valid flag, LTI/Edu-ID/manual, and assessment participation.
+2. **Shadow**: add new tables and start shadow-writing new identities/recovery state without changing login behavior.
+3. **Backfill**: populate `ParticipantExternalIdentity`, `AssessmentParticipantIdentity`, and encrypted invitations. Keep old reads live.
+4. **Compare**: run consistency reports:
+   - LTI subject hash resolves same participant as old `ssoId`;
+   - assessment decrypted identity matches legacy email source for sampled rows;
+   - invitation hash matching accepts same users as raw email matching;
+   - no new non-assessment account creation writes `Participant.email`.
+5. **Canary**: enable privacy auth for internal/test courses and a small opt-in set of non-assessment courses.
+6. **Notify**: send first legacy email notice and show in-app checklist on login.
+7. **Require setup**: for active non-assessment manual accounts, require passkey or recovery-code setup before continuing after a grace period.
+8. **Stop new email login**: hide email login for new accounts, keep legacy claim link in a separate "Recover old account" path.
+9. **Purge eligible rows**: null legacy email fields for migrated accounts; preserve only encrypted assessment identity.
+10. **Final cutoff**: disable legacy email claim after the announced date, purge remaining non-assessment emails, and remove old code paths.
+
+Rollback rule: until step 10, old email fields remain available behind feature flags, but no rollback should re-enable new non-assessment email writes.
+
+### Slice 6 - Remove Non-Assessment Email Outputs
+
+- Remove `email` from `LeaderboardEntry` for non-assessment contexts or always return null unless `course.isAssessmentEnabled`.
+- Update manage leaderboard UI export/downloads.
+- Update group assignment views and point correction participant pickers:
+  - non-assessment uses username/avatar/id;
+  - assessment uses decrypted assessment email.
+- Add prize claim code workflow.
+- Update i18n from "Username / E-mail" to "Username" or "Passkey".
+
+### Slice 7 - Cleanup and Hardening
+
+- Remove `sendMagicLink` as general participant login.
+- Remove `activateParticipantAccount` email-token semantics after challenge migration.
+- Remove `isEmailValid` from active code.
+- Add audit logs for assessment identity decrypt/export.
+- Add admin script for key rotation.
+- Update privacy policy/help docs.
+
+## Existing Student Communication Plan
+
+### Audiences
+
+- **Manual non-assessment account, active**: needs action. They must set up passkey or recovery codes and confirm/choose a memorable username.
+- **Manual non-assessment account, inactive**: send one notice if email exists; keep legacy claim until cutoff; purge after cutoff.
+- **LTI-origin non-assessment account**: low action if they always enter through LTI. If they set a password, explain that recovery happens through LTI/passkey/recovery codes, not email.
+- **Assessment participant**: explain exception clearly: assessment courses still store email because course staff need verified identity, but it is course-scoped and encrypted.
+- **Lecturers**: explain non-assessment leaderboard email export removal and prize claim-code replacement.
+
+### Channels
+
+Use multiple channels because no single channel reaches everyone:
+
+1. **One-time email to legacy stored email** before purging it. This is the only way to reach students who do not remember username and are not currently logged in.
+2. **In-app migration checklist** on next login. This should be the authoritative setup flow.
+3. **Login page "Recover old account" path** during grace period.
+4. **Course/lecturer announcement template** for OLAT/LMS/course email.
+5. **Assessment login banner** for assessment-specific identity explanation.
+
+Do not rely on push notifications until push delivery is implemented and verified.
+
+### Timeline Template
+
+Use exact dates in production copy:
+
+- **T-8 weeks**: first notice. Explain why email login is being removed, what actions are required, and cutoff date.
+- **T-4 weeks**: second notice to accounts not migrated.
+- **T-2 weeks**: in-app checklist becomes blocking for active manual accounts except "continue once" grace.
+- **T day**: email login disabled except dedicated legacy claim endpoint if policy keeps short emergency extension.
+- **T+4 weeks**: purge remaining non-assessment legacy emails.
+- **T+8 weeks**: remove legacy claim endpoint and old email fields from active code.
+
+### Student Copy - Short Email
+
+Subject: `KlickerUZH account privacy update: action required`
+
+Body:
+
+```text
+KlickerUZH is changing participant accounts so that non-assessment accounts no longer store email addresses.
+
+What changes:
+- Your email address will no longer be stored on your regular KlickerUZH participant account.
+- Email login and email password reset will end on <DATE>.
+- To keep access, sign in once before <DATE> and set up a passkey or download recovery codes.
+- If you use KlickerUZH through OLAT/LTI, you can still access your account through OLAT/LTI.
+
+Assessment courses are different: if a course uses assessment mode, KlickerUZH still needs your verified email for course administration. That email will be stored only for that assessment context and protected separately.
+
+Open KlickerUZH: <LINK>
+```
+
+### Student Copy - In-App Checklist
+
+Title: `Keep access to your account`
+
+```text
+We are removing stored email addresses from regular participant accounts.
+
+Complete these steps:
+1. Confirm your username.
+2. Add a passkey or download recovery codes.
+3. Save your changes.
+
+After <DATE>, you cannot recover this regular account by email. Assessment courses may still use your verified email for assessment administration.
+```
+
+### Legacy Recovery Page Copy
+
+Title: `Recover an old account`
+
+```text
+Use this page only if you created a KlickerUZH account before <DATE> and do not remember your username.
+
+If an account exists for this email address, we will send a one-time link. After signing in, you must set up a passkey or recovery codes. KlickerUZH will then remove the email address from your regular participant account.
+```
+
+### Lecturer Copy
+
+```text
+KlickerUZH is reducing participant personal data in regular courses. Participant email addresses will no longer be stored or exported for non-assessment course leaderboards.
+
+For prizes or follow-up, use the new claim-code workflow: select winners in KlickerUZH, send them an in-app instruction, and ask them to contact you with their claim code. Assessment courses are unaffected where verified identity is required.
+```
+
+## Verification Plan
+
+### Unit / Service
+
+- Crypto helper: decrypt roundtrip, wrong key/tag failure, HMAC stability by key id.
+- Challenge flow: no raw email persisted, token single-use, expiry enforced, enumeration-safe responses.
+- Recovery codes: single-use, hashed storage, reset rotates/invalidates as designed.
+- LTI: signed token no email, subject hash matches same launch and differs by issuer/client/deployment.
+- Assessment invitation matching: same normalized email matches via hash; no raw email selected in Prisma queries outside encryption module.
+
+### Integration
+
+- Manual signup creates participant with `email=null`.
+- Manual login cannot use email.
+- Password reset succeeds with recovery code and passkey; fails with email alone.
+- LTI login creates/links participant with no email or ssoEmail.
+- LTI password reset requires fresh LTI session or recovery code.
+- Assessment Edu-ID login creates encrypted assessment identity and no global email.
+- Assessment result views still show authorized emails.
+- Non-assessment leaderboard API/export returns no emails.
+
+### Browser / E2E
+
+- PWA signup/login/recovery in non-assessment mode.
+- LTI launch to non-assessment course through local verifier.
+- Assessment login through auth app and assessment PWA.
+- Lecturer assessment roster/results export.
+- Lecturer non-assessment leaderboard and prize claim code flow.
+
+Use `npx agent-browser` for UI validation per repo rules.
+
+### Data Safety
+
+- Pre-migration dry run counts.
+- Backfill dry run with sample encrypted identity counts.
+- Rollback path: old columns remain until final cleanup.
+- Post-migration DB assertion:
+  - no non-assessment participant has `Participant.email`;
+  - no non-assessment account has `ssoEmail`;
+  - all assessment participations that require identity have `AssessmentParticipantIdentity`;
+  - raw email columns are unused or dropped.
+
+## Risks and Decisions
+
+### Decision: Email Reset Without Storing Email
+
+Email-only reset is incompatible with "email not saved" because the service cannot know which account the mailbox should recover. Recommended decision: do not offer email-only reset for non-assessment participants. Use passkeys, recovery files/codes, active sessions, or fresh LTI.
+
+### Decision: Existing Unverified Emails
+
+Existing unverified emails are already used for magic-link login. For migration, keep that behavior only in a time-boxed legacy claim flow. Do not keep unverified emails indefinitely.
+
+### Decision: Username
+
+Do not prefill random usernames for manual accounts. If an account has LTI/passkey-only login, a generated internal username is acceptable only as an internal/display placeholder, not as the expected recovery handle. Prompt for a user-chosen public username when needed.
+
+### Risk: Hashes Are Still Personal Data in Assessment
+
+Assessment lookup hashes are derived from email and must be treated as personal data. Keep them course-scoped, keyed, and access-controlled. Rotate keys with a planned rehash job.
+
+### Risk: Cross-Course Linkability
+
+Global participant ids still link behavior across courses. If "anonymous" later means unlinkability across courses, this plan is not enough; that would require per-course participant identities or a privacy-preserving account/participation split.
+
+### Risk: LTI Subject Quality
+
+If an LTI platform sends stable subjects across contexts, Klicker can link a participant across LTI courses. If per-course unlinkability is desired, include context/course in the subject hash. That would trade off account continuity.
+
+## First Implementation PR
+
+Recommended first PR:
+
+1. Add schema/key helpers/challenge/recovery tables behind flags.
+2. Add inventory script and dry-run report.
+3. Add tests for crypto/challenge/recovery primitives.
+4. No UI behavior change yet.
+
+This gives a safe foundation and real data counts before touching user-facing login.
