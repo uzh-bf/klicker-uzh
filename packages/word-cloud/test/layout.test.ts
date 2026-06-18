@@ -189,4 +189,30 @@ describe('computeWordCloudLayout', () => {
       getSize(linearSizes, 'mid')
     )
   })
+
+  it('preserves explicit zero values for supported layout options', () => {
+    const result = computeWordCloudLayout(baselineWords, {
+      width: 500,
+      height: 300,
+      padding: 0,
+      maxRelayouts: 0,
+      deterministic: true,
+      seed: '42',
+    })
+
+    expect(result.settings.padding).toBe(0)
+    expect(result.settings.maxRelayouts).toBe(0)
+  })
+
+  it('clamps maxAttemptsPerWord to at least one', () => {
+    const result = computeWordCloudLayout(baselineWords, {
+      width: 500,
+      height: 300,
+      maxAttemptsPerWord: 0,
+      deterministic: true,
+      seed: '42',
+    })
+
+    expect(result.settings.maxAttemptsPerWord).toBe(1)
+  })
 })

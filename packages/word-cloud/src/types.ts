@@ -87,7 +87,7 @@ export interface RenderWordCloudOptions {
   fontFamily?: string
   fontStyle?: string
   fontWeight?: string | number
-  getWordTooltip?: (word: LayoutWord) => string
+  getWordTooltip?: (word: LayoutWord) => Node
   tooltipOffset?: number
   onWordClick?: (word: LayoutWord, event: MouseEvent) => void
   onWordMouseOver?: (word: LayoutWord, event: MouseEvent) => void
@@ -95,7 +95,10 @@ export interface RenderWordCloudOptions {
 }
 
 export interface RendererHandle {
-  update: (nextLayoutResult: LayoutResult) => void
+  update: (
+    nextLayoutResult: LayoutResult,
+    nextRenderOptions?: RenderWordCloudOptions
+  ) => void
   destroy: () => void
   getLayout: () => LayoutResult
 }

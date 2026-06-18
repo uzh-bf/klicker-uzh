@@ -4692,7 +4692,9 @@ describe('Different live-quiz workflows', function () {
 
     // start live quiz
     cy.get('[data-cy="activities"]').click()
-    cy.get(`[data-cy="start-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get(
+      `[data-cy="start-live-quiz-${this.data.liveQuizWordCloud.name}"]`
+    ).click()
     cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
 
@@ -4700,7 +4702,7 @@ describe('Different live-quiz workflows', function () {
       .closest('a')
       .invoke('attr', 'href')
       .then((href) => {
-        cy.visit({ url: `http://127.0.0.1:3002${href}` })
+        cy.visit({ url: `${Cypress.env('URL_MANAGE')}${href}` })
       })
     cy.get('[data-cy="change-chart-type"]').click()
     cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
@@ -4756,14 +4758,16 @@ describe('Different live-quiz workflows', function () {
   it('Test word cloud display after receiving answers', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(`[data-cy="live-quiz-cockpit-${this.data.modes.name}"]`).click()
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.liveQuizWordCloud.name}"]`
+    ).click()
     cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
     cy.get('[data-cy="evaluation-results-cockpit"]')
       .closest('a')
       .invoke('attr', 'href')
       .then((href) => {
-        cy.visit({ url: `http://127.0.0.1:3002${href}` })
+        cy.visit({ url: `${Cypress.env('URL_MANAGE')}${href}` })
       })
     cy.get('[data-cy="change-chart-type"]').click()
     cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()

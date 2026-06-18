@@ -2594,18 +2594,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       wordCloud: 'Word Cloud',
       wordCloudFilterMode: 'Filtermodus',
       wordCloudLanguageFilter: 'Sprachfilter',
-      wordCloudModeStandardTooltip:
-        'Standard: Reguläre Filter, z. B. Wörter, Zahlen, ...',
-      wordCloudModePremiumTooltip:
-        'Premium (nur auf Englisch): Erweitertes Set an Filter, z. B. Nomen, Verben, ...',
       wordCloudLanguageFilterTooltip:
-        'Stoppwörter (z. B. "und", "der") werden herausgefiltert, wenn der Modus auf einzelne Wörter gesetzt ist. Deaktivieren, um alle Wörter anzuzeigen.',
+        'Wenn eine Sprache ausgewählt ist, werden Stoppwörter dieser Sprache (z. B. "und", "der") herausgefiltert. Deaktivieren, um alle Wörter anzuzeigen.',
       wordCloudLanguageNone: 'Deaktiviert',
+      wordCloudDisplayLimit: 'Anzeigelimit',
+      wordCloudDisplayLimitAll: 'Alle',
       wordCloudModeWords: 'Einzelne Wörter',
       wordCloudOmittedWords:
-        '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund von Platzmangel nicht angezeigt werden.',
+        '{count} {count, plural, one {Wort} other {Wörter}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
       wordCloudOmittedSentences:
-        '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund von Platzmangel nicht angezeigt werden.',
+        '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
       wordCloudModeSentences: 'Vollständige Antworten',
       wordCloudNoResponses:
         'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert 😔.',

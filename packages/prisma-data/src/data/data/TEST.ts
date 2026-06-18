@@ -757,8 +757,9 @@ $$GourmetValue = Tastiness^2 \\times \\sqrt{Presentation} \\times (1+Uniqueness)
   },
   {
     originalId: '11',
-    name: 'Testfrage FREE_TEXT (Atopische Dermatitis)',
-    content: 'Describe atopic dermatitis in your own words.',
+    name: 'Testfrage FREE_TEXT (Finance)',
+    content:
+      'Describe the role of portfolio diversification in your own words.',
     explanation: 'FT generische Erklärung, warum diese Frage richtig ist.',
     type: ElementType.FREE_TEXT,
     options: {
@@ -767,16 +768,16 @@ $$GourmetValue = Tastiness^2 \\times \\sqrt{Presentation} \\times (1+Uniqueness)
         maxLength: 500,
       },
       solutions: [
-        'inflammation',
-        'pruritus',
-        'xerosis',
-        'filaggrin',
-        'barrier dysfunction',
-        'Th2 cytokines',
-        'IgE',
-        'emollients',
-        'eczema',
-        'Staphylococcus aureus',
+        'diversification',
+        'portfolio risk',
+        'asset allocation',
+        'correlation',
+        'expected return',
+        'volatility',
+        'systematic risk',
+        'idiosyncratic risk',
+        'risk-adjusted return',
+        'rebalancing',
       ],
     },
   },
@@ -967,61 +968,61 @@ export const LIVE_QUIZZES = [
           '8b4fc0755c2c002245255d951e6ff742': {
             count: 1,
             value:
-              'Atopic dermatitis is a chronic, relapsing inflammatory skin disease characterized by intense pruritus and xerosis. It commonly affects flexural areas such as the elbows and knees, especially in children. Impaired epidermal barrier function and immune dysregulation play central roles in its pathogenesis.',
+              'Portfolio diversification means spreading investments across different assets, sectors, or regions to reduce exposure to any single source of risk. It can lower idiosyncratic risk because losses in one holding may be offset by gains in another. The benefit depends strongly on correlations between assets.',
             correct: true,
           },
           c4ca4238a0b923820dcc509a6f75849b: {
             count: 1,
             value:
-              'The condition is associated with elevated serum IgE levels and a personal or family history of atopy, including asthma and allergic rhinitis. Acute flares often show erythema, vesiculation, and oozing, whereas chronic lesions exhibit lichenification. Environmental triggers such as detergents, allergens, and stress can exacerbate symptoms.',
+              'Diversification does not guarantee a profit, but it helps manage portfolio volatility. Combining equities, bonds, cash, and alternative assets can produce a smoother return path than holding only one security. Investors still remain exposed to broad market or systematic risk.',
             correct: true,
           },
           c81e728d9d4c2f636f067f89cc14862c: {
             count: 1,
             value:
-              'Atopic dermatitis is a contagious bacterial infection that spreads through direct skin contact. It primarily results from viral contamination rather than immune dysfunction. Antibiotics are the mainstay of treatment for complete cure.',
+              'Diversification means putting all available capital into the stock with the highest recent return. Concentrating in one winner removes risk because strong past performance reliably predicts future gains. Rebalancing is unnecessary once the best asset has been selected.',
             correct: false,
           },
           eccbc87e4b5ce2fe28308fd9f2a7baf3: {
             count: 1,
             value:
-              'Genetic mutations in the filaggrin (FLG) gene have been linked to increased susceptibility to atopic dermatitis. Filaggrin deficiency leads to transepidermal water loss and enhanced allergen penetration. This contributes to chronic inflammation mediated by Th2 cytokines such as IL-4 and IL-13.',
+              'The key idea is that assets with imperfect correlation do not move exactly together. A portfolio can therefore achieve a better risk-return tradeoff than its individual components alone. This is why asset allocation is central to modern portfolio theory.',
             correct: true,
           },
           a87ff679a2f3e71d9181a67b7542122c: {
             count: 1,
             value:
-              'Topical corticosteroids remain the first-line therapy for controlling inflammation and pruritus. Emollients are essential for restoring the skin barrier and reducing flare frequency. In severe cases, systemic immunomodulators like cyclosporine or biologics targeting IL-4Rα may be considered.',
+              'Investors diversify by holding instruments with different risk drivers, such as government bonds, corporate credit, broad equity indexes, and foreign assets. The portfolio should be reviewed over time because market movements change target weights. Rebalancing can restore the intended risk profile.',
             correct: true,
           },
           e4da3b7fbbce3765c8a6f2cfa1b3f3: {
             count: 1,
             value:
-              'Atopic dermatitis affects only adults and is rarely seen in children or infants. It primarily develops from excessive sun exposure rather than genetic or immune factors. Phototherapy usually worsens the condition instead of helping it.',
+              'Diversification eliminates every type of financial risk, including inflation, recession, interest-rate shocks, and market crashes. A diversified portfolio therefore cannot lose money. The expected return is always higher than the return of every individual asset.',
             correct: false,
           },
           '1679091c5a880faf6fb5e6087eb1b2dc': {
             count: 1,
             value:
-              'The skin microbiome, particularly Staphylococcus aureus colonization, is thought to aggravate disease severity. Antimicrobial peptides and immune regulation are altered in affected skin. Managing bacterial overgrowth can reduce flare-ups and inflammation.',
+              'A well-diversified portfolio reduces company-specific or sector-specific shocks. For example, a decline in one industry may have less impact when the investor also holds assets from other industries and regions. The remaining risk is mainly the market-wide component that cannot be diversified away.',
             correct: true,
           },
           '8f14e45fceea167a5a36dedd4bea2543': {
             count: 1,
             value:
-              'Itch-scratch cycles contribute significantly to lesion chronicity and secondary infections. Breaking this cycle through antihistamines, topical therapies, and behavioral strategies is crucial. Sleep disturbance and psychological stress can amplify pruritus perception.',
+              'Diversification should be connected to the investor goals, horizon, liquidity needs, and risk tolerance. A short-term investor may hold more cash or bonds, while a long-term investor may accept more equity volatility. The right mix is therefore context dependent.',
             correct: true,
           },
           c9f0f895fb98ab9159f51fd0297e236d: {
             count: 1,
             value:
-              'Atopic dermatitis is caused by an overproduction of melanin leading to dark patches on the skin. The condition is curable through simple vitamin D supplementation. It does not involve the immune system or inflammation.',
+              'Portfolio diversification is mainly an accounting rule for calculating taxes on dividends. It is unrelated to risk, correlation, or asset allocation. Investors use it only to decide which brokerage statement should be filed first.',
             correct: false,
           },
           d3d9446802a44259755d38e6d163e820: {
             count: 1,
             value:
-              'Atopic dermatitis often improves with age, though some individuals continue to experience relapses into adulthood. Preventive care includes maintaining skin hydration and avoiding known irritants. Patient education on trigger management and proper skincare greatly improves outcomes.',
+              'Diversification can be implemented with individual securities, mutual funds, or exchange-traded funds. Broad index funds are a simple way to gain exposure to many firms at low cost. However, investors should still monitor fees, concentration, and currency exposure.',
             correct: true,
           },
           // random texts (all incorrect)

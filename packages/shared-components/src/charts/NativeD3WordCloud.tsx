@@ -16,7 +16,7 @@ interface NativeD3WordCloudProps {
   colors: string[]
   transitionDuration: number
   emptyStateText: string
-  getWordTooltip: (word: LayoutWord) => string
+  getWordTooltip: (word: LayoutWord) => Node
   rotationAngles?: [number, number]
   onLayoutChange?: (result: LayoutResult) => void
 }
@@ -130,7 +130,12 @@ function NativeD3WordCloud({
       return
     }
 
-    rendererRef.current.update(layoutResult)
+    rendererRef.current.update(layoutResult, {
+      colors,
+      transitionDuration,
+      fontFamily,
+      getWordTooltip,
+    })
   }, [colors, fontFamily, getWordTooltip, layoutResult, transitionDuration])
 
   useEffect(() => {

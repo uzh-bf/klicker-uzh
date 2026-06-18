@@ -1,6 +1,6 @@
 import { readFile, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
-import { extname, join, normalize } from 'node:path'
+import { extname, join, normalize, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const demoRoot = fileURLToPath(new URL('./', import.meta.url))
@@ -20,7 +20,19 @@ const contentTypes = {
 
 function resolvePath(root, requestPath) {
   const sanitizedPath = normalize(requestPath).replace(/^(\.\.[/\\])+/, '')
-  return join(root, sanitizedPath)
+  const resolvedRoot = resolve(root)
+  const resolvedPath = resolve(resolvedRoot, sanitizedPath)
+  const relativePath = relative(resolvedRoot, resolvedPath)
+
+  if (
+    relativePath === '..' ||
+    relativePath.startsWith(`..${sep}`) ||
+    resolve(relativePath) === relativePath
+  ) {
+    throw new Error('Resolved path escapes demo root')
+  }
+
+  return resolvedPath
 }
 
 async function readResolvedFile(filePath) {
@@ -42,8 +54,11 @@ const server = createServer(async (request, response) => {
       ? pathname.replace('/dist/', '')
       : pathname.slice(1)
     const resolvedPath = resolvePath(root, relativePath)
-    const file = await readResolvedFile(resolvedPath)
-    const extension = extname(resolvedPath)
+    const finalPath = (await stat(resolvedPath)).isDirectory()
+      ? resolvePath(resolvedPath, 'index.html')
+      : resolvedPath
+    const file = await readResolvedFile(finalPath)
+    const extension = extname(finalPath)
     const contentType =
       contentTypes[extension] ?? 'application/octet-stream; charset=utf-8'
 

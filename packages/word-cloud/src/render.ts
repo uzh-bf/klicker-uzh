@@ -30,7 +30,18 @@ function getWordTransform(word: LayoutWord, scale = 1) {
 }
 
 function getDefaultTooltip(word: LayoutWord) {
-  return `<strong>${word.text}</strong><br/>${word.value}`
+  const wrapper = document.createElement('div')
+  const label = document.createElement('strong')
+  label.textContent = word.text
+  const lineBreak = document.createElement('br')
+  const value = document.createTextNode(String(word.value))
+
+  wrapper.append(label, lineBreak, value)
+  return wrapper
+}
+
+function replaceTooltipContent(tooltipElement: HTMLDivElement, content: Node) {
+  tooltipElement.replaceChildren(content)
 }
 
 function ensurePositionedContainer(container: HTMLElement) {
@@ -50,12 +61,9 @@ function ensurePositionedContainer(container: HTMLElement) {
 export function renderWordCloud(
   container: HTMLElement,
   initialLayoutResult: LayoutResult,
-  renderOptions: RenderWordCloudOptions = {}
+  initialRenderOptions: RenderWordCloudOptions = {}
 ): RendererHandle {
-  const colors = renderOptions.colors ?? DEFAULT_COLORS
-  const transitionDuration =
-    renderOptions.transitionDuration ?? DEFAULT_TRANSITION_DURATION
-  const tooltipOffset = renderOptions.tooltipOffset ?? DEFAULT_TOOLTIP_OFFSET
+  let renderOptions = initialRenderOptions
   let layoutResult = initialLayoutResult
   const teardownPositioning = ensurePositionedContainer(container)
   const hostSelection = select(container)
@@ -77,6 +85,11 @@ export function renderWordCloud(
   container.appendChild(tooltipElement)
 
   const draw = () => {
+    const colors = renderOptions.colors ?? DEFAULT_COLORS
+    const transitionDuration =
+      renderOptions.transitionDuration ?? DEFAULT_TRANSITION_DURATION
+    const tooltipOffset = renderOptions.tooltipOffset ?? DEFAULT_TOOLTIP_OFFSET
+
     svgSelection
       .attr('width', layoutResult.width)
       .attr('height', layoutResult.height)
@@ -99,6 +112,7 @@ export function renderWordCloud(
         (update: any) => update,
         (exit: any) =>
           exit
+            .interrupt()
             .transition()
             .duration(transitionDuration)
             .style('opacity', 0)
@@ -106,6 +120,7 @@ export function renderWordCloud(
       )
 
     textSelection
+      .interrupt()
       .attr('cursor', renderOptions.onWordClick ? 'pointer' : 'default')
       .attr(
         'fill',
@@ -132,9 +147,9 @@ export function renderWordCloud(
       .on(
         'mouseover',
         function (this: SVGTextElement, event: MouseEvent, word: LayoutWord) {
-          const tooltipHtml =
+          const tooltipContent =
             renderOptions.getWordTooltip?.(word) ?? getDefaultTooltip(word)
-          tooltipElement.innerHTML = tooltipHtml
+          replaceTooltipContent(tooltipElement, tooltipContent)
           tooltipElement.style.display = 'block'
           select(this).attr('transform', getWordTransform(word, 1.1))
           renderOptions.onWordMouseOver?.(word, event)
@@ -161,8 +176,14 @@ export function renderWordCloud(
   draw()
 
   return {
-    update: (nextLayoutResult: LayoutResult) => {
+    update: (
+      nextLayoutResult: LayoutResult,
+      nextRenderOptions?: RenderWordCloudOptions
+    ) => {
       layoutResult = nextLayoutResult
+      renderOptions = nextRenderOptions
+        ? { ...renderOptions, ...nextRenderOptions }
+        : renderOptions
       draw()
     },
     destroy: () => {

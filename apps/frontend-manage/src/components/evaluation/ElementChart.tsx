@@ -49,7 +49,6 @@ function ElementChart({
     return (
       <ElementWordCloud
         instance={instanceEvaluation}
-        showSolution={showSolution}
         showExplanation={showExplanation}
         textSize={{
           text: textSize.text,

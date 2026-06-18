@@ -100,14 +100,22 @@ function renderCloud() {
     padding: 5,
   })
 
+  const getWordTooltip = (word) => {
+    const wrapper = document.createElement('div')
+    const label = document.createElement('strong')
+    label.textContent = word.text
+    const value = document.createTextNode(`Frequency: ${word.value}`)
+    wrapper.append(label, document.createElement('br'), value)
+    return wrapper
+  }
+
   if (!renderer) {
     renderer = renderWordCloud(cloudElement, layoutResult, {
       transitionDuration: 350,
-      getWordTooltip: (word) =>
-        `<strong>${word.text}</strong><br/>Frequency: ${word.value}`,
+      getWordTooltip,
     })
   } else {
-    renderer.update(layoutResult)
+    renderer.update(layoutResult, { getWordTooltip })
   }
 
   setEmptyState(

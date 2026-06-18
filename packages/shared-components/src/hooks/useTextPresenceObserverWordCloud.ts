@@ -1,8 +1,9 @@
+import type { DependencyList, RefObject } from 'react'
 import { useEffect, useState } from 'react'
 
 export function useTextPresenceObserverWordCloud(
-  containerRef: React.RefObject<HTMLElement | null>,
-  deps: any[] = []
+  containerRef: RefObject<HTMLElement | null>,
+  deps: DependencyList = []
 ) {
   const [hasText, setHasText] = useState(false)
 

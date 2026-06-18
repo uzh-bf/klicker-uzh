@@ -73,24 +73,26 @@ function normalizeOptions(
   const height = Math.max(0, Math.floor(options.height))
   const minFontSize = Math.max(
     1,
-    Number.isFinite(options.minFontSize) && options.minFontSize
+    typeof options.minFontSize === 'number' &&
+      Number.isFinite(options.minFontSize)
       ? options.minFontSize
       : DEFAULT_MIN_FONT_SIZE
   )
   const rawMaxFontSize =
-    Number.isFinite(options.maxFontSize) && options.maxFontSize
+    typeof options.maxFontSize === 'number' &&
+    Number.isFinite(options.maxFontSize)
       ? options.maxFontSize
       : DEFAULT_MAX_FONT_SIZE
   const maxFontSize = Math.max(minFontSize, rawMaxFontSize)
   const scale = options.scale ?? DEFAULT_SCALE
   const spiral = options.spiral ?? 'archimedean'
   const padding =
-    Number.isFinite(options.padding) && options.padding
+    typeof options.padding === 'number' && Number.isFinite(options.padding)
       ? Math.max(0, options.padding)
       : DEFAULT_PADDING
   const rotationAngles = options.rotationAngles ?? DEFAULT_ROTATION_ANGLES
   const rotations =
-    Number.isFinite(options.rotations) && options.rotations
+    typeof options.rotations === 'number' && Number.isFinite(options.rotations)
       ? Math.max(1, Math.floor(options.rotations))
       : DEFAULT_ROTATIONS
   const deterministic = options.deterministic ?? true
@@ -99,15 +101,18 @@ function normalizeOptions(
   const fontStyle = options.fontStyle ?? DEFAULT_FONT_STYLE
   const fontWeight = options.fontWeight ?? DEFAULT_FONT_WEIGHT
   const shrinkFactor =
-    Number.isFinite(options.shrinkFactor) && options.shrinkFactor
+    typeof options.shrinkFactor === 'number' &&
+    Number.isFinite(options.shrinkFactor)
       ? clampNumber(options.shrinkFactor, 0.5, 0.99)
       : DEFAULT_SHRINK_FACTOR
   const maxRelayouts =
-    Number.isFinite(options.maxRelayouts) && options.maxRelayouts
+    typeof options.maxRelayouts === 'number' &&
+    Number.isFinite(options.maxRelayouts)
       ? Math.max(0, Math.floor(options.maxRelayouts))
       : DEFAULT_MAX_RELAYOUTS
   const maxAttemptsPerWord =
-    Number.isFinite(options.maxAttemptsPerWord) && options.maxAttemptsPerWord
+    typeof options.maxAttemptsPerWord === 'number' &&
+    Number.isFinite(options.maxAttemptsPerWord)
       ? Math.max(1, Math.floor(options.maxAttemptsPerWord))
       : DEFAULT_MAX_ATTEMPTS_PER_WORD
 

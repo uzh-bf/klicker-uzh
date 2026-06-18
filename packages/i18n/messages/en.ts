@@ -2555,18 +2555,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       wordCloudFilterMode: 'Filter Mode',
       wordCloudLanguageFilter: 'Language Filter',
-      wordCloudModeStandardTooltip:
-        'Standard: Regular filters, e.g. words, numbers, ...',
-      wordCloudModePremiumTooltip:
-        'Premium (only in English): Extended set of filters, e.g. nouns, verbs, ...',
       wordCloudLanguageFilterTooltip:
-        'Stopwords (e.g. "the", "and") are filtered out when the mode is set to individual words. Disable to show all words.',
+        'When a language is selected, stopwords for that language (e.g. "the", "and") are filtered out. Disable the filter to show all words.',
       wordCloudLanguageNone: 'Disabled',
+      wordCloudDisplayLimit: 'Display limit',
+      wordCloudDisplayLimitAll: 'All',
       wordCloudModeWords: 'Individual words',
       wordCloudOmittedWords:
-        '{count} {count, plural, one {response} other {responses}} could not be displayed due to space constraints.',
+        '{count} {count, plural, one {word} other {words}} could not be displayed due to the display limit or space constraints.',
       wordCloudOmittedSentences:
-        '{count} {count, plural, one {response} other {responses}} could not be displayed due to space constraints.',
+        '{count} {count, plural, one {response} other {responses}} could not be displayed due to the display limit or space constraints.',
       wordCloudModeSentences: 'Full responses',
       wordCloudNoResponses:
         'No participants have submitted responses for this question 😔.',

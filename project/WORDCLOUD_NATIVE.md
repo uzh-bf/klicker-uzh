@@ -18,33 +18,27 @@ The migration target is a complete backend switch for `ElementWordcloud` from le
 ## Implemented (Achieved)
 
 - [x] Introduced standalone package `@klicker-uzh/word-cloud` with layout/render API
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/src/index.ts`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/src/layout.ts`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/src/render.ts`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/src/random.ts`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/src/types.ts`
+  - `packages/word-cloud/src/index.ts`
+  - `packages/word-cloud/src/layout.ts`
+  - `packages/word-cloud/src/render.ts`
+  - `packages/word-cloud/src/random.ts`
+  - `packages/word-cloud/src/types.ts`
 - [x] Added standalone demo + tiny static server for isolated smoke testing
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/demo/index.html`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/demo/main.js`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/demo/server.mjs`
+  - `packages/word-cloud/demo/index.html`
+  - `packages/word-cloud/demo/main.js`
+  - `packages/word-cloud/demo/server.mjs`
 - [x] Added package-level tests for deterministic behavior, collisions, scales, and relayout
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/word-cloud/test/layout.test.ts`
+  - `packages/word-cloud/test/layout.test.ts`
 - [x] Integrated native renderer into `Standard` mode in `ElementWordcloud`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/shared-components/src/charts/ElementWordcloud.tsx`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/shared-components/src/charts/NativeD3WordCloud.tsx`
-- [x] Kept `Premium` mode temporarily on legacy renderer as migration fallback
+  - `packages/shared-components/src/charts/ElementWordcloud.tsx`
+  - `packages/shared-components/src/charts/NativeD3WordCloud.tsx`
 - [x] Wired workspace package usage and build dependency chain
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/shared-components/package.json`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/turbo.json`
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/pnpm-lock.yaml`
-- [x] Added temporary Cypress assertion to confirm Premium fallback still renders
-  - `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/cypress/cypress/e2e/O-live-quiz-workflow.cy.ts`
+  - `packages/shared-components/package.json`
+  - `turbo.json`
+  - `pnpm-lock.yaml`
 
 ## Open Migration Steps
 
-- [ ] Migrate `Premium` mode to native package path
-- [ ] Remove legacy renderer wiring/callbacks/options once Premium is migrated
-- [ ] Remove legacy dependencies from shared components (`react-wordcloud`, `d3-cloud`) when no longer needed
 - [ ] Re-check and clean remaining ancillary word-cloud deps (including legacy tag-cloud typings/packages where unused)
 - [ ] Replace remaining observer-based empty-state fallback logic with layout-result driven logic for all modes
 - [ ] Keep/expand regression coverage for Standard + Premium parity after full migration
@@ -56,7 +50,7 @@ Package: `@klicker-uzh/word-cloud`
 
 - `computeWordCloudLayout(words, options): LayoutResult`
 - `renderWordCloud(container, layoutResult, renderOptions): RendererHandle`
-- `RendererHandle.update(nextLayoutResult): void`
+- `RendererHandle.update(nextLayoutResult, nextRenderOptions?): void`
 - `RendererHandle.destroy(): void`
 
 ## Validation Performed
@@ -69,13 +63,12 @@ Package: `@klicker-uzh/word-cloud`
 
 ## Risks / Gaps
 
-- `Premium` is still on legacy fallback, so full dependency cleanup is not complete yet.
-- CI currently reports a failing syncpack conformity check on `/Users/rolandschlaefli/.codex/worktrees/eaff/klicker-uzh/packages/shared-components/package.json`.
+- Full cleanup of old tag-cloud dependencies should be handled after confirming no other chart path still imports them.
+- CI currently reports a failing syncpack conformity check on `packages/shared-components/package.json`.
 - Full app-level typecheck for shared-components depends on broader workspace build prerequisites and should be validated in CI/fully prepared local environment.
 
 ## Done Criteria for Full Migration
 
-- [ ] Both `Standard` and `Premium` modes use native `@klicker-uzh/word-cloud` path
 - [ ] Legacy renderer dependencies removed from active usage and manifests
 - [ ] Existing word-cloud Cypress behavior remains green without test rewrites (except intentional migration-specific updates)
 - [ ] Empty-state handling is consistent and layout-result driven for all modes
