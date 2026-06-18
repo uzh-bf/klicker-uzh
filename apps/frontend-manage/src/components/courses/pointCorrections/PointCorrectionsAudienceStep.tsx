@@ -1,9 +1,9 @@
-import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField, FormLabel } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import Select from 'react-select'
+import { PointCorrectionType } from '../../../lib/assessmentResultsTypes'
 import type { PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsAudienceStep({

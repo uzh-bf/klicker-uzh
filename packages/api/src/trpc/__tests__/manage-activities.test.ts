@@ -3,6 +3,7 @@ import {
   ElementType,
   Locale,
   PermissionLevel,
+  PointCorrectionType,
   PublicationStatus,
   ReviewStatus,
   UserLoginScope,
@@ -1854,6 +1855,387 @@ describe('manage activity read routers', () => {
       include: { activityInstances: true },
     })
     expect(groupActivityUpdate).not.toHaveBeenCalled()
+  })
+
+  test('returns null for assessment course results without admin permission', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const courseFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.assessmentResultsCourse({ courseId: 'course-1' })
+    ).resolves.toEqual({ assessmentResultsCourse: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        courseId: 'course-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+        },
+      },
+    })
+    expect(courseFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('returns ended live quizzes for point correction scope selection', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      liveQuizzes: [
+        {
+          id: 'live-quiz-1',
+          name: 'Internal name',
+          displayName: 'Display name',
+          blocks: [
+            {
+              elements: [
+                { id: 11, elementData: { name: 'Question A' } },
+                { id: 12, elementData: { name: 'Question B' } },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.endedLiveQuizzesCourse({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      endedLiveQuizzesCourse: [
+        {
+          id: 'live-quiz-1',
+          name: 'Internal name',
+          displayName: 'Display name',
+          instances: [
+            { id: '11', name: 'Question A' },
+            { id: '12', name: 'Question B' },
+          ],
+        },
+      ],
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      include: {
+        liveQuizzes: {
+          where: { isDeleted: false, status: PublicationStatus.ENDED },
+          include: {
+            blocks: {
+              include: { elements: { orderBy: { order: 'asc' } } },
+              orderBy: { order: 'asc' },
+            },
+          },
+          orderBy: { finishedAt: 'desc' },
+        },
+      },
+    })
+  })
+
+  test('returns sorted assessment course participants with preferred SSO email', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      participations: [
+        {
+          participant: {
+            id: 'participant-2',
+            email: 'z@example.com',
+            username: 'z-user',
+            accounts: [],
+          },
+        },
+        {
+          participant: {
+            id: 'participant-1',
+            email: 'a-local@example.com',
+            username: 'a-user',
+            accounts: [{ ssoEmail: 'a-sso@example.com' }],
+          },
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.assessmentCourseParticipants({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      assessmentCourseParticipants: [
+        { id: 'participant-1', email: 'a-sso@example.com', username: 'a-user' },
+        { id: 'participant-2', email: 'z@example.com', username: 'z-user' },
+      ],
+    })
+  })
+
+  test('returns student course assessment drilldown results for assessment admins', async () => {
+    const finishedAt = new Date('2026-01-01T10:00:00.000Z')
+    const permissionFindUnique = vi.fn().mockResolvedValue({ id: 1 })
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      liveQuizzes: [
+        {
+          id: 'live-quiz-1',
+          displayName: 'Assessment Live Quiz',
+          finishedAt,
+          pointsMultiplier: 2,
+          defaultPoints: 5,
+          defaultCorrectPoints: 10,
+          maxBonusPoints: 3,
+          blocks: [
+            {
+              elements: [
+                {
+                  elementType: ElementType.SC,
+                  elementData: {
+                    options: { hasSampleSolution: true },
+                  },
+                  options: { basePoints: true, pointsMultiplier: 2 },
+                  liveQuizResponses: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findUnique: permissionFindUnique,
+      },
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.studentCourseResults({
+        courseId: 'course-1',
+        participantId: 'participant-1',
+      })
+    ).resolves.toEqual({
+      studentCourseResults: [
+        {
+          id: 'live-quiz-1',
+          activityId: 'live-quiz-1',
+          displayName: 'Assessment Live Quiz',
+          finishedAt,
+          multiplier: 2,
+          basePoints: 0,
+          availableBasePoints: 5,
+          correctnessPoints: 0,
+          availableCorrectnessPoints: 20,
+          bonusPoints: 0,
+          availableBonusPoints: 6,
+          corrections: [],
+        },
+      ],
+    })
+  })
+
+  test('maps live quiz student assessment response blocks through preview DTOs', async () => {
+    const liveQuizFindUnique = vi.fn().mockResolvedValue({
+      blocks: [
+        {
+          id: 21,
+          elements: [
+            {
+              id: 11,
+              type: ElementInstanceType.LIVE_QUIZ,
+              elementType: ElementType.SC,
+              options: { basePoints: true, pointsMultiplier: 1 },
+              elementData: {
+                id: 1,
+                elementId: 2,
+                name: 'Question A',
+                type: ElementType.SC,
+                content: 'Question content',
+                explanation: null,
+                basePoints: true,
+                pointsMultiplier: 1,
+                options: {
+                  hasSampleSolution: true,
+                  hasAnswerFeedbacks: false,
+                  displayMode: 'LIST',
+                  choices: [{ ix: 0, correct: true, value: 'A' }],
+                },
+              },
+              liveQuizResponses: [
+                {
+                  basePoints: 5,
+                  correctnessPoints: 10,
+                  bonusPoints: 2,
+                  correctness: ResponseCorrectness.CORRECT,
+                  response: { choices: [0] },
+                  appliedCorrections: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.liveQuizStudentAssessmentResponses({
+        liveQuizId: 'live-quiz-1',
+        participantId: 'participant-1',
+      })
+    ).resolves.toMatchObject({
+      liveQuizStudentAssessmentResponses: [
+        {
+          blockId: 21,
+          instances: [
+            {
+              basePoints: 5,
+              correctnessPoints: 10,
+              bonusPoints: 2,
+              correctness: ResponseCorrectness.CORRECT,
+              submission: { choices: [0] },
+              corrections: [],
+              instance: {
+                id: 11,
+                type: ElementInstanceType.LIVE_QUIZ,
+                elementType: ElementType.SC,
+                elementData: {
+                  __typename: 'ChoicesElementData',
+                  name: 'Question A',
+                  options: {
+                    __typename: 'ChoiceElementOptions',
+                    choices: [{ ix: 0, correct: true, value: 'A' }],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(liveQuizFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'live-quiz-1',
+          isAssessmentEnabled: true,
+        }),
+      })
+    )
+  })
+
+  test('returns previous point corrections with display-ready relations', async () => {
+    const createdAt = new Date('2026-01-01T10:00:00.000Z')
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      liveQuizzes: [
+        {
+          id: 'live-quiz-1',
+          name: 'Live Quiz',
+          corrections: [
+            {
+              id: 1,
+              type: PointCorrectionType.SINGLE,
+              basePoints: true,
+              correctnessPoints: null,
+              bonusPoints: false,
+              reason: 'Lecturer reason',
+              studentReason: 'Student reason',
+              createdAt,
+              correctedBy: { id: user.id, shortname: 'lecturer' },
+              participant: {
+                id: 'participant-1',
+                username: 'participant',
+                email: 'fallback@example.com',
+                accounts: [{ ssoEmail: 'sso@example.com' }],
+              },
+              participants: [],
+            },
+          ],
+          blocks: [],
+        },
+      ],
+    })
+    const prisma = {
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.previousPointCorrections({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      previousPointCorrections: [
+        {
+          id: 1,
+          type: PointCorrectionType.SINGLE,
+          basePoints: true,
+          correctnessPoints: null,
+          bonusPoints: false,
+          reason: 'Lecturer reason',
+          studentReason: 'Student reason',
+          createdAt,
+          correctedBy: { id: user.id, shortname: 'lecturer' },
+          participant: {
+            id: 'participant-1',
+            username: 'participant',
+            email: 'sso@example.com',
+          },
+          participants: [],
+          liveQuiz: { id: 'live-quiz-1', name: 'Live Quiz' },
+          instance: null,
+        },
+      ],
+    })
+  })
+
+  test('returns null for point correction mutations without adjustments', async () => {
+    const elementInstanceFindUnique = vi.fn()
+    const prisma = {
+      elementInstance: {
+        findUnique: elementInstanceFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.correctAssessmentPointsInstance({
+        instanceId: 11,
+        reason: 'Lecturer reason',
+        studentReason: 'Student reason',
+        scope: PointCorrectionType.SINGLE,
+        participantId: 'participant-1',
+        participantIds: [],
+      })
+    ).resolves.toEqual({ correctAssessmentPointsInstance: null })
+
+    expect(elementInstanceFindUnique).not.toHaveBeenCalled()
   })
 
   test('requires full-access user scope for review status mutation', async () => {

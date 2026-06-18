@@ -1,5 +1,6 @@
 import {
   ElementType,
+  PointCorrectionType,
   PublicationStatus,
   ReviewStatus,
 } from '@klicker-uzh/prisma/client'
@@ -62,6 +63,62 @@ export const gradeGroupActivitySubmissionInput = z.object({
 export const finalizeGroupActivityGradingInput = z.object({
   id: z.string(),
 })
+
+export const assessmentResultsCourseInput = z.object({
+  courseId: z.string(),
+})
+
+export const assessmentResultsLiveQuizInput = z.object({
+  liveQuizId: z.string(),
+})
+
+export const studentCourseResultsInput = z.object({
+  courseId: z.string(),
+  participantId: z.string(),
+})
+
+export const liveQuizStudentAssessmentResponsesInput = z.object({
+  liveQuizId: z.string(),
+  participantId: z.string(),
+})
+
+export const endedLiveQuizzesCourseInput = z.object({
+  courseId: z.string(),
+})
+
+export const assessmentCourseParticipantsInput = z.object({
+  courseId: z.string(),
+})
+
+export const previousPointCorrectionsInput = z.object({
+  courseId: z.string().nullish(),
+  liveQuizId: z.string().nullish(),
+  instanceId: z.number().int().nullish(),
+})
+
+const correctAssessmentPointsBaseInput = z.object({
+  awardBasePoints: z.boolean().nullish(),
+  awardCorrectnessPoints: z.boolean().nullish(),
+  awardBonusPoints: z.boolean().nullish(),
+  deductBasePoints: z.boolean().nullish(),
+  deductCorrectnessPoints: z.boolean().nullish(),
+  deductBonusPoints: z.boolean().nullish(),
+  reason: z.string(),
+  studentReason: z.string(),
+  scope: z.nativeEnum(PointCorrectionType),
+  participantId: z.string().nullish(),
+  participantIds: z.array(z.string()).nullish(),
+})
+
+export const correctAssessmentPointsInstanceInput =
+  correctAssessmentPointsBaseInput.extend({
+    instanceId: z.number().int(),
+  })
+
+export const correctAssessmentPointsLiveQuizInput =
+  correctAssessmentPointsBaseInput.extend({
+    liveQuizId: z.string(),
+  })
 
 export const templateInformationInput = activityDetailsInput
 

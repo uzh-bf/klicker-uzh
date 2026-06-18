@@ -1,7 +1,6 @@
-import { useSuspenseQuery } from '@apollo/client'
 import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetPreviousPointCorrectionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   ShadcnCollapsible,
   ShadcnCollapsibleContent,
@@ -9,6 +8,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import PreviousPointCorrectionList from './PreviousPointCorrectionList'
 
 function SuspendedPreviousCorrections({
@@ -23,19 +23,36 @@ function SuspendedPreviousCorrections({
   const t = useTranslations()
 
   // fetch the previous corrections for the given live quiz / instance
-  const { data } = useSuspenseQuery(GetPreviousPointCorrectionsDocument, {
-    variables: {
+  const parsedInstanceId =
+    instanceScope && instanceId && instanceId !== ''
+      ? parseInt(instanceId, 10)
+      : undefined
+  const validInstanceId =
+    typeof parsedInstanceId === 'number' && !Number.isNaN(parsedInstanceId)
+  const hasLiveQuizId = Boolean(liveQuizId)
+  const { data, isLoading } = trpc.activity.previousPointCorrections.useQuery(
+    {
       liveQuizId,
-      instanceId:
-        instanceScope && instanceId && instanceId !== ''
-          ? parseInt(instanceId, 10)
-          : undefined,
+      instanceId: validInstanceId ? parsedInstanceId : undefined,
     },
-    fetchPolicy: 'network-only',
-    skip: !liveQuizId || liveQuizId === '',
-  })
+    { enabled: hasLiveQuizId }
+  )
   const corrections = data?.previousPointCorrections ?? []
   const [collapsibleOpen, setCollapsibleOpen] = useState(false)
+
+  if (!hasLiveQuizId) {
+    return (
+      <div className="text-sm text-gray-600">
+        {instanceScope
+          ? t('manage.pointCorrections.historyPlaceholderInstance')
+          : t('manage.pointCorrections.historyPlaceholder')}
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return <Loader />
+  }
 
   if (corrections.length === 0) {
     return (

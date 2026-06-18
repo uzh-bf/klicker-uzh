@@ -280,6 +280,102 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-18 Completed: S04N6 Manage Assessment Results and Point Corrections
+
+Status: complete for the scoped slice. Scope was limited to manage assessment
+result pages, student result drilldowns, and point-correction support/history
+flows. This was S04N/S04P mixed-state work only; S05 realtime and S06 cleanup
+were not started.
+
+Operation mapping:
+
+```text
+Slice: S04N6 Manage Assessment Results and Point Corrections
+
+GraphQL operations:
+- GetAssessmentResultsCourse
+- GetAssessmentResultsLiveQuiz
+- GetStudentCourseResults
+- GetLiveQuizStudentAssessmentResponses
+- GetEndedLiveQuizzesCourse
+- GetAssessmentCourseParticipants
+- GetPreviousPointCorrections
+- CorrectAssessmentPointsInstance
+- CorrectAssessmentPointsLiveQuiz
+
+tRPC procedures:
+- activity.assessmentResultsCourse
+- activity.assessmentResultsLiveQuiz
+- activity.studentCourseResults
+- activity.liveQuizStudentAssessmentResponses
+- activity.endedLiveQuizzesCourse
+- activity.assessmentCourseParticipants
+- activity.previousPointCorrections
+- activity.correctAssessmentPointsInstance
+- activity.correctAssessmentPointsLiveQuiz
+
+GraphQL behavior source:
+- packages/graphql/src/services/courses.ts assessment result, previous
+  correction, support-query, and point-correction functions
+- packages/graphql/src/schema/query.ts assessment query wrappers
+- packages/graphql/src/schema/mutation.ts point-correction mutation wrappers
+
+Apollo cache/refetch behavior:
+- Assessment result pages use network-only reads.
+- Point-correction mutations refetch live-quiz assessment responses and
+  live-quiz assessment results; tRPC should invalidate the corresponding
+  procedure inputs after mutation success.
+
+Cleanup blocked until: S04O secondary runtime consumers, S04P generated type
+leak cleanup outside this path, S04Q API no-GraphQL runtime gate, S05 realtime,
+and S06 cleanup gates.
+```
+
+Completed write scope:
+
+- Added API-local assessment results / point correction service code in
+  `packages/api/src/services`.
+- Added narrow DTOs and Zod inputs under `packages/api/src/trpc`.
+- Wired new activity router procedures with the same assessment admin guard
+  behavior as the GraphQL queries/mutations.
+- Replaced Apollo usage in the manage assessment results pages, live-quiz
+  student result drilldown, and point-correction modal/history components.
+- Added focused API router tests for permission/null paths, numeric aggregation,
+  support query DTOs, and point-correction input guards where cheap.
+- Added focused drilldown coverage for `studentCourseResults` and
+  `liveQuizStudentAssessmentResponses` because the local seeded assessment
+  pages render empty result tables and cannot expose a clickable student row.
+- Fixed the point-corrections history panel for disabled tRPC queries: React
+  Query v4 can report `isLoading` for a disabled query with no cached data, so
+  the modal now renders the existing empty-history placeholder instead of an
+  infinite spinner when no quiz is selected.
+
+Verification:
+
+- Formatted touched S04N6 files with `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write ...`; the final loader-state patch was unchanged by Prettier.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/backend-docker build`: passed, used to start the local backend with current tRPC router code.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/manage-activities.test.ts`: passed. The package script ran the API suite: 31 files, 322 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed. Existing warnings remained: `packages/next-config` has no module type, next-intl reports the mixed Pages/App Router `i18n` config caveat, Browserslist data is stale, `/qr/[...args]` emits `MISSING_MESSAGE`, and several pages exceed the 128 kB page-data threshold.
+- Browser verification used `npx agent-browser` against a real local stack: backend `http://127.0.0.1:3143`, auth `http://127.0.0.1:3146`, manage `http://127.0.0.1:3148`, delegated login as the seeded lecturer. Screenshots:
+  - `/tmp/agent-browser-shots/s04n6-05-course-results-correct.png`
+  - `/tmp/agent-browser-shots/s04n6-06-livequiz-results.png`
+  - `/tmp/agent-browser-shots/s04n6-10-point-corrections-modal-fixed.png`
+- Browser network evidence: course results loaded `activity.assessmentResultsCourse` through `/api/trpc`; `GetAssessmentResultsCourse` did not appear.
+- Browser network evidence: live-quiz results loaded `activity.assessmentResultsLiveQuiz` through `/api/trpc`; `GetAssessmentResultsLiveQuiz` did not appear.
+- Browser network evidence: point-corrections modal loaded `activity.previousPointCorrections`, `activity.endedLiveQuizzesCourse`, and `activity.assessmentCourseParticipants` through `/api/trpc`; `GetPreviousPointCorrections`, `GetEndedLiveQuizzesCourse`, and `GetAssessmentCourseParticipants` did not appear.
+- Local assessment seed caveat: course and live-quiz result tables render the empty state, so no student row was available to click for browser drilldown verification. Added router tests for both drilldown procedures and verified direct local tRPC response for previous corrections returned `200` with an empty correction list.
+- Focused migrated-path audit `rg -n "@apollo/client|@klicker-uzh/graphql/dist/ops" 'apps/frontend-manage/src/pages/courses/[id]/assessment' apps/frontend-manage/src/components/courses/PointCorrectionsModal.tsx apps/frontend-manage/src/components/courses/pointCorrections apps/frontend-manage/src/components/liveQuiz/results apps/frontend-manage/src/lib/assessmentResultsTypes.ts packages/api/src/services/manageAssessmentResults.ts packages/api/src/trpc/dto/manageAssessmentResults.ts`: no matches.
+- Focused S04N6 operation audit `rg -n "GetAssessmentResultsCourseDocument|GetAssessmentResultsLiveQuizDocument|GetStudentCourseResultsDocument|GetLiveQuizStudentAssessmentResponsesDocument|GetPreviousPointCorrectionsDocument|CorrectAssessmentPointsInstanceDocument|CorrectAssessmentPointsLiveQuizDocument|GetEndedLiveQuizzesCourseDocument|GetAssessmentCourseParticipantsDocument|GetAssessmentResultsCourse|GetAssessmentResultsLiveQuiz|GetStudentCourseResults|GetLiveQuizStudentAssessmentResponses|GetPreviousPointCorrections|CorrectAssessmentPointsInstance|CorrectAssessmentPointsLiveQuiz|GetEndedLiveQuizzesCourse|GetAssessmentCourseParticipants" apps/frontend-manage/src packages/api/src`: no matches.
+- Compact S04 coexistence audit `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`: `236`, confirming GraphQL/Apollo remain intentionally live before S05/S06 cleanup gates.
+- `git diff --check`: passed.
+- Local verification servers were stopped after browser verification; ports `3143`, `3146`, and `3148` were clear.
+
+Next: continue only remaining S04 gates (`S04O`, `S04P`, `S04Q`). Pause before
+S05 realtime; do not start S05 or S06 without explicit user instruction.
+
 ### 2026-06-18 Completed: S04N5 Manage Group Activity Grading
 
 Status: complete for the scoped slice. Scope was limited to the manage group

@@ -40,6 +40,17 @@ import {
 import type { z } from 'zod'
 import { applyManageActivityBatchOperations } from '../../services/manageActivityBatchOperations.js'
 import {
+  correctAssessmentPointsInstance,
+  correctAssessmentPointsLiveQuiz,
+  getAssessmentCourseParticipants,
+  getAssessmentResultsCourse,
+  getAssessmentResultsLiveQuiz,
+  getEndedLiveQuizzesCourse,
+  getLiveQuizStudentAssessmentResponses,
+  getManageStudentCourseResults,
+  getPreviousPointCorrections,
+} from '../../services/manageAssessmentResults.js'
+import {
   finalizeGroupActivityGrading,
   getGradingGroupActivity,
   gradeGroupActivitySubmission,
@@ -54,25 +65,38 @@ import {
 } from '../dto/activity.js'
 import { toPreviewElementData } from '../dto/elementPreview.js'
 import { toGroupActivityGradingDto } from '../dto/groupActivityGrading.js'
+import {
+  toLiveQuizStudentAssessmentResponsesDto,
+  toPreviousPointCorrectionsDto,
+} from '../dto/manageAssessmentResults.js'
 import { router } from '../init.js'
-import { hasActivityPermission } from '../permissions.js'
+import { hasActivityPermission, hasCoursePermission } from '../permissions.js'
 import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
   activityDetailsInput,
   activityReviewStatusInput,
   activityTemplateInput,
   applyActivityBatchOperationsInput,
+  assessmentCourseParticipantsInput,
+  assessmentResultsCourseInput,
+  assessmentResultsLiveQuizInput,
   checkTemplateElementExistsInput,
   checkTemplateInfoAvailableInput,
+  correctAssessmentPointsInstanceInput,
+  correctAssessmentPointsLiveQuizInput,
   createActivityTemplateInput,
   createLiveQuizFromTemplateInput,
   deleteActivityTemplateInput,
   editActivityTemplateInput,
+  endedLiveQuizzesCourseInput,
   finalizeGroupActivityGradingInput,
   gradeGroupActivitySubmissionInput,
   groupActivityGradingInput,
+  liveQuizStudentAssessmentResponsesInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
+  previousPointCorrectionsInput,
+  studentCourseResultsInput,
   templateInformationInput,
   templatePreviewAnswerCollectionEntriesInput,
   userActivitiesInput,
@@ -2022,6 +2046,167 @@ export const activityRouter = router({
       return {
         finalizeGroupActivityGrading: groupActivity
           ? { id: groupActivity.id, status: groupActivity.status }
+          : null,
+      }
+    }),
+
+  assessmentResultsCourse: userProcedure
+    .input(assessmentResultsCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canAdmin = await hasCoursePermission(
+        ctx,
+        input.courseId,
+        PermissionLevel.ADMIN
+      )
+
+      if (!canAdmin) return { assessmentResultsCourse: null }
+
+      return {
+        assessmentResultsCourse: await getAssessmentResultsCourse({
+          prisma,
+          courseId: input.courseId,
+        }),
+      }
+    }),
+
+  assessmentResultsLiveQuiz: userProcedure
+    .input(assessmentResultsLiveQuizInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        assessmentResultsLiveQuiz: await getAssessmentResultsLiveQuiz({
+          prisma,
+          liveQuizId: input.liveQuizId,
+          userId: ctx.user.sub,
+        }),
+      }
+    }),
+
+  studentCourseResults: userProcedure
+    .input(studentCourseResultsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        studentCourseResults: await getManageStudentCourseResults({
+          prisma,
+          user: ctx.user,
+          courseId: input.courseId,
+          participantId: input.participantId,
+        }),
+      }
+    }),
+
+  liveQuizStudentAssessmentResponses: userProcedure
+    .input(liveQuizStudentAssessmentResponsesInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        liveQuizStudentAssessmentResponses:
+          toLiveQuizStudentAssessmentResponsesDto(
+            await getLiveQuizStudentAssessmentResponses({
+              prisma,
+              liveQuizId: input.liveQuizId,
+              participantId: input.participantId,
+              userId: ctx.user.sub,
+            })
+          ),
+      }
+    }),
+
+  endedLiveQuizzesCourse: userProcedure
+    .input(endedLiveQuizzesCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canRead = await hasCoursePermission(
+        ctx,
+        input.courseId,
+        PermissionLevel.READ
+      )
+
+      if (!canRead) return { endedLiveQuizzesCourse: [] }
+
+      return {
+        endedLiveQuizzesCourse: await getEndedLiveQuizzesCourse({
+          prisma,
+          courseId: input.courseId,
+        }),
+      }
+    }),
+
+  assessmentCourseParticipants: userProcedure
+    .input(assessmentCourseParticipantsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canAdmin = await hasCoursePermission(
+        ctx,
+        input.courseId,
+        PermissionLevel.ADMIN
+      )
+
+      if (!canAdmin) return { assessmentCourseParticipants: [] }
+
+      return {
+        assessmentCourseParticipants: await getAssessmentCourseParticipants({
+          prisma,
+          courseId: input.courseId,
+        }),
+      }
+    }),
+
+  previousPointCorrections: userProcedure
+    .input(previousPointCorrectionsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        previousPointCorrections: toPreviousPointCorrectionsDto(
+          await getPreviousPointCorrections({
+            prisma,
+            courseId: input.courseId,
+            liveQuizId: input.liveQuizId,
+            instanceId: input.instanceId,
+            userId: ctx.user.sub,
+          })
+        ),
+      }
+    }),
+
+  correctAssessmentPointsInstance: userFullAccessProcedure
+    .input(correctAssessmentPointsInstanceInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const { instanceId, ...correctionInput } = input
+      const correction = await correctAssessmentPointsInstance({
+        ctx: { ...ctx, prisma },
+        input: correctionInput,
+        instanceId,
+      })
+
+      return {
+        correctAssessmentPointsInstance: correction
+          ? { id: correction.id }
+          : null,
+      }
+    }),
+
+  correctAssessmentPointsLiveQuiz: userFullAccessProcedure
+    .input(correctAssessmentPointsLiveQuizInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const { liveQuizId, ...correctionInput } = input
+      const correction = await correctAssessmentPointsLiveQuiz({
+        ctx: { ...ctx, prisma },
+        input: correctionInput,
+        liveQuizId,
+      })
+
+      return {
+        correctAssessmentPointsLiveQuiz: correction
+          ? { id: correction.id }
           : null,
       }
     }),

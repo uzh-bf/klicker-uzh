@@ -1,13 +1,13 @@
-import { useSuspenseQuery } from '@apollo/client'
 import {
   faArrowRight,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetStudentCourseResultsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { trpc } from '../../../lib/trpc'
 
 function CourseSingleStudentResults({
   courseId,
@@ -19,12 +19,16 @@ function CourseSingleStudentResults({
   const t = useTranslations()
   const formatter = useFormatter()
 
-  const { data, error } = useSuspenseQuery(GetStudentCourseResultsDocument, {
-    variables: { courseId, participantId },
-    fetchPolicy: 'network-only',
-    skip: !courseId || !participantId,
-  })
+  const { data, error, isLoading } =
+    trpc.activity.studentCourseResults.useQuery(
+      { courseId, participantId },
+      { enabled: Boolean(courseId && participantId) }
+    )
   const studentCourseResults = data?.studentCourseResults ?? []
+
+  if (isLoading) {
+    return <Loader />
+  }
 
   if (error || !data?.studentCourseResults) {
     return (

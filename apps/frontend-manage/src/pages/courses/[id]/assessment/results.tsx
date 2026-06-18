@@ -1,7 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import { GetAssessmentResultsCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -15,6 +13,7 @@ import AssessmentStudentResultsTable, {
   PageSizeOption,
 } from '../../../../components/liveQuiz/results/AssessmentStudentResultsTable'
 import CourseSingleStudentResults from '../../../../components/liveQuiz/results/CourseSingleStudentResults'
+import { trpc } from '../../../../lib/trpc'
 
 function CourseAssessmentResults() {
   const t = useTranslations()
@@ -29,16 +28,14 @@ function CourseAssessmentResults() {
     email: string
   } | null>(null)
 
-  const { data, loading, error } = useQuery(
-    GetAssessmentResultsCourseDocument,
-    {
-      variables: { courseId: router.query.id as string },
-      skip: !router.query.id,
-      fetchPolicy: 'network-only',
-    }
-  )
+  const courseId = typeof router.query.id === 'string' ? router.query.id : ''
+  const { data, isLoading, error } =
+    trpc.activity.assessmentResultsCourse.useQuery(
+      { courseId },
+      { enabled: Boolean(courseId) }
+    )
 
-  if (loading) {
+  if (isLoading || !courseId) {
     return (
       <Layout>
         <Loader />
@@ -106,7 +103,7 @@ function CourseAssessmentResults() {
           {!!selectedParticipant ? (
             <Suspense>
               <CourseSingleStudentResults
-                courseId={router.query.id as string}
+                courseId={courseId}
                 participantId={selectedParticipant.id}
               />
             </Suspense>
@@ -119,18 +116,18 @@ function CourseAssessmentResults() {
         </div>
       </div>
 
-      {correctionsModal && router.query.id ? (
+      {correctionsModal ? (
         <PointCorrectionsModal
-          courseId={router.query.id as string}
+          courseId={courseId}
           onClose={() => setCorrectionsModal(false)}
         />
       ) : null}
 
       {course.numberOfCorrections > 0 &&
       previousCorrectionsModal &&
-      router.query.id ? (
+      courseId ? (
         <PreviousCorrectionsListModal
-          courseId={router.query.id as string}
+          courseId={courseId}
           onClose={() => setPreviousCorrectionsModal(false)}
         />
       ) : null}

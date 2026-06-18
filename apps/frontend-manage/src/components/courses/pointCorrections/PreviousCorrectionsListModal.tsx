@@ -1,8 +1,6 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetPreviousPointCorrectionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Suspense } from 'react'
+import { trpc } from '../../../lib/trpc'
 import PreviousPointCorrectionList from './PreviousPointCorrectionList'
 
 function PreviousCorrectionsListModal({
@@ -23,51 +21,40 @@ function PreviousCorrectionsListModal({
     instanceId && instanceId.trim() !== ''
       ? parseInt(instanceId, 10)
       : undefined
-  const { data: previousCorrectionsData } = useSuspenseQuery(
-    GetPreviousPointCorrectionsDocument,
-    {
-      variables: {
+  const validInstanceId =
+    typeof parsedInstanceId === 'number' && !Number.isNaN(parsedInstanceId)
+  const { data: previousCorrectionsData, isLoading } =
+    trpc.activity.previousPointCorrections.useQuery(
+      {
         courseId,
         liveQuizId,
-        instanceId: !Number.isNaN(parsedInstanceId)
-          ? parsedInstanceId
-          : undefined,
+        instanceId: validInstanceId ? parsedInstanceId : undefined,
       },
-      fetchPolicy: 'network-only',
-      skip:
-        (!liveQuizId || liveQuizId === '') && (!courseId || courseId === ''),
-    }
-  )
+      {
+        enabled: Boolean(liveQuizId || courseId || validInstanceId),
+      }
+    )
 
   return (
-    <Suspense
-      fallback={
-        <Modal open loading onClose={() => {}}>
-          {' '}
-        </Modal>
-      }
+    <Modal
+      open
+      loading={isLoading}
+      onClose={onClose}
+      title={t('manage.course.appliedCorrections')}
+      className={{ content: 'max-w-3xl' }}
     >
-      <Modal
-        open
-        onClose={onClose}
-        title={t('manage.course.appliedCorrections')}
-        className={{ content: 'max-w-3xl' }}
-      >
-        {previousCorrectionsData?.previousPointCorrections ? (
-          <PreviousPointCorrectionList
-            corrections={
-              previousCorrectionsData?.previousPointCorrections ?? []
-            }
-          />
-        ) : (
-          <div className="text-sm text-gray-600">
-            {!!instanceId
-              ? t('manage.pointCorrections.historyPlaceholderInstance')
-              : t('manage.pointCorrections.historyPlaceholder')}
-          </div>
-        )}
-      </Modal>
-    </Suspense>
+      {previousCorrectionsData?.previousPointCorrections ? (
+        <PreviousPointCorrectionList
+          corrections={previousCorrectionsData.previousPointCorrections}
+        />
+      ) : (
+        <div className="text-sm text-gray-600">
+          {!!instanceId
+            ? t('manage.pointCorrections.historyPlaceholderInstance')
+            : t('manage.pointCorrections.historyPlaceholder')}
+        </div>
+      )}
+    </Modal>
   )
 }
 

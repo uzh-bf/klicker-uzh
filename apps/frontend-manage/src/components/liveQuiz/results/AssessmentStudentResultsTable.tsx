@@ -1,16 +1,13 @@
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetAssessmentResultsLiveQuizQuery } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
 import { Select } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { AssessmentStudentResult } from '../../../lib/assessmentResultsTypes'
 
-type AssessmentStudentResult = NonNullable<
-  GetAssessmentResultsLiveQuizQuery['assessmentResultsLiveQuiz']
->['studentResults'][number]
 export type PageSizeOption = '10' | '15' | '30' | 'all'
 
 function AssessmentStudentResultsTable({

@@ -1,18 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  CorrectAssessmentPointsInstanceDocument,
-  CorrectAssessmentPointsLiveQuizDocument,
-  GetAssessmentCourseParticipantsDocument,
-  GetAssessmentResultsLiveQuizDocument,
-  GetEndedLiveQuizzesCourseDocument,
-  GetLiveQuizStudentAssessmentResponsesDocument,
-  PointCorrectionType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { Form, Formik, getIn } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import * as Yup from 'yup'
+import { PointCorrectionType } from '../../lib/assessmentResultsTypes'
+import { trpc } from '../../lib/trpc'
 import PointCorrectionsAdjustmentsStep from './pointCorrections/PointCorrectionsAdjustmentsStep'
 import PointCorrectionsAudienceStep from './pointCorrections/PointCorrectionsAudienceStep'
 import PointCorrectionsReasonStep from './pointCorrections/PointCorrectionsReasonStep'
@@ -65,22 +57,42 @@ function PointCorrectionsModal({
 }) {
   const t = useTranslations()
   const [activeStep, setActiveStep] = useState(0)
+  const utils = trpc.useUtils()
 
-  const { data: endedQuizzesData, loading: endedQuizzesLoading } = useQuery(
-    GetEndedLiveQuizzesCourseDocument,
-    { variables: { courseId }, fetchPolicy: 'network-only' }
-  )
-  const { data: courseParticipantsData, loading: courseParticipantsLoading } =
-    useQuery(GetAssessmentCourseParticipantsDocument, {
-      variables: { courseId },
-      fetchPolicy: 'network-only',
-    })
-  const [correctAssessmentPointsInstance] = useMutation(
-    CorrectAssessmentPointsInstanceDocument
-  )
-  const [correctAssessmentPointsLiveQuiz] = useMutation(
-    CorrectAssessmentPointsLiveQuizDocument
-  )
+  const { data: endedQuizzesData, isLoading: endedQuizzesLoading } =
+    trpc.activity.endedLiveQuizzesCourse.useQuery(
+      { courseId },
+      { enabled: Boolean(courseId) }
+    )
+  const { data: courseParticipantsData, isLoading: courseParticipantsLoading } =
+    trpc.activity.assessmentCourseParticipants.useQuery(
+      { courseId },
+      { enabled: Boolean(courseId) }
+    )
+  const correctAssessmentPointsInstance =
+    trpc.activity.correctAssessmentPointsInstance.useMutation()
+  const correctAssessmentPointsLiveQuiz =
+    trpc.activity.correctAssessmentPointsLiveQuiz.useMutation()
+
+  const invalidatePointCorrectionData = async ({
+    liveQuizId,
+    participantId,
+  }: {
+    liveQuizId: string
+    participantId?: string | null
+  }) => {
+    await Promise.all([
+      utils.activity.assessmentResultsCourse.invalidate({ courseId }),
+      utils.activity.assessmentResultsLiveQuiz.invalidate({ liveQuizId }),
+      utils.activity.previousPointCorrections.invalidate(),
+      participantId
+        ? utils.activity.liveQuizStudentAssessmentResponses.invalidate({
+            liveQuizId,
+            participantId,
+          })
+        : Promise.resolve(),
+    ])
+  }
 
   const validationSchemas = useMemo(() => {
     const adjustmentSchema = Yup.object({
@@ -217,7 +229,7 @@ function PointCorrectionsModal({
       validationSchema={validationSchemas[activeStep]}
       onSubmit={async (values, { resetForm, setSubmitting }) => {
         let success = false
-        let error = null
+        let error: unknown = null
         setSubmitting(true)
 
         if (values.scopeType === 'instance') {
@@ -234,41 +246,34 @@ function PointCorrectionsModal({
             return
           }
 
-          // trigger instance point correction
-          const { data: result, errors } =
-            await correctAssessmentPointsInstance({
-              variables: {
-                instanceId: parseInt(values.instanceId, 10),
-                awardBasePoints: values.adjustments.baseAward,
-                awardCorrectnessPoints: values.adjustments.correctnessAward,
-                awardBonusPoints: values.adjustments.bonusAward,
-                deductBasePoints: values.adjustments.baseDeduct,
-                deductCorrectnessPoints: values.adjustments.correctnessDeduct,
-                deductBonusPoints: values.adjustments.bonusDeduct,
-                reason: values.lecturerReason.trim(),
-                studentReason: values.useSameReasonForStudents
-                  ? values.lecturerReason.trim()
-                  : values.studentReason.trim(),
-                scope: values.participantScope,
-                participantId: values.participantId,
-                participantIds: values.participantIds,
-              },
-              refetchQueries: [
-                {
-                  query: GetLiveQuizStudentAssessmentResponsesDocument,
-                  variables: {
-                    liveQuizId: values.quizId,
-                    participantId: preselectedParticipantId,
-                  },
-                },
-                {
-                  query: GetAssessmentResultsLiveQuizDocument,
-                  variables: { liveQuizId: values.quizId },
-                },
-              ],
+          try {
+            const result = await correctAssessmentPointsInstance.mutateAsync({
+              instanceId: parseInt(values.instanceId, 10),
+              awardBasePoints: values.adjustments.baseAward,
+              awardCorrectnessPoints: values.adjustments.correctnessAward,
+              awardBonusPoints: values.adjustments.bonusAward,
+              deductBasePoints: values.adjustments.baseDeduct,
+              deductCorrectnessPoints: values.adjustments.correctnessDeduct,
+              deductBonusPoints: values.adjustments.bonusDeduct,
+              reason: values.lecturerReason.trim(),
+              studentReason: values.useSameReasonForStudents
+                ? values.lecturerReason.trim()
+                : values.studentReason.trim(),
+              scope: values.participantScope,
+              participantId: values.participantId,
+              participantIds: values.participantIds,
             })
-          success = result?.correctAssessmentPointsInstance !== null
-          error = JSON.stringify(errors)
+            success = result.correctAssessmentPointsInstance !== null
+            if (success) {
+              await invalidatePointCorrectionData({
+                liveQuizId: values.quizId,
+                participantId:
+                  preselectedParticipantId || values.participantId || null,
+              })
+            }
+          } catch (mutationError) {
+            error = mutationError
+          }
         } else {
           if (!values.quizId || values.participantScope === '') {
             toast({
@@ -279,41 +284,34 @@ function PointCorrectionsModal({
             return
           }
 
-          // trigger live quiz point correction
-          const { data: result, errors } =
-            await correctAssessmentPointsLiveQuiz({
-              variables: {
-                liveQuizId: values.quizId,
-                awardBasePoints: values.adjustments.baseAward,
-                awardCorrectnessPoints: values.adjustments.correctnessAward,
-                awardBonusPoints: values.adjustments.bonusAward,
-                deductBasePoints: values.adjustments.baseDeduct,
-                deductCorrectnessPoints: values.adjustments.correctnessDeduct,
-                deductBonusPoints: values.adjustments.bonusDeduct,
-                reason: values.lecturerReason,
-                studentReason: values.useSameReasonForStudents
-                  ? values.lecturerReason
-                  : values.studentReason,
-                scope: values.participantScope,
-                participantId: values.participantId,
-                participantIds: values.participantIds,
-              },
-              refetchQueries: [
-                {
-                  query: GetLiveQuizStudentAssessmentResponsesDocument,
-                  variables: {
-                    liveQuizId: values.quizId,
-                    participantId: preselectedParticipantId,
-                  },
-                },
-                {
-                  query: GetAssessmentResultsLiveQuizDocument,
-                  variables: { liveQuizId: values.quizId },
-                },
-              ],
+          try {
+            const result = await correctAssessmentPointsLiveQuiz.mutateAsync({
+              liveQuizId: values.quizId,
+              awardBasePoints: values.adjustments.baseAward,
+              awardCorrectnessPoints: values.adjustments.correctnessAward,
+              awardBonusPoints: values.adjustments.bonusAward,
+              deductBasePoints: values.adjustments.baseDeduct,
+              deductCorrectnessPoints: values.adjustments.correctnessDeduct,
+              deductBonusPoints: values.adjustments.bonusDeduct,
+              reason: values.lecturerReason,
+              studentReason: values.useSameReasonForStudents
+                ? values.lecturerReason
+                : values.studentReason,
+              scope: values.participantScope,
+              participantId: values.participantId,
+              participantIds: values.participantIds,
             })
-          success = result?.correctAssessmentPointsLiveQuiz !== null
-          error = JSON.stringify(errors)
+            success = result.correctAssessmentPointsLiveQuiz !== null
+            if (success) {
+              await invalidatePointCorrectionData({
+                liveQuizId: values.quizId,
+                participantId:
+                  preselectedParticipantId || values.participantId || null,
+              })
+            }
+          } catch (mutationError) {
+            error = mutationError
+          }
         }
 
         if (success) {

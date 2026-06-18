@@ -1,4 +1,3 @@
-import { useSuspenseQuery } from '@apollo/client'
 import {
   faCircleCheck,
   faCircleHalfStroke,
@@ -9,10 +8,7 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetLiveQuizStudentAssessmentResponsesDocument,
-  ResponseCorrectness,
-} from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { InstanceStackStudentResponseType } from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
@@ -29,6 +25,8 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Fragment, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ResponseCorrectness } from '../../../lib/assessmentResultsTypes'
+import { trpc } from '../../../lib/trpc'
 import PointCorrectionsModal from '../../courses/PointCorrectionsModal'
 import StudentAssessmentResponseModal, {
   AssessmentResultInstance,
@@ -81,10 +79,11 @@ function LiveQuizSingleStudentResults({
     { instanceId: string; participantId: string } | undefined
   >(undefined)
 
-  const { data, error } = useSuspenseQuery(
-    GetLiveQuizStudentAssessmentResponsesDocument,
-    { variables: { liveQuizId, participantId }, fetchPolicy: 'network-only' }
-  )
+  const { data, error, isLoading } =
+    trpc.activity.liveQuizStudentAssessmentResponses.useQuery(
+      { liveQuizId, participantId },
+      { enabled: Boolean(liveQuizId && participantId) }
+    )
   const [selectedInstance, setSelectedInstance] = useState<{
     instance: AssessmentResultInstance
     response: InstanceStackStudentResponseType
@@ -168,6 +167,10 @@ function LiveQuizSingleStudentResults({
       }
     })
   }, [blocks, quizBasePoints, quizBonusPoints, quizCorrectnessPoints])
+
+  if (isLoading) {
+    return <Loader />
+  }
 
   if (error) {
     return (
