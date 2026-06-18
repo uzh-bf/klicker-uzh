@@ -3,6 +3,8 @@ import { createHmac } from 'node:crypto'
 
 type ControlLiveQuizListItem = Pick<DB.LiveQuiz, 'id' | 'name' | 'status'>
 
+type RunningLiveQuizListItem = Pick<DB.LiveQuiz, 'id' | 'name'>
+
 type LiveQuizMetaSource = Pick<DB.LiveQuiz, 'id' | 'name' | 'status'>
 
 type LiveQuizStatusSource = Pick<DB.LiveQuiz, 'id' | 'status'>
@@ -54,6 +56,13 @@ export function toControlLiveQuizListItem(quiz: ControlLiveQuizListItem) {
     id: quiz.id,
     name: quiz.name,
     status: quiz.status,
+  }
+}
+
+export function toRunningLiveQuizListItem(quiz: RunningLiveQuizListItem) {
+  return {
+    id: quiz.id,
+    name: quiz.name,
   }
 }
 

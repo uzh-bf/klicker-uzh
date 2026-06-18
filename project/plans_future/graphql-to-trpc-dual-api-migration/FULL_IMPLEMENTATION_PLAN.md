@@ -280,6 +280,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04J Manage Header Running Live Quiz Read
+
+Status: complete for the scoped slice. Scope was limited to the Manage header's
+`GetUserRunningLiveQuizzesDocument` read used for the running-live-quiz
+dropdown. This is a pre-realtime list query and does not migrate live-quiz
+cockpit subscriptions, PWA live-quiz subscriptions, Apollo providers,
+generated cleanup, S05, or S06.
+
+Operation mapping:
+
+```text
+Slice: S04J Manage Header Running Live Quiz Read
+
+GraphQL operations:
+- GetUserRunningLiveQuizzes
+
+tRPC procedures:
+- liveQuiz.running
+
+GraphQL behavior source:
+- packages/graphql/src/services/liveQuizzes.ts getUserRunningLiveQuizzes
+- packages/graphql/src/schema/query.ts userRunningLiveQuizzes
+
+React Query replacement:
+- trpc.liveQuiz.running.useQuery()
+```
+
+Completed write scope:
+
+- Added `liveQuiz.running` to the API liveQuiz router, preserving the GraphQL
+  permission/status filter for direct live-quiz permissions with EXECUTE or
+  higher access and published live quizzes.
+- Added `toRunningLiveQuizListItem` DTO.
+- Migrated `Header.tsx` from Apollo `GetUserRunningLiveQuizzesDocument` to
+  `trpc.liveQuiz.running.useQuery()`.
+- Removed the remaining generated `UserRole` import from `Header.tsx` by using
+  the stable role string returned by `user.profile`.
+- Added focused API tests for running live quizzes and empty state.
+
+Verification:
+
+- Prettier for touched files and this plan.
+- `pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/live-quiz-running.test.ts`: passed. The API test script ran the full API suite: 36 files, 341 tests.
+- `pnpm --filter @klicker-uzh/api check`: passed.
+- `pnpm --filter @klicker-uzh/api build`: passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed with existing
+  Node 26 engine warnings.
+- Focused audit `rg -n "@apollo/client|GetUserRunningLiveQuizzesDocument|userRunningLiveQuizzes|@klicker-uzh/graphql/dist/ops" ...`: no matches in the migrated header/API files.
+- Browser smoke with existing local stack and clean delegated lecturer browser
+  session: `/` rendered the header and library page, and the resource trace
+  included `/api/trpc/sharing.catalogSharingRequestCount,liveQuiz.running,course.userCourses,user.profile`.
+- Screenshot:
+  - `/tmp/agent-browser-shots/s04-header-running-live-quiz-01-library.png`
+
+Next: continue remaining S04-only pre-realtime manage findings. Pause before
+S05/S06.
+
 ### 2026-06-19 Completed: S04J Activity Creation Profile Reads
 
 Status: complete for the scoped slice. Scope was limited to remaining manage

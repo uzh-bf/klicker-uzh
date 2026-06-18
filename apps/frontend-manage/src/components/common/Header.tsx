@@ -1,13 +1,8 @@
-import { useQuery } from '@apollo/client'
 import {
   faPlayCircle,
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
-import {
-  GetUserRunningLiveQuizzesDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Navigation,
   NavigationItemProps,
@@ -30,12 +25,10 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
 
   const { data: pendingRequestData } =
     trpc.sharing.catalogSharingRequestCount.useQuery()
-  const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
-    fetchPolicy: 'cache-first',
-  })
+  const { data: liveQuizData } = trpc.liveQuiz.running.useQuery()
   const { data: courseData } = trpc.course.userCourses.useQuery()
 
-  const quizzes = liveQuizData?.userRunningLiveQuizzes
+  const quizzes = liveQuizData?.liveQuizzes
   const courses = courseData?.userCourses
 
   const resourceElements: NavigationMenuItemProps[] = [
@@ -248,7 +241,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
           onClick: () => router.push('/user/settings'),
           data: { cy: 'menu-user-settings' },
         },
-        ...(user?.role === UserRole.Admin
+        ...(user?.role === 'ADMIN'
           ? [
               {
                 key: 'admin',

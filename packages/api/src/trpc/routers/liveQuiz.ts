@@ -15,6 +15,7 @@ import {
   toLiveQuizEmbeddingInfo,
   toLiveQuizMeta,
   toLiveQuizStatus,
+  toRunningLiveQuizListItem,
 } from '../dto/liveQuiz.js'
 import { router } from '../init.js'
 import {
@@ -43,6 +44,45 @@ function getExecutionContext(ctx: TRPCContextWithUser) {
 }
 
 export const liveQuizRouter = router({
+  running: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+    const user = await prisma.user.findUnique({
+      where: { id: ctx.user.sub },
+      select: {
+        objects: {
+          where: {
+            liveQuizId: { not: null },
+            permissionLevel: {
+              in: [
+                PermissionLevel.EXECUTE,
+                PermissionLevel.WRITE,
+                PermissionLevel.ADMIN,
+                PermissionLevel.OWNER,
+              ],
+            },
+            liveQuiz: { status: PublicationStatus.PUBLISHED },
+          },
+          select: {
+            liveQuiz: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    return {
+      liveQuizzes:
+        user?.objects
+          .map((object) => object.liveQuiz)
+          .filter((quiz): quiz is NonNullable<typeof quiz> => quiz !== null)
+          .map(toRunningLiveQuizListItem) ?? [],
+    }
+  }),
+
   unassigned: userProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)
     const user = await prisma.user.findUnique({
