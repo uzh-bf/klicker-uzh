@@ -1,10 +1,10 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import ElementBarChart from '@klicker-uzh/shared-components/src/charts/ElementBarChart'
 import ElementHistogram from '@klicker-uzh/shared-components/src/charts/ElementHistogram'
 import ElementTableChart from '@klicker-uzh/shared-components/src/charts/ElementTableChart'
 import ElementWordcloud from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
+import { ElementInstanceEvaluation } from '@lib/evaluationTypes'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -35,7 +35,7 @@ function ElementChart({
   if (chartType === ChartType.TABLE) {
     return (
       <ElementTableChart
-        instance={instanceEvaluation}
+        instance={instanceEvaluation as never}
         showSolution={showSolution}
         showExplanation={showExplanation}
         textSize={textSize.text}
@@ -46,7 +46,7 @@ function ElementChart({
   } else if (chartType === ChartType.WORD_CLOUD) {
     return (
       <ElementWordcloud
-        instance={instanceEvaluation}
+        instance={instanceEvaluation as never}
         showSolution={showSolution}
         showExplanation={showExplanation}
         textSize={{
@@ -61,7 +61,7 @@ function ElementChart({
   } else if (chartType === ChartType.BAR_CHART) {
     return (
       <ElementBarChart
-        instance={instanceEvaluation}
+        instance={instanceEvaluation as never}
         showSolution={showSolution}
         showExplanation={showExplanation}
         textSize={textSize}
@@ -89,7 +89,7 @@ function ElementChart({
         />
         <div className="min-h-0 flex-1">
           <ElementHistogram
-            type={instanceEvaluation.type}
+            type={instanceEvaluation.type as never}
             responses={responses}
             solutionRanges={instanceEvaluation.results.solutionRanges ?? []}
             exactSolutions={instanceEvaluation.results.exactSolutions ?? []}

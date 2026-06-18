@@ -1,4 +1,4 @@
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { StackEvaluation } from '@lib/evaluationTypes'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'

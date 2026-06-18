@@ -1,27 +1,27 @@
-import { useQuery } from '@apollo/client'
-import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
+import { trpc } from '../../../lib/trpc'
 
 function LiveQuizEvaluation() {
   const router = useRouter()
 
   // fetch evaluation data
-  const { data, loading } = useQuery(GetLiveQuizEvaluationDocument, {
-    variables: {
-      id: router.query.id as string,
-      hmac: router.query.hmac as string,
-    },
-    pollInterval: 5000,
-    skip: !router.query.id,
-    onError: () => {
-      router.push('/404')
-    },
-  })
+  const id = router.query.id as string | undefined
+  const hmac = router.query.hmac as string | undefined
+  const { data, isLoading } = trpc.analytics.liveQuizEvaluation.useQuery(
+    { id: id ?? '', hmac },
+    {
+      enabled: !!id,
+      refetchInterval: 5000,
+      onError: () => {
+        router.push('/404')
+      },
+    }
+  )
 
-  if (loading) {
+  if (isLoading || !id) {
     return <Loader />
   }
 
@@ -42,7 +42,7 @@ function LiveQuizEvaluation() {
     <ActivityEvaluation
       type="LiveQuiz"
       hideActiveBlockResults={!router.query.hmac} // hide the results for active blocks when not inside PPT
-      activityId={router.query.id as string}
+      activityId={id}
       activityName={evaluation?.displayName ?? ''}
       courseLanguage={evaluation?.courseLanguage}
       stacks={evaluation?.results ?? []}

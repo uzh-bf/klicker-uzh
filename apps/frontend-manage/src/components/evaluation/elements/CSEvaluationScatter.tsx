@@ -1,10 +1,10 @@
+import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
-} from '@klicker-uzh/graphql/dist/ops'
-import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
+} from '@lib/evaluationTypes'
 import {
   ResizableHandle,
   ResizablePanel,

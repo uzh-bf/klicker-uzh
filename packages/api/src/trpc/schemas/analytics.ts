@@ -7,3 +7,11 @@ export const activityAnalyticsInput = z.object({
 export const courseAnalyticsInput = z.object({
   courseId: z.string(),
 })
+
+export const activityEvaluationInput = z.object({
+  id: z.string(),
+})
+
+export const liveQuizEvaluationInput = activityEvaluationInput.extend({
+  hmac: z.string().nullish(),
+})

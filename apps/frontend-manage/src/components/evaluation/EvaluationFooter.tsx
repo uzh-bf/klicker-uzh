@@ -5,16 +5,16 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementInstanceEvaluation,
-  ElementType,
-  LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   ACTIVE_CHART_TYPES,
   ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
+import {
+  ElementInstanceEvaluation,
+  ElementType,
+  LocaleType,
+} from '@lib/evaluationTypes'
 import { Button, Select, Switch, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'

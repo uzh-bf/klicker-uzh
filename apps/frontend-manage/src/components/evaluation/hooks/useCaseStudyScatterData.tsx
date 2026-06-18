@@ -2,7 +2,7 @@ import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '@lib/evaluationTypes'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import { CSResultsEvaluationObject } from '../elements/CSEvaluation'
 import {

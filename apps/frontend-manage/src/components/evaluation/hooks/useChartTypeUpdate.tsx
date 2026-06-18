@@ -1,8 +1,8 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import {
   ACTIVE_CHART_TYPES,
   ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
+import { ElementType } from '@lib/evaluationTypes'
 import { useEffect } from 'react'
 
 interface UseChartTypeUpdateProps {

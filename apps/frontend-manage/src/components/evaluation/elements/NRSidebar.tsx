@@ -1,11 +1,11 @@
 import {
-  LocaleType,
-  NumericalActivityEvaluationData,
-} from '@klicker-uzh/graphql/dist/ops'
-import {
   ChartType,
   STATISTICS_ORDER,
 } from '@klicker-uzh/shared-components/src/constants'
+import {
+  LocaleType,
+  NumericalActivityEvaluationData,
+} from '@lib/evaluationTypes'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'

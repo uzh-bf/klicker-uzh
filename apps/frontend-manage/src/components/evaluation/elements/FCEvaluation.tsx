@@ -1,5 +1,5 @@
-import { FlashcardActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import { FlashcardActivityEvaluationData } from '@lib/evaluationTypes'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 import FlashcardContentCollapsible from './FlashcardContentCollapsible'

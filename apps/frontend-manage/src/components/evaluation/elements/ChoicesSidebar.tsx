@@ -1,9 +1,6 @@
-import {
-  ChoicesActivityEvaluationData,
-  LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
+import { ChoicesActivityEvaluationData, LocaleType } from '@lib/evaluationTypes'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from '../ActivityEvaluation'

@@ -281,6 +281,119 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ## Progress
 
 
+### 2026-06-18 Completed: S04N4 Manage Evaluation Reads
+
+Status: complete for the scoped slice. Scope was the manage evaluation read
+pages for practice quizzes, microlearnings, and live quizzes. This was S04N/S04P
+mixed-state work only; S05 realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04N4 Manage Evaluation Reads
+GraphQL operation(s): GetPracticeQuizEvaluation, GetMicroLearningEvaluation, GetLiveQuizEvaluation
+GraphQL resolver(s): Query.getPracticeQuizEvaluation, Query.getMicroLearningEvaluation, Query.getLiveQuizEvaluation with existing READ permission / HMAC access behavior
+Behavior source: packages/graphql/src/services/practiceQuizzes.ts, packages/graphql/src/services/microLearning.ts, packages/graphql/src/services/liveQuizzes.ts, and packages/graphql/src/services/stacks.ts computeStackEvaluation
+tRPC router.procedure: analytics.practiceQuizEvaluation, analytics.microLearningEvaluation, analytics.liveQuizEvaluation
+Input schema: { id: string } for activity evaluations; { id: string, hmac?: string } for live quiz evaluation
+Output DTO: activity/live evaluation payloads with stack/instance/result discriminators, feedbacks, confusion feedbacks, and live leaderboard entries matching the existing frontend expectations
+Active frontend consumers: apps/frontend-manage/src/pages/practiceQuiz/[id]/evaluation.tsx; apps/frontend-manage/src/pages/microLearning/[id]/evaluation.tsx; apps/frontend-manage/src/pages/quizzes/[id]/evaluation.tsx; apps/frontend-manage/src/components/evaluation/**
+Apollo cache/refetch/subscription behavior: read-only Apollo queries; live quiz evaluation polling preserved as tRPC refetchInterval; no GraphQL subscriptions migrated in this slice
+React Query replacement: trpc.analytics.practiceQuizEvaluation.useQuery, trpc.analytics.microLearningEvaluation.useQuery, trpc.analytics.liveQuizEvaluation.useQuery
+Browser verification path: branch-local backend/auth/manage on 3133/3136/3134; delegated login; seeded practice/micro evaluation pages; live route verified in unavailable state because local seed has no published/ended live quiz
+Cleanup blocked until: remaining S04N grading/point-correction/reporting reads, S04O secondary runtime consumers, S04P generated GraphQL type leak cleanup outside the migrated evaluation path, S04Q API no-GraphQL runtime gate, S05 realtime, and S06 cleanup gates
+```
+
+Intended write scope:
+
+- `packages/api/src/trpc/schemas/analytics.ts`
+- `packages/api/src/trpc/dto/evaluation.ts`
+- `packages/api/src/trpc/routers/analytics.ts`
+- `packages/api/src/trpc/__tests__/analytics-read.test.ts`
+- `apps/frontend-manage/src/lib/evaluationTypes.ts`
+- `apps/frontend-manage/src/pages/practiceQuiz/[id]/evaluation.tsx`
+- `apps/frontend-manage/src/pages/microLearning/[id]/evaluation.tsx`
+- `apps/frontend-manage/src/pages/quizzes/[id]/evaluation.tsx`
+- Directly affected `apps/frontend-manage/src/components/evaluation/**` and evaluation hooks that consumed the migrated payloads
+- This plan file
+
+Implementation:
+
+- Added API-local evaluation DTO mapping in `packages/api/src/trpc/dto/evaluation.ts`
+  to avoid importing GraphQL runtime code into `packages/api`, while preserving the
+  existing stack, element result, feedback, confusion feedback, and leaderboard
+  shapes expected by the manage evaluation UI.
+- Added `analytics.practiceQuizEvaluation` and `analytics.microLearningEvaluation`
+  behind existing activity READ permission checks, returning nullable payloads on
+  missing permission or missing activity data.
+- Added `analytics.liveQuizEvaluation` as a public procedure to preserve embed
+  HMAC behavior; non-HMAC access still requires READ permission, and invalid HMAC
+  returns nullable evaluation/leaderboard data.
+- Preserved the live evaluation active-block cache behavior by reading Redis-backed
+  block results when available and otherwise falling back to persisted DB results.
+- Migrated practice quiz, microlearning, and live quiz evaluation pages from Apollo
+  queries to tRPC queries; live quiz polling now uses TanStack/tRPC
+  `refetchInterval: 5000`.
+- Replaced generated GraphQL operation types throughout the directly affected
+  evaluation component path with tRPC-derived structural types in
+  `apps/frontend-manage/src/lib/evaluationTypes.ts`, plus narrow boundary casts for
+  shared mixed-state components that still type against generated GraphQL shapes.
+- Browser verification caught an API DTO guard regression for flashcard/content
+  instances without `options`; the tRPC mapper now matches the GraphQL guard before
+  reading `hasSampleSolution` or `hasAnswerFeedbacks`.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed after the DTO guard fix, regenerating `packages/api/dist` for the local backend.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed earlier in the slice with existing Next/module-type, next-intl, Browserslist, `MISSING_MESSAGE`, and large-page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/analytics-read.test.ts`: passed; package script ran all API tests, 311 tests across 31 files.
+- Focused audit `rg -n "GetPracticeQuizEvaluationDocument|GetPracticeQuizEvaluation|GetMicroLearningEvaluationDocument|GetMicroLearningEvaluation|GetLiveQuizEvaluationDocument|GetLiveQuizEvaluation" apps/frontend-manage/src packages/api/src`: no matches.
+- Focused generated/Apollo audit over the migrated evaluation page/component path found no `@klicker-uzh/graphql/dist/ops` or `@apollo/client` imports.
+- Focused API runtime audit over the new evaluation DTO/router/schema/test files found no `@klicker-uzh/graphql`, `graphql-yoga`, `graphql-ws`, or `@apollo/client` imports.
+- Compact S04 coexistence audit `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`: `254`, confirming GraphQL/Apollo remain intentionally live for later S04/S05/S06 gates.
+- `git diff --check`: passed.
+
+Browser/runtime verification:
+
+- Branch-local backend/auth/manage ran on `3133/3136/3134` with the same local URL
+  override pattern as S04N3.
+- Delegated lecturer login succeeded; screenshot:
+  `/tmp/agent-browser-shots/s04n4-03-after-login.png`.
+- Opened
+  `http://127.0.0.1:3134/practiceQuiz/7c5a84ef-ad0f-423d-8061-484401cd38c2/evaluation`.
+  The first browser pass caught a real tRPC 500 from the missing `options` guard;
+  after the DTO fix and API rebuild, the page rendered a flashcard evaluation and
+  browser resource timing showed `analytics.practiceQuizEvaluation` returning 200.
+  Screenshot: `/tmp/agent-browser-shots/s04n4-04-practice-evaluation-fixed.png`.
+- Opened
+  `http://127.0.0.1:3134/microLearning/a4d6f5ca-9d81-4f94-be71-1b62c85eb745/evaluation`.
+  The page rendered the evaluation component stack and browser resource timing
+  showed `analytics.microLearningEvaluation` returning 200. Screenshot:
+  `/tmp/agent-browser-shots/s04n4-05-micro-evaluation.png`.
+- Local seed data has no published or ended live quiz, so live runtime verification
+  used a seeded draft/scheduled quiz only. Opened
+  `http://127.0.0.1:3134/quizzes/20325ec6-0ce7-4e24-bd79-5c1a46f64c47/evaluation`.
+  The page rendered the expected unavailable message and browser resource timing
+  showed `analytics.liveQuizEvaluation` returning 200. Screenshot:
+  `/tmp/agent-browser-shots/s04n4-06-live-unavailable.png`.
+- `/api/graphql` remained visible for surrounding still-migrating manage app data;
+  no old evaluation GraphQL operation request appeared in the migrated page checks.
+
+Residual risk / next S04 work:
+
+- S04N remains open for grading, point-correction, and reporting surfaces outside
+  the migrated manage evaluation pages.
+- S04O secondary runtime consumers remain open; current audit still shows
+  `apps/hatchet-worker-general/src/index.ts` importing `@klicker-uzh/graphql`.
+- S04P generated GraphQL type leak cleanup remains open outside the migrated
+  evaluation path.
+- S04Q API no-GraphQL runtime dependency gate remains open.
+- Stop remains before S05; do not begin realtime migration without explicit user
+  direction.
+
+
 ### 2026-06-18 Completed: S04N3 Manage Course Analytics Reads
 
 Status: complete for the scoped slice. Scope was the course-level manage

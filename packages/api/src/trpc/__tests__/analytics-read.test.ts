@@ -612,4 +612,139 @@ describe('analytics read routers', () => {
     ).resolves.toEqual({ coursePerformanceAnalytics: null })
     expect(courseFindUnique).not.toHaveBeenCalled()
   })
+
+  test('returns practice quiz evaluation when read permission exists', async () => {
+    const choicesElementData = {
+      id: 'element-uuid',
+      elementId: 1,
+      type: 'SC',
+      name: 'Choice Element',
+      content: 'Question',
+      explanation: 'Explanation',
+      pointsMultiplier: 1,
+      options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+        displayMode: 'LIST',
+        choices: [
+          { ix: 0, value: 'A', correct: true, feedback: 'Correct' },
+          { ix: 1, value: 'B', correct: false, feedback: 'Wrong' },
+        ],
+      },
+    } as ElementData
+    const practiceFindUnique = vi.fn().mockResolvedValue({
+      id: 'pq-1',
+      name: 'Practice Quiz Demo',
+      displayName: 'Practice Quiz Evaluation',
+      description: 'Evaluation description',
+      courseId: 'course-1',
+      stacks: [
+        {
+          id: 100,
+          displayName: 'Stack 1',
+          description: 'Stack description',
+          order: 0,
+          elements: [
+            {
+              id: 200,
+              elementData: choicesElementData,
+              results: { choices: { 0: 2 }, total: 2 },
+              anonymousResults: { choices: { 0: 1, 1: 1 }, total: 2 },
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValue({ permissionLevel: PermissionLevel.READ }),
+      },
+      practiceQuiz: {
+        findUnique: practiceFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.analytics.practiceQuizEvaluation({ id: 'pq-1' })
+    ).resolves.toEqual({
+      practiceQuizEvaluation: expect.objectContaining({
+        id: 'pq-1',
+        displayName: 'Practice Quiz Evaluation',
+        courseId: 'course-1',
+        results: [
+          expect.objectContaining({
+            stackId: 100,
+            stackName: 'Stack 1',
+            instances: [
+              expect.objectContaining({
+                __typename: 'ChoicesActivityEvaluationData',
+                id: 200,
+                hasSampleSolution: true,
+                hasAnswerFeedbacks: true,
+                results: expect.objectContaining({
+                  totalAnswers: 4,
+                  anonymousAnswers: 2,
+                  choices: [
+                    expect.objectContaining({
+                      value: 'A',
+                      count: 3,
+                      correct: true,
+                    }),
+                    expect.objectContaining({
+                      value: 'B',
+                      count: 1,
+                      correct: false,
+                    }),
+                  ],
+                }),
+              }),
+            ],
+          }),
+        ],
+      }),
+    })
+    expect(practiceFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'pq-1', isDeleted: false }),
+      })
+    )
+  })
+
+  test('returns null live quiz evaluation for invalid hmac', async () => {
+    const originalAppSecret = process.env.APP_SECRET
+    process.env.APP_SECRET = 'test-secret'
+    const liveQuizFindUnique = vi.fn().mockResolvedValue({
+      id: 'lq-1',
+      namespace: 'namespace-1',
+    })
+    const prisma = {
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    try {
+      await expect(
+        caller.analytics.liveQuizEvaluation({ id: 'lq-1', hmac: 'invalid' })
+      ).resolves.toEqual({
+        liveQuizEvaluation: null,
+        liveQuizLeaderboard: null,
+      })
+      expect(liveQuizFindUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'lq-1', isDeleted: false }),
+        })
+      )
+    } finally {
+      if (typeof originalAppSecret === 'undefined') {
+        delete process.env.APP_SECRET
+      } else {
+        process.env.APP_SECRET = originalAppSecret
+      }
+    }
+  })
 })

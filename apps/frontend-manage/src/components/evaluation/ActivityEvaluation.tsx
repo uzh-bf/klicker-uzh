@@ -1,13 +1,13 @@
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import Leaderboard, {
+  LeaderboardCombinedEntry,
+} from '@klicker-uzh/shared-components/src/Leaderboard'
 import {
   ConfusionTimestep,
   Feedback,
   LocaleType,
   StackEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
-import Leaderboard, {
-  LeaderboardCombinedEntry,
-} from '@klicker-uzh/shared-components/src/Leaderboard'
+} from '@lib/evaluationTypes'
 import { useSessionStorage } from '@uidotdev/usehooks'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'

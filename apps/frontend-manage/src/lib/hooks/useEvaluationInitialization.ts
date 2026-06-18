@@ -1,4 +1,4 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { ElementInstanceEvaluation } from '@lib/evaluationTypes'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { ActivityEvaluationType } from '../../components/evaluation/ActivityEvaluation'
 

@@ -1,12 +1,11 @@
-import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import useFeedbackFilter from '@lib/hooks/useFeedbackFilter'
 import { useTranslations } from 'next-intl'
 import FeedbackSearchAndFilters from '../../interaction/feedbacks/FeedbackSearchAndFilters'
 import FeedbacksPrintView from './FeedbacksPrintView'
-import SingleFeedback from './SingleFeedback'
+import SingleFeedback, { DisplayFeedback } from './SingleFeedback'
 
 interface EvaluationFeedbacksProps {
-  feedbacks: Feedback[]
+  feedbacks: DisplayFeedback[]
   liveQuizName: string
 }
 

@@ -1,5 +1,5 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
-import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
+import { LocaleType } from '@lib/evaluationTypes'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -41,7 +41,7 @@ function LiveQuizEvaluationQRCode({
           quizId={router.query.id as string}
           quizPin={pinCode}
           isAssessmentEnabled={isAssessmentEnabled}
-          language={language}
+          language={language as never}
           onClose={() => setShowQrCodes(false)}
         />
       )}

@@ -1,5 +1,5 @@
 import { faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { StackEvaluation } from '@lib/evaluationTypes'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'

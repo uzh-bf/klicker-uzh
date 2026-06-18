@@ -1,6 +1,6 @@
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ConfusionTimestep } from '@klicker-uzh/graphql/dist/ops'
+import { ConfusionTimestep } from '@lib/evaluationTypes'
 import { FormikNumberField, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'

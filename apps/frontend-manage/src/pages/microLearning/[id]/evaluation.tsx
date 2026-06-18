@@ -1,27 +1,24 @@
-import { useQuery } from '@apollo/client'
-import { GetMicroLearningEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import Layout from '../../../components/Layout'
+import { trpc } from '../../../lib/trpc'
 
 function MicroLearningEvaluation() {
   const t = useTranslations()
   const router = useRouter()
 
   // fetch evaluation data
-  const { data, loading, error } = useQuery(
-    GetMicroLearningEvaluationDocument,
-    {
-      variables: {
-        id: router.query.id as string,
-      },
-    }
-  )
+  const id = router.query.id as string | undefined
+  const { data, isLoading, error } =
+    trpc.analytics.microLearningEvaluation.useQuery(
+      { id: id ?? '' },
+      { enabled: !!id }
+    )
 
-  if (loading) {
+  if (isLoading || !id) {
     return (
       <Layout displayName={t('manage.evaluation.microLearningEvaluation')}>
         <Loader />
@@ -34,12 +31,12 @@ function MicroLearningEvaluation() {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
-  const evaluation = data?.getMicroLearningEvaluation
+  const evaluation = data?.microLearningEvaluation
 
   return (
     <ActivityEvaluation
       courseId={evaluation?.courseId}
-      activityId={router.query.id as string}
+      activityId={id}
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
     />
