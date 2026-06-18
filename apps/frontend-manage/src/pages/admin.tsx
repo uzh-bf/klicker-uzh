@@ -1,9 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faLockOpen } from '@fortawesome/free-solid-svg-icons'
-import {
-  GetUsersPrivatePreviewDocument,
-  GrantPrivatePreviewAccessDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
@@ -21,13 +16,14 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import Layout from '../components/Layout'
+import { trpc } from '../lib/trpc'
 
 function AdminPanel() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetUsersPrivatePreviewDocument)
-  const [grantPrivatePreviewAccess] = useMutation(
-    GrantPrivatePreviewAccessDocument
-  )
+  const utils = trpc.useUtils()
+  const { data, isLoading } = trpc.user.privatePreviewUsers.useQuery()
+  const grantPrivatePreviewAccess =
+    trpc.user.grantPrivatePreviewAccess.useMutation()
 
   return (
     <Layout displayName={t('manage.admin.pageName')}>
@@ -56,16 +52,14 @@ function AdminPanel() {
                       .required(t('manage.admin.grantAccessEmailRequired')),
                   })}
                   onSubmit={async (values, { resetForm }) => {
-                    const { data: success } = await grantPrivatePreviewAccess({
-                      variables: { email: values.email },
-                      // performance is not relevant for admin access operations
-                      // prefer additional fetches over potentially outdated data
-                      refetchQueries: [
-                        { query: GetUsersPrivatePreviewDocument },
-                      ],
-                    })
+                    const success = await grantPrivatePreviewAccess.mutateAsync(
+                      {
+                        email: values.email,
+                      }
+                    )
+                    await utils.user.privatePreviewUsers.invalidate()
 
-                    if (success?.grantPrivatePreviewAccess === 0) {
+                    if (success === 0) {
                       // success toast - access granted successfully
                       toast({
                         type: 'success',
@@ -73,7 +67,7 @@ function AdminPanel() {
                       })
                       resetForm()
                       return
-                    } else if (success?.grantPrivatePreviewAccess === 1) {
+                    } else if (success === 1) {
                       // error toast - user does not exist
                       toast({
                         type: 'error',
@@ -81,7 +75,7 @@ function AdminPanel() {
                         options: { duration: 6000 },
                       })
                       return
-                    } else if (success?.grantPrivatePreviewAccess === 2) {
+                    } else if (success === 2) {
                       // success toast - user already has private preview access
                       toast({
                         type: 'success',
@@ -131,7 +125,7 @@ function AdminPanel() {
                   )}
                 </Formik>
               </div>
-              {loading ? (
+              {isLoading ? (
                 <Loader />
               ) : (
                 <DataTable
@@ -166,7 +160,7 @@ function AdminPanel() {
                       className: 'w-20',
                     },
                   ]}
-                  data={data?.getUsersPrivatePreview ?? []}
+                  data={data ?? []}
                   className={{
                     tableHeader: 'h-7 p-2',
                     tableCell: 'h-7 p-2',

@@ -280,6 +280,134 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-18 Completed: S04J Admin Private Preview Access
+
+Status: complete for the scoped slice. Scope was limited to the manage
+`/admin` private-preview access list and grant flow. This was S04J pre-realtime
+manage settings work only; S05 realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04J Admin Private Preview Access
+
+GraphQL operations:
+- GetUsersPrivatePreview
+- GrantPrivatePreviewAccess
+
+tRPC procedures:
+- user.privatePreviewUsers
+- user.grantPrivatePreviewAccess
+
+GraphQL behavior source:
+- packages/graphql/src/services/accounts.ts getUsersPrivatePreview
+- packages/graphql/src/services/accounts.ts grantPrivatePreviewAccess
+
+Apollo behavior:
+- The mutation refetched GetUsersPrivatePreview after every submit.
+- The tRPC mutation invalidates user.privatePreviewUsers after submit.
+```
+
+Completed write scope:
+
+- Added a strict `adminProcedure` guard in `packages/api`.
+- Added API-local private-preview list/grant procedures in the user router,
+  preserving the existing `0` / `1` / `2` grant status codes.
+- Preserved the private-preview Teams notification side effect with an
+  API-local fetch helper.
+- Migrated `apps/frontend-manage/src/pages/admin.tsx` from Apollo operations to
+  tRPC hooks.
+- Added focused API router tests for admin list, non-admin rejection, and grant
+  status codes.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write ...`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/user-admin.test.ts`: passed. The API test script ran the full API suite: 32 files, 325 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after rebuilding `@klicker-uzh/api`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `/qr/[...args]` missing messages, and large page-data warnings).
+- Focused audit `rg -n "@apollo/client|GetUsersPrivatePreviewDocument|GrantPrivatePreviewAccessDocument|@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/pages/admin.tsx packages/api/src/trpc/routers/user.ts packages/api/src/trpc/__tests__/user-admin.test.ts`: no matches.
+- `git diff --check`: passed.
+
+Browser verification:
+
+- Started local compose backing services, branch backend/auth/manage on
+  `3103`/`3106`/`3104`, and logged in with seeded admin lecturer credentials.
+- `prisma:push` reported the local DB was already schema-synced. Non-destructive
+  seed upsert hit an existing-data `pinCode` uniqueness conflict, so browser
+  verification used the already-seeded local data. The destructive reset path
+  was not used.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04j-admin-auth-after-login.png`
+  - `/tmp/agent-browser-shots/s04j-admin-loaded.png`
+  - `/tmp/agent-browser-shots/s04j-admin-reloaded.png`
+  - `/tmp/agent-browser-shots/s04j-admin-existing-grant.png`
+- Browser evidence: `/admin` loaded seeded private-preview users through
+  `/api/trpc/user.profile,user.privatePreviewUsers`.
+- Browser evidence: submitting an already-enabled user used
+  `/api/trpc/user.grantPrivatePreviewAccess` and then
+  `/api/trpc/user.privatePreviewUsers` invalidation/refetch.
+
+Next: continue the corrected S04 branch-state queue with remaining non-realtime
+manage consumers. Pause before S05.
+
+### 2026-06-18 Active: S04 Branch-State Review and Stop-Before-S05 Scope
+
+Status: active. Branch-state review after S04O found that S04 is not yet down
+to S04P/S04Q only. Continue S04 pre-realtime migration work, then run S04P and
+S04Q, and pause before S05 realtime. Do not start S05 or S06 without explicit
+user direction.
+
+Completed immediately before this review:
+
+- S04N6 committed as `3ccba40c27 feat(trpc): migrate assessment results and corrections`.
+- S04O/S04Q Hatchet worker decoupling committed as
+  `539017f04a chore(api): decouple hatchet worker handlers`.
+- Worktree was clean after the S04O/S04Q commit.
+
+Audit findings:
+
+- `apps/frontend-control/src`: no active `@apollo/client` or generated
+  GraphQL operation imports in the compact app audit.
+- `apps/frontend-pwa/src`: remaining GraphQL/Apollo runtime usage is
+  concentrated in live quiz/session, feedback, leaderboard, account selector,
+  and live group/microlearning subscriber flows. Treat these as S05-boundary
+  realtime/live-session work unless a small non-realtime read/mutation can be
+  safely extracted without touching subscription behavior.
+- `apps/frontend-manage/src`: many pre-realtime Apollo consumers remain,
+  including admin/user settings, course list/detail/CRUD, groups, media,
+  catalog/resource helpers, course activity modals, activity actions, and
+  activity authoring. These block S04 completion.
+- `packages/shared-components/src`: generated GraphQL imports remain mostly as
+  shared structural question/evaluation/chart types. S04P should replace only
+  generated imports in migrated areas; leave shared leftovers documented if
+  their owning app workflow still uses GraphQL.
+- Secondary runtime audit from S04O found no hidden Cypress or secondary
+  `/api/graphql` caller that blocks S04. Remaining Hatchet worker GraphQL Yoga
+  pub/sub is S05 realtime scope.
+
+Corrected next order:
+
+1. Migrate remaining S04J/S04K low-risk manage consumers first: admin/user
+   settings, groups, catalog/resource/media helpers, and course list/detail
+   reads where they are not tied to realtime.
+2. Migrate remaining S04L activity/course action and authoring mutations in
+   small workflow slices, preserving cache/refetch behavior with tRPC
+   invalidation.
+3. Run S04P generated type leak cleanup only for workflows that are already
+   tRPC-backed.
+4. Run S04Q gates for `packages/api`, secondary workers, and active app runtime
+   imports.
+5. Pause before S05.
+
+Current stop boundary:
+
+- Do not touch GraphQL subscription transport, GraphQL Yoga pub/sub event
+  bridge, Apollo provider removal, generated file deletion, or package-level
+  GraphQL deletion. Those remain S05/S06.
+
 ### 2026-06-18 Completed: S04O/S04Q Hatchet Worker GraphQL Handler Decoupling
 
 Status: complete for the scoped secondary-runtime slice. Scope was limited to

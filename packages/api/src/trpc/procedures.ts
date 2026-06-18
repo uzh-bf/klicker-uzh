@@ -100,6 +100,9 @@ export const temporaryParticipantProcedure = authenticatedProcedure.use(
 export const userProcedure = authenticatedProcedure.use(
   requireRole(UserRole.USER)
 )
+export const adminProcedure = authenticatedProcedure.use(
+  requireRole(UserRole.ADMIN)
+)
 export const userFullAccessProcedure = userProcedure.use(
   requireScope(UserLoginScope.FULL_ACCESS)
 )
