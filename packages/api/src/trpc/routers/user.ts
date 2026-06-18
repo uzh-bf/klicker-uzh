@@ -1,9 +1,15 @@
+import { Locale } from '@klicker-uzh/prisma/client'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
+import { seedDemoQuestions } from '../../services/demoQuestions.js'
 import { getPrisma } from '../context.js'
 import { toUserProfile } from '../dto/user.js'
 import { router } from '../init.js'
-import { adminProcedure, userProcedure } from '../procedures.js'
+import {
+  adminProcedure,
+  userFullAccessProcedure,
+  userProcedure,
+} from '../procedures.js'
 
 type CookieResponse = {
   cookie(name: string, value: string, options: Record<string, unknown>): unknown
@@ -94,6 +100,161 @@ export const userRouter = router({
       })
 
       return 0
+    }),
+
+  checkShortnameAvailable: userProcedure
+    .input(z.object({ shortname: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const user = await prisma.user.findUnique({
+        where: { shortname: input.shortname.trim() },
+      })
+
+      return !user || user.id === ctx.user.sub
+    }),
+
+  changeShortname: userFullAccessProcedure
+    .input(z.object({ shortname: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const trimmedShortname = input.shortname.trim()
+
+      if (trimmedShortname.length < 5 || trimmedShortname.length > 10) {
+        return null
+      }
+
+      const existingUser = await prisma.user.findUnique({
+        where: { shortname: trimmedShortname },
+        select: { id: true },
+      })
+
+      if (existingUser && existingUser.id !== ctx.user.sub) {
+        return await prisma.user.findUnique({
+          where: { id: ctx.user.sub },
+          select: { id: true, shortname: true },
+        })
+      }
+
+      return await prisma.user.update({
+        where: { id: ctx.user.sub },
+        data: { shortname: trimmedShortname },
+        select: { id: true, shortname: true },
+      })
+    }),
+
+  changeUserLocale: userProcedure
+    .input(z.object({ locale: z.nativeEnum(Locale) }))
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const user = await prisma.user.update({
+        where: { id: ctx.user.sub },
+        data: { locale: input.locale },
+        select: { id: true, locale: true },
+      })
+
+      getCookieResponse(ctx.res).cookie('NEXT_LOCALE', input.locale, {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 30,
+        secure:
+          process.env.NODE_ENV === 'production' &&
+          process.env.COOKIE_DOMAIN !== '127.0.0.1',
+        sameSite: 'lax',
+      })
+
+      return user
+    }),
+
+  changeEmailSettings: userFullAccessProcedure
+    .input(z.object({ projectUpdates: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return await prisma.user.update({
+        where: { id: ctx.user.sub },
+        data: { sendProjectUpdates: input.projectUpdates },
+        select: { id: true, sendProjectUpdates: true },
+      })
+    }),
+
+  changeInitialSettings: userFullAccessProcedure
+    .input(
+      z.object({
+        shortname: z.string(),
+        locale: z.nativeEnum(Locale),
+        sendUpdates: z.boolean(),
+        seedDemoElements: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const trimmedShortname = input.shortname.trim()
+      const existingUser = await prisma.user.findFirst({
+        where: { shortname: trimmedShortname },
+        select: { id: true },
+      })
+
+      if (existingUser && existingUser.id !== ctx.user.sub) {
+        const user = await prisma.user.update({
+          where: { id: ctx.user.sub },
+          data: { locale: input.locale },
+          select: {
+            id: true,
+            email: true,
+            shortname: true,
+            locale: true,
+            firstLogin: true,
+            catalystInstitutional: true,
+            catalystIndividual: true,
+            catalystTier: true,
+          },
+        })
+
+        return {
+          id: user.id,
+          email: user.email,
+          shortname: user.shortname,
+          locale: user.locale,
+          firstLogin: user.firstLogin,
+          catalyst: user.catalystInstitutional || user.catalystIndividual,
+          catalystTier: user.catalystTier,
+        }
+      }
+
+      if (input.seedDemoElements) {
+        await seedDemoQuestions({ prisma, userId: ctx.user.sub })
+      }
+
+      const user = await prisma.user.update({
+        where: { id: ctx.user.sub },
+        data: {
+          shortname: trimmedShortname,
+          locale: input.locale,
+          sendProjectUpdates: input.sendUpdates,
+          firstLogin: false,
+        },
+        select: {
+          id: true,
+          email: true,
+          shortname: true,
+          locale: true,
+          firstLogin: true,
+          catalystInstitutional: true,
+          catalystIndividual: true,
+          catalystTier: true,
+        },
+      })
+
+      return {
+        id: user.id,
+        email: user.email,
+        shortname: user.shortname,
+        locale: user.locale,
+        firstLogin: user.firstLogin,
+        catalyst: user.catalystInstitutional || user.catalystIndividual,
+        catalystTier: user.catalystTier,
+      }
     }),
 
   logout: userProcedure.mutation(async ({ ctx }) => {

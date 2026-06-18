@@ -280,6 +280,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-18 Completed: S04J User Profile Settings and First Login
+
+Status: complete for the scoped slice. Scope was limited to manage user profile
+settings and the first-login settings modal. Delegated access CRUD remains a
+separate S04 settings slice; S05 realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04J User Profile Settings and First Login
+
+GraphQL operations:
+- CheckShortnameAvailable
+- ChangeShortname
+- ChangeUserLocale
+- ChangeEmailSettings
+- ChangeInitialSettings
+- UserProfile usages inside the migrated settings components
+
+tRPC procedures:
+- user.checkShortnameAvailable
+- user.changeShortname
+- user.changeUserLocale
+- user.changeEmailSettings
+- user.changeInitialSettings
+- user.profile
+
+GraphQL behavior source:
+- packages/graphql/src/services/accounts.ts checkShortnameAvailable
+- packages/graphql/src/services/accounts.ts changeShortname
+- packages/graphql/src/services/accounts.ts changeUserLocale
+- packages/graphql/src/services/accounts.ts changeEmailSettings
+- packages/graphql/src/services/accounts.ts changeInitialSettings
+- packages/graphql/src/services/accounts.ts seedDemoQuestions
+```
+
+Completed write scope:
+
+- Added API-owned user settings procedures with the same shortname availability,
+  shortname-taken, locale-cookie, email-update, and first-login semantics.
+- Added `packages/api/src/services/demoQuestions.ts` so first-login demo seeding
+  no longer needs an API-to-GraphQL runtime dependency.
+- Migrated `ShortnameSetting`, `LanguageSetting`, `EmailSetting`, and
+  `SuspendedFirstLoginModal` from Apollo operations to tRPC hooks/utilities.
+- Added focused API router tests for availability checks, settings mutations,
+  locale cookie writing, first-login taken-shortname behavior, and demo seeding.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write ...`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/user-settings.test.ts src/trpc/__tests__/user-admin.test.ts`: passed. The API test script ran the full API suite: 33 files, 331 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed after rebuilding `@klicker-uzh/api`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs, stale Browserslist, `/qr/[...args]` missing messages, and large page-data warnings).
+- Focused audit `rg -n "@apollo/client|ChangeShortnameDocument|CheckShortnameAvailableDocument|ChangeUserLocaleDocument|ChangeEmailSettingsDocument|ChangeInitialSettingsDocument|UserProfileDocument|@klicker-uzh/graphql/dist/ops" ...`: no matches in the migrated settings files/API slice.
+- `git diff --check`: passed.
+
+Browser verification:
+
+- Started local compose backing services, branch backend/auth/manage on
+  `3103`/`3106`/`3104`, and logged in with seeded lecturer credentials.
+- Used local-only verification overrides:
+  - `NEXT_PUBLIC_MANAGE_URL=http://localhost:3104` for manage redirect targets.
+  - `APP_MANAGE_SUBDOMAIN=localhost` for backend cookie extraction from
+    localhost manage origins.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04-settings-04-loaded.png`
+  - `/tmp/agent-browser-shots/s04-settings-05-before-email-toggle.png`
+  - `/tmp/agent-browser-shots/s04-settings-06-after-email-toggle-on.png`
+  - `/tmp/agent-browser-shots/s04-settings-07-restored.png`
+- Browser evidence: `/user/settings` loaded through
+  `/api/trpc/user.profile`; remaining generic `/api/graphql` requests were from
+  surrounding app providers.
+- Browser evidence: toggling "Project Updates via E-Mail" used
+  `/api/trpc/user.changeEmailSettings` and then refetched
+  `/api/trpc/user.profile`. The setting was toggled back after the smoke test.
+
+Next: continue S04 settings with delegated access CRUD, then the remaining
+non-realtime manage consumers. Pause before S05.
+
 ### 2026-06-18 Completed: S04J Admin Private Preview Access
 
 Status: complete for the scoped slice. Scope was limited to the manage
