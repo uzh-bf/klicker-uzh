@@ -39,6 +39,11 @@ import {
 } from '@klicker-uzh/util'
 import type { z } from 'zod'
 import { applyManageActivityBatchOperations } from '../../services/manageActivityBatchOperations.js'
+import {
+  finalizeGroupActivityGrading,
+  getGradingGroupActivity,
+  gradeGroupActivitySubmission,
+} from '../../services/manageGroupActivityGrading.js'
 import { getPrisma, type TRPCContext } from '../context.js'
 import {
   toAsyncActivityDetails,
@@ -48,6 +53,7 @@ import {
   toUserActivityOverviewItem,
 } from '../dto/activity.js'
 import { toPreviewElementData } from '../dto/elementPreview.js'
+import { toGroupActivityGradingDto } from '../dto/groupActivityGrading.js'
 import { router } from '../init.js'
 import { hasActivityPermission } from '../permissions.js'
 import { userFullAccessProcedure, userProcedure } from '../procedures.js'
@@ -62,6 +68,9 @@ import {
   createLiveQuizFromTemplateInput,
   deleteActivityTemplateInput,
   editActivityTemplateInput,
+  finalizeGroupActivityGradingInput,
+  gradeGroupActivitySubmissionInput,
+  groupActivityGradingInput,
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
   templateInformationInput,
@@ -1938,6 +1947,81 @@ export const activityRouter = router({
               activity: groupActivity,
               isGroupActivity: true,
             })
+          : null,
+      }
+    }),
+
+  groupActivityGrading: userProcedure
+    .input(groupActivityGradingInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canExecute = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.id,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        },
+        PermissionLevel.EXECUTE
+      )
+
+      if (!canExecute) return { groupActivityGrading: null }
+
+      return {
+        groupActivityGrading: toGroupActivityGradingDto(
+          await getGradingGroupActivity({ prisma, id: input.id })
+        ),
+      }
+    }),
+
+  gradeGroupActivitySubmission: userFullAccessProcedure
+    .input(gradeGroupActivitySubmissionInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canExecute = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.groupActivityId,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        },
+        PermissionLevel.EXECUTE
+      )
+
+      if (!canExecute) return { gradeGroupActivitySubmission: null }
+
+      const submission = await gradeGroupActivitySubmission({
+        prisma,
+        id: input.id,
+        gradingDecisions: input.gradingDecisions,
+      })
+
+      return {
+        gradeGroupActivitySubmission: submission ? { id: submission.id } : null,
+      }
+    }),
+
+  finalizeGroupActivityGrading: userFullAccessProcedure
+    .input(finalizeGroupActivityGradingInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const canWrite = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.id,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        },
+        PermissionLevel.WRITE
+      )
+
+      if (!canWrite) return { finalizeGroupActivityGrading: null }
+
+      const groupActivity = await finalizeGroupActivityGrading({
+        prisma,
+        id: input.id,
+      })
+
+      return {
+        finalizeGroupActivityGrading: groupActivity
+          ? { id: groupActivity.id, status: groupActivity.status }
           : null,
       }
     }),

@@ -280,6 +280,107 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-18 Completed: S04N5 Manage Group Activity Grading
+
+Status: complete for the scoped slice. Scope was limited to the manage group
+activity grading page and its local grading/finalization mutations. This was
+S04N/S04P mixed-state work only; S05 realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04N5 Manage Group Activity Grading
+GraphQL operation(s): GetGradingGroupActivity, GradeGroupActivitySubmission, FinalizeGroupActivityGrading
+GraphQL resolver(s): Query.getGradingGroupActivity, Mutation.gradeGroupActivitySubmission, Mutation.finalizeGroupActivityGrading with EXECUTE / WRITE group activity permission gates
+Behavior source: packages/graphql/src/services/groups.ts group activity grading functions
+tRPC router.procedure: activity.groupActivityGrading, activity.gradeGroupActivitySubmission, activity.finalizeGroupActivityGrading
+Input schema: { id: string } for read/finalize; { id: number, groupActivityId: string, gradingDecisions } for submission grading
+Output DTO: narrow grading page payload with group activity metadata, clues, stacks, preview element data, group submissions, decisions, results, and groupName
+Active frontend consumers: apps/frontend-manage/src/pages/courses/grading/groupActivity/[id].tsx; apps/frontend-manage/src/components/courses/groupActivity/FinalizeGradingModal.tsx; apps/frontend-manage/src/components/courses/groupActivity/GroupActivityGradingStack.tsx; apps/frontend-manage/src/components/courses/groupActivity/GroupActivitySubmission.tsx
+Apollo cache/refetch/subscription behavior: one read query and two local mutations; mutation success should invalidate the tRPC grading read query instead of relying on Apollo normalized cache updates
+Browser verification path: branch-local backend/auth/manage if still available; otherwise restart local stack and verify a seeded/available group activity grading route with screenshots
+Cleanup blocked until: remaining S04N point-correction/scoring/reporting consumers, S04O secondary runtime consumers, S04P generated GraphQL type leak cleanup outside this path, S04Q API no-GraphQL runtime gate, S05 realtime, and S06 cleanup gates
+```
+
+Intended write scope:
+
+- `packages/api/src/services/manageGroupActivityGrading.ts`
+- `packages/api/src/trpc/dto/groupActivityGrading.ts`
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/lib/groupActivityGradingTypes.ts`
+- `apps/frontend-manage/src/pages/courses/grading/groupActivity/[id].tsx`
+- `apps/frontend-manage/src/components/courses/groupActivity/FinalizeGradingModal.tsx`
+- `apps/frontend-manage/src/components/courses/groupActivity/GroupActivityGradingStack.tsx`
+- `apps/frontend-manage/src/components/courses/groupActivity/GroupActivitySubmission.tsx`
+- This plan file
+
+Implementation:
+
+- Added API-local group activity grading service logic in
+  `packages/api/src/services/manageGroupActivityGrading.ts`, porting the
+  existing GraphQL behavior source for grading reads, score clamping,
+  correctness assignment, finalization guards, achievement awards, leaderboard
+  increments, and daily timeline updates without importing GraphQL runtime code.
+- Added `activity.groupActivityGrading`, `activity.gradeGroupActivitySubmission`,
+  and `activity.finalizeGroupActivityGrading` procedures behind the same group
+  activity EXECUTE / WRITE permission levels as the GraphQL resolvers.
+- Added a narrow group grading DTO in
+  `packages/api/src/trpc/dto/groupActivityGrading.ts` that returns group
+  metadata, clues, stack elements with preview element data, submissions,
+  decisions, results, and `groupName` for the manage grading page.
+- Migrated the manage group activity grading page from Apollo
+  `GetGradingGroupActivity` to `trpc.activity.groupActivityGrading.useQuery`.
+- Migrated the grading and finalization mutations to tRPC. Successful mutations
+  invalidate `activity.groupActivityGrading` for the current activity instead of
+  relying on Apollo normalized-cache updates.
+- Replaced generated GraphQL operation types in the directly affected frontend
+  path with `RouterOutputs`-derived local types in
+  `apps/frontend-manage/src/lib/groupActivityGradingTypes.ts`; the remaining
+  `StudentElement` compatibility cast stays at the page/component boundary while
+  shared components are still mixed-state.
+- Fixed the selected choices reconstruction in the group grading stack to use
+  `choice.ix` for MC/SC responses, matching the actual decision payload shape.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed, refreshing `packages/api/dist` for frontend type consumption and local backend runtime.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/module-type, next-intl, Browserslist, `MISSING_MESSAGE`, and large-page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/manage-activities.test.ts`: passed; package script ran all API tests, 315 tests across 31 files.
+- Focused audit `rg -n "GetGradingGroupActivityDocument|GradeGroupActivitySubmissionDocument|FinalizeGroupActivityGradingDocument|GetGradingGroupActivity|GradeGroupActivitySubmission|FinalizeGroupActivityGrading" apps/frontend-manage/src packages/api/src`: no matches.
+- Focused generated/Apollo audit over the migrated group grading page/component/API path found no `@apollo/client` or `@klicker-uzh/graphql/dist/ops` imports.
+- Compact S04 coexistence audit `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`: `250`, confirming GraphQL/Apollo remain intentionally live for later S04/S05/S06 gates.
+- `git diff --check`: passed.
+
+Browser/runtime verification:
+
+- Reused branch-local backend/auth on `3133/3136`; the previous manage dev server
+  on `3134` became stale after the production build and served a missing Next
+  vendor chunk, so a clean manage dev server was started on `3137` with the same
+  local backend/auth URLs.
+- Delegated login succeeded through local auth (`127.0.0.1:3136`) and redirected
+  back to the target route.
+- Verified seeded ended group activity route
+  `http://127.0.0.1:3137/courses/grading/groupActivity/8918501d-5e44-49d6-916e-43ba11794b96`.
+- Screenshot `/tmp/agent-browser-shots/s04n5-03-after-login-group-grading.png`:
+  submissions list rendered, graded/to-grade/not-submitted states visible,
+  finalize button disabled while ungraded submitted groups remain, and resource
+  timing showed `activity.groupActivityGrading` through `/api/trpc`.
+- Screenshot `/tmp/agent-browser-shots/s04n5-05-group-grading-selected-viewport.png`:
+  selecting a submitted group rendered the grading panel with student element
+  preview, feedback editor, score input, and disabled save button until the form
+  becomes valid.
+- `/api/graphql` was still present only for surrounding still-migrating app chrome,
+  consistent with mixed GraphQL/tRPC coexistence before S06.
+
+Cleanup blocked until: remaining S04N point-correction/scoring/reporting
+consumers, S04O secondary runtime consumers, S04P generated GraphQL type leak
+cleanup outside this path, S04Q API no-GraphQL runtime gate, S05 realtime, and
+S06 cleanup gates.
+
 
 ### 2026-06-18 Completed: S04N4 Manage Evaluation Reads
 

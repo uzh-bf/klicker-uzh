@@ -8,7 +8,12 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
+import {
+  ActivityType,
+  ResponseCorrectness,
+  SharingType,
+  SortByType,
+} from '@klicker-uzh/types'
 import { describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 import { appRouter } from '../root.js'
@@ -1546,6 +1551,309 @@ describe('manage activity read routers', () => {
         },
       },
     })
+  })
+
+  test('returns null for group activity grading without execute permission', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const groupActivityFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique: groupActivityFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.groupActivityGrading({ id: 'group-activity-1' })
+    ).resolves.toEqual({ groupActivityGrading: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        groupActivityId: 'group-activity-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(groupActivityFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('returns group activity grading payload with preview element data', async () => {
+    const scheduledStartAt = new Date('2026-05-01T10:00:00.000Z')
+    const scheduledEndAt = new Date('2026-05-01T11:00:00.000Z')
+    const decisionsSubmittedAt = new Date('2026-05-01T10:15:00.000Z')
+    const resultsComputedAt = new Date('2026-05-01T10:30:00.000Z')
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const groupActivityFindUnique = vi.fn().mockResolvedValue({
+      id: 'group-activity-1',
+      name: 'Group Activity',
+      displayName: 'Group Activity',
+      description: null,
+      status: PublicationStatus.ENDED,
+      pointsMultiplier: 1,
+      scheduledStartAt,
+      scheduledEndAt,
+      clues: [
+        {
+          id: 1,
+          type: 'NUMBER',
+          name: 'clue',
+          displayName: 'Clue',
+          value: '42',
+          unit: null,
+        },
+      ],
+      stacks: [
+        {
+          id: 3,
+          displayName: 'Stack',
+          description: null,
+          elements: [
+            {
+              id: 11,
+              type: ElementInstanceType.GROUP_ACTIVITY,
+              elementType: ElementType.SC,
+              options: { pointsMultiplier: 2 },
+              elementData: {
+                id: 'element-data-1',
+                elementId: 17,
+                name: 'Choice question',
+                type: ElementType.SC,
+                content: 'Choose one',
+                explanation: null,
+                basePoints: true,
+                pointsMultiplier: 1,
+                options: {
+                  hasSampleSolution: true,
+                  hasAnswerFeedbacks: false,
+                  displayMode: 'LIST',
+                  choices: [{ ix: 0, correct: true, value: 'A' }],
+                },
+              },
+            },
+          ],
+        },
+      ],
+      activityInstances: [
+        {
+          id: 21,
+          groupActivityId: 'group-activity-1',
+          decisionsSubmittedAt,
+          decisions: [
+            {
+              instanceId: 11,
+              type: ElementType.SC,
+              choicesResponse: [{ ix: 0, selected: true }],
+            },
+          ],
+          resultsComputedAt,
+          results: {
+            passed: true,
+            points: 50,
+            comment: 'Well done',
+            grading: [
+              {
+                instanceId: 11,
+                score: 50,
+                maxPoints: 50,
+                feedback: 'Good',
+              },
+            ],
+          },
+          group: { name: 'Group 1' },
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique: groupActivityFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.groupActivityGrading({ id: 'group-activity-1' })
+    ).resolves.toMatchObject({
+      groupActivityGrading: {
+        __typename: 'GroupActivity',
+        id: 'group-activity-1',
+        clues: [
+          {
+            __typename: 'GroupActivityClue',
+            id: 1,
+            displayName: 'Clue',
+          },
+        ],
+        stacks: [
+          {
+            __typename: 'ElementStack',
+            elements: [
+              {
+                __typename: 'ElementInstance',
+                id: 11,
+                options: {
+                  __typename: 'ElementInstanceOptions',
+                  pointsMultiplier: 2,
+                },
+                elementData: {
+                  __typename: 'ChoicesElementData',
+                  name: 'Choice question',
+                },
+              },
+            ],
+          },
+        ],
+        activityInstances: [
+          {
+            __typename: 'GroupActivityInstance',
+            id: 21,
+            groupName: 'Group 1',
+            decisions: [
+              {
+                __typename: 'GroupActivityDecision',
+                choicesResponse: [
+                  {
+                    __typename: 'ChoicesResponseObject',
+                    ix: 0,
+                    selected: true,
+                  },
+                ],
+              },
+            ],
+            results: {
+              __typename: 'GroupActivityResults',
+              grading: [
+                {
+                  __typename: 'GroupActivityGrading',
+                  score: 50,
+                  maxPoints: 50,
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })
+
+    expect(groupActivityFindUnique).toHaveBeenCalledWith({
+      where: { id: 'group-activity-1' },
+      include: {
+        clues: true,
+        stacks: {
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
+        },
+        activityInstances: {
+          include: { group: true },
+          orderBy: { decisionsSubmittedAt: 'asc' },
+        },
+      },
+    })
+  })
+
+  test('grades group activity submissions with clamped scores', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const elementInstanceFindMany = vi
+      .fn()
+      .mockResolvedValue([{ id: 11, options: { pointsMultiplier: 2 } }])
+    const groupActivityInstanceUpdate = vi.fn().mockResolvedValue({ id: 21 })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      elementInstance: {
+        findMany: elementInstanceFindMany,
+      },
+      groupActivityInstance: {
+        update: groupActivityInstanceUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.gradeGroupActivitySubmission({
+        id: 21,
+        groupActivityId: 'group-activity-1',
+        gradingDecisions: {
+          passed: true,
+          comment: 'Well done',
+          grading: [
+            {
+              instanceId: 11,
+              score: 60,
+              feedback: 'Good',
+            },
+          ],
+        },
+      })
+    ).resolves.toEqual({ gradeGroupActivitySubmission: { id: 21 } })
+
+    expect(elementInstanceFindMany).toHaveBeenCalledWith({
+      where: { id: { in: [11] } },
+      select: { id: true, options: true },
+    })
+    expect(groupActivityInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: 21 },
+      data: {
+        results: {
+          passed: true,
+          points: 60,
+          comment: 'Well done',
+          grading: [
+            {
+              instanceId: 11,
+              score: 50,
+              maxPoints: 50,
+              feedback: 'Good',
+              correctness: ResponseCorrectness.CORRECT,
+            },
+          ],
+        },
+      },
+    })
+  })
+
+  test('does not finalize group activity grading while solved submissions lack results', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const groupActivityFindUnique = vi.fn().mockResolvedValue({
+      id: 'group-activity-1',
+      activityInstances: [
+        { id: 21, decisions: [{ instanceId: 11 }], results: null },
+      ],
+    })
+    const groupActivityUpdate = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique: groupActivityFindUnique,
+        update: groupActivityUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.finalizeGroupActivityGrading({ id: 'group-activity-1' })
+    ).resolves.toEqual({ finalizeGroupActivityGrading: null })
+
+    expect(groupActivityFindUnique).toHaveBeenCalledWith({
+      where: { id: 'group-activity-1' },
+      include: { activityInstances: true },
+    })
+    expect(groupActivityUpdate).not.toHaveBeenCalled()
   })
 
   test('requires full-access user scope for review status mutation', async () => {

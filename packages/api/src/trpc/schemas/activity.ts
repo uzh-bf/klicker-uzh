@@ -39,6 +39,30 @@ export const activityDetailsInput = z.object({
   activityType: z.nativeEnum(ActivityType),
 })
 
+export const groupActivityGradingInput = z.object({
+  id: z.string(),
+})
+
+const groupActivityGradingDecisionInput = z.object({
+  instanceId: z.number().int(),
+  score: z.number(),
+  feedback: z.string().nullish(),
+})
+
+export const gradeGroupActivitySubmissionInput = z.object({
+  id: z.number().int(),
+  groupActivityId: z.string(),
+  gradingDecisions: z.object({
+    passed: z.boolean(),
+    comment: z.string().nullish(),
+    grading: z.array(groupActivityGradingDecisionInput),
+  }),
+})
+
+export const finalizeGroupActivityGradingInput = z.object({
+  id: z.string(),
+})
+
 export const templateInformationInput = activityDetailsInput
 
 export const checkTemplateInfoAvailableInput = activityDetailsInput

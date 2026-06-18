@@ -1,15 +1,15 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GroupActivityGrading,
-  GroupActivityInstance,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type {
+  GroupActivityGradingResult,
+  GroupActivityInstance,
+} from '../../../lib/groupActivityGradingTypes'
 
 interface GroupActivitySubmissionProps {
   submission: GroupActivityInstance
@@ -32,7 +32,7 @@ function GroupActivitySubmission({
     if (!submission.results) return 0
 
     return submission.results.grading.reduce(
-      (acc: number, answer: GroupActivityGrading) => {
+      (acc: number, answer: GroupActivityGradingResult) => {
         return acc + answer.score
       },
       0

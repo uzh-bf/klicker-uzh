@@ -1,9 +1,8 @@
-import { useMutation } from '@apollo/client'
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { FinalizeGroupActivityGradingDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 function FinalizeGradingModal({
   onClose,
@@ -13,21 +12,25 @@ function FinalizeGradingModal({
   activityId: string
 }) {
   const t = useTranslations()
-  const [finalizeGroupActivityGrading, { loading: finalizingGrading }] =
-    useMutation(FinalizeGroupActivityGradingDocument)
+  const utils = trpc.useUtils()
+  const finalizeGroupActivityGrading =
+    trpc.activity.finalizeGroupActivityGrading.useMutation()
 
   return (
     <Modal
       open
       title={t('manage.groupActivity.finalizeGrading')}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={finalizingGrading}
+      primaryLoading={finalizeGroupActivityGrading.isLoading}
       onPrimaryAction={async () => {
-        const { data } = await finalizeGroupActivityGrading({
-          variables: { id: activityId },
+        const data = await finalizeGroupActivityGrading.mutateAsync({
+          id: activityId,
         })
 
         if (data?.finalizeGroupActivityGrading?.id) {
+          await utils.activity.groupActivityGrading.invalidate({
+            id: activityId,
+          })
           toast({
             type: 'success',
             message: t('manage.groupActivity.finalizeGradingSuccess'),
