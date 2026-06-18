@@ -1,12 +1,5 @@
-import { useMutation, useSuspenseQuery } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faKey } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateUserLoginDocument,
-  DeleteUserLoginDocument,
-  GetUserLoginsDocument,
-  UserLoginScope,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
@@ -22,26 +15,37 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc, type RouterInputs } from '../../lib/trpc'
 import DelegatedAccessCreationModal from './DelegatedAccessCreationModal'
 import DelegatedAccessPassword, { PW_SETTINGS } from './DelegatedAccessPassword'
 import DelegatedPasswordChangeModal from './DelegatedPasswordChangeModal'
 import Setting from './Setting'
 
+const USER_LOGIN_SCOPE = {
+  ACCOUNT_OWNER: 'ACCOUNT_OWNER',
+  FULL_ACCESS: 'FULL_ACCESS',
+  SESSION_EXEC: 'SESSION_EXEC',
+  READ_ONLY: 'READ_ONLY',
+} as const
+
+type CreateUserLoginInput = RouterInputs['user']['createUserLogin']
+
 function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [confirmationModal, setConfirmationModal] = useState(false)
   const [changePasswordModal, setChangePasswordModal] = useState<{
     open: boolean
     loginId?: string
   }>({ open: false, loginId: undefined })
-  const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
+  const { data } = trpc.user.delegatedAccess.useQuery()
 
-  const [createUserLogin] = useMutation(CreateUserLoginDocument)
-  const [deleteUserLogin] = useMutation(DeleteUserLoginDocument)
+  const createUserLogin = trpc.user.createUserLogin.useMutation()
+  const deleteUserLogin = trpc.user.deleteUserLogin.useMutation()
 
   if (
-    typeof userLogins?.userScope === 'undefined' ||
-    userLogins.userScope !== UserLoginScope.AccountOwner
+    typeof data?.userScope === 'undefined' ||
+    data.userScope !== USER_LOGIN_SCOPE.ACCOUNT_OWNER
   ) {
     return null
   }
@@ -53,13 +57,15 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
   })
 
   // TODO: allow selection of other scopes once auth is ready on granular level
-  const availableScopes: UserLoginScope[] = [UserLoginScope.FullAccess]
+  const availableScopes: CreateUserLoginInput['scope'][] = [
+    USER_LOGIN_SCOPE.FULL_ACCESS,
+  ]
 
   return (
     <Setting title={t('auth.delegatedAccess')}>
       <div className="mb-5">
         <div className="flex flex-col gap-1">
-          {userLogins.userLogins?.map((login) => (
+          {data.userLogins.map((login) => (
             <div
               key={login.id}
               className={twMerge(
@@ -71,10 +77,12 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                 <div
                   className={twMerge(
                     'w-max rounded px-1 py-0.5 text-sm font-bold',
-                    login.scope === UserLoginScope.FullAccess && 'bg-green-300',
-                    login.scope === UserLoginScope.SessionExec &&
+                    login.scope === USER_LOGIN_SCOPE.FULL_ACCESS &&
+                      'bg-green-300',
+                    login.scope === USER_LOGIN_SCOPE.SESSION_EXEC &&
                       'bg-yellow-200',
-                    login.scope === UserLoginScope.ReadOnly && 'bg-orange-300'
+                    login.scope === USER_LOGIN_SCOPE.READ_ONLY &&
+                      'bg-orange-300'
                   )}
                 >
                   {t(`manage.settings.${login.scope}`)}
@@ -103,30 +111,10 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                 <Button
                   destructive
                   className={{ root: 'h-7 w-7' }}
-                  onClick={() =>
-                    deleteUserLogin({
-                      variables: { id: login.id },
-                      update: (cache, { data }) => {
-                        // verify that the deletion was successful
-                        if (!data?.deleteUserLogin) return
-
-                        // remove the deleted login from the cache
-                        cache.updateQuery(
-                          { query: GetUserLoginsDocument },
-                          (qData) => {
-                            if (!qData?.userLogins) return qData
-
-                            return {
-                              ...qData,
-                              userLogins: qData.userLogins.filter(
-                                (login) => login.id !== data.deleteUserLogin!.id
-                              ),
-                            }
-                          }
-                        )
-                      },
-                    })
-                  }
+                  onClick={async () => {
+                    await deleteUserLogin.mutateAsync({ id: login.id })
+                    await utils.user.delegatedAccess.invalidate()
+                  }}
                   data={{ cy: `delete-delegated-login-${login.name}` }}
                 >
                   <Button.Icon withoutLabel icon={faTrashCan} />
@@ -136,7 +124,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
           ))}
         </div>
 
-        <div className={(userLogins.userLogins?.length || 0) > 0 ? 'mt-5' : ''}>
+        <div className={data.userLogins.length > 0 ? 'mt-5' : ''}>
           <H4 className={{ root: 'mb-0' }}>
             {t('manage.settings.createDelegatedLogin')}
           </H4>
@@ -148,7 +136,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
             initialValues={{
               password: generatePassword.generate(PW_SETTINGS),
               name: '',
-              scope: UserLoginScope.FullAccess,
+              scope: USER_LOGIN_SCOPE.FULL_ACCESS,
             }}
             validationSchema={loginSchema}
             onSubmit={async (
@@ -156,37 +144,16 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
               { resetForm, setFieldValue, setSubmitting, validateForm }
             ) => {
               setSubmitting(true)
-              const result = await createUserLogin({
-                variables: {
-                  name: values.name,
-                  password: values.password,
-                  scope: values.scope,
-                },
-                update: (cache, { data }) => {
-                  // verify that the creation was successful
-                  if (!data?.createUserLogin) return
-
-                  // update the listed user logins
-                  cache.updateQuery(
-                    { query: GetUserLoginsDocument },
-                    (qData) => {
-                      if (!qData?.userLogins) return qData
-
-                      return {
-                        ...qData,
-                        userLogins: [
-                          ...qData.userLogins,
-                          data.createUserLogin!,
-                        ],
-                      }
-                    }
-                  )
-                },
+              const result = await createUserLogin.mutateAsync({
+                name: values.name,
+                password: values.password,
+                scope: values.scope,
               })
+              await utils.user.delegatedAccess.invalidate()
               setSubmitting(false)
               setConfirmationModal(false)
 
-              if (result.data?.createUserLogin) {
+              if (result) {
                 resetForm()
                 await setFieldValue(
                   'password',

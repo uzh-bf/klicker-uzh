@@ -280,6 +280,91 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04J Delegated Access Settings
+
+Status: complete for the scoped slice. Scope was limited to manage delegated
+access settings on `/user/settings`: list delegated logins, create delegated
+logins, update delegated-login passwords, and delete delegated logins. S05
+realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04J Delegated Access Settings
+
+GraphQL operations:
+- GetUserLogins
+- CreateUserLogin
+- UpdateUserLogin
+- DeleteUserLogin
+- userScope field used to hide/show the account-owner settings panel
+
+tRPC procedures:
+- user.delegatedAccess
+- user.createUserLogin
+- user.updateUserLogin
+- user.deleteUserLogin
+
+GraphQL behavior source:
+- packages/graphql/src/services/accounts.ts getUserLogins
+- packages/graphql/src/services/accounts.ts createUserLogin
+- packages/graphql/src/services/accounts.ts updateUserLogin
+- packages/graphql/src/services/accounts.ts deleteUserLogin
+- packages/graphql/src/schema/mutation.ts account-owner guards for the
+  delegated-login mutations
+```
+
+Completed write scope:
+
+- Added `userAccountOwnerProcedure` for account-owner-only user mutations.
+- Added `user.delegatedAccess`, `user.createUserLogin`,
+  `user.updateUserLogin`, and `user.deleteUserLogin` to the API user router.
+- Preserved GraphQL behavior where delegated-login creation accepts a scope
+  input but still creates `FULL_ACCESS` logins until granular auth is ready.
+- Kept update ownership checks and tightened delete ownership checks in tRPC so
+  account owners can only delete delegated logins belonging to their account.
+- Migrated `DelegatedAccessSettings` and `DelegatedPasswordChangeModal` from
+  Apollo/generated GraphQL operations to tRPC hooks and React Query
+  invalidation.
+- Added focused API router tests for list, create, update, delete, and
+  non-account-owner rejection behavior.
+
+Verification:
+
+- `pnpm exec prettier --write packages/api/src/trpc/routers/user.ts packages/api/src/trpc/__tests__/user-delegated-access.test.ts apps/frontend-manage/src/components/user/DelegatedAccessSettings.tsx apps/frontend-manage/src/components/user/DelegatedPasswordChangeModal.tsx packages/api/src/trpc/procedures.ts`: passed.
+- `git diff --check`: passed.
+- `pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/user-delegated-access.test.ts`: passed. The API test script ran the full API suite: 34 files, 336 tests.
+- `pnpm --filter @klicker-uzh/api check`: passed.
+- `pnpm --filter @klicker-uzh/api build`: passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed after rebuilding
+  `@klicker-uzh/api`.
+- Focused audit `rg -n "@apollo/client|GetUserLoginsDocument|CreateUserLoginDocument|UpdateUserLoginDocument|DeleteUserLoginDocument|@klicker-uzh/graphql/dist/ops" ...`: no matches in the migrated delegated-access files/API slice.
+- `pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing
+  warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs,
+  stale Browserslist, `/qr/[...args]` missing messages, and large page-data
+  warnings).
+
+Browser verification:
+
+- Used the already-running local compose backing services and branch backend on
+  `3103`, started branch auth/manage on `3106`/`3104`, and logged in with
+  seeded delegated lecturer credentials.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04-delegated-access-01-open.png`
+  - `/tmp/agent-browser-shots/s04-delegated-access-02-after-login.png`
+  - `/tmp/agent-browser-shots/s04-delegated-access-03-manage.png`
+  - `/tmp/agent-browser-shots/s04-delegated-access-04-settings.png`
+- Browser evidence: `/user/settings` loaded and the resource trace included
+  `/api/trpc/sharing.catalogSharingRequestCount,course.userCourses,user.delegatedAccess,user.profile`.
+- Authenticated browser fetch to `user.delegatedAccess` returned HTTP 200 with
+  `userScope: "FULL_ACCESS"` and the seeded delegated logins, so the
+  account-owner-only delegated access panel stayed hidden in this local seeded
+  session. CRUD behavior was therefore verified through API tests rather than a
+  browser mutation smoke.
+
+Next: continue remaining S04-only pre-realtime manage findings. Pause before
+S05/S06.
+
 ### 2026-06-18 Completed: S04J User Profile Settings and First Login
 
 Status: complete for the scoped slice. Scope was limited to manage user profile

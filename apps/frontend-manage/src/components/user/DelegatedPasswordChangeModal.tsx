@@ -1,11 +1,10 @@
-import { useMutation } from '@apollo/client'
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { UpdateUserLoginDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import generatePassword from 'generate-password'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../lib/trpc'
 import DelegatedAccessPassword, { PW_SETTINGS } from './DelegatedAccessPassword'
 
 function DelegatedPasswordChangeModal({
@@ -16,7 +15,7 @@ function DelegatedPasswordChangeModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [updateUserLogin] = useMutation(UpdateUserLoginDocument)
+  const updateUserLogin = trpc.user.updateUserLogin.useMutation()
 
   if (!loginId) {
     return null
@@ -43,8 +42,9 @@ function DelegatedPasswordChangeModal({
         })}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          await updateUserLogin({
-            variables: { id: loginId!, password: values.password },
+          await updateUserLogin.mutateAsync({
+            id: loginId!,
+            password: values.password,
           })
           setSubmitting(false)
           onClose()

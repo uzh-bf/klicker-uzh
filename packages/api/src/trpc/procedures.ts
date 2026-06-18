@@ -106,6 +106,9 @@ export const adminProcedure = authenticatedProcedure.use(
 export const userFullAccessProcedure = userProcedure.use(
   requireScope(UserLoginScope.FULL_ACCESS)
 )
+export const userAccountOwnerProcedure = userProcedure.use(
+  requireScope(UserLoginScope.ACCOUNT_OWNER)
+)
 export const userSessionExecProcedure = userProcedure.use(
   requireScope(UserLoginScope.SESSION_EXEC)
 )

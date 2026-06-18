@@ -1,5 +1,6 @@
-import { Locale } from '@klicker-uzh/prisma/client'
+import { Locale, UserLoginScope } from '@klicker-uzh/prisma/client'
 import { TRPCError } from '@trpc/server'
+import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { seedDemoQuestions } from '../../services/demoQuestions.js'
 import { getPrisma } from '../context.js'
@@ -7,12 +8,26 @@ import { toUserProfile } from '../dto/user.js'
 import { router } from '../init.js'
 import {
   adminProcedure,
+  userAccountOwnerProcedure,
   userFullAccessProcedure,
   userProcedure,
 } from '../procedures.js'
 
 type CookieResponse = {
   cookie(name: string, value: string, options: Record<string, unknown>): unknown
+}
+
+const delegatedLoginSelect = {
+  id: true,
+  name: true,
+  scope: true,
+  lastLoginAt: true,
+  user: {
+    select: {
+      id: true,
+      shortname: true,
+    },
+  },
 }
 
 function getCookieResponse(res: unknown): CookieResponse {
@@ -255,6 +270,78 @@ export const userRouter = router({
         catalyst: user.catalystInstitutional || user.catalystIndividual,
         catalystTier: user.catalystTier,
       }
+    }),
+
+  delegatedAccess: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+    const userLogins = await prisma.userLogin.findMany({
+      where: { user: { id: ctx.user.sub } },
+      select: delegatedLoginSelect,
+      orderBy: { scope: 'asc' },
+    })
+
+    return {
+      userScope: ctx.user.scope,
+      userLogins,
+    }
+  }),
+
+  createUserLogin: userAccountOwnerProcedure
+    .input(
+      z.object({
+        password: z.string(),
+        name: z.string(),
+        scope: z.nativeEnum(UserLoginScope),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const hashedPassword = await bcrypt.hash(input.password, 12)
+
+      return await prisma.userLogin.create({
+        data: {
+          password: hashedPassword,
+          name: input.name.trim(),
+          // TODO: allow creation of other access levels once auth is handled granularly.
+          scope: UserLoginScope.FULL_ACCESS,
+          user: { connect: { id: ctx.user.sub } },
+        },
+        select: delegatedLoginSelect,
+      })
+    }),
+
+  updateUserLogin: userAccountOwnerProcedure
+    .input(z.object({ id: z.string(), password: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const login = await prisma.userLogin.findUnique({
+        where: { id: input.id, userId: ctx.user.sub },
+      })
+
+      if (!login) return null
+
+      const hashedPassword = await bcrypt.hash(input.password, 12)
+      return await prisma.userLogin.update({
+        where: { id: input.id },
+        data: { password: hashedPassword },
+        select: delegatedLoginSelect,
+      })
+    }),
+
+  deleteUserLogin: userAccountOwnerProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const login = await prisma.userLogin.findUnique({
+        where: { id: input.id, userId: ctx.user.sub },
+      })
+
+      if (!login) return null
+
+      return await prisma.userLogin.delete({
+        where: { id: input.id },
+        select: { id: true },
+      })
     }),
 
   logout: userProcedure.mutation(async ({ ctx }) => {
