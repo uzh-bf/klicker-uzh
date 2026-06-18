@@ -1,12 +1,11 @@
-import { useQuery } from '@apollo/client'
 import { faChevronLeft } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetCourseActivitiesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { trpc } from '../../../lib/trpc'
 
 function QuizAnalyticsNavigation({
   courseId,
@@ -15,15 +14,18 @@ function QuizAnalyticsNavigation({
   courseId: string
   activityId: string
 }) {
-  const { data, loading } = useQuery(GetCourseActivitiesDocument, {
-    variables: { courseId },
-  })
+  const { data, isLoading } = trpc.course.activities.useQuery(
+    { courseId },
+    { enabled: !!courseId }
+  )
   const t = useTranslations()
   const router = useRouter()
 
-  if (loading) {
+  if (isLoading) {
     return <Loader />
   }
+
+  const course = data?.courseActivities
 
   return (
     <div className="mb-6 grid w-full grid-cols-3">
@@ -42,33 +44,25 @@ function QuizAnalyticsNavigation({
           labelType="large"
           value={activityId}
           groups={[
-            ...(data?.getCourseActivities?.practiceQuizzes &&
-            data.getCourseActivities.practiceQuizzes.length > 0
+            ...(course?.practiceQuizzes && course.practiceQuizzes.length > 0
               ? [
                   {
                     label: `${t('shared.generic.practiceQuizzes')}:`,
-                    items:
-                      data?.getCourseActivities?.practiceQuizzes?.map(
-                        (activity) => ({
-                          label: activity.name,
-                          value: activity.id,
-                        })
-                      ) ?? [],
+                    items: course.practiceQuizzes.map((activity) => ({
+                      label: activity.name,
+                      value: activity.id,
+                    })),
                   },
                 ]
               : []),
-            ...(data?.getCourseActivities?.microLearnings &&
-            data.getCourseActivities.microLearnings.length > 0
+            ...(course?.microLearnings && course.microLearnings.length > 0
               ? [
                   {
                     label: `${t('shared.generic.microlearnings')}:`,
-                    items:
-                      data?.getCourseActivities?.microLearnings?.map(
-                        (activity) => ({
-                          label: activity.name,
-                          value: activity.id,
-                        })
-                      ) ?? [],
+                    items: course.microLearnings.map((activity) => ({
+                      label: activity.name,
+                      value: activity.id,
+                    })),
                   },
                 ]
               : []),

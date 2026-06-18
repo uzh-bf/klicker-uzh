@@ -1,4 +1,8 @@
-import { PermissionLevel, type Prisma } from '@klicker-uzh/prisma/client'
+import {
+  PermissionLevel,
+  PublicationStatus,
+  type Prisma,
+} from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
@@ -7,6 +11,7 @@ import {
   toBasicCourseInformation,
   toControlCourse,
   toControlCourseListItem,
+  toCourseActivities,
   toCourseSummary,
   toManageCourseListItem,
 } from '../dto/course.js'
@@ -17,6 +22,7 @@ import {
   activeUserCoursesInput,
   basicCourseInformationInput,
   controlCourseInput,
+  courseActivitiesInput,
   courseActivityIdsInput,
   courseSummaryInput,
 } from '../schemas/course.js'
@@ -358,6 +364,59 @@ export const courseRouter = router({
             groupActivities: [],
           }
         ),
+      }
+    }),
+
+  activities: userProcedure
+    .input(courseActivitiesInput)
+    .query(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.courseId,
+          PermissionLevel.READ
+        ))
+      ) {
+        return { courseActivities: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        select: {
+          id: true,
+          name: true,
+          practiceQuizzes: {
+            where: {
+              isDeleted: false,
+              status: PublicationStatus.PUBLISHED,
+            },
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          },
+          microLearnings: {
+            where: {
+              isDeleted: false,
+              status: {
+                in: [PublicationStatus.PUBLISHED, PublicationStatus.ENDED],
+              },
+            },
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+            orderBy: { scheduledStartAt: 'desc' },
+          },
+        },
+      })
+
+      return {
+        courseActivities: toCourseActivities(course),
       }
     }),
 

@@ -280,6 +280,112 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-18 Completed: S04N1 Manage Analytics Course Activities Read
+
+Status: complete for the scoped slice. Scope was the
+`GetCourseActivitiesDocument` read used by manage analytics quiz
+selection/navigation/performance surfaces. This is part of S04N only; S05
+realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04N1 Manage Analytics Course Activities Read
+GraphQL operation(s): GetCourseActivities
+GraphQL resolver(s): Query.getCourseActivities with READ course permission
+Behavior source: packages/graphql/src/services/courses.ts getCourseActivities
+tRPC router.procedure: course.activities
+Input schema: { courseId: string }
+Output DTO: { courseActivities: { id: string; name: string; practiceQuizzes: { id: string; name: string; status: PublicationStatus }[]; microLearnings: { id: string; name: string; status: PublicationStatus }[] } | null }
+Active frontend consumers: apps/frontend-manage/src/pages/analytics/[courseId]/quizzes/index.tsx; apps/frontend-manage/src/components/analytics/quiz/QuizAnalyticsNavigation.tsx; apps/frontend-manage/src/components/analytics/performance/StudentActivityPerformance.tsx
+Apollo cache/refetch/subscription behavior: read-only Apollo query, no cache writes, no subscriptions
+React Query replacement: trpc.course.activities.useQuery({ courseId }, { enabled: !!courseId })
+Browser verification path: branch-local manage app; delegated login; open analytics quiz selection and a quiz performance page; verify /api/trpc/course.activities resource timing and screenshots if local stack is available
+Cleanup blocked until: remaining S04N analytics/evaluation/reporting reads, S04O secondary runtime consumers, S04P generated type leaks, S04Q API no-GraphQL runtime gate, S05 realtime, and S06 cleanup gates
+```
+
+Intended write scope:
+
+- `packages/api/src/trpc/schemas/course.ts`
+- `packages/api/src/trpc/dto/course.ts`
+- `packages/api/src/trpc/routers/course.ts`
+- `packages/api/src/trpc/__tests__/control-read.test.ts`
+- `apps/frontend-manage/src/pages/analytics/[courseId]/quizzes/index.tsx`
+- `apps/frontend-manage/src/components/analytics/quiz/QuizAnalyticsNavigation.tsx`
+- `apps/frontend-manage/src/components/analytics/performance/StudentActivityPerformance.tsx`
+- This plan file
+
+Implementation:
+
+- Added `course.activities` with READ course permission checking, the same
+  GraphQL filters/order as `CourseService.getCourseActivities`, and a narrow
+  DTO containing course `id`, course `name`, and `id`/`name`/`status` for
+  published practice quizzes plus published/ended microlearnings.
+- Migrated the quiz dashboard activity selection page, quiz analytics activity
+  navigation dropdown, and Student Performance activity selector from Apollo
+  `GetCourseActivitiesDocument` to `trpc.course.activities.useQuery`.
+- Added focused API tests for the allowed and unauthorized cases, including the
+  exact Prisma selection/filter/order contract.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/control-read.test.ts`: passed; package script ran all API tests, 302 tests across 30 files.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing Next/module-type, next-intl, Browserslist, `MISSING_MESSAGE`, and large-page-data warnings.
+- Focused audit `rg -n "GetCourseActivitiesDocument|GetCourseActivities" apps/frontend-manage/src apps/frontend-pwa/src apps/frontend-control/src packages/shared-components packages/markdown packages/i18n packages/api/src`: no matches.
+- Compact S04 coexistence audit `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`: `320`, confirming GraphQL/Apollo remain intentionally live for later S04/S05/S06 gates.
+- `git diff --check`: passed.
+
+Browser/runtime verification:
+
+- Branch-local backend/auth/manage ran on `3133/3136/3134`. Backend needed a
+  syntactically valid local Hatchet JWT and `APP_MANAGE_SUBDOMAIN=127.0.0.1`;
+  auth/manage were restarted with backend local env exported plus branch-local
+  URL overrides after auth first failed without `DATABASE_URL`.
+- Delegated login as `lecturer` rendered the analytics landing page with seeded
+  courses including `Testkurs`.
+- Quiz dashboard opened at
+  `http://127.0.0.1:3134/analytics/7c12e44e-d083-4acf-845e-4c34aaff6b49/quizzes`
+  and rendered `Practice Quiz Demo`, `Test Microlearning`, `Test Microlearning
+  Past`, and `Test Microlearning Past No FT`.
+- Quiz detail opened at
+  `http://127.0.0.1:3134/analytics/7c12e44e-d083-4acf-845e-4c34aaff6b49/quizzes/4214338b-c5af-4ff7-84f9-ae5a139d6e5b`
+  and rendered the activity dropdown from the migrated navigation consumer.
+- Performance dashboard Student Performance tab opened at
+  `http://127.0.0.1:3134/analytics/7c12e44e-d083-4acf-845e-4c34aaff6b49/performance`
+  and rendered the Student Activity Performance selector with the same practice
+  quiz and microlearning activities.
+- Browser resource timing included batched
+  `/api/trpc/...course.activities` requests for the quiz dashboard/detail and a
+  direct `/api/trpc/course.activities` request on the Student Performance tab.
+  `/api/graphql` also appeared for surrounding analytics data that remains in
+  S04N scope.
+- Screenshots:
+  `/tmp/agent-browser-shots/s04n1-01-open-analytics.png`,
+  `/tmp/agent-browser-shots/s04n1-02-after-login.png`,
+  `/tmp/agent-browser-shots/s04n1-03-reopen-after-env-fix.png`,
+  `/tmp/agent-browser-shots/s04n1-04-after-login-env-fix.png`,
+  `/tmp/agent-browser-shots/s04n1-05-analytics-list.png`,
+  `/tmp/agent-browser-shots/s04n1-06-quiz-dashboard.png`,
+  `/tmp/agent-browser-shots/s04n1-07-quiz-detail.png`,
+  `/tmp/agent-browser-shots/s04n1-08-performance-dashboard.png`,
+  `/tmp/agent-browser-shots/s04n1-09-student-performance-tab.png`.
+- Cleanup closed `agent-browser`, stopped only the temporary branch-local
+  backend/auth/manage processes, and confirmed ports `3133`, `3134`, and
+  `3136` had no listeners afterward.
+
+Residual risk / next S04 work:
+
+- S04N is still open for remaining analytics/evaluation/reporting Apollo reads,
+  including `GetActivityAnalyticsDocument` and performance dashboard GraphQL
+  payloads outside this `GetCourseActivities` slice.
+- S04O secondary runtime consumers, S04P generated GraphQL type leaks, and S04Q
+  API no-GraphQL runtime dependency gate remain open.
+- Stop remains before S05; do not begin realtime migration without explicit user
+  direction.
+
 ### 2026-06-05 Completed: S04M20-S04M21 Manage Template Deletion and Conversion
 
 Status: complete for the final S04 manage-template slice. Scope was the
@@ -403,8 +509,13 @@ Residual risk:
 
 S04 status:
 
-- S04 non-realtime vertical migration work is complete. Pause here; do not start
-  S05 realtime or S06 GraphQL/Apollo cleanup without explicit user direction.
+- S04M manage template deletion/conversion work is complete.
+- S04 overall is not complete yet. Review on 2026-06-05 found open S04N,
+  S04O, S04P, and S04Q work: analytics/evaluation/reporting, secondary runtime
+  GraphQL consumers, generated GraphQL type leaks, and the API no-GraphQL
+  runtime dependency gate.
+- Continue with S04N first. Pause before S05 realtime or S06 GraphQL/Apollo
+  cleanup.
 
 ### 2026-06-05 Completed: S04M19 Manage Live Quiz Create From Template Mutation
 
@@ -6801,8 +6912,9 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Pause after completed S04 non-realtime vertical migrations.
-2. Do not start S05 realtime migration or S06 GraphQL/Apollo cleanup until the
-   user explicitly resumes that scope.
-3. When resumed, begin with S05 realtime migration; request explicit S06 cleanup
-   approval only after active consumers and audits are clean.
+1. Continue S04 review findings only.
+2. Complete S04N analytics/evaluation/reporting, S04O secondary runtime
+   consumers, S04P generated type leak cleanup, and S04Q API no-GraphQL runtime
+   gate.
+3. Pause before S05 realtime migration. Do not start S05 or S06 without explicit
+   user direction.

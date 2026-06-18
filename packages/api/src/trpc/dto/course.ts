@@ -81,6 +81,11 @@ type CourseSummarySource = {
   }
 }
 
+type CourseActivitiesSource = Pick<DB.Course, 'id' | 'name'> & {
+  practiceQuizzes?: Pick<DB.PracticeQuiz, 'id' | 'name' | 'status'>[] | null
+  microLearnings?: Pick<DB.MicroLearning, 'id' | 'name' | 'status'>[] | null
+}
+
 export function toControlCourseListItem(course: ControlCourseListItem) {
   return {
     id: course.id,
@@ -222,5 +227,26 @@ export function toCourseSummary(course: CourseSummarySource | null) {
     numOfGroupActivities: course._count.groupActivities,
     numOfLeaderboardEntries: course._count.leaderboard,
     numOfParticipantGroups: course._count.participantGroups,
+  }
+}
+
+export function toCourseActivities(course: CourseActivitiesSource | null) {
+  if (!course) return null
+
+  return {
+    id: course.id,
+    name: course.name,
+    practiceQuizzes:
+      course.practiceQuizzes?.map((quiz) => ({
+        id: quiz.id,
+        name: quiz.name,
+        status: quiz.status,
+      })) ?? [],
+    microLearnings:
+      course.microLearnings?.map((microLearning) => ({
+        id: microLearning.id,
+        name: microLearning.name,
+        status: microLearning.status,
+      })) ?? [],
   }
 }

@@ -646,6 +646,131 @@ describe('control read routers', () => {
     )
   })
 
+  test('returns course activities when read permission exists', async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      permissionLevel: PermissionLevel.READ,
+    })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      name: 'Course 1',
+      practiceQuizzes: [
+        {
+          id: 'practice-1',
+          name: 'Practice Quiz',
+          status: PublicationStatus.PUBLISHED,
+        },
+      ],
+      microLearnings: [
+        {
+          id: 'micro-1',
+          name: 'Microlearning',
+          status: PublicationStatus.ENDED,
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst,
+      },
+      course: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.activities({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      courseActivities: {
+        id: 'course-1',
+        name: 'Course 1',
+        practiceQuizzes: [
+          {
+            id: 'practice-1',
+            name: 'Practice Quiz',
+            status: PublicationStatus.PUBLISHED,
+          },
+        ],
+        microLearnings: [
+          {
+            id: 'micro-1',
+            name: 'Microlearning',
+            status: PublicationStatus.ENDED,
+          },
+        ],
+      },
+    })
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        courseId: 'course-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: {
+        id: true,
+        name: true,
+        practiceQuizzes: {
+          where: {
+            isDeleted: false,
+            status: PublicationStatus.PUBLISHED,
+          },
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        microLearnings: {
+          where: {
+            isDeleted: false,
+            status: {
+              in: [PublicationStatus.PUBLISHED, PublicationStatus.ENDED],
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+          orderBy: { scheduledStartAt: 'desc' },
+        },
+      },
+    })
+  })
+
+  test('returns null course activities without read permission', async () => {
+    const findUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      course: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.activities({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      courseActivities: null,
+    })
+    expect(findUnique).not.toHaveBeenCalled()
+  })
+
   test('returns a course deletion summary when read permission exists', async () => {
     const findFirst = vi.fn().mockResolvedValue({
       permissionLevel: PermissionLevel.READ,

@@ -1,9 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
-import {
-  GetCourseActivitiesDocument,
-  ParticipantActivityPerformances,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ParticipantActivityPerformances } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
@@ -16,6 +12,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import useActivityMap from './useActivityMap'
 import useStudentActivityPerformanceTableData from './useStudentActivityPerformanceTableData'
 
@@ -29,11 +26,11 @@ function StudentActivityPerformance({
   const t = useTranslations()
   const [selectedActivities, setSelectedActivities] = useState<string[]>([])
 
-  const { loading, data } = useQuery(GetCourseActivitiesDocument, {
-    variables: { courseId },
-    skip: !courseId,
-  })
-  const course = data?.getCourseActivities
+  const { data, isLoading } = trpc.course.activities.useQuery(
+    { courseId },
+    { enabled: !!courseId }
+  )
+  const course = data?.courseActivities
 
   const handleActivityToggle = (activityId: string) => {
     setSelectedActivities((prev) => {
@@ -50,12 +47,12 @@ function StudentActivityPerformance({
   })
 
   const tableData = useStudentActivityPerformanceTableData({
-    dataAvailable: !loading && !!course,
+    dataAvailable: !isLoading && !!course,
     performances,
     selectedActivities,
   })
 
-  if (loading || !tableData) {
+  if (isLoading || !tableData) {
     return <Loader />
   }
 
