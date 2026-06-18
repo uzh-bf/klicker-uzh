@@ -105,3 +105,7 @@ mode.
 
 The generic target case format lives in `generic_tutor_case.schema.json`, with a
 MathTutorBench-derived example in `generic_tutor_case.example.json`.
+
+The first runnable generic harness is
+`scripts/eval/run_generic_tutorbench.ts`; its sample cross-domain cases live in
+`project/evals/tutor-generic/`.
