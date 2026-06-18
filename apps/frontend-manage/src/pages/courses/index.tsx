@@ -1,9 +1,4 @@
-import { useMutation } from '@apollo/client'
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateCourseDocument,
-  GetUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
@@ -27,7 +22,7 @@ function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [createCourse] = useMutation(CreateCourseDocument)
+  const createCourse = trpc.course.create.useMutation()
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
@@ -158,63 +153,40 @@ function CourseSelectionPage() {
               ) => {
                 try {
                   // convert dates to UTC
-                  const startDateUTC = dayjs(values.startDate)
-                    .utc()
-                    .toISOString()
-                  const endDateUTC = dayjs(values.endDate).utc().toISOString()
+                  const startDateUTC = dayjs(values.startDate).utc().toDate()
+                  const endDateUTC = dayjs(values.endDate).utc().toDate()
                   const groupDeadlineDateUTC = dayjs(
                     values.groupCreationDeadline
                   )
                     .utc()
-                    .toISOString()
+                    .toDate()
 
-                  const result = await createCourse({
-                    variables: {
-                      name: values.name,
-                      displayName: values.displayName,
-                      description:
-                        !values.description?.match(/^(<br>(\n)*)$/g) &&
-                        values.description !== ''
-                          ? values.description
-                          : null,
-                      language: values.language,
-                      color: values.color,
-                      startDate: startDateUTC,
-                      endDate: endDateUTC,
-                      notificationEmail: values.notificationEmail,
-                      isGamificationEnabled: values.isGamificationEnabled,
-                      isGroupCreationEnabled: values.isGroupCreationEnabled,
-                      groupDeadlineDate: groupDeadlineDateUTC,
-                      maxGroupSize: parseInt(String(values.maxGroupSize)),
-                      preferredGroupSize: parseInt(
-                        String(values.preferredGroupSize)
-                      ),
-                    },
-                    update: (cache, { data }) => {
-                      // verify that the course creation was successful
-                      if (!data?.createCourse) return
-
-                      // add the new course to the course list
-                      cache.updateQuery(
-                        { query: GetUserCoursesDocument },
-                        (qData) => {
-                          if (!qData?.userCourses) return qData
-
-                          return {
-                            userCourses: [
-                              ...qData.userCourses,
-                              data.createCourse!,
-                            ],
-                          }
-                        }
-                      )
-                    },
+                  const result = await createCourse.mutateAsync({
+                    name: values.name,
+                    displayName: values.displayName,
+                    description:
+                      !values.description?.match(/^(<br>(\n)*)$/g) &&
+                      values.description !== ''
+                        ? values.description
+                        : null,
+                    language: values.language,
+                    color: values.color,
+                    startDate: startDateUTC,
+                    endDate: endDateUTC,
+                    notificationEmail: values.notificationEmail,
+                    isGamificationEnabled: values.isGamificationEnabled,
+                    isGroupCreationEnabled: values.isGroupCreationEnabled,
+                    groupDeadlineDate: groupDeadlineDateUTC,
+                    maxGroupSize: parseInt(String(values.maxGroupSize)),
+                    preferredGroupSize: parseInt(
+                      String(values.preferredGroupSize)
+                    ),
                   })
 
-                  if (result.data?.createCourse) {
+                  if (result.course) {
                     await utils.course.userCourses.invalidate()
                     showCreateCourseModal(false)
-                    router.push(`/courses/${result.data.createCourse.id}`)
+                    router.push(`/courses/${result.course.id}`)
                   } else {
                     onError()
                     setSubmitting(false)

@@ -4,6 +4,7 @@ import {
   type Prisma,
 } from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
   toActiveUserCourse,
@@ -17,7 +18,7 @@ import {
 } from '../dto/course.js'
 import { publicProcedure, router } from '../init.js'
 import { hasActivityPermission, hasCoursePermission } from '../permissions.js'
-import { userProcedure } from '../procedures.js'
+import { userFullAccessProcedure, userProcedure } from '../procedures.js'
 import {
   activeUserCoursesInput,
   basicCourseInformationInput,
@@ -25,6 +26,8 @@ import {
   courseActivitiesInput,
   courseActivityIdsInput,
   courseSummaryInput,
+  createCourseInput,
+  toggleArchiveCourseInput,
 } from '../schemas/course.js'
 
 const courseExecutePermissionLevels = [
@@ -192,6 +195,93 @@ export const courseRouter = router({
           }) ?? [],
     }
   }),
+
+  create: userFullAccessProcedure
+    .input(createCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
+
+      const course = await prisma.$transaction(
+        async (tx) => {
+          const newCourse = await tx.course.create({
+            data: {
+              name: input.name.trim(),
+              displayName: input.displayName.trim(),
+              description: input.description,
+              language: input.language,
+              color: input.color ?? '#CCD5ED',
+              startDate: input.startDate,
+              endDate: input.endDate,
+              isGroupCreationEnabled: input.isGroupCreationEnabled,
+              groupDeadlineDate: input.groupDeadlineDate,
+              maxGroupSize: input.maxGroupSize,
+              preferredGroupSize: input.preferredGroupSize,
+              notificationEmail: input.notificationEmail,
+              isGamificationEnabled: input.isGamificationEnabled,
+              isAssessmentEnabled: false,
+              pinCode: randomPin,
+              owner: {
+                connect: {
+                  id: ctx.user.sub,
+                },
+              },
+            },
+          })
+
+          await recomputeDerivedPermissions(
+            {
+              courseId: newCourse.id,
+              userId: ctx.user.sub,
+            },
+            tx
+          )
+
+          return newCourse
+        },
+        { timeout: 60000 }
+      )
+
+      return {
+        course: toManageCourseListItem({
+          course: {
+            ...course,
+            _count: {
+              permissions: 1,
+            },
+          },
+          derived: false,
+          directPermission: null,
+          permissionLevel: PermissionLevel.OWNER,
+        }),
+      }
+    }),
+
+  toggleArchive: userProcedure
+    .input(toggleArchiveCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.id,
+          PermissionLevel.ADMIN
+        ))
+      ) {
+        return { course: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.update({
+        where: { id: input.id, endDate: { lte: new Date() } },
+        data: { isArchived: input.isArchived },
+        select: {
+          id: true,
+          isArchived: true,
+        },
+      })
+
+      return { course }
+    }),
 
   activeUserCourses: userProcedure
     .input(activeUserCoursesInput)

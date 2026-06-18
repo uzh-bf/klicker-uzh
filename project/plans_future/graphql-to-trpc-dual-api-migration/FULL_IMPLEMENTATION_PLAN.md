@@ -280,6 +280,93 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04J Course List Create and Archive
+
+Status: complete for the scoped slice. Scope was limited to the manage
+`/courses` course-list create/archive workflow and the create-course modal's
+profile defaults. S05 realtime and S06 cleanup were not started.
+
+Operation mapping:
+
+```text
+Slice: S04J Course List Create and Archive
+
+GraphQL operations:
+- CreateCourse
+- ToggleArchiveCourse
+- GetUserCourses Apollo cache updates after create/archive
+- UserProfile cache-only defaults in CourseManipulationModal
+
+tRPC procedures:
+- course.create
+- course.toggleArchive
+- existing course.userCourses invalidation
+- existing user.profile create-modal defaults
+
+GraphQL behavior source:
+- packages/graphql/src/services/courses.ts createCourse
+- packages/graphql/src/services/courses.ts toggleArchiveCourse
+- packages/graphql/src/schema/mutation.ts withPermission null-on-deny archive
+```
+
+Completed write scope:
+
+- Added `createCourseInput` and `toggleArchiveCourseInput` schemas.
+- Added `course.create` for non-assessment course creation, including PIN
+  generation, default color handling, owner permission creation, and derived
+  permission recomputation.
+- Added `course.toggleArchive` with ADMIN permission checks and null-on-deny
+  behavior matching the GraphQL resolver contract.
+- Migrated `/courses` create-course submission and archive modal actions from
+  Apollo/generated GraphQL operations to tRPC mutations and React Query
+  invalidation.
+- Migrated create-modal profile defaults from `UserProfileDocument` to
+  `user.profile`.
+- Kept `CourseOverviewHeader` update settings GraphQL-backed for a later slice;
+  this slice only added the local locale compatibility cast needed by the
+  shared modal type change.
+- Added focused API router tests for create, archive permission denial, and
+  archive success.
+
+Verification:
+
+- `pnpm exec prettier --write ...`: passed for all touched API/manage files.
+- `pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/course-mutations.test.ts`: passed. The API test script ran the full API suite: 35 files, 339 tests.
+- `pnpm --filter @klicker-uzh/api check`: passed.
+- `pnpm --filter @klicker-uzh/api build`: passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed after fixing the
+  shared modal locale and nullable boolean compatibility issues.
+- Focused audit `rg -n "@apollo/client|CreateCourseDocument|GetUserCoursesDocument|ToggleArchiveCourseDocument|UserProfileDocument|@klicker-uzh/graphql/dist/ops" ...`: no matches in the migrated course-list/create/archive files/API slice.
+- `pnpm --filter @klicker-uzh/frontend-manage build`: passed with existing
+  warnings only (`MODULE_TYPELESS_PACKAGE_JSON`, next-intl `i18n`, PWA logs,
+  stale Browserslist, `/qr/[...args]` missing messages, and large page-data
+  warnings).
+
+Browser verification:
+
+- Ran local compose backing services plus branch backend/manage/auth on
+  `3103`/`3104`/`3106`. Backend required a local dummy Hatchet JWT with the
+  container Hatchet addresses; auth required `DATABASE_URL` and `APP_SECRET=abcd`
+  so backend JWT verification accepted delegated-login cookies.
+- Logged in with seeded delegated lecturer credentials in a clean
+  `agent-browser` session and opened `http://localhost:3104/courses`.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04-course-create-archive-clean-01-auth.png`
+  - `/tmp/agent-browser-shots/s04-course-create-archive-clean-02-logged-in.png`
+  - `/tmp/agent-browser-shots/s04-course-create-archive-clean-03-courses.png`
+  - `/tmp/agent-browser-shots/s04-course-create-archive-clean-04-create-modal.png`
+- Browser evidence: `/courses` rendered the seeded course list, the create
+  modal rendered with the `lecturer@df.uzh.ch` profile email default, and the
+  resource trace included `course.userCourses` and `user.profile` tRPC calls.
+  One `/api/graphql` resource remained from the surrounding coexistence shell,
+  which is expected before S06 cleanup.
+- Browser mutation smoke was intentionally skipped to avoid leaving extra local
+  course/archive state; create/archive mutation behavior is covered by focused
+  API router tests.
+
+Next: continue remaining S04-only pre-realtime manage findings. Pause before
+S05/S06.
+
 ### 2026-06-19 Completed: S04J Delegated Access Settings
 
 Status: complete for the scoped slice. Scope was limited to manage delegated

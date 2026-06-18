@@ -1,5 +1,3 @@
-import { useMutation } from '@apollo/client'
-import { ToggleArchiveCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
@@ -15,9 +13,7 @@ function CourseArchiveModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [toggleArchiveCourse, { loading }] = useMutation(
-    ToggleArchiveCourseDocument
-  )
+  const toggleArchiveCourse = trpc.course.toggleArchive.useMutation()
 
   if (!courseId) {
     return null
@@ -33,30 +29,11 @@ function CourseArchiveModal({
           : t('manage.courseList.archiveCourse')
       }
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={loading}
+      primaryLoading={toggleArchiveCourse.isLoading}
       onPrimaryAction={async () => {
-        await toggleArchiveCourse({
-          variables: { id: courseId, isArchived: !isArchived },
-          optimisticResponse: {
-            __typename: 'Mutation',
-            toggleArchiveCourse: {
-              __typename: 'Course',
-              id: courseId,
-              isArchived: !isArchived,
-            },
-          },
-          update: (cache, { data }) => {
-            // check if the query was successful
-            if (!data?.toggleArchiveCourse) return
-
-            // update the entry in the course list accordingly
-            cache.modify({
-              id: cache.identify(data.toggleArchiveCourse),
-              fields: {
-                isArchived: () => data.toggleArchiveCourse!.isArchived,
-              },
-            })
-          },
+        await toggleArchiveCourse.mutateAsync({
+          id: courseId,
+          isArchived: !isArchived,
         })
         await utils.course.userCourses.invalidate()
         onClose()

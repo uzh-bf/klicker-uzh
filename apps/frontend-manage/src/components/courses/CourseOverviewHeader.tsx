@@ -11,6 +11,7 @@ import {
 import {
   Course,
   GetSingleCourseDocument,
+  LocaleType as GraphQLLocaleType,
   ObjectType,
   UpdateCourseSettingsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -239,7 +240,7 @@ function CourseOverviewHeader({
                     values.description !== ''
                       ? values.description
                       : null,
-                  language: values.language,
+                  language: values.language as GraphQLLocaleType,
                   color: values.color,
                   startDate: startDateUTC,
                   endDate: endDateUTC,

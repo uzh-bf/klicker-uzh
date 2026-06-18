@@ -1,0 +1,195 @@
+import {
+  Locale,
+  PermissionLevel,
+  UserLoginScope,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
+import { describe, expect, test, vi } from 'vitest'
+import type { TRPCContext } from '../context.js'
+
+const recomputeDerivedPermissions = vi.hoisted(() => vi.fn())
+
+vi.mock('@klicker-uzh/util', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@klicker-uzh/util')>()
+  return {
+    ...actual,
+    recomputeDerivedPermissions,
+  }
+})
+
+const { appRouter } = await import('../root.js')
+
+const user = {
+  sub: 'user-1',
+  role: UserRole.USER,
+  scope: UserLoginScope.FULL_ACCESS,
+  catalystInstitutional: false,
+  catalystIndividual: false,
+}
+
+function createContext(prisma: TRPCContext['prisma']): TRPCContext {
+  return { prisma, user }
+}
+
+describe('course mutation routers', () => {
+  test('creates a course and recomputes owner permissions', async () => {
+    const startDate = new Date('2026-09-01T00:00:00.000Z')
+    const endDate = new Date('2027-02-01T00:00:00.000Z')
+    const groupDeadlineDate = new Date('2026-10-01T00:00:00.000Z')
+    const createdAt = new Date('2026-06-01T00:00:00.000Z')
+    const updatedAt = new Date('2026-06-02T00:00:00.000Z')
+    const courseCreate = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      name: 'Course',
+      displayName: 'Course Display',
+      description: 'Description',
+      color: '#0028A5',
+      startDate,
+      endDate,
+      isArchived: false,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
+      isGroupCreationEnabled: true,
+      createdAt,
+      updatedAt,
+    })
+    const tx = {
+      course: {
+        create: courseCreate,
+      },
+    }
+    const transaction = vi.fn(
+      async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx)
+    )
+    const prisma = {
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.create({
+        name: ' Course ',
+        displayName: ' Course Display ',
+        description: 'Description',
+        color: '#0028A5',
+        startDate,
+        endDate,
+        isGroupCreationEnabled: true,
+        groupDeadlineDate,
+        maxGroupSize: 5,
+        preferredGroupSize: 3,
+        language: Locale.en,
+        notificationEmail: 'lecturer@example.com',
+        isGamificationEnabled: true,
+      })
+    ).resolves.toMatchObject({
+      course: {
+        id: 'course-1',
+        name: 'Course',
+        displayName: 'Course Display',
+        permissionLevel: PermissionLevel.OWNER,
+        isOwner: true,
+        isManager: true,
+        isEditor: true,
+        isShared: false,
+        isRemovable: false,
+      },
+    })
+    expect(courseCreate).toHaveBeenCalledWith({
+      data: {
+        name: 'Course',
+        displayName: 'Course Display',
+        description: 'Description',
+        language: Locale.en,
+        color: '#0028A5',
+        startDate,
+        endDate,
+        isGroupCreationEnabled: true,
+        groupDeadlineDate,
+        maxGroupSize: 5,
+        preferredGroupSize: 3,
+        notificationEmail: 'lecturer@example.com',
+        isGamificationEnabled: true,
+        isAssessmentEnabled: false,
+        pinCode: expect.any(Number),
+        owner: {
+          connect: {
+            id: user.sub,
+          },
+        },
+      },
+    })
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      {
+        courseId: 'course-1',
+        userId: user.sub,
+      },
+      tx
+    )
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: 60000,
+    })
+  })
+
+  test('returns null when archive permission is missing', async () => {
+    const update = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      course: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.toggleArchive({ id: 'course-1', isArchived: true })
+    ).resolves.toEqual({ course: null })
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  test('archives courses for admins', async () => {
+    const update = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      isArchived: true,
+    })
+    const findFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const prisma = {
+      derivedPermission: {
+        findFirst,
+      },
+      course: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.toggleArchive({ id: 'course-1', isArchived: true })
+    ).resolves.toEqual({
+      course: {
+        id: 'course-1',
+        isArchived: true,
+      },
+    })
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        courseId: 'course-1',
+        userId: user.sub,
+        permissionLevel: {
+          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+        },
+      },
+    })
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'course-1', endDate: { lte: expect.any(Date) } },
+      data: { isArchived: true },
+      select: {
+        id: true,
+        isArchived: true,
+      },
+    })
+  })
+})
