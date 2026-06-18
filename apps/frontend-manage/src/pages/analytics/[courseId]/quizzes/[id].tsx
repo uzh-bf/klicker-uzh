@@ -1,9 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faChartSimple } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  GetActivityAnalyticsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -15,6 +11,7 @@ import InstanceQuizAnalytics from '../../../../components/analytics/quiz/Instanc
 import QuizAnalyticsNavigation from '../../../../components/analytics/quiz/QuizAnalyticsNavigation'
 import PreviewTag from '../../../../components/common/PreviewTag'
 import Layout from '../../../../components/Layout'
+import { trpc } from '../../../../lib/trpc'
 
 function QuizAnalytics() {
   const router = useRouter()
@@ -22,15 +19,15 @@ function QuizAnalytics() {
   const activityId = router.query.id as string
   const courseId = router.query.courseId as string
 
-  const { data, loading, error } = useQuery(GetActivityAnalyticsDocument, {
-    variables: { activityId },
-    skip: !activityId,
-  })
+  const { data, isLoading, error } = trpc.analytics.activity.useQuery(
+    { activityId },
+    { enabled: !!activityId }
+  )
 
   const navigation = (
     <QuizAnalyticsNavigation courseId={courseId} activityId={activityId} />
   )
-  const analytics = data?.getActivityAnalytics
+  const analytics = data?.activityAnalytics
 
   const chartColors = {
     correct: '#064e3b',
@@ -39,7 +36,7 @@ function QuizAnalytics() {
   }
 
   // loading state
-  if (loading || !activityId) {
+  if (isLoading || !activityId) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.quizDashboard')}
@@ -73,7 +70,7 @@ function QuizAnalytics() {
             className={{ root: 'h-8' }}
             onClick={() =>
               window.open(
-                analytics.activityType === ActivityType.PracticeQuiz
+                analytics.activityType === ActivityType.PRACTICE_QUIZ
                   ? `${router.locale ? `/${router.locale}` : ''}/practiceQuiz/${activityId}/evaluation`
                   : `${router.locale ? `/${router.locale}` : ''}/microLearning/${activityId}/evaluation`,
                 '_blank'

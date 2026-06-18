@@ -1,6 +1,7 @@
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server'
 import { createCallerFactory, router } from './init.js'
 import { activityRouter } from './routers/activity.js'
+import { analyticsRouter } from './routers/analytics.js'
 import { courseRouter } from './routers/course.js'
 import { elementRouter } from './routers/element.js'
 import { liveQuizRouter } from './routers/liveQuiz.js'
@@ -12,6 +13,7 @@ import { userRouter } from './routers/user.js'
 
 export const appRouter = router({
   activity: activityRouter,
+  analytics: analyticsRouter,
   course: courseRouter,
   element: elementRouter,
   liveQuiz: liveQuizRouter,
