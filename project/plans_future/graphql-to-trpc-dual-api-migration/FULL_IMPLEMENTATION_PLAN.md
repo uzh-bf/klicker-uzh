@@ -83,8 +83,10 @@ Committed markers:
 
 Current next action:
 
-- S04 branch-state findings are complete. Pause before S05 realtime migration.
-  Do not start S05 or S06 without explicit approval.
+- S04Q GraphQL/tRPC package test parity is complete locally. Push the CI update,
+  wait for GitHub Actions to verify the GraphQL package workflow and the new API
+  package workflow, then pause before S05 realtime migration. Do not start S05
+  or S06 without explicit approval.
 
 Still intentionally live:
 
@@ -276,6 +278,81 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
+
+Status: complete locally. User requested one more pre-S05 gate: keep the
+existing GraphQL package test workflow running against `packages/graphql`, and
+add a separate tRPC API package test check that exercises the migrated
+`packages/api` router tests. Do not start S05 or S06 as part of this follow-up.
+
+Slice: S04Q GraphQL/tRPC Package Test Parity
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing GraphQL package Vitest suite plus existing
+`packages/api/src/trpc/__tests__` router tests.
+
+tRPC router.procedure: existing migrated S04 procedures covered by
+`@klicker-uzh/api` Vitest tests.
+
+Input schema: existing API Zod schemas.
+
+Output DTO: existing API DTOs.
+
+Active frontend consumers: none changed.
+
+Apollo cache/refetch/subscription behavior: unchanged.
+
+React Query replacement: unchanged.
+
+Browser verification path: not UI-facing; CI/package-test follow-up only.
+
+Cleanup blocked until: S05 realtime and S06 final GraphQL/Apollo cleanup.
+
+Files changed:
+
+- `.github/workflows/test-graphql.yml`
+- `.github/workflows/test-api.yml`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+What changed:
+
+- Fixed `.github/workflows/test-graphql.yml` so GraphQL codegen/test setup builds
+  `@klicker-uzh/api` before `@klicker-uzh/graphql`, while still running Vitest
+  from `packages/graphql`.
+- Added `.github/workflows/test-api.yml` so package-level tRPC API tests run as
+  a separate GitHub Actions check on API/dependency changes.
+- Added `packages/api/**` as a trigger for the GraphQL package workflow because
+  `@klicker-uzh/graphql` now imports `@klicker-uzh/api` during codegen/build.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  failed before package execution because pnpm `11.5.0` requires Node
+  `>=22.13` and imports `node:sqlite`; the plan's old Node 20 command is stale
+  after the latest `v3` merge.
+- `pnpm --filter @klicker-uzh/api build`: passed with expected local Node
+  `v26.3.0` engine warnings.
+- `pnpm --filter @klicker-uzh/api test`: passed (`40` files, `425` tests) with
+  expected local Node `v26.3.0` engine warnings.
+- `pnpm --filter @klicker-uzh/graphql build`: passed with expected GraphQL
+  Rollup/TypeScript warnings, and codegen no longer fails on missing
+  `@klicker-uzh/api/dist/index.js`.
+- `pnpm exec prettier --check .github/workflows/test-api.yml .github/workflows/test-graphql.yml project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `git diff --check`: passed.
+
+Residual:
+
+- Full local GraphQL integration tests were not run because the workflow resets
+  the database before `packages/graphql` Vitest. The pushed GitHub Actions
+  workflow should verify this in CI with its isolated PostgreSQL/Hatchet/Redis
+  services.
+- Pause before S05 until the GraphQL workflow and new tRPC API workflow have
+  reported CI status.
 
 ### 2026-06-19 Completed: S04P Element Management Generated Type Cleanup and S04Q Final Gate
 
@@ -10702,9 +10779,8 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Continue S04 review findings only.
-2. Complete S04N analytics/evaluation/reporting, S04O secondary runtime
-   consumers, S04P generated type leak cleanup, and S04Q API no-GraphQL runtime
-   gate.
-3. Pause before S05 realtime migration. Do not start S05 or S06 without explicit
-   user direction.
+1. Push the S04Q GraphQL/tRPC package test parity CI update.
+2. Wait for GitHub Actions to verify that `test-graphql.yml` still runs
+   `packages/graphql` and the new `test-api.yml` runs `packages/api`.
+3. Pause before S05 realtime migration until this parity gate is green. Do not
+   start S05 or S06 without explicit user direction.
