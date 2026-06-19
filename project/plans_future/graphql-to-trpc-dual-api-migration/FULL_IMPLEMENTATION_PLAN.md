@@ -170,9 +170,14 @@ Current next action:
   complete locally. It removes the generated GraphQL `LiveQuizSummary` import
   from the already migrated cancellation confirmation path and replaces it with
   a narrow local structural counter type.
-- S05G-O next: continue with the next smallest active manage/PWA
-  Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
-  gates are clean and explicitly reviewed.
+- S05G-O PWA live-quiz generated type cleanup is complete locally. It removes
+  the remaining direct generated GraphQL imports from the PWA live-quiz session
+  page and live-quiz question/storage components by typing the already migrated
+  `participant.runningLiveQuiz` payload from `RouterOutputs` and keeping the
+  old shared GraphQL shape isolated at shared-component boundaries.
+- S05G-P next: continue with the next smallest active shared-components
+  generated type cleanup while keeping GraphQL/Apollo live. Do not start S06
+  cleanup until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -1404,6 +1409,76 @@ Verification:
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining generated GraphQL type
 imports in PWA/shared components are still blockers for S06.
+
+### 2026-06-19 Completed: S05G-O PWA Live-Quiz Generated Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove direct generated
+GraphQL type/enum imports from the already migrated PWA live-quiz session path
+without removing Apollo, `/api/graphql`, GraphQL package tests, or shared
+component GraphQL types.
+
+Slice: S05G-O PWA Live-Quiz Generated Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing tRPC `participant.runningLiveQuiz` output plus the
+existing response-api submission contract.
+
+tRPC router.procedure: existing `participant.runningLiveQuiz`.
+
+Active frontend consumers:
+
+- `apps/frontend-pwa/src/pages/session/[id].tsx`
+- `apps/frontend-pwa/src/components/liveQuiz/LiveQuizQuestionColumn.tsx`
+- `apps/frontend-pwa/src/components/liveQuiz/QuestionArea.tsx`
+- `apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`
+
+Intended behavior:
+
+- Keep the PWA live-quiz session runtime behavior unchanged.
+- Type the live-quiz session/question path from `RouterOutputs` instead of the
+  generated GraphQL `GetRunningLiveQuizQuery` / `ElementType` /
+  `ElementBlockStatus` imports.
+- Keep compatibility with shared-components, which still expect generated
+  GraphQL `ElementInstance` and student response discriminants.
+- Avoid pulling Prisma client runtime enums into the browser bundle.
+
+What changed:
+
+- Added `apps/frontend-pwa/src/components/liveQuiz/types.ts` with narrow local
+  live-quiz enum constants and `RouterOutputs`-based live-quiz payload types.
+- Replaced direct generated GraphQL imports in the PWA live-quiz session page,
+  question column, question area, and storage helper.
+- Removed the session page's `QUESTION_GROUPS` dependency for response routing
+  because that shared helper still imports generated GraphQL enum values.
+- Kept the old shared GraphQL shape isolated at the `useSingleStudentResponse`
+  and `StudentElement` boundaries with explicit typed casts.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm exec prettier --check apps/frontend-pwa/src/components/liveQuiz/types.ts apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts apps/frontend-pwa/src/components/liveQuiz/QuestionArea.tsx apps/frontend-pwa/src/components/liveQuiz/LiveQuizQuestionColumn.tsx 'apps/frontend-pwa/src/pages/session/[id].tsx'`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops|QUESTION_GROUPS" apps/frontend-pwa/src/components/liveQuiz 'apps/frontend-pwa/src/pages/session/[id].tsx'`
+  returned no matches.
+- `pnpm --filter @klicker-uzh/graphql exec vitest run test/responses.test.ts test/randomGroups.test.ts`
+  passed from `packages/graphql`: 2 files, 6 tests.
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/participant-live-quiz-session.test.ts src/trpc/__tests__/live-quiz-cancel.test.ts src/trpc/__tests__/live-quiz-cockpit.test.ts src/trpc/__tests__/live-quiz-feedback-management.test.ts`
+  passed from `packages/api`: 4 files, 21 tests.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/engine/page-data warning noise.
+- `git diff --check` passed.
+- A fresh remaining import audit showed no direct generated GraphQL imports in
+  the PWA live-quiz/session path. Remaining direct imports are in
+  shared-components plus the intentionally retained PWA/manage Apollo
+  provider/client files.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. Shared-components generated GraphQL
+type imports and intentionally retained Apollo provider/client files are still
+blockers for S06.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -11909,7 +11984,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-O with the next smallest active manage/PWA
-   Apollo/generated-operation consumer while keeping GraphQL live.
+2. Continue S05G-P with the next smallest active shared-components generated
+   type cleanup while keeping GraphQL/Apollo live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

@@ -6,13 +6,7 @@ import {
   faRankingStar,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementBlockStatus,
-  ElementType,
-  type GetRunningLiveQuizQuery,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import {
   Button,
@@ -34,15 +28,16 @@ import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
 import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
+import {
+  ElementBlockStatus,
+  ElementType,
+  type StudentLiveQuizData,
+} from '../../components/liveQuiz/types'
 
 const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
   { ssr: false }
 )
-
-type StudentLiveQuizData = NonNullable<
-  GetRunningLiveQuizQuery['studentLiveQuiz']
->
 
 async function handleNewResponse({
   liveQuizId,
@@ -63,7 +58,11 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
     credentials: 'include',
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type)) {
+  if (
+    type === ElementType.Sc ||
+    type === ElementType.Mc ||
+    type === ElementType.Kprim
+  ) {
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
@@ -73,10 +72,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         response: { choices: answer },
       }),
     }
-  } else if (
-    QUESTION_GROUPS.NUMERICAL.includes(type) ||
-    QUESTION_GROUPS.FREE_TEXT.includes(type)
-  ) {
+  } else if (type === ElementType.Numerical || type === ElementType.FreeText) {
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
