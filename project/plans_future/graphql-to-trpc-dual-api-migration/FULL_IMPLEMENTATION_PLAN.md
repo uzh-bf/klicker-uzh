@@ -614,6 +614,67 @@ S05G-AF next: run a final generated-operation import audit to identify any
 remaining active consumers before the S06 cleanup gate. Stop before S06 unless
 the gate is explicitly approved.
 
+### 2026-06-19 Completed: S05G-AF Final Generated Import and Parity Audit
+
+Status: completed. Scope was audit-only: confirm migrated frontend/shared paths
+no longer import generated GraphQL operations, confirm retained Apollo/GraphQL
+surfaces are only the intentional coexistence boundary, and refresh the
+GraphQL-package plus tRPC-package parity tests requested for S04Q-R.
+
+Slice: S05G-AF final generated import and parity audit
+
+Operation mapping:
+
+- GraphQL generated imports:
+  `@klicker-uzh/graphql/dist/ops` in active app/shared consumers
+- Replacement:
+  none in this slice; this is the audit gate after S05G cleanup
+- Active consumers:
+  PWA/manage/control frontend paths, shared-components, markdown, and i18n
+- React Query replacement:
+  none
+- Browser verification path:
+  no new UI behavior; use static audits, package tests, and pre-S06 gate review
+- Cleanup blocked until:
+  all audit findings are classified and S06 cleanup is explicitly approved
+
+Verification:
+
+- Corrected generated-operation import audit over active frontend/shared paths
+  returned no `@klicker-uzh/graphql/dist/ops` matches.
+- Broad generated-operation import file-list audit
+  `rg -l @klicker-uzh/graphql/dist/ops apps packages cypress` returned no
+  matches.
+- Apollo import audit over active frontend/shared paths found only retained
+  PWA/manage Apollo provider/client files:
+  `apps/frontend-pwa/src/pages/_app.tsx`,
+  `apps/frontend-pwa/src/lib/apollo.ts`,
+  `apps/frontend-pwa/src/lib/SSELink.ts`,
+  `apps/frontend-manage/src/pages/_app.tsx`,
+  `apps/frontend-manage/src/lib/apollo.ts`, and
+  `apps/frontend-manage/src/lib/SSELink.ts`.
+- Active frontend/shared `@klicker-uzh/graphql` namespace audit found only
+  persisted-hash imports in `apps/frontend-pwa/src/lib/apollo.ts` and
+  `apps/frontend-manage/src/lib/apollo.ts`.
+- `/api/graphql` file-list audit found the expected backend GraphQL mount in
+  `apps/backend-docker/src/app.ts` plus tRPC client URL derivation fallbacks in
+  frontend PWA/manage/control `lib/trpc.tsx` files.
+- `pnpm --filter @klicker-uzh/graphql exec vitest run test/responses.test.ts test/randomGroups.test.ts`
+  passed from `packages/graphql`: 2 files, 6 tests.
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/graphql-package-parity.test.ts`
+  passed from `packages/api`: 1 file, 6 tests.
+- `git diff --check` passed.
+
+Conclusion:
+
+- No active app/shared generated operation imports remain.
+- GraphQL package behavior tests still run against `packages/graphql`.
+- The new tRPC parity test still covers the same stack-feedback and
+  random-group behavior inside `packages/api`.
+- Apollo providers/client links, persisted GraphQL hashes, `/api/graphql`, and
+  backend GraphQL runtime remain live by design. Stop before S06 cleanup unless
+  explicit user approval is given.
+
 ### 2026-06-19 Completed: S05A PWA Microlearning tRPC Realtime
 
 Status: completed. User requested continuing the goal after the S04Q test-parity
