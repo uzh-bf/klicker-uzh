@@ -1,13 +1,10 @@
-import { useSubscription } from '@apollo/client'
-import {
-  MicroLearningEndedDocument,
-  type MicroLearningEndedSubscription,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { MicroLearningEndedEvent } from '@klicker-uzh/api'
+import { api } from '@lib/trpc'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 
-type EndedMicroLearning = MicroLearningEndedSubscription['microLearningEnded']
+type EndedMicroLearning = MicroLearningEndedEvent
 
 interface MicroLearningSubscriberProps {
   activityId: string
@@ -28,28 +25,26 @@ function MicroLearningSubscriber({
     onEndedRef.current = onEnded
   }, [onEnded])
 
-  const { data } = useSubscription(MicroLearningEndedDocument, {
-    variables: { activityId },
-  })
+  api.realtime.microLearningEnded.useSubscription(
+    { activityId },
+    {
+      onData(microLearning) {
+        if (handledActivityIdRef.current === microLearning.id) return
 
-  useEffect(() => {
-    const microLearning = data?.microLearningEnded
-    if (!microLearning || handledActivityIdRef.current === microLearning.id) {
-      return
+        handledActivityIdRef.current = microLearning.id
+
+        toast({
+          type: 'warning',
+          message: t('pwa.courses.microLearningEndedToast', {
+            activityName: microLearningName,
+          }),
+          options: { duration: 10000 },
+        })
+
+        void onEndedRef.current?.(microLearning)
+      },
     }
-
-    handledActivityIdRef.current = microLearning.id
-
-    toast({
-      type: 'warning',
-      message: t('pwa.courses.microLearningEndedToast', {
-        activityName: microLearningName,
-      }),
-      options: { duration: 10000 },
-    })
-
-    void onEndedRef.current?.(microLearning)
-  }, [data?.microLearningEnded, microLearningName, t])
+  )
 
   return null
 }

@@ -8,7 +8,10 @@ import {
 import {
   TRPCClientError,
   createTRPCProxyClient,
+  createWSClient,
   httpBatchLink,
+  splitLink,
+  wsLink,
 } from '@trpc/client'
 import { createTRPCReact } from '@trpc/react-query'
 import type { GetServerSidePropsContext } from 'next'
@@ -43,6 +46,16 @@ export function getTRPCUrl() {
   }
 
   return `${apiUrl.replace(/\/$/, '')}/api/trpc`
+}
+
+export function getTRPCWsUrl() {
+  const trpcUrl = getTRPCUrl()
+  const url =
+    typeof window === 'undefined'
+      ? trpcUrl
+      : new URL(trpcUrl, window.location.origin).toString()
+
+  return url.replace(/^http:\/\//, 'ws://').replace(/^https:\/\//, 'wss://')
 }
 
 function getHeaders(
@@ -94,19 +107,31 @@ export function createTRPCQueryClient() {
 }
 
 export function createTRPCClient(ctx?: GetServerSidePropsContext) {
+  const httpLink = httpBatchLink({
+    url: getTRPCUrl(),
+    headers: () => getHeaders(ctx),
+    fetch(url, options) {
+      return globalThis.fetch(url, {
+        ...options,
+        credentials: 'include',
+      })
+    },
+  })
+
   return trpc.createClient({
     transformer: superjson,
     links: [
-      httpBatchLink({
-        url: getTRPCUrl(),
-        headers: () => getHeaders(ctx),
-        fetch(url, options) {
-          return globalThis.fetch(url, {
-            ...options,
-            credentials: 'include',
-          })
-        },
-      }),
+      typeof window === 'undefined'
+        ? httpLink
+        : splitLink({
+            condition: (op) => op.type === 'subscription',
+            true: wsLink({
+              client: createWSClient({
+                url: getTRPCWsUrl,
+              }),
+            }),
+            false: httpLink,
+          }),
     ],
   })
 }

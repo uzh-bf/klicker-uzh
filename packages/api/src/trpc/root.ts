@@ -6,6 +6,7 @@ import { courseRouter } from './routers/course.js'
 import { elementRouter } from './routers/element.js'
 import { liveQuizRouter } from './routers/liveQuiz.js'
 import { participantRouter } from './routers/participant.js'
+import { realtimeRouter } from './routers/realtime.js'
 import { resourcesRouter } from './routers/resources.js'
 import { sharingRouter } from './routers/sharing.js'
 import { systemRouter } from './routers/system.js'
@@ -18,6 +19,7 @@ export const appRouter = router({
   element: elementRouter,
   liveQuiz: liveQuizRouter,
   participant: participantRouter,
+  realtime: realtimeRouter,
   resources: resourcesRouter,
   sharing: sharingRouter,
   system: systemRouter,

@@ -1,3 +1,10 @@
+export {
+  publishMicroLearningEnded,
+  realtimeEvents,
+  toMicroLearningEndedEvent,
+  type MicroLearningEndedEvent,
+  type MicroLearningEndedSource,
+} from './realtime/events.js'
 export { hatchetHandlers } from './services/hatchetHandlers.js'
 export {
   activateLiveQuizBlock,

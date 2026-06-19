@@ -25,6 +25,7 @@ import {
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator'
+import { publishMicroLearningEnded } from '../realtime/events.js'
 
 dayjs.extend(utc)
 dayjs.extend(isoWeek)
@@ -1187,7 +1188,7 @@ export const hatchetHandlers: HatchetHandlers = {
         text: `Successfully ended expired microlearning ${updatedMicroLearning.id}`,
       })
 
-      globalCtx.pubSub.publish('microLearningEnded', updatedMicroLearning)
+      publishMicroLearningEnded(globalCtx.pubSub, updatedMicroLearning)
       globalCtx.emitter.emit('invalidate', {
         typename: 'MicroLearning',
         id: updatedMicroLearning.id,

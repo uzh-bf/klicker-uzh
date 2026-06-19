@@ -83,10 +83,12 @@ Committed markers:
 
 Current next action:
 
-- S04Q GraphQL/tRPC package test parity is complete locally. Push the CI update,
-  wait for GitHub Actions to verify the GraphQL package workflow and the new API
-  package workflow, then pause before S05 realtime migration. Do not start S05
-  or S06 without explicit approval.
+- S04Q GraphQL/tRPC package test parity is complete and verified in CI:
+  the GraphQL package workflow still runs against `packages/graphql`, and the
+  new API package workflow runs against `packages/api`.
+- Continue with S05 realtime migration, starting with the narrow PWA
+  microlearning-ended subscription path. Do not start S06 cleanup until all S05
+  realtime slices are complete and explicitly reviewed.
 
 Still intentionally live:
 
@@ -278,6 +280,77 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-19 Completed: S05A PWA Microlearning tRPC Realtime
+
+Status: completed. User requested continuing the goal after the S04Q test-parity
+gate, iterating until the GraphQL package test and new tRPC API package test
+both work, then continuing with remaining slices. The first S05 realtime slice
+targeted only the PWA microlearning-ended subscription.
+
+Slice: S05A PWA Microlearning tRPC Realtime
+
+Operation mapping:
+
+- GraphQL subscription:
+  `MicroLearningEndedDocument` / `microLearningEnded(activityId: String!)`
+- tRPC subscription:
+  `api.realtime.microLearningEnded.useSubscription({ activityId })`
+- Event key:
+  `microLearningEnded`
+
+Write scope:
+
+- `packages/api/src/realtime/events.ts`
+- `packages/api/src/trpc/routers/realtime.ts`
+- `packages/api/src/trpc/root.ts`
+- `packages/api/src/trpc/__tests__/realtime.test.ts`
+- `apps/backend-docker/src/index.ts`
+- `apps/frontend-pwa/src/lib/trpc.tsx`
+- `apps/frontend-pwa/src/components/microLearning/MicroLearningSubscriber.tsx`
+- `apps/frontend-pwa/src/components/microLearning/MicroLearningListSubscriber.tsx`
+- Existing microlearning-ended publishers in `packages/api` and
+  `packages/graphql`
+
+Implemented behavior:
+
+- Keep GraphQL subscriptions active on `/api/graphql`.
+- Add tRPC WebSocket subscriptions on `/api/trpc`.
+- Keep publishing the existing `microLearningEnded` pubSub event and original
+  payload for GraphQL clients.
+- Let the new tRPC subscription filter the same event by `activityId` and emit
+  the DTO fields currently consumed by PWA microlearning subscribers.
+
+Runtime finding:
+
+- Multiple `WebSocketServer({ server, path })` listeners on the same HTTP server
+  are not coexistence-safe with `ws`: the first listener rejects unmatched
+  upgrade paths with HTTP 400. The backend now uses `noServer: true` WebSocket
+  servers plus one explicit `server.on('upgrade')` router for `/api/graphql`
+  and `/api/trpc`.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api test -- realtime`
+- `pnpm --filter @klicker-uzh/api check`
+- `pnpm --filter @klicker-uzh/api build`
+- `pnpm --filter @klicker-uzh/backend-docker check`
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- `pnpm exec prettier --check` on touched files
+- coexistence audit for migrated microlearning subscribers
+- raw WebSocket probe confirmed `/api/trpc` accepts upgrades
+- raw tRPC WebSocket query probe returned `system.health`
+- raw tRPC WebSocket subscription probe received the Redis-backed
+  `microLearningEnded` event
+- raw GraphQL WebSocket subscription probe on `/api/graphql` still received the
+  same `microLearningEnded` event
+- browser verification in the local PWA showed the microlearning page switching
+  to the expired state after the tRPC event, with screenshots:
+  `/tmp/agent-browser-shots/trpc-s05a-before-fixed.png` and
+  `/tmp/agent-browser-shots/trpc-s05a-after-fixed.png`
+
+Cleanup blocked until: remaining S05 realtime subscription consumers and S06
+final GraphQL/Apollo cleanup.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -10779,8 +10852,7 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Push the S04Q GraphQL/tRPC package test parity CI update.
-2. Wait for GitHub Actions to verify that `test-graphql.yml` still runs
-   `packages/graphql` and the new `test-api.yml` runs `packages/api`.
-3. Pause before S05 realtime migration until this parity gate is green. Do not
-   start S05 or S06 without explicit user direction.
+1. Run final focused checks for S05A after the WebSocket routing fix.
+2. Commit, push, update the PR, and monitor CI.
+3. Continue with remaining S05 realtime consumers only after S05A is green. Do
+   not start S06 cleanup without explicit approval.

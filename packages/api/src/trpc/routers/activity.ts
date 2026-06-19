@@ -45,6 +45,7 @@ import { TRPCError } from '@trpc/server'
 import type { Redis } from 'ioredis'
 import { randomInt, randomUUID } from 'node:crypto'
 import type { z } from 'zod'
+import { publishMicroLearningEnded } from '../../realtime/events.js'
 import {
   startLiveQuiz,
   type LiveQuizExecutionContext,
@@ -4079,8 +4080,7 @@ async function endMicroLearningActivity({
     })
   }
 
-  const pubSub = ctx.pubSub as PubSubPublisher | undefined
-  pubSub?.publish('microLearningEnded', updatedMicroLearning)
+  publishMicroLearningEnded(ctx.pubSub, updatedMicroLearning)
 
   return {
     id: updatedMicroLearning.id,

@@ -1,3 +1,4 @@
+import { publishMicroLearningEnded } from '@klicker-uzh/api'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
@@ -661,7 +662,7 @@ export async function endMicroLearning(
     }
   }
 
-  ctx.pubSub.publish('microLearningEnded', updatedMicroLearning)
+  publishMicroLearningEnded(ctx.pubSub, updatedMicroLearning)
   return updatedMicroLearning
 }
 
@@ -940,7 +941,7 @@ export const handleEndExpiredMicroLearning: HatchetHandlers['handleEndExpiredMic
       })
 
       // publish the event to subscribers
-      globalCtx.pubSub.publish('microLearningEnded', updatedMicroLearning)
+      publishMicroLearningEnded(globalCtx.pubSub, updatedMicroLearning)
       globalCtx.emitter.emit('invalidate', {
         typename: 'MicroLearning',
         id: updatedMicroLearning.id,
