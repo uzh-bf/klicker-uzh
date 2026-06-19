@@ -100,6 +100,10 @@ Current next action:
   Apollo GraphQL websocket links and direct app `graphql-ws` dependencies now
   that app GraphQL subscription consumers are gone; Apollo HTTP GraphQL stays
   live for remaining queries and mutations.
+- S05G-A PWA live-quiz AccountSelector self-query cleanup is complete locally.
+  Scope was limited to replacing the modal's Apollo `SelfDocument` query with
+  the existing `trpc.participant.self` query; the broader live-quiz session,
+  feedback, and leaderboard GraphQL consumers remain live for follow-up slices.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -632,6 +636,31 @@ Verification:
 - `pnpm run check:syncpack` passed.
 - `pnpm exec prettier --check` passed for touched files.
 - `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-A PWA AccountSelector Self Query Cleanup
+
+Status: complete locally. Scope was deliberately narrow because PWA app-level
+Apollo removal is still gated by the larger live-quiz session data, feedback,
+and leaderboard consumers.
+
+Slice:
+
+- Replace `apps/frontend-pwa/src/components/liveQuiz/AccountSelector.tsx`
+  Apollo `SelfDocument` usage with the existing `trpc.participant.self` query.
+- Keep the temporary-login mutation on tRPC and invalidate/refetch the same tRPC
+  self query after pseudonym login.
+- Do not touch the larger `GetRunningLiveQuiz`, feedback, or leaderboard Apollo
+  consumers in this slice.
+
+Verification:
+
+- `pnpm exec prettier --check` passed for the touched file and plan.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/i18n/page-data warning noise.
+- `git diff --check` passed.
+- Narrow audit confirmed `AccountSelector` no longer imports Apollo or generated
+  GraphQL operations.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

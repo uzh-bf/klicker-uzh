@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import { faKeyboard } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -8,7 +7,6 @@ import {
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SelfDocument, UserRole } from '@klicker-uzh/graphql/dist/ops'
 import { trpc } from '@lib/trpc'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import {
@@ -73,14 +71,16 @@ function AccountSelector({
   const utils = trpc.useUtils()
 
   // check if the user is already logged in as a participant or temporary participant of this quiz
-  const { data, loading, refetch } = useQuery(SelfDocument, {
-    variables: { liveQuizId: quizId },
-    fetchPolicy: 'network-only',
-    skip: loginState === 'anonymous', // if the user has already opted to participate anonymously, skip the query
-  })
+  const { data, isLoading, refetch } = trpc.participant.self.useQuery(
+    { liveQuizId: quizId },
+    {
+      enabled: loginState !== 'anonymous', // if the user has already opted to participate anonymously, skip the query
+      refetchOnMount: 'always',
+    }
+  )
   useEffect(() => {
     // wait while the query is still loading
-    if (loading || loginState === 'anonymous') {
+    if (isLoading || loginState === 'anonymous') {
       return
     }
 
@@ -96,16 +96,16 @@ function AccountSelector({
 
     // if the user is logged in as a participant, set the login state to 'loggedIn'
     // depending on whether the user has a participation on the course, a notification / warning will be shown
-    if (data.self.role === UserRole.Participant) {
+    if (data.self.role === 'PARTICIPANT') {
       setLoginState('loggedIn')
     }
 
     // if the user is logged in as a temporary participant, set the login state to 'temporary'
-    if (data.self.role === UserRole.TemporaryParticipant) {
+    if (data.self.role === 'TEMPORARY_PARTICIPANT') {
       setLoginState('temporary')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, loading])
+  }, [data, isLoading])
 
   return (
     <Modal
@@ -209,8 +209,8 @@ function AccountSelector({
               })
 
               await Promise.all([
-                refetch(), // refetch the self query to update page-local Apollo data
-                utils.participant.self.invalidate(),
+                refetch(), // refetch the self query to update page-local data
+                utils.participant.self.invalidate({ liveQuizId: quizId }),
               ])
             } else {
               toast({
