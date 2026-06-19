@@ -10,7 +10,6 @@ import type {
   ChoicesResponse,
   GroupActivityDecision,
   GroupActivityResults,
-  SelectionElementData,
 } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -134,10 +133,10 @@ function GroupActivityStack({
             (element) => element.id === decision.instanceId
           )
           const response = getEmptySelectionResponse({
-            numberOfInputs: instance
-              ? (instance.elementData as SelectionElementData).options
-                  .numberOfInputs
-              : 1,
+            numberOfInputs:
+              instance?.elementData.__typename === 'SelectionElementData'
+                ? instance.elementData.options.numberOfInputs
+                : 1,
           })
           decision.selectionResponse
             ? decision.selectionResponse.forEach((answerId, ix) => {

@@ -561,6 +561,59 @@ S05G-AE next: remove generated `ElementType`, `ElementInstance`, and
 while keeping GraphQL/Apollo live. Do not start S06 cleanup until all S05 gates
 are clean and explicitly reviewed.
 
+### 2026-06-19 Completed: S05G-AE Student Element/Response Generated Type Cleanup
+
+Status: completed. Scope was limited to the remaining shared student element
+and student-response hooks while keeping GraphQL/Apollo live.
+
+Slice: S05G-AE student element/response generated type cleanup
+
+Operation mapping:
+
+- GraphQL generated imports:
+  `ElementType`, `ElementInstance`, `ElementStack`, and `InstanceEvaluation`
+  from `@klicker-uzh/graphql/dist/ops`
+- Replacement:
+  local structural element instance / stack / student evaluation types plus
+  local `ElementType` constants from `packages/shared-components`
+- Active consumers:
+  `StudentElement`, `useSingleStudentResponse`, `useStudentResponse`
+- React Query replacement:
+  none; this is a shared-component generated type cleanup, not an API call
+  migration
+- Browser verification path:
+  no new UI behavior; use package checks and generated import audits for this
+  shared boundary cleanup
+- Cleanup blocked until:
+  no active generated GraphQL imports remain in shared/app consumers and S06 is
+  explicitly approved
+
+Write scope:
+
+- Extended `packages/shared-components/src/elementTypes.ts` with local
+  structural `ElementInstance`, `ElementStack`, and student evaluation types.
+- Switched `StudentElement`, `useSingleStudentResponse`, and
+  `useStudentResponse` away from generated `@klicker-uzh/graphql/dist/ops`
+  element/evaluation imports.
+- Updated `GroupActivityStack` to use the local element-data discriminator
+  instead of casting through generated-compatible selection element data.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed
+- focused Prettier check on touched files passed
+- generated type import audit for the touched student response files passed
+  with no matches
+- broader generated type import audit for shared/PWA/manage/markdown paths
+  passed with no matches
+- `git diff --check` passed
+
+S05G-AF next: run a final generated-operation import audit to identify any
+remaining active consumers before the S06 cleanup gate. Stop before S06 unless
+the gate is explicitly approved.
+
 ### 2026-06-19 Completed: S05A PWA Microlearning tRPC Realtime
 
 Status: completed. User requested continuing the goal after the S04Q test-parity

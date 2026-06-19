@@ -1,8 +1,3 @@
-import type {
-  ElementInstance,
-  InstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
 import React from 'react'
 import CaseStudyQuestion from './CaseStudyQuestion'
@@ -12,12 +7,17 @@ import Flashcard from './Flashcard'
 import FreeTextQuestion from './FreeTextQuestion'
 import NumericalQuestion from './NumericalQuestion'
 import SelectionQuestion from './SelectionQuestion'
-import type { FlashcardCorrectness } from './elementTypes'
+import {
+  ElementType,
+  type ElementInstance,
+  type FlashcardCorrectness,
+  type StudentInstanceEvaluation,
+} from './elementTypes'
 
 export type ElementChoicesType =
-  | ElementType.Sc
-  | ElementType.Mc
-  | ElementType.Kprim
+  | typeof ElementType.Sc
+  | typeof ElementType.Mc
+  | typeof ElementType.Kprim
 
 export type ChoicesStudentResponseType = {
   [optionIx: number]: boolean | undefined
@@ -37,46 +37,46 @@ export type CaseStudyStudentResponseType = {
 
 export type InstanceStackStudentResponseType =
   | {
-      type: ElementType.Flashcard
+      type: typeof ElementType.Flashcard
       response?: FlashcardCorrectness
       valid?: boolean
-      evaluation?: InstanceEvaluation
+      evaluation?: StudentInstanceEvaluation
     }
   | {
-      type: ElementType.Content
+      type: typeof ElementType.Content
       response?: boolean
       valid?: boolean
-      evaluation?: InstanceEvaluation
+      evaluation?: StudentInstanceEvaluation
     }
   | {
-      type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
+      type: ElementChoicesType
       response?: ChoicesStudentResponseType
       valid?: boolean
-      evaluation?: InstanceEvaluation
+      evaluation?: StudentInstanceEvaluation
     }
   | {
-      type: ElementType.Numerical
+      type: typeof ElementType.Numerical
       response?: string
       valid?: boolean
-      evaluation?: InstanceEvaluation
+      evaluation?: StudentInstanceEvaluation
     }
   | {
-      type: ElementType.FreeText
+      type: typeof ElementType.FreeText
       response?: string
       valid?: boolean
-      evaluation?: InstanceEvaluation
+      evaluation?: StudentInstanceEvaluation
     }
   | {
-      type: ElementType.Selection
+      type: typeof ElementType.Selection
       response?: SelectionStudentResponseType
       valid?: boolean
-      evaluation?: InstanceEvaluation
+      evaluation?: StudentInstanceEvaluation
     }
   | {
-      type: ElementType.CaseStudy
+      type: typeof ElementType.CaseStudy
       response?: CaseStudyStudentResponseType
       valid?: boolean
-      evaluation?: InstanceEvaluation
+      evaluation?: StudentInstanceEvaluation
     }
 
 export type StackStudentResponseType = Record<

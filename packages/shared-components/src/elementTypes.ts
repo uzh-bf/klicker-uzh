@@ -55,6 +55,7 @@ export type ChoiceElementOptions = {
 }
 
 export type ChoicesInstanceEvaluation = InstanceEvaluation & {
+  __typename?: 'ChoicesInstanceEvaluation'
   choices?:
     | {
         count: number
@@ -63,10 +64,18 @@ export type ChoicesInstanceEvaluation = InstanceEvaluation & {
     | null
   explanation?: string | null
   feedbacks?: QuestionFeedback[] | null
+  instanceId?: number | null
+  lastResponse?: {
+    choices: {
+      ix: number
+      selected: boolean
+    }[]
+  } | null
   numAnswers?: number | null
 }
 
 export type FreeTextElementOptions = {
+  hasSampleSolution?: boolean | null
   restrictions?: {
     maxLength?: number | null
   } | null
@@ -74,6 +83,7 @@ export type FreeTextElementOptions = {
 }
 
 export type FreeTextInstanceEvaluation = InstanceEvaluation & {
+  __typename?: 'FreeTextInstanceEvaluation'
   answers?:
     | {
         count: number
@@ -81,12 +91,17 @@ export type FreeTextInstanceEvaluation = InstanceEvaluation & {
       }[]
     | null
   explanation?: string | null
+  instanceId?: number | null
+  lastResponse?: {
+    value: string
+  } | null
   solutions?: string[] | null
 }
 
 export type NumericalElementOptions = {
   accuracy?: number | null
   exactSolutions?: number[] | null
+  hasSampleSolution?: boolean | null
   placeholder?: string | null
   restrictions?: {
     max?: number | null
@@ -102,8 +117,13 @@ export type NumericalSolutionRange = {
 }
 
 export type NumericalInstanceEvaluation = InstanceEvaluation & {
+  __typename?: 'NumericalInstanceEvaluation'
   exactSolutions?: number[] | null
   explanation?: string | null
+  instanceId?: number | null
+  lastResponse?: {
+    value: string
+  } | null
   responses?:
     | {
         count: number
@@ -234,8 +254,13 @@ export type SelectionElementOptions = {
 }
 
 export type SelectionInstanceEvaluation = InstanceEvaluation & {
+  __typename?: 'SelectionInstanceEvaluation'
   answerSolutionIds?: number[] | null
   explanation?: string | null
+  instanceId?: number | null
+  lastResponse?: {
+    selection: number[]
+  } | null
   numAnswers?: number | null
   selectionResponses?:
     | {
@@ -287,6 +312,7 @@ export type CaseStudyElementOptions = {
 }
 
 export type CaseStudyInstanceEvaluation = InstanceEvaluation & {
+  __typename?: 'CaseStudyInstanceEvaluation'
   assessments?:
     | {
         caseId: string
@@ -296,6 +322,20 @@ export type CaseStudyInstanceEvaluation = InstanceEvaluation & {
       }[]
     | null
   explanation?: string | null
+  instanceId?: number | null
+  lastResponse?: {
+    assessment: {
+      caseId: string
+      itemResponses: {
+        criterionResponses: {
+          criterionId: string
+          correct?: boolean | null
+          response: number
+        }[]
+        itemId: number
+      }[]
+    }[]
+  } | null
   studySolutions?:
     | {
         caseId: string
@@ -311,4 +351,98 @@ export type CaseStudyInstanceEvaluation = InstanceEvaluation & {
           | null
       }[]
     | null
+}
+
+export type ContentInstanceEvaluation = InstanceEvaluation & {
+  __typename?: 'ContentInstanceEvaluation'
+  instanceId?: number | null
+  lastResponse?: {
+    viewed: boolean
+  } | null
+}
+
+export type FlashcardInstanceEvaluation = InstanceEvaluation & {
+  __typename?: 'FlashcardInstanceEvaluation'
+  instanceId?: number | null
+  lastResponse?: {
+    correctness: FlashcardCorrectness
+  } | null
+}
+
+export type StudentInstanceEvaluation =
+  | CaseStudyInstanceEvaluation
+  | ChoicesInstanceEvaluation
+  | ContentInstanceEvaluation
+  | FlashcardInstanceEvaluation
+  | FreeTextInstanceEvaluation
+  | NumericalInstanceEvaluation
+  | SelectionInstanceEvaluation
+
+type ElementDataBase = {
+  basePoints: boolean
+  content: string
+  id: string
+  name: string
+  explanation?: string | null
+  type: ElementType
+}
+
+type ChoicesElementData = ElementDataBase & {
+  __typename: 'ChoicesElementData'
+  options: ChoiceElementOptions
+  type: typeof ElementType.Kprim | typeof ElementType.Mc | typeof ElementType.Sc
+}
+
+type NumericalElementData = ElementDataBase & {
+  __typename: 'NumericalElementData'
+  options: NumericalElementOptions
+  type: typeof ElementType.Numerical
+}
+
+type FreeTextElementData = ElementDataBase & {
+  __typename: 'FreeTextElementData'
+  options: FreeTextElementOptions
+  type: typeof ElementType.FreeText
+}
+
+type SelectionElementData = ElementDataBase & {
+  __typename: 'SelectionElementData'
+  options: SelectionElementOptions
+  type: typeof ElementType.Selection
+}
+
+type CaseStudyElementData = ElementDataBase & {
+  __typename: 'CaseStudyElementData'
+  options: CaseStudyElementOptions
+  type: typeof ElementType.CaseStudy
+}
+
+type FlashcardElementData = ElementDataBase & {
+  __typename: 'FlashcardElementData'
+  type: typeof ElementType.Flashcard
+}
+
+type ContentElementData = ElementDataBase & {
+  __typename: 'ContentElementData'
+  type: typeof ElementType.Content
+}
+
+export type ElementInstance = {
+  elementData:
+    | CaseStudyElementData
+    | ChoicesElementData
+    | ContentElementData
+    | FlashcardElementData
+    | FreeTextElementData
+    | NumericalElementData
+    | SelectionElementData
+  elementType: ElementType
+  id: number
+}
+
+export type ElementStack = {
+  description?: string | null
+  displayName?: string | null
+  elements?: ElementInstance[] | null
+  id: number
 }

@@ -1,6 +1,5 @@
-import { ElementType, type ElementStack } from '@klicker-uzh/graphql/dist/ops'
-import type { SelectionElementData } from '@klicker-uzh/types'
 import React, { useEffect } from 'react'
+import { ElementType, type ElementStack } from '../elementTypes'
 import type {
   CaseStudyStudentResponseType,
   ElementChoicesType,
@@ -48,8 +47,7 @@ function useStudentResponse({
           return acc
         } else if (element.elementData.__typename === 'SelectionElementData') {
           const emptyResponses = getEmptySelectionResponse({
-            numberOfInputs: (element.elementData as SelectionElementData)
-              .options.numberOfInputs,
+            numberOfInputs: element.elementData.options.numberOfInputs,
           })
 
           acc[element.id] = {
