@@ -6,7 +6,11 @@ import { useEffect, useState } from 'react'
 
 dayjs.extend(durationPlugin)
 
-const calculateRuntime = ({ startedAt }: { startedAt?: string }) => {
+const calculateRuntime = ({
+  startedAt,
+}: {
+  startedAt?: string | Date | null
+}) => {
   const start = dayjs(startedAt)
   const duration = dayjs.duration(dayjs().diff(start))
 
@@ -21,7 +25,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }) => {
   return `${hours}:${minutes}:${seconds}`
 }
 
-function RuntimeCounter({ startedAt }: { startedAt?: string }) {
+function RuntimeCounter({ startedAt }: { startedAt?: string | Date | null }) {
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
   const startingTime = runtime.includes('d')
     ? dayjs(startedAt).format('DD.MM HH:mm:ss')

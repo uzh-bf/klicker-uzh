@@ -153,7 +153,14 @@ Current next action:
   It removes the `@klicker-uzh/graphql` `LocaleType` import from
   `LiveQuizTimeline` while preserving the local `de` / `en` locale contract
   shared with the QR modal.
-- S05G-L next: continue with the next smallest active manage/PWA
+- S05G-L manage live-quiz cockpit cleanup is complete locally. It migrates the
+  cockpit page query plus block/end mutations from Apollo/GraphQL to tRPC,
+  extracts a `liveQuiz.cockpit` API service with GraphQL-equivalent timeline
+  participant counts, feedback mapping, and confusion summary behavior, removes
+  the remaining generated GraphQL timeline block types from the migrated cockpit
+  path, keeps the GraphQL package workflow visibly tied to `packages/graphql`,
+  and adds focused `packages/api` tRPC parity coverage for the cockpit behavior.
+- S05G-M next: continue with the next smallest active manage/PWA
   Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
   gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1178,6 +1185,82 @@ Verification:
 - `git diff --check` passed.
 - Focused audit confirmed `LiveQuizQRModal.tsx` no longer imports Apollo,
   `UserProfileDocument`, or `@klicker-uzh/graphql`.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining active
+Apollo/generated-operation consumers in manage/PWA are still blockers for S06.
+
+### 2026-06-19 Completed: S05G-L Manage Live-Quiz Cockpit
+
+Status: complete locally. Scope remained S05 only: migrate the manage
+live-quiz cockpit page's main query and block/end mutations to tRPC while
+keeping GraphQL live for remaining active consumers.
+
+Slice: S05G-L Manage Live-Quiz Cockpit
+
+GraphQL operation(s): `GetCockpitQuizDocument`,
+`ActivateLiveQuizBlockDocument`, `DeactivateLiveQuizBlockDocument`,
+`EndLiveQuizDocument`.
+
+GraphQL resolver(s): `Query.getCockpitQuiz`,
+`Mutation.activateLiveQuizBlock`, `Mutation.deactivateLiveQuizBlock`,
+`Mutation.endLiveQuiz`.
+
+Behavior source: `packages/graphql/src/services/liveQuizzes.ts`
+`getCockpitQuiz` plus the existing live-quiz execution service behavior already
+ported to `packages/api`.
+
+tRPC router.procedure: new `liveQuiz.cockpit`, existing
+`liveQuiz.activateBlock`, `liveQuiz.deactivateBlock`, and `liveQuiz.end`.
+
+Active frontend consumer:
+`apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx`.
+
+Intended behavior:
+
+- Keep READ permission gating on the cockpit query.
+- Return `null` for unauthorized or non-published cockpit reads.
+- Preserve cockpit flags, metadata, course language, active block id, feedback
+  DTOs, and recent-confusion summary.
+- Preserve GraphQL timeline participant-count semantics, including active-block
+  Redis participant counts.
+- Keep element timeline data sanitized to the fields rendered by the cockpit
+  timeline.
+- Keep GraphQL feedback/settings mutations in `AudienceInteraction` for the next
+  slice.
+
+What changed:
+
+- Added `getCockpitLiveQuiz` in `packages/api` for the cockpit DTO.
+- Added `liveQuiz.cockpit` with existing READ permission checks.
+- Migrated the manage cockpit page from Apollo `GetCockpitQuizDocument` and
+  block/end mutation documents to tRPC query/mutation hooks.
+- Removed generated GraphQL timeline block/status type imports from the migrated
+  cockpit path and replaced them with narrow local structural types.
+- Added focused tRPC API tests for permission gating, published-only lookup,
+  participant aggregation, active-block Redis override, sanitized element data,
+  feedback mapping, and confusion aggregation.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/live-quiz-cockpit.test.ts`
+  passed: 3 tests.
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/live-quiz-cockpit.test.ts src/trpc/__tests__/live-quiz-cancel.test.ts`
+  passed: 2 files, 7 tests.
+- `pnpm --filter @klicker-uzh/api test` passed: 46 files, 457 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/graphql check` passed.
+- `pnpm --filter @klicker-uzh/graphql exec vitest run test/responses.test.ts test/randomGroups.test.ts`
+  passed: 2 files, 6 tests, confirming the GraphQL package test path still
+  executes against `packages/graphql`.
+- `pnpm --filter @klicker-uzh/frontend-manage build` passed with existing
+  Next/i18n/page-data warning noise and existing QR `MISSING_MESSAGE` warning
+  noise.
+- `pnpm exec prettier --write <S05G-L touched files>` passed.
+- `pnpm exec prettier --check <S05G-L touched files>` passed.
+- `git diff --check` passed.
 
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining active
@@ -11687,7 +11770,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-L with the next smallest active manage/PWA
+2. Continue S05G-M with the next smallest active manage/PWA
    Apollo/generated-operation consumer while keeping GraphQL live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

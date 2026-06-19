@@ -25,7 +25,7 @@ type FeedbackSource = {
   responses?: FeedbackResponseSource[] | null
 }
 
-function aggregateFeedbacks(
+export function aggregateFeedbacks(
   feedbacks: Pick<ConfusionTimestep, 'createdAt' | 'difficulty' | 'speed'>[]
 ) {
   const recentFeedbacks = feedbacks.filter((feedback) => {
@@ -54,7 +54,7 @@ function aggregateFeedbacks(
   }
 }
 
-function toFeedback(feedback: FeedbackSource) {
+export function toFeedback(feedback: FeedbackSource) {
   return {
     id: feedback.id,
     isPublished: feedback.isPublished,

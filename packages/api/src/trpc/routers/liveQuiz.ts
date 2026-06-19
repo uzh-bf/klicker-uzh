@@ -8,6 +8,7 @@ import {
   startLiveQuiz,
   type LiveQuizExecutionContext,
 } from '../../services/liveQuizExecution.js'
+import { getCockpitLiveQuiz } from '../../services/manageLiveQuizCockpit.js'
 import { getLecturerViewLiveQuiz } from '../../services/manageLiveQuizLecturerView.js'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
@@ -188,6 +189,29 @@ export const liveQuizRouter = router({
         lecturerViewLiveQuiz: await getLecturerViewLiveQuiz({
           id: input.id,
           prisma: getPrisma(ctx),
+        }),
+      }
+    }),
+
+  cockpit: userProcedure
+    .input(liveQuizIdInput)
+    .query(async ({ ctx, input }) => {
+      if (
+        !(await hasLiveQuizPermission(
+          ctx as TRPCContextWithUser,
+          input.id,
+          PermissionLevel.READ
+        ))
+      ) {
+        return { cockpitQuiz: null }
+      }
+
+      return {
+        cockpitQuiz: await getCockpitLiveQuiz({
+          id: input.id,
+          prisma: getPrisma(ctx),
+          redisExec: ctx.redisExec,
+          redisAssessmentExec: ctx.redisAssessmentExec,
         }),
       }
     }),

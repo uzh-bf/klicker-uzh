@@ -1,62 +1,31 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  ActivateLiveQuizBlockDocument,
-  DeactivateLiveQuizBlockDocument,
-  EndLiveQuizDocument,
-  GetCockpitQuizDocument,
-  GetUserRunningLiveQuizzesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
 import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
+import { api } from '../../../lib/trpc'
 
 function Cockpit() {
   const router = useRouter()
+  const quizId = typeof router.query.id === 'string' ? router.query.id : ''
+  const utils = api.useUtils()
 
-  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
-    ActivateLiveQuizBlockDocument
-  )
-  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateLiveQuizBlockDocument
-  )
-
-  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
-    EndLiveQuizDocument,
-    {
-      update(cache, { data }) {
-        // verify that the live quiz has ended successfully
-        if (!data?.endLiveQuiz) return
-
-        // update the list of running live quizzes
-        cache.updateQuery(
-          { query: GetUserRunningLiveQuizzesDocument },
-          (qData) => {
-            if (!qData?.userRunningLiveQuizzes) return qData
-            return {
-              userRunningLiveQuizzes: qData.userRunningLiveQuizzes.filter(
-                (q) => q.id !== data.endLiveQuiz!.id
-              ),
-            }
-          }
-        )
-      },
-    }
-  )
+  const activateLiveQuizBlock = api.liveQuiz.activateBlock.useMutation()
+  const deactivateLiveQuizBlock = api.liveQuiz.deactivateBlock.useMutation()
+  const endLiveQuiz = api.liveQuiz.end.useMutation()
 
   const {
-    loading: cockpitLoading,
     data: cockpitData,
     refetch: refetchCockpitQuiz,
-  } = useQuery(GetCockpitQuizDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    pollInterval: 2000,
-    skip: !router.query.id,
-  })
+    isLoading: cockpitLoading,
+  } = api.liveQuiz.cockpit.useQuery(
+    { id: quizId },
+    {
+      enabled: Boolean(quizId),
+      refetchInterval: 2000,
+    }
+  )
 
   // data has not been received yet
   if (cockpitLoading || !cockpitData?.cockpitQuiz)
@@ -96,29 +65,32 @@ function Cockpit() {
           language={course?.language ?? null}
           isGamificationEnabled={isGamificationEnabled}
           handleEndLiveQuiz={async () => {
-            await endLiveQuiz({ variables: { id: id } })
+            const result = await endLiveQuiz.mutateAsync({ id })
+            if (result.liveQuiz?.id) {
+              await utils.liveQuiz.running.invalidate()
+            }
             router.push('/activities')
           }}
           handleOpenBlock={async (blockId: number) => {
-            await activateLiveQuizBlock({
-              variables: { quizId: id, blockId },
-              // high stakes mutation where cache updates are hard due to cached and db data
-              refetchQueries: [
-                { query: GetCockpitQuizDocument, variables: { id } },
-              ],
+            await activateLiveQuizBlock.mutateAsync({
+              quizId: id,
+              blockId,
             })
+            await utils.liveQuiz.cockpit.invalidate({ id })
           }}
           handleCloseBlock={async (blockId: number) => {
-            await deactivateLiveQuizBlock({
-              variables: { quizId: id, blockId },
-              // high stakes mutation where cache updates are hard due to cached and db data
-              refetchQueries: [
-                { query: GetCockpitQuizDocument, variables: { id } },
-              ],
+            await deactivateLiveQuizBlock.mutateAsync({
+              quizId: id,
+              blockId,
             })
+            await utils.liveQuiz.cockpit.invalidate({ id })
           }}
           startedAt={startedAt}
-          loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
+          loading={
+            activateLiveQuizBlock.isLoading ||
+            deactivateLiveQuizBlock.isLoading ||
+            endLiveQuiz.isLoading
+          }
         />
       </div>
 

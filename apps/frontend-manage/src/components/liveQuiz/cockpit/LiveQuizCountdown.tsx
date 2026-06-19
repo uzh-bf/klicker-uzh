@@ -1,11 +1,10 @@
 import { faSave } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementBlockStatus } from '@klicker-uzh/graphql/dist/ops'
 import { CycleCountdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { QuizTimelineBlock } from './LiveQuizBlock'
+import { ElementBlockStatus, QuizTimelineBlock } from './LiveQuizBlock'
 
 // fixed cooldown duration (including some buffer for UI updates after block closure)
 const COOLDOWN_DURATION = 12

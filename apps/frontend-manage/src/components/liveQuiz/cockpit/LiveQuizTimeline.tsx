@@ -37,7 +37,7 @@ interface LiveQuizTimelineProps {
   handleEndLiveQuiz: () => Promise<void>
   handleOpenBlock: (blockId: number) => Promise<void>
   handleCloseBlock: (blockId: number) => Promise<void>
-  startedAt?: string
+  startedAt?: string | Date | null
   loading?: boolean
 }
 
