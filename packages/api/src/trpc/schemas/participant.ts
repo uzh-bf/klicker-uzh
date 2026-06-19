@@ -38,6 +38,10 @@ export const participantSetLiveQuizPinInput = z.object({
   pin: z.string(),
 })
 
+export const participantRunningLiveQuizInput = z.object({
+  id: z.string(),
+})
+
 export const participantCreateLiveQuizFeedbackInput = z.object({
   quizId: z.string(),
   content: z.string(),

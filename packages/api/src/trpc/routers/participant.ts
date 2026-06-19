@@ -59,7 +59,10 @@ import {
   voteLiveQuizFeedbackResponse,
 } from '../../services/participantLiveQuizFeedbacks.js'
 import { getLiveQuizLeaderboard } from '../../services/participantLiveQuizLeaderboard.js'
-import { setLiveQuizPinCookie } from '../../services/participantLiveQuizSession.js'
+import {
+  getRunningLiveQuiz,
+  setLiveQuizPinCookie,
+} from '../../services/participantLiveQuizSession.js'
 import {
   getMicroLearningDetail,
   getParticipantCourseParticipation,
@@ -141,6 +144,7 @@ import {
   participantRateElementInput,
   participantRenameGroupInput,
   participantRespondToElementStackInput,
+  participantRunningLiveQuizInput,
   participantSelfInput,
   participantSendMagicLinkInput,
   participantSetLiveQuizPinInput,
@@ -1498,6 +1502,20 @@ export const participantRouter = router({
         pin: input.pin,
         prisma,
         res: ctx.res,
+      })
+    }),
+
+  runningLiveQuiz: publicProcedure
+    .input(participantRunningLiveQuizInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getRunningLiveQuiz({
+        id: input.id,
+        prisma,
+        req: ctx.req,
+        res: ctx.res,
+        user: ctx.user,
       })
     }),
 

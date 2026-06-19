@@ -18,6 +18,7 @@ export interface TRPCUser extends Record<string, unknown> {
 }
 
 export interface TRPCRequest {
+  cookies?: Record<string, string | undefined>
   locals?: {
     user?: TRPCUser | null
   }

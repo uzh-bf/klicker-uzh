@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -10,13 +9,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementBlockStatus,
   ElementType,
-  GetFeedbacksDocument,
-  GetRunningLiveQuizDocument,
+  type GetRunningLiveQuizQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
-import { addApolloState, initializeApollo } from '@lib/apollo'
-import { trpc } from '@lib/trpc'
+import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import {
   Button,
   FormikAlphaNumericPinField,
@@ -42,6 +39,10 @@ const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
   { ssr: false }
 )
+
+type StudentLiveQuizData = NonNullable<
+  GetRunningLiveQuizQuery['studentLiveQuiz']
+>
 
 async function handleNewResponse({
   liveQuizId,
@@ -141,6 +142,13 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
   }
 }
 
+function hasLiveQuizError(error: any, message: string) {
+  return (
+    error?.message === message ||
+    error?.graphQLErrors?.some((err: any) => err.message === message)
+  )
+}
+
 function Index({ id }: { id: string }) {
   const t = useTranslations()
   const router = useRouter()
@@ -154,12 +162,12 @@ function Index({ id }: { id: string }) {
   const [isDesktop, setIsDesktop] = useState<boolean>(false)
 
   const setLiveQuizPin = trpc.participant.setLiveQuizPin.useMutation()
-  const { data, loading, error, refetch } = useQuery(
-    GetRunningLiveQuizDocument,
-    {
-      variables: { id },
-    }
-  )
+  const {
+    data,
+    isLoading: loading,
+    error,
+    refetch,
+  } = trpc.participant.runningLiveQuiz.useQuery({ id })
   const { data: selfData } = trpc.participant.self.useQuery({ liveQuizId: id })
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
@@ -265,16 +273,9 @@ function Index({ id }: { id: string }) {
 
   // pin error handling
   const isPinMissing =
-    error?.graphQLErrors?.some(
-      (e) =>
-        e.message === 'LIVE_QUIZ_PIN_MISSING' ||
-        e.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
-    ) ||
-    error?.message === 'LIVE_QUIZ_PIN_MISSING' ||
-    error?.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
-  const isPinInvalid =
-    error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_INVALID') ||
-    error?.message === 'LIVE_QUIZ_PIN_INVALID'
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING') ||
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT')
+  const isPinInvalid = hasLiveQuizError(error, 'LIVE_QUIZ_PIN_INVALID')
 
   if (isPinMissing || isPinInvalid) {
     return (
@@ -381,6 +382,8 @@ function Index({ id }: { id: string }) {
   const leaderboardAvailable = !!selfData?.self && !!isGamificationEnabled
   const hasQuestionPanel = !!(blocks && blocks.length > 0)
   const hasSidebarPanel = feedbackAvailable || leaderboardAvailable
+  const questionBlocks = blocks as StudentLiveQuizData['blocks']
+  const questionActiveBlock = activeBlock as StudentLiveQuizData['activeBlock']
 
   const mobileMenuItems: {
     value: string
@@ -431,8 +434,8 @@ function Index({ id }: { id: string }) {
     return (
       <LiveQuizQuestionColumn
         quizId={id}
-        blocks={blocks}
-        activeBlock={activeBlock}
+        blocks={questionBlocks}
+        activeBlock={questionActiveBlock}
         beforeFirstBlock={beforeFirstBlock}
         displayName={displayName}
         description={description}
@@ -540,29 +543,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  const apolloClient = initializeApollo()
+  const authorizationHeader = ctx.req.cookies?.[
+    'next-auth.participant-session-token'
+  ]
+    ? {
+        authorization: `Bearer ${
+          ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''
+        }`,
+      }
+    : undefined
+  const trpcClient = createTRPCSSRClient(ctx, authorizationHeader)
+  let liveQuiz: RouterOutputs['participant']['runningLiveQuiz'] | null = null
 
-  let liveQuiz = null
   try {
-    liveQuiz = await apolloClient.query({
-      query: GetRunningLiveQuizDocument,
-      variables: { id: ctx.query?.id as string },
-      context: {
-        headers: {
-          authorization: ctx.req.cookies?.[
-            'next-auth.participant-session-token'
-          ]
-            ? `Bearer ${ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''}`
-            : undefined,
-        },
-      },
+    liveQuiz = await trpcClient.participant.runningLiveQuiz.query({
+      id: ctx.params.id,
     })
   } catch (e: any) {
     // if the user is requesting an assessment quiz from the PWA domain, redirect them to the assessment domain
     if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
-      ) &&
+      hasLiveQuizError(e, 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT') &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -578,9 +578,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // if the user is requesting a standard PWA quiz with PIN protection from the assessment domain, redirect them to the PWA domain
     if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING'
-      ) &&
+      hasLiveQuizError(e, 'LIVE_QUIZ_PIN_MISSING') &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -595,11 +593,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     // if the user is requesting access to an assessment live quiz and is not authenticated, redirect to the assessment login
-    if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'UNAUTHORIZED_ASSESSMENT'
-      )
-    ) {
+    if (hasLiveQuizError(e, 'UNAUTHORIZED_ASSESSMENT')) {
       return {
         redirect: {
           destination: `${
@@ -615,11 +609,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     // if the user does not have a valid participation in the requested live quiz, redirect to the assessment home page with a warning toast
-    if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'MISSING_ASSESSMENT_COURSE_PARTICIPATION'
-      )
-    ) {
+    if (hasLiveQuizError(e, 'MISSING_ASSESSMENT_COURSE_PARTICIPATION')) {
       return {
         redirect: {
           destination: `${
@@ -635,9 +625,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // if the fetch was successful, redirect based on the assessment boolean
   // -> if student entered valid PIN for an assessment quiz and then visits quiz through PWA domain (or vice-versa)
-  if (liveQuiz?.data.studentLiveQuiz) {
+  if (liveQuiz?.studentLiveQuiz) {
     if (
-      liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      liveQuiz.studentLiveQuiz.isAssessmentEnabled &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -652,7 +642,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     if (
-      !liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      !liveQuiz.studentLiveQuiz.isAssessmentEnabled &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -667,21 +657,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  await apolloClient.query({
-    query: GetFeedbacksDocument,
-    variables: {
-      quizId: ctx.query?.id as string,
-      skip: !ctx.query?.id,
-    },
-  })
-
-  return addApolloState(apolloClient, {
+  return {
     props: {
       id: ctx.params.id,
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
-  })
+  }
 }
 
 export default Index
