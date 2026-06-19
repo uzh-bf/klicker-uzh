@@ -73,6 +73,27 @@ describe('tutor move policy', () => {
     )
   })
 
+  it('selects scaffold ladder directives from hint depth', () => {
+    expect(selectTutorMovePolicy(baseState).directives.join('\n')).toContain(
+      'orientation-level scaffolding'
+    )
+    expect(
+      selectTutorMovePolicy({ ...baseState, hintDepth: 1 }).directives.join(
+        '\n'
+      )
+    ).toContain('instrumental scaffolding')
+    expect(
+      selectTutorMovePolicy({ ...baseState, hintDepth: 2 }).directives.join(
+        '\n'
+      )
+    ).toContain('worked-example scaffolding')
+    expect(
+      selectTutorMovePolicy({ ...baseState, hintDepth: 3 }).directives.join(
+        '\n'
+      )
+    ).toContain('bottom-out scaffolding')
+  })
+
   it('adds leakage and citation preflight directives for high-risk turns', () => {
     const preflight = runTutorVerifierPreflight({
       state: { ...baseState, retrievalNeeded: true },

@@ -95,6 +95,8 @@ const PLANNER_SYSTEM_PROMPT = `You classify the hidden state for a university tu
 Return only the requested structured object.
 Do not solve the student's problem.
 Prefer the first pedagogically useful error or missing idea over later errors.
+Use hintDepth as the scaffold ladder position already reached: 0 orientation, 1 instrumental next-action hint, 2 worked-example scaffold, 3+ bottom-out one-step scaffold.
+Choose allowedMove inside the student's zone of proximal development: ask or hint when the student can move, simplify when prerequisite knowledge is missing, worked_micro_step after repeated unproductive struggle, and summarize or reflect when understanding is visible.
 Mark leakageAllowed true only when the student explicitly asks for a final answer after showing work, asks to verify an answer, or the next useful move requires a worked micro-step.`
 
 function latestUserMessage(messages: TutorPlannerMessage[]) {

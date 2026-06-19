@@ -44,7 +44,7 @@ export type TutorMovePolicy = {
 
 const MOVE_DIRECTIVES: Record<TutorAllowedMove, string> = {
   ask: 'Ask one targeted open-ended question that helps the student take the next step.',
-  hint: 'Give one minimal hint. Do not solve the full problem.',
+  hint: 'Give one hint at the current ladder rung. Do not solve the full problem.',
   simplify: 'Reduce the task to a smaller subproblem or prerequisite idea.',
   explain:
     'Give a concise concept explanation, then ask one next-action question.',
@@ -56,6 +56,30 @@ const MOVE_DIRECTIVES: Record<TutorAllowedMove, string> = {
     'Ask the student to reflect on the strategy, assumption, or check they used.',
   summarize:
     'Briefly summarize the relevant course boundary or completed reasoning.',
+}
+
+function selectScaffoldDirective(state: TutorPolicyState) {
+  if (state.allowedMove === 'worked_micro_step') {
+    return 'Use a worked micro-step as a temporary scaffold, then hand the next action back to the student.'
+  }
+
+  if (state.allowedMove !== 'hint' && state.allowedMove !== 'simplify') {
+    return 'Keep support inside the learner zone: target the smallest next action the student can attempt with help.'
+  }
+
+  if (state.hintDepth <= 0) {
+    return 'Use orientation-level scaffolding: name the concept or place to look, not the calculation or final answer.'
+  }
+
+  if (state.hintDepth === 1) {
+    return 'Use instrumental scaffolding: give one concrete next action in words, without doing it for the student.'
+  }
+
+  if (state.hintDepth === 2) {
+    return 'Use worked-example scaffolding: show an analogous micro-example or pattern, then return to the student task.'
+  }
+
+  return 'Use bottom-out scaffolding for one step only: give the exact next action, then stop before the full solution.'
 }
 
 export function selectTutorMovePolicy(
@@ -71,6 +95,7 @@ export function selectTutorMovePolicy(
 
   const directives = [
     MOVE_DIRECTIVES[state.allowedMove],
+    selectScaffoldDirective(state),
     'Use exactly one tutor move for this turn.',
     'Ask at most one question.',
     directAnswerAllowed
