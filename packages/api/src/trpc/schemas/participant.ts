@@ -24,6 +24,32 @@ export const participantCourseLiveQuizInput = z.object({
   quizId: z.string().uuid(),
 })
 
+export const participantLiveQuizFeedbacksInput = z.object({
+  quizId: z.string(),
+})
+
+export const participantCreateLiveQuizFeedbackInput = z.object({
+  quizId: z.string(),
+  content: z.string(),
+})
+
+export const participantUpvoteLiveQuizFeedbackInput = z.object({
+  feedbackId: z.number().int(),
+  increment: z.number().int(),
+})
+
+export const participantVoteLiveQuizFeedbackResponseInput = z.object({
+  id: z.number().int(),
+  incrementUpvote: z.number().int(),
+  incrementDownvote: z.number().int(),
+})
+
+export const participantAddLiveQuizConfusionTimestepInput = z.object({
+  quizId: z.string(),
+  difficulty: z.number().int(),
+  speed: z.number().int(),
+})
+
 export const participantCreateGroupInput = z.object({
   courseId: z.string(),
   name: z.string(),

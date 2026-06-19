@@ -109,6 +109,10 @@ Current next action:
   with `trpc.participant.self` and decoupling the shared `Leaderboard`
   participant prop from the generated GraphQL `Participant` type; the leaderboard
   data query itself remains GraphQL.
+- S05G-C PWA live-quiz feedback data/mutation cleanup is complete locally.
+  Scope was limited to replacing the PWA feedback-area GraphQL query/mutations
+  with participant tRPC procedures and focused API parity tests; live-quiz
+  session and leaderboard data queries remain GraphQL.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -695,6 +699,42 @@ Verification:
 - Narrow audit confirmed `LiveQuizLeaderboard` no longer imports `SelfDocument`.
 - Narrow audit confirmed shared `Leaderboard` no longer imports generated
   GraphQL types.
+
+### 2026-06-19 Completed: S05G-C PWA Feedback Data and Mutations
+
+Status: complete locally. This slice migrated the PWA live-quiz feedback area
+off Apollo for its feedback query and mutations while keeping the existing tRPC
+feedback realtime invalidation subscriptions from S05C.
+
+Slice:
+
+- Added participant tRPC procedures for `liveQuizFeedbacks`,
+  `createLiveQuizFeedback`, `upvoteLiveQuizFeedback`,
+  `voteLiveQuizFeedbackResponse`, and `addLiveQuizConfusionTimestep`.
+- Added `packages/api/src/services/participantLiveQuizFeedbacks.ts` to mirror
+  the GraphQL feedback behavior source: moderation filtering, Live Q&A guard,
+  participant attribution, vote increments, confusion timestep creation,
+  realtime publish events, and LiveQuiz invalidation events.
+- Replaced `apps/frontend-pwa/src/components/liveQuiz/FeedbackArea.tsx` Apollo
+  feedback query/mutations with the new participant tRPC hooks.
+- Replaced `apps/frontend-pwa/src/components/liveQuiz/PublicFeedback.tsx`'s
+  generated GraphQL `Feedback` prop type with a local display shape.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/participant-live-quiz-feedbacks.test.ts`
+  passed.
+- `pnpm --filter @klicker-uzh/api test` passed (`42` files, `435` tests).
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed and refreshed router
+  declarations for frontend typechecking.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm exec prettier --check` passed for the touched files.
+- `git diff --check` passed.
+- Narrow audit confirmed `FeedbackArea` and `PublicFeedback` no longer import
+  Apollo or generated GraphQL feedback operations/types.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

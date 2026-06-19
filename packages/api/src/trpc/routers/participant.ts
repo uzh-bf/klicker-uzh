@@ -52,6 +52,13 @@ import {
   renameParticipantGroup as renameParticipantGroupService,
 } from '../../services/participantGroups.js'
 import {
+  addLiveQuizConfusionTimestep,
+  createLiveQuizFeedback,
+  getLiveQuizFeedbacks,
+  upvoteLiveQuizFeedback,
+  voteLiveQuizFeedbackResponse,
+} from '../../services/participantLiveQuizFeedbacks.js'
+import {
   getMicroLearningDetail,
   getParticipantCourseParticipation,
   markMicroLearningCompleted,
@@ -98,6 +105,7 @@ import {
 } from '../procedures.js'
 import {
   participantActivateAccountInput,
+  participantAddLiveQuizConfusionTimestepInput,
   participantBookmarkElementStackInput,
   participantChangeLocaleInput,
   participantCheckNameAvailableInput,
@@ -107,12 +115,14 @@ import {
   participantCoursePinInput,
   participantCreateAccountInput,
   participantCreateGroupInput,
+  participantCreateLiveQuizFeedbackInput,
   participantFlagElementInput,
   participantGroupActivityDetailsInput,
   participantGroupActivityInstancesInput,
   participantGroupMessageInput,
   participantJoinGroupInput,
   participantLeaveGroupInput,
+  participantLiveQuizFeedbacksInput,
   participantLoginInput,
   participantLoginTemporaryInput,
   participantLoginWithLtiInput,
@@ -138,6 +148,8 @@ import {
   participantUnsubscribeFromPushInput,
   participantUpdateAvatarInput,
   participantUpdateProfileInput,
+  participantUpvoteLiveQuizFeedbackInput,
+  participantVoteLiveQuizFeedbackResponseInput,
 } from '../schemas/participant.js'
 
 async function getLevelData(prisma: PrismaClient, xp: number | null) {
@@ -1449,6 +1461,68 @@ export const participantRouter = router({
       })
 
       return { isAvailable: !!liveQuiz }
+    }),
+
+  liveQuizFeedbacks: publicProcedure
+    .input(participantLiveQuizFeedbacksInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getLiveQuizFeedbacks({ prisma, quizId: input.quizId })
+    }),
+
+  createLiveQuizFeedback: publicProcedure
+    .input(participantCreateLiveQuizFeedbackInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return createLiveQuizFeedback({
+        content: input.content,
+        emitter: ctx.emitter,
+        prisma,
+        pubSub: ctx.pubSub,
+        quizId: input.quizId,
+        user: ctx.user,
+      })
+    }),
+
+  upvoteLiveQuizFeedback: publicProcedure
+    .input(participantUpvoteLiveQuizFeedbackInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return upvoteLiveQuizFeedback({
+        feedbackId: input.feedbackId,
+        increment: input.increment,
+        prisma,
+      })
+    }),
+
+  voteLiveQuizFeedbackResponse: publicProcedure
+    .input(participantVoteLiveQuizFeedbackResponseInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return voteLiveQuizFeedbackResponse({
+        id: input.id,
+        incrementDownvote: input.incrementDownvote,
+        incrementUpvote: input.incrementUpvote,
+        prisma,
+      })
+    }),
+
+  addLiveQuizConfusionTimestep: publicProcedure
+    .input(participantAddLiveQuizConfusionTimestepInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return addLiveQuizConfusionTimestep({
+        difficulty: input.difficulty,
+        emitter: ctx.emitter,
+        prisma,
+        quizId: input.quizId,
+        speed: input.speed,
+      })
     }),
 
   courseOverview: publicProcedure

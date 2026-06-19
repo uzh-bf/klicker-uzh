@@ -1,11 +1,27 @@
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
-import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
+
+type Feedback = {
+  id: number
+  isResolved: boolean
+  content: string
+  resolvedAt?: Date | string | null
+  createdAt: Date | string
+  responses?:
+    | {
+        id: number
+        content: string
+        positiveReactions: number
+        negativeReactions: number
+        createdAt?: Date | string | null
+      }[]
+    | null
+}
 
 function PublicFeedback({
   feedback,
@@ -152,7 +168,7 @@ function PublicFeedback({
         </div>
         <Button
           active={upvotes.upvote}
-          disabled={feedback.resolvedAt}
+          disabled={!!feedback.resolvedAt}
           onClick={() => onUpvote(upvotes.upvote)}
           className={{
             root: 'h-10 w-10 transform transition hover:scale-105',

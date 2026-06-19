@@ -1,12 +1,5 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  AddConfusionTimestepDocument,
-  CreateFeedbackDocument,
-  GetFeedbacksDocument,
-  UpvoteFeedbackDocument,
-  VoteFeedbackResponseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { push } from '@socialgouv/matomo-next'
 import {
   Button,
@@ -54,12 +47,14 @@ function FeedbackArea({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const quizId = router.query.id as string
+  const quizId = typeof router.query.id === 'string' ? router.query.id : ''
 
-  const [createFeedback] = useMutation(CreateFeedbackDocument)
-  const [addConfusionTimestep] = useMutation(AddConfusionTimestepDocument)
-  const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
-  const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
+  const createFeedback = trpc.participant.createLiveQuizFeedback.useMutation()
+  const addConfusionTimestep =
+    trpc.participant.addLiveQuizConfusionTimestep.useMutation()
+  const upvoteFeedback = trpc.participant.upvoteLiveQuizFeedback.useMutation()
+  const voteFeedbackResponse =
+    trpc.participant.voteLiveQuizFeedbackResponse.useMutation()
 
   const [confusionDifficulty, setConfusionDifficulty] = useState(0)
   const [confusionSpeed, setConfusionSpeed] = useState(0)
@@ -68,29 +63,25 @@ function FeedbackArea({
   const confusionSubmissionTimeout = useRef<any>(null)
 
   const {
-    loading: feedbacksLoading,
+    isLoading: feedbacksLoading,
     data: feedbacksData,
     refetch: refetchFeedbacks,
-  } = useQuery(GetFeedbacksDocument, {
-    variables: {
-      quizId: router.query.id as string,
-    },
-    skip: !router.query.id,
-  })
+  } = trpc.participant.liveQuizFeedbacks.useQuery(
+    { quizId },
+    { enabled: !!quizId }
+  )
 
   const onAddFeedback = async (input: string) => {
-    if (!router.query.id) return
-    await createFeedback({
-      variables: {
-        quizId: router.query.id as string,
-        content: input,
-      },
+    if (!quizId) return
+    await createFeedback.mutateAsync({
+      quizId,
+      content: input,
     })
     toast({ type: 'success', message: t('pwa.feedbacks.feedbackSubmitted') })
   }
 
   const onUpvoteFeedback = async (id: number, change: number) => {
-    await upvoteFeedback({ variables: { feedbackId: id, increment: change } })
+    await upvoteFeedback.mutateAsync({ feedbackId: id, increment: change })
   }
 
   const onReactToFeedbackResponse = async (
@@ -98,12 +89,10 @@ function FeedbackArea({
     upvoteChange: number,
     downvoteChange: number
   ) => {
-    await voteFeedbackResponse({
-      variables: {
-        id: id,
-        incrementUpvote: upvoteChange,
-        incrementDownvote: downvoteChange,
-      },
+    await voteFeedbackResponse.mutateAsync({
+      id,
+      incrementUpvote: upvoteChange,
+      incrementDownvote: downvoteChange,
     })
   }
 
@@ -143,12 +132,10 @@ function FeedbackArea({
   const handleNewConfusionTS = useCallback(
     async ({ speed = 0, difficulty = 0 }): Promise<void> => {
       try {
-        addConfusionTimestep({
-          variables: {
-            quizId,
-            difficulty: difficulty,
-            speed: speed,
-          },
+        await addConfusionTimestep.mutateAsync({
+          quizId,
+          difficulty: difficulty,
+          speed: speed,
         })
 
         localForage.setItem(`${quizId}-confusion`, {
