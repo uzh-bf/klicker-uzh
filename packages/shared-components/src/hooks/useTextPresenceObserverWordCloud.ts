@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 export function useTextPresenceObserverWordCloud(
   containerRef: RefObject<HTMLElement | null>,
   deps: DependencyList = []
-) {
-  const [hasText, setHasText] = useState(false)
+): boolean {
+  const [hasText, setHasText] = useState<boolean>(false)
 
   useEffect(() => {
     const el = containerRef.current
@@ -23,7 +23,7 @@ export function useTextPresenceObserverWordCloud(
     mo.observe(el, { childList: true, subtree: true, characterData: true })
 
     return () => mo.disconnect()
-  }, [containerRef, ...deps])
+  }, [containerRef.current, ...deps])
 
   return hasText
 }

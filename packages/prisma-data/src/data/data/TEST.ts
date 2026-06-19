@@ -1151,44 +1151,39 @@ export const LIVE_QUIZZES = [
       '5': {
         total: 8,
         responses: {
-          '8b4fc0755c2c002245255d951e6ff742': {
-            count: 1,
-            value: 20,
+          '98f13708210194c475687be6106a3b84': {
+            count: 2,
+            value: '20',
             correct: true,
           },
           c4ca4238a0b923820dcc509a6f75849b: {
             count: 1,
-            value: 1,
+            value: '1',
             correct: false,
           },
-          c81e728d9d4c2f636f067f89cc14862c: {
+          d3d9446802a44259755d38e6d163e820: {
             count: 1,
-            value: 10,
+            value: '10',
             correct: false,
           },
-          eccbc87e4b5ce2fe28308fd9f2a7baf3: {
+          '8e296a067a37563370ded05f5a3bf3ec': {
             count: 1,
-            value: 25,
+            value: '25',
             correct: false,
           },
-          a87ff679a2f3e71d9181a67b7542122c: {
+          a5bfc9e07964f8dddeb95fc584cd965d: {
             count: 1,
-            value: 37,
+            value: '37',
             correct: false,
           },
-          e4da3b7fbbce3765c8a6f2cfa1b3f3: {
+          cf3e481a44141cabd4e9d46cfbb1f899: {
             count: 1,
-            value: 20,
-            correct: true,
+            value: '12.5',
+            correct: false,
           },
-          '1679091c5a880faf6fb5e6087eb1b2dc': {
+          f899139df5e1059396431415e770c6dd: {
             count: 1,
-            value: 20,
-            correct: true,
-          },
-          '8f14e45fceea167a5a36dedd4bea2543': {
-            count: 1,
-            value: 100,
+            value: '100',
             correct: true,
           },
         },

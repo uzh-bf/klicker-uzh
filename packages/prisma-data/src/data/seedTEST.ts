@@ -578,7 +578,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                 const elementData = processElementData(el)
                 const initialResults = getInitialInstanceResults(elementData)
                 const anonymousResultIndex = String(
-                  el.id - 1
+                  elementId
                 ) as DATA_TEST.QUESTION_ID_TYPE
                 const anonymousResults = isEnded
                   ? data.anonymousResults[anonymousResultIndex]
