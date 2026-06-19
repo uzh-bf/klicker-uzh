@@ -1,14 +1,22 @@
-import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
+
+type CourseDateActivity = {
+  type: ActivityType
+  scheduledStartAt?: string | Date | null
+  automaticPublicationAt?: string | Date | null
+  scheduledEndAt?: string | Date | null
+}
+
+function toTime(value: string | Date) {
+  return value instanceof Date ? value.getTime() : Date.parse(value)
+}
 
 function useEarliestLatestCourseDates({
   activities,
 }: {
-  activities?: Pick<
-    ActivityInfo,
-    'type' | 'scheduledStartAt' | 'automaticPublicationAt' | 'scheduledEndAt'
-  >[]
+  activities?: CourseDateActivity[]
 }) {
   return useMemo(() => {
     if (activities && activities.length > 0) {
@@ -16,25 +24,25 @@ function useEarliestLatestCourseDates({
         ...activities
           .filter(
             (activity) =>
-              activity.type === ActivityType.GroupActivity &&
+              activity.type === ActivityType.GROUP_ACTIVITY &&
               activity.scheduledStartAt !== null &&
               typeof activity.scheduledStartAt !== 'undefined'
           )
-          .map((activity) => Date.parse(activity.scheduledStartAt)),
+          .map((activity) => toTime(activity.scheduledStartAt!)),
       ]
       const activityStartDates = [
         ...groupActivityStartDates,
         ...activities
           .filter(
             (activity) =>
-              (activity.type !== ActivityType.GroupActivity &&
+              (activity.type !== ActivityType.GROUP_ACTIVITY &&
                 activity.scheduledStartAt !== null &&
                 typeof activity.scheduledStartAt !== 'undefined') ||
               (activity.automaticPublicationAt !== null &&
                 typeof activity.automaticPublicationAt !== 'undefined')
           )
           .map((activity) => {
-            return Date.parse(
+            return toTime(
               activity.scheduledStartAt ?? activity.automaticPublicationAt!
             )
           }),
@@ -46,7 +54,7 @@ function useEarliestLatestCourseDates({
             activity.scheduledEndAt !== null &&
             typeof activity.scheduledEndAt !== 'undefined'
         )
-        .map((activity) => Date.parse(activity.scheduledEndAt))
+        .map((activity) => toTime(activity.scheduledEndAt!))
 
       return {
         earliestGroupDeadline:

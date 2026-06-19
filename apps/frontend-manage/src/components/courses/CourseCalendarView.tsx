@@ -9,14 +9,11 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
-import {
-  ActivityInfo,
-  ActivityType,
-  Course,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useRef, useState } from 'react'
+import type { RouterOutputs } from '../../lib/trpc'
 
 const COLORS = {
   courseStart: 'hsl(142 60% 40%)', // Stronger, darker green
@@ -37,13 +34,16 @@ const TEXT_COLORS = {
   groupActivity: 'black',
 }
 
+type CourseDetail = NonNullable<RouterOutputs['course']['detail']['course']>
+type CourseDetailActivity = NonNullable<CourseDetail['liveQuizzesInfo']>[number]
+
 function CourseCalendarView({
   course,
   setActivityList,
   switchToListView,
   setHighlightedActivity,
 }: {
-  course: Course
+  course: CourseDetail
   setActivityList: Dispatch<SetStateAction<string>>
   switchToListView: () => void
   setHighlightedActivity: Dispatch<SetStateAction<string | null>>
@@ -66,7 +66,7 @@ function CourseCalendarView({
 
   // helper function to add events for activities with duration
   const addActivityEvents = (
-    activity: ActivityInfo,
+    activity: CourseDetailActivity,
     color: string,
     textColor: string,
     calendarEvents: any[]
@@ -80,8 +80,8 @@ function CourseCalendarView({
     // for scheduled practice quizzes and live quizzes, show the start date and an all-day event on the start date
     if (
       publicationDate &&
-      (activity.type === ActivityType.PracticeQuiz ||
-        activity.type === ActivityType.LiveQuiz)
+      (activity.type === ActivityType.PRACTICE_QUIZ ||
+        activity.type === ActivityType.LIVE_QUIZ)
     ) {
       const startDate = new Date(publicationDate)
       const isStartMidnight =
@@ -470,13 +470,13 @@ function CourseCalendarView({
             switchToListView()
             setHighlightedActivity(activityId)
 
-            if (activityType === ActivityType.LiveQuiz) {
+            if (activityType === ActivityType.LIVE_QUIZ) {
               setActivityList('liveQuizzes')
-            } else if (activityType === ActivityType.PracticeQuiz) {
+            } else if (activityType === ActivityType.PRACTICE_QUIZ) {
               setActivityList('practiceQuizzes')
-            } else if (activityType === ActivityType.MicroLearning) {
+            } else if (activityType === ActivityType.MICRO_LEARNING) {
               setActivityList('microLearnings')
-            } else if (activityType === ActivityType.GroupActivity) {
+            } else if (activityType === ActivityType.GROUP_ACTIVITY) {
               setActivityList('groupActivities')
             }
           }}

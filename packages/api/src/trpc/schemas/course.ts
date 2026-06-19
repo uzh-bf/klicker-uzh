@@ -25,6 +25,10 @@ export const courseActivitiesInput = z.object({
   courseId: z.string(),
 })
 
+export const courseDetailInput = z.object({
+  courseId: z.string(),
+})
+
 export const courseSummaryInput = z.object({
   courseId: z.string(),
 })

@@ -1,5 +1,6 @@
 import type * as DB from '@klicker-uzh/prisma/client'
 import { PermissionLevel } from '@klicker-uzh/prisma/client'
+import { ActivityType, SharingType } from '@klicker-uzh/types'
 
 type ControlCourseListItem = Pick<
   DB.Course,
@@ -68,6 +69,76 @@ type ActiveUserCourseObjectSource = {
   course: ActiveUserCourseSource | null
   permissionLevel: DB.PermissionLevel
 }
+
+type CourseDetailPermissionSource = Pick<
+  DB.DerivedPermission,
+  'derived' | 'permissionLevel'
+> & {
+  directPermission: Pick<DB.Permission, 'userGroupId'> | null
+}
+
+type CourseDetailActivityStackSource = {
+  _count: {
+    elements: number
+  }
+}
+
+type CourseDetailActivityBaseSource = {
+  id: string
+  name: string
+  displayName: string
+  status: DB.PublicationStatus
+  reviewStatus: DB.ReviewStatus
+  isGamificationEnabled: boolean
+  isAssessmentEnabled: boolean
+  areInstancesOutdated: boolean
+  updatedAt: Date
+  permissions: CourseDetailPermissionSource[]
+  templateInfo: Pick<DB.ActivityTemplate, 'id'> | null
+  _count: {
+    permissions: number
+  }
+}
+
+type CourseDetailLiveQuizSource = CourseDetailActivityBaseSource & {
+  pinCode: string | null
+  blocks: CourseDetailActivityStackSource[]
+}
+
+type CourseDetailStackedActivitySource = CourseDetailActivityBaseSource & {
+  stacks: CourseDetailActivityStackSource[]
+}
+
+type CourseDetailPracticeQuizSource = CourseDetailStackedActivitySource & {
+  availableFrom: Date | null
+}
+
+type CourseDetailScheduledActivitySource = CourseDetailStackedActivitySource & {
+  scheduledStartAt: Date | null
+  scheduledEndAt: Date | null
+}
+
+type CourseDetailSource = ActiveUserCourseSource &
+  Pick<
+    DB.Course,
+    | 'displayName'
+    | 'language'
+    | 'maxGroupSize'
+    | 'notificationEmail'
+    | 'preferredGroupSize'
+    | 'randomAssignmentFinalized'
+  > & {
+    _count: {
+      participantGroups: number
+      participations: number
+      permissions: number
+    }
+    permissions: CourseDetailPermissionSource[]
+    liveQuizzes: CourseDetailLiveQuizSource[]
+    practiceQuizzes: CourseDetailPracticeQuizSource[]
+    microLearnings: CourseDetailScheduledActivitySource[]
+    groupActivities: CourseDetailScheduledActivitySource[]
+  }
 
 type CourseSummarySource = {
   _count: {
@@ -203,6 +274,215 @@ export function toActiveUserCourseWithoutPermissions(
     isManager: false,
     isEditor: false,
     isShared: false,
+  }
+}
+
+function toPermissionBooleans({
+  permissionLevel,
+  derived,
+  directPermission,
+}: CourseDetailPermissionSource) {
+  return {
+    isOwner: permissionLevel === PermissionLevel.OWNER,
+    isManager:
+      permissionLevel === PermissionLevel.OWNER ||
+      permissionLevel === PermissionLevel.ADMIN,
+    isEditor:
+      permissionLevel === PermissionLevel.OWNER ||
+      permissionLevel === PermissionLevel.ADMIN ||
+      permissionLevel === PermissionLevel.WRITE,
+    isExecutor:
+      permissionLevel === PermissionLevel.EXECUTE ||
+      permissionLevel === PermissionLevel.WRITE ||
+      permissionLevel === PermissionLevel.ADMIN ||
+      permissionLevel === PermissionLevel.OWNER,
+    isShared: permissionLevel !== PermissionLevel.OWNER,
+    isRemovable:
+      permissionLevel !== PermissionLevel.OWNER &&
+      !derived &&
+      directPermission?.userGroupId === null,
+    sharingType:
+      permissionLevel === PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED,
+  }
+}
+
+function toCourseDetailActivity({
+  activity,
+  course,
+  type,
+  numOfStacks,
+  numOfElements,
+  automaticPublicationAt,
+  scheduledStartAt,
+  scheduledEndAt,
+  groupDeadlineDate,
+  numOfParticipantGroups,
+  pinCode,
+  isActivityReviewer,
+}: {
+  activity: CourseDetailActivityBaseSource
+  course: CourseDetailSource
+  type: ActivityType
+  numOfStacks: number
+  numOfElements: number
+  automaticPublicationAt?: Date | null
+  scheduledStartAt?: Date | null
+  scheduledEndAt?: Date | null
+  groupDeadlineDate?: Date | null
+  numOfParticipantGroups?: number | null
+  pinCode?: string | null
+  isActivityReviewer: boolean
+}) {
+  const permission = activity.permissions[0]
+  if (!permission) return null
+
+  const permissionBooleans = toPermissionBooleans(permission)
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    type,
+    status: activity.status,
+    courseId: course.id,
+    courseName: course.name,
+    courseStartDate: course.startDate,
+    courseLanguage: course.language,
+    numOfStacks,
+    numOfElements,
+    reviewStatus: activity.reviewStatus,
+    automaticPublicationAt: automaticPublicationAt ?? null,
+    scheduledStartAt: scheduledStartAt ?? null,
+    scheduledEndAt: scheduledEndAt ?? null,
+    groupDeadlineDate: groupDeadlineDate ?? null,
+    numOfParticipantGroups: numOfParticipantGroups ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    permissionLevel: permission.permissionLevel,
+    derivedAccess: permission.derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: pinCode ?? null,
+    numSharedUsers: activity._count.permissions - 1,
+    ...permissionBooleans,
+    isActivityReviewer,
+    updatedAt: activity.updatedAt,
+  }
+}
+
+function nonNullable<T>(value: T | null): value is T {
+  return value !== null
+}
+
+export function toCourseDetail(course: CourseDetailSource | null) {
+  if (!course) return null
+
+  const coursePermission = course.permissions[0]
+  if (!coursePermission) return null
+
+  const coursePermissionBooleans = toPermissionBooleans(coursePermission)
+  const isActivityReviewer =
+    coursePermission.permissionLevel === PermissionLevel.ADMIN ||
+    coursePermission.permissionLevel === PermissionLevel.OWNER
+
+  return {
+    id: course.id,
+    isArchived: course.isArchived,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    pinCode: course.pinCode,
+    name: course.name,
+    displayName: course.displayName,
+    description: course.description,
+    language: course.language,
+    notificationEmail: course.notificationEmail,
+    color: course.color,
+    numOfParticipants: course._count.participations,
+    numOfParticipantGroups: course._count.participantGroups,
+    averageScore: null,
+    startDate: course.startDate,
+    endDate: course.endDate,
+    isGroupCreationEnabled: course.isGroupCreationEnabled,
+    groupDeadlineDate: course.groupDeadlineDate,
+    maxGroupSize: course.maxGroupSize,
+    preferredGroupSize: course.preferredGroupSize,
+    randomAssignmentFinalized: course.randomAssignmentFinalized,
+    derivedAccess: coursePermission.derived,
+    numSharedUsers: course._count.permissions - 1,
+    permissionLevel: coursePermission.permissionLevel,
+    ...coursePermissionBooleans,
+    liveQuizzesInfo: course.liveQuizzes
+      .map((activity) =>
+        toCourseDetailActivity({
+          activity,
+          course,
+          type: ActivityType.LIVE_QUIZ,
+          numOfStacks: activity.blocks.length,
+          numOfElements: activity.blocks.reduce(
+            (acc, block) => acc + block._count.elements,
+            0
+          ),
+          pinCode: activity.pinCode,
+          isActivityReviewer,
+        })
+      )
+      .filter(nonNullable),
+    practiceQuizzesInfo: course.practiceQuizzes
+      .map((activity) =>
+        toCourseDetailActivity({
+          activity,
+          course,
+          type: ActivityType.PRACTICE_QUIZ,
+          numOfStacks: activity.stacks.length,
+          numOfElements: activity.stacks.reduce(
+            (acc, stack) => acc + stack._count.elements,
+            0
+          ),
+          automaticPublicationAt: activity.availableFrom,
+          isActivityReviewer,
+        })
+      )
+      .filter(nonNullable),
+    microLearningsInfo: course.microLearnings
+      .map((activity) =>
+        toCourseDetailActivity({
+          activity,
+          course,
+          type: ActivityType.MICRO_LEARNING,
+          numOfStacks: activity.stacks.length,
+          numOfElements: activity.stacks.reduce(
+            (acc, stack) => acc + stack._count.elements,
+            0
+          ),
+          scheduledStartAt: activity.scheduledStartAt,
+          scheduledEndAt: activity.scheduledEndAt,
+          isActivityReviewer,
+        })
+      )
+      .filter(nonNullable),
+    groupActivitiesInfo: course.groupActivities
+      .map((activity) =>
+        toCourseDetailActivity({
+          activity,
+          course,
+          type: ActivityType.GROUP_ACTIVITY,
+          numOfStacks: activity.stacks.length,
+          numOfElements: activity.stacks.reduce(
+            (acc, stack) => acc + stack._count.elements,
+            0
+          ),
+          scheduledStartAt: activity.scheduledStartAt,
+          scheduledEndAt: activity.scheduledEndAt,
+          groupDeadlineDate: course.groupDeadlineDate,
+          numOfParticipantGroups: course._count.participantGroups,
+          isActivityReviewer,
+        })
+      )
+      .filter(nonNullable),
   }
 }
 

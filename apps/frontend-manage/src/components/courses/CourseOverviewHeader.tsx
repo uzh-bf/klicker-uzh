@@ -1,4 +1,3 @@
-import { useApolloClient } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
@@ -8,14 +7,13 @@ import {
   faPencil,
   faShare,
 } from '@fortawesome/free-solid-svg-icons'
-import { Course, GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { trpc } from '../../lib/trpc'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
@@ -25,11 +23,10 @@ import CourseManipulationModal, {
 import PointCorrectionsModal from './PointCorrectionsModal'
 import QRCodePopover from './QRCodePopover'
 
+type CourseDetail = NonNullable<RouterOutputs['course']['detail']['course']>
+
 interface CourseOverviewHeaderProps {
-  course: Omit<
-    Course,
-    'leaderboard' | 'liveQuizzes' | 'practiceQuizzes' | 'microLearnings'
-  >
+  course: CourseDetail
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
@@ -53,7 +50,7 @@ function CourseOverviewHeader({
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
-  const apolloClient = useApolloClient()
+  const utils = trpc.useUtils()
   const updateCourseSettings = trpc.course.updateSettings.useMutation()
   const { data: user } = trpc.user.profile.useQuery()
 
@@ -248,28 +245,7 @@ function CourseOverviewHeader({
               const updatedCourseResult = result.course
 
               if (updatedCourseResult) {
-                apolloClient.cache.updateQuery(
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { courseId: course.id },
-                  },
-                  (qData) => {
-                    if (!qData?.course) return qData
-
-                    const updatedCourse = {
-                      ...updatedCourseResult,
-                      language:
-                        updatedCourseResult.language as typeof qData.course.language,
-                    }
-
-                    return {
-                      course: {
-                        ...qData.course,
-                        ...updatedCourse,
-                      },
-                    }
-                  }
-                )
+                await utils.course.detail.invalidate({ courseId: course.id })
                 setCourseSettingsModal(false)
               } else {
                 onError()

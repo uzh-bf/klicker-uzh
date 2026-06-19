@@ -27,6 +27,106 @@ describe('course group routers', () => {
     vi.clearAllMocks()
   })
 
+  test('returns course detail for readers', async () => {
+    const startDate = new Date('2025-01-01T00:00:00.000Z')
+    const endDate = new Date('2036-01-01T00:00:00.000Z')
+    const updatedAt = new Date('2026-01-01T00:00:00.000Z')
+    const permission = {
+      permissionLevel: PermissionLevel.OWNER,
+      derived: false,
+      directPermission: null,
+    }
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      isArchived: false,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
+      isGroupCreationEnabled: true,
+      pinCode: 123456,
+      name: 'Course 1',
+      displayName: 'Course 1',
+      description: 'Description',
+      language: 'en',
+      notificationEmail: null,
+      color: '#eaa07d',
+      startDate,
+      endDate,
+      groupDeadlineDate: startDate,
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
+      randomAssignmentFinalized: false,
+      _count: {
+        participations: 12,
+        participantGroups: 3,
+        permissions: 1,
+      },
+      permissions: [permission],
+      liveQuizzes: [
+        {
+          id: 'live-quiz-1',
+          name: 'Live Quiz 1',
+          displayName: 'Live Quiz 1',
+          status: 'DRAFT',
+          reviewStatus: 'INCOMPLETE',
+          isGamificationEnabled: true,
+          isAssessmentEnabled: false,
+          areInstancesOutdated: false,
+          updatedAt,
+          pinCode: '123456',
+          permissions: [permission],
+          templateInfo: null,
+          blocks: [{ _count: { elements: 2 } }],
+          _count: { permissions: 1 },
+        },
+      ],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      course: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.course.detail({ courseId: 'course-1' })
+    ).resolves.toMatchObject({
+      course: {
+        id: 'course-1',
+        name: 'Course 1',
+        isOwner: true,
+        isManager: true,
+        isEditor: true,
+        numOfParticipants: 12,
+        numOfParticipantGroups: 3,
+        liveQuizzesInfo: [
+          {
+            id: 'live-quiz-1',
+            type: 'LIVE_QUIZ',
+            numOfStacks: 1,
+            numOfElements: 2,
+            permissionLevel: PermissionLevel.OWNER,
+            isActivityReviewer: true,
+          },
+        ],
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      include: expect.objectContaining({
+        liveQuizzes: expect.any(Object),
+        practiceQuizzes: expect.any(Object),
+        microLearnings: expect.any(Object),
+        groupActivities: expect.any(Object),
+      }),
+    })
+  })
+
   test('returns course groups for readers', async () => {
     const findUnique = vi.fn().mockResolvedValue({
       participantGroups: [

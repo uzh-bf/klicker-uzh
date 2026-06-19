@@ -21,6 +21,7 @@ import {
   toControlCourse,
   toControlCourseListItem,
   toCourseActivities,
+  toCourseDetail,
   toCourseGroups,
   toCourseParticipantGroups,
   toCourseSummary,
@@ -35,6 +36,7 @@ import {
   controlCourseInput,
   courseActivitiesInput,
   courseActivityIdsInput,
+  courseDetailInput,
   courseGroupsInput,
   courseSummaryInput,
   createCourseInput,
@@ -898,6 +900,100 @@ export const courseRouter = router({
           ctx as TRPCContextWithUser,
           input
         ),
+      }
+    }),
+
+  detail: userProcedure
+    .input(courseDetailInput)
+    .query(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.courseId,
+          PermissionLevel.READ
+        ))
+      ) {
+        return { course: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const userId = ctx.user.sub
+      const activityPermissionInclude = {
+        where: { userId },
+        include: { directPermission: true },
+      }
+
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        include: {
+          _count: {
+            select: {
+              participantGroups: true,
+              participations: true,
+              permissions: true,
+            },
+          },
+          permissions: {
+            where: { userId },
+            include: { directPermission: true },
+          },
+          liveQuizzes: {
+            where: { isDeleted: false },
+            include: {
+              blocks: {
+                include: { _count: { select: { elements: true } } },
+                orderBy: { order: 'asc' },
+              },
+              permissions: activityPermissionInclude,
+              templateInfo: true,
+              _count: { select: { permissions: true } },
+            },
+            orderBy: { name: 'desc' },
+          },
+          practiceQuizzes: {
+            where: { isDeleted: false },
+            include: {
+              stacks: {
+                include: { _count: { select: { elements: true } } },
+                orderBy: { order: 'asc' },
+              },
+              permissions: activityPermissionInclude,
+              templateInfo: true,
+              _count: { select: { permissions: true } },
+            },
+            orderBy: { name: 'asc' },
+          },
+          groupActivities: {
+            where: { isDeleted: false },
+            include: {
+              stacks: {
+                include: { _count: { select: { elements: true } } },
+                orderBy: { order: 'asc' },
+              },
+              permissions: activityPermissionInclude,
+              templateInfo: true,
+              _count: { select: { permissions: true } },
+            },
+            orderBy: { scheduledStartAt: 'asc' },
+          },
+          microLearnings: {
+            where: { isDeleted: false },
+            include: {
+              stacks: {
+                include: { _count: { select: { elements: true } } },
+                orderBy: { order: 'asc' },
+              },
+              permissions: activityPermissionInclude,
+              templateInfo: true,
+              _count: { select: { permissions: true } },
+            },
+            orderBy: { scheduledStartAt: 'asc' },
+          },
+        },
+      })
+
+      return {
+        course: toCourseDetail(course),
       }
     }),
 

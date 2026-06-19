@@ -280,6 +280,75 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04J Manage Course Detail Read
+
+Status: complete for the scoped course-detail read slice. Scope was limited to
+replacing the manage `/courses/[id]` page's `GetSingleCourseDocument` read with
+`course.detail` tRPC and adapting direct page/header/gamification/calendar
+consumers. Activity list actions, activity authoring modals, realtime
+subscriptions, S05, and S06 cleanup are intentionally out of scope.
+
+Slice: S04J Manage Course Detail Read
+
+Behavior source:
+
+- `GetSingleCourseDocument`
+- `CourseService.getCourseData`
+
+Implemented:
+
+- Added `course.detail` tRPC input, router procedure, DTO mapping, and API
+  coverage for a reader-visible course detail payload.
+- Replaced Apollo `useQuery(GetSingleCourseDocument)` on the manage course
+  detail page with `trpc.course.detail.useQuery`.
+- Swapped the course overview header's settings refresh from Apollo cache
+  refetching to `course.detail` invalidation.
+- Adapted direct gamification and calendar consumers to the tRPC course detail
+  output while keeping still-GraphQL activity list child components on their
+  existing generated `ActivityInfo` boundary for later S04 slices.
+- Kept Apollo providers, generated artifacts, GraphQL runtime, activity action
+  modals, and realtime consumers live.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04J course detail files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- course-groups.test.ts`:
+  passed; Vitest ran 39 API test files / 368 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/module/Browserslist/i18n/page-data warnings.
+- Direct migrated-file audit:
+  `rg -n "GetSingleCourseDocument|GetSingleCourse|useQuery\\(" <S04J course detail files>`
+  found only `trpc.user.profile.useQuery` and `trpc.course.detail.useQuery`, no
+  `GetSingleCourse` references.
+- Browser smoke against local manage/auth/backend loaded
+  `/courses/b8b1305e-bfe8-458b-bf26-9082fdca953f` and rendered the `Testkurs`
+  detail page with activity tabs and leaderboard. Screenshots:
+  `/tmp/agent-browser-shots/s04-course-detail-01-initial.png`,
+  `/tmp/agent-browser-shots/s04-course-detail-02-delegated-login.png`,
+  `/tmp/agent-browser-shots/s04-course-detail-03-course-detail.png`, and
+  `/tmp/agent-browser-shots/s04-course-detail-04-playwright.png`.
+- Browser network evidence: Playwright request trace observed 200 response for
+  batched `user.profile,course.detail` tRPC and `graphQlSingleCourseCount = 0`.
+  The remaining GraphQL request on reload was `GetCourseLeaderboard`, which is
+  a separate S04 consumer.
+- Broad residual audit
+  `rg -n "GetSingleCourseDocument|GetSingleCourse" apps/frontend-manage/src`
+  still finds references in activity action hooks, publish/delete/reset/ending
+  modals, and authoring submit handlers. Those remain S04 action/modal slices.
+
+Residual scope:
+
+- S04 remains open for the action/modal/authoring `GetSingleCourseDocument`
+  refetch consumers and the remaining generated type cleanup/API gates.
+- S05 realtime/subscription migration and S06 cleanup were not started.
+
 ### 2026-06-19 Completed: S04K Manage Course Groups Read and Assignment Mutation
 
 Status: complete for the scoped course-groups slice. Scope was limited to the
