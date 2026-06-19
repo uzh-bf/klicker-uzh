@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.4.0-alpha.62",
+  "version": "3.4.0-alpha.64",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -26,7 +26,7 @@
     "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "husky": "~9.1.7",
     "knip": "~5.83.0",
@@ -45,7 +45,7 @@
     "build": "turbo run build",
     "build:test": "cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "turbo run check --continue",
-    "check:all": "run-p check check:format check:lint check:syncpack",
+    "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
     "check:syncpack": "syncpack lint",
@@ -66,7 +66,7 @@
     "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
-    "prisma:setup": "run-s prisma:setup:1 prisma:setup:2",
+    "prisma:setup": "run-s --npm-path pnpm prisma:setup:1 prisma:setup:2",
     "prisma:setup:1": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
     "prisma:setup:2": "pnpm run --filter @klicker-uzh/prisma-data seed",
     "prisma:setup:raw": "pnpm run --filter @klicker-uzh/prisma prisma:setup:raw",
@@ -84,7 +84,7 @@
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
     "start": "turbo run start",
-    "start:test": "run-s build:test start:test:ci",
+    "start:test": "run-s --npm-path pnpm build:test start:test:ci",
     "start:test:ci": "cross-env NODE_ENV=test turbo run start:test",
     "syncpack:format": "syncpack format",
     "syncpack:lint": "syncpack lint",
@@ -93,14 +93,14 @@
     "syncpack:update": "syncpack update",
     "test:run": "turbo run test:run",
     "test:run:playwright": "pnpm --filter @klicker-uzh/playwright test:run",
-    "test:watch": "run-p test dev:test"
+    "test:watch": "run-p --npm-path pnpm test dev:test"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
-    "node": "20.19.4",
-    "pnpm": "10.15.0"
+    "node": "24.16.0",
+    "pnpm": "11.5.0"
   },
-  "packageManager": "pnpm@10.15.0"
+  "packageManager": "pnpm@11.5.0"
 }

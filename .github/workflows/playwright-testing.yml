@@ -102,16 +102,16 @@ jobs:
       - run: echo "Running Playwright PoC tests for draft PR"
 
       - name: Define node version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 10.15.0
+          version: 11.5.0
           run_install: false
 
       - name: Get pnpm store directory

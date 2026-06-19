@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.4.0-alpha.62",
+  "version": "3.4.0-alpha.64",
   "license": "AGPL-3.0",
   "dependencies": {
     "@ducanh2912/next-pwa": "7.3.3",
@@ -22,15 +22,15 @@
     "@trpc/react-query": "10.45.2",
     "@uzh-bf/design-system": "4.1.6",
     "cross-env": "7.0.3",
-    "dayjs": "1.11.13",
-    "formik": "2.4.6",
-    "js-cookie": "3.0.5",
+    "dayjs": "1.11.20",
+    "formik": "2.4.9",
+    "js-cookie": "3.0.7",
     "localforage": "1.10.0",
-    "next": "15.3.8",
+    "next": "15.5.18",
     "next-intl": "4.3.4",
     "react": "19.1.2",
     "react-dom": "19.1.2",
-    "react-select": "5.10.1",
+    "react-select": "5.10.2",
     "remeda": "2.15.0",
     "sharp": "0.33.5",
     "superjson": "2.2.6",
@@ -39,21 +39,21 @@
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "~0.4.2",
-    "@tailwindcss/forms": "~0.5.10",
+    "@tailwindcss/forms": "~0.5.11",
     "@tailwindcss/postcss": "~4.1.11",
-    "@tailwindcss/typography": "~0.5.16",
+    "@tailwindcss/typography": "~0.5.19",
     "@types/js-cookie": "^3.0.6",
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.10.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "autoprefixer": "~10.4.20",
     "cross-env": "~7.0.3",
     "cssnano": "~6.0.1",
     "eslint": "~9.30.1",
-    "eslint-config-next": "~15.0.0",
+    "eslint-config-next": "~15.5.18",
     "postcss": "~8.4.47",
     "postcss-import": "~16.1.0",
-    "swc-loader": "~0.2.6",
+    "swc-loader": "~0.2.7",
     "tailwindcss": "~4.1.11",
     "tw-animate-css": "~1.3.4",
     "typescript": "~5.6.3"
@@ -72,7 +72,7 @@
     "start:test": "cross-env NODE_ENV=test pnpm start"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

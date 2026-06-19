@@ -141,6 +141,7 @@ export const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
   allMessages: [],
   isRunning: false,
   createdAt: new Date(apiThread.createdAt),
+  updatedAt: new Date(apiThread.updatedAt),
 })
 
 /**

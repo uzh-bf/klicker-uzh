@@ -28,9 +28,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 10.15.0
+          version: 11.5.0
           run_install: true
       - name: Check formatting
         shell: bash
