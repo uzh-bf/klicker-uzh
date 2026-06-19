@@ -1,11 +1,5 @@
-import { ApolloQueryResult } from '@apollo/client'
 import { faArrowsRotate, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Exact,
-  GetOutdatedElementInstancesQuery,
-  Scalars,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import {
@@ -15,15 +9,9 @@ import {
   PracticeQuizFormValues,
 } from './WizardLayout'
 
-export type OutdatedInstancesRefetchFunction = (
-  variables?:
-    | Partial<
-        Exact<{
-          instanceIds: Array<Scalars['Int']['input']> | Scalars['Int']['input']
-        }>
-      >
-    | undefined
-) => Promise<ApolloQueryResult<GetOutdatedElementInstancesQuery>>
+export type OutdatedInstancesRefetchFunction = (variables?: {
+  instanceIds: number[]
+}) => Promise<unknown>
 
 function InstanceUpdateOption({
   values,

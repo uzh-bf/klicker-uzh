@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCircleExclamation,
@@ -8,7 +7,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Element,
   ElementType,
-  GetOutdatedElementInstancesDocument,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormLabel, Tooltip } from '@uzh-bf/design-system'
@@ -20,6 +18,7 @@ import CreationFormValidator from '../CreationFormValidator'
 import InstanceUpdateOption from '../InstanceUpdateOption'
 import StackBlockCreation from '../StackBlockCreation'
 import WizardNavigation from '../WizardNavigation'
+import { useOutdatedElementInstances } from '../useOutdatedElementInstances'
 import GroupActivityClueModal from './GroupActivityClueModal'
 import { GroupActivityWizardStepProps } from './GroupActivityWizard'
 
@@ -59,15 +58,14 @@ function GroupActivityStackClues({
   )
 
   // query if any invalid element versions are used
-  const { data, loading, refetch } = useQuery(
-    GetOutdatedElementInstancesDocument,
-    {
-      variables: { instanceIds: instanceVersionMap },
-      skip: instanceVersionMap.length === 0 || activeStep !== 3,
-      fetchPolicy: 'network-only',
-    }
-  )
-  const outdatedInstances = data?.getOutdatedElementInstances ?? []
+  const {
+    loading,
+    outdatedInstances,
+    refetch: refetchOutdatedInstances,
+  } = useOutdatedElementInstances({
+    enabled: activeStep === 3,
+    instanceIds: instanceVersionMap,
+  })
   const showNotification = outdatedInstances.length > 0
 
   return (
@@ -99,7 +97,7 @@ function GroupActivityStackClues({
                 loading={loading}
                 outdatedInstances={outdatedInstances}
                 setValues={setValues}
-                refetch={refetch}
+                refetch={refetchOutdatedInstances}
               />
             )}
             <div
@@ -118,7 +116,7 @@ function GroupActivityStackClues({
                 resetSelection={resetSelection}
                 error={errors.stack as any}
                 outdatedInstances={outdatedInstances}
-                refetchOutdatedInstances={refetch}
+                refetchOutdatedInstances={refetchOutdatedInstances}
                 className="w-80"
               />
               <div className="h-max w-full">

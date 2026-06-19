@@ -280,6 +280,94 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Authoring Outdated Element Instances
+
+Status: complete for the scoped slice. Scope was limited to the remaining Manage
+`GetOutdatedElementInstances` consumers in the creation wizards. Backend tRPC
+behavior already exists as `activity.outdatedElementInstances`; this slice only
+replaces the Apollo read wiring in the authoring UI and keeps activity submit
+mutations, realtime, Apollo providers, generated type cleanup, S05, and S06 out
+of scope.
+
+Operation mapping:
+
+```text
+Slice: S04L Authoring Outdated Element Instances
+GraphQL operation(s): GetOutdatedElementInstances
+GraphQL resolver(s): getOutdatedElementInstances
+Behavior source: packages/graphql/src/schema/query.ts and existing packages/api activity.outdatedElementInstances procedure
+tRPC router.procedure: activity.outdatedElementInstances
+Input schema: outdatedElementInstancesInput
+Output DTO: { outdatedElementInstances: { id, newTitle, newSampleSolution }[] }
+Active frontend consumers:
+- apps/frontend-manage/src/components/activities/creation/StackCreationStep.tsx
+- apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizQuestionsStep.tsx
+- apps/frontend-manage/src/components/activities/creation/groupActivity/GroupActivityStackClues.tsx
+- apps/frontend-manage/src/components/activities/creation/InstanceUpdateOption.tsx
+Apollo cache/refetch/subscription behavior: network-only query skipped until step 3 and instance ids exist; child controls refetch with narrowed instanceIds after updating stale instances.
+React Query replacement: trpc.activity.outdatedElementInstances.useQuery with refetchOnMount/staleTime and a local variable-aware refetch wrapper for child controls.
+Browser verification path: local manage activity creation wizard with network trace confirming tRPC request for outdated instances when authoring step 3 is reached if local stack/data allow.
+Cleanup blocked until: remaining S04 authoring mutations, generated type leak cleanup, S05 realtime, and S06 cleanup gates.
+```
+
+Implementation:
+
+- Replace Apollo `GetOutdatedElementInstancesDocument` usage in the three
+  creation-step components with `useOutdatedElementInstances`.
+- Added
+  `apps/frontend-manage/src/components/activities/creation/useOutdatedElementInstances.ts`
+  to bridge the old Apollo variable-refetch contract onto
+  `trpc.activity.outdatedElementInstances`.
+- Updated `InstanceUpdateOption` so the shared refetch type no longer depends on
+  Apollo result/generated GraphQL operation types.
+- Kept generated `Element`/`ElementType`/`ParameterType` imports in place where
+  they still describe mixed-state activity form values. Broad generated type
+  cleanup remains S04P.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04L files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- Focused operation audit
+  `rg -n "GetOutdatedElementInstancesDocument|GetOutdatedElementInstancesQuery|GetOutdatedElementInstances|getOutdatedElementInstances|ApolloQueryResult|@apollo/client" <touched creation files>`:
+  no matches.
+- Broader focused app/API audit
+  `rg -n "GetOutdatedElementInstancesDocument|GetOutdatedElementInstancesQuery|GetOutdatedElementInstances|getOutdatedElementInstances" apps/frontend-manage/src packages/api/src/trpc`:
+  no matches.
+- Compact S04 coexistence audit
+  `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`:
+  `210`, confirming GraphQL/Apollo remain intentionally live for other S04/S05/S06
+  work.
+- `git diff --check`: passed.
+- Browser verification with `AGENT_BROWSER_SESSION=s04-outdated npx agent-browser`
+  against the local manage/backend/auth stack on ports `3104`/`3103`/`3106`:
+  logged in via delegated `lecturer`, opened `/`, created a disposable live-quiz
+  draft locally without submitting, added the seeded single-choice element, and
+  confirmed the Questions & Blocks step rendered:
+  `/tmp/agent-browser-shots/s04-outdated-02-questions-empty.png`,
+  `/tmp/agent-browser-shots/s04-outdated-03-questions-with-element.png`.
+- Browser verification for the actual outdated-instance tRPC request used the
+  seeded `Live Quiz: Live Quiz 1` duplicate flow, because newly selected
+  question-pool elements are inserted as fresh copies with
+  `existingInstanceId: null`. The duplicate flow mounted Questions & Blocks with
+  persisted instance id `24`, and browser resource entries included
+  `/api/trpc/activity.outdatedElementInstances?...instanceIds%22%3A%5B24%5D...`.
+  Screenshot:
+  `/tmp/agent-browser-shots/s04-outdated-05-duplicate-questions.png`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with the known manage build warnings (`MODULE_TYPELESS_PACKAGE_JSON`,
+  next-intl `i18n`, PWA output, stale Browserslist, `/qr/[...args]`
+  `MISSING_MESSAGE`, large page data).
+
+Residual risk / next S04 work:
+
+- The duplication flow still performed one `/api/graphql` request for the
+  existing live-quiz source data; that is outside this slice and remains part of
+  the remaining authoring mutation/read migration queue.
+- Continue remaining S04-only findings and pause before S05/S06.
+
 ### 2026-06-18 Completed: S04K Manage User Groups
 
 Status: complete for the scoped slice. Scope was limited to the Manage

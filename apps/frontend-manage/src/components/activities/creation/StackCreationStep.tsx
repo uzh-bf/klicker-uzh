@@ -1,9 +1,4 @@
-import { useQuery } from '@apollo/client'
-import {
-  Element,
-  ElementType,
-  GetOutdatedElementInstancesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, Form, Formik } from 'formik'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -15,6 +10,7 @@ import { ElementStackFormValues } from './WizardLayout'
 import WizardNavigation from './WizardNavigation'
 import { MicroLearningWizardStepProps } from './microLearning/MicroLearningWizard'
 import { PracticeQuizWizardStepProps } from './practiceQuiz/PracticeQuizWizard'
+import { useOutdatedElementInstances } from './useOutdatedElementInstances'
 
 interface PracticeQuizStackCreationStepProps
   extends PracticeQuizWizardStepProps {
@@ -61,15 +57,14 @@ function StackCreationStep({
   )
 
   // query if any invalid element versions are used
-  const { data, loading, refetch } = useQuery(
-    GetOutdatedElementInstancesDocument,
-    {
-      variables: { instanceIds: instanceVersionMap },
-      skip: instanceVersionMap.length === 0 || activeStep !== 3,
-      fetchPolicy: 'network-only',
-    }
-  )
-  const outdatedInstances = data?.getOutdatedElementInstances ?? []
+  const {
+    loading,
+    outdatedInstances,
+    refetch: refetchOutdatedInstances,
+  } = useOutdatedElementInstances({
+    enabled: activeStep === 3,
+    instanceIds: instanceVersionMap,
+  })
   const showNotification = outdatedInstances.length > 0
 
   return (
@@ -94,7 +89,7 @@ function StackCreationStep({
                 loading={loading}
                 outdatedInstances={outdatedInstances}
                 setValues={setValues}
-                refetch={refetch}
+                refetch={refetchOutdatedInstances}
               />
             )}
             <div className="mt-1 md:mt-0 md:overflow-x-auto">
@@ -122,7 +117,7 @@ function StackCreationStep({
                           resetSelection={resetSelection}
                           error={errors.stacks as any}
                           outdatedInstances={outdatedInstances}
-                          refetchOutdatedInstances={refetch}
+                          refetchOutdatedInstances={refetchOutdatedInstances}
                         />
                       )
                     )}
