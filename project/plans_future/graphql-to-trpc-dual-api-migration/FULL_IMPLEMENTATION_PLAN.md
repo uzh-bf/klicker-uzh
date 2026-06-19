@@ -192,7 +192,11 @@ Current next action:
   locally. It removes the generated GraphQL option-type import from shared
   `validateResponse` by adding narrow local structural option types, while
   keeping GraphQL/Apollo live.
-- S05G-T next: continue with the next smallest shared-components generated
+- S05G-T selection answer-options generated option type cleanup is complete
+  locally. It removes the generated GraphQL option-type import from the
+  `SELECTIONAnswerOptions` leaf component by using a narrow local structural
+  option type.
+- S05G-U next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1709,6 +1713,57 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/utils/validateResponse.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/utils/validateResponse.ts packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-T Selection Answer Options Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove the generated GraphQL
+option-type import from the selection answer-options leaf component without
+changing selection rendering or migrating the broader selection question and
+evaluation payloads.
+
+Slice: S05G-T Selection Answer Options Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `SelectionElementOptions` shape;
+the answer-options component only reads `numberOfInputs` and answer-collection
+entry `id` / `value` fields.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/questions/SELECTIONAnswerOptions.tsx`
+- `packages/shared-components/src/SelectionQuestion.tsx`
+
+Intended behavior:
+
+- Keep selection answer option rendering unchanged.
+- Remove the generated GraphQL option-type import from
+  `SELECTIONAnswerOptions.tsx`.
+- Keep generated GraphQL option payloads accepted by structural typing while
+  already migrated tRPC DTO payloads can also call the component.
+
+What changed:
+
+- Added local structural `SelectionElementOptions` in
+  `packages/shared-components/src/elementTypes.ts`.
+- Switched
+  `packages/shared-components/src/questions/SELECTIONAnswerOptions.tsx` to the
+  local option type instead of the generated GraphQL operation type.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/questions/SELECTIONAnswerOptions.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed after formatting.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/questions/SELECTIONAnswerOptions.tsx packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 

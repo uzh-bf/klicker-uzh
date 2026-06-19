@@ -41,3 +41,15 @@ export type NumericalElementOptions = {
     min?: number | null
   } | null
 }
+
+export type SelectionElementOptions = {
+  answerCollection?: {
+    entries?:
+      | {
+          id: number
+          value: string
+        }[]
+      | null
+  } | null
+  numberOfInputs?: number | null
+}
