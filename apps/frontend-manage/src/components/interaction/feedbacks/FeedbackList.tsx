@@ -1,10 +1,10 @@
-import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { AudienceFeedback } from '../types'
 import FeedbackListEntry from './FeedbackListEntry'
 
 interface FeedbackListProps {
-  feedbacks: FeedbackType[]
+  feedbacks: AudienceFeedback[]
   noFeedbacks: boolean
   isPublic?: boolean
   handleDeleteFeedback: (feedbackId: number) => void

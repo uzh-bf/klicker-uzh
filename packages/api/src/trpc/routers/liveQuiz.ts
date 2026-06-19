@@ -9,6 +9,15 @@ import {
   type LiveQuizExecutionContext,
 } from '../../services/liveQuizExecution.js'
 import { getCockpitLiveQuiz } from '../../services/manageLiveQuizCockpit.js'
+import {
+  changeManageLiveQuizSettings,
+  deleteManageLiveQuizFeedback,
+  deleteManageLiveQuizFeedbackResponse,
+  pinManageLiveQuizFeedback,
+  publishManageLiveQuizFeedback,
+  resolveManageLiveQuizFeedback,
+  respondToManageLiveQuizFeedback,
+} from '../../services/manageLiveQuizFeedbacks.js'
 import { getLecturerViewLiveQuiz } from '../../services/manageLiveQuizLecturerView.js'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
@@ -26,7 +35,16 @@ import {
   requireLiveQuizPermission,
 } from '../permissions.js'
 import { userProcedure, userSessionExecProcedure } from '../procedures.js'
-import { liveQuizBlockInput, liveQuizIdInput } from '../schemas/liveQuiz.js'
+import {
+  liveQuizBlockInput,
+  liveQuizFeedbackIdInput,
+  liveQuizFeedbackPinInput,
+  liveQuizFeedbackPublicationInput,
+  liveQuizFeedbackResolveInput,
+  liveQuizFeedbackResponseInput,
+  liveQuizIdInput,
+  liveQuizSettingsInput,
+} from '../schemas/liveQuiz.js'
 
 function getExecutionContext(ctx: TRPCContextWithUser) {
   if (
@@ -345,5 +363,124 @@ export const liveQuizRouter = router({
       )
 
       return { liveQuiz: toLiveQuizStatus(quiz) }
+    }),
+
+  changeSettings: userSessionExecProcedure
+    .input(liveQuizSettingsInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.id,
+        PermissionLevel.EXECUTE
+      )
+
+      return changeManageLiveQuizSettings({
+        ...input,
+        emitter: ctx.emitter,
+        prisma: getPrisma(ctx),
+        pubSub: ctx.pubSub,
+      })
+    }),
+
+  publishFeedback: userSessionExecProcedure
+    .input(liveQuizFeedbackPublicationInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.liveQuizId,
+        PermissionLevel.EXECUTE
+      )
+
+      return publishManageLiveQuizFeedback({
+        ...input,
+        emitter: ctx.emitter,
+        prisma: getPrisma(ctx),
+        pubSub: ctx.pubSub,
+      })
+    }),
+
+  pinFeedback: userSessionExecProcedure
+    .input(liveQuizFeedbackPinInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.liveQuizId,
+        PermissionLevel.EXECUTE
+      )
+
+      return pinManageLiveQuizFeedback({
+        ...input,
+        emitter: ctx.emitter,
+        prisma: getPrisma(ctx),
+        pubSub: ctx.pubSub,
+      })
+    }),
+
+  resolveFeedback: userSessionExecProcedure
+    .input(liveQuizFeedbackResolveInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.liveQuizId,
+        PermissionLevel.EXECUTE
+      )
+
+      return resolveManageLiveQuizFeedback({
+        ...input,
+        emitter: ctx.emitter,
+        prisma: getPrisma(ctx),
+        pubSub: ctx.pubSub,
+      })
+    }),
+
+  respondToFeedback: userSessionExecProcedure
+    .input(liveQuizFeedbackResponseInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.liveQuizId,
+        PermissionLevel.EXECUTE
+      )
+
+      return respondToManageLiveQuizFeedback({
+        ...input,
+        emitter: ctx.emitter,
+        prisma: getPrisma(ctx),
+        pubSub: ctx.pubSub,
+      })
+    }),
+
+  deleteFeedback: userSessionExecProcedure
+    .input(liveQuizFeedbackIdInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.liveQuizId,
+        PermissionLevel.EXECUTE
+      )
+
+      return deleteManageLiveQuizFeedback({
+        ...input,
+        emitter: ctx.emitter,
+        prisma: getPrisma(ctx),
+        pubSub: ctx.pubSub,
+      })
+    }),
+
+  deleteFeedbackResponse: userSessionExecProcedure
+    .input(liveQuizFeedbackIdInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.liveQuizId,
+        PermissionLevel.EXECUTE
+      )
+
+      return deleteManageLiveQuizFeedbackResponse({
+        ...input,
+        emitter: ctx.emitter,
+        prisma: getPrisma(ctx),
+        pubSub: ctx.pubSub,
+      })
     }),
 })

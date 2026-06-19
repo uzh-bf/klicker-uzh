@@ -11,24 +11,24 @@ import {
   faThumbTack,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { AudienceFeedbackResponse } from '../types'
 import FeedbackDeletionModal from './FeedbackDeletionModal'
 
 interface IFeedback {
   id: number
   content: string
-  createdAt: string
+  createdAt: Date | string
   votes: number
   resolved: boolean
   pinned: boolean
-  responses?: FeedbackResponse[]
-  resolvedAt: string
+  responses?: AudienceFeedbackResponse[] | null
+  resolvedAt: Date | string | null
 }
 
 interface Props extends IFeedback {
@@ -170,7 +170,7 @@ function Feedback({
             responses.map((response) => (
               <div
                 className="no-page-break-inside rounded-lg border border-gray-200 bg-white p-3 shadow-sm print:border-l-4 print:border-l-blue-400"
-                key={response.createdAt}
+                key={response.id}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

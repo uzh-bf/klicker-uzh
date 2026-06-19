@@ -1,10 +1,10 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
+import type { AudienceFeedback } from '../types'
 import Feedback from './Feedback'
 
 interface FeedbackListEntryProps {
-  feedback: FeedbackType
+  feedback: AudienceFeedback
   isPublic?: boolean
   onDeleteFeedback: () => void
   onDeleteResponse: (responseId: number) => void

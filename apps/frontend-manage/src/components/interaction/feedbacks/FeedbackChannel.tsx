@@ -2,15 +2,15 @@
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
-import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import FeedbacksPrintView from '../../evaluation/feedbacks/FeedbacksPrintView'
+import type { AudienceFeedback } from '../types'
 import FeedbackList from './FeedbackList'
 import FeedbackOverviewFilters from './FeedbackOverviewFilters'
 import FeedbackSearchBar from './FeedbackSearchBar'
 
 interface Props {
   liveQuizName: string
-  feedbacks?: FeedbackType[]
+  feedbacks?: AudienceFeedback[]
   handleDeleteFeedback: (feedbackId: number) => void
   handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
   handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void

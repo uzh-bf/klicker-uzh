@@ -160,7 +160,13 @@ Current next action:
   the remaining generated GraphQL timeline block types from the migrated cockpit
   path, keeps the GraphQL package workflow visibly tied to `packages/graphql`,
   and adds focused `packages/api` tRPC parity coverage for the cockpit behavior.
-- S05G-M next: continue with the next smallest active manage/PWA
+- S05G-M manage live-quiz audience interaction cleanup is complete locally. It
+  migrates lecturer feedback/settings mutations in `AudienceInteraction` from
+  Apollo/GraphQL to tRPC, preserves GraphQL-equivalent realtime side effects
+  including moderation auto-publish, keeps the GraphQL package workflow visibly
+  tied to `packages/graphql`, and adds focused `packages/api` tRPC parity
+  coverage for the same behavior.
+- S05G-N next: continue with the next smallest active manage/PWA
   Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
   gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1261,6 +1267,88 @@ Verification:
 - `pnpm exec prettier --write <S05G-L touched files>` passed.
 - `pnpm exec prettier --check <S05G-L touched files>` passed.
 - `git diff --check` passed.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining active
+Apollo/generated-operation consumers in manage/PWA are still blockers for S06.
+
+### 2026-06-19 Completed: S05G-M Manage Live-Quiz Audience Interaction
+
+Status: complete locally. Scope remained S05 only: migrate the manage
+live-quiz audience feedback/settings mutation path to tRPC while keeping
+GraphQL live for remaining active consumers.
+
+Slice: S05G-M Manage Live-Quiz Audience Interaction
+
+GraphQL operation(s): `ChangeLiveQuizSettingsDocument`,
+`PublishFeedbackDocument`, `PinFeedbackDocument`, `ResolveFeedbackDocument`,
+`RespondToFeedbackDocument`, `DeleteFeedbackDocument`, and
+`DeleteFeedbackResponseDocument`.
+
+GraphQL resolver(s): `Mutation.changeLiveQuizSettings`,
+`Mutation.publishFeedback`, `Mutation.pinFeedback`,
+`Mutation.resolveFeedback`, `Mutation.respondToFeedback`,
+`Mutation.deleteFeedback`, and `Mutation.deleteFeedbackResponse`.
+
+Behavior source: `packages/graphql/src/services/liveQuizzes.ts`
+`changeLiveQuizSettings` plus `packages/graphql/src/services/feedbacks.ts`
+lecturer feedback management mutations.
+
+tRPC router.procedure: new `liveQuiz.changeSettings`,
+`liveQuiz.publishFeedback`, `liveQuiz.pinFeedback`,
+`liveQuiz.resolveFeedback`, `liveQuiz.respondToFeedback`,
+`liveQuiz.deleteFeedback`, and `liveQuiz.deleteFeedbackResponse`.
+
+Active frontend consumer:
+`apps/frontend-manage/src/components/interaction/AudienceInteraction.tsx`.
+
+Intended behavior:
+
+- Keep `EXECUTE` permission gating for all lecturer feedback/settings
+  mutations.
+- Preserve GraphQL settings behavior, including moderation-disable
+  auto-publish of unpublished feedback.
+- Preserve realtime feedback added/removed/updated/pinned/settings-changed
+  publication and LiveQuiz invalidation side effects.
+- Keep the existing parent refetch callback path so the migrated cockpit query
+  and lecturer view query refresh after each mutation.
+- Remove generated GraphQL feedback/confusion types from the migrated
+  interaction component path and replace them with narrow structural types.
+
+What changed:
+
+- Added `manageLiveQuizFeedbacks` service functions in `packages/api` for the
+  GraphQL-equivalent feedback/settings behavior.
+- Added tRPC input schemas and procedures for the migrated mutation surface.
+- Migrated `AudienceInteraction` from Apollo `useMutation` plus
+  `GetCockpitQuizDocument` cache writes to tRPC mutation hooks plus
+  React Query invalidation/refetch.
+- Added local structural interaction feedback/confusion types used by the
+  migrated interaction components.
+- Added focused tRPC API tests covering permission gating, settings
+  auto-publish, visibility publication, pin/resolve, respond, delete feedback,
+  and delete feedback response behavior.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/live-quiz-feedback-management.test.ts`
+  passed: 1 file, 6 tests.
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/live-quiz-feedback-management.test.ts src/trpc/__tests__/live-quiz-cockpit.test.ts`
+  passed: 2 files, 9 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed after rebuilding
+  `@klicker-uzh/api` declarations.
+- `pnpm --filter @klicker-uzh/api test` passed: 47 files, 463 tests.
+- `pnpm --filter @klicker-uzh/graphql check` passed.
+- `pnpm --filter @klicker-uzh/graphql exec vitest run test/responses.test.ts test/randomGroups.test.ts`
+  passed: 2 files, 6 tests, confirming the GraphQL package test path still
+  executes against `packages/graphql`.
+- `pnpm exec prettier --check <S05G-M touched files>` passed.
+- `git diff --check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage build` passed with existing
+  Next/i18n/page-data warning noise and existing QR `MISSING_MESSAGE` warning
+  noise.
 
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining active
@@ -11770,7 +11858,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-M with the next smallest active manage/PWA
+2. Continue S05G-N with the next smallest active manage/PWA
    Apollo/generated-operation consumer while keeping GraphQL live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.
