@@ -66,10 +66,42 @@ export type FreeTextInstanceEvaluation = InstanceEvaluation & {
 }
 
 export type NumericalElementOptions = {
+  accuracy?: number | null
+  exactSolutions?: number[] | null
+  placeholder?: string | null
   restrictions?: {
     max?: number | null
     min?: number | null
   } | null
+  solutionRanges?: NumericalSolutionRange[] | null
+  unit?: string | null
+}
+
+export type NumericalSolutionRange = {
+  max?: number | null
+  min?: number | null
+}
+
+export type NumericalInstanceEvaluation = InstanceEvaluation & {
+  exactSolutions?: number[] | null
+  explanation?: string | null
+  responses?:
+    | {
+        count: number
+        value: number
+      }[]
+    | null
+  solutionRanges?: NumericalSolutionRange[] | null
+}
+
+export type Statistics = {
+  max: number
+  mean: number
+  median: number
+  min: number
+  q1: number
+  q3: number
+  sd: number
 }
 
 export type ContentElementInstance = {

@@ -217,7 +217,11 @@ Current next action:
   locally. Scope was limited to replacing `FreeTextQuestion` / `FTEvaluation`
   generated `FreeTextElementOptions` and `FreeTextInstanceEvaluation` imports
   with narrow local structural types.
-- S05G-Z next: continue with the next smallest shared-components generated
+- S05G-Z numerical question/evaluation and histogram generated type cleanup is
+  complete locally. Scope was limited to replacing generated numerical
+  option/evaluation, histogram range/statistics, and `ElementType` imports in
+  the numerical shared-component leaf path with local structural types.
+- S05G-AA next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -2048,6 +2052,72 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/FreeTextQuestion.tsx packages/shared-components/src/evaluation/FTEvaluation.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/FreeTextQuestion.tsx packages/shared-components/src/evaluation/FTEvaluation.tsx packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-Z Numerical Evaluation/Histogram Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove generated GraphQL
+imports from the numerical shared question/evaluation histogram path without touching
+GraphQL/Apollo runtime paths.
+
+Slice: S05G-Z Numerical Evaluation/Histogram Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `NumericalElementOptions`,
+`NumericalInstanceEvaluation`, `NumericalSolutionRange`, `Statistics`, and
+`ElementType.Numerical` fields consumed by the numerical shared components.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/NumericalQuestion.tsx`
+- `packages/shared-components/src/evaluation/NREvaluation.tsx`
+- `packages/shared-components/src/charts/ElementHistogram.tsx`
+- `packages/shared-components/src/hooks/useEvaluationHistogramData.ts`
+- `apps/frontend-manage/src/components/evaluation/ElementChart.tsx`
+
+Intended behavior:
+
+- Keep numerical answer input validation and min/max/accuracy/placeholder/unit
+  rendering unchanged.
+- Keep practice-quiz numerical point summary, explanation, histogram responses,
+  exact solutions, solution ranges, and optional statistics rendering unchanged.
+- Remove generated GraphQL imports from the numerical shared-component leaf
+  path by using local structural shared-component types.
+
+What changed:
+
+- Expanded local `NumericalElementOptions` in
+  `packages/shared-components/src/elementTypes.ts` with accuracy, placeholder,
+  unit, exact solutions, and solution ranges.
+- Added local structural `NumericalSolutionRange`,
+  `NumericalInstanceEvaluation`, and `Statistics` types.
+- Switched `packages/shared-components/src/NumericalQuestion.tsx`,
+  `packages/shared-components/src/evaluation/NREvaluation.tsx`,
+  `packages/shared-components/src/charts/ElementHistogram.tsx`, and
+  `packages/shared-components/src/hooks/useEvaluationHistogramData.ts` to local
+  structural types and local `ElementType`.
+- Added an explicit `ElementType[]` annotation for the histogram supported-type
+  list so TypeScript does not narrow it to only `ElementType.Numerical`.
+
+Verification:
+
+- Initial `pnpm --filter @klicker-uzh/shared-components check`,
+  `pnpm --filter @klicker-uzh/frontend-pwa check`, and
+  `pnpm --filter @klicker-uzh/frontend-manage check` failed on local enum array
+  narrowing in `ElementHistogram.tsx`.
+- `pnpm --filter @klicker-uzh/shared-components check` passed after adding the
+  explicit `ElementType[]` annotation.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed after the same fix.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed after the same fix.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/NumericalQuestion.tsx packages/shared-components/src/evaluation/NREvaluation.tsx packages/shared-components/src/charts/ElementHistogram.tsx packages/shared-components/src/hooks/useEvaluationHistogramData.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/NumericalQuestion.tsx packages/shared-components/src/evaluation/NREvaluation.tsx packages/shared-components/src/charts/ElementHistogram.tsx packages/shared-components/src/hooks/useEvaluationHistogramData.ts packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 

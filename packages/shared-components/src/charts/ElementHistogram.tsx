@@ -1,5 +1,4 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { ElementType, type Statistics } from '@klicker-uzh/graphql/dist/ops'
 import { Button, NumberField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
@@ -16,6 +15,7 @@ import {
 } from 'recharts'
 import { twMerge } from 'tailwind-merge'
 import { CHART_SOLUTION_COLORS } from '../constants'
+import { ElementType, type Statistics } from '../elementTypes'
 import useEvaluationHistogramData from '../hooks/useEvaluationHistogramData'
 
 interface ElementHistogramProps {
@@ -58,7 +58,7 @@ function ElementHistogram({
   className,
 }: ElementHistogramProps) {
   const t = useTranslations()
-  const supportedElementTypes = [ElementType.Numerical]
+  const supportedElementTypes: ElementType[] = [ElementType.Numerical]
   const [numBins, setNumBins] = useState('20')
   const [lowerLimit, setLowerLimit] = useState<number | null>(minValue ?? null)
   const [upperLimit, setUpperLimit] = useState<number | null>(maxValue ?? null)
