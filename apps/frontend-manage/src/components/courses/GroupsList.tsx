@@ -1,9 +1,8 @@
-import { useQuery } from '@apollo/client'
 import { faShuffle } from '@fortawesome/free-solid-svg-icons'
-import { GetCourseGroupsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, TabContent, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import ParticipantListEntry from './ParticipantListEntry'
 import AssignmentConfirmationModal from './groups/AssignmentConfirmationModal'
 
@@ -18,13 +17,18 @@ function GroupsList({
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
+  const [isGroupCreationFinalized, setIsGroupCreationFinalized] = useState(
+    groupCreationFinalized
+  )
 
-  const { data } = useQuery(GetCourseGroupsDocument, {
-    variables: { courseId: courseId },
-  })
+  useEffect(() => {
+    setIsGroupCreationFinalized(groupCreationFinalized)
+  }, [groupCreationFinalized])
 
-  const pool = data?.getCourseGroups?.groupAssignmentPoolEntries ?? []
-  const groups = data?.getCourseGroups?.participantGroups ?? []
+  const { data } = trpc.course.groups.useQuery({ courseId })
+
+  const pool = data?.courseGroups?.groupAssignmentPoolEntries ?? []
+  const groups = data?.courseGroups?.participantGroups ?? []
 
   // count the number of groups with only one participant
   const groupsOfOne = groups.filter(
@@ -50,29 +54,31 @@ function GroupsList({
             className="@xl:grid-cols-2 grid"
             data-cy="random-group-assignment-pool"
           >
-            {pool.map((entry) => (
-              <ParticipantListEntry
-                participant={entry.participant!}
-                key={entry.id}
-              />
-            ))}
+            {pool.map((entry) =>
+              entry.participant ? (
+                <ParticipantListEntry
+                  participant={entry.participant}
+                  key={entry.id}
+                />
+              ) : null
+            )}
           </div>
         )}
 
-        {!groupCreationFinalized && randomAssignmentNotPossible && (
+        {!isGroupCreationFinalized && randomAssignmentNotPossible && (
           <UserNotification
             type="warning"
             message={t('manage.course.randomGroupsNotPossible')}
           />
         )}
-        {groupCreationFinalized && (
+        {isGroupCreationFinalized && (
           <UserNotification
             type="warning"
             message={t('manage.course.groupAssignmentFinalizedMessage')}
           />
         )}
 
-        {!groupCreationFinalized && !actionsDisabled && (
+        {!isGroupCreationFinalized && !actionsDisabled && (
           <Button
             primary
             className={{ root: 'my-1 h-8 w-max self-end' }}
@@ -105,6 +111,7 @@ function GroupsList({
       {open && (
         <AssignmentConfirmationModal
           courseId={courseId}
+          onAssigned={() => setIsGroupCreationFinalized(true)}
           onClose={() => setOpen(false)}
         />
       )}

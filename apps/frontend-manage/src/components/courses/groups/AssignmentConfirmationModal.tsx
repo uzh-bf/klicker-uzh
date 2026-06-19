@@ -1,63 +1,29 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetCourseGroupsDocument,
-  GetSingleCourseDocument,
-  ManualRandomGroupAssignmentsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 function AssignmentConfirmationModal({
   courseId,
+  onAssigned,
   onClose,
 }: {
   courseId: string
+  onAssigned: () => void
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [
-    manualRandomGroupAssignments,
-    { loading: randomGroupCreationLoading },
-  ] = useMutation(ManualRandomGroupAssignmentsDocument, {
-    update: (cache, { data }) => {
-      // check if the finalization was successful
-      if (!data?.manualRandomGroupAssignments) return
+  const utils = trpc.useUtils()
+  const assignmentMutation =
+    trpc.course.manualRandomGroupAssignments.useMutation()
 
-      // update the modified course settings
-      cache.updateQuery(
-        { query: GetSingleCourseDocument, variables: { courseId } },
-        (qData) => {
-          if (!qData?.course) return qData
-
-          return {
-            course: {
-              ...qData.course,
-              randomAssignmentFinalized: true,
-              groupDeadlineDate: new Date(),
-
-              numOfParticipantGroups: data.manualRandomGroupAssignments!.length,
-            },
-          }
-        }
-      )
-
-      // update the course participant groups
-      cache.updateQuery(
-        { query: GetCourseGroupsDocument, variables: { courseId } },
-        (qData) => {
-          if (!qData?.getCourseGroups) return qData
-
-          return {
-            getCourseGroups: {
-              ...qData.getCourseGroups,
-              groupAssignmentPoolEntries: [],
-              participantGroups: data.manualRandomGroupAssignments!,
-            },
-          }
-        }
-      )
-    },
-  })
+  function showErrorToast() {
+    console.error('Error while creating random groups')
+    toast({
+      type: 'error',
+      message: t('manage.course.groupAssignmentFailed'),
+      options: { duration: 5000 },
+    })
+  }
 
   return (
     <Modal
@@ -65,25 +31,29 @@ function AssignmentConfirmationModal({
       onClose={onClose}
       title={t('manage.course.finalizeRandomGroupAssignment')}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={randomGroupCreationLoading}
+      primaryLoading={assignmentMutation.isLoading}
       onPrimaryAction={async () => {
-        const res = await manualRandomGroupAssignments({
-          variables: { courseId: courseId },
-        })
-        if (res.data?.manualRandomGroupAssignments) {
+        try {
+          const res = await assignmentMutation.mutateAsync({ courseId })
+
+          if (!res.participantGroups) {
+            showErrorToast()
+            return
+          }
+
+          await Promise.all([
+            utils.course.groups.invalidate({ courseId }),
+            utils.course.summary.invalidate({ courseId }),
+          ])
+          onAssigned()
           toast({
             type: 'success',
             message: t('manage.course.groupAssignmentSuccessful'),
             options: { duration: 5000 },
           })
           onClose()
-        } else {
-          console.error('Error while creating random groups')
-          toast({
-            type: 'error',
-            message: t('manage.course.groupAssignmentFailed'),
-            options: { duration: 5000 },
-          })
+        } catch {
+          showErrorToast()
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-random-group-assignment' }}

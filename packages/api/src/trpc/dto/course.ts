@@ -86,6 +86,27 @@ type CourseActivitiesSource = Pick<DB.Course, 'id' | 'name'> & {
   microLearnings?: Pick<DB.MicroLearning, 'id' | 'name' | 'status'>[] | null
 }
 
+type CourseGroupParticipantSource = Pick<
+  DB.Participant,
+  'avatar' | 'email' | 'id' | 'username'
+>
+
+type CourseParticipantGroupSource = Pick<
+  DB.ParticipantGroup,
+  'averageMemberScore' | 'code' | 'groupActivityScore' | 'id' | 'name'
+> & {
+  participants?: CourseGroupParticipantSource[] | null
+}
+
+type CourseGroupPoolEntrySource = Pick<DB.GroupAssignmentPoolEntry, 'id'> & {
+  participant?: CourseGroupParticipantSource | null
+}
+
+type CourseGroupsSource = {
+  participantGroups?: CourseParticipantGroupSource[] | null
+  groupAssignmentPoolEntries?: CourseGroupPoolEntrySource[] | null
+}
+
 export function toControlCourseListItem(course: ControlCourseListItem) {
   return {
     id: course.id,
@@ -249,4 +270,48 @@ export function toCourseActivities(course: CourseActivitiesSource | null) {
         status: microLearning.status,
       })) ?? [],
   }
+}
+
+function toCourseParticipantGroup(group: CourseParticipantGroupSource) {
+  return {
+    id: group.id,
+    name: group.name,
+    code: group.code,
+    averageMemberScore: group.averageMemberScore,
+    groupActivityScore: group.groupActivityScore,
+    participants:
+      group.participants?.map((participant) => ({
+        id: participant.id,
+        username: participant.username,
+        email: participant.email,
+        avatar: participant.avatar,
+      })) ?? [],
+  }
+}
+
+export function toCourseGroups(course: CourseGroupsSource | null) {
+  if (!course) return null
+
+  return {
+    participantGroups:
+      course.participantGroups?.map(toCourseParticipantGroup) ?? [],
+    groupAssignmentPoolEntries:
+      course.groupAssignmentPoolEntries?.map((entry) => ({
+        id: entry.id,
+        participant: entry.participant
+          ? {
+              id: entry.participant.id,
+              username: entry.participant.username,
+              email: entry.participant.email,
+              avatar: entry.participant.avatar,
+            }
+          : null,
+      })) ?? [],
+  }
+}
+
+export function toCourseParticipantGroups(
+  groups: CourseParticipantGroupSource[] | null
+) {
+  return groups?.map(toCourseParticipantGroup) ?? groups
 }

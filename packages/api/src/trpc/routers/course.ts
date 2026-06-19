@@ -2,9 +2,17 @@ import {
   PermissionLevel,
   PublicationStatus,
   type Prisma,
+  type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import type { EventEmitter } from 'node:events'
+import {
+  adjectives,
+  animals,
+  colors,
+  uniqueNamesGenerator,
+} from 'unique-names-generator'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
   toActiveUserCourse,
@@ -13,6 +21,8 @@ import {
   toControlCourse,
   toControlCourseListItem,
   toCourseActivities,
+  toCourseGroups,
+  toCourseParticipantGroups,
   toCourseSummary,
   toManageCourseListItem,
 } from '../dto/course.js'
@@ -25,6 +35,7 @@ import {
   controlCourseInput,
   courseActivitiesInput,
   courseActivityIdsInput,
+  courseGroupsInput,
   courseSummaryInput,
   createCourseInput,
   deleteCourseInput,
@@ -80,9 +91,269 @@ const courseSettingsSelect = {
   updatedAt: true,
 } satisfies Prisma.CourseSelect
 
+const courseGroupParticipantSelect = {
+  id: true,
+  username: true,
+  email: true,
+  avatar: true,
+} satisfies Prisma.ParticipantSelect
+
+const courseParticipantGroupSelect = {
+  id: true,
+  name: true,
+  code: true,
+  averageMemberScore: true,
+  groupActivityScore: true,
+  participants: {
+    select: courseGroupParticipantSelect,
+  },
+} satisfies Prisma.ParticipantGroupSelect
+
+const singleParticipantGroupSelect = {
+  id: true,
+  participants: {
+    select: {
+      id: true,
+    },
+  },
+} satisfies Prisma.ParticipantGroupSelect
+
+type CourseWithSingleParticipantGroups = Prisma.CourseGetPayload<{
+  include: {
+    participantGroups: {
+      select: typeof singleParticipantGroupSelect
+    }
+  }
+}>
+
+interface RandomGroupAssignmentArgs {
+  participantIds: string[]
+  preferredGroupSize: number
+}
+
 type ScheduledHatchetClient = {
   scheduled: {
     delete: (taskId: string) => Promise<unknown>
+  }
+}
+
+async function sendTeamsNotification({
+  scope,
+  text,
+}: {
+  scope: string
+  text: string
+}) {
+  if (!process.env.TEAMS_WEBHOOK_URL) return null
+
+  try {
+    return await fetch(process.env.TEAMS_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        '@context': 'https://schema.org/extensions',
+        '@type': 'MessageCard',
+        themeColor: '0076D7',
+        title: scope,
+        text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
+      }),
+    })
+  } catch (error) {
+    console.error('Failed to send Teams notification:', error)
+    return null
+  }
+}
+
+function splitGroupsFinal({
+  participantIds,
+  preferredGroupSize,
+}: RandomGroupAssignmentArgs) {
+  if (participantIds.length === 1) {
+    return []
+  }
+
+  const participantIdsCopy = [...participantIds]
+  let studentsInPool = participantIdsCopy.length
+  if (studentsInPool % preferredGroupSize === 0) {
+    const groups: string[][] = []
+    while (studentsInPool > 0) {
+      const group = participantIdsCopy.splice(0, preferredGroupSize)
+      groups.push(group)
+      studentsInPool -= preferredGroupSize
+    }
+
+    return groups
+  }
+
+  const numOfGroups = Math.floor((studentsInPool - 2) / preferredGroupSize) + 1
+  const groups: string[][] = Array.from({ length: numOfGroups }, () => [])
+
+  let groupIx = 0
+  for (const participantId of participantIdsCopy) {
+    groups[groupIx]!.push(participantId)
+    groupIx = (groupIx + 1) % numOfGroups
+  }
+
+  return groups
+}
+
+async function resolveSingleParticipantGroups({
+  course,
+  prisma,
+  emitter,
+}: {
+  course: CourseWithSingleParticipantGroups
+  prisma: PrismaClient
+  emitter?: EventEmitter
+}) {
+  const singleParticipantGroups = course.participantGroups
+    .filter((group) => group.participants.length === 1)
+    .map((group) => ({
+      groupId: group.id,
+      participantId: group.participants[0]!.id,
+    }))
+
+  const courseExtendedPool = await prisma.course.update({
+    where: { id: course.id },
+    data: {
+      groupAssignmentPoolEntries: {
+        create: singleParticipantGroups.map(({ participantId }) => ({
+          participant: {
+            connect: { id: participantId },
+          },
+        })),
+      },
+      participantGroups: {
+        deleteMany: {
+          id: {
+            in: singleParticipantGroups.map(({ groupId }) => groupId),
+          },
+        },
+      },
+    },
+    include: {
+      groupAssignmentPoolEntries: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  })
+
+  singleParticipantGroups.forEach(({ groupId }) => {
+    emitter?.emit('invalidate', {
+      typename: 'ParticipantGroup',
+      id: groupId,
+    })
+  })
+
+  return courseExtendedPool
+}
+
+async function manualRandomGroupAssignmentsByCourseId(
+  ctx: TRPCContextWithUser,
+  courseId: string
+) {
+  const prisma = getPrisma(ctx)
+  const course = await prisma.course.findUnique({
+    where: {
+      id: courseId,
+      randomAssignmentFinalized: false,
+      isGroupCreationEnabled: true,
+    },
+    include: {
+      groupAssignmentPoolEntries: { orderBy: { createdAt: 'asc' } },
+      participantGroups: {
+        select: singleParticipantGroupSelect,
+      },
+    },
+  })
+
+  if (!course) return null
+
+  try {
+    const courseExtendedPool = await resolveSingleParticipantGroups({
+      course,
+      prisma,
+      emitter: ctx.emitter,
+    })
+
+    await sendTeamsNotification({
+      scope: 'trpc/manualRandomGroupAssignments',
+      text: `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`,
+    })
+
+    if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
+      await prisma.course.update({
+        where: { id: courseId },
+        data: { randomAssignmentFinalized: true },
+      })
+
+      return []
+    }
+
+    if (courseExtendedPool.groupAssignmentPoolEntries.length === 1) return null
+
+    const groupParticipantIds = splitGroupsFinal({
+      participantIds: courseExtendedPool.groupAssignmentPoolEntries.map(
+        (entry) => entry.participantId
+      ),
+      preferredGroupSize: course.preferredGroupSize,
+    })
+
+    const newGroups = groupParticipantIds.map((group) => ({
+      randomlyAssigned: true,
+      name:
+        uniqueNamesGenerator({
+          dictionaries: [colors, adjectives, animals],
+          separator: ' ',
+          style: 'capital',
+        }) + 's',
+      code: 100000 + Math.floor(Math.random() * 900000),
+      participants: { connect: group.map((id) => ({ id })) },
+    }))
+
+    const updatedCourse = await prisma.course.update({
+      where: { id: courseId },
+      data: {
+        groupDeadlineDate: new Date(),
+        randomAssignmentFinalized: true,
+        participantGroups: { create: newGroups },
+        groupAssignmentPoolEntries: { deleteMany: {} },
+      },
+      select: {
+        participantGroups: {
+          select: courseParticipantGroupSelect,
+        },
+      },
+    })
+
+    ctx.emitter?.emit('invalidate', { typename: 'Course', id: courseId })
+    courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
+      ctx.emitter?.emit('invalidate', {
+        typename: 'GroupAssignmentPoolEntry',
+        id: entry.id,
+      })
+    })
+
+    await sendTeamsNotification({
+      scope: 'trpc/manualRandomGroupAssignments',
+      text: `Successfully completed random group assignment for course ${course.name} (id: ${course.id}) with ${newGroups.length} new groups.`,
+    })
+
+    return updatedCourse.participantGroups
+  } catch (error) {
+    console.error(error)
+    await sendTeamsNotification({
+      scope: 'trpc/manualRandomGroupAssignments',
+      text: `Random group creation failed for course ${course.name} (id: ${course.id}) with error: ${
+        error || 'missing'
+      }`,
+    })
+
+    return null
   }
 }
 
@@ -626,6 +897,65 @@ export const courseRouter = router({
         course: await updateCourseSettingsById(
           ctx as TRPCContextWithUser,
           input
+        ),
+      }
+    }),
+
+  groups: userProcedure
+    .input(courseGroupsInput)
+    .query(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.courseId,
+          PermissionLevel.READ
+        ))
+      ) {
+        return { courseGroups: null }
+      }
+
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        select: {
+          participantGroups: {
+            select: courseParticipantGroupSelect,
+          },
+          groupAssignmentPoolEntries: {
+            select: {
+              id: true,
+              participant: {
+                select: courseGroupParticipantSelect,
+              },
+            },
+          },
+        },
+      })
+
+      return {
+        courseGroups: toCourseGroups(course),
+      }
+    }),
+
+  manualRandomGroupAssignments: userProcedure
+    .input(courseGroupsInput)
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.courseId,
+          PermissionLevel.WRITE
+        ))
+      ) {
+        return { participantGroups: null }
+      }
+
+      return {
+        participantGroups: toCourseParticipantGroups(
+          await manualRandomGroupAssignmentsByCourseId(
+            ctx as TRPCContextWithUser,
+            input.courseId
+          )
         ),
       }
     }),

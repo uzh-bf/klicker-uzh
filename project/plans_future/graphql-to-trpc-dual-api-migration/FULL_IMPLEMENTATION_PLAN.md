@@ -280,6 +280,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04K Manage Course Groups Read and Assignment Mutation
+
+Status: complete for the scoped course-groups slice. Scope was limited to the
+manage course gamification groups tab and its manual random group assignment
+confirmation modal. This continued S04 only and did not start S05
+realtime/subscription work or S06 cleanup.
+
+Slice: S04K Manage Course Groups Read and Assignment Mutation
+
+Behavior source:
+
+- `GetCourseGroupsDocument` / `GroupService.getCourseGroups`
+- `ManualRandomGroupAssignmentsDocument` /
+  `GroupService.manualRandomGroupAssignments`
+
+Implemented:
+
+- Add narrow tRPC course procedures and DTOs for the groups tab.
+- Replace Apollo `useQuery` / `useMutation` in `GroupsList` and
+  `AssignmentConfirmationModal`.
+- Remove the generated GraphQL participant type from the group-only
+  `ParticipantListEntry`.
+- Keep the surrounding course detail page on GraphQL for a separate S04 slice.
+- Kept Apollo providers, generated artifacts, GraphQL runtime, and realtime
+  consumers live.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04K course group files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- course-groups.test.ts`:
+  passed; Vitest ran 39 API test files / 367 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/module/Browserslist/i18n/page-data warnings.
+- Migrated operation audit: no remaining `GetCourseGroupsDocument` /
+  `ManualRandomGroupAssignmentsDocument` frontend references under
+  `apps/frontend-manage/src`.
+- Touched component import audit: no remaining `@apollo/client` or generated
+  GraphQL op imports in the migrated groups components.
+- Compact coexistence count remained intentionally non-zero: 149 files still
+  reference Apollo/generated GraphQL/API GraphQL surfaces across
+  `apps/frontend-manage/src`, `apps/backend-docker/src`, and
+  `packages/api/src`.
+- Browser smoke against local manage/auth/backend loaded
+  `/courses/b8b1305e-bfe8-458b-bf26-9082fdca953f`, opened the groups tab, and
+  opened the assignment confirmation modal without confirming the mutation.
+  Screenshots:
+  `/tmp/agent-browser-shots/s04-course-groups-10-course-detail-before-groups.png`,
+  `/tmp/agent-browser-shots/s04-course-groups-11-groups-tab.png`,
+  `/tmp/agent-browser-shots/s04-course-groups-12-assignment-modal.png`.
+- Browser network evidence: observed 200 response for batched
+  `user.profile,course.groups` tRPC; observed no `GetCourseGroups` or
+  `ManualRandomGroupAssignments` GraphQL requests and no
+  `manualRandomGroupAssignments` tRPC request because the destructive modal
+  confirmation was intentionally not submitted.
+
+Residual scope:
+
+- The surrounding course detail page still uses `GetSingleCourseDocument` and
+  remains S04 work for a separate slice.
+- S05 realtime/subscription migration and S06 cleanup were not started.
+
 ### 2026-06-19 Completed: S04P Sharing Generated Enum Cleanup
 
 Status: complete for the scoped sharing cleanup. Scope was limited to manage

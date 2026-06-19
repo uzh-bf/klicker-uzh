@@ -29,6 +29,10 @@ export const courseSummaryInput = z.object({
   courseId: z.string(),
 })
 
+export const courseGroupsInput = z.object({
+  courseId: z.string(),
+})
+
 export const createCourseInput = z.object({
   name: z.string(),
   displayName: z.string(),

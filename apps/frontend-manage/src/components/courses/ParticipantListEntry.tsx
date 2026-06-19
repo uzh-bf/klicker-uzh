@@ -1,11 +1,17 @@
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Image from 'next/image'
+
+interface CourseGroupParticipant {
+  id: string
+  username: string
+  email?: string | null
+  avatar?: string | null
+}
 
 function ParticipantListEntry({
   participant,
 }: {
-  participant: Pick<Participant, 'id' | 'username' | 'email' | 'avatar'>
+  participant: CourseGroupParticipant
 }) {
   return (
     <div className="flex flex-row items-center gap-2">
