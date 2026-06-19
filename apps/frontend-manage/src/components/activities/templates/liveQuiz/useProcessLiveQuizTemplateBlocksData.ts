@@ -1,10 +1,9 @@
+import { omitBy } from 'remeda'
 import {
   ElementStatus,
   ElementType,
-  TemplateElementManipulationInput,
-} from '@klicker-uzh/graphql/dist/ops'
-import { omitBy } from 'remeda'
-import { trpc } from '../../../../lib/trpc'
+} from '../../../../lib/constants/elementTypes'
+import { trpc, type RouterInputs } from '../../../../lib/trpc'
 import {
   createInlineCaseStudyCollection,
   createInlineSelectionCollection,
@@ -16,13 +15,21 @@ import {
   prepareNumericalArgs,
   prepareSelectionArgs,
 } from '../../../elements/manipulation/helpers'
+import type { ElementFormTypes } from '../../../elements/manipulation/types'
 import extractFormValuesFromElementInstance from '../extractFormValuesFromElementInstance'
 import { LiveQuizTemplateFormValues } from '../types'
+
+type TemplateElementManipulationInput = NonNullable<
+  NonNullable<
+    RouterInputs['activity']['createLiveQuizFromTemplate']['blocks'][number]['elements'][number]['newElement']
+  >
+>
 
 function useProcessLiveQuizTemplateBlocksData() {
   const createAnswerCollectionMutation =
     trpc.resources.createAnswerCollection.useMutation()
   const utils = trpc.useUtils()
+  const readyStatus = ElementStatus.Ready as ElementFormTypes['status']
 
   const processLiveQuizTemplateBlocksData = async ({
     data,
@@ -84,7 +91,7 @@ function useProcessLiveQuizTemplateBlocksData() {
                 const args = prepareChoicesArgs({
                   elementId: undefined,
                   isDuplication: false,
-                  values: { ...values, status: ElementStatus.Ready },
+                  values: { ...values, status: readyStatus },
                 })
 
                 elementManipulationData = {
@@ -101,7 +108,7 @@ function useProcessLiveQuizTemplateBlocksData() {
                 const args = prepareNumericalArgs({
                   elementId: undefined,
                   isDuplication: false,
-                  values: { ...values, status: ElementStatus.Ready },
+                  values: { ...values, status: readyStatus },
                 })
 
                 elementManipulationData = {
@@ -117,7 +124,7 @@ function useProcessLiveQuizTemplateBlocksData() {
                 const args = prepareFreeTextArgs({
                   elementId: undefined,
                   isDuplication: false,
-                  values: { ...values, status: ElementStatus.Ready },
+                  values: { ...values, status: readyStatus },
                 })
 
                 elementManipulationData = {
@@ -163,8 +170,8 @@ function useProcessLiveQuizTemplateBlocksData() {
                   isDuplication: false,
                   values:
                     values.options.itemSelectionMode === 'new'
-                      ? { ...innerValues!, status: ElementStatus.Ready }!
-                      : { ...values, status: ElementStatus.Ready },
+                      ? { ...innerValues!, status: readyStatus }!
+                      : { ...values, status: readyStatus },
                 })
 
                 elementManipulationData = {
@@ -210,8 +217,8 @@ function useProcessLiveQuizTemplateBlocksData() {
                   isDuplication: false,
                   values:
                     values.options.itemSelectionMode === 'new'
-                      ? { ...innerValues!, status: ElementStatus.Ready }!
-                      : { ...values, status: ElementStatus.Ready },
+                      ? { ...innerValues!, status: readyStatus }!
+                      : { ...values, status: readyStatus },
                 })
 
                 elementManipulationData = {
@@ -227,7 +234,7 @@ function useProcessLiveQuizTemplateBlocksData() {
                 const args = prepareFlashcardArgs({
                   elementId: undefined,
                   isDuplication: false,
-                  values: { ...values, status: ElementStatus.Ready },
+                  values: { ...values, status: readyStatus },
                 })
 
                 elementManipulationData = {
@@ -242,7 +249,7 @@ function useProcessLiveQuizTemplateBlocksData() {
                 const args = prepareContentArgs({
                   elementId: undefined,
                   isDuplication: false,
-                  values: { ...values, status: ElementStatus.Ready },
+                  values: { ...values, status: readyStatus },
                 })
 
                 elementManipulationData = {

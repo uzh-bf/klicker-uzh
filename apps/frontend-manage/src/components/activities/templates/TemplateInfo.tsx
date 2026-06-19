@@ -1,7 +1,7 @@
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ActivityType } from '../../../lib/constants/elementTypes'
 
 function TemplateInfo({
   activityType,

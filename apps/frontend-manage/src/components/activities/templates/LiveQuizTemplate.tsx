@@ -4,12 +4,12 @@ import {
   faDownLeftAndUpRightToCenter,
   faUpRightAndDownLeftFromCenter,
 } from '@fortawesome/free-solid-svg-icons'
-import { ActivityTemplate } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H3, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import type { ActivityTemplate } from '../../../lib/constants/elementTypes'
 import { trpc } from '../../../lib/trpc'
 import goToNextTemplateElement from './goToNextTemplateElement'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'

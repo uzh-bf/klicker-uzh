@@ -1,7 +1,3 @@
-import {
-  ElementType,
-  type ElementInstance,
-} from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
@@ -9,10 +5,16 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, type ComponentProps } from 'react'
+import {
+  ElementType,
+  type ElementInstance,
+} from '../../../lib/constants/elementTypes'
 import { trpc } from '../../../lib/trpc'
 import useArtificialElementInstance from '../../elements/manipulation/useArtificialElementInstance'
 import { ActivityTemplateElementFormValues } from './types'
+
+type StudentElementInstance = ComponentProps<typeof StudentElement>['element']
 
 function TemplateElementPreview({
   templateId,
@@ -92,7 +94,7 @@ function TemplateElementPreview({
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
     useState<InstanceStackStudentResponseType>({
-      type: ElementType.Sc,
+      type: ElementType.Sc as InstanceStackStudentResponseType['type'],
       response: undefined,
       valid: false,
     })
@@ -133,7 +135,7 @@ function TemplateElementPreview({
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
-    instance: effectiveInstance,
+    instance: effectiveInstance as StudentElementInstance | null,
     setStudentResponse,
   })
 
@@ -147,7 +149,7 @@ function TemplateElementPreview({
       <div className="rounded border p-4">
         <StudentElement
           preview
-          element={effectiveInstance}
+          element={effectiveInstance as StudentElementInstance}
           elementIx={0}
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}

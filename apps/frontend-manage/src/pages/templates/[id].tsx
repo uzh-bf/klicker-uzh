@@ -1,4 +1,3 @@
-import type { ActivityTemplate } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ActivityType } from '@klicker-uzh/types'
 import { H2, UserNotification } from '@uzh-bf/design-system'
@@ -9,6 +8,7 @@ import GroupActivityTemplate from '../../components/activities/templates/GroupAc
 import LiveQuizTemplate from '../../components/activities/templates/LiveQuizTemplate'
 import MicroLearningTemplate from '../../components/activities/templates/MicroLearningTemplate'
 import PracticeQuizTemplate from '../../components/activities/templates/PracticeQuizTemplate'
+import type { ActivityTemplate } from '../../lib/constants/elementTypes'
 import { trpc } from '../../lib/trpc'
 
 function Template({ templateId }: { templateId: string }) {

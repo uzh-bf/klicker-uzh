@@ -231,12 +231,14 @@ function TemplateElementContent({
           replaceWithExistingElement={replaceWithExistingElement}
           requiredElementType={templateElement.instance.elementType}
           hasSampleSolution={
-            'options' in templateElement.instance.elementData
+            'options' in templateElement.instance.elementData &&
+            templateElement.instance.elementData.options != null
               ? templateElement.instance.elementData.options.hasSampleSolution
               : null
           }
           hasAnswerFeedbacks={
             'options' in templateElement.instance.elementData &&
+            templateElement.instance.elementData.options != null &&
             'hasAnswerFeedbacks' in templateElement.instance.elementData.options
               ? templateElement.instance.elementData.options.hasAnswerFeedbacks
               : null

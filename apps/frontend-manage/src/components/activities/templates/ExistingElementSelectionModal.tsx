@@ -1,9 +1,9 @@
-import type { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { ElementType } from '../../../lib/constants/elementTypes'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 type MatchingUserElementsTemplateInput =
