@@ -104,6 +104,7 @@ import {
   groupActivityGradingInput,
   liveQuizStudentAssessmentResponsesInput,
   matchingUserElementsTemplateInput,
+  openGroupActivityInput,
   outdatedElementInstancesInput,
   previousPointCorrectionsInput,
   publishActivityInput,
@@ -158,6 +159,10 @@ type TemplateElementInstanceRecord = {
   type: ElementInstanceType
   elementType: ElementType
   elementData: Prisma.JsonValue
+}
+
+type PubSubPublisher = {
+  publish(event: string, payload: unknown): unknown
 }
 
 type TemplateElementBlockRecord = {
@@ -778,6 +783,12 @@ type ScheduledLiveQuizRecord = {
   availableFrom?: Date | null
 }
 
+type OpenedGroupActivityRecord = {
+  id: string
+  status: PublicationStatus
+  scheduledStartAt: Date
+}
+
 type ExtendedActivityRecord = {
   id: string
   scheduledEndAt: Date
@@ -1304,6 +1315,76 @@ async function scheduleLiveQuizActivity({
   )
 
   return toScheduledLiveQuizRecord(startedLiveQuiz)
+}
+
+async function openGroupActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+  }
+}): Promise<OpenedGroupActivityRecord | null> {
+  const canExecute = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: ActivityType.GROUP_ACTIVITY,
+    },
+    PermissionLevel.EXECUTE
+  )
+
+  if (!canExecute) return null
+
+  const prisma = getPrisma(ctx)
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: { id: input.activityId, status: PublicationStatus.SCHEDULED },
+  })
+
+  if (!groupActivity) return null
+
+  if (groupActivity.scheduledPublicationTaskId) {
+    await deleteScheduledHatchetTask({
+      ctx,
+      taskId: groupActivity.scheduledPublicationTaskId,
+      failureMessage: `Failed to delete scheduled task for group activity ${input.activityId}:`,
+    })
+  }
+
+  let scheduledCompletionTaskId: string | undefined
+  if (!groupActivity.scheduledCompletionTaskId) {
+    const completionTask = await getActivitySchedulerTasks(
+      ctx
+    )?.endExpiredGroupActivity?.schedule(groupActivity.scheduledEndAt, {
+      groupActivityId: groupActivity.id,
+    })
+
+    if (!completionTask) {
+      throw new Error('Group activity completion scheduler unavailable')
+    }
+
+    scheduledCompletionTaskId = getScheduledTaskId(completionTask)
+  }
+
+  const updatedGroupActivity = await prisma.groupActivity.update({
+    where: { id: input.activityId, status: PublicationStatus.SCHEDULED },
+    data: {
+      status: PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(),
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId,
+    },
+  })
+
+  const pubSub = ctx.pubSub as PubSubPublisher | undefined
+  pubSub?.publish('groupActivityStarted', updatedGroupActivity)
+
+  return {
+    id: updatedGroupActivity.id,
+    status: updatedGroupActivity.status,
+    scheduledStartAt: updatedGroupActivity.scheduledStartAt,
+  }
 }
 
 async function extendMicroLearningActivity({
@@ -3295,6 +3376,12 @@ export const activityRouter = router({
     .input(scheduleLiveQuizInput)
     .mutation(async ({ ctx, input }) => ({
       scheduleLiveQuiz: await scheduleLiveQuizActivity({ ctx, input }),
+    })),
+
+  openGroupActivity: userFullAccessProcedure
+    .input(openGroupActivityInput)
+    .mutation(async ({ ctx, input }) => ({
+      openGroupActivity: await openGroupActivity({ ctx, input }),
     })),
 
   extend: userFullAccessProcedure

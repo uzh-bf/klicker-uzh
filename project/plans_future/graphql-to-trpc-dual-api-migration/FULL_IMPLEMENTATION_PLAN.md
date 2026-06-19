@@ -280,6 +280,68 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Group Activity Start Action
+
+Status: complete for the scoped code migration and automated verification.
+Scope was limited to replacing
+`GroupActivityStartingModal`'s Apollo `OpenGroupActivityDocument` mutation and
+generated `PublicationStatus` import with `trpc.activity.openGroupActivity`.
+This slice preserved FULL_ACCESS auth, EXECUTE permission checks, scheduled
+publication task deletion, completion task creation when missing, PUBLISHED
+status transition, `scheduledStartAt` update, course/activity list refresh, and
+the existing `groupActivityStarted` pubSub event for still-GraphQL subscribers.
+It did not migrate end/delete/reset/schedule actions, live quiz start
+hooks/wizards, cockpit/lecturer realtime pages, S05, or S06.
+
+Slice: S04L Group Activity Start Action
+
+GraphQL operation(s):
+
+- `OpenGroupActivityDocument`
+
+Behavior source:
+
+- `packages/graphql/src/services/groups.ts` `openGroupActivity`
+- Existing GraphQL mutation permission wrapper in
+  `packages/graphql/src/schema/mutation.ts`
+
+Write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/courses/modals/GroupActivityStartingModal.tsx`
+- this plan progress entry
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed after fixing the local test helper to pass `pubSub` through; 40 test
+  files, 399 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-size warnings.
+- `rg -n "OpenGroupActivityDocument|@apollo/client|@klicker-uzh/graphql|PublicationStatus" apps/frontend-manage/src/components/courses/modals/GroupActivityStartingModal.tsx`:
+  no matches.
+- `git diff --check`: passed.
+- Browser attempt: `frontend-manage` returned HTTP 200 on
+  `http://127.0.0.1:3002`, but `npx agent-browser` still reported
+  `chrome-error://chromewebdata/` and `(no interactive elements)`. Screenshot:
+  `/tmp/agent-browser-shots/s04-group-start-01-initial.png` (blank white).
+- Direct safe HTTP smoke against local backend:
+  `POST /api/trpc/activity.openGroupActivity` with a nonexistent activity id
+  returned `{"result":{"data":{"json":{"openGroupActivity":null}}}}`.
+  Happy-path mutation of a real scheduled group activity still requires a real
+  local Hatchet token to verify publication/completion task scheduling end to
+  end.
+
 ### 2026-06-19 Completed: S04L Live Quiz Scheduling Action
 
 Status: complete for the scoped code migration and automated verification.

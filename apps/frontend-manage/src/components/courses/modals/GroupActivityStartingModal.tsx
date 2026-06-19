@@ -1,8 +1,3 @@
-import { useMutation } from '@apollo/client'
-import {
-  OpenGroupActivityDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -32,21 +27,7 @@ function GroupActivityStartingModal({
 }: GroupActivityStartingModalProps) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [openGroupActivity, { loading: openingGroupActivity }] = useMutation(
-    OpenGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        openGroupActivity: {
-          id: activityId,
-          status: PublicationStatus.Published,
-          scheduledStartAt: new Date(),
-          __typename: 'GroupActivity',
-        },
-      },
-    }
-  )
+  const openGroupActivity = trpc.activity.openGroupActivity.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     participantGroups: false,
@@ -67,13 +48,13 @@ function GroupActivityStartingModal({
       title={t('manage.course.startGroupActivityNow')}
       message={t('manage.course.startGroupActivityNowMessage')}
       onSubmit={async () => {
-        const result = await openGroupActivity()
-        if (result.data?.openGroupActivity?.id) {
+        const result = await openGroupActivity.mutateAsync({ activityId })
+        if (result.openGroupActivity?.id) {
           await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
       }}
-      submitting={openingGroupActivity}
+      submitting={openGroupActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={false}
       confirmationType="confirm"

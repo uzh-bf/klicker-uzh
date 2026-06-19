@@ -58,6 +58,10 @@ export const scheduleLiveQuizInput = z.object({
   availableFrom: z.date().nullish(),
 })
 
+export const openGroupActivityInput = z.object({
+  activityId: z.string(),
+})
+
 export const groupActivityGradingInput = z.object({
   id: z.string(),
 })

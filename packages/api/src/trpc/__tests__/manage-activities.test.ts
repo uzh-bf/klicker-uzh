@@ -29,6 +29,7 @@ function createContext(
     scope?: UserLoginScope
     emitter?: TRPCContext['emitter']
     hatchet?: TRPCContext['hatchet']
+    pubSub?: TRPCContext['pubSub']
     tasks?: TRPCContext['tasks']
   }
 ): TRPCContext {
@@ -36,6 +37,7 @@ function createContext(
     prisma,
     emitter: options?.emitter,
     hatchet: options?.hatchet,
+    pubSub: options?.pubSub,
     tasks: options?.tasks,
     user: {
       sub: user.id,
@@ -2182,6 +2184,140 @@ describe('manage activity read routers', () => {
     })
     expect(schedule).not.toHaveBeenCalled()
     expect(liveQuizUpdate).not.toHaveBeenCalled()
+  })
+
+  test('opens a scheduled group activity through the activity router', async () => {
+    const scheduledEndAt = new Date('2099-01-02T10:00:00.000Z')
+    const scheduledStartAt = new Date('2026-06-19T10:00:00.000Z')
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'group-activity-1',
+      scheduledEndAt,
+      scheduledPublicationTaskId: 'publication-task',
+      scheduledCompletionTaskId: null,
+    })
+    const update = vi.fn().mockResolvedValue({
+      id: 'group-activity-1',
+      status: PublicationStatus.PUBLISHED,
+      scheduledStartAt,
+    })
+    const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+    const completionSchedule = vi.fn().mockResolvedValue({
+      metadata: { id: 'completion-task' },
+    })
+    const publish = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique,
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        hatchet: {
+          scheduled: {
+            delete: scheduledDelete,
+          },
+        } as unknown as TRPCContext['hatchet'],
+        pubSub: { publish } as unknown as TRPCContext['pubSub'],
+        tasks: {
+          endExpiredGroupActivity: { schedule: completionSchedule },
+        } as unknown as TRPCContext['tasks'],
+      })
+    )
+
+    await expect(
+      caller.activity.openGroupActivity({
+        activityId: 'group-activity-1',
+      })
+    ).resolves.toEqual({
+      openGroupActivity: {
+        id: 'group-activity-1',
+        status: PublicationStatus.PUBLISHED,
+        scheduledStartAt,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        groupActivityId: 'group-activity-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'group-activity-1',
+        status: PublicationStatus.SCHEDULED,
+      },
+    })
+    expect(scheduledDelete).toHaveBeenCalledWith('publication-task')
+    expect(completionSchedule).toHaveBeenCalledWith(scheduledEndAt, {
+      groupActivityId: 'group-activity-1',
+    })
+    expect(update).toHaveBeenCalledWith({
+      where: {
+        id: 'group-activity-1',
+        status: PublicationStatus.SCHEDULED,
+      },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        scheduledStartAt: expect.any(Date),
+        scheduledPublicationTaskId: null,
+        scheduledCompletionTaskId: 'completion-task',
+      },
+    })
+    expect(publish).toHaveBeenCalledWith('groupActivityStarted', {
+      id: 'group-activity-1',
+      status: PublicationStatus.PUBLISHED,
+      scheduledStartAt,
+    })
+  })
+
+  test('returns null when group activity open execute permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const findUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.openGroupActivity({
+        activityId: 'group-activity-1',
+      })
+    ).resolves.toEqual({ openGroupActivity: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        groupActivityId: 'group-activity-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).not.toHaveBeenCalled()
   })
 
   test.each([
