@@ -228,7 +228,22 @@ export type SelectionElementOptions = {
         }[]
       | null
   } | null
+  answerCollectionSolutionIds?: number[] | null
+  hasSampleSolution?: boolean | null
   numberOfInputs?: number | null
+}
+
+export type SelectionInstanceEvaluation = InstanceEvaluation & {
+  answerSolutionIds?: number[] | null
+  explanation?: string | null
+  numAnswers?: number | null
+  selectionResponses?:
+    | {
+        answerId: number
+        count: number
+        value: string
+      }[]
+    | null
 }
 
 export type CaseStudyElementOptions = {

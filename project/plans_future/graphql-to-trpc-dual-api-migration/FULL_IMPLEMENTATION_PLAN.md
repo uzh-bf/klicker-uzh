@@ -470,6 +470,50 @@ enum/type cleanup, likely the selection question/evaluation family, while
 keeping GraphQL/Apollo live. Do not start S06 cleanup until all S05 gates are
 clean and explicitly reviewed.
 
+### 2026-06-19 Completed: S05G-AC Selection Question/Evaluation Generated Type Cleanup
+
+Status: complete locally. Scope was limited to the shared selection
+question/evaluation leaf path while keeping GraphQL/Apollo live.
+
+Slice: S05G-AC selection question/evaluation generated type cleanup
+
+Operation mapping:
+
+- GraphQL generated imports:
+  `SelectionElementOptions` and `SelectionInstanceEvaluation` from
+  `@klicker-uzh/graphql/dist/ops`
+- Replacement:
+  local structural `SelectionElementOptions` / `SelectionInstanceEvaluation`
+  types from `packages/shared-components`
+- Active consumers:
+  `SelectionQuestion`, `SEEvaluation`
+- React Query replacement:
+  none; this is a shared-component generated type cleanup, not an API call
+  migration
+- Browser verification path:
+  no new UI behavior; use package checks and coexistence import audits for this
+  leaf cleanup
+- Cleanup blocked until:
+  remaining shared `CaseStudy`, `StudentElement`, and student-response generated
+  imports are removed and S06 is explicitly approved
+
+Intended verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed
+- focused Prettier check on touched files passed
+- generated type import audit for the touched selection files passed with no
+  matches
+- `git diff --check` passed
+
+Residual generated imports after this slice are limited to shared case-study
+and student response / `StudentElement` paths.
+
+S05G-AD next: continue with the shared case-study question/evaluation generated
+type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup until
+all S05 gates are clean and explicitly reviewed.
+
 ### 2026-06-19 Completed: S05A PWA Microlearning tRPC Realtime
 
 Status: completed. User requested continuing the goal after the S04Q test-parity
