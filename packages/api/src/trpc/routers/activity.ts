@@ -819,6 +819,106 @@ type LiveQuizSummaryRecord = {
   numOfLeaderboardEntries: number
 }
 
+type AuthoringJsonRecord = Record<string, unknown>
+
+function isAuthoringRecord(value: unknown): value is AuthoringJsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function getAuthoringObjectProperty(value: unknown, key: string) {
+  return isAuthoringRecord(value) ? value[key] : undefined
+}
+
+type AuthoringElementInstanceSource = Pick<
+  ElementInstance,
+  'id' | 'type' | 'elementType' | 'elementData'
+>
+
+type AuthoringElementStackSource = Pick<
+  ElementStack,
+  'id' | 'type' | 'displayName' | 'description' | 'order'
+> & {
+  elements: AuthoringElementInstanceSource[]
+}
+
+type AuthoringElementBlockSource = Pick<
+  ElementBlock,
+  'id' | 'order' | 'status' | 'timeLimit'
+> & {
+  elements: AuthoringElementInstanceSource[]
+}
+
+type AuthoringLiveQuizSource = Pick<
+  LiveQuiz,
+  | 'id'
+  | 'name'
+  | 'displayName'
+  | 'description'
+  | 'pointsMultiplier'
+  | 'defaultPoints'
+  | 'defaultCorrectPoints'
+  | 'maxBonusPoints'
+  | 'timeToZeroBonus'
+  | 'isGamificationEnabled'
+  | 'isAssessmentEnabled'
+  | 'pinCode'
+  | 'isLiveQAEnabled'
+  | 'isConfusionFeedbackEnabled'
+  | 'isModerationEnabled'
+> & {
+  blocks: AuthoringElementBlockSource[]
+  course: { id: string } | null
+}
+
+type AuthoringPracticeQuizSource = Pick<
+  PracticeQuiz,
+  | 'id'
+  | 'status'
+  | 'name'
+  | 'displayName'
+  | 'description'
+  | 'pointsMultiplier'
+  | 'resetTimeDays'
+  | 'availableFrom'
+  | 'orderType'
+> & {
+  course: { id: string; displayName: string; color: string } | null
+  stacks: AuthoringElementStackSource[]
+}
+
+type AuthoringMicroLearningSource = Pick<
+  MicroLearning,
+  | 'id'
+  | 'name'
+  | 'status'
+  | 'displayName'
+  | 'description'
+  | 'pointsMultiplier'
+  | 'scheduledStartAt'
+  | 'scheduledEndAt'
+> & {
+  course: { id: string; displayName: string; color: string } | null
+  stacks: AuthoringElementStackSource[]
+}
+
+type AuthoringGroupActivitySource = Pick<
+  GroupActivity,
+  | 'id'
+  | 'name'
+  | 'displayName'
+  | 'description'
+  | 'pointsMultiplier'
+  | 'scheduledStartAt'
+  | 'scheduledEndAt'
+> & {
+  course: { id: string; displayName: string } | null
+  clues: Pick<
+    GroupActivityClue,
+    'id' | 'type' | 'name' | 'displayName' | 'value' | 'unit'
+  >[]
+  stacks: AuthoringElementStackSource[]
+}
+
 type EndedActivityRecord = {
   id: string
   status: PublicationStatus
@@ -1595,6 +1695,306 @@ async function getPracticeQuizSummary({
     numOfResponses: responses,
     numOfAnonymousResponses: anonymousResponses,
   }
+}
+
+function toAuthoringElementData({
+  elementData,
+  includeSolutions = true,
+}: {
+  elementData: ElementInstance['elementData']
+  includeSolutions?: boolean
+}) {
+  if (includeSolutions) return elementData as ElementData
+
+  const cloned = JSON.parse(JSON.stringify(elementData)) as AuthoringJsonRecord
+  const options = getAuthoringObjectProperty(cloned, 'options')
+
+  if (isAuthoringRecord(options)) {
+    const choices = getAuthoringObjectProperty(options, 'choices')
+    if (Array.isArray(choices)) {
+      options.choices = choices.map((choice) => {
+        if (!isAuthoringRecord(choice)) return choice
+        return {
+          ix: choice.ix,
+          value: choice.value,
+        }
+      })
+    }
+
+    delete options.answerCollectionId
+    delete options.answerCollectionSolutionIds
+    delete options.exactSolutions
+    delete options.solutionRanges
+    delete options.solutions
+
+    const cases = getAuthoringObjectProperty(options, 'cases')
+    if (Array.isArray(cases)) {
+      for (const item of cases) {
+        if (isAuthoringRecord(item)) {
+          delete item.solutions
+        }
+      }
+    }
+  }
+
+  return cloned as unknown as ElementData
+}
+
+function toAuthoringElementInstance(
+  instance: AuthoringElementInstanceSource,
+  includeSolutions = true
+) {
+  return {
+    id: instance.id,
+    type: instance.type,
+    elementType: instance.elementType,
+    elementData: toAuthoringElementData({
+      elementData: instance.elementData,
+      includeSolutions,
+    }),
+  }
+}
+
+function toAuthoringElementStack(stack: AuthoringElementStackSource) {
+  return {
+    id: stack.id,
+    type: stack.type,
+    displayName: stack.displayName,
+    description: stack.description,
+    order: stack.order,
+    elements: stack.elements.map((element) =>
+      toAuthoringElementInstance(element)
+    ),
+  }
+}
+
+function toAuthoringGroupActivityStack(stack: AuthoringElementStackSource) {
+  return {
+    id: stack.id,
+    displayName: stack.displayName,
+    description: stack.description,
+    elements: stack.elements.map((element) =>
+      toAuthoringElementInstance(element, false)
+    ),
+  }
+}
+
+function toAuthoringLiveQuiz(quiz: AuthoringLiveQuizSource) {
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    displayName: quiz.displayName,
+    description: quiz.description,
+    blocks: quiz.blocks.map((block) => ({
+      id: block.id,
+      order: block.order,
+      status: block.status,
+      timeLimit: block.timeLimit,
+      elements: block.elements.map((element) =>
+        toAuthoringElementInstance(element)
+      ),
+    })),
+    course: quiz.course ? { id: quiz.course.id } : null,
+    pointsMultiplier: quiz.pointsMultiplier,
+    defaultPoints: quiz.defaultPoints,
+    defaultCorrectPoints: quiz.defaultCorrectPoints,
+    maxBonusPoints: quiz.maxBonusPoints,
+    timeToZeroBonus: quiz.timeToZeroBonus,
+    isGamificationEnabled: quiz.isGamificationEnabled,
+    isAssessmentEnabled: quiz.isAssessmentEnabled,
+    pinCode: quiz.pinCode,
+    isLiveQAEnabled: quiz.isLiveQAEnabled,
+    isConfusionFeedbackEnabled: quiz.isConfusionFeedbackEnabled,
+    isModerationEnabled: quiz.isModerationEnabled,
+  }
+}
+
+function toAuthoringPracticeQuiz(quiz: AuthoringPracticeQuizSource) {
+  return {
+    id: quiz.id,
+    status: quiz.status,
+    name: quiz.name,
+    displayName: quiz.displayName,
+    description: quiz.description,
+    pointsMultiplier: quiz.pointsMultiplier,
+    resetTimeDays: quiz.resetTimeDays,
+    availableFrom: quiz.availableFrom,
+    orderType: quiz.orderType,
+    numOfStacks: quiz.stacks.length,
+    course: quiz.course
+      ? {
+          id: quiz.course.id,
+          displayName: quiz.course.displayName,
+          color: quiz.course.color,
+        }
+      : null,
+    stacks: quiz.stacks.map(toAuthoringElementStack),
+  }
+}
+
+function toAuthoringMicroLearning(activity: AuthoringMicroLearningSource) {
+  return {
+    id: activity.id,
+    name: activity.name,
+    status: activity.status,
+    displayName: activity.displayName,
+    description: activity.description,
+    pointsMultiplier: activity.pointsMultiplier,
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
+    course: activity.course
+      ? {
+          id: activity.course.id,
+          displayName: activity.course.displayName,
+          color: activity.course.color,
+        }
+      : null,
+    stacks: activity.stacks.map(toAuthoringElementStack),
+  }
+}
+
+function toAuthoringGroupActivity(activity: AuthoringGroupActivitySource) {
+  return {
+    id: activity.id,
+    name: activity.name,
+    displayName: activity.displayName,
+    description: activity.description,
+    pointsMultiplier: activity.pointsMultiplier,
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
+    clues: activity.clues.map((clue) => ({
+      id: clue.id,
+      type: clue.type,
+      name: clue.name,
+      displayName: clue.displayName,
+      value: clue.value,
+      unit: clue.unit,
+    })),
+    stacks: activity.stacks.map(toAuthoringGroupActivityStack),
+    course: activity.course
+      ? {
+          id: activity.course.id,
+          displayName: activity.course.displayName,
+        }
+      : null,
+  }
+}
+
+async function getAuthoringLiveQuiz({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: { activityId: string }
+}) {
+  const canRead = await hasActivityPermission(
+    ctx,
+    { activityId: input.activityId, activityType: ActivityType.LIVE_QUIZ },
+    PermissionLevel.READ
+  )
+
+  if (!canRead || !input.activityId) return null
+
+  const quiz = await getPrisma(ctx).liveQuiz.findUnique({
+    where: { id: input.activityId },
+    include: {
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+      course: true,
+    },
+  })
+
+  return quiz ? toAuthoringLiveQuiz(quiz) : null
+}
+
+async function getAuthoringPracticeQuiz({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: { activityId: string }
+}) {
+  const canRead = await hasActivityPermission(
+    ctx,
+    { activityId: input.activityId, activityType: ActivityType.PRACTICE_QUIZ },
+    PermissionLevel.READ
+  )
+
+  if (!canRead) return null
+
+  const quiz = await getPrisma(ctx).practiceQuiz.findUnique({
+    where: { id: input.activityId, isDeleted: false },
+    include: {
+      course: true,
+      stacks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  return quiz ? toAuthoringPracticeQuiz(quiz) : null
+}
+
+async function getAuthoringMicroLearning({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: { activityId: string }
+}) {
+  const canRead = await hasActivityPermission(
+    ctx,
+    { activityId: input.activityId, activityType: ActivityType.MICRO_LEARNING },
+    PermissionLevel.READ
+  )
+
+  if (!canRead) return null
+
+  const microLearning = await getPrisma(ctx).microLearning.findUnique({
+    where: { id: input.activityId, isDeleted: false },
+    include: {
+      course: true,
+      stacks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  return microLearning ? toAuthoringMicroLearning(microLearning) : null
+}
+
+async function getAuthoringGroupActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: { activityId: string }
+}) {
+  const canRead = await hasActivityPermission(
+    ctx,
+    { activityId: input.activityId, activityType: ActivityType.GROUP_ACTIVITY },
+    PermissionLevel.READ
+  )
+
+  if (!canRead) return null
+
+  const groupActivity = await getPrisma(ctx).groupActivity.findUnique({
+    where: { id: input.activityId, isDeleted: false },
+    include: {
+      course: true,
+      clues: true,
+      stacks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  return groupActivity ? toAuthoringGroupActivity(groupActivity) : null
 }
 
 async function getLiveQuizSummary({
@@ -4411,6 +4811,30 @@ export const activityRouter = router({
     .input(changeActivityNameInput)
     .mutation(async ({ ctx, input }) => ({
       changeActivityName: await changeActivityName({ ctx, input }),
+    })),
+
+  authoringLiveQuiz: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      liveQuiz: await getAuthoringLiveQuiz({ ctx, input }),
+    })),
+
+  authoringPracticeQuiz: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      practiceQuiz: await getAuthoringPracticeQuiz({ ctx, input }),
+    })),
+
+  authoringMicroLearning: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      microLearning: await getAuthoringMicroLearning({ ctx, input }),
+    })),
+
+  authoringGroupActivity: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      groupActivity: await getAuthoringGroupActivity({ ctx, input }),
     })),
 
   liveQuizSummary: userProcedure

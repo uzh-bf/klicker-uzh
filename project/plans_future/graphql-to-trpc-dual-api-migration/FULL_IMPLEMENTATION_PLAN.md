@@ -280,6 +280,91 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Activity Creation Authoring Reads
+
+Status: complete for the activity-creation authoring-read slice. Scope stayed
+limited to migrating `ActivityCreation.tsx` away from Apollo/generated GraphQL
+reads for existing activity data loaded into the creation/edit/duplication
+wizards. This slice covered `GetSingleLiveQuiz`, `GetSinglePracticeQuiz`,
+`GetSingleMicroLearning`, and `GetGroupActivity` only. It preserved READ
+permission checks, ordered blocks/stacks/elements, copied `elementData` payloads
+for wizard initialization, and course metadata used by duplication/conversion.
+It did not migrate authoring submit mutations, `LiveQuizWizard` start/create/edit
+logic, cockpit/lecturer runtime pages, S05, or S06.
+
+Slice: S04L Activity Creation Authoring Reads
+
+GraphQL operation(s):
+
+- `GetSingleLiveQuizDocument`
+- `GetSinglePracticeQuizDocument`
+- `GetSingleMicroLearningDocument`
+- `GetGroupActivityDocument`
+
+Behavior source:
+
+- `packages/graphql/src/services/liveQuizzes.ts` `getLiveQuizData`
+- `packages/graphql/src/services/practiceQuizzes.ts` `getSinglePracticeQuiz`
+- `packages/graphql/src/services/microLearning.ts` `getSingleMicroLearning`
+- `packages/graphql/src/services/groups.ts` `getGroupActivity`
+- Existing READ permission wrappers in `packages/graphql/src/schema/query.ts`
+
+Write scope:
+
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/ActivityCreation.tsx`
+- this plan progress entry
+
+Implementation notes:
+
+- Added `activity.authoringLiveQuiz`, `activity.authoringPracticeQuiz`,
+  `activity.authoringMicroLearning`, and `activity.authoringGroupActivity` tRPC
+  read procedures.
+- Added narrow authoring DTOs for activity wizard initialization, including
+  ordered blocks/stacks/elements and copied `elementData`.
+- Preserved GraphQL `ElementDataWithoutSolutions` semantics for group activity
+  authoring reads by stripping solution-only fields from copied element data.
+- Replaced Apollo `useQuery` calls in `ActivityCreation.tsx` with tRPC queries
+  and `enabled` guards matching the previous `skip` behavior.
+- Left generated GraphQL type casts at wizard handoff boundaries for S04P cleanup,
+  because the wizards still use generated GraphQL prop types.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L authoring-read files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, 40 files and 417 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-data warnings.
+- Source audit found no `@apollo/client`, `GetSingleLiveQuizDocument`,
+  `GetSinglePracticeQuizDocument`, `GetSingleMicroLearningDocument`, or
+  `GetGroupActivityDocument` in `ActivityCreation.tsx`.
+- Direct tRPC HTTP smoke against branch-local backend with local smoke JWT:
+  all four authoring read procedures returned null envelopes for a nonexistent
+  UUID (`{ liveQuiz: null }`, `{ practiceQuiz: null }`, `{ microLearning: null }`,
+  `{ groupActivity: null }`).
+- Browser attempt: branch-local `frontend-manage` returned HTTP 200 on
+  `http://127.0.0.1:3002`, but `npx agent-browser` ended at
+  `chrome-error://chromewebdata/` with no interactive elements. Screenshot:
+  `/tmp/agent-browser-shots/s04-authoring-reads-01-initial.png` (blank white).
+
+Residual S04 scope:
+
+- Authoring submit mutations remain in `LiveQuizWizard`, `PracticeQuizWizard`,
+  `MicroLearningWizard`, `GroupActivityWizard`, and their submit helpers.
+- `LiveQuizWizard` still has start/running-live-quiz GraphQL logic for a later
+  S04 authoring slice.
+- Cockpit/cancel runtime screens and `/quizzes/[id]/cockpit` or
+  `/quizzes/[id]/lecturer` remain out of scope until S05.
+
 ### 2026-06-19 Completed: S04L Live Quiz Action Modals
 
 Status: complete for the live-quiz action/modal migration slice. Scope stayed

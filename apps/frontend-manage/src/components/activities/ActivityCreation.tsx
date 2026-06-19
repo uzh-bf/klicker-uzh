@@ -1,12 +1,7 @@
-import { useQuery } from '@apollo/client'
 import {
   ActivityType,
   Course,
   Element,
-  GetGroupActivityDocument,
-  GetSingleLiveQuizDocument,
-  GetSingleMicroLearningDocument,
-  GetSinglePracticeQuizDocument,
   GroupActivity,
   MicroLearning,
   PracticeQuiz,
@@ -56,53 +51,50 @@ function ActivityCreation({
   resetSelection,
 }: ActivityCreationProps) {
   const t = useTranslations()
-  const { data: dataLiveQuiz, loading: liveLoading } = useQuery(
-    GetSingleLiveQuizDocument,
-    {
-      variables: { quizId: activityId || '' },
-      skip:
-        !activityId ||
-        (editMode !== ActivityType.LiveQuiz &&
-          duplicationMode !== ActivityType.LiveQuiz) ||
-        conversionMode === 'microLearningToPracticeQuiz',
-      fetchPolicy: 'network-only',
-    }
+  const loadLiveQuiz = Boolean(
+    activityId &&
+      (editMode === ActivityType.LiveQuiz ||
+        duplicationMode === ActivityType.LiveQuiz) &&
+      conversionMode !== 'microLearningToPracticeQuiz'
   )
-  const { data: dataMicroLearning, loading: microLoading } = useQuery(
-    GetSingleMicroLearningDocument,
-    {
-      variables: { id: activityId || '' },
-      skip:
-        !activityId ||
-        (editMode !== ActivityType.MicroLearning &&
-          duplicationMode !== ActivityType.MicroLearning &&
-          conversionMode !== 'microLearningToPracticeQuiz'),
-      fetchPolicy: 'network-only',
-    }
+  const loadMicroLearning = Boolean(
+    activityId &&
+      (editMode === ActivityType.MicroLearning ||
+        duplicationMode === ActivityType.MicroLearning ||
+        conversionMode === 'microLearningToPracticeQuiz')
   )
-  const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
-    GetSinglePracticeQuizDocument,
-    {
-      variables: { id: activityId || '' },
-      skip:
-        !activityId ||
-        (editMode !== ActivityType.PracticeQuiz &&
-          duplicationMode !== ActivityType.PracticeQuiz) ||
-        conversionMode === 'microLearningToPracticeQuiz',
-      fetchPolicy: 'network-only',
-    }
+  const loadPracticeQuiz = Boolean(
+    activityId &&
+      (editMode === ActivityType.PracticeQuiz ||
+        duplicationMode === ActivityType.PracticeQuiz) &&
+      conversionMode !== 'microLearningToPracticeQuiz'
   )
-  const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
-    GetGroupActivityDocument,
-    {
-      variables: { id: activityId || '' },
-      skip:
-        !activityId ||
-        (editMode !== ActivityType.GroupActivity &&
-          duplicationMode !== ActivityType.GroupActivity),
-      fetchPolicy: 'network-only',
-    }
+  const loadGroupActivity = Boolean(
+    activityId &&
+      (editMode === ActivityType.GroupActivity ||
+        duplicationMode === ActivityType.GroupActivity)
   )
+
+  const { data: dataLiveQuiz, isLoading: liveLoading } =
+    trpc.activity.authoringLiveQuiz.useQuery(
+      { activityId: activityId ?? '' },
+      { enabled: loadLiveQuiz }
+    )
+  const { data: dataMicroLearning, isLoading: microLoading } =
+    trpc.activity.authoringMicroLearning.useQuery(
+      { activityId: activityId ?? '' },
+      { enabled: loadMicroLearning }
+    )
+  const { data: dataPracticeQuiz, isLoading: learningLoading } =
+    trpc.activity.authoringPracticeQuiz.useQuery(
+      { activityId: activityId ?? '' },
+      { enabled: loadPracticeQuiz }
+    )
+  const { data: dataGroupActivity, isLoading: groupActivityLoading } =
+    trpc.activity.authoringGroupActivity.useQuery(
+      { activityId: activityId ?? '' },
+      { enabled: loadGroupActivity }
+    )
 
   // fetch all courses available to the user and the one linked to this activity (if not included in the former)
   const {
@@ -183,17 +175,17 @@ function ActivityCreation({
 
   if (
     conversionMode === 'microLearningToPracticeQuiz' &&
-    dataMicroLearning?.getSingleMicroLearning
+    dataMicroLearning?.microLearning
   ) {
-    const microData = dataMicroLearning.getSingleMicroLearning
+    const microData = dataMicroLearning.microLearning
 
     initialDataPracticeQuiz = {
       name: `${microData.name} (converted)`,
       displayName: microData.displayName,
       description: microData.description,
-      stacks: microData.stacks,
+      stacks: microData.stacks as unknown as PracticeQuiz['stacks'],
       pointsMultiplier: microData.pointsMultiplier,
-      course: microData.course as Course,
+      course: microData.course as unknown as Course,
     }
   }
 
@@ -208,13 +200,17 @@ function ActivityCreation({
             initialValues={
               dataLiveQuiz?.liveQuiz
                 ? duplicationMode === ActivityType.LiveQuiz
-                  ? {
+                  ? ({
                       ...dataLiveQuiz.liveQuiz,
                       name: `${dataLiveQuiz.liveQuiz.name} (Copy)`,
                       // do not link previous course during duplication -> might not be available to user / not running anymore
                       course: { id: 'no-course-selected' },
-                    }
-                  : dataLiveQuiz.liveQuiz
+                    } as unknown as Parameters<
+                      typeof LiveQuizWizard
+                    >[0]['initialValues'])
+                  : (dataLiveQuiz.liveQuiz as unknown as Parameters<
+                      typeof LiveQuizWizard
+                    >[0]['initialValues'])
                 : undefined
             }
             selection={selectedElements}
@@ -229,15 +225,15 @@ function ActivityCreation({
             closeWizard={closeWizard}
             courses={courseSelection ?? []}
             initialValues={
-              dataMicroLearning?.getSingleMicroLearning
+              dataMicroLearning?.microLearning
                 ? duplicationMode === ActivityType.MicroLearning
                   ? ({
-                      ...dataMicroLearning.getSingleMicroLearning,
-                      name: `${dataMicroLearning.getSingleMicroLearning.name} (Copy)`,
+                      ...dataMicroLearning.microLearning,
+                      name: `${dataMicroLearning.microLearning.name} (Copy)`,
                       // do not link previous course during duplication -> might not be available to user / not running anymore
                       course: { id: '' },
-                    } as MicroLearning)
-                  : (dataMicroLearning.getSingleMicroLearning as MicroLearning)
+                    } as unknown as MicroLearning)
+                  : (dataMicroLearning.microLearning as unknown as MicroLearning)
                 : undefined
             }
             selection={selectedElements}
@@ -253,15 +249,15 @@ function ActivityCreation({
             closeWizard={closeWizard}
             courses={courseSelection ?? []}
             initialValues={
-              dataPracticeQuiz?.getSinglePracticeQuiz
+              dataPracticeQuiz?.practiceQuiz
                 ? duplicationMode === ActivityType.PracticeQuiz
                   ? ({
-                      ...dataPracticeQuiz.getSinglePracticeQuiz,
-                      name: `${dataPracticeQuiz.getSinglePracticeQuiz.name} (Copy)`,
+                      ...dataPracticeQuiz.practiceQuiz,
+                      name: `${dataPracticeQuiz.practiceQuiz.name} (Copy)`,
                       // do not link previous course during duplication -> might not be available to user / not running anymore
                       course: { id: '' },
-                    } as PracticeQuiz)
-                  : (dataPracticeQuiz.getSinglePracticeQuiz as PracticeQuiz)
+                    } as unknown as PracticeQuiz)
+                  : (dataPracticeQuiz.practiceQuiz as unknown as PracticeQuiz)
                 : initialDataPracticeQuiz
             }
             selection={selectedElements}
@@ -279,7 +275,8 @@ function ActivityCreation({
             selection={selectedElements}
             resetSelection={resetSelection}
             initialValues={
-              (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
+              (dataGroupActivity?.groupActivity as unknown as GroupActivity) ??
+              undefined
             }
             editMode={editMode === ActivityType.GroupActivity}
             duplicationMode={duplicationMode === ActivityType.GroupActivity}

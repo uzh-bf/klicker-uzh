@@ -2399,6 +2399,313 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('returns a live quiz authoring read through the activity router', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      name: 'Live Quiz',
+      displayName: 'Displayed Live Quiz',
+      description: 'Description',
+      pointsMultiplier: 2,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      maxBonusPoints: 20,
+      timeToZeroBonus: 30,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
+      pinCode: '123456',
+      isLiveQAEnabled: true,
+      isConfusionFeedbackEnabled: true,
+      isModerationEnabled: false,
+      course: { id: 'course-1' },
+      blocks: [
+        {
+          id: 1,
+          order: 0,
+          status: 'SCHEDULED',
+          timeLimit: 60,
+          elements: [
+            {
+              id: 11,
+              type: ElementInstanceType.LIVE_QUIZ,
+              elementType: ElementType.SC,
+              elementData: {
+                id: 'element-1-v1',
+                elementId: 1,
+                name: 'Question',
+                type: ElementType.SC,
+                options: { hasSampleSolution: true },
+              },
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: { findFirst: permissionFindFirst },
+      liveQuiz: { findUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.authoringLiveQuiz({ activityId: 'live-quiz-1' })
+    ).resolves.toEqual({
+      liveQuiz: {
+        id: 'live-quiz-1',
+        name: 'Live Quiz',
+        displayName: 'Displayed Live Quiz',
+        description: 'Description',
+        pointsMultiplier: 2,
+        defaultPoints: 10,
+        defaultCorrectPoints: 5,
+        maxBonusPoints: 20,
+        timeToZeroBonus: 30,
+        isGamificationEnabled: true,
+        isAssessmentEnabled: false,
+        pinCode: '123456',
+        isLiveQAEnabled: true,
+        isConfusionFeedbackEnabled: true,
+        isModerationEnabled: false,
+        course: { id: 'course-1' },
+        blocks: [
+          {
+            id: 1,
+            order: 0,
+            status: 'SCHEDULED',
+            timeLimit: 60,
+            elements: [
+              {
+                id: 11,
+                type: ElementInstanceType.LIVE_QUIZ,
+                elementType: ElementType.SC,
+                elementData: {
+                  id: 'element-1-v1',
+                  elementId: 1,
+                  name: 'Question',
+                  type: ElementType.SC,
+                  options: { hasSampleSolution: true },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1' },
+      include: {
+        blocks: {
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
+        },
+        course: true,
+      },
+    })
+  })
+
+  test('returns practice quiz and microlearning authoring reads through the activity router', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const practiceFindUnique = vi.fn().mockResolvedValue({
+      id: 'practice-quiz-1',
+      status: PublicationStatus.DRAFT,
+      name: 'Practice Quiz',
+      displayName: 'Displayed Practice Quiz',
+      description: null,
+      pointsMultiplier: 1,
+      resetTimeDays: 6,
+      availableFrom: null,
+      orderType: 'SEQUENTIAL',
+      course: { id: 'course-1', displayName: 'Course', color: '#fff' },
+      stacks: [
+        {
+          id: 1,
+          type: 'PRACTICE_QUIZ',
+          displayName: 'Stack',
+          description: null,
+          order: 0,
+          elements: [
+            {
+              id: 11,
+              type: ElementInstanceType.PRACTICE_QUIZ,
+              elementType: ElementType.SC,
+              elementData: { id: 'element-1-v1', name: 'Question' },
+            },
+          ],
+        },
+      ],
+    })
+    const startDate = new Date('2026-01-01T00:00:00.000Z')
+    const endDate = new Date('2026-01-02T00:00:00.000Z')
+    const microFindUnique = vi.fn().mockResolvedValue({
+      id: 'microlearning-1',
+      status: PublicationStatus.SCHEDULED,
+      name: 'Microlearning',
+      displayName: 'Displayed Microlearning',
+      description: 'Description',
+      pointsMultiplier: 2,
+      scheduledStartAt: startDate,
+      scheduledEndAt: endDate,
+      course: { id: 'course-1', displayName: 'Course', color: '#fff' },
+      stacks: [],
+    })
+    const prisma = {
+      derivedPermission: { findFirst: permissionFindFirst },
+      practiceQuiz: { findUnique: practiceFindUnique },
+      microLearning: { findUnique: microFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.authoringPracticeQuiz({ activityId: 'practice-quiz-1' })
+    ).resolves.toMatchObject({
+      practiceQuiz: {
+        id: 'practice-quiz-1',
+        numOfStacks: 1,
+        stacks: [
+          {
+            id: 1,
+            order: 0,
+            elements: [{ id: 11, elementData: { id: 'element-1-v1' } }],
+          },
+        ],
+      },
+    })
+    await expect(
+      caller.activity.authoringMicroLearning({ activityId: 'microlearning-1' })
+    ).resolves.toMatchObject({
+      microLearning: {
+        id: 'microlearning-1',
+        scheduledStartAt: startDate,
+        scheduledEndAt: endDate,
+        stacks: [],
+      },
+    })
+  })
+
+  test('returns group activity authoring reads without solution fields', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'group-activity-1',
+      name: 'Group Activity',
+      displayName: 'Displayed Group Activity',
+      description: null,
+      pointsMultiplier: 1,
+      scheduledStartAt: new Date('2026-01-01T00:00:00.000Z'),
+      scheduledEndAt: new Date('2026-01-02T00:00:00.000Z'),
+      course: { id: 'course-1', displayName: 'Course' },
+      clues: [
+        {
+          id: 1,
+          type: 'STRING',
+          name: 'clue',
+          displayName: 'Clue',
+          value: 'value',
+          unit: null,
+        },
+      ],
+      stacks: [
+        {
+          id: 1,
+          type: 'GROUP_ACTIVITY',
+          displayName: 'Stack',
+          description: null,
+          order: 0,
+          elements: [
+            {
+              id: 11,
+              type: ElementInstanceType.GROUP_ACTIVITY,
+              elementType: ElementType.SC,
+              elementData: {
+                id: 'element-1-v1',
+                elementId: 1,
+                name: 'Question',
+                type: ElementType.SC,
+                options: {
+                  hasSampleSolution: true,
+                  choices: [
+                    { ix: 0, value: 'A', correct: true, feedback: 'Good' },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: { findFirst: permissionFindFirst },
+      groupActivity: { findUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.authoringGroupActivity({
+        activityId: 'group-activity-1',
+      })
+    ).resolves.toEqual({
+      groupActivity: {
+        id: 'group-activity-1',
+        name: 'Group Activity',
+        displayName: 'Displayed Group Activity',
+        description: null,
+        pointsMultiplier: 1,
+        scheduledStartAt: new Date('2026-01-01T00:00:00.000Z'),
+        scheduledEndAt: new Date('2026-01-02T00:00:00.000Z'),
+        course: { id: 'course-1', displayName: 'Course' },
+        clues: [
+          {
+            id: 1,
+            type: 'STRING',
+            name: 'clue',
+            displayName: 'Clue',
+            value: 'value',
+            unit: null,
+          },
+        ],
+        stacks: [
+          {
+            id: 1,
+            displayName: 'Stack',
+            description: null,
+            elements: [
+              {
+                id: 11,
+                type: ElementInstanceType.GROUP_ACTIVITY,
+                elementType: ElementType.SC,
+                elementData: {
+                  id: 'element-1-v1',
+                  elementId: 1,
+                  name: 'Question',
+                  type: ElementType.SC,
+                  options: {
+                    hasSampleSolution: true,
+                    choices: [{ ix: 0, value: 'A' }],
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    })
+  })
+
   test('returns a microlearning summary through the activity router', async () => {
     const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
     const findUnique = vi.fn().mockResolvedValue({
