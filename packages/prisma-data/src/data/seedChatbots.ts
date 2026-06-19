@@ -1,7 +1,6 @@
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { readFileSync } from 'fs'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
-import { seedTutorArtifacts } from './seedTutorArtifacts.js'
 
 export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 
@@ -89,12 +88,6 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       modelSelection: true, // Allow model selection for testing
       disclaimerId: testDisclaimer.id,
     },
-  })
-
-  await seedTutorArtifacts(prisma, {
-    chatbotId: testChatbot.id,
-    courseId: COURSE_ID_TEST,
-    skillPackPrompt: tutorSkillsV1Prompt,
   })
 
   return {

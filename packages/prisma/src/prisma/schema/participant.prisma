@@ -90,7 +90,6 @@ model Participant {
   messages                        GroupMessage[]
   chatThreads                     ChatThread[]
   chatUsageCredits                ChatUsageCredits[]
-  tutorLearnerStates              TutorLearnerState[]
   tutorEvents                     TutorEvent[]
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]

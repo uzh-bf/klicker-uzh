@@ -54,11 +54,6 @@ model Course {
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
-  tutorSkillPacks            TutorSkillPack[]
-  tutorKnowledgeComponents   TutorKnowledgeComponent[]
-  tutorMisconceptions        TutorMisconception[]
-  tutorHintLadders           TutorHintLadder[]
-  tutorLearnerStates         TutorLearnerState[]
   participantInvitations     ParticipantInvitation[]
 
   directPermissions  Permission[]

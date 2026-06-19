@@ -40,7 +40,7 @@ model ChatThread {
   id    String  @id @default(uuid()) @db.Uuid
   title String?
 
-  messages    ChatMessage[]
+  messages ChatMessage[]
   tutorEvents TutorEvent[]
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -80,11 +80,11 @@ model ChatMessage {
 model ChatAttachment {
   id String @id @default(uuid()) @db.Uuid
 
-  type               ChatAttachmentType
-  position           Int
-  imageBase64        String?            @db.Text // base64 data URL for display 
-  imagePreviewBase64 String?            @db.Text // compact preview data URL for history rendering
-  imageDescription   String?            @db.Text // AI-generated description for context injection
+  type             ChatAttachmentType
+  position         Int
+  imageBase64      String?            @db.Text // base64 data URL for display
+  imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
+  imageDescription String?            @db.Text // AI-generated description for context injection
 
   messageId String      @db.Uuid
   message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -126,12 +126,10 @@ model Chatbot {
   disclaimerId String?            @db.Uuid
 
   // Relations
-  mcpConfigurations  ChatbotMCPConfig[]
-  threads            ChatThread[]
-  usageCredits       ChatUsageCredits[]
-  tutorSkillPacks    TutorSkillPack[]
-  tutorLearnerStates TutorLearnerState[]
-  tutorEvents        TutorEvent[]
+  mcpConfigurations ChatbotMCPConfig[]
+  threads           ChatThread[]
+  usageCredits      ChatUsageCredits[]
+  tutorEvents       TutorEvent[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -141,119 +139,6 @@ model Chatbot {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model TutorSkillPack {
-  id          String    @id @default(uuid()) @db.Uuid
-  version     String
-  name        String
-  status      String    @default("draft") // draft | published | archived
-  baseMode    String    @default("tutor")
-  prompt      String    @db.Text
-  policy      Json?
-  publishedAt DateTime?
-
-  chatbot   Chatbot? @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  chatbotId String?  @db.Uuid
-
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String? @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([chatbotId, baseMode, version])
-  @@index([courseId, status])
-}
-
-model TutorKnowledgeComponent {
-  id            String   @id @default(uuid()) @db.Uuid
-  slug          String
-  title         String
-  description   String?
-  prerequisites String[]
-  metadata      Json?
-
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
-
-  misconceptions TutorMisconception[]
-  hintLadders    TutorHintLadder[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([courseId, slug])
-}
-
-model TutorMisconception {
-  id                 String  @id @default(uuid()) @db.Uuid
-  label              String
-  symptoms           Json
-  nearMisses         Json?
-  diagnosticQuestion String? @db.Text
-  correctiveMove     String? @db.Text
-  evidenceLevel      String
-  status             String  @default("draft") // draft | lecturer_validated | retired
-
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
-
-  skill   TutorKnowledgeComponent? @relation(fields: [skillId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  skillId String?                  @db.Uuid
-
-  hintLadders TutorHintLadder[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([courseId, label])
-  @@index([courseId, status])
-  @@index([skillId])
-}
-
-model TutorHintLadder {
-  id       String @id @default(uuid()) @db.Uuid
-  levels   Json
-  maxDepth Int
-
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
-
-  skill   TutorKnowledgeComponent? @relation(fields: [skillId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  skillId String?                  @db.Uuid
-
-  misconception   TutorMisconception? @relation(fields: [misconceptionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  misconceptionId String?             @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([courseId, skillId, misconceptionId])
-  @@index([courseId])
-  @@index([skillId])
-  @@index([misconceptionId])
-}
-
-model TutorLearnerState {
-  id    String @id @default(uuid()) @db.Uuid
-  state Json
-
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
-
-  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  chatbotId String  @db.Uuid
-
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String? @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([participantId, chatbotId])
-  @@index([chatbotId])
-  @@index([courseId])
 }
 
 model TutorEvent {

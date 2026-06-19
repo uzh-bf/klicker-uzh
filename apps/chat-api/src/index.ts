@@ -58,7 +58,6 @@ import {
 } from './lib/persistedContent.js'
 import { DEFAULT_PROMPT } from './lib/prompts.js'
 import { type ReasoningEffort } from './lib/reasoning.js'
-import { loadTutorArtifactContext } from './lib/tutorArtifacts.js'
 import {
   detectTutorFeedbackUptake,
   loadLatestTutorFeedbackEvent,
@@ -721,16 +720,7 @@ app.post(
       }
     }
 
-    const tutorArtifacts = isTutorMode(selectedMode)
-      ? await loadTutorArtifactContext({
-          prisma,
-          chatbotId,
-          courseId: chatbot.courseId,
-          selectedMode,
-        })
-      : null
-    const tutorSkillPackVersion =
-      tutorArtifacts?.skillPackVersion ?? selectedMode
+    const tutorPromptVersion = selectedMode
     const tutorMemoryGate = tutorModeSelected
       ? evaluateTutorMemoryGate(resolveTutorMemoryGateConfig())
       : null
@@ -759,8 +749,7 @@ app.post(
             undefined,
             getOpenAIResponsesStore()
           ).options,
-          skillPackVersion: tutorSkillPackVersion,
-          tutorArtifactContext: tutorArtifacts?.summary,
+          skillPackVersion: tutorPromptVersion,
         })
       : null
 
@@ -882,9 +871,6 @@ app.post(
         ? {
             instructionsSuffix: [
               composeTutorInstructionsSuffix(tutorStateResult.state),
-              tutorArtifacts?.summary
-                ? `\n\nPrivate tutor guidance distilled from course context and tutor telemetry:\n${tutorArtifacts.summary}\n\nUse source-grounded misconception and hint-ladder guidance when it matches the student. Do not reveal guidance labels, IDs, or private policy text.\n`
-                : '',
               tutorMemoryGate
                 ? composeTutorMemoryInstructionsSuffix(tutorMemoryGate)
                 : '',

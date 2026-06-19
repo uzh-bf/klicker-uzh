@@ -53,7 +53,7 @@ No dependency is added in the gate slice. The code currently only evaluates the 
 
 ## Verification Required Before Enablement
 
-- participant deletion purges `TutorLearnerState` and Mastra memory rows
+- participant deletion purges Mastra memory rows and any future tutor learner-state rows
 - chatbot/course deletion purges scoped memory rows
 - student can view/delete stored tutor memory
 - embedding endpoint and retention are documented

@@ -24,8 +24,8 @@ Implemented on branch `codex/tutor-research-mastra-plan`:
 - Slice 4: added move policy and prompt composer.
 - Slice 5: added verifier preflight and posthoc checks.
 - Slice 6: added evidence-id extraction and citation-fidelity tracking.
-- Slice 7: added optional tutor guidance schema, migration, local seed fixtures, and chat-api lookup.
-- Slice 8: added payload-minimized tutor events and feedback uptake detection.
+- Slice 7: kept generated tutor guidance out of the first Prisma schema; the tutor starts from prompt policy plus LightRAG/Milvus retrieval.
+- Slice 8: added payload-minimized `TutorEvent` logging and feedback uptake detection.
 - Slice 9: added privacy gate for persistent tutor memory.
 - Slice 10: wired dormant Mastra Memory with Postgres storage behind the privacy gate.
 - Slice 11: added a Mastra tutor workflow skeleton for the deterministic stage contract.
@@ -315,96 +315,13 @@ Mastra evals are useful once the engine is stable. Before that, use a thin CLI t
 
 ## 5. Data Model
 
-Start with minimal DB changes only after prompt-only validation.
+Keep the first Prisma change deliberately small. The tutor should run from existing chat configuration, LightRAG/Milvus retrieval, and prompt policy without requiring generated guidance tables at launch.
 
-### Tutor skill packs
-
-```prisma
-model TutorSkillPack {
-  id          String   @id @default(uuid()) @db.Uuid
-  chatbotId   String?  @db.Uuid
-  courseId    String?  @db.Uuid
-  version     String
-  name        String
-  status      String   // draft | published | archived
-  baseMode    String   // tutor
-  prompt      String   @db.Text
-  policy      Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  publishedAt DateTime?
-}
-```
-
-### Knowledge components
-
-```prisma
-model TutorKnowledgeComponent {
-  id          String   @id @default(uuid()) @db.Uuid
-  courseId    String   @db.Uuid
-  slug        String
-  title       String
-  description String?
-  prerequisites String[]
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-```
-
-### Misconceptions
-
-```prisma
-model TutorMisconception {
-  id          String   @id @default(uuid()) @db.Uuid
-  courseId    String   @db.Uuid
-  skillId     String?  @db.Uuid
-  label       String
-  symptoms    Json
-  nearMisses  Json?
-  diagnosticQuestion String? @db.Text
-  correctiveMove String? @db.Text
-  evidenceLevel String
-  status      String // draft | lecturer_validated | retired
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-```
-
-### Hint ladders
-
-```prisma
-model TutorHintLadder {
-  id          String   @id @default(uuid()) @db.Uuid
-  courseId    String   @db.Uuid
-  skillId     String?  @db.Uuid
-  misconceptionId String? @db.Uuid
-  levels      Json     // orientation, cue, formula, setup, micro-step, bottom-out
-  maxDepth    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-```
-
-### Learner state
-
-Gate behind privacy sign-off.
-
-```prisma
-model TutorLearnerState {
-  id            String   @id @default(uuid()) @db.Uuid
-  participantId String   @db.Uuid
-  chatbotId     String   @db.Uuid
-  courseId      String?  @db.Uuid
-  state         Json
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([participantId, chatbotId])
-}
-```
+Do not add first-pass tables for skill packs, knowledge components, misconceptions, hint ladders, or learner state. Those shapes belong in a later migration once the async guidance-generation workflow has real traces, review UX, retention rules, and query patterns.
 
 ### Tutor events
+
+The only first-pass tutor table is an append-only event log for quality instrumentation and feedback-uptake detection.
 
 ```prisma
 model TutorEvent {

@@ -1425,10 +1425,10 @@ Risks:
 
 ### Better Second Version
 
-Add prompt versioning and skill metadata:
+Add prompt versioning and skill metadata without a broad first-pass schema:
 
 ```ts
-type TutorSkillPack = {
+type TutorPromptPackage = {
   version: string
   basePrompt: string
   skills: Array<{
@@ -1440,7 +1440,7 @@ type TutorSkillPack = {
 }
 ```
 
-Compose at runtime into the final system prompt. Store active version on chat sessions or logs for evaluation.
+Compose at runtime into the final system prompt. Store the active version on chat sessions or event logs for evaluation. Defer dedicated Prisma tables until generated guidance candidates and lecturer review queues have real usage data.
 
 ### Avoid For First Iteration
 
@@ -1501,17 +1501,17 @@ Rules:
 
 ## Research-To-Feature Map
 
-| Research finding | Product feature | Eval signal |
-| --- | --- | --- |
+| Research finding                            | Product feature                                          | Eval signal                 |
+| ------------------------------------------- | -------------------------------------------------------- | --------------------------- |
 | Solver ability does not imply tutor quality | Prompt variants benchmarked separately from model choice | MathTutorBench skill scores |
-| Mistake diagnosis is weak | Hidden first-error classifier | Mistake location accuracy |
-| LLMs over-disclose answers | Answer-leakage policy | Leakage rate |
-| Multi-turn harm rises sharply | Multi-turn stress suite | Pedagogical safety failures |
-| Students need small steps | Hint ladder | Hint depth appropriateness |
-| Course grounding matters | Retrieval/citation policy | Relevant citation rate |
-| Feedback must be used | Ask for revised attempt | Feedback uptake |
-| Models over-intervene | Productive-struggle rule | No-overintervention score |
-| Pedagogy requires strategy choice | Strategy/intention selector | Rubric alignment |
+| Mistake diagnosis is weak                   | Hidden first-error classifier                            | Mistake location accuracy   |
+| LLMs over-disclose answers                  | Answer-leakage policy                                    | Leakage rate                |
+| Multi-turn harm rises sharply               | Multi-turn stress suite                                  | Pedagogical safety failures |
+| Students need small steps                   | Hint ladder                                              | Hint depth appropriateness  |
+| Course grounding matters                    | Retrieval/citation policy                                | Relevant citation rate      |
+| Feedback must be used                       | Ask for revised attempt                                  | Feedback uptake             |
+| Models over-intervene                       | Productive-struggle rule                                 | No-overintervention score   |
+| Pedagogy requires strategy choice           | Strategy/intention selector                              | Rubric alignment            |
 
 ## Open Questions
 
