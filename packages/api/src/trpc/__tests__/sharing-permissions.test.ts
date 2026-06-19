@@ -646,4 +646,204 @@ describe('sharing permission router', () => {
       ],
     })
   })
+
+  test('creates a user group with members and admins', async () => {
+    const auditCreate = vi.fn().mockResolvedValue({})
+    const create = vi.fn().mockResolvedValue({
+      id: 12,
+      name: 'Tutors',
+      members: [
+        {
+          id: 'user-2',
+          shortname: 'assistant',
+          email: 'assistant@example.com',
+        },
+      ],
+      admins: [
+        {
+          id: 'user-3',
+          shortname: 'lead',
+          email: 'lead@example.com',
+        },
+      ],
+      owner: {
+        id: user.id,
+        shortname: 'lecturer',
+        email: 'lecturer@example.com',
+      },
+    })
+    const transaction = vi.fn(async (callback) =>
+      callback({
+        userGroup: { create },
+        auditLogEntry: { create: auditCreate },
+      })
+    )
+    const prisma = {
+      userGroup: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'user-2',
+            shortname: 'assistant',
+            email: 'assistant@example.com',
+          },
+          {
+            id: 'user-3',
+            shortname: 'lead',
+            email: 'lead@example.com',
+          },
+        ]),
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.createUserGroup({
+        name: 'Tutors',
+        members: [
+          { shortnameOrEmail: 'assistant', isAdmin: false },
+          { shortnameOrEmail: 'lead@example.com', isAdmin: true },
+        ],
+      })
+    ).resolves.toEqual({
+      userGroup: {
+        id: 12,
+        name: 'Tutors',
+        members: [
+          {
+            id: 'user-2',
+            shortname: 'assistant',
+            email: 'assistant@example.com',
+            isSelf: false,
+          },
+        ],
+        admins: [
+          {
+            id: 'user-3',
+            shortname: 'lead',
+            email: 'lead@example.com',
+            isSelf: false,
+          },
+        ],
+        owner: {
+          id: user.id,
+          shortname: 'lecturer',
+          email: 'lecturer@example.com',
+          isSelf: true,
+        },
+        numOfMembers: 3,
+        isMember: false,
+        isAdmin: false,
+        isOwner: true,
+      },
+    })
+    expect(create).toHaveBeenCalledWith({
+      data: {
+        name: 'Tutors',
+        members: { connect: [{ id: 'user-2' }] },
+        admins: { connect: [{ id: 'user-3' }] },
+        owner: { connect: { id: user.id } },
+      },
+      include: expect.anything(),
+    })
+    expect(auditCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: AuditLogType.USER_GROUP_CREATED,
+        objectType: ObjectType.USER_GROUP,
+        objectId: '12',
+        sourceUserId: user.id,
+      }),
+    })
+  })
+
+  test('adds a user to a user group and recomputes shared permissions', async () => {
+    const update = vi.fn().mockResolvedValue({
+      id: 12,
+      permissions: [{ liveQuizId: 'live-quiz-1' }],
+    })
+    const auditCreate = vi.fn().mockResolvedValue({})
+    const transaction = vi.fn(async (callback) =>
+      callback({
+        userGroup: { update },
+        auditLogEntry: { create: auditCreate },
+      })
+    )
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'user-2',
+          shortname: 'assistant',
+          email: 'assistant@example.com',
+        }),
+      },
+      userGroup: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 12,
+          ownerId: user.id,
+          members: [],
+          admins: [],
+        }),
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.addUserToUserGroup({
+        groupId: 12,
+        shortnameOrEmail: 'assistant',
+        asAdmin: false,
+      })
+    ).resolves.toEqual({
+      user: {
+        id: 'user-2',
+        shortname: 'assistant',
+        email: 'assistant@example.com',
+        isSelf: false,
+      },
+    })
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 12 },
+      data: {
+        members: { connect: { id: 'user-2' } },
+        admins: undefined,
+      },
+      include: { permissions: true },
+    })
+    expect(recomputeDerivedPermissions).toHaveBeenCalledWith(
+      { liveQuizId: 'live-quiz-1', userId: 'user-2' },
+      expect.anything()
+    )
+    expect(auditCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: AuditLogType.USER_GROUP_USER_ADDED,
+        objectType: ObjectType.USER_GROUP,
+        objectId: '12',
+        sourceUserId: user.id,
+        targetUserId: 'user-2',
+      }),
+    })
+  })
+
+  test('does not remove the acting user through group management', async () => {
+    const findUnique = vi.fn()
+    const transaction = vi.fn()
+    const prisma = {
+      userGroup: { findUnique },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.removeUserFromGroup({
+        groupId: 12,
+        userId: user.id,
+      })
+    ).resolves.toEqual({ removed: false })
+    expect(findUnique).not.toHaveBeenCalled()
+    expect(transaction).not.toHaveBeenCalled()
+  })
 })

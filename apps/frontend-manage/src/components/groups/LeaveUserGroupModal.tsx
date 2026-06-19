@@ -1,15 +1,11 @@
-import { useMutation } from '@apollo/client'
 import {
   faBan,
   faPersonWalkingArrowRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetUserGroupsUserDocument,
-  LeaveUserGroupDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../lib/trpc'
 
 function LeaveUserGroupModal({
   onClose,
@@ -23,7 +19,9 @@ function LeaveUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  const [leaveUserGroup, { loading }] = useMutation(LeaveUserGroupDocument)
+  const utils = trpc.useUtils()
+  const leaveUserGroup = trpc.sharing.leaveUserGroup.useMutation()
+  const loading = leaveUserGroup.isPending
 
   const onErrorToast = () =>
     toast({
@@ -46,31 +44,9 @@ function LeaveUserGroupModal({
       primaryLoading={loading}
       onPrimaryAction={async () => {
         try {
-          const { data: success } = await leaveUserGroup({
-            variables: {
-              groupId,
-            },
-            update: (cache, { data }) => {
-              // check if request was successful
-              if (!data?.leaveUserGroup) return
-
-              // update list of user groups
-              cache.updateQuery(
-                { query: GetUserGroupsUserDocument },
-                (qData) => {
-                  if (!qData?.getUserGroupsUser) return
-
-                  return {
-                    getUserGroupsUser: qData.getUserGroupsUser.filter(
-                      (group) => group.id !== groupId
-                    ),
-                  }
-                }
-              )
-            },
-          })
-
-          if (success?.leaveUserGroup) {
+          const success = await leaveUserGroup.mutateAsync({ groupId })
+          if (success.left) {
+            await utils.sharing.userGroups.invalidate()
             onSuccess()
           } else {
             onErrorToast()

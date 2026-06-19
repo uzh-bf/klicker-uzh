@@ -1,13 +1,9 @@
-import { useMutation } from '@apollo/client'
-import {
-  DemoteGroupAdminToMemberDocument,
-  GetUserGroupsUserDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '../../lib/trpc'
 
 function useDemoteGroupAdminToMember() {
-  const [demoteGroupAdminToMember, { loading }] = useMutation(
-    DemoteGroupAdminToMemberDocument
-  )
+  const utils = trpc.useUtils()
+  const demoteGroupAdminToMember =
+    trpc.sharing.demoteGroupAdminToMember.useMutation()
 
   const onDemotion = async ({
     groupId,
@@ -17,47 +13,17 @@ function useDemoteGroupAdminToMember() {
     adminId: string
   }) => {
     try {
-      await demoteGroupAdminToMember({
-        variables: { groupId, adminId },
-        optimisticResponse: { demoteGroupAdminToMember: true },
-        update: (cache, { data }) => {
-          // verify that the demotion was successful
-          if (!data?.demoteGroupAdminToMember) return
-
-          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
-            if (!qData?.getUserGroupsUser) return qData
-
-            return {
-              getUserGroupsUser: qData.getUserGroupsUser.map(
-                (existingGroup) => {
-                  if (groupId === existingGroup.id) {
-                    const removedAdmin = existingGroup.admins?.find(
-                      (a) => a.id === adminId
-                    )
-                    if (!removedAdmin) return existingGroup
-
-                    return {
-                      ...existingGroup,
-                      admins: existingGroup.admins?.filter(
-                        (a) => a.id !== adminId
-                      ),
-                      members: [...(existingGroup.members ?? []), removedAdmin],
-                    }
-                  }
-
-                  return existingGroup
-                }
-              ),
-            }
-          })
-        },
+      const result = await demoteGroupAdminToMember.mutateAsync({
+        groupId,
+        adminId,
       })
+      if (result.demoted) await utils.sharing.userGroups.invalidate()
     } catch (e) {
       console.error(e)
     }
   }
 
-  return { onDemotion, demoting: loading }
+  return { onDemotion, demoting: demoteGroupAdminToMember.isPending }
 }
 
 export default useDemoteGroupAdminToMember

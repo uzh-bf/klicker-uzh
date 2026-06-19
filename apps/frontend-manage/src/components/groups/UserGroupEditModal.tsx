@@ -8,7 +8,6 @@ import {
   faUserXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   H4,
@@ -20,6 +19,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AddUserGroupMember from './AddUserGroupMember'
+import type { UserGroup } from './types'
 import useChangeUserGroupName from './useChangeUserGroupName'
 import useDemoteGroupAdminToMember from './useDemoteGroupAdminToMember'
 import usePromoteGroupMemberToAdmin from './usePromoteGroupMemberToAdmin'

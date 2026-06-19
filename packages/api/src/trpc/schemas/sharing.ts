@@ -45,6 +45,47 @@ export const transferObjectOwnershipInput = objectActivityInput.extend({
   shortnameOrEmail: z.string(),
 })
 
+export const userGroupMemberInput = z.object({
+  shortnameOrEmail: z.string(),
+  isAdmin: z.boolean().nullish(),
+})
+
+export const createUserGroupInput = z.object({
+  name: z.string(),
+  members: z.array(userGroupMemberInput),
+})
+
+export const userGroupInput = z.object({
+  groupId: z.number().int(),
+})
+
+export const userGroupNameInput = z.object({
+  id: z.number().int(),
+  name: z.string(),
+})
+
+export const addUserToUserGroupInput = userGroupInput.extend({
+  shortnameOrEmail: z.string(),
+  asAdmin: z.boolean().nullish(),
+})
+
+export const userGroupUserInput = userGroupInput.extend({
+  userId: z.string(),
+})
+
+export const promoteGroupMemberInput = userGroupInput.extend({
+  memberId: z.string(),
+})
+
+export const demoteGroupAdminInput = userGroupInput.extend({
+  adminId: z.string(),
+})
+
+export const transferGroupOwnershipInput = z.object({
+  id: z.number().int(),
+  newOwnerId: z.string(),
+})
+
 export const sharingRequestInput = z.object({
   requestId: z.number().int(),
   userId: z.string(),

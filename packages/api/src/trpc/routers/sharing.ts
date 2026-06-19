@@ -34,6 +34,7 @@ import {
   activityLogEntryInput,
   addActivityMessageInput,
   addObjectToCatalogInput,
+  addUserToUserGroupInput,
   approveObjectSharingRequestInput,
   catalogCollectionAccessInput,
   catalogCollectionInput,
@@ -42,9 +43,12 @@ import {
   catalogObjectActionInput,
   changePermissionLevelInput,
   createCatalogCollectionInput,
+  createUserGroupInput,
   deleteCatalogCollectionInput,
+  demoteGroupAdminInput,
   derivedPermissionOriginInput,
   objectActivityInput,
+  promoteGroupMemberInput,
   removeCatalogObjectAssignmentInput,
   removeObjectInput,
   requestCatalogCollectionInput,
@@ -52,7 +56,11 @@ import {
   revokeObjectAccessInput,
   shareObjectInput,
   sharingRequestInput,
+  transferGroupOwnershipInput,
   transferObjectOwnershipInput,
+  userGroupInput,
+  userGroupNameInput,
+  userGroupUserInput,
 } from '../schemas/sharing.js'
 
 type ActivityLogObjectFields = Pick<
@@ -76,6 +84,11 @@ type PermissionObjectScope = Pick<
   | 'practiceQuizId'
   | 'microLearningId'
   | 'groupActivityId'
+>
+
+type UserGroupPermission = Pick<
+  Prisma.PermissionGetPayload<{}>,
+  keyof PermissionObjectScope
 >
 
 type RecomputePermissionScope = Parameters<
@@ -3336,6 +3349,181 @@ async function removeObject({
   return objectId
 }
 
+function getScopeFromUserGroupPermission(
+  permission: UserGroupPermission
+): PermissionObjectScope | null {
+  if (permission.catalogCollectionId != null) {
+    return { catalogCollectionId: permission.catalogCollectionId }
+  }
+  if (permission.answerCollectionId != null) {
+    return { answerCollectionId: permission.answerCollectionId }
+  }
+  if (permission.elementId != null) return { elementId: permission.elementId }
+  if (permission.courseId != null) return { courseId: permission.courseId }
+  if (permission.liveQuizId != null) {
+    return { liveQuizId: permission.liveQuizId }
+  }
+  if (permission.practiceQuizId != null) {
+    return { practiceQuizId: permission.practiceQuizId }
+  }
+  if (permission.microLearningId != null) {
+    return { microLearningId: permission.microLearningId }
+  }
+  if (permission.groupActivityId != null) {
+    return { groupActivityId: permission.groupActivityId }
+  }
+
+  return null
+}
+
+async function recomputePermissionsUserGroupMember(
+  {
+    permissions,
+    userId,
+  }: { permissions: UserGroupPermission[]; userId?: string },
+  prisma: Prisma.TransactionClient
+) {
+  for (const permission of permissions) {
+    const scope = getScopeFromUserGroupPermission(permission)
+    if (!scope) continue
+
+    await recomputeForScope(scope, prisma, userId ? { userId } : undefined)
+  }
+}
+
+async function createUserGroupAuditLog({
+  prisma,
+  type,
+  groupId,
+  sourceUserId,
+  targetUserId,
+  message,
+}: {
+  prisma: Prisma.TransactionClient
+  type: AuditLogType
+  groupId: number
+  sourceUserId: string
+  targetUserId?: string | null
+  message: string
+}) {
+  await prisma.auditLogEntry.create({
+    data: {
+      type,
+      objectType: ObjectType.USER_GROUP,
+      objectId: String(groupId),
+      sourceUserId,
+      targetUserId: targetUserId ?? undefined,
+      message,
+    },
+  })
+}
+
+async function createUserGroup({
+  prisma,
+  userId,
+  name,
+  members,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  name: string
+  members: { shortnameOrEmail: string; isAdmin?: boolean | null }[]
+}) {
+  const existingUserGroup = await prisma.userGroup.findUnique({
+    where: {
+      ownerId_name: {
+        ownerId: userId,
+        name,
+      },
+    },
+  })
+
+  if (existingUserGroup) return null
+
+  const users = await prisma.user.findMany({
+    where: {
+      id: { not: userId },
+      OR: members.flatMap((member) => [
+        { shortname: member.shortnameOrEmail },
+        { email: member.shortnameOrEmail },
+      ]),
+    },
+  })
+
+  if (users.length === 0) return null
+
+  const { memberIds, adminIds } = users.reduce<{
+    memberIds: string[]
+    adminIds: string[]
+  }>(
+    (acc, user) => {
+      const isAdmin = members.find(
+        (member) =>
+          member.shortnameOrEmail === user.shortname ||
+          member.shortnameOrEmail === user.email
+      )?.isAdmin
+
+      if (isAdmin) {
+        acc.adminIds.push(user.id)
+      } else {
+        acc.memberIds.push(user.id)
+      }
+      return acc
+    },
+    { memberIds: [], adminIds: [] }
+  )
+
+  const newUserGroup = await prisma.$transaction(async (transaction) => {
+    const createdUserGroup = await transaction.userGroup.create({
+      data: {
+        name,
+        members: { connect: memberIds.map((id) => ({ id })) },
+        admins: { connect: adminIds.map((id) => ({ id })) },
+        owner: { connect: { id: userId } },
+      },
+      include: {
+        members: {
+          select: { id: true, shortname: true, email: true },
+          orderBy: { shortname: 'asc' },
+        },
+        admins: {
+          select: { id: true, shortname: true, email: true },
+          orderBy: { shortname: 'asc' },
+        },
+        owner: {
+          select: { id: true, shortname: true, email: true },
+        },
+      },
+    })
+
+    await createUserGroupAuditLog({
+      prisma: transaction,
+      type: AuditLogType.USER_GROUP_CREATED,
+      groupId: createdUserGroup.id,
+      sourceUserId: userId,
+      message: `User group created with members [${createdUserGroup.members.map((member) => member.id).join(',')}] and admins [${createdUserGroup.admins.map((admin) => admin.id).join(',')}].`,
+    })
+
+    return createdUserGroup
+  })
+
+  return {
+    id: newUserGroup.id,
+    name: newUserGroup.name,
+    members: newUserGroup.members.map((member) =>
+      toUserGroupMember(member, userId)
+    ),
+    admins: newUserGroup.admins.map((admin) =>
+      toUserGroupMember(admin, userId)
+    ),
+    owner: toUserGroupMember(newUserGroup.owner, userId),
+    numOfMembers: newUserGroup.members.length + newUserGroup.admins.length + 1,
+    isMember: false,
+    isAdmin: false,
+    isOwner: true,
+  }
+}
+
 async function getUserGroupsUser(
   prisma: ReturnType<typeof getPrisma>,
   userId: string
@@ -3406,12 +3594,600 @@ async function getUserGroupsUser(
   ]
 }
 
+async function leaveUserGroup({
+  prisma,
+  userId,
+  groupId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  groupId: number
+}) {
+  const userGroup = await prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: { where: { id: userId } },
+      admins: { where: { id: userId } },
+    },
+  })
+
+  if (
+    !userGroup ||
+    (userGroup.members.length === 0 && userGroup.admins.length === 0)
+  ) {
+    return false
+  }
+
+  await prisma.$transaction(
+    async (transaction) => {
+      const updatedUserGroup = await transaction.userGroup.update({
+        where: { id: groupId },
+        data: {
+          members:
+            userGroup.members.length > 0
+              ? { disconnect: { id: userId } }
+              : undefined,
+          admins:
+            userGroup.admins.length > 0
+              ? { disconnect: { id: userId } }
+              : undefined,
+        },
+        include: { permissions: true },
+      })
+
+      await createUserGroupAuditLog({
+        prisma: transaction,
+        type: AuditLogType.USER_GROUP_USER_REMOVED,
+        groupId: updatedUserGroup.id,
+        sourceUserId: userId,
+        targetUserId: userId,
+        message: `User left user group.`,
+      })
+
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedUserGroup.permissions, userId },
+        transaction
+      )
+    },
+    { timeout: 60000 }
+  )
+
+  return true
+}
+
+async function deleteUserGroup({
+  prisma,
+  userId,
+  groupId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  groupId: number
+}) {
+  const userGroup = await prisma.userGroup.findUnique({
+    where: { id: groupId, ownerId: userId },
+    include: { permissions: true },
+  })
+
+  if (!userGroup) return false
+
+  await prisma.$transaction(
+    async (transaction) => {
+      await transaction.userGroup.delete({ where: { id: groupId } })
+
+      await createUserGroupAuditLog({
+        prisma: transaction,
+        type: AuditLogType.USER_GROUP_DELETED,
+        groupId: userGroup.id,
+        sourceUserId: userId,
+        message: `User group deleted by owner.`,
+      })
+
+      await recomputePermissionsUserGroupMember(
+        { permissions: userGroup.permissions },
+        transaction
+      )
+    },
+    { timeout: 60000 }
+  )
+
+  return true
+}
+
+async function promoteGroupMemberToAdmin({
+  prisma,
+  userId,
+  groupId,
+  memberId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  groupId: number
+  memberId: string
+}) {
+  const group = await prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: { where: { id: memberId } },
+      admins: { where: { id: userId } },
+    },
+  })
+
+  if (
+    !group ||
+    group.members.length === 0 ||
+    (group.admins.length === 0 && group.ownerId !== userId)
+  ) {
+    return false
+  }
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.userGroup.update({
+      where: { id: groupId },
+      data: {
+        members: { disconnect: { id: memberId } },
+        admins: { connect: { id: memberId } },
+      },
+    })
+
+    await createUserGroupAuditLog({
+      prisma: transaction,
+      type: AuditLogType.USER_GROUP_USER_MODIFIED,
+      groupId: group.id,
+      sourceUserId: userId,
+      targetUserId: memberId,
+      message: `User promoted from member to admin.`,
+    })
+  })
+
+  return true
+}
+
+async function demoteGroupAdminToMember({
+  prisma,
+  userId,
+  groupId,
+  adminId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  groupId: number
+  adminId: string
+}) {
+  const group = await prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: { admins: true },
+  })
+
+  const adminUserIds = group?.admins.map((admin) => admin.id) ?? []
+  if (
+    !group ||
+    !adminUserIds.includes(adminId) ||
+    (!adminUserIds.includes(userId) && group.ownerId !== userId)
+  ) {
+    return false
+  }
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.userGroup.update({
+      where: { id: groupId },
+      data: {
+        admins: { disconnect: { id: adminId } },
+        members: { connect: { id: adminId } },
+      },
+    })
+
+    await createUserGroupAuditLog({
+      prisma: transaction,
+      type: AuditLogType.USER_GROUP_USER_MODIFIED,
+      groupId: group.id,
+      sourceUserId: userId,
+      targetUserId: adminId,
+      message: `User demoted from admin to member.`,
+    })
+  })
+
+  return true
+}
+
+async function removeUserFromGroup({
+  prisma,
+  sourceUserId,
+  groupId,
+  userId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  sourceUserId: string
+  groupId: number
+  userId: string
+}) {
+  if (userId === sourceUserId) return false
+
+  const group = await prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: { where: { id: userId } },
+      admins: true,
+    },
+  })
+
+  const adminUserIds = group?.admins.map((admin) => admin.id) ?? []
+  const userIsAdmin = adminUserIds.includes(userId)
+  const userIsMember = (group?.members.length ?? -1) > 0
+  if (
+    !group ||
+    (group.members.length === 0 && !adminUserIds.includes(userId)) ||
+    (!adminUserIds.includes(sourceUserId) && group.ownerId !== sourceUserId) ||
+    (userIsAdmin && userIsMember)
+  ) {
+    return false
+  }
+
+  await prisma.$transaction(
+    async (transaction) => {
+      const updatedUserGroup = await transaction.userGroup.update({
+        where: { id: groupId },
+        data: {
+          admins: userIsAdmin ? { disconnect: { id: userId } } : undefined,
+          members: userIsMember ? { disconnect: { id: userId } } : undefined,
+        },
+        include: { permissions: true },
+      })
+
+      await createUserGroupAuditLog({
+        prisma: transaction,
+        type: AuditLogType.USER_GROUP_USER_REMOVED,
+        groupId: updatedUserGroup.id,
+        sourceUserId,
+        targetUserId: userId,
+        message: `User removed from group.`,
+      })
+
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedUserGroup.permissions, userId },
+        transaction
+      )
+    },
+    { timeout: 60000 }
+  )
+
+  return true
+}
+
+async function changeUserGroupName({
+  prisma,
+  userId,
+  id,
+  name,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  id: number
+  name: string
+}) {
+  const userGroup = await prisma.userGroup.findUnique({
+    where: { id },
+    include: {
+      admins: { where: { id: userId } },
+    },
+  })
+
+  if (
+    !userGroup ||
+    (userGroup.admins.length === 0 && userGroup.ownerId !== userId)
+  ) {
+    return false
+  }
+
+  await prisma.userGroup.update({
+    where: { id },
+    data: { name },
+  })
+
+  await prisma.auditLogEntry.create({
+    data: {
+      type: AuditLogType.USER_GROUP_MODIFIED,
+      objectType: ObjectType.USER_GROUP,
+      objectId: String(userGroup.id),
+      sourceUserId: userId,
+      message: `User group name changed to ${name}.`,
+    },
+  })
+
+  return true
+}
+
+async function transferGroupOwnership({
+  prisma,
+  userId,
+  id,
+  newOwnerId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  id: number
+  newOwnerId: string
+}) {
+  const userGroup = await prisma.userGroup.findUnique({
+    where: { id },
+    include: {
+      admins: { where: { id: newOwnerId } },
+    },
+  })
+
+  if (
+    !userGroup ||
+    userGroup.ownerId !== userId ||
+    userGroup.admins.length === 0
+  ) {
+    return false
+  }
+
+  await prisma.$transaction(async (transaction) => {
+    let groupName = userGroup.name
+    let counter = 0
+    let valid = false
+
+    do {
+      const existingGroup = await transaction.userGroup.findUnique({
+        where: {
+          ownerId_name: {
+            ownerId: newOwnerId,
+            name: groupName,
+          },
+        },
+      })
+
+      if (existingGroup) {
+        counter += 1
+        groupName = `${userGroup.name} (${counter})`
+      } else {
+        valid = true
+      }
+    } while (valid === false && counter < 100)
+
+    if (!valid) {
+      throw new Error(`Could not find a valid name for the new user group.`)
+    }
+
+    await transaction.userGroup.update({
+      where: { id },
+      data: {
+        name: groupName,
+        owner: { connect: { id: newOwnerId } },
+        admins: {
+          connect: { id: userId },
+          disconnect: { id: newOwnerId },
+        },
+      },
+    })
+
+    await createUserGroupAuditLog({
+      prisma: transaction,
+      type: AuditLogType.USER_GROUP_MODIFIED,
+      groupId: userGroup.id,
+      sourceUserId: userId,
+      targetUserId: newOwnerId,
+      message: `User group ownership transferred to group admin.`,
+    })
+  })
+
+  return true
+}
+
+async function addUserToUserGroup({
+  prisma,
+  sourceUserId,
+  groupId,
+  shortnameOrEmail,
+  asAdmin = false,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  sourceUserId: string
+  groupId: number
+  shortnameOrEmail: string
+  asAdmin?: boolean | null
+}) {
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+  })
+
+  if (!user) return null
+
+  const userGroup = await prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: true,
+      admins: true,
+    },
+  })
+
+  const adminUserIds = userGroup?.admins.map((admin) => admin.id) ?? []
+  if (
+    !userGroup ||
+    (!adminUserIds.includes(sourceUserId) && userGroup.ownerId !== sourceUserId)
+  ) {
+    return null
+  }
+
+  const memberUserIds = userGroup.members.map((member) => member.id)
+  if (memberUserIds.includes(user.id) || adminUserIds.includes(user.id)) {
+    return null
+  }
+
+  await prisma.$transaction(
+    async (transaction) => {
+      const updatedUserGroup = await transaction.userGroup.update({
+        where: { id: groupId },
+        data: {
+          members: !asAdmin ? { connect: { id: user.id } } : undefined,
+          admins: asAdmin ? { connect: { id: user.id } } : undefined,
+        },
+        include: { permissions: true },
+      })
+
+      await createUserGroupAuditLog({
+        prisma: transaction,
+        type: AuditLogType.USER_GROUP_USER_ADDED,
+        groupId: updatedUserGroup.id,
+        sourceUserId,
+        targetUserId: user.id,
+        message: `New user added to group as ${asAdmin ? 'admin' : 'member'}.`,
+      })
+
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedUserGroup.permissions, userId: user.id },
+        transaction
+      )
+    },
+    { timeout: 60000 }
+  )
+
+  return toUserGroupMember(user, sourceUserId)
+}
+
 export const sharingRouter = router({
   userGroups: userProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)
 
     return { userGroups: await getUserGroupsUser(prisma, ctx.user.sub) }
   }),
+
+  createUserGroup: userFullAccessProcedure
+    .input(createUserGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        userGroup: await createUserGroup({
+          prisma,
+          userId: ctx.user.sub,
+          name: input.name,
+          members: input.members,
+        }),
+      }
+    }),
+
+  leaveUserGroup: userFullAccessProcedure
+    .input(userGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        left: await leaveUserGroup({
+          prisma,
+          userId: ctx.user.sub,
+          groupId: input.groupId,
+        }),
+      }
+    }),
+
+  deleteUserGroup: userFullAccessProcedure
+    .input(userGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        deleted: await deleteUserGroup({
+          prisma,
+          userId: ctx.user.sub,
+          groupId: input.groupId,
+        }),
+      }
+    }),
+
+  changeUserGroupName: userFullAccessProcedure
+    .input(userGroupNameInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        changed: await changeUserGroupName({
+          prisma,
+          userId: ctx.user.sub,
+          id: input.id,
+          name: input.name,
+        }),
+      }
+    }),
+
+  addUserToUserGroup: userFullAccessProcedure
+    .input(addUserToUserGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        user: await addUserToUserGroup({
+          prisma,
+          sourceUserId: ctx.user.sub,
+          groupId: input.groupId,
+          shortnameOrEmail: input.shortnameOrEmail,
+          asAdmin: input.asAdmin,
+        }),
+      }
+    }),
+
+  promoteGroupMemberToAdmin: userFullAccessProcedure
+    .input(promoteGroupMemberInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        promoted: await promoteGroupMemberToAdmin({
+          prisma,
+          userId: ctx.user.sub,
+          groupId: input.groupId,
+          memberId: input.memberId,
+        }),
+      }
+    }),
+
+  demoteGroupAdminToMember: userFullAccessProcedure
+    .input(demoteGroupAdminInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        demoted: await demoteGroupAdminToMember({
+          prisma,
+          userId: ctx.user.sub,
+          groupId: input.groupId,
+          adminId: input.adminId,
+        }),
+      }
+    }),
+
+  removeUserFromGroup: userFullAccessProcedure
+    .input(userGroupUserInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        removed: await removeUserFromGroup({
+          prisma,
+          sourceUserId: ctx.user.sub,
+          groupId: input.groupId,
+          userId: input.userId,
+        }),
+      }
+    }),
+
+  transferGroupOwnership: userFullAccessProcedure
+    .input(transferGroupOwnershipInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        transferred: await transferGroupOwnership({
+          prisma,
+          userId: ctx.user.sub,
+          id: input.id,
+          newOwnerId: input.newOwnerId,
+        }),
+      }
+    }),
 
   catalogSharingRequestCount: userProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)

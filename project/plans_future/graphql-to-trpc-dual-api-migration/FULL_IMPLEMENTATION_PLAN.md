@@ -280,6 +280,110 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-18 Completed: S04K Manage User Groups
+
+Status: complete for the scoped slice. Scope was limited to the Manage
+`/resources/userGroups` read and user-group management mutations. Sharing
+permission tables, catalog flows, course/activity authoring, realtime
+subscriptions, Apollo providers, generated artifact cleanup, S05, and S06 remain
+out of scope.
+
+Operation mapping:
+
+```text
+Slice: S04K Manage User Groups
+
+GraphQL operations:
+- GetUserGroupsUser
+- CreateUserGroup
+- LeaveUserGroup
+- DeleteUserGroup
+- ChangeUserGroupName
+- AddUserToUserGroup
+- PromoteGroupMemberToAdmin
+- DemoteGroupAdminToMember
+- RemoveUserFromGroup
+- TransferGroupOwnership
+
+tRPC procedures:
+- sharing.userGroups
+- sharing.createUserGroup
+- sharing.leaveUserGroup
+- sharing.deleteUserGroup
+- sharing.changeUserGroupName
+- sharing.addUserToUserGroup
+- sharing.promoteGroupMemberToAdmin
+- sharing.demoteGroupAdminToMember
+- sharing.removeUserFromGroup
+- sharing.transferGroupOwnership
+
+GraphQL behavior source:
+- packages/graphql/src/schema/query.ts getUserGroupsUser
+- packages/graphql/src/schema/mutation.ts user-group mutations
+- packages/graphql/src/services/sharing.ts user-group management helpers
+
+React Query replacement:
+- trpc.sharing.userGroups.useQuery()
+- trpc.sharing.<mutation>.useMutation()
+- utils.sharing.userGroups.invalidate()
+```
+
+Completed write scope:
+
+- Added sharing Zod inputs for user-group creation, membership changes, role
+  changes, name changes, ownership transfer, leave, and delete.
+- Added the missing user-group tRPC mutations to `sharingRouter`, preserving the
+  GraphQL full-access gate, owner/admin guards, audit-log writes, and derived
+  permission recomputes for affected users/objects.
+- Reused the existing `sharing.userGroups` read and replaced the manage
+  user-groups page Apollo query with tRPC.
+- Replaced Apollo cache updates across the user-group form, modals, and hooks
+  with `sharing.userGroups` invalidation after successful mutations.
+- Replaced generated `UserGroup` imports in the user-groups UI with a local
+  `RouterOutputs`-derived type.
+- Added focused API tests for create, add-with-recompute, and self-removal guard
+  behavior.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write ...`:
+  passed for touched files.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/sharing-permissions.test.ts`:
+  passed. The API script ran the full API suite: 36 files, 350 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  failed once because it ran in parallel with the API build and saw stale router
+  types; passed after rerunning once the API build completed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing repository warnings only (`MODULE_TYPELESS_PACKAGE_JSON`,
+  next-intl `i18n`, PWA logs, stale Browserslist, `/qr/[...args]`
+  `MISSING_MESSAGE`, and large page-data warnings).
+- Focused audit over `apps/frontend-manage/src/components/groups`,
+  `apps/frontend-manage/src/pages/resources/userGroups.tsx`, and the touched API
+  files for the migrated Apollo/generated operation names: no matches.
+- `git diff --check`: passed.
+
+Browser verification:
+
+- Restarted Manage dev on `3104` after the production build invalidated the dev
+  `.next` output; reused branch backend/auth on `3103`/`3106`.
+- Logged in with delegated local credentials and opened
+  `http://localhost:3104/resources/userGroups`.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04-user-groups-01-initial.png`
+  - `/tmp/agent-browser-shots/s04-user-groups-02-page.png`
+  - `/tmp/agent-browser-shots/s04-user-groups-03-create-form.png`
+- Browser evidence: the authenticated user-groups page rendered, the `New User
+  Group` form opened, the empty form kept `Create` disabled, and the resource
+  trace included `/api/trpc/...sharing.userGroups` with no `/api/graphql` request
+  for this page view. Data-changing user-group mutations were intentionally not
+  submitted in the browser; mutation behavior is covered by API tests.
+
+Next: continue remaining S04-only pre-realtime findings. Pause before S05/S06.
+
 ### 2026-06-19 Completed: S04L Course Settings Mutation
 
 Status: complete for the scoped slice. Scope was limited to migrating the

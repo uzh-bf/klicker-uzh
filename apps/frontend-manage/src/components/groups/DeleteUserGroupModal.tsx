@@ -1,13 +1,9 @@
-import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
-import {
-  DeleteUserGroupDocument,
-  GetUserGroupsUserDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import ConfirmationItem from '../common/ConfirmationItem'
 
 function DeleteUserGroupModal({
@@ -22,7 +18,9 @@ function DeleteUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  const [deleteUserGroup, { loading }] = useMutation(DeleteUserGroupDocument)
+  const utils = trpc.useUtils()
+  const deleteUserGroup = trpc.sharing.deleteUserGroup.useMutation()
+  const loading = deleteUserGroup.isPending
 
   const [confirmations, setConfirmations] = useState({
     resolveGroup: false,
@@ -62,28 +60,9 @@ function DeleteUserGroupModal({
       primaryDisabled={Object.values(confirmations).some((value) => !value)}
       onPrimaryAction={async () => {
         try {
-          const { data: success } = await deleteUserGroup({
-            variables: { groupId },
-            update: (cache, { data }) => {
-              // check if request was successful
-              if (!data?.deleteUserGroup) return
-
-              // update list of user groups
-              cache.updateQuery(
-                { query: GetUserGroupsUserDocument },
-                (qData) => {
-                  if (!qData?.getUserGroupsUser) return qData
-
-                  return {
-                    getUserGroupsUser: qData.getUserGroupsUser.filter(
-                      (group) => group.id !== groupId
-                    ),
-                  }
-                }
-              )
-            },
-          })
-          if (success?.deleteUserGroup) {
+          const success = await deleteUserGroup.mutateAsync({ groupId })
+          if (success.deleted) {
+            await utils.sharing.userGroups.invalidate()
             onSuccess()
           } else {
             onErrorToast()

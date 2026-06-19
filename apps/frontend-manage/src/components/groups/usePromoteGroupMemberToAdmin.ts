@@ -1,13 +1,9 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetUserGroupsUserDocument,
-  PromoteGroupMemberToAdminDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '../../lib/trpc'
 
 function usePromoteGroupMemberToAdmin() {
-  const [promoteGroupMemberToAdmin, { loading }] = useMutation(
-    PromoteGroupMemberToAdminDocument
-  )
+  const utils = trpc.useUtils()
+  const promoteGroupMemberToAdmin =
+    trpc.sharing.promoteGroupMemberToAdmin.useMutation()
 
   const onPromotion = async ({
     groupId,
@@ -17,47 +13,17 @@ function usePromoteGroupMemberToAdmin() {
     memberId: string
   }) => {
     try {
-      await promoteGroupMemberToAdmin({
-        variables: { groupId, memberId },
-        optimisticResponse: { promoteGroupMemberToAdmin: true },
-        update: (cache, { data }) => {
-          // verify that the promotion was successful
-          if (!data?.promoteGroupMemberToAdmin) return
-
-          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
-            if (!qData?.getUserGroupsUser) return qData
-
-            return {
-              getUserGroupsUser: qData.getUserGroupsUser.map(
-                (existingGroup) => {
-                  if (groupId === existingGroup.id) {
-                    const promotedMember = existingGroup.members?.find(
-                      (m) => m.id === memberId
-                    )
-                    if (!promotedMember) return existingGroup
-
-                    return {
-                      ...existingGroup,
-                      admins: [...(existingGroup.admins ?? []), promotedMember],
-                      members: existingGroup.members?.filter(
-                        (m) => m.id !== memberId
-                      ),
-                    }
-                  }
-
-                  return existingGroup
-                }
-              ),
-            }
-          })
-        },
+      const result = await promoteGroupMemberToAdmin.mutateAsync({
+        groupId,
+        memberId,
       })
+      if (result.promoted) await utils.sharing.userGroups.invalidate()
     } catch (e) {
       console.error(e)
     }
   }
 
-  return { onPromotion, promoting: loading }
+  return { onPromotion, promoting: promoteGroupMemberToAdmin.isPending }
 }
 
 export default usePromoteGroupMemberToAdmin

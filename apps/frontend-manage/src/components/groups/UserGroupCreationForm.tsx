@@ -1,14 +1,9 @@
-import { useMutation } from '@apollo/client'
 import {
   faBan,
   faCheck,
   faPlusCircle,
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateUserGroupDocument,
-  GetUserGroupsUserDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSwitchField,
@@ -18,6 +13,7 @@ import {
 import { FieldArray, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../lib/trpc'
 
 type UserGroupCreationFormValues = {
   name?: string
@@ -34,7 +30,8 @@ function UserGroupCreationForm({
   onError: () => void
 }) {
   const t = useTranslations()
-  const [createUserGroup] = useMutation(CreateUserGroupDocument)
+  const utils = trpc.useUtils()
+  const createUserGroup = trpc.sharing.createUserGroup.useMutation()
 
   const validationSchema = Yup.object({
     name: Yup.string().required(t('manage.userGroups.nameRequired')),
@@ -69,32 +66,13 @@ function UserGroupCreationForm({
         }}
         onSubmit={async (values: UserGroupCreationFormValues) => {
           try {
-            const { data } = await createUserGroup({
-              variables: {
-                name: values.name!,
-                members: values.members!,
-              },
-              update: (cache, { data }) => {
-                // check if the creation was successful
-                if (!data?.createUserGroup) return
-
-                // update the list of user groups
-                cache.updateQuery(
-                  { query: GetUserGroupsUserDocument },
-                  (qData) => {
-                    if (!qData?.getUserGroupsUser) return qData
-                    return {
-                      getUserGroupsUser: [
-                        ...qData.getUserGroupsUser,
-                        data.createUserGroup!,
-                      ],
-                    }
-                  }
-                )
-              },
+            const result = await createUserGroup.mutateAsync({
+              name: values.name!,
+              members: values.members!,
             })
 
-            if (data?.createUserGroup?.id) {
+            if (result.userGroup?.id) {
+              await utils.sharing.userGroups.invalidate()
               onClose()
               onSuccess()
             } else {

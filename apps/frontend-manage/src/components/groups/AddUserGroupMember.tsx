@@ -1,13 +1,9 @@
-import { useMutation } from '@apollo/client'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
-import {
-  AddUserToUserGroupDocument,
-  GetUserGroupsUserDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../lib/trpc'
 
 function AddUserGroupMember({
   groupId,
@@ -19,7 +15,8 @@ function AddUserGroupMember({
   loading: boolean
 }) {
   const t = useTranslations()
-  const [addUserToUserGroup] = useMutation(AddUserToUserGroupDocument)
+  const utils = trpc.useUtils()
+  const addUserToUserGroup = trpc.sharing.addUserToUserGroup.useMutation()
 
   const onErrorToast = () =>
     toast({
@@ -40,52 +37,15 @@ function AddUserGroupMember({
         setSubmitting(true)
 
         try {
-          const { data: addedUser } = await addUserToUserGroup({
-            variables: {
-              groupId: groupId,
-              shortnameOrEmail: values.shortnameOrEmail,
-              asAdmin: adminMode,
-            },
-            update: (cache, { data }) => {
-              // check if request was successful
-              const newUser = data?.addUserToUserGroup
-              if (!newUser) return
-
-              // add the new user as an admin or member to of the group
-              cache.updateQuery(
-                { query: GetUserGroupsUserDocument },
-                (qData) => {
-                  if (!qData?.getUserGroupsUser) return qData
-
-                  return {
-                    getUserGroupsUser: qData.getUserGroupsUser.map(
-                      (existingGroup) => {
-                        if (groupId === existingGroup.id) {
-                          return {
-                            ...existingGroup,
-                            numOfMembers: (existingGroup.numOfMembers ?? 1) + 1,
-                            members: [
-                              ...(existingGroup.members ?? []),
-                              ...(adminMode ? [] : [newUser]),
-                            ],
-                            admins: [
-                              ...(existingGroup.admins ?? []),
-                              ...(adminMode ? [newUser] : []),
-                            ],
-                          }
-                        }
-
-                        return existingGroup
-                      }
-                    ),
-                  }
-                }
-              )
-            },
+          const addedUser = await addUserToUserGroup.mutateAsync({
+            groupId,
+            shortnameOrEmail: values.shortnameOrEmail,
+            asAdmin: adminMode,
           })
 
           setSubmitting(false)
-          if (!!addedUser?.addUserToUserGroup) {
+          if (addedUser.user) {
+            await utils.sharing.userGroups.invalidate()
             resetForm()
             toast({
               type: 'success',
