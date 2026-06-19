@@ -141,7 +141,10 @@ Current next action:
   the GraphQL package workflow visibly tied to `packages/graphql`, adds focused
   tRPC API coverage for the same lecturer-view behavior in `packages/api`, and
   migrates only the active manage lecturer page consumer.
-- S05G-I next: continue with the next smallest active manage/PWA
+- S05G-I manage live-quiz QR modal profile-read cleanup is complete locally.
+  It migrates the modal from Apollo `UserProfileDocument` to the existing tRPC
+  `user.profile` query.
+- S05G-J next: continue with the next smallest active manage/PWA
   Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
   gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1117,6 +1120,55 @@ Verification:
   `packages/graphql Vitest`, and `test-api.yml` names its tRPC package check
   `packages/api tRPC Vitest`; both workflows are requested for
   `packages/graphql/**` and `packages/api/**` changes.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining active
+Apollo/generated-operation consumers in manage/PWA are still blockers for S06.
+
+### 2026-06-19 Completed: S05G-I Manage Live-Quiz QR Modal Profile Read
+
+Status: complete locally. Scope remained S05 only: migrate the manage
+live-quiz QR modal's user-profile read to tRPC while keeping GraphQL live for
+remaining active consumers.
+
+Slice: S05G-I Manage Live-Quiz QR Modal Profile Read
+
+GraphQL operation(s): `UserProfileDocument`.
+
+GraphQL resolver(s): `Query.userProfile`.
+
+Behavior source: existing tRPC `user.profile` DTO already covers `shortname`
+and `locale` and is covered by existing API tests.
+
+tRPC router.procedure: existing `user.profile`.
+
+Active frontend consumer:
+`apps/frontend-manage/src/components/liveQuiz/cockpit/LiveQuizQRModal.tsx`.
+
+Intended behavior:
+
+- Keep using the active user shortname for the account QR link.
+- Preserve the existing `language` prop contract for localized QR paths.
+- Remove the modal's Apollo cache-only `UserProfileDocument` read.
+- Use the existing tRPC profile cache/query path shared by other manage
+  components.
+
+What changed:
+
+- Replaced the Apollo cache-only profile query with
+  `api.user.profile.useQuery`.
+- Removed the generated GraphQL `LocaleType` dependency from the modal and
+  replaced it with a local `'de' | 'en'` type.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm exec prettier --check <S05G-I touched files>` passed.
+- `git diff --check` passed.
+- Focused audit confirmed `LiveQuizQRModal.tsx` no longer imports Apollo,
+  `UserProfileDocument`, or `@klicker-uzh/graphql`.
 
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining active
@@ -11626,7 +11678,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-I with the next smallest active manage/PWA
+2. Continue S05G-J with the next smallest active manage/PWA
    Apollo/generated-operation consumer while keeping GraphQL live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.
