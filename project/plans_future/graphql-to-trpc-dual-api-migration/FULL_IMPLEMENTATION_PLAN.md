@@ -280,6 +280,97 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04K Catalog Answer Collection Info
+
+Status: complete for the scoped slice. Scope was the read-only manage catalog
+answer-collection info component used in copy/import/request modals. This stayed
+inside S04K and did not touch realtime subscribers, live-quiz cockpit/PWA
+session code, Apollo providers, generated artifact cleanup, S05, or S06.
+
+Slice: S04K Catalog Answer Collection Info
+GraphQL operation(s): `GetAnswerCollectionCatalogInfoDocument`
+GraphQL resolver(s): `getAnswerCollectionCatalogInfo`
+Behavior source: `packages/graphql/src/services/sharing.ts`
+`getAnswerCollectionCatalogInfo`
+tRPC router.procedure: `sharing.answerCollectionCatalogInfo`
+Input schema: `answerCollectionCatalogInfoInput`
+Output DTO: `{ answerCollectionCatalogInfo: { id, name, description, entries[] } | null }`
+Active frontend consumers:
+`apps/frontend-manage/src/components/catalog/actions/info/CatalogInfoAnswerCollection.tsx`
+Apollo cache/refetch/subscription behavior: suspense read only; no mutation,
+cache update, refetch query, or subscription behavior to port.
+React Query replacement: `trpc.sharing.answerCollectionCatalogInfo.useSuspenseQuery`
+within the existing suspense boundary.
+Browser verification path: open manage catalog UI locally, trigger the
+answer-collection info popover/modal if seeded catalog data exposes one, and
+confirm the browser requests `/api/trpc/sharing.answerCollectionCatalogInfo`
+instead of `/api/graphql`.
+Cleanup blocked until: remaining S04 consumers, S04P generated type leak cleanup,
+S05 realtime, and S06 cleanup gates.
+
+Implementation:
+
+- Added `sharing.answerCollectionCatalogInfo` in `packages/api`, mirroring the
+  existing GraphQL service behavior: missing collection returns `null`, optional
+  catalog collection access must be browsable, missing assignment returns
+  `null`, public assignments expose entries, and restricted assignments hide
+  entries.
+- Migrated `CatalogInfoAnswerCollection` from Apollo suspense and
+  `GetAnswerCollectionCatalogInfoDocument` to
+  `trpc.sharing.answerCollectionCatalogInfo.useSuspenseQuery`.
+- Added focused API tests for public entry visibility, restricted assignment
+  entry hiding, and denied restricted catalog browsing.
+
+Verification:
+
+- Context7 checked current tRPC React `useSuspenseQuery` usage and tuple return
+  shape before implementation.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04K catalog answer info files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/sharing-catalog-browser.test.ts`:
+  passed after the test typing fix; the package test runner executed 38 files /
+  363 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  initially failed only because the new tests asserted through the Prisma-typed
+  mock object; after moving mock functions into named variables before the cast,
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-data warnings. The production build
+  rewrote `.next` while the temporary dev server was running, so the branch-local
+  Manage dev server on `localhost:3116` was restarted before browser
+  verification.
+- Focused operation audits:
+  `rg -n "GetAnswerCollectionCatalogInfoDocument|GetAnswerCollectionCatalogInfo|@apollo/client" apps/frontend-manage/src/components/catalog/actions/info/CatalogInfoAnswerCollection.tsx packages/api/src --glob '!**/*.d.ts'`
+  and
+  `rg -n "GetAnswerCollectionCatalogInfoDocument|GetAnswerCollectionCatalogInfo" apps/frontend-manage/src packages/api/src --glob '!**/*.d.ts'`
+  returned no matches.
+- Compact S04 coexistence audit
+  `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`:
+  `204`, confirming GraphQL/Apollo remain intentionally live for other
+  S04/S05/S06 work.
+- `git diff --check`: passed.
+- Browser verification with `npx agent-browser`: logged in through delegated
+  access as seeded non-owner user `free`, opened
+  `http://localhost:3116/resources/catalog`, triggered the public answer
+  collection import modal, confirmed resource timing contained
+  `/api/trpc/sharing.answerCollectionCatalogInfo?...collectionId=10` and no
+  `/api/graphql` request for this read, then expanded `Show Answers`.
+- Browser screenshots:
+  `/tmp/agent-browser-shots/s04-catalog-answer-info-04-free-catalog.png`,
+  `/tmp/agent-browser-shots/s04-catalog-answer-info-05-import-modal.png`,
+  `/tmp/agent-browser-shots/s04-catalog-answer-info-06-answers-expanded.png`.
+
+Residual risk / next S04 work:
+
+- `CatalogAdditionalObjectInfo` and adjacent catalog action types still import
+  generated GraphQL enums during mixed Apollo/tRPC state. That remains S04P/S06
+  cleanup territory and was deliberately not widened into this read migration.
+- Continue remaining S04-only findings and pause before S05/S06.
+
 ### 2026-06-19 Completed: S04M Manage Single Element Instance Preview
 
 Status: complete for the scoped slice. Scope was limited to the standalone Manage

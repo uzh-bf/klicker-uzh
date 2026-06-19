@@ -240,4 +240,133 @@ describe('sharing catalog browser router', () => {
       })
     )
   })
+
+  test('returns public answer collection catalog info with entries', async () => {
+    const assignmentFindUnique = vi.fn().mockResolvedValue({
+      access: ObjectAccess.PUBLIC,
+    })
+    const prisma = {
+      answerCollection: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 21,
+          name: 'Answers',
+          description: 'Reusable answer options',
+          entries: [
+            { id: 1, value: 'Option A' },
+            { id: 2, value: 'Option B' },
+          ],
+        }),
+      },
+      catalogCollection: {
+        findUnique: vi.fn().mockResolvedValue({ access: ObjectAccess.PUBLIC }),
+      },
+      catalogCollectionAssignment: {
+        findUnique: assignmentFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.answerCollectionCatalogInfo({
+        collectionId: 21,
+        catalogCollectionId: 'catalog-1',
+      })
+    ).resolves.toEqual({
+      answerCollectionCatalogInfo: {
+        id: 21,
+        name: 'Answers',
+        description: 'Reusable answer options',
+        entries: [
+          { id: 1, value: 'Option A' },
+          { id: 2, value: 'Option B' },
+        ],
+      },
+    })
+    expect(assignmentFindUnique).toHaveBeenCalledWith({
+      where: {
+        answerCollectionId_catalogCollectionId: {
+          answerCollectionId: 21,
+          catalogCollectionId: 'catalog-1',
+        },
+      },
+      select: { access: true },
+    })
+  })
+
+  test('hides entries for restricted answer collection catalog assignments', async () => {
+    const assignmentFindUnique = vi.fn().mockResolvedValue({
+      access: ObjectAccess.RESTRICTED,
+    })
+    const prisma = {
+      answerCollection: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 21,
+          name: 'Answers',
+          description: 'Reusable answer options',
+          entries: [{ id: 1, value: 'Option A' }],
+        }),
+      },
+      catalogCollectionAssignment: {
+        findUnique: assignmentFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.answerCollectionCatalogInfo({
+        collectionId: 21,
+        catalogCollectionId: null,
+      })
+    ).resolves.toEqual({
+      answerCollectionCatalogInfo: {
+        id: 21,
+        name: 'Answers',
+        description: 'Reusable answer options',
+        entries: [],
+      },
+    })
+    expect(assignmentFindUnique).toHaveBeenCalledWith({
+      where: {
+        answerCollectionId_catalogCollectionId: {
+          answerCollectionId: 21,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+      select: { access: true },
+    })
+  })
+
+  test('returns null for answer collection info in an unbrowsable catalog collection', async () => {
+    const assignmentFindUnique = vi.fn()
+    const prisma = {
+      answerCollection: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 21,
+          name: 'Answers',
+          description: 'Reusable answer options',
+          entries: [{ id: 1, value: 'Option A' }],
+        }),
+      },
+      catalogCollection: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ access: ObjectAccess.RESTRICTED }),
+      },
+      derivedPermission: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      catalogCollectionAssignment: {
+        findUnique: assignmentFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.sharing.answerCollectionCatalogInfo({
+        collectionId: 21,
+        catalogCollectionId: 'catalog-1',
+      })
+    ).resolves.toEqual({ answerCollectionCatalogInfo: null })
+    expect(assignmentFindUnique).not.toHaveBeenCalled()
+  })
 })

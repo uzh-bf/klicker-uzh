@@ -35,6 +35,7 @@ import {
   addActivityMessageInput,
   addObjectToCatalogInput,
   addUserToUserGroupInput,
+  answerCollectionCatalogInfoInput,
   approveObjectSharingRequestInput,
   catalogCollectionAccessInput,
   catalogCollectionInput,
@@ -1813,6 +1814,59 @@ async function getCatalogObjects({
       .map(toCatalogObjectsFromAssignment)
       .filter((object) => object !== null) ?? []
   )
+}
+
+async function getAnswerCollectionCatalogInfo({
+  prisma,
+  userId,
+  collectionId,
+  catalogCollectionId,
+}: {
+  prisma: ReturnType<typeof getPrisma>
+  userId: string
+  collectionId: number
+  catalogCollectionId?: string | null
+}) {
+  const collection = await prisma.answerCollection.findUnique({
+    where: { id: collectionId },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      entries: { select: { id: true, value: true } },
+    },
+  })
+
+  if (!collection) return null
+
+  const canBrowseCatalogCollection = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable({
+        prisma,
+        catalogCollectionId,
+        userId,
+      })
+    : true
+
+  if (!canBrowseCatalogCollection) return null
+
+  const assignment = await prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    select: { access: true },
+  })
+
+  if (!assignment) return null
+
+  return {
+    ...collection,
+    entries:
+      assignment.access === ObjectAccess.PUBLIC ? collection.entries : [],
+  }
 }
 
 async function getCatalogAnswerCollections(
@@ -4237,6 +4291,21 @@ export const sharingRouter = router({
         catalogObjects: await getCatalogObjects({
           prisma,
           userId: ctx.user.sub,
+          catalogCollectionId: input.catalogCollectionId,
+        }),
+      }
+    }),
+
+  answerCollectionCatalogInfo: userProcedure
+    .input(answerCollectionCatalogInfoInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        answerCollectionCatalogInfo: await getAnswerCollectionCatalogInfo({
+          prisma,
+          userId: ctx.user.sub,
+          collectionId: input.collectionId,
           catalogCollectionId: input.catalogCollectionId,
         }),
       }

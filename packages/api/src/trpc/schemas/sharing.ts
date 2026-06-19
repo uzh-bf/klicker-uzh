@@ -100,6 +100,11 @@ export const catalogCollectionInput = z.object({
   catalogCollectionId: z.string().nullish(),
 })
 
+export const answerCollectionCatalogInfoInput = z.object({
+  collectionId: z.number().int(),
+  catalogCollectionId: z.string().nullish(),
+})
+
 export const catalogObjectActionInput = objectActivityInput.extend({
   catalogCollectionId: z.string().nullish(),
 })
