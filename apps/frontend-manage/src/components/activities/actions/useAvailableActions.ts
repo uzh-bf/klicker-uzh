@@ -1,6 +1,6 @@
 import { IconDefinition } from '@fortawesome/free-solid-svg-icons'
-import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
+import type { PublicationStatus } from '../../../lib/constants/activityEnums'
 
 export type ActivityAction = {
   id: string

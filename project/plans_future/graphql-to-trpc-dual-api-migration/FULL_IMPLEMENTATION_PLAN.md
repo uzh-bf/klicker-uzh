@@ -280,6 +280,50 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04P Activity Action Generated Type Cleanup
+
+Status: complete for the scoped activity action cleanup. Scope stayed limited
+to removing generated GraphQL enum/type imports from the already-migrated
+activity action hooks. This did not touch S05 realtime/cockpit/PWA runtime
+migration or S06 GraphQL cleanup.
+
+Slice: S04P Activity Action Generated Type Cleanup
+
+GraphQL operation(s): none; generated type/enum import cleanup only.
+
+Behavior source:
+
+- Existing generated enum string values.
+- tRPC `activity.userActivities` output DTO used by the migrated activity list.
+
+Implemented:
+
+- Added local `activityEnums.ts` constants and a narrow structural
+  `ActivityInfo` action type for mixed GraphQL/tRPC callers.
+- Repointed activity action hooks from generated GraphQL `ActivityInfo`,
+  `ActivityType`, and `PublicationStatus` imports to local constants/types.
+- Kept the conversion modal setter boundary mixed-state compatible because the
+  surrounding overview component still owns generated types.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04P activity action files>`:
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/components/activities/actions apps/frontend-manage/src/lib/constants/activityEnums.ts --glob '!**/*.d.ts'`:
+  no matches.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed after switching the local action type from a tRPC-output-specific
+  alias to a mixed-state structural type.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known Next/package-type, next-intl config, PWA, browserslist,
+  missing-message, and large-page-data warnings.
+
+Residual S04P:
+
+- Activity overview and creation components still have generated type imports
+  and need separate scoped cleanup or documented mixed-state exceptions before
+  S04 can be closed.
+
 ### 2026-06-19 Completed: S04L Live Quiz Authoring Submit
 
 Status: complete for the live quiz authoring submit slice. Scope stayed limited

@@ -18,12 +18,14 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import {
+  ActivityType,
+  type ActivityInfo,
+} from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
@@ -194,7 +196,7 @@ function useMicroLearningActions({
         onClick: async () => {
           const result = await unpublishMicroLearning.mutateAsync({
             activityId: microLearning.id,
-            activityType: ApiActivityType.MICRO_LEARNING,
+            activityType: ActivityType.MicroLearning,
           })
           if (microLearning.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({

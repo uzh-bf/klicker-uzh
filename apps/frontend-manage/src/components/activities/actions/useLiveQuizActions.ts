@@ -19,11 +19,13 @@ import {
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import {
+  ActivityType,
+  type ActivityInfo,
+} from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
@@ -52,13 +54,7 @@ function useLiveQuizActions({
   setQRModal: Dispatch<SetStateAction<boolean>>
   setTemplateEditingModal: Dispatch<SetStateAction<boolean>>
   setTemplateDeletionModal: Dispatch<SetStateAction<boolean>>
-  setConversionModal: Dispatch<
-    SetStateAction<{
-      open: boolean
-      activityId: string
-      activityType: ActivityType
-    }>
-  >
+  setConversionModal: Dispatch<SetStateAction<any>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
@@ -210,7 +206,7 @@ function useLiveQuizActions({
         onClick: async () => {
           const result = await unpublishLiveQuiz.mutateAsync({
             activityId: quiz.id,
-            activityType: ApiActivityType.LIVE_QUIZ,
+            activityType: ActivityType.LiveQuiz,
           })
           if (quiz.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({ courseId: quiz.courseId })
