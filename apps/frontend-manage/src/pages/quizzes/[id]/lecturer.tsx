@@ -3,12 +3,11 @@ import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Feedback,
-  FeedbackPinnedDocument,
   GetLecturerViewLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Head from 'next/head'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -16,19 +15,38 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import { api } from '../../../lib/trpc'
 
 function LecturerView() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data, loading, error, subscribeToMore } = useQuery(
-    GetLecturerViewLiveQuizDocument,
+  const {
+    data,
+    loading,
+    error,
+    refetch: refetchLecturerView,
+  } = useQuery(GetLecturerViewLiveQuizDocument, {
+    variables: {
+      id: router.query.id as string,
+    },
+    pollInterval: 10000, // polling only required for confusion feedbacks (lower priority)
+    skip: !router.query.id,
+  })
+  const refetchLecturerViewRef = useRef(refetchLecturerView)
+  const quizId = data?.getLecturerViewLiveQuiz?.id
+
+  useEffect(() => {
+    refetchLecturerViewRef.current = refetchLecturerView
+  }, [refetchLecturerView])
+
+  api.realtime.feedbackPinned.useSubscription(
+    { quizId: quizId ?? '' },
     {
-      variables: {
-        id: router.query.id as string,
+      enabled: Boolean(quizId),
+      onData() {
+        void refetchLecturerViewRef.current()
       },
-      pollInterval: 10000, // polling only required for confusion feedbacks (lower priority)
-      skip: !router.query.id,
     }
   )
 
@@ -59,40 +77,6 @@ function LecturerView() {
 
     return 'border-green-300'
   }, [aggregateConfusion])
-
-  useEffect(() => {
-    const quizId = data?.getLecturerViewLiveQuiz?.id
-    if (!quizId) return
-
-    const feedbackPinned = subscribeToMore({
-      document: FeedbackPinnedDocument,
-      variables: { quizId },
-      updateQuery: (prev, { subscriptionData }) => {
-        if (!subscriptionData.data || !prev.getLecturerViewLiveQuiz) return prev
-        const prevQuiz = prev.getLecturerViewLiveQuiz
-        const updatedFeedback = subscriptionData.data.feedbackPinned
-        const feedbackShown = !!prevQuiz?.feedbacks?.find(
-          (f) => f.id === updatedFeedback.id
-        )
-
-        return {
-          getLecturerViewLiveQuiz: {
-            ...prevQuiz,
-            feedbacks: updatedFeedback.isPinned
-              ? [
-                  ...(prevQuiz?.feedbacks ?? []),
-                  ...(feedbackShown ? [] : [updatedFeedback]),
-                ]
-              : prevQuiz?.feedbacks?.filter((f) => f.id !== updatedFeedback.id),
-          },
-        }
-      },
-    })
-
-    return () => {
-      feedbackPinned && feedbackPinned()
-    }
-  }, [subscribeToMore, data?.getLecturerViewLiveQuiz?.id])
 
   if (loading) {
     return <Loader />

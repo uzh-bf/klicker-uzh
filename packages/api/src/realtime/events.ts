@@ -1,5 +1,7 @@
 export const realtimeEvents = {
   feedbackAdded: 'feedbackAdded',
+  feedbackCreated: 'feedbackCreated',
+  feedbackPinned: 'feedbackPinned',
   feedbackRemoved: 'feedbackRemoved',
   feedbackUpdated: 'feedbackUpdated',
   groupActivityEnded: 'groupActivityEnded',
@@ -219,6 +221,20 @@ export function publishFeedbackAdded(
   return publishEvent(pubSub, realtimeEvents.feedbackAdded, feedback)
 }
 
+export function publishFeedbackCreated(
+  pubSub: unknown,
+  feedback: FeedbackSource
+) {
+  return publishEvent(pubSub, realtimeEvents.feedbackCreated, feedback)
+}
+
+export function publishFeedbackPinned(
+  pubSub: unknown,
+  feedback: FeedbackSource
+) {
+  return publishEvent(pubSub, realtimeEvents.feedbackPinned, feedback)
+}
+
 export function publishFeedbackRemoved(
   pubSub: unknown,
   feedback: FeedbackSource
@@ -285,6 +301,14 @@ export function subscribeLiveQuizSettingsChanged(pubSub: unknown) {
 
 export function subscribeFeedbackAdded(pubSub: unknown) {
   return subscribeEvent<FeedbackSource>(pubSub, realtimeEvents.feedbackAdded)
+}
+
+export function subscribeFeedbackCreated(pubSub: unknown) {
+  return subscribeEvent<FeedbackSource>(pubSub, realtimeEvents.feedbackCreated)
+}
+
+export function subscribeFeedbackPinned(pubSub: unknown) {
+  return subscribeEvent<FeedbackSource>(pubSub, realtimeEvents.feedbackPinned)
 }
 
 export function subscribeFeedbackRemoved(pubSub: unknown) {

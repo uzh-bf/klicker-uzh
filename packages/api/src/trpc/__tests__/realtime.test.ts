@@ -1,6 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   publishFeedbackAdded,
+  publishFeedbackCreated,
+  publishFeedbackPinned,
   publishFeedbackRemoved,
   publishFeedbackUpdated,
   publishGroupActivityEnded,
@@ -305,6 +307,12 @@ describe('realtime router', () => {
     const addedStream = await caller.realtime.feedbackAdded({
       quizId: 'live-quiz-1',
     })
+    const createdStream = await caller.realtime.feedbackCreated({
+      quizId: 'live-quiz-1',
+    })
+    const pinnedStream = await caller.realtime.feedbackPinned({
+      quizId: 'live-quiz-1',
+    })
     const removedStream = await caller.realtime.feedbackRemoved({
       quizId: 'live-quiz-1',
     })
@@ -313,10 +321,20 @@ describe('realtime router', () => {
     })
 
     const added = receiveNext(addedStream)
+    const created = receiveNext(createdStream)
+    const pinned = receiveNext(pinnedStream)
     const removed = receiveNext(removedStream)
     const updated = receiveNext(updatedStream)
 
     publishFeedbackAdded(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackCreated(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackPinned(
       pubSub,
       createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
     )
@@ -330,10 +348,20 @@ describe('realtime router', () => {
     )
 
     publishFeedbackAdded(pubSub, createFeedback())
+    publishFeedbackCreated(pubSub, createFeedback())
+    publishFeedbackPinned(pubSub, createFeedback())
     publishFeedbackRemoved(pubSub, createFeedback())
     publishFeedbackUpdated(pubSub, createFeedback())
 
     await expect(added).resolves.toEqual({ id: 1, liveQuizId: 'live-quiz-1' })
+    await expect(created).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
+    await expect(pinned).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
     await expect(removed).resolves.toEqual({
       id: 1,
       liveQuizId: 'live-quiz-1',
@@ -344,6 +372,10 @@ describe('realtime router', () => {
     })
 
     expect(pubSub.subscribe).toHaveBeenCalledWith(realtimeEvents.feedbackAdded)
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.feedbackCreated
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(realtimeEvents.feedbackPinned)
     expect(pubSub.subscribe).toHaveBeenCalledWith(
       realtimeEvents.feedbackRemoved
     )

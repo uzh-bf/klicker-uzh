@@ -1,5 +1,7 @@
 import {
   publishFeedbackAdded,
+  publishFeedbackCreated,
+  publishFeedbackPinned,
   publishFeedbackRemoved,
   publishFeedbackUpdated,
 } from '@klicker-uzh/api'
@@ -90,7 +92,7 @@ export async function createFeedback(
     },
   })
 
-  ctx.pubSub.publish('feedbackCreated', newFeedback)
+  publishFeedbackCreated(ctx.pubSub, newFeedback)
   ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id: quizId })
 
   if (!quiz.isModerationEnabled) {
@@ -232,7 +234,7 @@ export async function pinFeedback(
   })
 
   publishFeedbackUpdated(ctx.pubSub, updatedFeedback)
-  ctx.pubSub.publish('feedbackPinned', updatedFeedback)
+  publishFeedbackPinned(ctx.pubSub, updatedFeedback)
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
     id: updatedFeedback.liveQuizId,

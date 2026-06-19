@@ -92,6 +92,10 @@ Current next action:
 - S05C PWA feedback realtime is complete locally. It replaces the PWA
   feedback-area GraphQL `subscribeToMore` subscriptions with tRPC invalidation
   subscriptions while keeping the existing GraphQL feedback query/mutations.
+- S05E manage feedback realtime is complete locally. It replaces
+  manage cockpit/lecturer GraphQL feedback `subscribeToMore` subscriptions with
+  tRPC invalidation subscriptions while keeping existing GraphQL
+  cockpit/lecturer queries and mutations.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -546,6 +550,50 @@ Verification:
 - Runtime WebSocket parity probe passed on the local backend: GraphQL received
   `feedbackAdded`, `feedbackRemoved`, and `feedbackUpdated`; tRPC received the
   matching compact `{ id, liveQuizId }` events for the same live quiz.
+
+### 2026-06-19 Completed: S05E Manage Feedback tRPC Realtime
+
+Status: complete locally. Scope was limited to the manage feedback realtime
+subscriptions:
+
+- `FeedbackCreatedDocument` in `AudienceInteraction`.
+- `FeedbackPinnedDocument` in the lecturer view.
+
+Planned tRPC subscriptions:
+
+- `api.realtime.feedbackCreated.useSubscription({ quizId })`
+- `api.realtime.feedbackPinned.useSubscription({ quizId })`
+
+Intended behavior:
+
+- Preserve the existing GraphQL feedback subscription payloads and event keys on
+  `/api/graphql`.
+- Bridge existing GraphQL publishers through shared realtime helpers so tRPC and
+  GraphQL receive the same Redis-backed events.
+- Use manage feedback tRPC subscriptions as invalidation/refetch signals for the
+  existing GraphQL cockpit and lecturer queries. Do not duplicate the full
+  feedback DTO in `packages/api` in this slice.
+
+Verification:
+
+- Focused API realtime-router test passed for `feedbackCreated` and
+  `feedbackPinned`
+  event keys and filtering by `quizId`.
+- `pnpm --filter @klicker-uzh/api test` passed: 41 files, 430 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm --filter @klicker-uzh/graphql build` passed with existing warnings only.
+- `pnpm exec prettier --check` passed for S05E touched files.
+- `git diff --check` passed.
+- Scoped audit confirmed manage no longer imports `FeedbackCreatedDocument`,
+  `FeedbackPinnedDocument`, or Apollo `SubscribeToMoreOptions` for feedback
+  realtime.
+- Runtime WebSocket parity probe passed on the local backend: GraphQL received
+  `feedbackCreated` and `feedbackPinned`; tRPC received the matching compact
+  `{ id, liveQuizId }` events for the same live quiz.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

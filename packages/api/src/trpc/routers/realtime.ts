@@ -3,6 +3,8 @@ import { observable } from '@trpc/server/observable'
 import { z } from 'zod'
 import {
   subscribeFeedbackAdded,
+  subscribeFeedbackCreated,
+  subscribeFeedbackPinned,
   subscribeFeedbackRemoved,
   subscribeFeedbackUpdated,
   subscribeGroupActivityEnded,
@@ -73,6 +75,24 @@ export const realtimeRouter = router({
     .subscription(({ ctx, input }) =>
       createSubscription<FeedbackSource, FeedbackEvent>(
         subscribeFeedbackAdded(ctx.pubSub),
+        (feedback) => feedback.liveQuizId === input.quizId,
+        toFeedbackEvent
+      )
+    ),
+  feedbackCreated: publicProcedure
+    .input(z.object({ quizId: z.string() }))
+    .subscription(({ ctx, input }) =>
+      createSubscription<FeedbackSource, FeedbackEvent>(
+        subscribeFeedbackCreated(ctx.pubSub),
+        (feedback) => feedback.liveQuizId === input.quizId,
+        toFeedbackEvent
+      )
+    ),
+  feedbackPinned: publicProcedure
+    .input(z.object({ quizId: z.string() }))
+    .subscription(({ ctx, input }) =>
+      createSubscription<FeedbackSource, FeedbackEvent>(
+        subscribeFeedbackPinned(ctx.pubSub),
         (feedback) => feedback.liveQuizId === input.quizId,
         toFeedbackEvent
       )

@@ -49,7 +49,7 @@ function Cockpit() {
   const {
     loading: cockpitLoading,
     data: cockpitData,
-    subscribeToMore,
+    refetch: refetchCockpitQuiz,
   } = useQuery(GetCockpitQuizDocument, {
     variables: {
       id: router.query.id as string,
@@ -123,7 +123,7 @@ function Cockpit() {
       </div>
 
       <AudienceInteraction
-        subscribeToMore={subscribeToMore}
+        onFeedbackCreated={refetchCockpitQuiz}
         confusionValues={confusionSummary ?? undefined}
         feedbacks={feedbacks ?? []}
         isLiveQAEnabled={isLiveQAEnabled}

@@ -1,4 +1,4 @@
-import { SubscribeToMoreOptions, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -7,9 +7,7 @@ import {
   DeleteFeedbackDocument,
   DeleteFeedbackResponseDocument,
   Feedback,
-  FeedbackCreatedDocument,
   GetCockpitQuizDocument,
-  LiveQuiz,
   PinFeedbackDocument,
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
@@ -18,10 +16,11 @@ import {
 import { push } from '@socialgouv/matomo-next'
 import { H2, Switch } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useTranslations } from 'next-intl'
+import { api } from '../../lib/trpc'
 import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import ModerationChangeModal from './feedbacks/ModerationChangeModal'
@@ -34,7 +33,7 @@ interface Props {
   isLiveQAEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isModerationEnabled: boolean
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onFeedbackCreated: () => unknown | Promise<unknown>
 }
 
 function AudienceInteraction({
@@ -45,41 +44,26 @@ function AudienceInteraction({
   isLiveQAEnabled,
   isConfusionFeedbackEnabled,
   isModerationEnabled,
-  subscribeToMore,
+  onFeedbackCreated,
 }: Props) {
   const t = useTranslations()
   const [showModerationModal, setShowModerationModal] = useState(false)
   const [moderationChangeLoading, setModerationChangeLoading] = useState(false)
+  const onFeedbackCreatedRef = useRef(onFeedbackCreated)
 
   useEffect(() => {
-    if (!quizId) return
+    onFeedbackCreatedRef.current = onFeedbackCreated
+  }, [onFeedbackCreated])
 
-    const feedbackAdded = subscribeToMore({
-      document: FeedbackCreatedDocument,
-      variables: { quizId },
-      updateQuery: (
-        prev: { cockpitQuiz: LiveQuiz },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackCreated: Feedback } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const newItem = subscriptionData.data.feedbackCreated
-        const updatedQuiz = {
-          ...prev.cockpitQuiz,
-          feedbacks: [newItem, ...(prev.cockpitQuiz.feedbacks ?? [])],
-        }
-
-        return {
-          cockpitQuiz: updatedQuiz,
-        }
+  api.realtime.feedbackCreated.useSubscription(
+    { quizId },
+    {
+      enabled: Boolean(quizId),
+      onData() {
+        void onFeedbackCreatedRef.current()
       },
-    })
-
-    return () => {
-      feedbackAdded && feedbackAdded()
     }
-  }, [subscribeToMore, quizId])
+  )
 
   const [changeQuizSettings] = useMutation(ChangeLiveQuizSettingsDocument, {
     update: (cache, { data }) => {

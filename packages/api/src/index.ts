@@ -1,5 +1,7 @@
 export {
   publishFeedbackAdded,
+  publishFeedbackCreated,
+  publishFeedbackPinned,
   publishFeedbackRemoved,
   publishFeedbackUpdated,
   publishGroupActivityEnded,
