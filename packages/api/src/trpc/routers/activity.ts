@@ -90,6 +90,7 @@ import {
   deleteActivityTemplateInput,
   editActivityTemplateInput,
   endedLiveQuizzesCourseInput,
+  extendActivityInput,
   finalizeGroupActivityGradingInput,
   gradeGroupActivitySubmissionInput,
   groupActivityGradingInput,
@@ -755,6 +756,11 @@ type PublishedActivityRecord = {
   status: PublicationStatus
 }
 
+type ExtendedActivityRecord = {
+  id: string
+  scheduledEndAt: Date
+}
+
 function getActivitySchedulerTasks(ctx: TRPCContext) {
   return ctx.tasks as ActivitySchedulerTasks | undefined
 }
@@ -1194,6 +1200,151 @@ async function publishActivity({
     return await publishGroupActivity({
       ctx,
       activityId: input.activityId,
+    })
+  }
+
+  return null
+}
+
+async function extendMicroLearningActivity({
+  ctx,
+  activityId,
+  endDate,
+}: {
+  ctx: TRPCContext
+  activityId: string
+  endDate: Date
+}): Promise<ExtendedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const microLearning = await prisma.microLearning.update({
+    where: {
+      id: activityId,
+      scheduledEndAt: { gt: new Date() },
+      isDeleted: false,
+    },
+    data: { scheduledEndAt: endDate },
+    select: { id: true, scheduledCompletionTaskId: true },
+  })
+
+  if (microLearning.scheduledCompletionTaskId) {
+    await deleteScheduledHatchetTask({
+      ctx,
+      taskId: microLearning.scheduledCompletionTaskId,
+      failureMessage: `Failed to delete scheduled completion task for microlearning ${activityId}:`,
+    })
+  }
+
+  const completionTask = await getActivitySchedulerTasks(
+    ctx
+  )?.endExpiredMicroLearning?.schedule(endDate, {
+    microLearningId: microLearning.id,
+  })
+
+  if (!completionTask) {
+    throw new Error('Microlearning completion scheduler unavailable')
+  }
+
+  const updatedMicroLearning = await prisma.microLearning.update({
+    where: { id: activityId },
+    data: { scheduledCompletionTaskId: getScheduledTaskId(completionTask) },
+    select: { id: true, scheduledEndAt: true },
+  })
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'MicroLearning',
+    id: activityId,
+  })
+  return updatedMicroLearning
+}
+
+async function extendGroupActivity({
+  ctx,
+  activityId,
+  endDate,
+}: {
+  ctx: TRPCContext
+  activityId: string
+  endDate: Date
+}): Promise<ExtendedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const groupActivity = await prisma.groupActivity.update({
+    where: {
+      id: activityId,
+      status: {
+        in: [PublicationStatus.SCHEDULED, PublicationStatus.PUBLISHED],
+      },
+      scheduledEndAt: { gt: new Date() },
+    },
+    data: { scheduledEndAt: endDate },
+    select: { id: true, scheduledCompletionTaskId: true },
+  })
+
+  if (groupActivity.scheduledCompletionTaskId) {
+    await deleteScheduledHatchetTask({
+      ctx,
+      taskId: groupActivity.scheduledCompletionTaskId,
+      failureMessage: `Failed to delete scheduled completion task for group activity ${activityId}:`,
+    })
+  }
+
+  const completionTask = await getActivitySchedulerTasks(
+    ctx
+  )?.endExpiredGroupActivity?.schedule(endDate, {
+    groupActivityId: groupActivity.id,
+  })
+
+  if (!completionTask) {
+    throw new Error('Group activity completion scheduler unavailable')
+  }
+
+  const updatedGroupActivity = await prisma.groupActivity.update({
+    where: { id: activityId },
+    data: { scheduledCompletionTaskId: getScheduledTaskId(completionTask) },
+    select: { id: true, scheduledEndAt: true },
+  })
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'GroupActivity',
+    id: activityId,
+  })
+  return updatedGroupActivity
+}
+
+async function extendActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+    endDate: Date
+  }
+}) {
+  const canExecute = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.EXECUTE
+  )
+
+  if (!canExecute || input.endDate < new Date()) return null
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    return await extendMicroLearningActivity({
+      ctx,
+      activityId: input.activityId,
+      endDate: input.endDate,
+    })
+  }
+
+  if (input.activityType === ActivityType.GROUP_ACTIVITY) {
+    return await extendGroupActivity({
+      ctx,
+      activityId: input.activityId,
+      endDate: input.endDate,
     })
   }
 
@@ -3038,6 +3189,12 @@ export const activityRouter = router({
     .input(publishActivityInput)
     .mutation(async ({ ctx, input }) => ({
       publishActivity: await publishActivity({ ctx, input }),
+    })),
+
+  extend: userFullAccessProcedure
+    .input(extendActivityInput)
+    .mutation(async ({ ctx, input }) => ({
+      extendActivity: await extendActivity({ ctx, input }),
     })),
 
   unpublish: userFullAccessProcedure

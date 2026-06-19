@@ -2060,6 +2060,204 @@ describe('manage activity read routers', () => {
 
   test.each([
     {
+      activityType: ActivityType.MICRO_LEARNING,
+      modelName: 'microLearning',
+      permissionKey: 'microLearningId',
+      typename: 'MicroLearning',
+      completionTaskName: 'endExpiredMicroLearning',
+      completionPayload: { microLearningId: 'activity-1' },
+      updateWhere: {
+        id: 'activity-1',
+        scheduledEndAt: { gt: expect.any(Date) },
+        isDeleted: false,
+      },
+    },
+    {
+      activityType: ActivityType.GROUP_ACTIVITY,
+      modelName: 'groupActivity',
+      permissionKey: 'groupActivityId',
+      typename: 'GroupActivity',
+      completionTaskName: 'endExpiredGroupActivity',
+      completionPayload: { groupActivityId: 'activity-1' },
+      updateWhere: {
+        id: 'activity-1',
+        status: {
+          in: [PublicationStatus.SCHEDULED, PublicationStatus.PUBLISHED],
+        },
+        scheduledEndAt: { gt: expect.any(Date) },
+      },
+    },
+  ])(
+    'extends $activityType and replaces the scheduled completion task',
+    async ({
+      activityType,
+      modelName,
+      permissionKey,
+      typename,
+      completionTaskName,
+      completionPayload,
+      updateWhere,
+    }) => {
+      const endDate = new Date('2099-01-02T10:00:00.000Z')
+      const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+      const update = vi
+        .fn()
+        .mockResolvedValueOnce({
+          id: 'activity-1',
+          scheduledCompletionTaskId: 'old-completion-task',
+        })
+        .mockResolvedValueOnce({
+          id: 'activity-1',
+          scheduledEndAt: endDate,
+        })
+      const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+      const completionSchedule = vi.fn().mockResolvedValue({
+        metadata: { id: 'new-completion-task' },
+      })
+      const emit = vi.fn()
+      const prisma = {
+        derivedPermission: {
+          findFirst: permissionFindFirst,
+        },
+        [modelName]: {
+          update,
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(
+        createContext(prisma, {
+          emitter: { emit } as unknown as TRPCContext['emitter'],
+          hatchet: {
+            scheduled: {
+              delete: scheduledDelete,
+            },
+          } as unknown as TRPCContext['hatchet'],
+          tasks: {
+            [completionTaskName]: { schedule: completionSchedule },
+          } as unknown as TRPCContext['tasks'],
+        })
+      )
+
+      await expect(
+        caller.activity.extend({
+          activityId: 'activity-1',
+          activityType,
+          endDate,
+        })
+      ).resolves.toEqual({
+        extendActivity: {
+          id: 'activity-1',
+          scheduledEndAt: endDate,
+        },
+      })
+
+      expect(permissionFindFirst).toHaveBeenCalledWith({
+        where: {
+          [permissionKey]: 'activity-1',
+          userId: user.id,
+          permissionLevel: {
+            in: [
+              PermissionLevel.EXECUTE,
+              PermissionLevel.WRITE,
+              PermissionLevel.ADMIN,
+              PermissionLevel.OWNER,
+            ],
+          },
+        },
+      })
+      expect(update).toHaveBeenNthCalledWith(1, {
+        where: updateWhere,
+        data: { scheduledEndAt: endDate },
+        select: { id: true, scheduledCompletionTaskId: true },
+      })
+      expect(scheduledDelete).toHaveBeenCalledWith('old-completion-task')
+      expect(completionSchedule).toHaveBeenCalledWith(
+        endDate,
+        completionPayload
+      )
+      expect(update).toHaveBeenNthCalledWith(2, {
+        where: { id: 'activity-1' },
+        data: { scheduledCompletionTaskId: 'new-completion-task' },
+        select: { id: true, scheduledEndAt: true },
+      })
+      expect(emit).toHaveBeenCalledWith('invalidate', {
+        typename,
+        id: 'activity-1',
+      })
+    }
+  )
+
+  test('returns null when activity extension execute permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const microLearningUpdate = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      microLearning: {
+        update: microLearningUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.extend({
+        activityId: 'microlearning-1',
+        activityType: ActivityType.MICRO_LEARNING,
+        endDate: new Date('2099-01-02T10:00:00.000Z'),
+      })
+    ).resolves.toEqual({ extendActivity: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        microLearningId: 'microlearning-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(microLearningUpdate).not.toHaveBeenCalled()
+  })
+
+  test('returns null when activity extension end date is in the past', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const completionSchedule = vi.fn()
+    const groupActivityUpdate = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        update: groupActivityUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        tasks: {
+          endExpiredGroupActivity: { schedule: completionSchedule },
+        } as unknown as TRPCContext['tasks'],
+      })
+    )
+
+    await expect(
+      caller.activity.extend({
+        activityId: 'group-activity-1',
+        activityType: ActivityType.GROUP_ACTIVITY,
+        endDate: new Date('2020-01-02T10:00:00.000Z'),
+      })
+    ).resolves.toEqual({ extendActivity: null })
+
+    expect(groupActivityUpdate).not.toHaveBeenCalled()
+    expect(completionSchedule).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    {
       activityType: ActivityType.LIVE_QUIZ,
       modelName: 'liveQuiz',
       permissionKey: 'liveQuizId',

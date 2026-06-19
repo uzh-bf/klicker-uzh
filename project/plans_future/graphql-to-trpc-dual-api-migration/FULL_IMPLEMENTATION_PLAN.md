@@ -280,6 +280,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Activity Extension Actions
+
+Status: complete for the scoped code migration and automated verification.
+Scope was limited to replacing the manage extension modal's Apollo
+`ExtendMicroLearningDocument` and `ExtendGroupActivityDocument` mutations with a
+single `trpc.activity.extend` mutation. This preserved EXECUTE permission
+checks, future-end-date validation, scheduled completion task replacement,
+object invalidation events, and course/activity list invalidation. This did not
+migrate end/delete/reset/start/schedule modals, activity authoring create/edit
+wizards, live-quiz cockpit/lecturer realtime pages, S05, or S06.
+
+Slice: S04L Activity Extension Actions
+
+GraphQL operation(s):
+
+- `ExtendMicroLearningDocument`
+- `ExtendGroupActivityDocument`
+
+Behavior source:
+
+- `packages/graphql/src/services/microLearning.ts` `extendMicroLearning`
+- `packages/graphql/src/services/groups.ts` `extendGroupActivity`
+- Existing GraphQL mutation permission wrappers in
+  `packages/graphql/src/schema/mutation.ts`
+
+Implemented:
+
+- Added `extendActivityInput` and `activity.extend`.
+- Added microlearning and group activity branches that update `scheduledEndAt`,
+  delete any previous scheduled completion task, schedule the replacement
+  completion task, store the new task id, and emit activity invalidation.
+- Migrated `ExtensionModal` from Apollo generated mutation documents to
+  `trpc.activity.extend`, passing a SuperJSON-serializable `Date` and retaining
+  course-detail/activity-list invalidation.
+- Added focused API tests for successful microlearning/group activity extension,
+  missing execute permission, and past end-date validation.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L extension files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, including 40 API test files / 395 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known existing warnings.
+- Focused source audit for
+  `ExtendMicroLearningDocument|ExtendGroupActivityDocument|@apollo/client` in
+  the migrated extension files: no matches.
+- `git diff --check`: passed.
+- Browser attempt: backend/auth/manage dev servers started and `curl` confirmed
+  `http://127.0.0.1:3002` returned `200`, but `npx agent-browser` repeatedly
+  landed on `chrome-error://chromewebdata/` / blank screenshots for both
+  `127.0.0.1` and `localhost`. Screenshots:
+  - `/tmp/agent-browser-shots/s04-extension-01-initial.png`
+  - `/tmp/agent-browser-shots/s04-extension-02-localhost.png`
+- Runtime HTTP smoke:
+  - Non-mutating validation path passed: direct local POST to
+    `/api/trpc/activity.extend` with a past `endDate` returned
+    `extendActivity: null`.
+  - Successful scheduled-extension path reached the new route but was blocked by
+    local Hatchet auth. With the process-only fake token, Hatchet returned tenant
+    `404`; with a tenant-bearing local unsigned token, Hatchet returned `403` on
+    `POST /api/v1/tenants/707d0855-80ab-4e1f-a156-f1c4546cbf52/workflows/end-expired-micro-learnings/scheduled`.
+    The temporary local row mutation on `MicroLearning 1`
+    (`82c6d7bf-a249-423f-a63a-06d06686850c`) was restored to
+    `scheduledEndAt = 2026-10-14 16:00:00` and
+    `scheduledCompletionTaskId = null`.
+
+Residual risk / next S04 work:
+
+- Successful runtime verification of the extension happy path still needs a real
+  local `HATCHET_CLIENT_TOKEN` that can create scheduled runs.
+- Continue remaining S04-only action/modals and generated type cleanup; pause
+  before S05/S06.
+
 ### 2026-06-19 Completed: S04L Activity Publish Actions
 
 Status: complete for practice quiz publish/schedule, microlearning publish, and

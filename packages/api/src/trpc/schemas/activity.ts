@@ -49,6 +49,10 @@ export const publishActivityInput = activityDetailsInput.extend({
   availableFrom: z.date().nullish(),
 })
 
+export const extendActivityInput = activityDetailsInput.extend({
+  endDate: z.date(),
+})
+
 export const groupActivityGradingInput = z.object({
   id: z.string(),
 })

@@ -1,8 +1,4 @@
-import { useMutation } from '@apollo/client'
-import {
-  ExtendGroupActivityDocument,
-  ExtendMicroLearningDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -33,8 +29,7 @@ function ExtensionModal({
 }: ExtensionModalProps) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
-  const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument)
+  const extendActivity = trpc.activity.extend.useMutation()
 
   return (
     <Modal
@@ -57,45 +52,26 @@ function ExtensionModal({
               .min(new Date(), t('manage.course.futureEndDateRequired')),
           })}
           onSubmit={async (values, { setSubmitting }) => {
-            const utcEndDate = dayjs(values.endDate).utc().format()
+            const utcEndDate = dayjs(values.endDate).utc().toDate()
             setSubmitting(true)
 
-            if (type === 'microLearning') {
-              const result = await extendMicroLearning({
-                variables: { id, endDate: utcEndDate },
-                optimisticResponse: {
-                  __typename: 'Mutation',
-                  extendMicroLearning: {
-                    __typename: 'MicroLearning',
-                    id,
-                    scheduledEndAt: utcEndDate,
-                  },
-                },
+            try {
+              const result = await extendActivity.mutateAsync({
+                activityId: id,
+                activityType:
+                  type === 'microLearning'
+                    ? ActivityType.MICRO_LEARNING
+                    : ActivityType.GROUP_ACTIVITY,
+                endDate: utcEndDate,
               })
-              if (result.data?.extendMicroLearning?.id) {
+              if (result.extendActivity?.id) {
                 await utils.course.detail.invalidate({ courseId })
               }
               await refetchActivities?.()
-            } else if (type === 'groupActivity') {
-              const result = await extendGroupActivity({
-                variables: { id, endDate: utcEndDate },
-                optimisticResponse: {
-                  __typename: 'Mutation',
-                  extendGroupActivity: {
-                    __typename: 'GroupActivity',
-                    id,
-                    scheduledEndAt: utcEndDate,
-                  },
-                },
-              })
-              if (result.data?.extendGroupActivity?.id) {
-                await utils.course.detail.invalidate({ courseId })
-              }
-              await refetchActivities?.()
+              onClose()
+            } finally {
+              setSubmitting(false)
             }
-
-            setSubmitting(false)
-            onClose()
           }}
         >
           {({ isValid, isSubmitting }) => (
