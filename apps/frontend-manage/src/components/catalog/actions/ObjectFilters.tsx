@@ -1,4 +1,4 @@
-import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'

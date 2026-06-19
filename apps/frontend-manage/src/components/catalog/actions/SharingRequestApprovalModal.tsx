@@ -1,5 +1,10 @@
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
-import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ObjectType,
+  PermissionLevel,
+  toGraphqlObjectType,
+  toGraphqlPermissionLevel,
+} from '@lib/constants/catalogEnums'
 import { Button, Modal, SelectField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -24,10 +29,12 @@ function SharingRequestApprovalModal({
   onSuccess: () => void
 }) {
   const t = useTranslations()
-  const [permissionLevel, setPermissionLevel] = useState(PermissionLevel.Read)
+  const [permissionLevel, setPermissionLevel] = useState<PermissionLevel>(
+    PermissionLevel.Read
+  )
   const objectType = request.objectType as unknown as ObjectType
   const permissionLevelSelectItems = usePermissionLevelSelection({
-    type: objectType,
+    type: toGraphqlObjectType(objectType),
   })
   const utils = trpc.useUtils()
   const approveObjectSharingRequest =
@@ -79,7 +86,9 @@ function SharingRequestApprovalModal({
         value={permissionLevel}
         label={t('shared.generic.permissionLevel')}
         items={permissionLevelSelectItems}
-        onChange={(newValue) => setPermissionLevel(newValue as PermissionLevel)}
+        onChange={(newValue) =>
+          setPermissionLevel(newValue as unknown as PermissionLevel)
+        }
         className={{ label: 'text-base', select: { trigger: 'h-9' } }}
         data={{ cy: 'permission-level-select' }}
       />
@@ -134,14 +143,14 @@ function SharingRequestApprovalModal({
 
       <div className="mt-6">
         <PermissionsTable
-          objectType={objectType}
-          activePermissionLevel={permissionLevel}
+          objectType={toGraphqlObjectType(objectType)}
+          activePermissionLevel={toGraphqlPermissionLevel(permissionLevel)}
         />
       </div>
 
       <PropagatedPermissionsTable
-        objectType={objectType}
-        activePermissionLevel={permissionLevel}
+        objectType={toGraphqlObjectType(objectType)}
+        activePermissionLevel={toGraphqlPermissionLevel(permissionLevel)}
         showPropagationSetting={objectType === ObjectType.Course}
       />
     </Modal>

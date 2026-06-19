@@ -1,4 +1,4 @@
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/catalogEnums'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 // function to trigger object sharing request, returns success boolean

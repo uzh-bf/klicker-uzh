@@ -1,4 +1,4 @@
-import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc, type RouterInputs } from '../../../lib/trpc'

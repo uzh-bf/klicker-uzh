@@ -1,4 +1,4 @@
-import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
 import { Button, H4, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'

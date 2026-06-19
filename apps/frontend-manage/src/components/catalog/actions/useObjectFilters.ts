@@ -1,4 +1,4 @@
-import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
 import * as JsSearch from 'js-search'
 import { useMemo } from 'react'
 import type {

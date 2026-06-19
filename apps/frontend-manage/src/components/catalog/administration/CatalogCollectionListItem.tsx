@@ -5,7 +5,11 @@ import {
   faPencil,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ObjectAccess,
+  ObjectType,
+  toGraphqlObjectType,
+} from '@lib/constants/catalogEnums'
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -150,7 +154,7 @@ function CatalogCollectionListItem({
               onClose={() => setSharingModal(false)}
               objectUuid={collection.id}
               objectName={collection.name}
-              objectType={ObjectType.CatalogCollection}
+              objectType={toGraphqlObjectType(ObjectType.CatalogCollection)}
             />
           )}
           {deletionModal && (

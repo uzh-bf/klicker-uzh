@@ -1,4 +1,4 @@
-import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess } from '@lib/constants/catalogEnums'
 import {
   Button,
   FormikTextField,

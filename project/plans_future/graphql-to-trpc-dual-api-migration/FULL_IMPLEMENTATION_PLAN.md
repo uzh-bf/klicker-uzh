@@ -280,6 +280,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04P Catalog Generated Enum Cleanup
+
+Status: complete for the scoped catalog cleanup. Scope was limited to catalog
+browser/action/admin components and the two catalog action-dropdown hooks that
+now consume tRPC data/mutations but still imported generated GraphQL enum
+constants for `ObjectAccess`, `ObjectType`, or `PermissionLevel`.
+
+Slice: S04P Catalog Generated Enum Cleanup
+GraphQL operation(s): none; this is generated enum import cleanup only.
+GraphQL resolver(s): none.
+Behavior source: existing enum string values from generated GraphQL output and
+Prisma-backed tRPC DTO values.
+tRPC router.procedure: unchanged.
+Input schema: unchanged.
+Output DTO: unchanged.
+Active frontend consumers: `apps/frontend-manage/src/components/catalog/**` and
+`apps/frontend-manage/src/lib/hooks/useCatalog*ActionsDropdown.tsx`.
+Apollo cache/refetch/subscription behavior: none.
+React Query replacement: none.
+
+Implementation:
+
+- Added local catalog enum constants in
+  `apps/frontend-manage/src/lib/constants/catalogEnums.ts` and repointed the
+  scoped catalog components/hooks away from direct generated GraphQL enum value
+  imports.
+- Kept type-only compatibility casts for still-Apollo sharing boundaries that
+  still expect generated `ObjectType` / `PermissionLevel` inputs.
+
+Verification:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write ...`
+- `pnpm --filter @klicker-uzh/frontend-manage check`
+- `pnpm --filter @klicker-uzh/frontend-manage build`
+- `rg -n "@klicker-uzh/graphql/dist/ops|@klicker/constants/catalogEnums" apps/frontend-manage/src/components/catalog apps/frontend-manage/src/lib/hooks/useCatalogObjectActionsDropdown.tsx apps/frontend-manage/src/lib/hooks/useCatalogCollectionActionsDropdown.tsx -g '*.ts' -g '*.tsx'`
+  returned no matches.
+- `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`
+  returned `178`.
+- `git diff --check`
+- Browser verification with seeded `free` user on
+  `http://localhost:3116/resources/catalog`:
+  `/tmp/agent-browser-shots/s04-catalog-enums-01-catalog.png`,
+  `/tmp/agent-browser-shots/s04-catalog-enums-02-action-menu.png`,
+  `/tmp/agent-browser-shots/s04-catalog-enums-03-row-action.png`.
+
+Cleanup blocked until: remaining S04 generated type leaks outside catalog,
+sharing-boundary generated enum compatibility casts, S05 realtime, and S06
+cleanup gates.
+
 ### 2026-06-19 Completed: S04K Catalog Copy/Import Apollo Refetch Cleanup
 
 Status: complete for the scoped cleanup. Scope was limited to the two catalog

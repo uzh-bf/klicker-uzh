@@ -6,7 +6,7 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
