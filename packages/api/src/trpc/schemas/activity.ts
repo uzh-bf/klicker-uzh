@@ -83,6 +83,21 @@ export const editPracticeQuizInput = practiceQuizManipulationInput.extend({
   id: z.string(),
 })
 
+export const microLearningManipulationInput = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string().nullish(),
+  stacks: z.array(activityElementStackInput),
+  courseId: z.string(),
+  multiplier: z.number().int(),
+  startDate: z.date(),
+  endDate: z.date(),
+})
+
+export const editMicroLearningInput = microLearningManipulationInput.extend({
+  id: z.string(),
+})
+
 export const publishActivityInput = activityDetailsInput.extend({
   availableFrom: z.date().nullish(),
 })

@@ -2664,6 +2664,71 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('returns null when editing a microlearning without write permission', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      derivedPermission: { findFirst: permissionFindFirst },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.editMicroLearning({
+        id: 'microlearning-1',
+        name: 'Microlearning',
+        displayName: 'Displayed Microlearning',
+        description: null,
+        stacks: [],
+        courseId: 'course-1',
+        multiplier: 1,
+        startDate: new Date('2026-07-01T10:00:00.000Z'),
+        endDate: new Date('2026-07-02T10:00:00.000Z'),
+      })
+    ).resolves.toEqual({ editMicroLearning: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        microLearningId: 'microlearning-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+  })
+
+  test('maps missing target course to a not-found error when creating a microlearning', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      course: { findUnique: courseFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.createMicroLearning({
+        name: 'Microlearning',
+        displayName: 'Displayed Microlearning',
+        description: null,
+        stacks: [],
+        courseId: 'missing-course',
+        multiplier: 1,
+        startDate: new Date('2026-07-01T10:00:00.000Z'),
+        endDate: new Date('2026-07-02T10:00:00.000Z'),
+      })
+    ).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      message: 'Course not found',
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'missing-course' },
+      select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+    })
+  })
+
   test('returns group activity authoring reads without solution fields', async () => {
     const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
     const findUnique = vi.fn().mockResolvedValue({

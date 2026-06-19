@@ -280,6 +280,84 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Microlearning Authoring Submit
+
+Status: complete for the microlearning authoring submit slice. Scope stayed
+limited to replacing the microlearning create/edit wizard submit path with tRPC.
+This did not start S05 realtime migration, S06 cleanup, group/live authoring
+submit migration, or live-quiz start/cockpit work.
+
+Slice: S04L Microlearning Authoring Submit
+
+GraphQL operation(s):
+
+- `CreateMicroLearningDocument`
+- `EditMicroLearningDocument`
+
+Behavior source:
+
+- `packages/graphql/src/schema/mutation.ts` `createMicroLearning` /
+  `editMicroLearning` wrappers
+- `packages/graphql/src/services/microLearning.ts` `manipulateMicroLearning`
+- API-local `splitActivityInstances` port from the completed practice quiz
+  authoring submit slice
+
+Write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/creation/microLearning/MicroLearningWizard.tsx`
+- `apps/frontend-manage/src/components/activities/creation/microLearning/submitMicrolearningForm.ts`
+- this plan progress entry
+
+Implementation notes:
+
+- Added `activity.createMicroLearning` and `activity.editMicroLearning` tRPC
+  mutations.
+- Reused the API-local `splitActivityInstances` helper from the practice quiz
+  authoring submit slice.
+- Preserved create full-access behavior, edit WRITE permission behavior, and
+  PUBLISHED/ENDED edit rejection.
+- Replaced `MicroLearningWizard` Apollo mutation tuples with tRPC mutations.
+- Replaced Apollo mutation function types in `submitMicrolearningForm` with
+  `RouterInputs` / `RouterOutputs` and passed UTC `Date` values over SuperJSON.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L microlearning authoring files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, 40 files and 421 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-data warnings.
+- `rg -n "CreateMicroLearningDocument|EditMicroLearningDocument|@apollo/client|CreateMicroLearningMutation|EditMicroLearningMutation" apps/frontend-manage/src/components/activities/creation/microLearning packages/api/src/trpc --glob '!**/*.d.ts'`:
+  no matches.
+- `git diff --check`: passed.
+- Direct non-destructive procedure coverage is in the focused API test file:
+  edit without WRITE permission returns `{ editMicroLearning: null }`, and
+  create against a missing course returns `NOT_FOUND`.
+- Browser attempt: `curl -sS -I http://127.0.0.1:3002` failed with connection
+  refused. `npx agent-browser open http://127.0.0.1:3002/activities` failed
+  with `net::ERR_CONNECTION_REFUSED`. Screenshot:
+  `/tmp/agent-browser-shots/s04-microlearning-authoring-01-connection-refused.png`
+  (blank white after failed navigation).
+
+Residual S04 scope:
+
+- `GroupActivityWizard` and `submitGroupActivityForm` still use Apollo
+  create/edit mutations.
+- `LiveQuizWizard` and `submitLiveQuizForm` still use Apollo create/edit and
+  live-quiz start/running-live-quiz logic.
+- S04P generated type leak cleanup and S04Q API no-GraphQL runtime dependency
+  gates remain open.
+
 ### 2026-06-19 Completed: S04L Practice Quiz Authoring Submit
 
 Status: complete for the practice quiz authoring submit slice. Scope stayed

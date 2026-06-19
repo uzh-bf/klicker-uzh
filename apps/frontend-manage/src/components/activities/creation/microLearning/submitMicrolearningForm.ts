@@ -1,20 +1,15 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreateMicroLearningMutation,
-  CreateMicroLearningMutationVariables,
-  EditMicroLearningMutation,
-  EditMicroLearningMutationVariables,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import type { RouterInputs, RouterOutputs } from '../../../../lib/trpc'
 import {
   ElementStackFormValues,
   MicroLearningFormValues,
 } from '../WizardLayout'
+
+type CreateMicroLearningInput = RouterInputs['activity']['createMicroLearning']
+type CreateMicroLearningResult =
+  RouterOutputs['activity']['createMicroLearning']
+type EditMicroLearningInput = RouterInputs['activity']['editMicroLearning']
+type EditMicroLearningResult = RouterOutputs['activity']['editMicroLearning']
 
 interface MicroLearningFormSubmissionProps {
   id?: string
@@ -22,25 +17,11 @@ interface MicroLearningFormSubmissionProps {
   values: MicroLearningFormValues
   editMode: boolean
   createMicroLearning: (
-    options?:
-      | MutationFunctionOptions<
-          CreateMicroLearningMutation,
-          CreateMicroLearningMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<CreateMicroLearningMutation>>
+    input: CreateMicroLearningInput
+  ) => Promise<CreateMicroLearningResult>
   editMicroLearning: (
-    options?:
-      | MutationFunctionOptions<
-          EditMicroLearningMutation,
-          EditMicroLearningMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<EditMicroLearningMutation>>
+    input: EditMicroLearningInput
+  ) => Promise<EditMicroLearningResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
   onError: () => void
@@ -81,18 +62,16 @@ async function submitMicrolearningForm({
           duplicateInstance: element.duplicateInstance,
         })),
       })),
-      startDate: dayjs(values.startDate).utc().format(),
-      endDate: dayjs(values.endDate).utc().format(),
+      startDate: dayjs(values.startDate).utc().toDate(),
+      endDate: dayjs(values.endDate).utc().toDate(),
       multiplier: parseInt(values.multiplier),
       courseId: values.courseId!,
     }
 
     if (editMode && id) {
-      const { data: result } = await editMicroLearning({
-        variables: { id, ...createUpdateJSON },
-      })
-      success = Boolean(result?.editMicroLearning)
-      if (result?.editMicroLearning?.courseId) {
+      const result = await editMicroLearning({ id, ...createUpdateJSON })
+      success = Boolean(result.editMicroLearning)
+      if (result.editMicroLearning?.courseId) {
         const courseIds = new Set(
           [previousCourseId, result.editMicroLearning.courseId].filter(
             (courseId): courseId is string => Boolean(courseId)
@@ -101,11 +80,9 @@ async function submitMicrolearningForm({
         await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
       }
     } else {
-      const { data: result } = await createMicroLearning({
-        variables: createUpdateJSON,
-      })
-      success = Boolean(result?.createMicroLearning)
-      if (result?.createMicroLearning?.courseId) {
+      const result = await createMicroLearning(createUpdateJSON)
+      success = Boolean(result.createMicroLearning)
+      if (result.createMicroLearning?.courseId) {
         await invalidateCourseDetail(result.createMicroLearning.courseId)
       }
     }

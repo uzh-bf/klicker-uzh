@@ -106,6 +106,7 @@ import {
   createLiveQuizFromTemplateInput,
   deleteActivityTemplateInput,
   editActivityTemplateInput,
+  editMicroLearningInput,
   editPracticeQuizInput,
   endedLiveQuizzesCourseInput,
   extendActivityInput,
@@ -114,6 +115,7 @@ import {
   groupActivityGradingInput,
   liveQuizStudentAssessmentResponsesInput,
   matchingUserElementsTemplateInput,
+  microLearningManipulationInput,
   openGroupActivityInput,
   outdatedElementInstancesInput,
   practiceQuizManipulationInput,
@@ -260,6 +262,12 @@ type PracticeQuizManipulationInput = z.infer<
 >
 
 type EditPracticeQuizInput = z.infer<typeof editPracticeQuizInput>
+
+type MicroLearningManipulationInput = z.infer<
+  typeof microLearningManipulationInput
+>
+
+type EditMicroLearningInput = z.infer<typeof editMicroLearningInput>
 
 type TemplateElementWithCollections = Element & {
   answerCollection?:
@@ -1342,6 +1350,269 @@ async function manipulatePracticeQuiz({
     automaticPublicationAt: activity.availableFrom,
     scheduledStartAt: null,
     scheduledEndAt: null,
+    groupDeadlineDate: null,
+    numOfParticipantGroups: null,
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: null,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    isActivityReviewer: (activity.course?._count.permissions ?? 0) > 0,
+    sharingType,
+    updatedAt: activity.updatedAt,
+  }
+}
+
+async function manipulateMicroLearning({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: MicroLearningManipulationInput | EditMicroLearningInput
+}) {
+  const prisma = getPrisma(ctx)
+  const id = 'id' in input ? input.id : undefined
+
+  let existingActivity: MicroLearning | null = null
+  if (id) {
+    existingActivity = await prisma.microLearning.findUnique({
+      where: { id, isDeleted: false },
+    })
+
+    if (!existingActivity) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Microlearning not found',
+      })
+    }
+    if (
+      existingActivity.status === PublicationStatus.PUBLISHED ||
+      existingActivity.status === PublicationStatus.ENDED
+    ) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Cannot edit a published or ended microlearning',
+      })
+    }
+  }
+
+  const course = await prisma.course.findUnique({
+    where: { id: input.courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Course not found' })
+  }
+
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+    anyInstanceOutdated,
+  } = await splitActivityInstances({ ctx, stacksOrBlocks: input.stacks })
+
+  let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = []
+  let stacksToDelete: number[] = []
+  if (id) {
+    const instances = await prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementStack: { microLearningId: id },
+      },
+    })
+
+    const stacks = await prisma.elementStack.findMany({
+      where: { microLearningId: id },
+    })
+
+    instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
+    stacksToDelete = stacks.map((stack) => stack.id)
+  }
+
+  const createOrUpdateJSON = {
+    name: input.name.trim(),
+    displayName: input.displayName.trim(),
+    description: input.description,
+    pointsMultiplier: input.multiplier,
+    scheduledStartAt: input.startDate,
+    scheduledEndAt: input.endDate,
+    areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.courseId !== input.courseId
+        ? ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === ReviewStatus.REVIEWED
+          ? ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
+    stacks: {
+      create: input.stacks.map((stack) => ({
+        type: ElementStackType.MICROLEARNING,
+        order: stack.order,
+        displayName: stack.displayName?.trim() ?? '',
+        description: stack.description ?? '',
+        elements: {
+          connectOrCreate: stack.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.MICROLEARNING,
+              activityMultiplier: input.multiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+            })
+          ),
+        },
+      })),
+    },
+    course: { connect: { id: input.courseId } },
+  }
+
+  const activity = await prisma.$transaction(
+    async (tx) => {
+      await tx.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
+      })
+
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          getAuthoringObjectProperty(
+            instance.elementData,
+            'pointsMultiplier'
+          ) ?? 1
+
+        await tx.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...(isAuthoringRecord(instance.options) ? instance.options : {}),
+              pointsMultiplier:
+                input.multiplier *
+                (typeof elementMultiplier === 'number' ? elementMultiplier : 1),
+            },
+          },
+        })
+      }
+
+      await tx.elementStack.deleteMany({
+        where: { id: { in: stacksToDelete } },
+      })
+
+      const upsertedMicroLearning = await tx.microLearning.upsert({
+        where: { id: id ?? randomUUID() },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } },
+        },
+        update: createOrUpdateJSON,
+        include: {
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
+            include: {
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          stacks: {
+            include: { _count: { select: { elements: true } } },
+            orderBy: { order: 'asc' },
+          },
+          _count: { select: { permissions: true } },
+        },
+      })
+
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, tx)
+        }
+      }
+
+      await recomputeDerivedPermissions(
+        { microLearningId: upsertedMicroLearning.id },
+        tx
+      )
+
+      return upsertedMicroLearning
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'MicroLearning',
+    id: activity.id,
+  })
+
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const directPermission = activity.permissions[0]?.directPermission
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = toActivityPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission: Boolean(
+      directPermission && directPermission.userGroupId !== null
+    ),
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
+    type: ActivityType.MICRO_LEARNING,
+    status: activity.status,
+    courseId: activity.course?.id,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.stacks.length,
+    numOfElements: activity.stacks.reduce(
+      (acc, stack) => acc + stack._count.elements,
+      0
+    ),
+    automaticPublicationAt: null,
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
     groupDeadlineDate: null,
     numOfParticipantGroups: null,
     permissionLevel,
@@ -5257,6 +5528,31 @@ export const activityRouter = router({
 
       return {
         editPracticeQuiz: await manipulatePracticeQuiz({ ctx, input }),
+      }
+    }),
+
+  createMicroLearning: userFullAccessProcedure
+    .input(microLearningManipulationInput)
+    .mutation(async ({ ctx, input }) => ({
+      createMicroLearning: await manipulateMicroLearning({ ctx, input }),
+    })),
+
+  editMicroLearning: userFullAccessProcedure
+    .input(editMicroLearningInput)
+    .mutation(async ({ ctx, input }) => {
+      const canWrite = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.id,
+          activityType: ActivityType.MICRO_LEARNING,
+        },
+        PermissionLevel.WRITE
+      )
+
+      if (!canWrite) return { editMicroLearning: null }
+
+      return {
+        editMicroLearning: await manipulateMicroLearning({ ctx, input }),
       }
     }),
 

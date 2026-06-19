@@ -1,7 +1,4 @@
-import { useMutation } from '@apollo/client'
 import {
-  CreateMicroLearningDocument,
-  EditMicroLearningDocument,
   Element,
   ElementType,
   MicroLearning,
@@ -267,12 +264,8 @@ function MicroLearningWizard({
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
   })
 
-  const [createMicroLearning, { data: creationData }] = useMutation(
-    CreateMicroLearningDocument
-  )
-  const [editMicroLearning, { data: editingData }] = useMutation(
-    EditMicroLearningDocument
-  )
+  const createMicroLearning = trpc.activity.createMicroLearning.useMutation()
+  const editMicroLearning = trpc.activity.editMicroLearning.useMutation()
   const utils = trpc.useUtils()
   const invalidateCourseDetail = useCallback(
     async (courseId: string) => {
@@ -288,8 +281,8 @@ function MicroLearningWizard({
         previousCourseId: initialValues?.course?.id,
         values,
         editMode,
-        createMicroLearning,
-        editMicroLearning,
+        createMicroLearning: createMicroLearning.mutateAsync,
+        editMicroLearning: editMicroLearning.mutateAsync,
         invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
@@ -310,8 +303,8 @@ function MicroLearningWizard({
       })
     },
     [
-      createMicroLearning,
-      editMicroLearning,
+      createMicroLearning.mutateAsync,
+      editMicroLearning.mutateAsync,
       editMode,
       initialValues?.course?.id,
       initialValues?.id,
@@ -320,13 +313,14 @@ function MicroLearningWizard({
   )
 
   const activityId =
-    creationData?.createMicroLearning?.id ?? editingData?.editMicroLearning?.id
+    createMicroLearning.data?.createMicroLearning?.id ??
+    editMicroLearning.data?.editMicroLearning?.id
   const selectedCourseId =
-    creationData?.createMicroLearning?.courseId ??
-    editingData?.editMicroLearning?.courseId
+    createMicroLearning.data?.createMicroLearning?.courseId ??
+    editMicroLearning.data?.editMicroLearning?.courseId
   const isActivityReviewer =
-    creationData?.createMicroLearning?.isActivityReviewer ??
-    editingData?.editMicroLearning?.isActivityReviewer
+    createMicroLearning.data?.createMicroLearning?.isActivityReviewer ??
+    editMicroLearning.data?.editMicroLearning?.isActivityReviewer
 
   return (
     <WizardLayout
