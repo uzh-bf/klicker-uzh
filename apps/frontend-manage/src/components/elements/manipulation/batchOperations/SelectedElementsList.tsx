@@ -1,6 +1,5 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element } from '@klicker-uzh/graphql/dist/ops'
 import {
   ShadcnTable,
   ShadcnTableBody,
@@ -11,6 +10,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { Element } from '../../../../lib/constants/elementTypes'
 import ObjectPermissionLevel from '../../../sharing/ObjectPermissionLevel'
 
 function SelectedElementsList({

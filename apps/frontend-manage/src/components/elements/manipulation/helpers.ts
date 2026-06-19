@@ -1,4 +1,4 @@
-import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
+import { ElementStatus } from '../../../lib/constants/elementTypes'
 import type { RouterOutputs } from '../../../lib/trpc'
 import {
   ElementFormTypesCaseStudy,

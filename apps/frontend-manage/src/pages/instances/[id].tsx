@@ -1,7 +1,3 @@
-import {
-  ElementType,
-  type ElementInstance,
-} from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
@@ -11,8 +7,14 @@ import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
+import {
+  ElementType,
+  type ElementInstance,
+} from '../../lib/constants/elementTypes'
 import { trpc } from '../../lib/trpc'
+
+type StudentElementInstance = ComponentProps<typeof StudentElement>['element']
 
 function InstancePreview() {
   const t = useTranslations()
@@ -35,14 +37,14 @@ function InstancePreview() {
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
     useState<InstanceStackStudentResponseType>({
-      type: ElementType.FreeText,
+      type: ElementType.FreeText as InstanceStackStudentResponseType['type'],
       response: undefined,
       valid: false,
     })
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
-    instance,
+    instance: instance as StudentElementInstance | null | undefined,
     setStudentResponse,
   })
 
@@ -68,7 +70,7 @@ function InstancePreview() {
         </H2>
         <div className="w-256 max-w-full rounded-lg border border-solid p-5">
           <StudentElement
-            element={instance}
+            element={instance as StudentElementInstance}
             elementIx={0}
             singleStudentResponse={studentResponse}
             setSingleStudentResponse={setStudentResponse}

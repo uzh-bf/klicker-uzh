@@ -1,16 +1,16 @@
-import type { Element as ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
+import type { Element as ElementObject } from '../../lib/constants/elementTypes'
 import Element from './Element'
 
 interface ElementListProps {
   filtersActive: boolean
   activityWizardOpen: boolean
-  setSelectedElements: (id: number, data: ElementType) => void
-  selectedElements: Record<number, ElementType | undefined>
+  setSelectedElements: (id: number, data: ElementObject) => void
+  selectedElements: Record<number, ElementObject | undefined>
   triggerSuccessToast: () => void
-  elements?: ElementType[]
+  elements?: ElementObject[]
   tagfilter?: string[]
   handleTagClick: (tagId: number) => void
   handleFilterReset: () => void

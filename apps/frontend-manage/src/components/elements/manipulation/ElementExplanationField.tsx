@@ -1,7 +1,7 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FormLabel } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
+import { ElementType } from '../../../lib/constants/elementTypes'
 import ContentInput from '../../common/ContentInput'
 import { ElementFormTypes } from './types'
 

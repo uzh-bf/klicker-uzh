@@ -1,3 +1,4 @@
+import type { RouterOutputs } from '../trpc'
 import type {
   ActivityType as ActivityTypeValue,
   LiveQuiz as AuthoringLiveQuiz,
@@ -5,10 +6,12 @@ import type {
   GroupActivity,
   MicroLearning,
   PracticeQuiz,
+  SortByType as SortByTypeValue,
 } from './activityEnums'
 import {
   ActivityType as ActivityTypeConst,
   ElementType as ElementTypeConst,
+  SortByType as SortByTypeConst,
 } from './activityEnums'
 
 export const ActivityType = ActivityTypeConst
@@ -16,6 +19,9 @@ export type ActivityType = ActivityTypeValue
 
 export const ElementType = ElementTypeConst
 export type ElementType = ElementTypeValue
+
+export const SortByType = SortByTypeConst
+export type SortByType = SortByTypeValue
 
 export type {
   GroupActivity,
@@ -39,11 +45,27 @@ export const ElementStatus = {
 
 export type ElementStatus = (typeof ElementStatus)[keyof typeof ElementStatus]
 
+export const ElementInstanceType = {
+  LiveQuiz: 'LIVE_QUIZ',
+  PracticeQuiz: 'PRACTICE_QUIZ',
+  MicroLearning: 'MICROLEARNING',
+  GroupActivity: 'GROUP_ACTIVITY',
+} as const
+
+export type ElementInstanceType =
+  (typeof ElementInstanceType)[keyof typeof ElementInstanceType]
+
 export type Tag = {
   id: number
   name: string
   order?: number | null
 }
+
+export type Element = RouterOutputs['element']['list']['elements'][number]
+
+export type EditableElement = NonNullable<
+  RouterOutputs['element']['single']['element']
+>
 
 export type AnswerCollectionEntry = {
   id: number
@@ -187,7 +209,7 @@ export type ElementInstance = {
   id: number
   elementData: ElementData
   elementType: ElementTypeValue
-  type?: string
+  type?: ElementInstanceType
   options?: unknown
 }
 

@@ -1,7 +1,10 @@
-import { ElementType, type Element } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import React, { useMemo, useState } from 'react'
+import {
+  ElementType,
+  type EditableElement,
+} from '../../../lib/constants/elementTypes'
 import { trpc } from '../../../lib/trpc'
 import ElementEditForm from './ElementEditForm'
 import {
@@ -96,7 +99,7 @@ function ElementEditModal({
 
   const initialValues = useElementFormInitialValues({
     mode,
-    question: dataQuestion?.element as Element | null | undefined,
+    question: dataQuestion?.element as EditableElement | null | undefined,
     isDuplication,
   })
 

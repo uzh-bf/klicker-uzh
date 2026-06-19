@@ -4,12 +4,6 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  type Element as ElementObject,
-  ElementStatus,
-  type ElementType,
-  type Tag,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
@@ -18,6 +12,12 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import {
+  type Element as ElementObject,
+  ElementStatus,
+  type ElementType,
+  type Tag,
+} from '../../lib/constants/elementTypes'
 import { trpc } from '../../lib/trpc'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'

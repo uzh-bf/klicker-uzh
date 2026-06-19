@@ -1,10 +1,5 @@
 import { faMagnifyingGlass, faMessage } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementData,
-  ElementStatus,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import {
   Button,
@@ -18,6 +13,11 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  ElementData,
+  ElementStatus,
+  ElementType,
+} from '../../../lib/constants/elementTypes'
 import { trpc } from '../../../lib/trpc'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'

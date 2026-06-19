@@ -5,9 +5,9 @@ import {
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import { Element } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import type { Element } from '../../lib/constants/elementTypes'
 import { ActivityAction } from '../activities/actions/useAvailableActions'
 
 function useElementActions({

@@ -1,7 +1,6 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ElementType } from '../../../../lib/constants/elementTypes'
 
 interface OptionsLabelProps {
   type: ElementType
@@ -9,10 +8,16 @@ interface OptionsLabelProps {
 
 function OptionsLabel({ type }: OptionsLabelProps) {
   const t = useTranslations()
+  const isChoiceElement =
+    type === ElementType.Sc ||
+    type === ElementType.Mc ||
+    type === ElementType.Kprim
+  const isFreeElement =
+    type === ElementType.FreeText || type === ElementType.Numerical
 
   return (
     <>
-      {QUESTION_GROUPS.CHOICES.includes(type) && (
+      {isChoiceElement && (
         <div className="flex-1">
           <FormLabel
             required
@@ -22,7 +27,7 @@ function OptionsLabel({ type }: OptionsLabelProps) {
           />
         </div>
       )}
-      {QUESTION_GROUPS.FREE.includes(type) && (
+      {isFreeElement && (
         <div className="flex-1">
           <FormLabel
             required

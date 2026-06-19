@@ -1,5 +1,5 @@
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import type { AnswerCollection } from '../../../../lib/constants/elementTypes'
 
 function useSelectAnswerCollectionOptions({
   collectionId,

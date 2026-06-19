@@ -1,4 +1,3 @@
-import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
 import {
   Card,
   CardContent,
@@ -10,6 +9,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ElementStatus } from '../../../../lib/constants/elementTypes'
 import { ElementBatchOperationActions } from '../types'
 
 function ElementStatusCard({

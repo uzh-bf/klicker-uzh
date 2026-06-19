@@ -1,7 +1,7 @@
 import { faSortAsc, faSortDesc } from '@fortawesome/free-solid-svg-icons'
-import { SortByType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { SortByType } from '../../lib/constants/elementTypes'
 import { LibrarySortType } from '../../lib/hooks/useSortingAndFiltering'
 
 function ElementListSorting({

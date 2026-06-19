@@ -1,7 +1,7 @@
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useField } from 'formik'
 import { Dispatch, SetStateAction, useState } from 'react'
+import type { AnswerCollection } from '../../../../lib/constants/elementTypes'
 import { ElementFormTypesCaseStudy } from '../types'
 import CaseStudyCasesFields, {
   CaseStudySetterProps,

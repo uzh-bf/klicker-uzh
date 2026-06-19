@@ -28,16 +28,13 @@ import {
   faSquareCheck as faSquareCheckSolid,
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ElementStatus,
-  ElementType,
-  SharingType,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Accordion, Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ElementStatus, ElementType } from '../../../lib/constants/elementTypes'
+import { SharingType } from '../../../lib/constants/sharingEnums'
 import { LibraryFilters } from '../../../lib/hooks/useSortingAndFiltering'
 import { trpc } from '../../../lib/trpc'
 import FilterItem from './FilterItem'

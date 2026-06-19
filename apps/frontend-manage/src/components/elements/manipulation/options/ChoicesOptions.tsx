@@ -3,7 +3,6 @@ import {
   faArrowUp,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Switch } from '@uzh-bf/design-system'
 import {
   FastField,
@@ -16,6 +15,7 @@ import {
 import { nanoid } from 'nanoid'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import { ElementType } from '../../../../lib/constants/elementTypes'
 import ContentInput from '../../../common/ContentInput'
 import { ElementFormTypes, ElementFormTypesChoices } from '../types'
 

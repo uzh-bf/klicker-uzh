@@ -83,11 +83,8 @@ Committed markers:
 
 Current next action:
 
-- Continue S04 pre-realtime manage consumers from the branch review: activity
-  creation/edit reads and mutations, publish/unpublish/start/schedule/end/reset
-  action modals, course action modals, and suspended course leaderboard
-  operations. Pause when S04 is complete; do not start S05 realtime migration
-  or S06 cleanup without explicit approval.
+- S04 branch-state findings are complete. Pause before S05 realtime migration.
+  Do not start S05 or S06 without explicit approval.
 
 Still intentionally live:
 
@@ -279,6 +276,94 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-19 Completed: S04P Element Management Generated Type Cleanup and S04Q Final Gate
+
+Status: complete. This finishes the remaining S04 generated-type cleanup from
+the branch-state review and closes the S04Q API no-GraphQL runtime dependency
+gate. Stop before S05 realtime migration.
+
+Slice: S04P Element Management Generated Type Cleanup and S04Q Final Gate
+
+GraphQL operation(s): none newly migrated; cleanup after migrated tRPC
+element/list/single/singleInstance workflows.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing migrated tRPC element routers and local structural DTO
+helpers.
+
+tRPC router.procedure: `element.list`, `element.single`,
+`element.singleInstance`, `element.artificialInstance`,
+`element.applyBatchOperations`.
+
+Input schema: existing `packages/api` element schemas.
+
+Output DTO: `RouterOutputs`-backed local element aliases plus structural element
+preview types.
+
+Active frontend consumers: manage element list/actions, element edit
+modal/form/options, batch operations, and instance preview.
+
+Apollo cache/refetch/subscription behavior: unchanged for remaining S05 realtime
+consumers.
+
+React Query replacement: existing tRPC queries/mutations retained.
+
+Browser verification path: `http://127.0.0.1:3002/`.
+
+Cleanup blocked until: S05 realtime and S06 final GraphQL/Apollo cleanup.
+
+Files changed:
+
+- `apps/frontend-manage/src/lib/constants/elementTypes.ts`
+- `apps/frontend-manage/src/lib/hooks/useSortingAndFiltering.ts`
+- `apps/frontend-manage/src/pages/instances/[id].tsx`
+- `apps/frontend-manage/src/components/elements/**`
+
+What changed:
+
+- Replaced generated GraphQL operation type imports in the manage element list,
+  tag/filter/sorting shell, element actions, batch operations, element edit
+  modal/form/options, preview wrapper, and instance preview page with local
+  constants/types.
+- Added local `RouterOutputs`-backed aliases for element list/edit DTOs and
+  local structural preview types for element data/instances.
+- Kept necessary casts only at `StudentElement` / `useSingleStudentResponse`
+  shared-component boundaries, matching the template/question preview cleanup
+  pattern while those shared components still expose generated GraphQL props.
+
+Verification:
+
+- `rg -n '@klicker-uzh/graphql/dist/ops' apps/frontend-manage/src --glob '!**/*.d.ts'`:
+  only S05 live quiz cockpit / audience interaction files remain.
+- `rg -n '@klicker-uzh/graphql|packages/graphql|graphql/dist' packages/api --glob '!**/*.d.ts'`:
+  no matches.
+- Wider audit across `packages/api apps/*/src`: remaining hits are backend
+  GraphQL mount/persisted-operation infrastructure for S06, PWA/manage Apollo
+  hashes for S06, and PWA/manage live-session/cockpit/subscriber/interaction
+  files for S05.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed.
+- `pnpm --filter @klicker-uzh/frontend-manage build`: passed with known Node 26
+  engine warnings, next-intl config warning, Browserslist stale-data warning,
+  large page-data warnings, and existing `MISSING_MESSAGE` warnings for
+  `/qr/[...args]`.
+- `pnpm --filter @klicker-uzh/api check`: passed.
+- `pnpm --filter @klicker-uzh/api build`: passed.
+- `git diff --check`: passed.
+- Runtime browser gate blocked: `curl -sS -I http://127.0.0.1:3002/` failed
+  with connection refused, and `npx agent-browser open http://127.0.0.1:3002/`
+  failed with `net::ERR_CONNECTION_REFUSED`. Screenshot artifact:
+  `/tmp/agent-browser-shots/s04-element-type-cleanup-connection-refused.png`
+  (blank failed-navigation page).
+
+Residual:
+
+- S04 is complete to the branch-state findings reviewed here.
+- Remaining generated GraphQL imports are intentionally outside S04: S05
+  realtime live-session/cockpit/subscriber/audience interaction flows and S06
+  final backend/Apollo/codegen cleanup.
+- Stop here before S05 per user instruction.
 
 ### 2026-06-19 Completed: S04P Course Detail Generated Type Cleanup
 

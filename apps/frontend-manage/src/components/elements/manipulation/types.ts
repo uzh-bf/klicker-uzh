@@ -2,7 +2,12 @@ import {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '../../../lib/constants/elementTypes'
+
+export type ChoicesElementType =
+  | typeof ElementType.Sc
+  | typeof ElementType.Mc
+  | typeof ElementType.Kprim
 
 interface SharedQuestionFormProps {
   name: string
@@ -22,7 +27,7 @@ interface ElementFormTypesChoice {
 }
 
 export interface ElementFormTypesChoices extends SharedQuestionFormProps {
-  type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
+  type: ChoicesElementType
   explanation?: string | null
   options: {
     choices: ElementFormTypesChoice[]
@@ -33,7 +38,7 @@ export interface ElementFormTypesChoices extends SharedQuestionFormProps {
 }
 
 export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
-  type: ElementType.Numerical
+  type: typeof ElementType.Numerical
   explanation?: string | null
   options: {
     hasSampleSolution: boolean
@@ -55,7 +60,7 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
 }
 
 export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
-  type: ElementType.FreeText
+  type: typeof ElementType.FreeText
   explanation?: string | null
   options: {
     hasSampleSolution: boolean
@@ -67,7 +72,7 @@ export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
 }
 
 export interface ElementFormTypesSelection extends SharedQuestionFormProps {
-  type: ElementType.Selection
+  type: typeof ElementType.Selection
   explanation?: string | null
   options: {
     itemSelectionMode?: 'existing' | 'new'
@@ -105,7 +110,7 @@ export type ElementFormTypesCaseStudyCriterion = {
 }
 
 export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
-  type: ElementType.CaseStudy
+  type: typeof ElementType.CaseStudy
   explanation?: string | null
   options: {
     itemSelectionMode?: 'existing' | 'new'
@@ -124,12 +129,12 @@ export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
 }
 
 export interface ElementFormTypesFlashcard extends SharedQuestionFormProps {
-  type: ElementType.Flashcard
+  type: typeof ElementType.Flashcard
   explanation: string
 }
 
 export interface ElementFormTypesContent extends SharedQuestionFormProps {
-  type: ElementType.Content
+  type: typeof ElementType.Content
 }
 
 export type ElementBatchOperationActions = {

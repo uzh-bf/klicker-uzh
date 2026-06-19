@@ -1,10 +1,10 @@
+import { useTranslations } from 'next-intl'
+import * as yup from 'yup'
 import {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
-import * as yup from 'yup'
+} from '../../../lib/constants/elementTypes'
 import { ElementFormTypesCaseStudy } from './types'
 
 function useSharedValidationSchema() {

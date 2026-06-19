@@ -1,5 +1,5 @@
-import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { ElementStatus } from '../../../lib/constants/elementTypes'
 
 function useStatusOptions() {
   const t = useTranslations()

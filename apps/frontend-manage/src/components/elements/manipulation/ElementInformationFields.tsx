@@ -1,4 +1,3 @@
-import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormLabel,
@@ -9,6 +8,7 @@ import {
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
+import { ElementStatus } from '../../../lib/constants/elementTypes'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'

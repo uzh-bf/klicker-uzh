@@ -1,7 +1,7 @@
-import { ActivityType, Element } from '@klicker-uzh/graphql/dist/ops'
 import { Checkbox } from '@uzh-bf/design-system'
-import { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { isEmpty } from 'remeda'
+import { ActivityType, type Element } from '../../lib/constants/elementTypes'
 
 function ElementListSelectAllCheckbox({
   elements,

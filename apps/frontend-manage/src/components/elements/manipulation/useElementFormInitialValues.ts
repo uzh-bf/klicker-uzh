@@ -1,14 +1,15 @@
-import {
-  Element,
-  ElementDisplayMode,
-  ElementStatus,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { sort } from 'remeda'
+import {
+  ElementDisplayMode,
+  ElementStatus,
+  ElementType,
+  type EditableElement,
+} from '../../../lib/constants/elementTypes'
 import { ElementEditMode } from './ElementEditModal'
 import {
+  ChoicesElementType,
   ElementFormTypes,
   ElementFormTypesCaseStudySolution,
   ElementFormTypesCaseStudySolutions,
@@ -16,8 +17,59 @@ import {
 
 interface UseElementFormInitialValuesProps {
   mode: ElementEditMode
-  question?: Element | null
+  question?: EditableElement | null
   isDuplication: boolean
+}
+
+type ChoiceOption = {
+  ix: number
+  value?: string | null
+  correct?: boolean | null
+  feedback?: string | null
+}
+
+type NumericalOptions = {
+  hasSampleSolution?: boolean | null
+  exactSolutions?: (number | string)[] | null
+  accuracy?: number | null
+  unit?: string | null
+  restrictions?: {
+    min?: number | string | null
+    max?: number | string | null
+  } | null
+  solutionRanges?:
+    | { min?: number | string | null; max?: number | string | null }[]
+    | null
+}
+
+type CaseStudyCriterion = {
+  id: string
+  name: string
+  min: number
+  max: number
+  step: number
+  unit?: string | null
+  labels?: {
+    min: string
+    mid?: string | null
+    max: string
+  } | null
+}
+
+type CaseStudySolution = {
+  itemId: number
+  criteriaSolutions: {
+    criterionId: string
+    min: number
+    max: number
+  }[]
+}
+
+type CaseStudyCase = {
+  id: string
+  title: string
+  description: string
+  solutions?: CaseStudySolution[] | null
 }
 
 function useElementFormInitialValues({
@@ -68,14 +120,16 @@ function useElementFormInitialValues({
     }
 
     if (question.__typename === 'ChoicesElement') {
-      const options = question.options
+      const options = question.options as {
+        hasSampleSolution?: boolean | null
+        hasAnswerFeedbacks?: boolean | null
+        displayMode: ElementDisplayMode
+        choices: ChoiceOption[]
+      }
 
       return {
         ...sharedAttributes,
-        type: question.type as
-          | ElementType.Sc
-          | ElementType.Mc
-          | ElementType.Kprim,
+        type: question.type as ChoicesElementType,
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
           hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? false,
@@ -90,7 +144,7 @@ function useElementFormInitialValues({
         },
       }
     } else if (question.__typename === 'NumericalElement') {
-      const options = question.options
+      const options = question.options as NumericalOptions
 
       return {
         ...sharedAttributes,
@@ -116,7 +170,11 @@ function useElementFormInitialValues({
         },
       }
     } else if (question.__typename === 'FreeTextElement') {
-      const options = question.options
+      const options = question.options as {
+        hasSampleSolution?: boolean | null
+        restrictions?: { maxLength?: number | string | null } | null
+        solutions?: string[] | null
+      }
 
       return {
         ...sharedAttributes,
@@ -132,7 +190,12 @@ function useElementFormInitialValues({
         },
       }
     } else if (question.__typename === 'SelectionElement') {
-      const options = question.options
+      const options = question.options as {
+        hasSampleSolution?: boolean | null
+        numberOfInputs?: number | string | null
+        answerCollection?: { id: number } | null
+        answerCollectionSolutionIds?: number[] | null
+      }
 
       return {
         ...sharedAttributes,
@@ -147,7 +210,13 @@ function useElementFormInitialValues({
         },
       }
     } else if (question.__typename === 'CaseStudyElement') {
-      const options = question.options
+      const options = question.options as {
+        hasSampleSolution?: boolean | null
+        answerCollectionId?: number | null
+        collectionItemIds?: number[] | null
+        criteria?: CaseStudyCriterion[]
+        cases?: CaseStudyCase[]
+      }
 
       return {
         ...sharedAttributes,
@@ -169,7 +238,7 @@ function useElementFormInitialValues({
               step: String(criterion.step),
             })) ?? [],
           cases:
-            options.cases.map((caseItem) => ({
+            options.cases?.map((caseItem) => ({
               id: caseItem.id,
               title: caseItem.title,
               description: caseItem.description,
