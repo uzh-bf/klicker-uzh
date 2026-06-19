@@ -2,11 +2,15 @@ import { describe, expect, test, vi } from 'vitest'
 import {
   publishGroupActivityEnded,
   publishGroupActivityStarted,
+  publishLiveQuizSettingsChanged,
   publishMicroLearningEnded,
+  publishRunningLiveQuizUpdated,
   publishSingleGroupActivityEnded,
   realtimeEvents,
   type GroupActivitySource,
+  type LiveQuizSettingsChangedSource,
   type MicroLearningEndedSource,
+  type RunningLiveQuizUpdatedSource,
 } from '../../realtime/events.js'
 import { appRouter } from '../root.js'
 
@@ -116,6 +120,29 @@ function createGroupActivity(
   }
 }
 
+function createRunningLiveQuiz(
+  fields: Partial<RunningLiveQuizUpdatedSource> = {}
+): RunningLiveQuizUpdatedSource {
+  return {
+    id: 'live-quiz-1',
+    beforeFirstBlock: false,
+    activeBlock: null,
+    blocks: [],
+    ...fields,
+  }
+}
+
+function createLiveQuizSettings(
+  fields: Partial<LiveQuizSettingsChangedSource> = {}
+): LiveQuizSettingsChangedSource {
+  return {
+    liveQuizId: 'live-quiz-1',
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: false,
+    ...fields,
+  }
+}
+
 describe('realtime router', () => {
   test('streams matching microlearning-ended events from the shared pubSub event', async () => {
     const pubSub = createRealtimePubSub<MicroLearningEndedSource>()
@@ -213,6 +240,49 @@ describe('realtime router', () => {
     )
     expect(pubSub.subscribe).toHaveBeenCalledWith(
       realtimeEvents.singleGroupActivityEnded
+    )
+  })
+
+  test('streams matching live-quiz update and settings events from the shared pubSub events', async () => {
+    const pubSub = createRealtimePubSub<
+      RunningLiveQuizUpdatedSource | LiveQuizSettingsChangedSource
+    >()
+    const caller = appRouter.createCaller({ pubSub })
+
+    const runningStream = await caller.realtime.runningLiveQuizUpdated({
+      id: 'live-quiz-1',
+    })
+    const settingsStream = await caller.realtime.liveQuizSettingsChanged({
+      quizId: 'live-quiz-1',
+    })
+
+    const running = receiveNext(runningStream)
+    const settings = receiveNext(settingsStream)
+
+    publishRunningLiveQuizUpdated(
+      pubSub,
+      createRunningLiveQuiz({ id: 'live-quiz-2' })
+    )
+    publishLiveQuizSettingsChanged(
+      pubSub,
+      createLiveQuizSettings({ liveQuizId: 'live-quiz-2' })
+    )
+
+    publishRunningLiveQuizUpdated(pubSub, createRunningLiveQuiz())
+    publishLiveQuizSettingsChanged(pubSub, createLiveQuizSettings())
+
+    await expect(running).resolves.toEqual({ id: 'live-quiz-1' })
+    await expect(settings).resolves.toEqual({
+      liveQuizId: 'live-quiz-1',
+      isLiveQAEnabled: true,
+      isConfusionFeedbackEnabled: false,
+    })
+
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.runningLiveQuizUpdated
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.liveQuizSettingsChanged
     )
   })
 })

@@ -4,14 +4,22 @@ import { z } from 'zod'
 import {
   subscribeGroupActivityEnded,
   subscribeGroupActivityStarted,
+  subscribeLiveQuizSettingsChanged,
   subscribeMicroLearningEnded,
+  subscribeRunningLiveQuizUpdated,
   subscribeSingleGroupActivityEnded,
   toGroupActivityEvent,
+  toLiveQuizSettingsChangedEvent,
   toMicroLearningEndedEvent,
+  toRunningLiveQuizUpdatedEvent,
   type GroupActivityEvent,
   type GroupActivitySource,
+  type LiveQuizSettingsChangedEvent,
+  type LiveQuizSettingsChangedSource,
   type MicroLearningEndedEvent,
   type MicroLearningEndedSource,
+  type RunningLiveQuizUpdatedEvent,
+  type RunningLiveQuizUpdatedSource,
 } from '../../realtime/events.js'
 import { publicProcedure, router } from '../init.js'
 
@@ -72,6 +80,18 @@ export const realtimeRouter = router({
         toGroupActivityEvent
       )
     ),
+  liveQuizSettingsChanged: publicProcedure
+    .input(z.object({ quizId: z.string() }))
+    .subscription(({ ctx, input }) =>
+      createSubscription<
+        LiveQuizSettingsChangedSource,
+        LiveQuizSettingsChangedEvent
+      >(
+        subscribeLiveQuizSettingsChanged(ctx.pubSub),
+        (settings) => settings.liveQuizId === input.quizId,
+        toLiveQuizSettingsChangedEvent
+      )
+    ),
   microLearningEnded: publicProcedure
     .input(z.object({ activityId: z.string() }))
     .subscription(({ ctx, input }) =>
@@ -79,6 +99,18 @@ export const realtimeRouter = router({
         subscribeMicroLearningEnded(ctx.pubSub),
         (microLearning) => microLearning.id === input.activityId,
         toMicroLearningEndedEvent
+      )
+    ),
+  runningLiveQuizUpdated: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .subscription(({ ctx, input }) =>
+      createSubscription<
+        RunningLiveQuizUpdatedSource,
+        RunningLiveQuizUpdatedEvent
+      >(
+        subscribeRunningLiveQuizUpdated(ctx.pubSub),
+        (liveQuiz) => liveQuiz.id === input.id,
+        toRunningLiveQuizUpdatedEvent
       )
     ),
   singleGroupActivityEnded: publicProcedure

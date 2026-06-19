@@ -87,10 +87,11 @@ Current next action:
   the GraphQL package workflow still runs against `packages/graphql`, and the
   new API package workflow runs against `packages/api`.
 - S05A PWA microlearning-ended realtime is complete.
-- S05D PWA group-activity realtime is complete locally; commit/push and PR
-  update are the next gates.
-- Continue remaining S05 realtime slices after S05D is committed. Do not start
-  S06 cleanup until all S05 realtime slices are complete and explicitly
+- S05D PWA group-activity realtime is complete and pushed.
+- S05B PWA live-quiz state/settings realtime is complete locally; commit,
+  push, and PR update are the next gates.
+- Continue remaining S05 realtime slices only after S05B is published. Do not
+  start S06 cleanup until all S05 realtime slices are complete and explicitly
   reviewed.
 
 Still intentionally live:
@@ -431,6 +432,76 @@ Residual:
   check.
 - Continue with remaining S05 realtime slices after commit/push/PR update. Do
   not start S06 cleanup.
+
+### 2026-06-19 Completed: S05B PWA Live Quiz State/Settings tRPC Realtime
+
+Status: complete locally. Scope stayed limited to the PWA session page
+live-quiz state and student settings subscriptions. Feedback realtime and
+manage cockpit/audience realtime stay out of this slice.
+
+Slice: S05B PWA Live Quiz State/Settings tRPC Realtime
+
+Operation mapping:
+
+- GraphQL subscriptions:
+  `RunningLiveQuizUpdatedDocument`, `LiveQuizSettingsChangedDocument`
+- tRPC subscriptions:
+  `api.realtime.runningLiveQuizUpdated.useSubscription({ id })`,
+  `api.realtime.liveQuizSettingsChanged.useSubscription({ quizId })`
+- Event keys:
+  `runningLiveQuizUpdated`, `liveQuizSettingsChanged`
+
+Intended behavior:
+
+- Preserve existing GraphQL subscriptions and payloads on `/api/graphql`.
+- Add shared event helpers so publishers keep emitting the current Redis pub/sub
+  events.
+- Use the tRPC subscriptions as live invalidation signals for the PWA session
+  page. The existing GraphQL `GetRunningLiveQuizDocument` query remains the
+  rich data source in this slice; the tRPC event triggers `refetch()` instead of
+  duplicating the full live-quiz block DTO shape in `packages/api`.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/realtime.test.ts`:
+  passed, including the new live-quiz update/settings event-key coverage.
+- `pnpm --filter @klicker-uzh/api check`: passed.
+- `pnpm --filter @klicker-uzh/api build`: passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check`: passed.
+- `pnpm --filter @klicker-uzh/api test`: passed, 429 tests.
+- `pnpm --filter @klicker-uzh/graphql build`: passed with the existing
+  GraphQL build warnings.
+- `pnpm exec prettier --check <S05B files>`: passed.
+- `git diff --check`: passed.
+- Scoped PWA audit found no remaining `RunningLiveQuizUpdatedDocument` or
+  `LiveQuizSettingsChangedDocument` use in the live-quiz session subscriber;
+  remaining `subscribeToMore` hits are the feedback-area slice, intentionally
+  left for a later S05 step.
+- Runtime WebSocket parity probe against the branch backend on IPv6 loopback
+  received both `runningLiveQuizUpdated` and `liveQuizSettingsChanged` over
+  `/api/trpc` and `/api/graphql` from the same Redis-backed Yoga pub/sub event
+  target.
+- Frontend-package `@trpc/client` probe using `wsLink` received both migrated
+  events from `/api/trpc`, matching the PWA subscription transport.
+
+Runtime note:
+
+- Port `127.0.0.1:3000` was occupied by an unrelated Manifest Next dev server
+  while the Klicker backend was listening on IPv6 `*:3000`. Runtime probes
+  therefore targeted `http://[::1]:3000` / `ws://[::1]:3000` explicitly. The
+  backend health check and `system.health` tRPC query passed on that address.
+
+Review/simplification:
+
+- Kept the tRPC live-quiz subscriptions as invalidation signals only. This
+  avoids duplicating the full GraphQL live-quiz block DTO in `packages/api`
+  while preserving the existing Apollo `GetRunningLiveQuizDocument` query until
+  the later live-session data migration.
+
+Next step:
+
+- Commit, push, and update PR #5132 for S05B, then continue with remaining S05
+  realtime slices only. Do not start S06 cleanup.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

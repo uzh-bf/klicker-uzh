@@ -3,6 +3,7 @@ import {
   deactivateLiveQuizBlock as executeDeactivateLiveQuizBlock,
   endLiveQuiz as executeEndLiveQuiz,
   startLiveQuiz as executeStartLiveQuiz,
+  publishLiveQuizSettingsChanged,
   type LiveQuizExecutionContext,
 } from '@klicker-uzh/api'
 import * as DB from '@klicker-uzh/prisma/client'
@@ -1283,7 +1284,7 @@ export async function changeLiveQuizSettings(
     },
   })
 
-  ctx.pubSub.publish('liveQuizSettingsChanged', {
+  publishLiveQuizSettingsChanged(ctx.pubSub, {
     liveQuizId: quiz.id,
     isLiveQAEnabled: quiz.isLiveQAEnabled,
     isConfusionFeedbackEnabled: quiz.isConfusionFeedbackEnabled,

@@ -1,7 +1,9 @@
 export const realtimeEvents = {
   groupActivityEnded: 'groupActivityEnded',
   groupActivityStarted: 'groupActivityStarted',
+  liveQuizSettingsChanged: 'liveQuizSettingsChanged',
   microLearningEnded: 'microLearningEnded',
+  runningLiveQuizUpdated: 'runningLiveQuizUpdated',
   singleGroupActivityEnded: 'singleGroupActivityEnded',
 } as const
 
@@ -43,6 +45,25 @@ export type MicroLearningEndedEvent = {
   scheduledStartAt: string
   scheduledEndAt: string
 }
+
+export type RunningLiveQuizUpdatedSource = {
+  id: string
+  beforeFirstBlock?: boolean | null
+  activeBlock?: unknown
+  blocks?: unknown
+}
+
+export type RunningLiveQuizUpdatedEvent = {
+  id: string
+}
+
+export type LiveQuizSettingsChangedSource = {
+  liveQuizId: string
+  isLiveQAEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+}
+
+export type LiveQuizSettingsChangedEvent = LiveQuizSettingsChangedSource
 
 type PubSubPublisher = {
   publish(event: string, payload: unknown): unknown
@@ -107,6 +128,22 @@ export function toGroupActivityEvent(
   }
 }
 
+export function toRunningLiveQuizUpdatedEvent(
+  liveQuiz: RunningLiveQuizUpdatedSource
+): RunningLiveQuizUpdatedEvent {
+  return { id: liveQuiz.id }
+}
+
+export function toLiveQuizSettingsChangedEvent(
+  settings: LiveQuizSettingsChangedSource
+): LiveQuizSettingsChangedEvent {
+  return {
+    liveQuizId: settings.liveQuizId,
+    isLiveQAEnabled: settings.isLiveQAEnabled,
+    isConfusionFeedbackEnabled: settings.isConfusionFeedbackEnabled,
+  }
+}
+
 function serializeEventDate(value: ActivityDate, fieldName: string): string {
   if (value instanceof Date) return value.toISOString()
   if (typeof value === 'string') return value
@@ -135,6 +172,20 @@ export function publishMicroLearningEnded(
   microLearning: MicroLearningEndedSource
 ) {
   return publishEvent(pubSub, realtimeEvents.microLearningEnded, microLearning)
+}
+
+export function publishRunningLiveQuizUpdated(
+  pubSub: unknown,
+  liveQuiz: RunningLiveQuizUpdatedSource
+) {
+  return publishEvent(pubSub, realtimeEvents.runningLiveQuizUpdated, liveQuiz)
+}
+
+export function publishLiveQuizSettingsChanged(
+  pubSub: unknown,
+  settings: LiveQuizSettingsChangedSource
+) {
+  return publishEvent(pubSub, realtimeEvents.liveQuizSettingsChanged, settings)
 }
 
 export function publishGroupActivityStarted(
@@ -170,6 +221,20 @@ export function subscribeMicroLearningEnded(pubSub: unknown) {
   return subscribeEvent<MicroLearningEndedSource>(
     pubSub,
     realtimeEvents.microLearningEnded
+  )
+}
+
+export function subscribeRunningLiveQuizUpdated(pubSub: unknown) {
+  return subscribeEvent<RunningLiveQuizUpdatedSource>(
+    pubSub,
+    realtimeEvents.runningLiveQuizUpdated
+  )
+}
+
+export function subscribeLiveQuizSettingsChanged(pubSub: unknown) {
+  return subscribeEvent<LiveQuizSettingsChangedSource>(
+    pubSub,
+    realtimeEvents.liveQuizSettingsChanged
   )
 }
 

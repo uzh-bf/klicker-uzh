@@ -155,9 +155,11 @@ function Index({ id }: { id: string }) {
   const [isDesktop, setIsDesktop] = useState<boolean>(false)
 
   const [setLiveQuizPin] = useMutation(SetLiveQuizPinDocument)
-  const { data, loading, error, subscribeToMore, refetch } = useQuery(
+  const { data, loading, error, refetch } = useQuery(
     GetRunningLiveQuizDocument,
-    { variables: { id } }
+    {
+      variables: { id },
+    }
   )
   const { data: selfData } = useQuery(SelfDocument, {
     variables: { liveQuizId: id },
@@ -484,7 +486,7 @@ function Index({ id }: { id: string }) {
       liveQuizId={id}
       className={{ body: 'p-0 px-4 pb-4' }}
     >
-      <LiveQuizSubscriber id={id} subscribeToMore={subscribeToMore} />
+      <LiveQuizSubscriber id={id} onChanged={refetch} />
       <DynamicAccountSelector
         isGamificationEnabled={isGamificationEnabled}
         quizId={id}

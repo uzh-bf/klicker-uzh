@@ -13,6 +13,7 @@ import dayjs from 'dayjs'
 import type { Redis } from 'ioredis'
 import schedule from 'node-schedule'
 import type { EventEmitter } from 'node:events'
+import { publishRunningLiveQuizUpdated } from '../realtime/events.js'
 
 const scheduledJobs: Record<string, schedule.Job> = {}
 
@@ -372,7 +373,7 @@ export async function activateLiveQuizBlock(
     )
   }
 
-  ctx.pubSub.publish('runningLiveQuizUpdated', {
+  publishRunningLiveQuizUpdated(ctx.pubSub, {
     id: updatedQuiz.id,
     beforeFirstBlock: false,
     activeBlock: {
@@ -579,7 +580,7 @@ export async function deactivateLiveQuizBlock(
     const activeInstanceIds = res.activeInstanceIds
     isAssessmentEnabled = updatedQuiz.isAssessmentEnabled
 
-    ctx.pubSub.publish('runningLiveQuizUpdated', {
+    publishRunningLiveQuizUpdated(ctx.pubSub, {
       id: updatedQuiz.id,
       beforeFirstBlock: false,
       activeBlock: null,
