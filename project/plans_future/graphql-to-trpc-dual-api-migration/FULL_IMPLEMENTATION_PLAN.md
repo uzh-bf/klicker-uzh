@@ -166,7 +166,11 @@ Current next action:
   including moderation auto-publish, keeps the GraphQL package workflow visibly
   tied to `packages/graphql`, and adds focused `packages/api` tRPC parity
   coverage for the same behavior.
-- S05G-N next: continue with the next smallest active manage/PWA
+- S05G-N manage live-quiz abortion confirmation generated type cleanup is
+  complete locally. It removes the generated GraphQL `LiveQuizSummary` import
+  from the already migrated cancellation confirmation path and replaces it with
+  a narrow local structural counter type.
+- S05G-O next: continue with the next smallest active manage/PWA
   Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
   gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1353,6 +1357,53 @@ Verification:
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining active
 Apollo/generated-operation consumers in manage/PWA are still blockers for S06.
+
+### 2026-06-19 Completed: S05G-N Manage Live-Quiz Abortion Confirmation Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove a generated GraphQL
+type import from the already migrated manage live-quiz cancellation
+confirmation UI.
+
+Slice: S05G-N Manage Live-Quiz Abortion Confirmation Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing tRPC `activity.liveQuizSummary` output and rendered
+confirmation counter usage.
+
+tRPC router.procedure: existing `activity.liveQuizSummary`.
+
+Active frontend consumer:
+`apps/frontend-manage/src/components/liveQuiz/cockpit/LiveQuizAbortionConfirmations.tsx`.
+
+Intended behavior:
+
+- Keep the existing cancellation confirmation counter rendering unchanged.
+- Remove the generated GraphQL `LiveQuizSummary` import from the migrated
+  cancellation path.
+- Use only the four numeric counters rendered by the component.
+
+What changed:
+
+- Replaced the generated GraphQL `LiveQuizSummary` import with a local
+  structural `LiveQuizSummary` type containing `numOfResponses`,
+  `numOfFeedbacks`, `numOfConfusionFeedbacks`, and
+  `numOfLeaderboardEntries`.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm exec prettier --check apps/frontend-manage/src/components/liveQuiz/cockpit/LiveQuizAbortionConfirmations.tsx`
+  passed.
+- `rg -n "LiveQuizSummary|@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/components/liveQuiz/cockpit/LiveQuizAbortionConfirmations.tsx`
+  showed only the local type references and no generated GraphQL import.
+- `git diff --check` passed.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining generated GraphQL type
+imports in PWA/shared components are still blockers for S06.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -11858,7 +11909,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-N with the next smallest active manage/PWA
+2. Continue S05G-O with the next smallest active manage/PWA
    Apollo/generated-operation consumer while keeping GraphQL live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.
