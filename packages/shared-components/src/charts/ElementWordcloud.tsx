@@ -230,13 +230,15 @@ function ElementWordCloud({
         ),
     [frequencies]
   )
+  const showWordModeOptions =
+    instance.type === ElementType.FreeText &&
+    splitMode === WordCloudSplitMode.WORDS
   const processedData = useMemo(
     () =>
-      splitMode === WordCloudSplitMode.SENTENCES ||
-      maxWords === WORD_CLOUD_MAX_WORDS_ALL
+      !showWordModeOptions || maxWords === WORD_CLOUD_MAX_WORDS_ALL
         ? allProcessedData
         : allProcessedData.slice(0, maxWords),
-    [allProcessedData, maxWords, splitMode]
+    [allProcessedData, maxWords, showWordModeOptions]
   )
   const limitedCount = allProcessedData.length - processedData.length
   const getWordTooltipContent = useCallback(
@@ -325,22 +327,8 @@ function ElementWordCloud({
             )}
           </div>
           <div className="flex flex-row items-end gap-5">
-            <FontSizeButtons
-              textSize={minTextSize}
-              setTextSize={setMinTextSize}
-              minTextSize={MIN_TEXT_SIZE_WORD_CLOUD}
-              maxTextSize={MAX_TEXT_SIZE_WORD_CLOUD}
-              labelPrefix={t('shared.generic.minimum')}
-            />
-            <FontSizeButtons
-              textSize={maxTextSize}
-              setTextSize={setMaxTextSize}
-              minTextSize={MIN_TEXT_SIZE_WORD_CLOUD}
-              maxTextSize={MAX_TEXT_SIZE_WORD_CLOUD}
-              labelPrefix={t('shared.generic.maximum')}
-            />
             {instance.type === ElementType.FreeText && (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1" data-cy="word-cloud-mode">
                 <span className="text-sm font-bold">
                   {t('manage.evaluation.wordCloudFilterMode')}
                 </span>
@@ -360,9 +348,12 @@ function ElementWordCloud({
                 />
               </div>
             )}
-            {instance.type === ElementType.FreeText &&
-              splitMode === WordCloudSplitMode.WORDS && (
-                <div className="flex flex-col gap-1">
+            {showWordModeOptions && (
+              <>
+                <div
+                  className="flex flex-col gap-1"
+                  data-cy="word-cloud-language-filter"
+                >
                   <Tooltip
                     tooltip={t(
                       'manage.evaluation.wordCloudLanguageFilterTooltip'
@@ -386,29 +377,45 @@ function ElementWordCloud({
                     className={{ trigger: 'w-28' }}
                   />
                 </div>
-              )}
-            {splitMode === WordCloudSplitMode.WORDS && (
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-bold">
-                  {t('manage.evaluation.wordCloudDisplayLimit')}
-                </span>
-                <Select
-                  value={String(maxWords)}
-                  items={[
-                    ...WORD_CLOUD_MAX_WORD_OPTIONS.map((option) => ({
-                      value: String(option),
-                      label: String(option),
-                    })),
-                    {
-                      value: WORD_CLOUD_MAX_WORDS_ALL,
-                      label: t('manage.evaluation.wordCloudDisplayLimitAll'),
-                    },
-                  ]}
-                  onChange={(val) => setMaxWords(getMaxWords(String(val)))}
-                  className={{ trigger: 'w-24' }}
-                />
-              </div>
+                <div
+                  className="flex flex-col gap-1"
+                  data-cy="word-cloud-display-limit"
+                >
+                  <span className="text-sm font-bold">
+                    {t('manage.evaluation.wordCloudDisplayLimit')}
+                  </span>
+                  <Select
+                    value={String(maxWords)}
+                    items={[
+                      ...WORD_CLOUD_MAX_WORD_OPTIONS.map((option) => ({
+                        value: String(option),
+                        label: String(option),
+                      })),
+                      {
+                        value: WORD_CLOUD_MAX_WORDS_ALL,
+                        label: t('manage.evaluation.wordCloudDisplayLimitAll'),
+                      },
+                    ]}
+                    onChange={(val) => setMaxWords(getMaxWords(String(val)))}
+                    className={{ trigger: 'w-24' }}
+                  />
+                </div>
+              </>
             )}
+            <FontSizeButtons
+              textSize={minTextSize}
+              setTextSize={setMinTextSize}
+              minTextSize={MIN_TEXT_SIZE_WORD_CLOUD}
+              maxTextSize={MAX_TEXT_SIZE_WORD_CLOUD}
+              labelPrefix={t('shared.generic.minimum')}
+            />
+            <FontSizeButtons
+              textSize={maxTextSize}
+              setTextSize={setMaxTextSize}
+              minTextSize={MIN_TEXT_SIZE_WORD_CLOUD}
+              maxTextSize={MAX_TEXT_SIZE_WORD_CLOUD}
+              labelPrefix={t('shared.generic.maximum')}
+            />
           </div>
         </div>
       </div>

@@ -151,6 +151,9 @@ describe('Different live-quiz workflows', function () {
 
     // create selection and case study questions (with and without sample solution)
     cy.get('[data-cy="library"]').click()
+    cy.get('[data-cy="elements-search-input"]', { timeout: 30000 }).should(
+      'exist'
+    )
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
@@ -4690,11 +4693,11 @@ describe('Different live-quiz workflows', function () {
     })
     cy.wait(500)
 
-    // start live quiz
-    cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="start-live-quiz-${this.data.liveQuizWordCloud.name}"]`
-    ).click()
+    // start live quiz from the creation success screen
+    cy.get('[data-cy="quick-start"]').click()
+    cy.get('[data-cy="next-block-timeline"]', { timeout: 30000 }).should(
+      'exist'
+    )
     cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
 
@@ -4715,6 +4718,8 @@ describe('Different live-quiz workflows', function () {
       'contain',
       noResponsesReceivedMessage
     )
+    cy.get('[data-cy="word-cloud-language-filter"]').should('not.exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('not.exist')
 
     cy.get('[data-cy="evaluate-question-select"]').click()
     cy.get(
@@ -4727,6 +4732,8 @@ describe('Different live-quiz workflows', function () {
       'contain',
       noResponsesReceivedMessage
     )
+    cy.get('[data-cy="word-cloud-language-filter"]').should('exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('exist')
 
     cy.get('[data-cy="evaluate-question-select"]').click()
     cy.get(
@@ -4739,27 +4746,31 @@ describe('Different live-quiz workflows', function () {
       'contain',
       noResponsesReceivedMessage
     )
+    cy.get('[data-cy="word-cloud-language-filter"]').should('exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('exist')
   })
 
-  it('Test answering live quiz questions', function () {
-    cy.loginStudent()
-    cy.findByText(this.data.liveQuizWordCloud.displayName).click()
-    cy.get('[data-cy="input-numerical-0"]').clear().type(this.data.NR4.answer)
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="free-text-input-1"]').type(this.data.FT4.answer)
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="free-text-input-2"]').type(this.data.FT5.answer)
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
+  it('Seed live quiz answers for word cloud display', function () {
+    cy.task('seedWordCloudLiveQuizResponses', {
+      freeTextAnswer: this.data.FT4.answer,
+      freeTextTitle: this.data.FT4.title,
+      numericalAnswer: this.data.NR4.answer,
+      numericalTitle: this.data.NR4.title,
+      quizName: this.data.liveQuizWordCloud.name,
+      secondFreeTextAnswer: this.data.FT5.answer,
+      secondFreeTextTitle: this.data.FT5.title,
+    })
   })
 
   it('Test word cloud display after receiving answers', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]', { timeout: 30000 })
+      .clear()
+      .type(`${this.data.liveQuizWordCloud.name}{enter}`)
     cy.get(
-      `[data-cy="live-quiz-cockpit-${this.data.liveQuizWordCloud.name}"]`
+      `[data-cy="live-quiz-cockpit-${this.data.liveQuizWordCloud.name}"]`,
+      { timeout: 30000 }
     ).click()
     cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
@@ -4774,6 +4785,8 @@ describe('Different live-quiz workflows', function () {
     cy.wait(1000)
 
     cy.get('[data-cy="word-cloud"]').should('contain', '50')
+    cy.get('[data-cy="word-cloud-language-filter"]').should('not.exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('not.exist')
   })
   // #endregion
 
