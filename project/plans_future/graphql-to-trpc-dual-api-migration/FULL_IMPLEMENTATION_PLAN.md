@@ -280,6 +280,73 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Group Activity Authoring Submit
+
+Status: complete for the group activity authoring submit slice. Scope stayed
+limited to replacing the group activity create/edit submit path with tRPC. This
+did not start S05 realtime migration, S06 cleanup, live quiz authoring submit
+migration, or live-quiz start/cockpit work.
+
+Slice: S04L Group Activity Authoring Submit
+
+GraphQL operation(s):
+
+- `CreateGroupActivityDocument`
+- `EditGroupActivityDocument`
+
+Behavior source:
+
+- `packages/graphql/src/schema/mutation.ts` `createGroupActivity` /
+  `editGroupActivity` wrappers
+- `packages/graphql/src/services/groups.ts` `manipulateGroupActivity`
+- API-local `splitActivityInstances` port from the completed practice quiz
+  authoring submit slice
+
+Implemented:
+
+- Added `activity.createGroupActivity` and `activity.editGroupActivity` tRPC
+  procedures with Zod inputs for group-activity manipulation and edit wrappers.
+- Ported group activity manipulation behavior from the GraphQL service into
+  `packages/api`, including permission recomputation, stack/instance splitting,
+  schedule/publish/grade edit guards, clue replacement on edit, and explicit
+  activity-info DTO output.
+- Migrated `GroupActivityWizard` and `submitGroupActivityForm` from Apollo
+  mutations to tRPC `mutateAsync` calls while preserving completion and error
+  handling behavior.
+- Added focused API regression tests for edit authorization denial and missing
+  course create rejection.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L group activity authoring files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, 40 files and 423 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known Next/package-type, next-intl config, PWA, browserslist,
+  missing-message, and large-page-data warnings.
+- `rg -n "CreateGroupActivityDocument|EditGroupActivityDocument|@apollo/client|CreateGroupActivityMutation|EditGroupActivityMutation" apps/frontend-manage/src/components/activities/creation/groupActivity packages/api/src/trpc --glob '!**/*.d.ts'`:
+  no matches.
+- `git diff --check`: passed.
+- Browser verification attempted against `http://127.0.0.1:3002/activities`;
+  local frontend was not listening, so `curl -I http://127.0.0.1:3002` and
+  `npx agent-browser open http://127.0.0.1:3002/activities` failed with
+  connection refused. Screenshot:
+  `/tmp/agent-browser-shots/s04-group-activity-authoring-01-connection-refused.png`.
+
+Residual S04:
+
+- Live quiz authoring submit still owns Apollo create/edit and live-quiz
+  start/cockpit cache behavior.
+- S04P generated type leak cleanup remains open for migrated workflows.
+- S04Q API no-GraphQL runtime dependency gates remain open.
+
 ### 2026-06-19 Completed: S04L Microlearning Authoring Submit
 
 Status: complete for the microlearning authoring submit slice. Scope stayed

@@ -106,6 +106,7 @@ import {
   createLiveQuizFromTemplateInput,
   deleteActivityTemplateInput,
   editActivityTemplateInput,
+  editGroupActivityInput,
   editMicroLearningInput,
   editPracticeQuizInput,
   endedLiveQuizzesCourseInput,
@@ -113,6 +114,7 @@ import {
   finalizeGroupActivityGradingInput,
   gradeGroupActivitySubmissionInput,
   groupActivityGradingInput,
+  groupActivityManipulationInput,
   liveQuizStudentAssessmentResponsesInput,
   matchingUserElementsTemplateInput,
   microLearningManipulationInput,
@@ -268,6 +270,12 @@ type MicroLearningManipulationInput = z.infer<
 >
 
 type EditMicroLearningInput = z.infer<typeof editMicroLearningInput>
+
+type GroupActivityManipulationInput = z.infer<
+  typeof groupActivityManipulationInput
+>
+
+type EditGroupActivityInput = z.infer<typeof editGroupActivityInput>
 
 type TemplateElementWithCollections = Element & {
   answerCollection?:
@@ -1615,6 +1623,289 @@ async function manipulateMicroLearning({
     scheduledEndAt: activity.scheduledEndAt,
     groupDeadlineDate: null,
     numOfParticipantGroups: null,
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: null,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    isActivityReviewer: (activity.course?._count.permissions ?? 0) > 0,
+    sharingType,
+    updatedAt: activity.updatedAt,
+  }
+}
+
+async function manipulateGroupActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: GroupActivityManipulationInput | EditGroupActivityInput
+}) {
+  const prisma = getPrisma(ctx)
+  const id = 'id' in input ? input.id : undefined
+
+  let existingActivity: GroupActivity | null = null
+  if (id) {
+    existingActivity = await prisma.groupActivity.findUnique({
+      where: { id, isDeleted: false },
+    })
+
+    if (!existingActivity) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Group Activity not found',
+      })
+    }
+    if (
+      existingActivity.status === PublicationStatus.SCHEDULED ||
+      existingActivity.status === PublicationStatus.PUBLISHED ||
+      existingActivity.status === PublicationStatus.GRADED
+    ) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Can only edit draft group activities',
+      })
+    }
+
+    await prisma.groupActivity.update({
+      where: { id },
+      data: { clues: { deleteMany: {} } },
+    })
+  }
+
+  const course = await prisma.course.findUnique({
+    where: { id: input.courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Course not found' })
+  }
+
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+    anyInstanceOutdated,
+  } = await splitActivityInstances({ ctx, stacksOrBlocks: [input.stack] })
+
+  let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = []
+  let stacksToDelete: number[] = []
+  if (id) {
+    const instances = await prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementStack: { groupActivityId: id },
+      },
+    })
+
+    const stacks = await prisma.elementStack.findMany({
+      where: { groupActivityId: id },
+    })
+
+    instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
+    stacksToDelete = stacks.map((stack) => stack.id)
+  }
+
+  const newId = randomUUID()
+  const groupActivityId = id ?? newId
+  const createOrUpdateJSON = {
+    id: groupActivityId,
+    name: input.name,
+    displayName: input.displayName,
+    description: input.description,
+    status: PublicationStatus.DRAFT,
+    scheduledStartAt: input.startDate,
+    scheduledEndAt: input.endDate,
+    pointsMultiplier: input.multiplier,
+    areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.courseId !== input.courseId
+        ? ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === ReviewStatus.REVIEWED
+          ? ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
+    clues: {
+      connectOrCreate: input.clues.map((clue) => ({
+        where: {
+          groupActivityId_name: {
+            groupActivityId,
+            name: clue.name,
+          },
+        },
+        create: {
+          name: clue.name,
+          displayName: clue.displayName,
+          type: clue.type,
+          value: clue.value,
+          unit: clue.unit,
+        },
+      })),
+    },
+    stacks: {
+      create: {
+        type: ElementStackType.GROUP_ACTIVITY,
+        order: 0,
+        displayName: input.stack.displayName,
+        description: input.stack.description,
+        elements: {
+          connectOrCreate: input.stack.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.GROUP_ACTIVITY,
+              activityMultiplier: input.multiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+            })
+          ),
+        },
+      },
+    },
+    course: { connect: { id: input.courseId } },
+  }
+
+  const activity = await prisma.$transaction(
+    async (tx) => {
+      await tx.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
+      })
+
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          getAuthoringObjectProperty(
+            instance.elementData,
+            'pointsMultiplier'
+          ) ?? 1
+
+        await tx.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...(isAuthoringRecord(instance.options) ? instance.options : {}),
+              pointsMultiplier:
+                input.multiplier *
+                (typeof elementMultiplier === 'number' ? elementMultiplier : 1),
+            },
+          },
+        })
+      }
+
+      await tx.elementStack.deleteMany({
+        where: { id: { in: stacksToDelete } },
+      })
+
+      const upsertedActivity = await tx.groupActivity.upsert({
+        where: { id: groupActivityId },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } },
+        },
+        update: createOrUpdateJSON,
+        include: {
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
+            include: {
+              _count: {
+                select: {
+                  participantGroups: true,
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          stacks: { include: { _count: { select: { elements: true } } } },
+          _count: { select: { permissions: true } },
+        },
+      })
+
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, tx)
+        }
+      }
+
+      await recomputeDerivedPermissions(
+        { groupActivityId: upsertedActivity.id },
+        tx
+      )
+
+      return upsertedActivity
+    },
+    { timeout: 60000 }
+  )
+
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const directPermission = activity.permissions[0]?.directPermission
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = toActivityPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission: Boolean(
+      directPermission && directPermission.userGroupId !== null
+    ),
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
+    type: ActivityType.GROUP_ACTIVITY,
+    status: activity.status,
+    courseId: activity.course?.id,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.stacks.length,
+    numOfElements: activity.stacks.reduce(
+      (acc, stack) => acc + stack._count.elements,
+      0
+    ),
+    automaticPublicationAt: null,
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
+    groupDeadlineDate: activity.course?.groupDeadlineDate,
+    numOfParticipantGroups: activity.course?._count.participantGroups ?? null,
     permissionLevel,
     derivedAccess: derived,
     areInstancesOutdated: activity.areInstancesOutdated,
@@ -5553,6 +5844,31 @@ export const activityRouter = router({
 
       return {
         editMicroLearning: await manipulateMicroLearning({ ctx, input }),
+      }
+    }),
+
+  createGroupActivity: userFullAccessProcedure
+    .input(groupActivityManipulationInput)
+    .mutation(async ({ ctx, input }) => ({
+      createGroupActivity: await manipulateGroupActivity({ ctx, input }),
+    })),
+
+  editGroupActivity: userFullAccessProcedure
+    .input(editGroupActivityInput)
+    .mutation(async ({ ctx, input }) => {
+      const canWrite = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.id,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        },
+        PermissionLevel.WRITE
+      )
+
+      if (!canWrite) return { editGroupActivity: null }
+
+      return {
+        editGroupActivity: await manipulateGroupActivity({ ctx, input }),
       }
     }),
 

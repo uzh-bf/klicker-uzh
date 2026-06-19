@@ -1,42 +1,23 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreateGroupActivityMutation,
-  CreateGroupActivityMutationVariables,
-  EditGroupActivityMutation,
-  EditGroupActivityMutationVariables,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import type { RouterInputs, RouterOutputs } from '../../../../lib/trpc'
 import { GroupActivityFormValues } from '../WizardLayout'
+
+type CreateGroupActivityInput = RouterInputs['activity']['createGroupActivity']
+type CreateGroupActivityResult =
+  RouterOutputs['activity']['createGroupActivity']
+type EditGroupActivityInput = RouterInputs['activity']['editGroupActivity']
+type EditGroupActivityResult = RouterOutputs['activity']['editGroupActivity']
 
 interface GroupActivityFormSubmissionProps {
   id?: string
   previousCourseId?: string
   values: GroupActivityFormValues
   createGroupActivity: (
-    options?:
-      | MutationFunctionOptions<
-          CreateGroupActivityMutation,
-          CreateGroupActivityMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<CreateGroupActivityMutation>>
+    input: CreateGroupActivityInput
+  ) => Promise<CreateGroupActivityResult>
   editGroupActivity: (
-    options?:
-      | MutationFunctionOptions<
-          EditGroupActivityMutation,
-          EditGroupActivityMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<EditGroupActivityMutation>>
+    input: EditGroupActivityInput
+  ) => Promise<EditGroupActivityResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
   onError: () => void
@@ -54,32 +35,31 @@ async function submitGroupActivityForm({
 }: GroupActivityFormSubmissionProps) {
   try {
     let success = false
-    if (id) {
-      const { data: result } = await editGroupActivity({
-        variables: {
-          id,
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-          startDate: dayjs(values.startDate).utc().format(),
-          endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
-          courseId: values.courseId!,
-          clues: values.clues,
-          stack: {
-            elements: values.stack.elements.map((element, ix) => ({
-              elementId: element.id,
-              order: ix,
-              existingInstanceId: element.existingInstanceId,
-              duplicateInstance: element.duplicateInstance,
-            })),
-            order: 0,
-          },
-        },
-      })
+    const createUpdateJSON = {
+      name: values.name,
+      displayName: values.displayName,
+      description: values.description,
+      startDate: dayjs(values.startDate).utc().toDate(),
+      endDate: dayjs(values.endDate).utc().toDate(),
+      multiplier: parseInt(values.multiplier),
+      courseId: values.courseId!,
+      clues: values.clues as CreateGroupActivityInput['clues'],
+      stack: {
+        elements: values.stack.elements.map((element, ix) => ({
+          elementId: element.id,
+          order: ix,
+          existingInstanceId: element.existingInstanceId,
+          duplicateInstance: element.duplicateInstance,
+        })),
+        order: 0,
+      },
+    }
 
-      success = Boolean(result?.editGroupActivity)
-      if (result?.editGroupActivity?.courseId) {
+    if (id) {
+      const result = await editGroupActivity({ id, ...createUpdateJSON })
+
+      success = Boolean(result.editGroupActivity)
+      if (result.editGroupActivity?.courseId) {
         const courseIds = new Set(
           [previousCourseId, result.editGroupActivity.courseId].filter(
             (courseId): courseId is string => Boolean(courseId)
@@ -88,30 +68,10 @@ async function submitGroupActivityForm({
         await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
       }
     } else {
-      const { data: result } = await createGroupActivity({
-        variables: {
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-          startDate: dayjs(values.startDate).utc().format(),
-          endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
-          courseId: values.courseId!,
-          clues: values.clues,
-          stack: {
-            elements: values.stack.elements.map((element, ix) => ({
-              elementId: element.id,
-              order: ix,
-              existingInstanceId: element.existingInstanceId,
-              duplicateInstance: element.duplicateInstance,
-            })),
-            order: 0,
-          },
-        },
-      })
+      const result = await createGroupActivity(createUpdateJSON)
 
-      success = Boolean(result?.createGroupActivity)
-      if (result?.createGroupActivity?.courseId) {
+      success = Boolean(result.createGroupActivity)
+      if (result.createGroupActivity?.courseId) {
         await invalidateCourseDetail(result.createGroupActivity.courseId)
       }
     }

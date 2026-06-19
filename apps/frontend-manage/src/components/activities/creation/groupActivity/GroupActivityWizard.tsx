@@ -1,7 +1,4 @@
-import { useMutation } from '@apollo/client'
 import {
-  CreateGroupActivityDocument,
-  EditGroupActivityDocument,
   Element,
   ElementType,
   GroupActivity,
@@ -301,12 +298,8 @@ function GroupActivityWizard({
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
   })
 
-  const [createGroupActivity, { data: creationData }] = useMutation(
-    CreateGroupActivityDocument
-  )
-  const [editGroupActivity, { data: editingData }] = useMutation(
-    EditGroupActivityDocument
-  )
+  const createGroupActivity = trpc.activity.createGroupActivity.useMutation()
+  const editGroupActivity = trpc.activity.editGroupActivity.useMutation()
   const utils = trpc.useUtils()
   const invalidateCourseDetail = useCallback(
     async (courseId: string) => {
@@ -321,8 +314,8 @@ function GroupActivityWizard({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,
-        createGroupActivity,
-        editGroupActivity,
+        createGroupActivity: createGroupActivity.mutateAsync,
+        editGroupActivity: editGroupActivity.mutateAsync,
         invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
@@ -343,8 +336,8 @@ function GroupActivityWizard({
       })
     },
     [
-      createGroupActivity,
-      editGroupActivity,
+      createGroupActivity.mutateAsync,
+      editGroupActivity.mutateAsync,
       initialValues?.course?.id,
       initialValues?.id,
       invalidateCourseDetail,
@@ -352,11 +345,11 @@ function GroupActivityWizard({
   )
 
   const selectedCourseId =
-    creationData?.createGroupActivity?.courseId ??
-    editingData?.editGroupActivity?.courseId
+    createGroupActivity.data?.createGroupActivity?.courseId ??
+    editGroupActivity.data?.editGroupActivity?.courseId
   const isActivityReviewer =
-    creationData?.createGroupActivity?.isActivityReviewer ??
-    editingData?.editGroupActivity?.isActivityReviewer
+    createGroupActivity.data?.createGroupActivity?.isActivityReviewer ??
+    editGroupActivity.data?.editGroupActivity?.isActivityReviewer
 
   return (
     <WizardLayout

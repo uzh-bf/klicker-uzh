@@ -1,6 +1,7 @@
 import {
   ElementOrderType,
   ElementType,
+  ParameterType,
   PointCorrectionType,
   PublicationStatus,
   ReviewStatus,
@@ -95,6 +96,30 @@ export const microLearningManipulationInput = z.object({
 })
 
 export const editMicroLearningInput = microLearningManipulationInput.extend({
+  id: z.string(),
+})
+
+const groupActivityClueInput = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  type: z.nativeEnum(ParameterType),
+  value: z.string(),
+  unit: z.string().nullish(),
+})
+
+export const groupActivityManipulationInput = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string().nullish(),
+  courseId: z.string(),
+  multiplier: z.number().int(),
+  startDate: z.date(),
+  endDate: z.date(),
+  clues: z.array(groupActivityClueInput),
+  stack: activityElementStackInput,
+})
+
+export const editGroupActivityInput = groupActivityManipulationInput.extend({
   id: z.string(),
 })
 
