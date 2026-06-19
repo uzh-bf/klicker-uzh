@@ -86,6 +86,10 @@ Current next action:
 - S04Q GraphQL/tRPC package test parity is complete and verified in CI:
   the GraphQL package workflow still runs against `packages/graphql`, and the
   new API package workflow runs against `packages/api`.
+- S04Q-R package test parity refresh is complete locally: keep the GraphQL
+  check visibly tied to `packages/graphql`, make the tRPC API check visibly tied
+  to `packages/api`, and request both package checks for dual-API package
+  changes.
 - S05A PWA microlearning-ended realtime is complete.
 - S05D PWA group-activity realtime is complete and pushed.
 - S05B PWA live-quiz state/settings realtime is complete and pushed.
@@ -735,6 +739,40 @@ Verification:
 - `git diff --check` passed.
 - Narrow audit confirmed `FeedbackArea` and `PublicFeedback` no longer import
   Apollo or generated GraphQL feedback operations/types.
+
+### 2026-06-19 Completed: S04Q-R Package Test Parity Refresh
+
+Status: complete locally. User requested that `test graphql` still tests
+GraphQL against `packages/graphql`, and that a new test covers the same
+migration safety gate on the tRPC API.
+
+Slice: S04Q-R Package Test Parity Refresh
+
+Write scope:
+
+- `.github/workflows/test-graphql.yml`
+- `.github/workflows/test-api.yml`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Intended behavior:
+
+- Keep the GraphQL package workflow running `packages/graphql` Vitest.
+- Keep the new tRPC API package workflow running `packages/api` Vitest.
+- Make both PR checks explicit in GitHub by naming the jobs
+  `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+- Trigger the tRPC API package workflow for `packages/graphql/**` changes too,
+  so dual-API behavior changes request both package-level checks.
+
+Verification:
+
+- `pnpm exec prettier --check .github/workflows/test-api.yml .github/workflows/test-graphql.yml project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `pnpm --filter @klicker-uzh/api test` passed: 42 files, 435 tests.
+- `pnpm --filter @klicker-uzh/graphql build` passed with existing Rollup
+  TypeScript warning noise.
+- `gh pr checks 5132` before this commit still showed multiple ambiguous
+  `test` entries; after this checkpoint is pushed, the package test jobs should
+  surface as `packages/graphql Vitest` and `packages/api tRPC Vitest`.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

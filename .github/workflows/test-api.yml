@@ -5,6 +5,7 @@ on:
     branches: ['v3', 'v3*']
     paths:
       - 'packages/api/**'
+      - 'packages/graphql/**'
       - 'packages/grading/**'
       - 'packages/prisma/**'
       - 'packages/types/**'
@@ -14,6 +15,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'packages/api/**'
+      - 'packages/graphql/**'
       - 'packages/grading/**'
       - 'packages/prisma/**'
       - 'packages/types/**'
@@ -26,6 +28,7 @@ concurrency:
 
 jobs:
   test:
+    name: packages/api tRPC Vitest
     runs-on: ubuntu-latest
     permissions:
       contents: read
