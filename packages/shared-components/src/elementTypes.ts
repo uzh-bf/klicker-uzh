@@ -47,6 +47,25 @@ export type Choice = {
 
 export type QuestionFeedback = Choice
 
+export type ChoiceElementOptions = {
+  choices: Choice[]
+  displayMode: ElementDisplayMode
+  hasAnswerFeedbacks?: boolean | null
+  hasSampleSolution?: boolean | null
+}
+
+export type ChoicesInstanceEvaluation = InstanceEvaluation & {
+  choices?:
+    | {
+        count: number
+        ix: number
+      }[]
+    | null
+  explanation?: string | null
+  feedbacks?: QuestionFeedback[] | null
+  numAnswers?: number | null
+}
+
 export type FreeTextElementOptions = {
   restrictions?: {
     maxLength?: number | null

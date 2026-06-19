@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S05G-AB Choice Question/Evaluation Generated Type Cleanup
+
+Status: complete locally. Scope was limited to the shared choice
+question/evaluation leaf path while keeping GraphQL/Apollo live and keeping the
+already verified GraphQL/package-vs-tRPC/package parity checks in place for API
+behavior work.
+
+Slice: S05G-AB choice question/evaluation generated type cleanup
+
+Operation mapping:
+
+- GraphQL generated imports:
+  `ChoiceElementOptions`, `ChoicesInstanceEvaluation`, and `ElementType`
+  from `@klicker-uzh/graphql/dist/ops`
+- Replacement:
+  local structural `ChoiceElementOptions` / `ChoicesInstanceEvaluation` types
+  plus local `ElementType` constants from `packages/shared-components`
+- Active consumers:
+  `ChoicesQuestion`, `SCEvaluation`, `MCKPRIMEvaluation`
+- React Query replacement:
+  none; this is a shared-component generated type cleanup, not an API call
+  migration
+- Browser verification path:
+  no new UI behavior; use package checks and coexistence import audits for this
+  leaf cleanup
+- Cleanup blocked until:
+  remaining shared `Selection`, `CaseStudy`, `StudentElement`, and student
+  response generated imports are removed and S06 is explicitly approved
+
+Intended verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed
+- focused Prettier check on touched files passed
+- generated type import audit for the touched choice files passed with no
+  matches
+- `git diff --check` passed
+
+Residual generated imports after this slice are limited to shared selection,
+case-study, and student response / `StudentElement` paths.
+
+S05G-AC next: continue with the next smallest shared-components generated
+enum/type cleanup, likely the selection question/evaluation family, while
+keeping GraphQL/Apollo live. Do not start S06 cleanup until all S05 gates are
+clean and explicitly reviewed.
+
 ### 2026-06-19 Completed: S05A PWA Microlearning tRPC Realtime
 
 Status: completed. User requested continuing the goal after the S04Q test-parity

@@ -1,9 +1,9 @@
-import type {
-  ChoiceElementOptions,
-  ChoicesInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import {
+  ElementType,
+  type ChoiceElementOptions,
+  type ChoicesInstanceEvaluation,
+} from './elementTypes'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
@@ -19,10 +19,15 @@ import {
   validateScResponse,
 } from './utils/validateResponse'
 
+type ChoiceQuestionElementType =
+  | typeof ElementType.Sc
+  | typeof ElementType.Mc
+  | typeof ElementType.Kprim
+
 interface ChoicesQuestionProps {
   preview?: boolean
   content: string
-  type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
+  type: ChoiceQuestionElementType
   options: ChoiceElementOptions
   response?: ChoicesStudentResponseType
   setResponse: (newValue: ChoicesStudentResponseType, valid: boolean) => void
