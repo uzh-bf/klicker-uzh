@@ -205,7 +205,11 @@ Current next action:
   Scope was limited to replacing the shared `Flashcard` / `StudentElement` generated
   `FlashcardCorrectness` import with a local enum constant/type matching the
   generated UI shape.
-- S05G-W next: continue with the next smallest shared-components generated
+- S05G-W content element generated instance type cleanup is complete locally.
+  Scope was limited to replacing the `ContentElement` leaf component's generated
+  `ElementInstance` import with a narrow local structural content instance
+  shape.
+- S05G-X next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1880,6 +1884,54 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/Flashcard.tsx packages/shared-components/src/StudentElement.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `rg -n "FlashcardCorrectness.*@klicker-uzh/graphql/dist/ops|@klicker-uzh/graphql/dist/ops.*FlashcardCorrectness" packages/shared-components/src/Flashcard.tsx packages/shared-components/src/StudentElement.tsx packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-W Content Element Instance Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove the generated
+GraphQL `ElementInstance` import from the `ContentElement` leaf component
+without changing content rendering or content-read response behavior.
+
+Slice: S05G-W Content Element Instance Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `ElementInstance` shape for content
+element rendering; the leaf component only reads `element.elementData.content`.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/ContentElement.tsx`
+- `packages/shared-components/src/StudentElement.tsx`
+
+Intended behavior:
+
+- Keep content markdown rendering and read-button behavior unchanged.
+- Remove the generated GraphQL `ElementInstance` import from
+  `ContentElement.tsx`.
+- Keep generated GraphQL element payloads accepted by structural typing while
+  already migrated tRPC DTO payloads can also call the component.
+
+What changed:
+
+- Added local structural `ContentElementInstance` in
+  `packages/shared-components/src/elementTypes.ts`.
+- Switched `packages/shared-components/src/ContentElement.tsx` to the local
+  structural content instance type.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/ContentElement.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/ContentElement.tsx packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 

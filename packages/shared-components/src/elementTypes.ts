@@ -51,6 +51,12 @@ export type NumericalElementOptions = {
   } | null
 }
 
+export type ContentElementInstance = {
+  elementData: {
+    content: string
+  }
+}
+
 export type SelectionElementOptions = {
   answerCollection?: {
     entries?:
