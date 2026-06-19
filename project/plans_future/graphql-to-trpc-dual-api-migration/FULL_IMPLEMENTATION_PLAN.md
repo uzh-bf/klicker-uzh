@@ -175,9 +175,14 @@ Current next action:
   page and live-quiz question/storage components by typing the already migrated
   `participant.runningLiveQuiz` payload from `RouterOutputs` and keeping the
   old shared GraphQL shape isolated at shared-component boundaries.
-- S05G-P next: continue with the next smallest active shared-components
-  generated type cleanup while keeping GraphQL/Apollo live. Do not start S06
-  cleanup until all S05 gates are clean and explicitly reviewed.
+- S05G-P shared-components constants generated enum cleanup is complete locally.
+  It introduces local shared `ElementType` / `ElementDisplayMode` constants and
+  removes the generated GraphQL enum import from `constants.ts` while keeping
+  `QUESTION_GROUPS` and `ACTIVE_CHART_TYPES` compatible with mixed GraphQL/tRPC
+  consumers.
+- S05G-Q next: continue with the next smallest shared-components generated enum
+  cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup until all
+  S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -1479,6 +1484,62 @@ Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. Shared-components generated GraphQL
 type imports and intentionally retained Apollo provider/client files are still
 blockers for S06.
+
+### 2026-06-19 Completed: S05G-P Shared-Components Constants Enum Cleanup
+
+Status: complete locally. Scope remained S05 only: remove generated GraphQL enum
+runtime imports from shared constants without changing GraphQL documents,
+Apollo providers, `/api/graphql`, or remaining shared generated types.
+
+Slice: S05G-P Shared-Components Constants Enum Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL enum string values, preserved as
+local shared constants.
+
+tRPC router.procedure: none.
+
+Active frontend consumers:
+
+- `packages/shared-components/src/constants.ts`
+- Manage/PWA consumers of `QUESTION_GROUPS`, `ACTIVE_CHART_TYPES`, and
+  `ChartType`.
+
+Intended behavior:
+
+- Keep shared constants runtime values unchanged.
+- Remove the generated GraphQL `ElementType` runtime import from
+  `constants.ts`.
+- Keep the exported maps flexible enough for current mixed GraphQL/tRPC callers
+  that still hold generated GraphQL enum values.
+
+What changed:
+
+- Added `packages/shared-components/src/elementTypes.ts` with local shared
+  `ElementType` and `ElementDisplayMode` constants matching the existing API
+  string values.
+- Switched `constants.ts` to the local `ElementType` constants.
+- Kept `QUESTION_GROUPS` string-array typed and `ACTIVE_CHART_TYPES`
+  string-indexed while validating that every local `ElementType` has a chart
+  configuration.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/constants.ts`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/constants.ts packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. Remaining shared-components generated
+GraphQL imports are still blockers for S06.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -11984,7 +12045,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-P with the next smallest active shared-components generated
-   type cleanup while keeping GraphQL/Apollo live.
+2. Continue S05G-Q with the next smallest active shared-components generated
+   enum/type cleanup while keeping GraphQL/Apollo live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

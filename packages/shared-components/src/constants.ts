@@ -1,5 +1,8 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type { AvatarOptions as AvatarOptionsType } from '@klicker-uzh/types'
+import {
+  ElementType,
+  type ElementType as SharedElementType,
+} from './elementTypes'
 
 export const SMALL_BAR_THRESHOLD: number = 0.05
 
@@ -37,7 +40,7 @@ export const CHART_SOLUTION_COLORS = {
   incorrect: '#ff0000',
 }
 
-export const QUESTION_GROUPS: Record<string, ElementType[]> = {
+export const QUESTION_GROUPS: Record<string, string[]> = {
   CHOICES: [ElementType.Sc, ElementType.Mc, ElementType.Kprim],
   FREE_TEXT: [ElementType.FreeText],
   NUMERICAL: [ElementType.Numerical],
@@ -95,10 +98,9 @@ export type ChartLabels =
   | 'manage.evaluation.barChart'
   | 'manage.evaluation.scatterPlot'
 
-export const ACTIVE_CHART_TYPES: Record<
-  ElementType,
-  { label: ChartLabels; value: ChartType }[]
-> = {
+type ActiveChartType = { label: ChartLabels; value: ChartType }
+
+export const ACTIVE_CHART_TYPES: Record<string, ActiveChartType[]> = {
   [ElementType.Sc]: [
     { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
     { label: 'manage.evaluation.table', value: ChartType.TABLE },
@@ -137,7 +139,7 @@ export const ACTIVE_CHART_TYPES: Record<
   [ElementType.Content]: [
     { label: 'manage.evaluation.unset', value: ChartType.UNSET },
   ],
-}
+} satisfies Record<SharedElementType, ActiveChartType[]>
 
 export interface ShowStatisticsType {
   mean?: boolean
