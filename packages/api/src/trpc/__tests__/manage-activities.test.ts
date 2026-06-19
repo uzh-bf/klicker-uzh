@@ -2388,6 +2388,71 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('returns a practice quiz summary through the activity router', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      stacks: [
+        {
+          elements: [
+            { results: { total: 7 }, anonymousResults: { total: 2 } },
+            { results: { total: 3 }, anonymousResults: { total: 1 } },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      practiceQuiz: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.practiceQuizSummary({
+        activityId: 'practice-quiz-1',
+      })
+    ).resolves.toEqual({
+      practiceQuizSummary: {
+        numOfResponses: 10,
+        numOfAnonymousResponses: 3,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        practiceQuizId: 'practice-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'practice-quiz-1' },
+      select: {
+        stacks: {
+          select: {
+            elements: {
+              select: {
+                results: true,
+                anonymousResults: true,
+              },
+            },
+          },
+        },
+      },
+    })
+  })
+
   test('returns a group activity summary through the activity router', async () => {
     const submittedAt = new Date('2026-06-19T10:00:00.000Z')
     const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
@@ -3111,6 +3176,187 @@ describe('manage activity read routers', () => {
             PermissionLevel.ADMIN,
             PermissionLevel.OWNER,
           ],
+        },
+      },
+    })
+    expect(practiceQuizFindUnique).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    {
+      activityType: ActivityType.PRACTICE_QUIZ,
+      modelName: 'practiceQuiz',
+      permissionKey: 'practiceQuizId',
+      typename: 'PracticeQuiz',
+      findInclude: {
+        responses: true,
+        stacks: { include: { elements: true } },
+      },
+      findResult: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+        responses: [],
+        stacks: [],
+      },
+      deleteResult: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+      },
+      deletedTaskIds: ['publication-task'],
+    },
+    {
+      activityType: ActivityType.MICRO_LEARNING,
+      modelName: 'microLearning',
+      permissionKey: 'microLearningId',
+      typename: 'MicroLearning',
+      findInclude: {
+        responses: true,
+        stacks: { include: { elements: true } },
+      },
+      findResult: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+        scheduledCompletionTaskId: 'completion-task',
+        responses: [],
+        stacks: [],
+      },
+      deleteResult: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+        scheduledCompletionTaskId: 'completion-task',
+      },
+      deletedTaskIds: ['publication-task', 'completion-task'],
+    },
+    {
+      activityType: ActivityType.GROUP_ACTIVITY,
+      modelName: 'groupActivity',
+      permissionKey: 'groupActivityId',
+      typename: 'GroupActivity',
+      findInclude: {
+        activityInstances: true,
+        stacks: { include: { elements: true } },
+      },
+      findResult: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+        scheduledCompletionTaskId: 'completion-task',
+        activityInstances: [],
+        stacks: [],
+      },
+      deleteResult: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+        scheduledCompletionTaskId: 'completion-task',
+      },
+      deletedTaskIds: ['publication-task', 'completion-task'],
+    },
+  ])(
+    'hard deletes scheduled $activityType activities through the activity router',
+    async ({
+      activityType,
+      modelName,
+      permissionKey,
+      typename,
+      findInclude,
+      findResult,
+      deleteResult,
+      deletedTaskIds,
+    }) => {
+      const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+      const findUnique = vi.fn().mockResolvedValue(findResult)
+      const deleteActivityModel = vi.fn().mockResolvedValue(deleteResult)
+      const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+      const emit = vi.fn()
+      const prisma = {
+        derivedPermission: {
+          findFirst: permissionFindFirst,
+        },
+        [modelName]: {
+          findUnique,
+          delete: deleteActivityModel,
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(
+        createContext(prisma, {
+          emitter: { emit } as unknown as TRPCContext['emitter'],
+          hatchet: {
+            scheduled: {
+              delete: scheduledDelete,
+            },
+          } as unknown as TRPCContext['hatchet'],
+        })
+      )
+
+      await expect(
+        caller.activity.delete({
+          activityId: 'activity-1',
+          activityType,
+        })
+      ).resolves.toEqual({
+        deleteActivity: {
+          id: 'activity-1',
+        },
+      })
+
+      expect(permissionFindFirst).toHaveBeenCalledWith({
+        where: {
+          [permissionKey]: 'activity-1',
+          userId: user.id,
+          permissionLevel: {
+            in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+          },
+        },
+      })
+      expect(findUnique).toHaveBeenCalledWith({
+        where: { id: 'activity-1' },
+        include: findInclude,
+      })
+      expect(deleteActivityModel).toHaveBeenCalledWith({
+        where: { id: 'activity-1' },
+      })
+      expect(scheduledDelete).toHaveBeenCalledTimes(deletedTaskIds.length)
+      deletedTaskIds.forEach((taskId, ix) => {
+        expect(scheduledDelete).toHaveBeenNthCalledWith(ix + 1, taskId)
+      })
+      expect(emit).toHaveBeenCalledWith('invalidate', {
+        typename,
+        id: 'activity-1',
+      })
+    }
+  )
+
+  test('returns null when activity delete admin permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const practiceQuizFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      practiceQuiz: {
+        findUnique: practiceQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.delete({
+        activityId: 'practice-quiz-1',
+        activityType: ActivityType.PRACTICE_QUIZ,
+      })
+    ).resolves.toEqual({ deleteActivity: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        practiceQuizId: 'practice-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
         },
       },
     })

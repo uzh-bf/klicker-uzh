@@ -1,8 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeleteMicroLearningDocument,
-  GetMicroLearningSummaryDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -22,18 +18,9 @@ function MicroLearningDeletionModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetMicroLearningSummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
-
-  const [deleteMicroLearning, { loading: deletingMicroLearning }] = useMutation(
-    DeleteMicroLearningDocument,
-    { variables: { id: activityId } }
-  )
+  const { data: summaryData, isLoading: summaryLoading } =
+    trpc.activity.microLearningSummary.useQuery({ activityId })
+  const deleteActivity = trpc.activity.delete.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -41,19 +28,18 @@ function MicroLearningDeletionModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getMicroLearningSummary) {
+    if (summaryData?.microLearningSummary) {
       setConfirmations({
-        deleteResponses:
-          summaryData?.getMicroLearningSummary.numOfResponses === 0,
+        deleteResponses: summaryData.microLearningSummary.numOfResponses === 0,
         deleteAnonymousResponses:
-          summaryData.getMicroLearningSummary.numOfAnonymousResponses === 0,
+          summaryData.microLearningSummary.numOfAnonymousResponses === 0,
       })
     }
-  }, [summaryData?.getMicroLearningSummary])
+  }, [summaryData?.microLearningSummary])
 
-  if (!summaryData?.getMicroLearningSummary) return null
+  if (!summaryData?.microLearningSummary) return null
 
-  const summary = summaryData.getMicroLearningSummary
+  const summary = summaryData.microLearningSummary
 
   return (
     <ActivityConfirmationModal
@@ -61,13 +47,16 @@ function MicroLearningDeletionModal({
       title={t('manage.course.deleteMicroLearning')}
       message={t('manage.course.deleteMicroLearningMessage')}
       onSubmit={async () => {
-        const result = await deleteMicroLearning()
-        if (result.data?.deleteMicroLearning?.id) {
+        const result = await deleteActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.MICRO_LEARNING,
+        })
+        if (result.deleteActivity?.id) {
           await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
       }}
-      submitting={deletingMicroLearning}
+      submitting={deleteActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"

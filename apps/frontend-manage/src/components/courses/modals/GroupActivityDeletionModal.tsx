@@ -1,8 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeleteGroupActivityDocument,
-  GetGroupActivitySummaryDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -22,18 +18,9 @@ function GroupActivityDeletionModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetGroupActivitySummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
-
-  const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
-    DeleteGroupActivityDocument,
-    { variables: { id: activityId } }
-  )
+  const { data: summaryData, isLoading: summaryLoading } =
+    trpc.activity.groupActivitySummary.useQuery({ activityId })
+  const deleteActivity = trpc.activity.delete.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     deleteStartedInstances: false,
@@ -41,19 +28,19 @@ function GroupActivityDeletionModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getGroupActivitySummary) {
+    if (summaryData?.groupActivitySummary) {
       setConfirmations({
         deleteStartedInstances:
-          summaryData?.getGroupActivitySummary.numOfStartedInstances === 0,
+          summaryData.groupActivitySummary.numOfStartedInstances === 0,
         deleteSubmissions:
-          summaryData.getGroupActivitySummary.numOfSubmissions === 0,
+          summaryData.groupActivitySummary.numOfSubmissions === 0,
       })
     }
-  }, [summaryData?.getGroupActivitySummary])
+  }, [summaryData?.groupActivitySummary])
 
-  if (!summaryData?.getGroupActivitySummary) return null
+  if (!summaryData?.groupActivitySummary) return null
 
-  const summary = summaryData.getGroupActivitySummary
+  const summary = summaryData.groupActivitySummary
 
   return (
     <ActivityConfirmationModal
@@ -61,13 +48,16 @@ function GroupActivityDeletionModal({
       title={t('manage.course.deleteGroupActivity')}
       message={t('manage.course.deleteGroupActivityMessage')}
       onSubmit={async () => {
-        const result = await deleteGroupActivity()
-        if (result.data?.deleteGroupActivity?.id) {
+        const result = await deleteActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        })
+        if (result.deleteActivity?.id) {
           await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
       }}
-      submitting={deletingGroupActivity}
+      submitting={deleteActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"

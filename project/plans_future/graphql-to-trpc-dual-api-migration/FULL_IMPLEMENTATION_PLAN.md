@@ -280,6 +280,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Async Activity Deletion Modals
+
+Status: complete for the scoped code migration and automated verification.
+Scope was limited to replacing the Apollo summary queries and delete mutations
+in `PracticeQuizDeletionModal`, `MicroLearningDeletionModal`, and
+`GroupActivityDeletionModal` with tRPC reads/mutations. This slice preserved
+READ permission checks for deletion summaries, FULL_ACCESS plus ADMIN checks for
+deletion, hard-delete versus soft-delete behavior, scheduled Hatchet task
+cleanup, derived-permission recomputation/propagation, course activity refresh,
+and existing invalidation events. It did not migrate live quiz delete/reset/start,
+activity authoring create/edit, live quiz cockpit/lecturer realtime pages, S05,
+or S06.
+
+Slice: S04L Async Activity Deletion Modals
+
+GraphQL operation(s):
+
+- `GetPracticeQuizSummaryDocument`
+- `DeletePracticeQuizDocument`
+- `GetMicroLearningSummaryDocument`
+- `DeleteMicroLearningDocument`
+- `GetGroupActivitySummaryDocument`
+- `DeleteGroupActivityDocument`
+
+Behavior source:
+
+- `packages/graphql/src/services/practiceQuizzes.ts`
+  `getPracticeQuizSummary` and `deletePracticeQuiz`
+- `packages/graphql/src/services/microLearning.ts` `getMicroLearningSummary`
+  and `deleteMicroLearning`
+- `packages/graphql/src/services/groups.ts` `getGroupActivitySummary` and
+  `deleteGroupActivity`
+- Existing GraphQL query/mutation permission wrappers in
+  `packages/graphql/src/schema/query.ts` and
+  `packages/graphql/src/schema/mutation.ts`
+
+Write scope:
+
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/courses/modals/PracticeQuizDeletionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/MicroLearningDeletionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/GroupActivityDeletionModal.tsx`
+- this plan progress entry
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed; 40 test files, 410 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-size warnings.
+- `rg -n "DeletePracticeQuizDocument|DeleteMicroLearningDocument|DeleteGroupActivityDocument|GetPracticeQuizSummaryDocument|GetMicroLearningSummaryDocument|GetGroupActivitySummaryDocument|@apollo/client|@klicker-uzh/graphql" <migrated deletion modals>`:
+  no matches.
+- Browser attempt: `frontend-manage` returned HTTP 200 on
+  `http://127.0.0.1:3002`, and `npx agent-browser open` succeeded, but
+  `npx agent-browser get url` reported `chrome-error://chromewebdata/` and the
+  screenshot was blank white. Screenshot:
+  `/tmp/agent-browser-shots/s04-deletion-modals-01-initial.png`.
+- Direct safe HTTP smokes against local backend with process-local
+  `APP_SECRET=abcd` and fake Hatchet token:
+  `GET /api/trpc/activity.practiceQuizSummary` returned
+  `{"result":{"data":{"json":{"practiceQuizSummary":null}}}}`;
+  `GET /api/trpc/activity.microLearningSummary` returned
+  `{"result":{"data":{"json":{"microLearningSummary":null}}}}`;
+  `GET /api/trpc/activity.groupActivitySummary` returned
+  `{"result":{"data":{"json":{"groupActivitySummary":null}}}}`; and
+  `POST /api/trpc/activity.delete` returned
+  `{"result":{"data":{"json":{"deleteActivity":null}}}}`.
+- Happy-path destructive deletion against real local activities was intentionally
+  not executed in the browser; focused API tests cover scheduled hard-delete
+  task cleanup, permission checks, and invalidation, while soft-delete parity is
+  covered by the implementation path and type/build checks.
+
 ### 2026-06-19 Completed: S04L Activity Ending Modals
 
 Status: complete for the scoped code migration and automated verification.

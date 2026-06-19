@@ -1,8 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeletePracticeQuizDocument,
-  GetPracticeQuizSummaryDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -22,18 +18,9 @@ function PracticeQuizDeletionModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetPracticeQuizSummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
-
-  const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
-    DeletePracticeQuizDocument,
-    { variables: { id: activityId } }
-  )
+  const { data: summaryData, isLoading: summaryLoading } =
+    trpc.activity.practiceQuizSummary.useQuery({ activityId })
+  const deleteActivity = trpc.activity.delete.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -41,19 +28,18 @@ function PracticeQuizDeletionModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getPracticeQuizSummary) {
+    if (summaryData?.practiceQuizSummary) {
       setConfirmations({
-        deleteResponses:
-          summaryData?.getPracticeQuizSummary.numOfResponses === 0,
+        deleteResponses: summaryData.practiceQuizSummary.numOfResponses === 0,
         deleteAnonymousResponses:
-          summaryData.getPracticeQuizSummary.numOfAnonymousResponses === 0,
+          summaryData.practiceQuizSummary.numOfAnonymousResponses === 0,
       })
     }
-  }, [summaryData?.getPracticeQuizSummary])
+  }, [summaryData?.practiceQuizSummary])
 
-  if (!summaryData?.getPracticeQuizSummary) return null
+  if (!summaryData?.practiceQuizSummary) return null
 
-  const summary = summaryData.getPracticeQuizSummary
+  const summary = summaryData.practiceQuizSummary
 
   return (
     <ActivityConfirmationModal
@@ -61,13 +47,16 @@ function PracticeQuizDeletionModal({
       title={t('manage.course.deletePracticeQuiz')}
       message={t('manage.course.deletePracticeQuizMessage')}
       onSubmit={async () => {
-        const result = await deletePracticeQuiz()
-        if (result.data?.deletePracticeQuiz?.id) {
+        const result = await deleteActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.PRACTICE_QUIZ,
+        })
+        if (result.deleteActivity?.id) {
           await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
       }}
-      submitting={deletingPracticeQuiz}
+      submitting={deleteActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"

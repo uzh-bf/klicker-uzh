@@ -790,10 +790,14 @@ type OpenedGroupActivityRecord = {
   scheduledStartAt: Date
 }
 
-type MicroLearningSummaryRecord = {
+type AsyncActivitySummaryRecord = {
   numOfResponses: number
   numOfAnonymousResponses: number
 }
+
+type PracticeQuizSummaryRecord = AsyncActivitySummaryRecord
+
+type MicroLearningSummaryRecord = AsyncActivitySummaryRecord
 
 type GroupActivitySummaryRecord = {
   numOfStartedInstances: number
@@ -809,6 +813,10 @@ type EndedActivityRecord = {
 type ExtendedActivityRecord = {
   id: string
   scheduledEndAt: Date
+}
+
+type DeletedActivityRecord = {
+  id: string
 }
 
 function getActivitySchedulerTasks(ctx: TRPCContext) {
@@ -1475,6 +1483,70 @@ async function getMicroLearningSummary({
   }
 }
 
+async function getPracticeQuizSummary({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+  }
+}): Promise<PracticeQuizSummaryRecord | null> {
+  const canRead = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: ActivityType.PRACTICE_QUIZ,
+    },
+    PermissionLevel.READ
+  )
+
+  if (!canRead) return null
+
+  const practiceQuiz = await getPrisma(ctx).practiceQuiz.findUnique({
+    where: { id: input.activityId },
+    select: {
+      stacks: {
+        select: {
+          elements: {
+            select: {
+              results: true,
+              anonymousResults: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) return null
+
+  const { responses, anonymousResponses } = practiceQuiz.stacks.reduce(
+    (acc, stack) => {
+      const stackCounts = stack.elements.reduce(
+        (elementAcc, instance) => {
+          elementAcc.responses += getResultTotal(instance.results)
+          elementAcc.anonymousResponses += getResultTotal(
+            instance.anonymousResults
+          )
+          return elementAcc
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += stackCounts.responses
+      acc.anonymousResponses += stackCounts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
+}
+
 async function getGroupActivitySummary({
   ctx,
   input,
@@ -1518,6 +1590,330 @@ async function getGroupActivitySummary({
     numOfStartedInstances,
     numOfSubmissions,
   }
+}
+
+async function deletePracticeQuizActivity({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext
+  activityId: string
+}): Promise<DeletedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const practiceQuiz = await prisma.practiceQuiz.findUnique({
+    where: { id: activityId },
+    include: { responses: true, stacks: { include: { elements: true } } },
+  })
+
+  if (!practiceQuiz) return null
+
+  if (
+    practiceQuiz.status === PublicationStatus.DRAFT ||
+    practiceQuiz.status === PublicationStatus.SCHEDULED ||
+    practiceQuiz.responses.length === 0
+  ) {
+    const deletedItem = await prisma.practiceQuiz.delete({
+      where: { id: activityId },
+    })
+
+    if (
+      deletedItem.scheduledPublicationTaskId &&
+      deletedItem.status === PublicationStatus.SCHEDULED
+    ) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: deletedItem.scheduledPublicationTaskId,
+        failureMessage: `Failed to delete scheduled task for practice quiz ${activityId}:`,
+      })
+    }
+
+    await propagateActivityToElements(
+      { stacks: practiceQuiz.stacks, updateAccessRequests: true },
+      prisma
+    )
+
+    ctx.emitter?.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id: activityId,
+    })
+    return { id: deletedItem.id }
+  }
+
+  const updatedPracticeQuiz = await prisma.$transaction(
+    async (tx) => {
+      const quiz = await tx.practiceQuiz.update({
+        where: { id: activityId },
+        data: {
+          isDeleted: true,
+          directPermissions: { deleteMany: {} },
+        },
+        include: { stacks: true },
+      })
+
+      await tx.elementStack.updateMany({
+        where: { id: { in: quiz.stacks.map((stack) => stack.id) } },
+        data: { courseId: null },
+      })
+
+      await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, tx)
+
+      return quiz
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id: activityId,
+  })
+  return { id: updatedPracticeQuiz.id }
+}
+
+async function deleteMicroLearningActivity({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext
+  activityId: string
+}): Promise<DeletedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const microLearning = await prisma.microLearning.findUnique({
+    where: { id: activityId },
+    include: { responses: true, stacks: { include: { elements: true } } },
+  })
+
+  if (!microLearning) return null
+
+  if (
+    microLearning.status === PublicationStatus.DRAFT ||
+    microLearning.status === PublicationStatus.SCHEDULED ||
+    microLearning.responses.length === 0
+  ) {
+    const deletedItem = await prisma.microLearning.delete({
+      where: { id: activityId },
+    })
+
+    if (
+      deletedItem.scheduledPublicationTaskId &&
+      deletedItem.status === PublicationStatus.SCHEDULED
+    ) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: deletedItem.scheduledPublicationTaskId,
+        failureMessage: `Failed to delete scheduled publication task for microlearning ${activityId}:`,
+      })
+    }
+
+    if (
+      deletedItem.scheduledCompletionTaskId &&
+      (deletedItem.status === PublicationStatus.SCHEDULED ||
+        deletedItem.status === PublicationStatus.PUBLISHED)
+    ) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: deletedItem.scheduledCompletionTaskId,
+        failureMessage: `Failed to delete scheduled completion task for microlearning ${activityId}:`,
+      })
+    }
+
+    await propagateActivityToElements(
+      { stacks: microLearning.stacks, updateAccessRequests: true },
+      prisma
+    )
+
+    ctx.emitter?.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: activityId,
+    })
+    return { id: deletedItem.id }
+  }
+
+  const updatedMicroLearning = await prisma.$transaction(
+    async (tx) => {
+      if (
+        microLearning.status === PublicationStatus.PUBLISHED &&
+        microLearning.scheduledCompletionTaskId
+      ) {
+        await deleteScheduledHatchetTask({
+          ctx,
+          taskId: microLearning.scheduledCompletionTaskId,
+          failureMessage: `Failed to delete scheduled completion task for microlearning ${activityId}:`,
+        })
+      }
+
+      const updatedActivity = await tx.microLearning.update({
+        where: { id: activityId },
+        data: {
+          isDeleted: true,
+          scheduledCompletionTaskId: null,
+          directPermissions: { deleteMany: {} },
+        },
+      })
+
+      await recomputeDerivedPermissions(
+        { microLearningId: updatedActivity.id },
+        tx
+      )
+
+      return updatedActivity
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'MicroLearning',
+    id: activityId,
+  })
+  return { id: updatedMicroLearning.id }
+}
+
+async function deleteGroupActivity({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext
+  activityId: string
+}): Promise<DeletedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: { id: activityId },
+    include: {
+      activityInstances: true,
+      stacks: { include: { elements: true } },
+    },
+  })
+
+  if (!groupActivity) return null
+
+  if (
+    groupActivity.status === PublicationStatus.DRAFT ||
+    groupActivity.status === PublicationStatus.SCHEDULED ||
+    groupActivity.activityInstances.length === 0
+  ) {
+    const deletedItem = await prisma.groupActivity.delete({
+      where: { id: activityId },
+    })
+
+    if (
+      deletedItem.scheduledPublicationTaskId &&
+      deletedItem.status === PublicationStatus.SCHEDULED
+    ) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: deletedItem.scheduledPublicationTaskId,
+        failureMessage: `Failed to delete scheduled publication task for group activity ${activityId}:`,
+      })
+    }
+
+    if (
+      deletedItem.scheduledCompletionTaskId &&
+      (deletedItem.status === PublicationStatus.SCHEDULED ||
+        deletedItem.status === PublicationStatus.PUBLISHED)
+    ) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: deletedItem.scheduledCompletionTaskId,
+        failureMessage: `Failed to delete scheduled completion task for group activity ${activityId}:`,
+      })
+    }
+
+    await propagateActivityToElements(
+      { stacks: groupActivity.stacks, updateAccessRequests: true },
+      prisma
+    )
+
+    ctx.emitter?.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: activityId,
+    })
+    return { id: deletedItem.id }
+  }
+
+  const updatedGroupActivity = await prisma.$transaction(
+    async (tx) => {
+      if (
+        groupActivity.status === PublicationStatus.PUBLISHED &&
+        groupActivity.scheduledCompletionTaskId
+      ) {
+        await deleteScheduledHatchetTask({
+          ctx,
+          taskId: groupActivity.scheduledCompletionTaskId,
+          failureMessage: `Failed to delete scheduled completion task for group activity ${activityId}:`,
+        })
+      }
+
+      const updatedActivity = await tx.groupActivity.update({
+        where: { id: activityId },
+        data: {
+          isDeleted: true,
+          directPermissions: { deleteMany: {} },
+          scheduledCompletionTaskId:
+            groupActivity.status === PublicationStatus.PUBLISHED
+              ? null
+              : undefined,
+        },
+      })
+
+      await recomputeDerivedPermissions(
+        { groupActivityId: updatedActivity.id },
+        tx
+      )
+
+      return updatedActivity
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'GroupActivity',
+    id: activityId,
+  })
+  return { id: updatedGroupActivity.id }
+}
+
+async function deleteActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+  }
+}): Promise<DeletedActivityRecord | null> {
+  const canAdmin = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.ADMIN
+  )
+
+  if (!canAdmin) return null
+
+  if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+    return await deletePracticeQuizActivity({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    return await deleteMicroLearningActivity({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
+
+  if (input.activityType === ActivityType.GROUP_ACTIVITY) {
+    return await deleteGroupActivity({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
+
+  return null
 }
 
 async function endMicroLearningActivity({
@@ -3613,6 +4009,12 @@ export const activityRouter = router({
       changeActivityName: await changeActivityName({ ctx, input }),
     })),
 
+  practiceQuizSummary: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      practiceQuizSummary: await getPracticeQuizSummary({ ctx, input }),
+    })),
+
   microLearningSummary: userProcedure
     .input(activityIdInput)
     .query(async ({ ctx, input }) => ({
@@ -3647,6 +4049,12 @@ export const activityRouter = router({
     .input(activityDetailsInput)
     .mutation(async ({ ctx, input }) => ({
       endActivity: await endActivity({ ctx, input }),
+    })),
+
+  delete: userFullAccessProcedure
+    .input(activityDetailsInput)
+    .mutation(async ({ ctx, input }) => ({
+      deleteActivity: await deleteActivity({ ctx, input }),
     })),
 
   extend: userFullAccessProcedure
