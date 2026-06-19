@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import {
   faCalendar,
   faCopy as faCopyRegular,
@@ -19,11 +18,8 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  UnpublishMicroLearningDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -55,9 +51,7 @@ function useMicroLearningActions({
   const t = useTranslations()
   const router = useRouter()
   const utils = trpc.useUtils()
-  const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
-    UnpublishMicroLearningDocument
-  )
+  const unpublishMicroLearning = trpc.activity.unpublish.useMutation()
   const onSuccessToast = () =>
     toast({
       type: 'success',
@@ -198,20 +192,18 @@ function useMicroLearningActions({
         label: t('manage.course.unpublishMicrolearning'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishMicroLearning({
-            variables: { id: microLearning.id! },
+          const result = await unpublishMicroLearning.mutateAsync({
+            activityId: microLearning.id,
+            activityType: ApiActivityType.MICRO_LEARNING,
           })
-          if (
-            microLearning.courseId &&
-            result.data?.unpublishMicroLearning?.id
-          ) {
+          if (microLearning.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({
               courseId: microLearning.courseId,
             })
           }
           await refetchActivities?.()
         },
-        disabled: unpublishing,
+        disabled: unpublishMicroLearning.isLoading,
         data: { cy: `unpublish-microlearning-${microLearning.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -252,6 +244,7 @@ function useMicroLearningActions({
       setSharingModal,
       unpublishMicroLearning,
       utils,
+      refetchActivities,
       setDeletionModal,
       setRemovalModal,
       setActivityLogOpen,

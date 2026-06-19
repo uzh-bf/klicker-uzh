@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faWpforms } from '@fortawesome/free-brands-svg-icons'
 import {
   faClock,
@@ -20,12 +19,8 @@ import {
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  GetUserActivitiesDocument,
-  UnpublishLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -47,6 +42,7 @@ function useLiveQuizActions({
   setDeletionModal,
   setActivityLogOpen,
   setResetModal,
+  refetchActivities,
 }: {
   quiz: ActivityInfo
   onStart: any
@@ -68,11 +64,12 @@ function useLiveQuizActions({
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
   setResetModal: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
   const utils = trpc.useUtils()
-  const [unpublishLiveQuiz] = useMutation(UnpublishLiveQuizDocument)
+  const unpublishLiveQuiz = trpc.activity.unpublish.useMutation()
 
   const actions = useMemo(
     () => [
@@ -211,14 +208,16 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.unpublishLiveQuiz'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishLiveQuiz({
-            variables: { id: quiz.id },
-            refetchQueries: [{ query: GetUserActivitiesDocument }],
+          const result = await unpublishLiveQuiz.mutateAsync({
+            activityId: quiz.id,
+            activityType: ApiActivityType.LIVE_QUIZ,
           })
-          if (quiz.courseId && result.data?.unpublishLiveQuiz?.id) {
+          if (quiz.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({ courseId: quiz.courseId })
           }
+          await refetchActivities?.()
         },
+        disabled: unpublishLiveQuiz.isLoading,
         data: { cy: `unpublish-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -264,6 +263,7 @@ function useLiveQuizActions({
       starting,
       unpublishLiveQuiz,
       utils,
+      refetchActivities,
       setEmbeddingModal,
       setQRModal,
       setTemplateEditingModal,

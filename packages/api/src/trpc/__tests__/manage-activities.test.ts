@@ -25,11 +25,16 @@ const user = {
 
 function createContext(
   prisma: TRPCContext['prisma'],
-  options?: { scope?: UserLoginScope; emitter?: TRPCContext['emitter'] }
+  options?: {
+    scope?: UserLoginScope
+    emitter?: TRPCContext['emitter']
+    hatchet?: TRPCContext['hatchet']
+  }
 ): TRPCContext {
   return {
     prisma,
     emitter: options?.emitter,
+    hatchet: options?.hatchet,
     user: {
       sub: user.id,
       role: UserRole.USER,
@@ -1763,6 +1768,324 @@ describe('manage activity read routers', () => {
     })
     expect(consoleError).toHaveBeenCalledWith(
       'Error changing live quiz name:',
+      expect.any(Error)
+    )
+    consoleError.mockRestore()
+  })
+
+  test.each([
+    {
+      activityType: ActivityType.LIVE_QUIZ,
+      modelName: 'liveQuiz',
+      permissionKey: 'liveQuizId',
+      typename: 'LiveQuiz',
+      findWhere: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+      },
+      findSelect: {
+        scheduledPublicationTaskId: true,
+      },
+      findResult: {
+        scheduledPublicationTaskId: 'publication-task',
+      },
+      updateData: {
+        availableFrom: null,
+        status: PublicationStatus.DRAFT,
+        scheduledPublicationTaskId: null,
+      },
+      deletedTaskIds: ['publication-task'],
+    },
+    {
+      activityType: ActivityType.PRACTICE_QUIZ,
+      modelName: 'practiceQuiz',
+      permissionKey: 'practiceQuizId',
+      typename: 'PracticeQuiz',
+      findWhere: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+      },
+      findSelect: {
+        scheduledPublicationTaskId: true,
+      },
+      findResult: {
+        scheduledPublicationTaskId: 'publication-task',
+      },
+      updateData: {
+        availableFrom: null,
+        status: PublicationStatus.DRAFT,
+        scheduledPublicationTaskId: null,
+      },
+      deletedTaskIds: ['publication-task'],
+    },
+    {
+      activityType: ActivityType.MICRO_LEARNING,
+      modelName: 'microLearning',
+      permissionKey: 'microLearningId',
+      typename: 'MicroLearning',
+      findWhere: {
+        id: 'activity-1',
+        isDeleted: false,
+        status: PublicationStatus.SCHEDULED,
+      },
+      findSelect: {
+        scheduledPublicationTaskId: true,
+        scheduledCompletionTaskId: true,
+      },
+      findResult: {
+        scheduledPublicationTaskId: 'publication-task',
+        scheduledCompletionTaskId: 'completion-task',
+      },
+      updateData: {
+        status: PublicationStatus.DRAFT,
+        scheduledPublicationTaskId: null,
+        scheduledCompletionTaskId: null,
+      },
+      deletedTaskIds: ['publication-task', 'completion-task'],
+    },
+    {
+      activityType: ActivityType.GROUP_ACTIVITY,
+      modelName: 'groupActivity',
+      permissionKey: 'groupActivityId',
+      typename: 'GroupActivity',
+      findWhere: {
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+      },
+      findSelect: {
+        scheduledPublicationTaskId: true,
+        scheduledCompletionTaskId: true,
+      },
+      findResult: {
+        scheduledPublicationTaskId: 'publication-task',
+        scheduledCompletionTaskId: 'completion-task',
+      },
+      updateData: {
+        status: PublicationStatus.DRAFT,
+        scheduledPublicationTaskId: null,
+        scheduledCompletionTaskId: null,
+      },
+      deletedTaskIds: ['publication-task', 'completion-task'],
+    },
+  ])(
+    'unpublishes scheduled $activityType activities through the activity router',
+    async ({
+      activityType,
+      modelName,
+      permissionKey,
+      typename,
+      findWhere,
+      findSelect,
+      findResult,
+      updateData,
+      deletedTaskIds,
+    }) => {
+      const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+      const findUnique = vi.fn().mockResolvedValue(findResult)
+      const update = vi.fn().mockResolvedValue({
+        id: 'activity-1',
+        status: PublicationStatus.DRAFT,
+      })
+      const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+      const emit = vi.fn()
+      const prisma = {
+        derivedPermission: {
+          findFirst: permissionFindFirst,
+        },
+        [modelName]: {
+          findUnique,
+          update,
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(
+        createContext(prisma, {
+          emitter: { emit } as unknown as TRPCContext['emitter'],
+          hatchet: {
+            scheduled: {
+              delete: scheduledDelete,
+            },
+          } as unknown as TRPCContext['hatchet'],
+        })
+      )
+
+      await expect(
+        caller.activity.unpublish({
+          activityId: 'activity-1',
+          activityType,
+        })
+      ).resolves.toEqual({
+        unpublishActivity: {
+          id: 'activity-1',
+          status: PublicationStatus.DRAFT,
+        },
+      })
+
+      expect(permissionFindFirst).toHaveBeenCalledWith({
+        where: {
+          [permissionKey]: 'activity-1',
+          userId: user.id,
+          permissionLevel: {
+            in: [
+              PermissionLevel.EXECUTE,
+              PermissionLevel.WRITE,
+              PermissionLevel.ADMIN,
+              PermissionLevel.OWNER,
+            ],
+          },
+        },
+      })
+      expect(findUnique).toHaveBeenCalledWith({
+        where: findWhere,
+        select: findSelect,
+      })
+      expect(update).toHaveBeenCalledWith({
+        where: {
+          id: 'activity-1',
+          status: PublicationStatus.SCHEDULED,
+        },
+        data: updateData,
+        select: { id: true, status: true },
+      })
+      expect(scheduledDelete).toHaveBeenCalledTimes(deletedTaskIds.length)
+      deletedTaskIds.forEach((taskId, ix) => {
+        expect(scheduledDelete).toHaveBeenNthCalledWith(ix + 1, taskId)
+      })
+      expect(emit).toHaveBeenCalledWith('invalidate', {
+        typename,
+        id: 'activity-1',
+      })
+    }
+  )
+
+  test('returns null when activity unpublish execute permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const practiceQuizFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      practiceQuiz: {
+        findUnique: practiceQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.unpublish({
+        activityId: 'practice-quiz-1',
+        activityType: ActivityType.PRACTICE_QUIZ,
+      })
+    ).resolves.toEqual({ unpublishActivity: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        practiceQuizId: 'practice-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(practiceQuizFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('returns null when activity unpublish target is not scheduled', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const practiceQuizFindUnique = vi.fn().mockResolvedValue(null)
+    const practiceQuizUpdate = vi.fn()
+    const scheduledDelete = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      practiceQuiz: {
+        findUnique: practiceQuizFindUnique,
+        update: practiceQuizUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        hatchet: {
+          scheduled: {
+            delete: scheduledDelete,
+          },
+        } as unknown as TRPCContext['hatchet'],
+      })
+    )
+
+    await expect(
+      caller.activity.unpublish({
+        activityId: 'practice-quiz-1',
+        activityType: ActivityType.PRACTICE_QUIZ,
+      })
+    ).resolves.toEqual({ unpublishActivity: null })
+
+    expect(practiceQuizFindUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'practice-quiz-1',
+        status: PublicationStatus.SCHEDULED,
+      },
+      select: { scheduledPublicationTaskId: true },
+    })
+    expect(scheduledDelete).not.toHaveBeenCalled()
+    expect(practiceQuizUpdate).not.toHaveBeenCalled()
+  })
+
+  test('continues activity unpublish when scheduled task deletion fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const microLearningFindUnique = vi.fn().mockResolvedValue({
+      scheduledPublicationTaskId: 'publication-task',
+      scheduledCompletionTaskId: null,
+    })
+    const microLearningUpdate = vi.fn().mockResolvedValue({
+      id: 'microlearning-1',
+      status: PublicationStatus.DRAFT,
+    })
+    const scheduledDelete = vi
+      .fn()
+      .mockRejectedValue(new Error('delete failed'))
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      microLearning: {
+        findUnique: microLearningFindUnique,
+        update: microLearningUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        hatchet: {
+          scheduled: {
+            delete: scheduledDelete,
+          },
+        } as unknown as TRPCContext['hatchet'],
+      })
+    )
+
+    await expect(
+      caller.activity.unpublish({
+        activityId: 'microlearning-1',
+        activityType: ActivityType.MICRO_LEARNING,
+      })
+    ).resolves.toEqual({
+      unpublishActivity: {
+        id: 'microlearning-1',
+        status: PublicationStatus.DRAFT,
+      },
+    })
+
+    expect(microLearningUpdate).toHaveBeenCalled()
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to delete scheduled publication task for microlearning microlearning-1:',
       expect.any(Error)
     )
     consoleError.mockRestore()

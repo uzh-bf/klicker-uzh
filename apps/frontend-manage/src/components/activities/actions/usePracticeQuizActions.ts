@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import {
   faCopy as faCopyRegular,
   faTrashCan,
@@ -16,11 +15,8 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  UnpublishPracticeQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -48,9 +44,7 @@ function usePracticeQuizActions({
   const t = useTranslations()
   const router = useRouter()
   const utils = trpc.useUtils()
-  const [unpublishPracticeQuiz, { loading: unpublishing }] = useMutation(
-    UnpublishPracticeQuizDocument
-  )
+  const unpublishPracticeQuiz = trpc.activity.unpublish.useMutation()
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}${practiceQuiz.courseLanguage ? `/${practiceQuiz.courseLanguage}` : ''}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
 
   const onSuccessToast = () =>
@@ -162,17 +156,18 @@ function usePracticeQuizActions({
         label: t('manage.course.unpublishPracticeQuiz'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishPracticeQuiz({
-            variables: { id: practiceQuiz.id! },
+          const result = await unpublishPracticeQuiz.mutateAsync({
+            activityId: practiceQuiz.id,
+            activityType: ApiActivityType.PRACTICE_QUIZ,
           })
-          if (practiceQuiz.courseId && result.data?.unpublishPracticeQuiz?.id) {
+          if (practiceQuiz.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({
               courseId: practiceQuiz.courseId,
             })
           }
           await refetchActivities?.()
         },
-        disabled: unpublishing,
+        disabled: unpublishPracticeQuiz.isLoading,
         data: { cy: `unpublish-practice-quiz-${practiceQuiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -212,6 +207,7 @@ function usePracticeQuizActions({
       setRemovalModal,
       unpublishPracticeQuiz,
       utils,
+      refetchActivities,
       setDeletionModal,
       setActivityLogOpen,
     ]

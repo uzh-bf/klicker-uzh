@@ -190,6 +190,7 @@ function LiveQuizActions({
     setDeletionModal,
     setActivityLogOpen,
     setResetModal,
+    refetchActivities,
   })
 
   // get all available actions based on permissions and status

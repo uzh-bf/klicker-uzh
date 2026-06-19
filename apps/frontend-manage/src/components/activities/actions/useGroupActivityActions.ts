@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faCalendar, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faFlagCheckered,
@@ -11,11 +10,8 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  UnpublishGroupActivityDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -48,9 +44,7 @@ function useGroupActivityActions({
   const t = useTranslations()
   const router = useRouter()
   const utils = trpc.useUtils()
-  const [unpublishGroupActivity, { loading: unpublishing }] = useMutation(
-    UnpublishGroupActivityDocument
-  )
+  const unpublishGroupActivity = trpc.activity.unpublish.useMutation()
 
   const actions = useMemo(
     () => [
@@ -80,20 +74,18 @@ function useGroupActivityActions({
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishGroupActivity({
-            variables: { id: groupActivity.id! },
+          const result = await unpublishGroupActivity.mutateAsync({
+            activityId: groupActivity.id,
+            activityType: ApiActivityType.GROUP_ACTIVITY,
           })
-          if (
-            groupActivity.courseId &&
-            result.data?.unpublishGroupActivity?.id
-          ) {
+          if (groupActivity.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({
               courseId: groupActivity.courseId,
             })
           }
           await refetchActivities?.()
         },
-        disabled: unpublishing,
+        disabled: unpublishGroupActivity.isLoading,
         data: { cy: `unpublish-group-activity-${groupActivity.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -166,8 +158,8 @@ function useGroupActivityActions({
       groupActivity.name,
       groupActivity.courseId,
       unpublishGroupActivity,
-      unpublishing,
       utils,
+      refetchActivities,
       setRemovalModal,
       setDeletionModal,
       setEndingModal,

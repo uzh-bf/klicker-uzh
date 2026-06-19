@@ -280,6 +280,113 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Activity Unpublish Actions
+
+Status: complete for the manage activity unpublish actions. Scope was limited to
+replacing the generated Apollo unpublish mutations in activity action hooks with
+`trpc.activity.unpublish`. This did not migrate publish/start/schedule/end/
+delete/reset flows, realtime/live-session subscribers, GraphQL schema/runtime,
+generated artifacts, Apollo providers, S05, or S06 cleanup.
+
+Slice: S04L Activity Unpublish Actions
+
+GraphQL operation(s):
+
+- `UnpublishLiveQuizDocument`
+- `UnpublishPracticeQuizDocument`
+- `UnpublishMicroLearningDocument`
+- `UnpublishGroupActivityDocument`
+
+Behavior source:
+
+- Existing GraphQL mutation behavior in `packages/graphql/src/schema/mutation.ts`.
+- Existing scheduled-task cleanup behavior for live quiz, practice quiz,
+  microlearning, and group activity unpublish flows.
+
+Implemented:
+
+- Add `activity.unpublish` to `packages/api` using the existing
+  `activityDetailsInput`, `userFullAccessProcedure`,
+  `hasActivityPermission(..., EXECUTE)`, scheduled-only lookups, Hatchet
+  scheduled task deletion, draft-status reset, and object invalidation events.
+- Cover all four activity types in one helper-backed implementation while
+  preserving each model's task IDs and reset fields.
+- Migrate live quiz, practice quiz, microlearning, and group activity action
+  hooks from Apollo unpublish mutations to `trpc.activity.unpublish`.
+- Preserve course detail invalidation and activity-list refetch behavior after a
+  successful unpublish.
+- Thread `refetchActivities` into live quiz actions so live quiz unpublish uses
+  the same activity-list refresh path as the other overview action hooks.
+- Add API tests for all four activity branches, missing EXECUTE permission,
+  not-scheduled null behavior, and scheduled-task deletion failure handling.
+
+Changed files:
+
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/actions/useLiveQuizActions.ts`
+- `apps/frontend-manage/src/components/activities/actions/usePracticeQuizActions.ts`
+- `apps/frontend-manage/src/components/activities/actions/useMicroLearningActions.ts`
+- `apps/frontend-manage/src/components/activities/actions/useGroupActivityActions.ts`
+- `apps/frontend-manage/src/components/activities/overview/LiveQuizActions.tsx`
+- This progress entry.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L unpublish files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed; package command ran all 39 API test files, 382 tests total.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/i18n/Browserslist/page-data warnings.
+- Focused GraphQL operation audit
+  `rg -n "UnpublishLiveQuizDocument|UnpublishPracticeQuizDocument|UnpublishMicroLearningDocument|UnpublishGroupActivityDocument" apps/frontend-manage/src/components/activities`:
+  no matches.
+- Focused Apollo hook audit
+  `rg -n "@apollo/client" apps/frontend-manage/src/components/activities/actions/useLiveQuizActions.ts apps/frontend-manage/src/components/activities/actions/usePracticeQuizActions.ts apps/frontend-manage/src/components/activities/actions/useMicroLearningActions.ts apps/frontend-manage/src/components/activities/actions/useGroupActivityActions.ts`:
+  no matches.
+- `git diff --check`: passed.
+
+Browser verification:
+
+- Started local backend, auth, and manage dev servers against the local Docker
+  stack on ports 3000, 3010, and 3002.
+- Logged in through delegated access as local seeded lecturer and opened
+  `http://localhost:3002/activities`.
+- Initial scheduled filter showed no scheduled activities in the local seeded
+  DB, so local dev DB prep set only `Practice Quiz 3` to `SCHEDULED`.
+- Screenshot evidence:
+  - `/tmp/agent-browser-shots/s04-unpublish-actions-01-initial.png`
+  - `/tmp/agent-browser-shots/s04-unpublish-actions-02-after-login.png`
+  - `/tmp/agent-browser-shots/s04-unpublish-actions-03-scheduled-filter.png`
+  - `/tmp/agent-browser-shots/s04-unpublish-actions-04-scheduled-seeded.png`
+  - `/tmp/agent-browser-shots/s04-unpublish-actions-07-menu-open.png`
+  - `/tmp/agent-browser-shots/s04-unpublish-actions-08-after-unpublish.png`
+- Action menu rendered `Unpublish Practice Quiz` for scheduled
+  `Practice Quiz 3`.
+- Browser resource audit confirmed
+  `http://localhost:3000/api/trpc/activity.unpublish?batch=1` and subsequent
+  `activity.userActivities` refetch.
+- Database verification after the browser click confirmed `Practice Quiz 3`
+  returned to `DRAFT` with `availableFrom` and `scheduledPublicationTaskId`
+  cleared.
+- Browser was closed, temporary dev servers were stopped, and ports 3000, 3002,
+  and 3010 had no listeners afterward.
+
+Residual risk / next S04 work:
+
+- Remaining publish/start/schedule/end/delete/reset action modals and course
+  action modals are still separate S04 findings.
+- GraphQL/Apollo remain intentionally live for remaining S04/S05/S06-gated
+  consumers.
+- Continue only S04 findings; pause before S05/S06.
+
 ### 2026-06-19 Completed: S04L Activity Name Change Mutation
 
 Status: complete for the activity overview name-change mutation. Scope was

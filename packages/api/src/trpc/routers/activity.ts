@@ -694,6 +694,22 @@ type ActivityNameRecord = {
   reviewStatus: ReviewStatus
 }
 
+type ScheduledHatchetClient = {
+  scheduled: {
+    delete: (taskId: string) => Promise<unknown>
+  }
+}
+
+type ScheduledActivityRecord = {
+  scheduledPublicationTaskId?: string | null
+  scheduledCompletionTaskId?: string | null
+}
+
+type UnpublishedActivityRecord = {
+  id: string
+  status: PublicationStatus
+}
+
 async function changeActivityNameForType({
   input,
   findActivity,
@@ -739,6 +755,245 @@ async function changeActivityNameForType({
     console.error(errorMessage, error)
     return false
   }
+}
+
+async function deleteScheduledHatchetTask({
+  ctx,
+  taskId,
+  failureMessage,
+}: {
+  ctx: TRPCContext
+  taskId: string
+  failureMessage: string
+}) {
+  const hatchet = ctx.hatchet as ScheduledHatchetClient | undefined
+
+  try {
+    if (!hatchet?.scheduled?.delete) {
+      throw new Error('Hatchet client unavailable')
+    }
+
+    await hatchet.scheduled.delete(taskId)
+  } catch (error) {
+    console.error(failureMessage, error)
+  }
+}
+
+async function unpublishScheduledActivity({
+  ctx,
+  activityId,
+  typename,
+  findActivity,
+  getScheduledTasks,
+  updateActivity,
+}: {
+  ctx: TRPCContext
+  activityId: string
+  typename: string
+  findActivity: () => Promise<ScheduledActivityRecord | null>
+  getScheduledTasks: (
+    activity: ScheduledActivityRecord
+  ) => { taskId?: string | null; failureMessage: string }[]
+  updateActivity: () => Promise<UnpublishedActivityRecord>
+}) {
+  const activity = await findActivity()
+
+  if (!activity) return null
+
+  for (const task of getScheduledTasks(activity)) {
+    if (task.taskId) {
+      await deleteScheduledHatchetTask({
+        ctx,
+        taskId: task.taskId,
+        failureMessage: task.failureMessage,
+      })
+    }
+  }
+
+  const updatedActivity = await updateActivity()
+
+  ctx.emitter?.emit('invalidate', { typename, id: activityId })
+
+  return {
+    id: updatedActivity.id,
+    status: updatedActivity.status,
+  }
+}
+
+async function unpublishActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+  }
+}) {
+  const prisma = getPrisma(ctx)
+  const canExecute = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.EXECUTE
+  )
+
+  if (!canExecute) return null
+
+  if (input.activityType === ActivityType.LIVE_QUIZ) {
+    return await unpublishScheduledActivity({
+      ctx,
+      activityId: input.activityId,
+      typename: 'LiveQuiz',
+      findActivity: () =>
+        prisma.liveQuiz.findUnique({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.SCHEDULED,
+          },
+          select: { scheduledPublicationTaskId: true },
+        }),
+      getScheduledTasks: (activity) => [
+        {
+          taskId: activity.scheduledPublicationTaskId,
+          failureMessage: `Failed to delete scheduled task for live quiz ${input.activityId}:`,
+        },
+      ],
+      updateActivity: () =>
+        prisma.liveQuiz.update({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.SCHEDULED,
+          },
+          data: {
+            availableFrom: null,
+            status: PublicationStatus.DRAFT,
+            scheduledPublicationTaskId: null,
+          },
+          select: { id: true, status: true },
+        }),
+    })
+  }
+
+  if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+    return await unpublishScheduledActivity({
+      ctx,
+      activityId: input.activityId,
+      typename: 'PracticeQuiz',
+      findActivity: () =>
+        prisma.practiceQuiz.findUnique({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.SCHEDULED,
+          },
+          select: { scheduledPublicationTaskId: true },
+        }),
+      getScheduledTasks: (activity) => [
+        {
+          taskId: activity.scheduledPublicationTaskId,
+          failureMessage: `Failed to delete scheduled task for practice quiz ${input.activityId}:`,
+        },
+      ],
+      updateActivity: () =>
+        prisma.practiceQuiz.update({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.SCHEDULED,
+          },
+          data: {
+            availableFrom: null,
+            status: PublicationStatus.DRAFT,
+            scheduledPublicationTaskId: null,
+          },
+          select: { id: true, status: true },
+        }),
+    })
+  }
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    return await unpublishScheduledActivity({
+      ctx,
+      activityId: input.activityId,
+      typename: 'MicroLearning',
+      findActivity: () =>
+        prisma.microLearning.findUnique({
+          where: {
+            id: input.activityId,
+            isDeleted: false,
+            status: PublicationStatus.SCHEDULED,
+          },
+          select: {
+            scheduledPublicationTaskId: true,
+            scheduledCompletionTaskId: true,
+          },
+        }),
+      getScheduledTasks: (activity) => [
+        {
+          taskId: activity.scheduledPublicationTaskId,
+          failureMessage: `Failed to delete scheduled publication task for microlearning ${input.activityId}:`,
+        },
+        {
+          taskId: activity.scheduledCompletionTaskId,
+          failureMessage: `Failed to delete scheduled completion task for microlearning ${input.activityId}:`,
+        },
+      ],
+      updateActivity: () =>
+        prisma.microLearning.update({
+          where: {
+            id: input.activityId,
+            status: PublicationStatus.SCHEDULED,
+          },
+          data: {
+            status: PublicationStatus.DRAFT,
+            scheduledPublicationTaskId: null,
+            scheduledCompletionTaskId: null,
+          },
+          select: { id: true, status: true },
+        }),
+    })
+  }
+
+  return await unpublishScheduledActivity({
+    ctx,
+    activityId: input.activityId,
+    typename: 'GroupActivity',
+    findActivity: () =>
+      prisma.groupActivity.findUnique({
+        where: {
+          id: input.activityId,
+          status: PublicationStatus.SCHEDULED,
+        },
+        select: {
+          scheduledPublicationTaskId: true,
+          scheduledCompletionTaskId: true,
+        },
+      }),
+    getScheduledTasks: (activity) => [
+      {
+        taskId: activity.scheduledPublicationTaskId,
+        failureMessage: `Failed to delete scheduled publication task for group activity ${input.activityId}:`,
+      },
+      {
+        taskId: activity.scheduledCompletionTaskId,
+        failureMessage: `Failed to delete scheduled completion task for group activity ${input.activityId}:`,
+      },
+    ],
+    updateActivity: () =>
+      prisma.groupActivity.update({
+        where: {
+          id: input.activityId,
+          status: PublicationStatus.SCHEDULED,
+        },
+        data: {
+          status: PublicationStatus.DRAFT,
+          scheduledPublicationTaskId: null,
+          scheduledCompletionTaskId: null,
+        },
+        select: { id: true, status: true },
+      }),
+  })
 }
 
 async function changeActivityName({
@@ -2397,6 +2652,12 @@ export const activityRouter = router({
     .input(changeActivityNameInput)
     .mutation(async ({ ctx, input }) => ({
       changeActivityName: await changeActivityName({ ctx, input }),
+    })),
+
+  unpublish: userFullAccessProcedure
+    .input(activityDetailsInput)
+    .mutation(async ({ ctx, input }) => ({
+      unpublishActivity: await unpublishActivity({ ctx, input }),
     })),
 
   setReviewStatus: userFullAccessProcedure
