@@ -1,42 +1,18 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreateLiveQuizMutation,
-  CreateLiveQuizMutationVariables,
-  EditLiveQuizMutation,
-  EditLiveQuizMutationVariables,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { RouterInputs, RouterOutputs } from '../../../../lib/trpc'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
+
+type CreateLiveQuizInput = RouterInputs['activity']['createLiveQuiz']
+type CreateLiveQuizResult = RouterOutputs['activity']['createLiveQuiz']
+type EditLiveQuizInput = RouterInputs['activity']['editLiveQuiz']
+type EditLiveQuizResult = RouterOutputs['activity']['editLiveQuiz']
 
 interface LiveQuizFormSubmissionProps {
   id?: string
   previousCourseId?: string | null
   editMode: boolean
   values: LiveQuizFormValues
-  createLiveQuiz: (
-    options?:
-      | MutationFunctionOptions<
-          CreateLiveQuizMutation,
-          CreateLiveQuizMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<CreateLiveQuizMutation>>
-  editLiveQuiz: (
-    options?:
-      | MutationFunctionOptions<
-          EditLiveQuizMutation,
-          EditLiveQuizMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<EditLiveQuizMutation>>
+  createLiveQuiz: (input: CreateLiveQuizInput) => Promise<CreateLiveQuizResult>
+  editLiveQuiz: (input: EditLiveQuizInput) => Promise<EditLiveQuizResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
   onError: () => void
@@ -73,64 +49,49 @@ async function submitLiveQuizForm({
   try {
     let success = false
 
+    const createOrUpdateJSON = {
+      name: values.name,
+      displayName: values.displayName,
+      description: values.description,
+      blocks: blockSubmission,
+      courseId:
+        values.courseId === 'no-course-selected' ? null : values.courseId,
+      multiplier:
+        values.courseId !== 'no-course-selected'
+          ? parseInt(values.multiplier)
+          : 1,
+      defaultPoints: parseInt(String(values.defaultPoints)),
+      defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
+      maxBonusPoints: parseInt(String(values.maxBonusPoints)),
+      timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
+      isGamificationEnabled: values.isGamificationEnabled,
+      isPinProtected: values.isPinProtected,
+      isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
+      isLiveQAEnabled: values.isLiveQAEnabled,
+      isModerationEnabled: values.isModerationEnabled,
+    }
+
     if (editMode && id) {
-      const liveQuiz = await editLiveQuiz({
-        variables: {
-          id: id,
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-          blocks: blockSubmission,
-          courseId:
-            values.courseId === 'no-course-selected' ? null : values.courseId,
-          multiplier:
-            values.courseId !== 'no-course-selected'
-              ? parseInt(values.multiplier)
-              : 1,
-          defaultPoints: parseInt(String(values.defaultPoints)),
-          defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
-          maxBonusPoints: parseInt(String(values.maxBonusPoints)),
-          timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
-          isGamificationEnabled: values.isGamificationEnabled,
-          isPinProtected: values.isPinProtected,
-          isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
-          isLiveQAEnabled: values.isLiveQAEnabled,
-          isModerationEnabled: values.isModerationEnabled,
-        },
-      })
-      success = Boolean(liveQuiz.data?.editLiveQuiz)
-      if (liveQuiz.data?.editLiveQuiz) {
+      const result = await editLiveQuiz({ id, ...createOrUpdateJSON })
+
+      success = Boolean(result.editLiveQuiz)
+      if (result.editLiveQuiz) {
         const courseIds = new Set(
-          [previousCourseId, liveQuiz.data.editLiveQuiz.courseId].filter(
+          [previousCourseId, result.editLiveQuiz.courseId].filter(
             (courseId): courseId is string => Boolean(courseId)
           )
         )
         await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
       }
     } else {
-      const liveQuiz = await createLiveQuiz({
-        variables: {
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-          blocks: blockSubmission,
-          courseId:
-            values.courseId === 'no-course-selected' ? null : values.courseId,
-          multiplier: parseInt(values.multiplier),
-          defaultPoints: parseInt(String(values.defaultPoints)),
-          defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
-          maxBonusPoints: parseInt(String(values.maxBonusPoints)),
-          timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
-          isGamificationEnabled: values.isGamificationEnabled,
-          isPinProtected: values.isPinProtected,
-          isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
-          isLiveQAEnabled: values.isLiveQAEnabled,
-          isModerationEnabled: values.isModerationEnabled,
-        },
+      const result = await createLiveQuiz({
+        ...createOrUpdateJSON,
+        multiplier: parseInt(values.multiplier),
       })
-      success = Boolean(liveQuiz.data?.createLiveQuiz)
-      if (liveQuiz.data?.createLiveQuiz?.courseId) {
-        await invalidateCourseDetail(liveQuiz.data.createLiveQuiz.courseId)
+
+      success = Boolean(result.createLiveQuiz)
+      if (result.createLiveQuiz?.courseId) {
+        await invalidateCourseDetail(result.createLiveQuiz.courseId)
       }
     }
 

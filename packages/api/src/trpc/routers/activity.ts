@@ -43,7 +43,7 @@ import {
 } from '@klicker-uzh/util'
 import { TRPCError } from '@trpc/server'
 import type { Redis } from 'ioredis'
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import type { z } from 'zod'
 import {
   startLiveQuiz,
@@ -107,6 +107,7 @@ import {
   deleteActivityTemplateInput,
   editActivityTemplateInput,
   editGroupActivityInput,
+  editLiveQuizInput,
   editMicroLearningInput,
   editPracticeQuizInput,
   endedLiveQuizzesCourseInput,
@@ -115,6 +116,7 @@ import {
   gradeGroupActivitySubmissionInput,
   groupActivityGradingInput,
   groupActivityManipulationInput,
+  liveQuizManipulationInput,
   liveQuizStudentAssessmentResponsesInput,
   matchingUserElementsTemplateInput,
   microLearningManipulationInput,
@@ -276,6 +278,10 @@ type GroupActivityManipulationInput = z.infer<
 >
 
 type EditGroupActivityInput = z.infer<typeof editGroupActivityInput>
+
+type LiveQuizManipulationInput = z.infer<typeof liveQuizManipulationInput>
+
+type EditLiveQuizInput = z.infer<typeof editLiveQuizInput>
 
 type TemplateElementWithCollections = Element & {
   answerCollection?:
@@ -1115,6 +1121,375 @@ async function splitActivityInstances({
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
+  }
+}
+
+function generateLiveQuizPin() {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+  return Array.from({ length: 6 }, () =>
+    characters.charAt(randomInt(characters.length))
+  ).join('')
+}
+
+async function manipulateLiveQuiz({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: LiveQuizManipulationInput | EditLiveQuizInput
+}) {
+  const prisma = getPrisma(ctx)
+  const id = 'id' in input ? input.id : undefined
+
+  let existingActivity:
+    | (LiveQuiz & { course?: { _count: { permissions: number } } | null })
+    | null = null
+  if (id) {
+    existingActivity = await prisma.liveQuiz.findUnique({
+      where: { id, isDeleted: false },
+      include: {
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!existingActivity) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Live quiz not found',
+      })
+    }
+    if (existingActivity.status === PublicationStatus.PUBLISHED) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Cannot edit a published live quiz',
+      })
+    }
+  }
+
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+    anyInstanceOutdated,
+  } = await splitActivityInstances({ ctx, stacksOrBlocks: input.blocks })
+
+  let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = []
+  let blocksToDelete: number[] = []
+  if (id) {
+    const instances = await prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementBlock: { liveQuizId: id },
+      },
+    })
+
+    const blocks = await prisma.elementBlock.findMany({
+      where: { liveQuizId: id },
+    })
+
+    instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
+    blocksToDelete = blocks.map((block) => block.id)
+  }
+
+  const course = input.courseId
+    ? await prisma.course.findUnique({
+        where: { id: input.courseId },
+        select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+      })
+    : null
+
+  if (input.courseId && !course) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Course not found' })
+  }
+
+  const gamificationSetting = course?.isGamificationEnabled
+    ? course.isGamificationEnabled
+    : input.isGamificationEnabled
+  const assessmentSetting = course?.isAssessmentEnabled ?? false
+  const pinProtection = assessmentSetting || input.isPinProtected
+
+  const isCourseAdminOwner = !!existingActivity?.course?._count.permissions
+  if (
+    existingActivity?.isAssessmentEnabled &&
+    !isCourseAdminOwner &&
+    (input.courseId === null || input.courseId !== existingActivity.courseId)
+  ) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message:
+        'Assessment live quizzes can only be modified by course admins or owners',
+    })
+  }
+
+  const requiresNewPin =
+    pinProtection &&
+    (!existingActivity ||
+      ((input.courseId || existingActivity.courseId) &&
+        input.courseId !== existingActivity.courseId) ||
+      (existingActivity && !existingActivity.courseId && !input.courseId))
+
+  let newPinCode: string | undefined | null = existingActivity?.pinCode
+  if (requiresNewPin) {
+    let pinValid = false
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      newPinCode = generateLiveQuizPin()
+
+      const existingLiveQuiz = await prisma.liveQuiz.findUnique({
+        where: { pinCode: newPinCode },
+      })
+      if (!existingLiveQuiz) {
+        pinValid = true
+        break
+      }
+    }
+
+    if (!pinValid) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Could not find available pin code for live quiz',
+      })
+    }
+  }
+
+  const activityMultiplier = Math.max(input.multiplier, 1)
+  const createOrUpdateJSON = {
+    name: input.name.trim(),
+    displayName: input.displayName.trim(),
+    description: input.description,
+    pointsMultiplier: activityMultiplier,
+    defaultPoints:
+      input.defaultPoints != null
+        ? Math.max(input.defaultPoints, 0)
+        : undefined,
+    defaultCorrectPoints:
+      input.defaultCorrectPoints != null
+        ? Math.max(input.defaultCorrectPoints, 0)
+        : undefined,
+    maxBonusPoints:
+      input.maxBonusPoints != null
+        ? Math.max(input.maxBonusPoints, 0)
+        : undefined,
+    timeToZeroBonus:
+      input.timeToZeroBonus != null
+        ? Math.max(input.timeToZeroBonus, 1)
+        : undefined,
+    isGamificationEnabled: gamificationSetting,
+    isAssessmentEnabled: assessmentSetting,
+    pinCode: pinProtection ? newPinCode : null,
+    isConfusionFeedbackEnabled: input.isConfusionFeedbackEnabled,
+    isLiveQAEnabled: input.isLiveQAEnabled,
+    isModerationEnabled: input.isModerationEnabled,
+    areInstancesOutdated: anyInstanceOutdated,
+    reviewStatus:
+      existingActivity?.courseId !== input.courseId
+        ? ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === ReviewStatus.REVIEWED
+          ? ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
+    blocks: {
+      create: input.blocks.map((block) => ({
+        order: block.order,
+        timeLimit: block.timeLimit,
+        elements: {
+          connectOrCreate: block.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.LIVE_QUIZ,
+              activityMultiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+            })
+          ),
+        },
+      })),
+    },
+  }
+
+  const activity = await prisma.$transaction(
+    async (tx) => {
+      await tx.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
+      })
+
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          getAuthoringObjectProperty(
+            instance.elementData,
+            'pointsMultiplier'
+          ) ?? 1
+
+        await tx.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            elementBlockId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...(isAuthoringRecord(instance.options) ? instance.options : {}),
+              pointsMultiplier:
+                activityMultiplier *
+                (typeof elementMultiplier === 'number' ? elementMultiplier : 1),
+            },
+          },
+        })
+      }
+
+      await tx.elementBlock.deleteMany({
+        where: { id: { in: blocksToDelete } },
+      })
+
+      const upsertedQuiz = await tx.liveQuiz.upsert({
+        where: { id: id ?? randomUUID() },
+        create: {
+          ...createOrUpdateJSON,
+          course: input.courseId
+            ? { connect: { id: input.courseId } }
+            : undefined,
+          owner: { connect: { id: ctx.user.sub } },
+        },
+        update: {
+          ...createOrUpdateJSON,
+          course:
+            typeof input.courseId !== 'undefined'
+              ? input.courseId !== null
+                ? { connect: { id: input.courseId } }
+                : { disconnect: true }
+              : undefined,
+        },
+        include: {
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
+            include: {
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          blocks: {
+            include: { _count: { select: { elements: true } } },
+            orderBy: { order: 'asc' },
+          },
+          _count: { select: { permissions: true } },
+        },
+      })
+
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, tx)
+        }
+      }
+
+      await recomputeDerivedPermissions({ liveQuizId: upsertedQuiz.id }, tx)
+
+      return upsertedQuiz
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'LiveQuiz',
+    id: activity.id,
+  })
+
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const directPermission = activity.permissions[0]?.directPermission
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = toActivityPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission: Boolean(
+      directPermission && directPermission.userGroupId !== null
+    ),
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
+    type: ActivityType.LIVE_QUIZ,
+    status: activity.status,
+    courseId: isCourseAdminOwner ? activity.course?.id : null,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.blocks.length,
+    numOfElements: activity.blocks.reduce(
+      (acc, block) => acc + block._count.elements,
+      0
+    ),
+    automaticPublicationAt: activity.availableFrom,
+    scheduledStartAt: null,
+    scheduledEndAt: null,
+    groupDeadlineDate: null,
+    numOfParticipantGroups: null,
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: activity.pinCode,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    isActivityReviewer:
+      !id ||
+      (activity.courseId === null &&
+        (permissionLevel === PermissionLevel.OWNER ||
+          permissionLevel === PermissionLevel.ADMIN)) ||
+      (activity.course?._count.permissions ?? 0) > 0,
+    sharingType,
+    updatedAt: activity.updatedAt,
   }
 }
 
@@ -5796,6 +6171,31 @@ export const activityRouter = router({
     .query(async ({ ctx, input }) => ({
       groupActivity: await getAuthoringGroupActivity({ ctx, input }),
     })),
+
+  createLiveQuiz: userFullAccessProcedure
+    .input(liveQuizManipulationInput)
+    .mutation(async ({ ctx, input }) => ({
+      createLiveQuiz: await manipulateLiveQuiz({ ctx, input }),
+    })),
+
+  editLiveQuiz: userFullAccessProcedure
+    .input(editLiveQuizInput)
+    .mutation(async ({ ctx, input }) => {
+      const canWrite = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.id,
+          activityType: ActivityType.LIVE_QUIZ,
+        },
+        PermissionLevel.WRITE
+      )
+
+      if (!canWrite) return { editLiveQuiz: null }
+
+      return {
+        editLiveQuiz: await manipulateLiveQuiz({ ctx, input }),
+      }
+    }),
 
   createPracticeQuiz: userFullAccessProcedure
     .input(practiceQuizManipulationInput)

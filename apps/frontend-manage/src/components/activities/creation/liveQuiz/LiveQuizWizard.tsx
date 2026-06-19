@@ -1,15 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateLiveQuizDocument,
-  EditLiveQuizDocument,
-  Element,
-  ElementType,
-  GetUserRunningLiveQuizzesDocument,
-  LiveQuiz,
-  PublicationStatus,
-  StartLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Element, ElementType, LiveQuiz } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -278,13 +268,15 @@ function LiveQuizWizard({
       formDefaultValues.isModerationEnabled,
   })
 
-  const [editLiveQuiz, { data: editingData }] =
-    useMutation(EditLiveQuizDocument)
-  const [createLiveQuiz, { data: creationData }] = useMutation(
-    CreateLiveQuizDocument
-  )
-  const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
+  const createLiveQuiz = trpc.activity.createLiveQuiz.useMutation()
+  const editLiveQuiz = trpc.activity.editLiveQuiz.useMutation()
   const utils = trpc.useUtils()
+  const startLiveQuiz = trpc.liveQuiz.start.useMutation({
+    onSuccess: async (result) => {
+      if (!result.liveQuiz) return
+      await utils.liveQuiz.running.invalidate()
+    },
+  })
   const invalidateCourseDetail = useCallback(
     async (courseId: string) => {
       await utils.course.detail.invalidate({ courseId })
@@ -299,8 +291,8 @@ function LiveQuizWizard({
         previousCourseId: initialValues?.course?.id,
         editMode,
         values,
-        createLiveQuiz,
-        editLiveQuiz,
+        createLiveQuiz: createLiveQuiz.mutateAsync,
+        editLiveQuiz: editLiveQuiz.mutateAsync,
         invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
@@ -321,9 +313,9 @@ function LiveQuizWizard({
       })
     },
     [
-      createLiveQuiz,
+      createLiveQuiz.mutateAsync,
       editMode,
-      editLiveQuiz,
+      editLiveQuiz.mutateAsync,
       initialValues?.course?.id,
       initialValues?.id,
       invalidateCourseDetail,
@@ -331,11 +323,14 @@ function LiveQuizWizard({
   )
 
   const isActivityReviewer =
-    creationData?.createLiveQuiz?.isActivityReviewer ??
-    editingData?.editLiveQuiz?.isActivityReviewer
+    createLiveQuiz.data?.createLiveQuiz?.isActivityReviewer ??
+    editLiveQuiz.data?.editLiveQuiz?.isActivityReviewer
   const selectedCourseId =
-    creationData?.createLiveQuiz?.courseId ??
-    editingData?.editLiveQuiz?.courseId
+    createLiveQuiz.data?.createLiveQuiz?.courseId ??
+    editLiveQuiz.data?.editLiveQuiz?.courseId
+  const liveQuizId =
+    createLiveQuiz.data?.createLiveQuiz?.id ??
+    editLiveQuiz.data?.editLiveQuiz?.id
 
   return (
     <WizardLayout
@@ -376,55 +371,16 @@ function LiveQuizWizard({
           setStepNumber={setActiveStep}
           onCloseWizard={closeWizard}
         >
-          {creationData?.createLiveQuiz?.id || editingData?.editLiveQuiz?.id ? (
+          {liveQuizId ? (
             <Button
               data={{ cy: 'quick-start' }}
               onClick={async () => {
-                await startLiveQuiz({
-                  variables: {
-                    id:
-                      creationData?.createLiveQuiz?.id ??
-                      editingData!.editLiveQuiz!.id,
-                  },
-                  update(cache, { data: res }) {
-                    // return early if the mutation failed
-                    if (!res?.startLiveQuiz) return
-
-                    cache.updateQuery(
-                      { query: GetUserRunningLiveQuizzesDocument },
-                      (data) => {
-                        // if no data is present, return early
-                        if (!data?.userRunningLiveQuizzes) return data
-
-                        // add the new live quiz to the existing list
-                        return {
-                          userRunningLiveQuizzes: [
-                            ...data.userRunningLiveQuizzes,
-                            {
-                              id: res.startLiveQuiz!.id,
-                              name: res.startLiveQuiz!.name,
-                            },
-                          ],
-                        }
-                      }
-                    )
-                  },
-                  optimisticResponse: {
-                    startLiveQuiz: {
-                      __typename: 'LiveQuizMeta',
-                      id:
-                        creationData?.createLiveQuiz?.id ??
-                        editingData!.editLiveQuiz!.id,
-                      name:
-                        creationData?.createLiveQuiz?.name ??
-                        editingData!.editLiveQuiz!.name,
-                      status: PublicationStatus.Published,
-                    },
-                  },
+                const result = await startLiveQuiz.mutateAsync({
+                  id: liveQuizId,
                 })
-                router.push(
-                  `/quizzes/${creationData?.createLiveQuiz?.id ?? editingData?.editLiveQuiz?.id}/cockpit`
-                )
+                if (!result.liveQuiz) return
+
+                router.push(`/quizzes/${liveQuizId}/cockpit`)
               }}
             >
               <Button.Icon icon={faPlay} />

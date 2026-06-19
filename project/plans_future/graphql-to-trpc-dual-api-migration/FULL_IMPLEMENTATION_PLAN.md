@@ -280,6 +280,83 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Live Quiz Authoring Submit
+
+Status: complete for the live quiz authoring submit slice. Scope stayed limited
+to replacing the live quiz create/edit submit path and the wizard completion
+quick-start mutation with tRPC. This did not start S05 realtime migration,
+cockpit query/subscription migration, PWA live quiz runtime migration, or S06
+cleanup.
+
+Slice: S04L Live Quiz Authoring Submit
+
+GraphQL operation(s):
+
+- `CreateLiveQuizDocument`
+- `EditLiveQuizDocument`
+- `StartLiveQuizDocument` only as used by the authoring completion quick-start
+  button
+- `GetUserRunningLiveQuizzesDocument` only as the Apollo cache update tied to
+  the completion quick-start button
+
+Behavior source:
+
+- `packages/graphql/src/schema/mutation.ts` `createLiveQuiz` / `editLiveQuiz`
+  wrappers
+- `packages/graphql/src/services/liveQuizzes.ts` `manipulateLiveQuiz`
+- Existing `packages/api/src/trpc/routers/liveQuiz.ts` `liveQuiz.start`
+  procedure for quick-start behavior
+- API-local `splitActivityInstances` port from previous S04L authoring submit
+  slices
+
+Implemented:
+
+- Added `activity.createLiveQuiz` and `activity.editLiveQuiz` tRPC procedures
+  with Zod inputs for live quiz manipulation and edit wrappers.
+- Ported live quiz manipulation behavior from the GraphQL service into
+  `packages/api`, including optional course assignment, pin generation,
+  assessment-course edit restrictions, value clamping, block recreation,
+  permission recomputation, and explicit activity-info DTO output.
+- Migrated `LiveQuizWizard` and `submitLiveQuizForm` from Apollo mutations to
+  tRPC `mutateAsync` calls while preserving completion and error handling
+  behavior.
+- Migrated the authoring completion quick-start button from Apollo
+  `StartLiveQuizDocument` plus `GetUserRunningLiveQuizzesDocument` cache updates
+  to `liveQuiz.start` and tRPC running-live-quiz invalidation.
+- Added focused API regression tests for edit authorization denial and missing
+  course create rejection.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L live quiz authoring files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, 40 files and 425 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known Next/package-type, next-intl config, PWA, browserslist,
+  missing-message, and large-page-data warnings.
+- `rg -n "CreateLiveQuizDocument|EditLiveQuizDocument|StartLiveQuizDocument|GetUserRunningLiveQuizzesDocument|@apollo/client|CreateLiveQuizMutation|EditLiveQuizMutation|StartLiveQuizMutation" apps/frontend-manage/src/components/activities/creation/liveQuiz packages/api/src/trpc --glob '!**/*.d.ts'`:
+  no matches.
+- `git diff --check`: passed.
+- Browser verification attempted against `http://127.0.0.1:3002/activities`;
+  local frontend was not listening, so `curl -I http://127.0.0.1:3002` failed
+  with connection refused and `npx agent-browser open
+  http://127.0.0.1:3002/activities` failed with `ERR_CONNECTION_REFUSED`.
+  Screenshot:
+  `/tmp/agent-browser-shots/s04-live-quiz-authoring-01-connection-refused.png`
+  (blank page after refused navigation).
+
+Residual S04:
+
+- S04P generated type leak cleanup remains open for migrated workflows.
+- S04Q API no-GraphQL runtime dependency gates remain open.
+
 ### 2026-06-19 Completed: S04L Group Activity Authoring Submit
 
 Status: complete for the group activity authoring submit slice. Scope stayed

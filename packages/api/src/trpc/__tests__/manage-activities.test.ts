@@ -2796,6 +2796,89 @@ describe('manage activity read routers', () => {
     })
   })
 
+  test('returns null when editing a live quiz without write permission', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      derivedPermission: { findFirst: permissionFindFirst },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.editLiveQuiz({
+        id: 'live-quiz-1',
+        name: 'Live Quiz',
+        displayName: 'Displayed Live Quiz',
+        description: null,
+        blocks: [],
+        courseId: 'course-1',
+        multiplier: 1,
+        defaultPoints: 1,
+        defaultCorrectPoints: 1,
+        maxBonusPoints: 1,
+        timeToZeroBonus: 1,
+        isGamificationEnabled: false,
+        isPinProtected: false,
+        isConfusionFeedbackEnabled: true,
+        isLiveQAEnabled: false,
+        isModerationEnabled: true,
+      })
+    ).resolves.toEqual({ editLiveQuiz: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+  })
+
+  test('maps missing target course to a not-found error when creating a live quiz', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue(null)
+    const elementInstanceFindMany = vi.fn().mockResolvedValue([])
+    const elementFindMany = vi.fn().mockResolvedValue([])
+    const prisma = {
+      course: { findUnique: courseFindUnique },
+      elementInstance: { findMany: elementInstanceFindMany },
+      element: { findMany: elementFindMany },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.createLiveQuiz({
+        name: 'Live Quiz',
+        displayName: 'Displayed Live Quiz',
+        description: null,
+        blocks: [],
+        courseId: 'missing-course',
+        multiplier: 1,
+        defaultPoints: 1,
+        defaultCorrectPoints: 1,
+        maxBonusPoints: 1,
+        timeToZeroBonus: 1,
+        isGamificationEnabled: false,
+        isPinProtected: false,
+        isConfusionFeedbackEnabled: true,
+        isLiveQAEnabled: false,
+        isModerationEnabled: true,
+      })
+    ).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      message: 'Course not found',
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'missing-course' },
+      select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+    })
+  })
+
   test('returns group activity authoring reads without solution fields', async () => {
     const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
     const findUnique = vi.fn().mockResolvedValue({

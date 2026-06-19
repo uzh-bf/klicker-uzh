@@ -69,6 +69,12 @@ const activityElementStackInput = z.object({
   elements: z.array(activityInstanceInput),
 })
 
+const activityElementBlockInput = z.object({
+  order: z.number().int(),
+  timeLimit: z.number().int().nullish(),
+  elements: z.array(activityInstanceInput),
+})
+
 export const practiceQuizManipulationInput = z.object({
   name: z.string(),
   displayName: z.string(),
@@ -120,6 +126,28 @@ export const groupActivityManipulationInput = z.object({
 })
 
 export const editGroupActivityInput = groupActivityManipulationInput.extend({
+  id: z.string(),
+})
+
+export const liveQuizManipulationInput = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string().nullish(),
+  blocks: z.array(activityElementBlockInput),
+  courseId: z.string().nullish(),
+  multiplier: z.number().int(),
+  defaultPoints: z.number().int().nullish(),
+  defaultCorrectPoints: z.number().int().nullish(),
+  maxBonusPoints: z.number().int().nullish(),
+  timeToZeroBonus: z.number().int().nullish(),
+  isGamificationEnabled: z.boolean(),
+  isPinProtected: z.boolean(),
+  isConfusionFeedbackEnabled: z.boolean(),
+  isLiveQAEnabled: z.boolean(),
+  isModerationEnabled: z.boolean(),
+})
+
+export const editLiveQuizInput = liveQuizManipulationInput.extend({
   id: z.string(),
 })
 
