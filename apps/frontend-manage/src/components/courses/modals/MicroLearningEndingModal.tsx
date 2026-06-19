@@ -1,9 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  EndMicroLearningDocument,
-  GetMicroLearningSummaryDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
@@ -22,32 +17,12 @@ function MicroLearningEndingModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetMicroLearningSummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
+  const { data: summaryData, isLoading: summaryLoading } =
+    trpc.activity.microLearningSummary.useQuery({ activityId })
+  const endActivity = trpc.activity.end.useMutation()
 
-  const [endMicroLearning, { loading: endingMicroLearning }] = useMutation(
-    EndMicroLearningDocument,
-    {
-      variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        endMicroLearning: {
-          id: activityId,
-          status: PublicationStatus.Ended,
-          scheduledEndAt: new Date(),
-          __typename: 'MicroLearning',
-        },
-      },
-    }
-  )
-
-  if (!summaryData?.getMicroLearningSummary) return null
-  const summary = summaryData.getMicroLearningSummary
+  if (!summaryData?.microLearningSummary) return null
+  const summary = summaryData.microLearningSummary
 
   return (
     <ActivityConfirmationModal
@@ -55,13 +30,16 @@ function MicroLearningEndingModal({
       title={t('manage.course.endMicroLearning')}
       message={t('manage.course.endMicroLearningMessage')}
       onSubmit={async () => {
-        const result = await endMicroLearning()
-        if (result.data?.endMicroLearning?.id) {
+        const result = await endActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.MICRO_LEARNING,
+        })
+        if (result.endActivity?.id) {
           await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
       }}
-      submitting={endingMicroLearning}
+      submitting={endActivity.isLoading}
       confirmations={{}}
       confirmationsInitializing={summaryLoading}
       confirmationType="confirm"

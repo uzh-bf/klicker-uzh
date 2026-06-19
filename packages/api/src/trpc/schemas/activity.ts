@@ -40,6 +40,10 @@ export const activityDetailsInput = z.object({
   activityType: z.nativeEnum(ActivityType),
 })
 
+export const activityIdInput = z.object({
+  activityId: z.string(),
+})
+
 export const changeActivityNameInput = activityDetailsInput.extend({
   name: z.string(),
   displayName: z.string(),
@@ -58,9 +62,7 @@ export const scheduleLiveQuizInput = z.object({
   availableFrom: z.date().nullish(),
 })
 
-export const openGroupActivityInput = z.object({
-  activityId: z.string(),
-})
+export const openGroupActivityInput = activityIdInput
 
 export const groupActivityGradingInput = z.object({
   id: z.string(),

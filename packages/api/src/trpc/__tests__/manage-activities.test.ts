@@ -2320,6 +2320,384 @@ describe('manage activity read routers', () => {
     expect(findUnique).not.toHaveBeenCalled()
   })
 
+  test('returns a microlearning summary through the activity router', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      stacks: [
+        {
+          elements: [
+            { results: { total: 3 }, anonymousResults: { total: 1 } },
+            { results: { total: 2 }, anonymousResults: { total: 0 } },
+          ],
+        },
+        {
+          elements: [{ results: { total: 5 }, anonymousResults: { total: 4 } }],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      microLearning: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.microLearningSummary({
+        activityId: 'microlearning-1',
+      })
+    ).resolves.toEqual({
+      microLearningSummary: {
+        numOfResponses: 10,
+        numOfAnonymousResponses: 5,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        microLearningId: 'microlearning-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'microlearning-1' },
+      select: {
+        stacks: {
+          select: {
+            elements: {
+              select: {
+                results: true,
+                anonymousResults: true,
+              },
+            },
+          },
+        },
+      },
+    })
+  })
+
+  test('returns a group activity summary through the activity router', async () => {
+    const submittedAt = new Date('2026-06-19T10:00:00.000Z')
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      activityInstances: [
+        { decisionsSubmittedAt: null },
+        { decisionsSubmittedAt: submittedAt },
+        { decisionsSubmittedAt: null },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.groupActivitySummary({
+        activityId: 'group-activity-1',
+      })
+    ).resolves.toEqual({
+      groupActivitySummary: {
+        numOfStartedInstances: 2,
+        numOfSubmissions: 1,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        groupActivityId: 'group-activity-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'group-activity-1' },
+      select: {
+        activityInstances: {
+          select: {
+            decisionsSubmittedAt: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('returns null for group activity summary when read permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const findUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.groupActivitySummary({
+        activityId: 'group-activity-1',
+      })
+    ).resolves.toEqual({ groupActivitySummary: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        groupActivityId: 'group-activity-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).not.toHaveBeenCalled()
+  })
+
+  test('ends a published microlearning through the activity router', async () => {
+    const scheduledEndAt = new Date('2026-06-19T10:00:00.000Z')
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const update = vi.fn().mockResolvedValue({
+      id: 'microlearning-1',
+      displayName: 'Microlearning',
+      status: PublicationStatus.ENDED,
+      scheduledStartAt: new Date('2026-06-19T09:00:00.000Z'),
+      scheduledEndAt,
+      scheduledCompletionTaskId: 'completion-task',
+    })
+    const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+    const publish = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      microLearning: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        hatchet: {
+          scheduled: {
+            delete: scheduledDelete,
+          },
+        } as unknown as TRPCContext['hatchet'],
+        pubSub: { publish } as unknown as TRPCContext['pubSub'],
+      })
+    )
+
+    await expect(
+      caller.activity.end({
+        activityId: 'microlearning-1',
+        activityType: ActivityType.MICRO_LEARNING,
+      })
+    ).resolves.toEqual({
+      endActivity: {
+        id: 'microlearning-1',
+        status: PublicationStatus.ENDED,
+        scheduledEndAt,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        microLearningId: 'microlearning-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(update).toHaveBeenCalledWith({
+      where: {
+        id: 'microlearning-1',
+        status: PublicationStatus.PUBLISHED,
+        isDeleted: false,
+      },
+      data: {
+        status: PublicationStatus.ENDED,
+        scheduledEndAt: expect.any(Date),
+      },
+    })
+    expect(scheduledDelete).toHaveBeenCalledWith('completion-task')
+    expect(publish).toHaveBeenCalledWith('microLearningEnded', {
+      id: 'microlearning-1',
+      displayName: 'Microlearning',
+      status: PublicationStatus.ENDED,
+      scheduledStartAt: new Date('2026-06-19T09:00:00.000Z'),
+      scheduledEndAt,
+      scheduledCompletionTaskId: 'completion-task',
+    })
+  })
+
+  test('ends a published group activity through the activity router', async () => {
+    const scheduledEndAt = new Date('2026-06-19T10:00:00.000Z')
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'group-activity-1',
+      scheduledCompletionTaskId: 'completion-task',
+    })
+    const update = vi.fn().mockResolvedValue({
+      id: 'group-activity-1',
+      displayName: 'Group Activity',
+      description: null,
+      status: PublicationStatus.ENDED,
+      scheduledStartAt: new Date('2026-06-19T09:00:00.000Z'),
+      scheduledEndAt,
+    })
+    const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+    const publish = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      groupActivity: {
+        findUnique,
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        hatchet: {
+          scheduled: {
+            delete: scheduledDelete,
+          },
+        } as unknown as TRPCContext['hatchet'],
+        pubSub: { publish } as unknown as TRPCContext['pubSub'],
+      })
+    )
+
+    await expect(
+      caller.activity.end({
+        activityId: 'group-activity-1',
+        activityType: ActivityType.GROUP_ACTIVITY,
+      })
+    ).resolves.toEqual({
+      endActivity: {
+        id: 'group-activity-1',
+        status: PublicationStatus.ENDED,
+        scheduledEndAt,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        groupActivityId: 'group-activity-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'group-activity-1',
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+    expect(scheduledDelete).toHaveBeenCalledWith('completion-task')
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'group-activity-1' },
+      data: {
+        status: PublicationStatus.ENDED,
+        scheduledEndAt: expect.any(Date),
+        scheduledCompletionTaskId: null,
+      },
+    })
+    expect(publish).toHaveBeenCalledWith('groupActivityEnded', {
+      id: 'group-activity-1',
+      displayName: 'Group Activity',
+      description: null,
+      status: PublicationStatus.ENDED,
+      scheduledStartAt: new Date('2026-06-19T09:00:00.000Z'),
+      scheduledEndAt,
+    })
+    expect(publish).toHaveBeenCalledWith('singleGroupActivityEnded', {
+      id: 'group-activity-1',
+      displayName: 'Group Activity',
+      description: null,
+      status: PublicationStatus.ENDED,
+      scheduledStartAt: new Date('2026-06-19T09:00:00.000Z'),
+      scheduledEndAt,
+    })
+  })
+
+  test('returns null when activity end execute permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const update = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      microLearning: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.end({
+        activityId: 'microlearning-1',
+        activityType: ActivityType.MICRO_LEARNING,
+      })
+    ).resolves.toEqual({ endActivity: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        microLearningId: 'microlearning-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(update).not.toHaveBeenCalled()
+  })
+
   test.each([
     {
       activityType: ActivityType.MICRO_LEARNING,

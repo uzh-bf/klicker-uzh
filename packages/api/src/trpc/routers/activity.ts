@@ -82,6 +82,7 @@ import {
 } from '../procedures.js'
 import {
   activityDetailsInput,
+  activityIdInput,
   activityReviewStatusInput,
   activityTemplateInput,
   applyActivityBatchOperationsInput,
@@ -789,6 +790,22 @@ type OpenedGroupActivityRecord = {
   scheduledStartAt: Date
 }
 
+type MicroLearningSummaryRecord = {
+  numOfResponses: number
+  numOfAnonymousResponses: number
+}
+
+type GroupActivitySummaryRecord = {
+  numOfStartedInstances: number
+  numOfSubmissions: number
+}
+
+type EndedActivityRecord = {
+  id: string
+  status: PublicationStatus
+  scheduledEndAt: Date
+}
+
 type ExtendedActivityRecord = {
   id: string
   scheduledEndAt: Date
@@ -811,6 +828,13 @@ function toScheduledLiveQuizRecord(quiz: ScheduledLiveQuizRecord | null) {
     status: quiz.status,
     availableFrom: quiz.availableFrom ?? null,
   }
+}
+
+function getResultTotal(results: Prisma.JsonValue | null | undefined) {
+  if (results === null || typeof results !== 'object') return 0
+
+  const total = (results as { total?: unknown }).total
+  return typeof total === 'number' ? total : 0
 }
 
 async function changeActivityNameForType({
@@ -1385,6 +1409,229 @@ async function openGroupActivity({
     status: updatedGroupActivity.status,
     scheduledStartAt: updatedGroupActivity.scheduledStartAt,
   }
+}
+
+async function getMicroLearningSummary({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+  }
+}): Promise<MicroLearningSummaryRecord | null> {
+  const canRead = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: ActivityType.MICRO_LEARNING,
+    },
+    PermissionLevel.READ
+  )
+
+  if (!canRead) return null
+
+  const microLearning = await getPrisma(ctx).microLearning.findUnique({
+    where: { id: input.activityId },
+    select: {
+      stacks: {
+        select: {
+          elements: {
+            select: {
+              results: true,
+              anonymousResults: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!microLearning) return null
+
+  const { responses, anonymousResponses } = microLearning.stacks.reduce(
+    (acc, stack) => {
+      const stackCounts = stack.elements.reduce(
+        (elementAcc, instance) => {
+          elementAcc.responses += getResultTotal(instance.results)
+          elementAcc.anonymousResponses += getResultTotal(
+            instance.anonymousResults
+          )
+          return elementAcc
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += stackCounts.responses
+      acc.anonymousResponses += stackCounts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
+}
+
+async function getGroupActivitySummary({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+  }
+}): Promise<GroupActivitySummaryRecord | null> {
+  const canRead = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: ActivityType.GROUP_ACTIVITY,
+    },
+    PermissionLevel.READ
+  )
+
+  if (!canRead) return null
+
+  const groupActivity = await getPrisma(ctx).groupActivity.findUnique({
+    where: { id: input.activityId },
+    select: {
+      activityInstances: {
+        select: {
+          decisionsSubmittedAt: true,
+        },
+      },
+    },
+  })
+
+  if (!groupActivity) return null
+
+  const numOfStartedInstances = groupActivity.activityInstances.filter(
+    (instance) => instance.decisionsSubmittedAt === null
+  ).length
+  const numOfSubmissions =
+    groupActivity.activityInstances.length - numOfStartedInstances
+
+  return {
+    numOfStartedInstances,
+    numOfSubmissions,
+  }
+}
+
+async function endMicroLearningActivity({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext
+  activityId: string
+}): Promise<EndedActivityRecord | null> {
+  const updatedMicroLearning = await getPrisma(ctx).microLearning.update({
+    where: {
+      id: activityId,
+      status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
+    },
+    data: { status: PublicationStatus.ENDED, scheduledEndAt: new Date() },
+  })
+
+  if (updatedMicroLearning.scheduledCompletionTaskId) {
+    await deleteScheduledHatchetTask({
+      ctx,
+      taskId: updatedMicroLearning.scheduledCompletionTaskId,
+      failureMessage: `Failed to delete scheduled completion task for microlearning ${activityId}:`,
+    })
+  }
+
+  const pubSub = ctx.pubSub as PubSubPublisher | undefined
+  pubSub?.publish('microLearningEnded', updatedMicroLearning)
+
+  return {
+    id: updatedMicroLearning.id,
+    status: updatedMicroLearning.status,
+    scheduledEndAt: updatedMicroLearning.scheduledEndAt,
+  }
+}
+
+async function endGroupActivity({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext
+  activityId: string
+}): Promise<EndedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: { id: activityId, status: PublicationStatus.PUBLISHED },
+  })
+
+  if (!groupActivity) return null
+
+  if (groupActivity.scheduledCompletionTaskId) {
+    await deleteScheduledHatchetTask({
+      ctx,
+      taskId: groupActivity.scheduledCompletionTaskId,
+      failureMessage: `Failed to delete scheduled completion task for group activity ${activityId}:`,
+    })
+  }
+
+  const updatedGroupActivity = await prisma.groupActivity.update({
+    where: { id: activityId },
+    data: {
+      status: PublicationStatus.ENDED,
+      scheduledEndAt: new Date(),
+      scheduledCompletionTaskId: null,
+    },
+  })
+
+  const pubSub = ctx.pubSub as PubSubPublisher | undefined
+  pubSub?.publish('groupActivityEnded', updatedGroupActivity)
+  pubSub?.publish('singleGroupActivityEnded', updatedGroupActivity)
+
+  return {
+    id: updatedGroupActivity.id,
+    status: updatedGroupActivity.status,
+    scheduledEndAt: updatedGroupActivity.scheduledEndAt,
+  }
+}
+
+async function endActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+  }
+}): Promise<EndedActivityRecord | null> {
+  const canExecute = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.EXECUTE
+  )
+
+  if (!canExecute) return null
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    return await endMicroLearningActivity({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
+
+  if (input.activityType === ActivityType.GROUP_ACTIVITY) {
+    return await endGroupActivity({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
+
+  return null
 }
 
 async function extendMicroLearningActivity({
@@ -3366,6 +3613,18 @@ export const activityRouter = router({
       changeActivityName: await changeActivityName({ ctx, input }),
     })),
 
+  microLearningSummary: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      microLearningSummary: await getMicroLearningSummary({ ctx, input }),
+    })),
+
+  groupActivitySummary: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      groupActivitySummary: await getGroupActivitySummary({ ctx, input }),
+    })),
+
   publish: userFullAccessProcedure
     .input(publishActivityInput)
     .mutation(async ({ ctx, input }) => ({
@@ -3382,6 +3641,12 @@ export const activityRouter = router({
     .input(openGroupActivityInput)
     .mutation(async ({ ctx, input }) => ({
       openGroupActivity: await openGroupActivity({ ctx, input }),
+    })),
+
+  end: userFullAccessProcedure
+    .input(activityDetailsInput)
+    .mutation(async ({ ctx, input }) => ({
+      endActivity: await endActivity({ ctx, input }),
     })),
 
   extend: userFullAccessProcedure

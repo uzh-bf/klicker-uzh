@@ -280,6 +280,79 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Activity Ending Modals
+
+Status: complete for the scoped code migration and automated verification.
+Scope was limited to replacing the Apollo summary queries and
+end mutations in `MicroLearningEndingModal` and `GroupActivityEndingModal` with
+tRPC reads/mutations. This slice preserved READ permission checks for the
+summary counts, FULL_ACCESS plus EXECUTE checks for ending, scheduled
+completion task deletion, ENDED status transitions, `scheduledEndAt` updates,
+course/activity list refresh, and the existing `microLearningEnded`,
+`groupActivityEnded`, and `singleGroupActivityEnded` pubSub events for
+still-GraphQL subscribers. It did not migrate deletion/reset/start actions,
+activity authoring create/edit, live quiz cockpit/lecturer realtime pages, S05,
+or S06.
+
+Slice: S04L Activity Ending Modals
+
+GraphQL operation(s):
+
+- `GetMicroLearningSummaryDocument`
+- `EndMicroLearningDocument`
+- `GetGroupActivitySummaryDocument`
+- `EndGroupActivityDocument`
+
+Behavior source:
+
+- `packages/graphql/src/services/microLearning.ts` `getMicroLearningSummary`
+  and `endMicroLearning`
+- `packages/graphql/src/services/groups.ts` `getGroupActivitySummary` and
+  `endGroupActivity`
+- Existing GraphQL query/mutation permission wrappers in
+  `packages/graphql/src/schema/query.ts` and
+  `packages/graphql/src/schema/mutation.ts`
+
+Write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/courses/modals/MicroLearningEndingModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/GroupActivityEndingModal.tsx`
+- this plan progress entry
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed; 40 test files, 405 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-size warnings.
+- `rg -n "EndMicroLearningDocument|EndGroupActivityDocument|GetMicroLearningSummaryDocument|GetGroupActivitySummaryDocument|@apollo/client|@klicker-uzh/graphql|PublicationStatus" <migrated ending modals>`:
+  no matches.
+- `git diff --check`: passed.
+- Browser attempt: `frontend-manage` returned HTTP 200 on
+  `http://127.0.0.1:3002`, but `npx agent-browser` still reported
+  `chrome-error://chromewebdata/` and `(no interactive elements)`. Screenshot:
+  `/tmp/agent-browser-shots/s04-ending-modals-01-initial.png` (blank white).
+- Direct safe HTTP smokes against local backend:
+  `GET /api/trpc/activity.microLearningSummary` with a nonexistent activity id
+  returned `{"result":{"data":{"json":{"microLearningSummary":null}}}}`;
+  `GET /api/trpc/activity.groupActivitySummary` returned
+  `{"result":{"data":{"json":{"groupActivitySummary":null}}}}`; and
+  `POST /api/trpc/activity.end` returned
+  `{"result":{"data":{"json":{"endActivity":null}}}}`.
+  Happy-path mutation of real published activities still requires a real local
+  Hatchet token to verify completion-task deletion end to end.
+
 ### 2026-06-19 Completed: S04L Group Activity Start Action
 
 Status: complete for the scoped code migration and automated verification.

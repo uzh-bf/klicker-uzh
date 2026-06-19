@@ -1,9 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  EndGroupActivityDocument,
-  GetGroupActivitySummaryDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -23,29 +18,9 @@ function GroupActivityEndingModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetGroupActivitySummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
-
-  const [endGroupActivity, { loading: endingGroupActivity }] = useMutation(
-    EndGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        endGroupActivity: {
-          id: activityId,
-          status: PublicationStatus.Ended,
-          scheduledEndAt: new Date(),
-          __typename: 'GroupActivity',
-        },
-      },
-    }
-  )
+  const { data: summaryData, isLoading: summaryLoading } =
+    trpc.activity.groupActivitySummary.useQuery({ activityId })
+  const endActivity = trpc.activity.end.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     startedInstances: false,
@@ -53,17 +28,17 @@ function GroupActivityEndingModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getGroupActivitySummary) {
+    if (summaryData?.groupActivitySummary) {
       setConfirmations({
         startedInstances:
-          summaryData?.getGroupActivitySummary.numOfStartedInstances === 0,
+          summaryData.groupActivitySummary.numOfStartedInstances === 0,
         submissions: true,
       })
     }
-  }, [summaryData?.getGroupActivitySummary])
+  }, [summaryData?.groupActivitySummary])
 
-  if (!summaryData?.getGroupActivitySummary) return null
-  const summary = summaryData.getGroupActivitySummary
+  if (!summaryData?.groupActivitySummary) return null
+  const summary = summaryData.groupActivitySummary
 
   return (
     <ActivityConfirmationModal
@@ -71,13 +46,16 @@ function GroupActivityEndingModal({
       title={t('manage.course.endGroupActivity')}
       message={t('manage.course.endGroupActivityMessage')}
       onSubmit={async () => {
-        const result = await endGroupActivity()
-        if (result.data?.endGroupActivity?.id) {
+        const result = await endActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        })
+        if (result.endActivity?.id) {
           await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
       }}
-      submitting={endingGroupActivity}
+      submitting={endActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="confirm"
