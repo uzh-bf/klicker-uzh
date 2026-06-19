@@ -1,4 +1,4 @@
-# Human-in-the-Loop Authoring for LLM Tutors
+# Human-in-the-Loop Review for Generated LLM Tutor Guidance
 
 Date: 2026-06-17
 
@@ -8,8 +8,8 @@ Scite was not available in this environment, so this note uses public arXiv pape
 
 This note focuses on:
 
-1. Lecturer authoring of misconceptions, hints, rubrics, and expected solutions
-2. Review workflows for AI-assisted item and tutor authoring
+1. Asynchronous generation of tutor guidance from course context and chats
+2. Exception-based review workflows for AI-assisted tutor guidance
 3. Learning engineering as an iterative design-and-measure loop
 4. Governance, provenance, and human control
 5. A Klicker-specific workflow proposal
@@ -26,38 +26,44 @@ That shows up in several places:
 - End-to-end tutoring systems still need handcrafted pedagogy and guardrails; LLMs can fill a predefined tutoring structure, but they should not improvise the whole interaction ([Chowdhury et al. 2024](https://arxiv.org/abs/2402.09216)).
 - AI-generated exams improve when generation is followed by critique and revision cycles, which is exactly the kind of workflow a lecturer-facing authoring tool should expose ([Isley et al. 2025](https://arxiv.org/abs/2508.08314)).
 
-## What lecturers should author explicitly
+## What should be generated automatically
 
-For LLM tutoring, the lecturer should author the stable pedagogical facts and policy constraints, not just the final prompt text.
+For Klicker tutoring, lecturers should not have to author large misconception,
+hint, or rubric libraries by hand. The primary course substrate should be the
+generated LightRAG knowledge graph plus Milvus chunks. Optional tutor guidance
+should be generated asynchronously from course data, tutor chats, eval failures,
+and repeated student misconceptions.
 
-Recommended authored fields:
+Recommended generated fields:
 
-| Field | Why it matters |
-| --- | --- |
-| Learning objective | Anchors the item to the course goal |
-| Expected solution | Gives the tutor a reference answer and scoring anchor |
-| Allowed solution variants | Prevents overfitting to one path |
-| Common misconceptions | Enables targeted hints and distractors |
-| Hint ladder | Controls how direct the tutor may be |
-| Rubric dimensions | Makes review and scoring repeatable |
-| Forbidden shortcuts | Prevents answer leakage and unsafe help |
-| Evidence strength | Distinguishes validated content from tentative content |
-| Course scope | Marks whether the artifact is reusable or local to one course |
-| Accessibility / locale notes | Keeps the output usable across audiences |
-| Review status | Makes release governance explicit |
+| Field                             | Why it matters                                                |
+| --------------------------------- | ------------------------------------------------------------- |
+| Knowledge graph concept           | Anchors guidance to generated course concepts                 |
+| Source chunks                     | Keeps guidance auditable against Milvus-backed evidence       |
+| Recurring misconception candidate | Captures patterns observed in chats/evals                     |
+| Hint ladder candidate             | Suggests scaffold levels for repeated issues                  |
+| Rubric candidate                  | Makes review and scoring repeatable for high-value tasks      |
+| Forbidden shortcut candidate      | Prevents answer leakage and unsafe help                       |
+| Evidence strength                 | Distinguishes validated content from tentative content        |
+| Course scope                      | Marks whether the guidance is reusable or local to one course |
+| Accessibility / locale notes      | Keeps the output usable across audiences                      |
+| Review status                     | Makes optional promotion governance explicit                  |
 
-This is an inference from the combined literature, not a direct claim from one paper: authoring works better when the human writes the pedagogical intent, while the model drafts the surface form.
+This is an inference from the combined literature plus Klicker's product
+constraints: human review is valuable, but only if the system keeps review
+queues small and tied to clear impact.
 
 ## Review workflow
 
-A practical review loop for tutor content is:
+A practical review loop for tutor guidance is:
 
-1. Lecturer creates a structured spec for the item, hint, rubric, or tutor dialogue.
-2. The model drafts candidates from that spec.
-3. A human reviewer checks correctness, pedagogical fit, answer leakage, and tone.
-4. The reviewer either approves, edits, or sends the draft back for regeneration.
-5. The released artifact is versioned and linked to the course context.
-6. Student telemetry feeds the next revision cycle.
+1. LightRAG and Milvus provide course-grounded concepts, relationships, and source chunks.
+2. Tutor chats and eval failures are mined asynchronously for recurring issues.
+3. The model proposes compact guidance candidates with source and telemetry evidence.
+4. Only high-impact, low-confidence, or conflicting candidates enter a lecturer review queue.
+5. The reviewer approves, suppresses, or edits the candidate.
+6. Approved guidance is versioned and linked to source chunks and telemetry.
+7. Student telemetry feeds the next revision cycle.
 
 This workflow is supported by several lines of evidence:
 
@@ -68,7 +74,9 @@ This workflow is supported by several lines of evidence:
 
 ## Rubrics and expected solutions
 
-Rubrics should be first-class authored objects, not a hidden prompt fragment.
+Rubrics should be first-class objects when they exist, but they should not block
+initial tutor launch. Start with eval rubrics and generated candidates; promote
+course/task rubrics only for high-value exercises.
 
 Why:
 
@@ -85,7 +93,10 @@ That separation matters because LLMs tend to anchor on a single exemplar unless 
 
 ## Misconceptions and hints
 
-The research points toward authoring misconceptions as structured diagnosis objects rather than free-text notes.
+The research points toward storing misconceptions as structured diagnosis
+objects rather than free-text notes. For this product, those objects should be
+generated from LightRAG/Milvus context and repeated chat/eval patterns, then
+optionally reviewed.
 
 Useful fields for each misconception:
 
@@ -106,7 +117,9 @@ For hints, the authoring tool should support a ladder:
 3. worked example
 4. bottom-out hint
 
-That ladder is not just a runtime policy. It should be visible during authoring so lecturers can decide how much help each stage is allowed to reveal.
+That ladder is not just a runtime policy. It should be visible when generated
+guidance is reviewed so lecturers can quickly see how much help each stage would
+reveal, without having to write the ladder from scratch.
 
 ## Learning engineering framing
 
@@ -137,43 +150,45 @@ Relevant governance signals from the literature:
 
 Practical governance rules for Klicker:
 
-- no publish without human approval
-- every artifact has an owner, version, and review date
-- every artifact records source material and evidence level
-- every artifact can be withdrawn or superseded
-- any AI-generated suggestion remains distinct from human-approved content
+- tutor can launch without promoted guidance items, using LightRAG/Milvus retrieval
+- every promoted guidance item has provenance, version, and evidence level
+- every promoted guidance item can be withdrawn or superseded
+- any AI-generated suggestion remains distinct from reviewed content
+- review queues stay compact and impact-ranked
 
 ## Klicker workflow proposal
 
-Best fit for Klicker: a course-scoped authoring record attached to a unit or block, with separate tabs for item, hint, rubric, and solution.
+Best fit for Klicker: an async guidance distillation pipeline attached to a
+course, unit, or chatbot, with optional compact review queues for high-impact
+misconceptions, hint ladders, and eval failures.
 
 Suggested flow:
 
-1. Lecturer selects the course context and learning objective.
-2. Lecturer enters the canonical solution, known misconceptions, and grading policy.
-3. Klicker asks the model to draft:
-   - the item stem
-   - hint ladder variants
-   - rubric dimensions
-   - expected solution
-   - distractors or wrong-answer examples
-4. Klicker shows the draft in a review queue with diff view and accept/reject controls.
-5. Lecturer edits the draft and approves the final version.
-6. Klicker stores the published artifact with provenance, version, and review metadata.
+1. Course documents are ingested into LightRAG and Milvus.
+2. Tutor runs from retrieved graph/chunk context plus generic tutor policy.
+3. Klicker asynchronously mines chats, evals, and retrieval traces for:
+   - recurring misconceptions
+   - weak or missing sources
+   - hint levels that fail repeatedly
+   - answer-leakage risks
+   - high-value exercise rubrics
+4. Klicker shows only compact, impact-ranked proposals in a review queue.
+5. Lecturer approves, suppresses, or edits proposals when useful.
+6. Klicker stores promoted guidance with provenance, version, and review metadata.
 7. Student attempts, hint requests, and common failure modes are logged back into the revision queue.
 
 Minimal schema for the stored artifact:
 
 - `course_scope`
 - `objective`
-- `prompt_or_item`
-- `expected_solution`
-- `allowed_variants`
-- `misconceptions`
-- `hint_ladder`
-- `rubric`
+- `source_chunk_ids`
+- `kg_entity_ids`
+- `kg_relationship_ids`
+- `guidance_type`
+- `guidance_payload`
+- `confidence`
+- `impact_score`
 - `review_status`
-- `owner`
 - `version`
 - `evidence_level`
 - `provenance`
@@ -186,11 +201,13 @@ Why this fits the literature:
 
 ## Practical takeaway
 
-The safest and most useful first version is a human-owned authoring pipeline where lecturers specify the pedagogy and the model fills in draft content.
+The safest and most useful first version is a retrieval-first tutor using
+LightRAG/Milvus context. Generated tutor guidance should come later as an async
+distillation layer, with lecturer review only for compact high-impact proposals.
 
 If Klicker does that well, it gets:
 
-- reusable lecturer-authored misconception and hint libraries
+- reusable generated misconception and hint guidance
 - rubric-backed review for items and tutor responses
 - cheaper content iteration
 - clearer governance

@@ -292,7 +292,7 @@ Reported findings:
 
 Implication for KlickerUZH:
 
-Near-term value may be strongest as AI-assisted tutoring under teacher/course control, not fully autonomous tutoring. For a university platform, lecturer-authored misconception lists and course-grounded examples should be first-class inputs.
+Near-term value may be strongest as AI-assisted tutoring under course control, not fully autonomous tutoring. For Klicker, the first-class inputs should be the generated LightRAG knowledge graph and Milvus chunks. Misconception lists, hint ladders, and examples should be optional generated guidance distilled from course data, chats, and evals, with lecturer review only for high-impact exceptions.
 
 ### GPT-4 Homework Tutor
 
@@ -590,7 +590,8 @@ Skill behavior:
 
 - Prefer course material over generic explanations.
 - Cite provided context.
-- Use lecturer-provided examples, definitions, and misconceptions.
+- Use source-backed examples, definitions, and generated misconception candidates
+  when available.
 - Say when the context is insufficient.
 
 Klicker skill module:
@@ -707,7 +708,7 @@ Klicker adaptation:
 }
 ```
 
-This structure is useful for lecturer-authored or AI-prepared exercise tutor plans, not necessarily for every open chat.
+This structure is useful for AI-prepared exercise tutor plans and high-value reviewed guidance, not necessarily for every open chat.
 
 ### TreeInstruct Style
 
@@ -882,13 +883,13 @@ Misconceptions should be represented as structured records, not buried in prose.
 - allowed hint ladder
 - corrective micro-explanation
 - source/evidence level
-- lecturer validation status
+- review status
 
-Finance mappings such as WACC, CAPM, NPV, duration, risk/return, leverage, and option pricing are plausible starting points, but they need lecturer validation. The evidence supports the workflow; the exact finance misconception list should be course-owned.
+Finance mappings such as WACC, CAPM, NPV, duration, risk/return, leverage, and option pricing are plausible starting points, but they should be treated as generated candidates until they are supported by course sources, chat patterns, or targeted review. The evidence supports the workflow; the exact finance misconception list should be course-owned and telemetry-informed.
 
 Klicker implication:
 
-Add lecturer-authored misconception records before trying to infer all misconceptions from chat logs.
+Do not require manually authored misconception records at launch. Start from LightRAG/Milvus retrieval, then infer recurring misconception candidates asynchronously from chat/eval telemetry and surface only compact review queues when confidence or impact is high.
 
 Relevant topic note: `docs/llm-tutoring-research/05-misconception-libraries.md`
 
@@ -1055,19 +1056,18 @@ This avoids a giant monolithic prompt while staying simpler than a full multi-ag
 
 Relevant topic note: `docs/llm-tutoring-research/14-prompt-program-architectures.md`
 
-### 15. Human-In-The-Loop Authoring Is Required For Course Quality
+### 15. Human-In-The-Loop Review Should Be Exception-Based
 
-Lecturers should author stable pedagogical facts:
+The system should generate optional tutor guidance from the knowledge graph, chunks, chats, and eval results:
 
-- expected solution paths
-- common misconceptions
-- hint ladders
-- rubrics
-- allowed directness
-- source material
-- task policy
+- recurring misconception candidates
+- hint ladder candidates
+- exercise/task policies
+- rubric candidates
+- source-backed explanation examples
+- weak-source or conflicting-source alerts
 
-LLM should draft variants and explanations, but lecturer review should approve publishable artifacts. Every artifact needs provenance, version, review metadata, and evaluation telemetry.
+Lecturer review should be lightweight and exception-based: approve, suppress, or correct high-impact guidance proposals rather than authoring large libraries by hand. Every promoted guidance item needs provenance, version metadata, and evaluation telemetry.
 
 Relevant topic note: `docs/llm-tutoring-research/15-human-in-loop-authoring.md`
 
@@ -1173,7 +1173,7 @@ Evaluation should combine five layers:
 
 5. Product layer:
 
-- lecturer artifact coverage
+- generated guidance coverage and review burden
 - prompt/skill version tracking
 - model version tracking
 - telemetry completeness
@@ -1521,7 +1521,7 @@ Rules:
 
 3. Can we create a small finance-specific evaluation set from existing course material without private student data?
 
-4. Do lecturers have common misconception lists for finance topics such as WACC, CAPM, NPV, duration, option pricing, or portfolio theory?
+4. Which recurring finance misconceptions can we infer from chats, evals, and LightRAG/Milvus context for topics such as WACC, CAPM, NPV, duration, option pricing, or portfolio theory?
 
 5. Which product metrics can safely approximate feedback uptake without storing sensitive content?
 

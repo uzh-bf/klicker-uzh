@@ -289,8 +289,8 @@ export async function planTutorTurnState({
       prompt: [
         `Skill pack version: ${skillPackVersion}`,
         tutorArtifactContext
-          ? `Lecturer-approved tutor artifacts:\n${tutorArtifactContext}`
-          : 'Lecturer-approved tutor artifacts: none loaded',
+          ? `Optional tutor guidance distilled from course context and tutor telemetry:\n${tutorArtifactContext}`
+          : 'Optional tutor guidance: none loaded',
         'Recent conversation:',
         formatPlannerMessages(messages),
       ].join('\n\n'),

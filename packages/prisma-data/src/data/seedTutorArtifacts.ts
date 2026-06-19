@@ -7,8 +7,9 @@ type SeedTutorArtifactOptions = {
 }
 
 // Local/test fixture data for the seeded Benibot chatbot only.
-// Production tutor artifacts must be authored/imported into the DB per course,
-// not hardcoded here.
+// Production tutor context starts from LightRAG's generated knowledge graph and
+// Milvus chunks. These extra guidance records are optional async distillations
+// from chats/evals, not a required manual setup step.
 const skillComponents = [
   {
     slug: 'wacc',
@@ -238,7 +239,7 @@ export async function seedTutorArtifacts(
         description: component.description,
         prerequisites: [...component.prerequisites],
         metadata: {
-          source: 'seeded_finance_tutor_artifacts',
+          source: 'seeded_finance_tutor_guidance_fixture',
         },
       },
       update: {
@@ -246,7 +247,7 @@ export async function seedTutorArtifacts(
         description: component.description,
         prerequisites: [...component.prerequisites],
         metadata: {
-          source: 'seeded_finance_tutor_artifacts',
+          source: 'seeded_finance_tutor_guidance_fixture',
         },
       },
       select: { id: true, title: true },

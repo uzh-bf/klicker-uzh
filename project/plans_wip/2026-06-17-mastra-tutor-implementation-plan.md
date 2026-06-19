@@ -24,7 +24,7 @@ Implemented on branch `codex/tutor-research-mastra-plan`:
 - Slice 4: added move policy and prompt composer.
 - Slice 5: added verifier preflight and posthoc checks.
 - Slice 6: added evidence-id extraction and citation-fidelity tracking.
-- Slice 7: added lecturer-authored tutor artifact schema, migration, local seed fixtures, and chat-api lookup.
+- Slice 7: added optional tutor guidance schema, migration, local seed fixtures, and chat-api lookup.
 - Slice 8: added payload-minimized tutor events and feedback uptake detection.
 - Slice 9: added privacy gate for persistent tutor memory.
 - Slice 10: wired dormant Mastra Memory with Postgres storage behind the privacy gate.
@@ -49,7 +49,8 @@ Build a research-grounded tutor architecture that uses Mastra as the production 
 - pedagogical move selection
 - leakage and grounding verification
 - course-scoped learner memory
-- lecturer-authored misconception and hint libraries
+- optional tutor guidance distilled asynchronously from LightRAG/Milvus context,
+  chats, and eval failures
 - evaluation and observability
 - feedback uptake logging
 
@@ -128,8 +129,10 @@ This is the right substrate for the tutor work.
 2. Structured state before long prompts.
    Prefer a small hidden state object over a giant instruction blob.
 
-3. Course artifacts before inferred pedagogy.
-   Lecturers should author misconceptions, solution paths, hint ladders, rubrics, and allowed directness.
+3. Retrieval before optional guidance.
+   Launch from LightRAG knowledge graph retrieval and Milvus chunks. Generate
+   misconception, hint-ladder, rubric, and directness guidance asynchronously
+   from chats/evals only when it adds measurable value.
 
 4. Memory only after privacy gates.
    Persistent learner memory touches real participant data. Ship prompt/policy first; gate profile and semantic recall separately.
@@ -707,17 +710,18 @@ Exit:
 - local citation-fidelity eval suite
 - tool-call trace includes evidence ids
 
-### Slice 7: Lecturer-authored skills, misconceptions, hints
+### Slice 7: Optional generated skills, misconceptions, hints
 
 Goal:
 
-- move pedagogy out of one prompt into course-owned artifacts
+- keep the tutor usable from LightRAG/Milvus context first, then allow optional
+  generated tutor guidance when chats/evals reveal recurring needs
 
 Backend:
 
 - Prisma models from section 5
-- GraphQL queries/mutations for lecturer authoring
-- seed examples for finance:
+- future GraphQL queries/mutations for compact review queues
+- local seed fixtures for finance:
   - WACC
   - CAPM
   - NPV
@@ -917,7 +921,7 @@ Rollout order:
 2. seeded local dev
 3. staging with staff test accounts
 4. one low-stakes course chatbot
-5. lecturer-approved skill pack for one module
+5. generated guidance review for one high-impact module, if needed
 6. broader finance topics
 
 Feature flags:
@@ -945,7 +949,7 @@ Best next 6 implementation tickets:
 
 Then:
 
-7. `feat(tutor): add lecturer-authored misconception and hint records`
+7. `feat(tutor): add async generated guidance candidates`
 8. `feat(tutor): add citation-fidelity eval suite`
 9. `feat(tutor): add privacy-gated Mastra Memory`
 10. `feat(tutor): promote turn pipeline to Mastra workflow`
@@ -1037,7 +1041,8 @@ The tutor architecture is ready for production rollout when:
 - `tutor-skills-v1` beats current prompt on MathTutorBench subset without higher leakage
 - hidden state exists for every tutor turn
 - verifier catches leakage and citation failures in eval
-- one course-scoped skill pack has lecturer-approved misconceptions and hints
+- tutor works from LightRAG/Milvus context without required guidance records
+- optional generated guidance candidates can be reviewed for one high-impact module
 - feedback uptake events are logged
 - privacy gate passes before memory is enabled
 - memory deletion test passes

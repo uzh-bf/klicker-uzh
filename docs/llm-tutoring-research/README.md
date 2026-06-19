@@ -29,7 +29,10 @@ Scite status: Scite was requested, but no Scite connector/tool was available in 
 - Tutor should operate from structured state: learner state, current skill, misconception hypothesis, hint depth, retrieved evidence ids, and prior attempts.
 - Pedagogy should be a policy, not only tone: choose one move, control answer leakage, avoid over-intervention, and shift between Socratic prompts, hints, explanation, and worked micro-steps.
 - Evaluation must combine rubric quality with behavior: next-attempt uptake, improvement, delayed transfer, leakage rate, citation fidelity, and student effort.
-- Lecturer-authored artifacts are high leverage: expected solution paths, misconception libraries, hint ladders, rubrics, source material, and task policies.
+- Primary tutor context should come from the generated LightRAG knowledge graph
+  and Milvus chunks. Extra tutor guidance such as misconceptions and hint
+  ladders should be async-generated from chats/evals only when useful, not
+  required as manual setup.
 - Course-grounded retrieval must be audited separately: correct answer is not enough if citation support, abstention, or course terminology fails.
 - Multimodal tutoring needs explicit failure handling: OCR drift, layout loss, chart/table misread, image-description ambiguity, and hallucinated visual details.
 - Scite was unavailable in every subagent environment; all notes record this and use public paper/web sources.
@@ -38,7 +41,9 @@ Scite status: Scite was requested, but no Scite connector/tool was available in 
 
 - `tutor-skills-v1`: hidden state classifier, first-error diagnosis, move selector, hint ladder, leakage gate, metacognitive check, affect/tone policy, course-grounding policy.
 - `tutor-eval-v1`: MathTutorBench plus local transcript rubric, pedagogical safety suite, feedback uptake events, citation-fidelity tests, multimodal stress cases.
-- `authoring-v1`: lecturer workflow for misconception lists, solution paths, hint ladders, rubrics, review/approval, versioning, and telemetry-driven revision.
+- `guidance-v1`: async generation of misconception candidates, hint ladders,
+  solution-path hints, and rubric candidates from LightRAG/Milvus context plus
+  chats/evals; compact lecturer review only for high-impact proposals.
 - `architecture-v1`: Retriever -> hidden planner/verifier -> presenter, with versioned state and auditable tutor moves.
 
 ## Consolidation Plan

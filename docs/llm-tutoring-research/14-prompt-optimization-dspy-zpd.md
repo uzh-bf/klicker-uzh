@@ -29,12 +29,12 @@ That maps well to our tutor if we optimize offline:
 - program: hidden state planner, move selector, response generator, verifier;
 - metric: tutor-quality rubric, leakage checks, citation checks, next-attempt
   uptake when available;
-- output: versioned prompt/skill artifacts committed or stored in DB.
+- output: versioned prompt/skill guidance committed or stored in DB.
 
 Do not put DSPy directly in the production request path for the first slice.
 The runtime is TypeScript/Mastra, while DSPy is Python-first. The safe seam is
 an offline optimizer that proposes prompt variants, runs our eval harness, and
-exports accepted instructions into the existing skill-pack artifact path.
+exports accepted instructions into the existing skill-pack/guidance path.
 
 ### Metric quality matters more than optimizer choice
 
@@ -127,7 +127,7 @@ Slice 2: offline optimizer prototype
 - Start with `BootstrapFewShot` or `MIPROv2` for small eval sets.
 - Try `GEPA` once the metric returns useful natural-language feedback.
 
-Slice 3: artifact export
+Slice 3: guidance export
 
 - Save optimized DSPy programs as JSON under gitignored eval results.
 - Extract accepted instructions/demos into a reviewed skill-pack text or DB seed.

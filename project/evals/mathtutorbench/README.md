@@ -73,11 +73,11 @@ MATHTUTORBENCH_DIR=/tmp/mathtutorbench pnpm --dir apps/chat-api exec tsx ../../s
   --model-args "base_url=http://127.0.0.1:43124/v1,is_chat=true,temperature=0,max_tokens=512"
 ```
 
-This path exercises `chat-api` tutor state planning, policy suffixes,
-lecturer-authored artifacts, verifier hooks, event logging, and Mastra agent
+This path exercises `chat-api` tutor state planning, policy suffixes, optional
+generated tutor guidance, verifier hooks, event logging, and Mastra agent
 streaming. Use a local model endpoint for privacy-safe benchmark runs. Running
 against an external model endpoint sends the benchmark prompts plus private tutor
-instructions/artifacts to that provider and needs explicit approval.
+instructions/guidance to that provider and needs explicit approval.
 
 Use `--tasks` to run a subset:
 

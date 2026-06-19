@@ -62,6 +62,6 @@ No dependency is added in the gate slice. The code currently only evaluates the 
 
 ## Consequences
 
-The tutor can still use current conversation context, hidden turn state, lecturer artifacts, retrieval, verifier checks, and tutor events.
+The tutor can still use current conversation context, hidden turn state, LightRAG/Milvus retrieval, optional generated tutor guidance, verifier checks, and tutor events.
 
 It cannot claim persistent personalization or continuity until the gate passes.

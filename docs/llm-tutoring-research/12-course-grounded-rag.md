@@ -29,7 +29,7 @@ The closest tutoring-specific precedent I found is KITE, a retrieval-augmented t
 For Klicker, course alignment should be explicit in the retrieval layer, not implied by the prompt.
 
 - Filter by course and teaching unit before broad semantic search.
-- Prefer lecturer-authored material first: slides, exercises, solution snippets, definitions, formulas, worked examples, and misconception notes.
+- Prefer generated course-grounded context first: LightRAG knowledge graph nodes/relationships plus Milvus chunks from slides, exercises, solution snippets, definitions, formulas, and worked examples.
 - Keep course metadata attached to every chunk: course, lecture, week, language, topic, source type, and version.
 - If multiple course sources conflict, do not synthesize silently. Surface the conflict or ask for clarification.
 - If retrieval finds only weakly related material, say so and switch to a general explanation that is clearly labeled as background, not course-grounded fact.

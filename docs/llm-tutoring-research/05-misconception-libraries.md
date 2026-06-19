@@ -9,7 +9,7 @@ Scite was not available in this environment, so this note uses public arXiv pape
 This file focuses on two questions:
 
 1. What shape should a misconception library have for a math tutor?
-2. How should lecturer-authored misconception lists feed an LLM tutor for finance topics such as WACC, CAPM, NPV, duration, risk/return, leverage, and option pricing?
+2. How should generated misconception candidates feed an LLM tutor for finance topics such as WACC, CAPM, NPV, duration, risk/return, leverage, and option pricing?
 
 ## What the math literature implies
 
@@ -50,7 +50,7 @@ Design implication: for finance tutoring, the misconception list should not be p
 
 ### Speculative topic mappings to validate with lecturers
 
-I did not find strong topic-specific misconception papers for every finance concept below. These mappings are plausible tutor-library entries, but they should be validated against lecturer-authored examples before being treated as canonical.
+I did not find strong topic-specific misconception papers for every finance concept below. These mappings are plausible tutor-library entries, but they should be treated as generated candidates grounded in course sources and chats, not canonical hand-authored content.
 
 #### WACC
 
@@ -98,7 +98,7 @@ I did not find strong topic-specific misconception papers for every finance conc
 - Treating volatility as a one-directional bad thing rather than a price input.
 - Ignoring time value, no-arbitrage, and risk-neutral valuation logic.
 
-## How lecturer-authored misconception lists should feed an LLM tutor
+## How generated misconception candidates should feed an LLM tutor
 
 The tutor should not consume a flat list of buzzwords. It should consume structured misconception records.
 
@@ -119,7 +119,7 @@ Recommended runtime flow:
 
 1. Retrieve candidate misconceptions from the student's current step, not only from the final answer.
 2. Pick the most likely misconception privately.
-3. Attach the relevant lecturer-authored example or definition.
+3. Attach the relevant source-backed example, definition, or chat-derived signal.
 4. Generate one short, targeted hint or question.
 5. Keep the misconception label hidden unless the product explicitly wants to reveal it.
 6. Ask for another student attempt before escalating the explanation.
@@ -135,7 +135,7 @@ The literature above supports this flow in three ways:
 For a finance tutor, the first useful misconception library is probably a hybrid:
 
 - math-style malrules for algebraic and present-value mechanics
-- lecturer-authored topic lists for course-specific finance language and examples
+- LightRAG knowledge-graph concepts and Milvus chunks for course-specific finance language and examples
 - private diagnosis rules that map a student step to the most likely misconception
 
 That gives the LLM something concrete to retrieve, diagnose, and remediate without pretending that generic chat behavior is enough.
