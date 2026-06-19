@@ -1,15 +1,19 @@
-import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
-import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  ElementDisplayMode,
+  ElementType,
+  type Choice,
+  type QuestionFeedback,
+} from '../elementTypes'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
 import type { ChoicesStudentResponseType } from '../StudentElement'
 
 export interface SCAnswerOptionsProps {
-  displayMode?: ElementDisplayMode
+  displayMode?: string
   choices: Choice[]
   feedbacks?: QuestionFeedback[] | null
   value?: ChoicesStudentResponseType

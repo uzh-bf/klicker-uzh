@@ -1,15 +1,19 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
-import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
-import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  ElementDisplayMode,
+  type Choice,
+  type ElementType,
+  type QuestionFeedback,
+} from '../elementTypes'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
 import type { ChoicesStudentResponseType } from '../StudentElement'
 
 export interface KPAnswerOptionsProps {
-  displayMode?: ElementDisplayMode
+  displayMode?: string
   type: ElementType
   choices: Choice[]
   feedbacks?: QuestionFeedback[] | null

@@ -180,9 +180,13 @@ Current next action:
   removes the generated GraphQL enum import from `constants.ts` while keeping
   `QUESTION_GROUPS` and `ACTIVE_CHART_TYPES` compatible with mixed GraphQL/tRPC
   consumers.
-- S05G-Q next: continue with the next smallest shared-components generated enum
-  cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup until all
-  S05 gates are clean and explicitly reviewed.
+- S05G-Q shared-components choice answer option generated type cleanup is
+  complete locally. It removes generated GraphQL imports from the choice
+  answer-option/feedback components by using local enum constants and narrow
+  structural `Choice` / `QuestionFeedback` types.
+- S05G-R next: continue with the next smallest shared-components generated
+  enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
+  until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -1534,6 +1538,63 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/constants.ts`
   passed.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/constants.ts packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. Remaining shared-components generated
+GraphQL imports are still blockers for S06.
+
+### 2026-06-19 Completed: S05G-Q Shared Choice Answer Option Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove generated GraphQL
+imports from small shared answer-option components without changing GraphQL
+documents, Apollo providers, `/api/graphql`, or remaining shared generated
+types.
+
+Slice: S05G-Q Shared Choice Answer Option Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `Choice`, `QuestionFeedback`,
+`ElementDisplayMode`, and `ElementType` string/value shapes.
+
+tRPC router.procedure: none.
+
+Active frontend consumers:
+
+- `packages/shared-components/src/questions/SCAnswerOptions.tsx`
+- `packages/shared-components/src/questions/MCAnswerOptions.tsx`
+- `packages/shared-components/src/questions/KPAnswerOptions.tsx`
+- `packages/shared-components/src/evaluation/ChoiceFeedback.tsx`
+
+Intended behavior:
+
+- Keep choice answer rendering and feedback rendering unchanged.
+- Remove generated GraphQL imports from the small answer-option/feedback
+  components.
+- Keep compatibility with generated GraphQL option/evaluation payloads and
+  tRPC DTO payloads by using narrow structural prop types.
+
+What changed:
+
+- Extended `packages/shared-components/src/elementTypes.ts` with structural
+  `Choice` and `QuestionFeedback` types containing only the fields these
+  components render.
+- Switched `SCAnswerOptions`, `MCAnswerOptions`, `KPAnswerOptions`, and
+  `ChoiceFeedback` to local enum constants / structural types.
+- Kept `displayMode` props string-compatible for mixed GraphQL/tRPC callers.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/evaluation/ChoiceFeedback.tsx packages/shared-components/src/questions/SCAnswerOptions.tsx packages/shared-components/src/questions/MCAnswerOptions.tsx packages/shared-components/src/questions/KPAnswerOptions.tsx`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/evaluation/ChoiceFeedback.tsx packages/shared-components/src/questions/SCAnswerOptions.tsx packages/shared-components/src/questions/MCAnswerOptions.tsx packages/shared-components/src/questions/KPAnswerOptions.tsx packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 
@@ -12045,7 +12106,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-Q with the next smallest active shared-components generated
+2. Continue S05G-R with the next smallest active shared-components generated
    enum/type cleanup while keeping GraphQL/Apollo live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

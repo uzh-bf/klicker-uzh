@@ -19,3 +19,12 @@ export const ElementType = {
 } as const
 
 export type ElementType = (typeof ElementType)[keyof typeof ElementType]
+
+export type Choice = {
+  correct?: boolean | null
+  feedback?: string | null
+  ix: number
+  value: string
+}
+
+export type QuestionFeedback = Choice
