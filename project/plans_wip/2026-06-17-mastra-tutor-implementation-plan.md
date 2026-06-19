@@ -2,7 +2,8 @@
 
 Date: 2026-06-17
 
-Status: implementation complete, validation in progress
+Status: implementation complete, draft PR #5129 open against
+`codex/mastra-chat-openrouter-smoke`
 
 Inputs:
 
@@ -35,9 +36,14 @@ Implemented on branch `codex/tutor-research-mastra-plan`:
 
 Known validation caveats:
 
-- Root pre-commit remains blocked by unrelated generated-output gaps in the monorepo.
+- Root pre-commit has been noisy on unrelated generated-output gaps in the
+  monorepo; use focused checks for this branch and let PR CI be the shared gate.
 - Local Rollup builds emit `dist` and then hang in this environment; dist generation is complete before interruption.
 - Persistent memory remains disabled unless all privacy gate flags pass.
+- The first tutor schema change is intentionally only the append-only
+  `TutorEvent` log; generated guidance, misconceptions, hint ladders, and
+  learner-state tables are deferred until real traces justify their query
+  patterns and review workflow.
 
 ## 1. Objective
 
@@ -322,6 +328,15 @@ Do not add first-pass tables for skill packs, knowledge components, misconceptio
 ### Tutor events
 
 The only first-pass tutor table is an append-only event log for quality instrumentation and feedback-uptake detection.
+
+Purpose:
+
+- record which tutor move was selected, whether feedback was delivered, whether
+  the student made a follow-up attempt, and whether verifier checks fired;
+- support eval/debug dashboards without storing generated guidance as required
+  course content;
+- keep payloads minimized and best-effort, with logging disabled by
+  `CHAT_TUTOR_EVENT_LOGGING_ENABLED=0`.
 
 ```prisma
 model TutorEvent {
@@ -636,26 +651,30 @@ Goal:
 
 Backend:
 
-- Prisma models from section 5
-- future GraphQL queries/mutations for compact review queues
-- local seed fixtures for finance:
-  - WACC
-  - CAPM
-  - NPV
-  - duration
-  - risk/return
-  - leverage
-  - option pricing
+- no first-pass Prisma models beyond `TutorEvent`
+- future GraphQL queries/mutations only after real traces prove the review
+  workflow and retention rules
+- guidance candidates generated asynchronously from real inputs:
+  - LightRAG concepts and relationships
+  - Milvus chunks and source metadata
+  - anonymized or minimized tutor-chat telemetry
+  - TutorBench / RAG eval failures
+  - lecturer corrections on high-impact guidance proposals
 
 Frontend:
 
-- start with minimal manage UI or admin-only JSON editor
-- no polished UX needed for first internal validation
+- start with an exception-based review queue, not bulk authoring
+- lecturer actions should be approve, suppress, edit, or flag for regeneration
+- no required upfront lecturer review before the tutor can run from course RAG
 
 LLM assist:
 
-- draft misconceptions and hint ladders from course material
-- lecturer must approve before published
+- draft misconceptions, hint ladders, worked micro-steps, and directness rules
+  from course material plus observed learner failures
+- each candidate must include provenance, source chunks, confidence, and usage
+  telemetry
+- only approved candidates can influence student chat; unpublished drafts are
+  invisible to runtime
 
 Exit:
 

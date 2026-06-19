@@ -237,9 +237,28 @@ Acceptance:
 
 ## Next Steps
 
-1. Implement `--rag-mode`.
-2. Add `project/evals/tutor-rag/cases.json`.
-3. Run dry-run and targeted TypeScript check.
-4. Wire finance fixture data or live finance `doc_query`.
-5. Add structured retrieval traces to chat-api eval output.
-6. Add semantic judge as second PR after baseline artifacts exist.
+1. Land or keep stacking on the Mastra baseline branch until PR #5129 is green
+   against `codex/mastra-chat-openrouter-smoke`.
+2. Keep the current CI fixes narrow:
+   - `check-types.yml` builds `packages/chat-engine` before checking
+     `apps/chat-api`;
+   - syncpack allows the intentional zod v3/v4 split between existing runtimes
+     and the Mastra engine.
+3. Provision real finance/course data through the production retrieval path:
+   LightRAG knowledge graph plus Milvus chunks attached to a real chatbot and
+   accessible participant.
+4. Replace the local KB MCP stub with the real `doc_query` service and record
+   stable chatbot, course, participant, and model configuration in the run note.
+5. Expose structured retrieval traces from `apps/chat-api` / MCP / RAG into
+   TutorBench result rows: retrieval backend, query, evidence IDs, chunk titles,
+   citation IDs, and trace availability.
+6. Run the full three-case real-RAG TutorBench smoke against an approved real
+   model, then inspect and save JSONL plus a human run note under
+   `project/evals/tutor-rag/`.
+7. Add the semantic judge only after real retrieval traces exist, scoring
+   diagnosis, scaffold fit, ZPD/directness, grounding, citation fidelity, and
+   answer leakage separately from deterministic checks.
+8. Use real chats, eval failures, LightRAG concepts, and Milvus chunks to
+   generate optional guidance candidates asynchronously. Do not require
+   lecturers to author upfront misconception lists, hint ladders, or seed tutor
+   artifacts.
