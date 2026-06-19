@@ -2,7 +2,8 @@
 
 Date: 2026-06-18
 
-Status: planned
+Status: implementation complete, one-case real e2e passed; full finance RAG
+grounding still needs live finance KB data
 
 Branch: `codex/tutor-research-mastra-plan`
 
@@ -30,15 +31,28 @@ Done:
 - Generic TutorBench runner can call `apps/chat-api` directly.
 - Dry-run validates prompt, output, and scoring layout.
 - Tutor prompt includes safe MathTutorBench pedagogy deltas.
+- `--rag-mode inline|real` implemented in the generic runner.
+- Real RAG finance case pack added under `project/evals/tutor-rag/`.
+- RAG evidence capture added for visible citations and expected keyword
+  coverage.
+- Real-mode dry-run passed with no inline source snippets in prompts.
+- Local chat-api and local KB MCP stub were started and reached for e2e setup
+  validation.
+- One-case real e2e ran through `apps/chat-api` plus OpenRouter
+  `deepseek-v4-pro`.
+- MCP stub logs confirmed chat-api called the RAG endpoint with the expected
+  chatbot header.
+- Validation note recorded in
+  `project/evals/tutor-rag/2026-06-19-rag-tutorbench-validation.md`.
 
 Missing:
 
-- Real RAG mode that does not inline source material into the eval prompt.
-- Real course/chatbot fixture IDs documented for repeatable runs.
-- RAG trace or citation evidence persisted in eval outputs.
-- Course-specific RAG cases tied to seeded or staging course material.
+- Real course/chatbot fixture IDs confirmed for repeatable local runs.
+- Structured retrieval trace exposed by `apps/chat-api`.
 - Semantic judging for diagnosis, hint quality, grounding, and leakage.
 - Multi-turn TutorBench cases.
+- Full three-case e2e against live finance RAG; current local MCP stub contains
+  algorithm fixtures, so it validates plumbing but not finance grounding.
 
 ## Run Requirements
 
@@ -62,7 +76,8 @@ Data:
 - Artifacts are indexed into the retrieval backend used by `apps/chat-api`.
 - Participant can access the course/chatbot.
 - Tutor mode uses retrieval path, not just base prompt.
-- External model data egress is approved before `deepseek-v4-pro` run.
+- External model data egress is approved before `deepseek-v4-pro` run, or a
+  local/private OpenAI-compatible model endpoint is configured.
 
 ## Slice 1: Real RAG Mode
 
@@ -225,5 +240,6 @@ Acceptance:
 1. Implement `--rag-mode`.
 2. Add `project/evals/tutor-rag/cases.json`.
 3. Run dry-run and targeted TypeScript check.
-4. Run real local smoke once course/chatbot IDs are confirmed.
-5. Add semantic judge as second PR after baseline artifacts exist.
+4. Wire finance fixture data or live finance `doc_query`.
+5. Add structured retrieval traces to chat-api eval output.
+6. Add semantic judge as second PR after baseline artifacts exist.

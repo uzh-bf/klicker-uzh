@@ -1,0 +1,218 @@
+[
+  {
+    "id": "rag-finance-wacc-001",
+    "source": "Klicker real RAG TutorBench seed case",
+    "domain": "finance",
+    "subdomain": "WACC; capital structure",
+    "task": "A Banking and Finance student asks about WACC using the course chatbot. The answer should use course context if retrieval is available.",
+    "dialogHistory": [
+      {
+        "role": "student",
+        "content": "I computed WACC by averaging the debt rate and the equity return. That should be fine because there are two financing sources, right?"
+      }
+    ],
+    "studentAttempt": "I used a simple average of the debt rate and equity return.",
+    "studentState": "misconception",
+    "learningObjective": "Use capital-structure weights and the after-tax cost of debt when explaining WACC.",
+    "expertSolution": "WACC weights the cost of equity and after-tax cost of debt by their financing shares. It is not a simple average unless the weights happen to be equal and taxes are irrelevant.",
+    "goldDiagnosis": {
+      "isCorrect": false,
+      "firstIssue": "The student used an unweighted average instead of capital-structure weights.",
+      "misconception": "Confuses a weighted average with a simple average.",
+      "missingConcept": "Debt and equity weights in WACC."
+    },
+    "goldNextMove": "hint",
+    "allowedDisclosure": "micro_step",
+    "constraints": {
+      "language": "en",
+      "maxQuestions": 1,
+      "maxSentences": 4,
+      "requiresCitation": true,
+      "forbidFinalAnswer": true
+    },
+    "rubric": [
+      {
+        "criterion": "issue_diagnosis",
+        "weight": 2,
+        "description": "Identifies the simple-average error."
+      },
+      {
+        "criterion": "scaffolding_quality",
+        "weight": 2,
+        "description": "Guides the learner to identify debt/equity weights before computing."
+      },
+      {
+        "criterion": "grounding",
+        "weight": 2,
+        "description": "Uses and cites retrieved course context when available."
+      },
+      {
+        "criterion": "question_quality",
+        "weight": 1,
+        "description": "Asks one targeted next-action question."
+      },
+      {
+        "criterion": "answer_leakage_control",
+        "weight": 1,
+        "description": "Does not jump to a full solved answer."
+      }
+    ],
+    "metadata": {
+      "expectedRetrievalKeywords": [
+        "WACC",
+        "weighted average",
+        "debt",
+        "equity",
+        "after-tax cost of debt"
+      ],
+      "expectedCitationKeywords": ["WACC", "debt", "equity"],
+      "expectedResponseKeywords": ["weighted", "debt", "equity"],
+      "forbiddenResponseKeywords": ["simple average is correct"],
+      "forbiddenCitationMarkers": ["according to the internet", "Wikipedia"]
+    }
+  },
+  {
+    "id": "rag-finance-capm-beta-001",
+    "source": "Klicker real RAG TutorBench seed case",
+    "domain": "finance",
+    "subdomain": "CAPM; beta",
+    "task": "A Banking and Finance student asks about CAPM beta using the course chatbot. The answer should use course context if retrieval is available.",
+    "dialogHistory": [
+      {
+        "role": "student",
+        "content": "A stock with beta 2 should have exactly twice the total return of the market, so if the market return is 8%, the stock return is 16%."
+      }
+    ],
+    "studentAttempt": "I doubled the market return because beta is 2.",
+    "studentState": "misconception",
+    "learningObjective": "Explain beta as sensitivity to market excess return in CAPM, not a direct multiplier of total market return.",
+    "expertSolution": "In CAPM, expected return equals the risk-free rate plus beta times the market risk premium. Beta scales the market excess return, not the total market return.",
+    "goldDiagnosis": {
+      "isCorrect": false,
+      "firstIssue": "The student multiplied total market return instead of the market risk premium.",
+      "misconception": "Treats beta as a multiplier for total market return.",
+      "missingConcept": "Risk-free rate and market risk premium in CAPM."
+    },
+    "goldNextMove": "hint",
+    "allowedDisclosure": "micro_step",
+    "constraints": {
+      "language": "en",
+      "maxQuestions": 1,
+      "maxSentences": 4,
+      "requiresCitation": true,
+      "forbidFinalAnswer": true
+    },
+    "rubric": [
+      {
+        "criterion": "issue_diagnosis",
+        "weight": 2,
+        "description": "Identifies that beta scales excess return, not total return."
+      },
+      {
+        "criterion": "scaffolding_quality",
+        "weight": 2,
+        "description": "Prompts the learner to separate risk-free rate and market risk premium."
+      },
+      {
+        "criterion": "grounding",
+        "weight": 2,
+        "description": "Uses and cites retrieved course context when available."
+      },
+      {
+        "criterion": "question_quality",
+        "weight": 1,
+        "description": "Asks one targeted next-action question."
+      },
+      {
+        "criterion": "correctness",
+        "weight": 1,
+        "description": "Does not reinforce the total-return multiplier misconception."
+      }
+    ],
+    "metadata": {
+      "expectedRetrievalKeywords": [
+        "CAPM",
+        "beta",
+        "risk-free rate",
+        "market risk premium",
+        "expected return"
+      ],
+      "expectedCitationKeywords": ["CAPM", "beta"],
+      "expectedResponseKeywords": ["risk-free", "market risk premium", "beta"],
+      "forbiddenResponseKeywords": ["beta doubles total market return"],
+      "forbiddenCitationMarkers": ["according to the internet", "Wikipedia"]
+    }
+  },
+  {
+    "id": "rag-finance-bond-yield-001",
+    "source": "Klicker real RAG TutorBench seed case",
+    "domain": "finance",
+    "subdomain": "bonds; yield and price",
+    "task": "A Banking and Finance student asks about bond prices and yields using the course chatbot. The answer should use course context if retrieval is available.",
+    "dialogHistory": [
+      {
+        "role": "student",
+        "content": "If the market yield goes up, the bond price should go up too because investors get a higher return."
+      }
+    ],
+    "studentAttempt": "I think bond price and yield move in the same direction.",
+    "studentState": "misconception",
+    "learningObjective": "Explain the inverse relation between bond prices and yields through discounting of promised cash flows.",
+    "expertSolution": "For fixed promised cash flows, a higher discount rate lowers present value, so bond prices and yields move inversely.",
+    "goldDiagnosis": {
+      "isCorrect": false,
+      "firstIssue": "The student assumes price and yield move in the same direction.",
+      "misconception": "Misses present-value discounting.",
+      "missingConcept": "Inverse price-yield relation."
+    },
+    "goldNextMove": "worked_micro_step",
+    "allowedDisclosure": "micro_step",
+    "constraints": {
+      "language": "en",
+      "maxQuestions": 1,
+      "maxSentences": 4,
+      "requiresCitation": true,
+      "forbidFinalAnswer": true
+    },
+    "rubric": [
+      {
+        "criterion": "issue_diagnosis",
+        "weight": 2,
+        "description": "Identifies the direction error."
+      },
+      {
+        "criterion": "scaffolding_quality",
+        "weight": 2,
+        "description": "Uses discounting or present value as the next scaffold."
+      },
+      {
+        "criterion": "grounding",
+        "weight": 2,
+        "description": "Uses and cites retrieved course context when available."
+      },
+      {
+        "criterion": "answer_leakage_control",
+        "weight": 1,
+        "description": "Gives a micro-step without over-solving."
+      },
+      {
+        "criterion": "tone_and_clarity",
+        "weight": 1,
+        "description": "Clear, concise, supportive."
+      }
+    ],
+    "metadata": {
+      "expectedRetrievalKeywords": [
+        "bond price",
+        "yield",
+        "discount rate",
+        "present value",
+        "cash flows"
+      ],
+      "expectedCitationKeywords": ["bond", "yield", "present value"],
+      "expectedResponseKeywords": ["discount", "present value", "yield"],
+      "forbiddenResponseKeywords": ["price and yield move in the same direction"],
+      "forbiddenCitationMarkers": ["according to the internet", "Wikipedia"]
+    }
+  }
+]

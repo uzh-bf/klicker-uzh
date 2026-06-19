@@ -4,6 +4,8 @@ import { basename, extname, join, resolve } from 'path'
 
 type CliArgs = Record<string, string | boolean>
 
+type RagMode = 'inline' | 'real'
+
 type DialogTurn = {
   role: 'teacher' | 'student' | 'assistant' | 'system'
   content: string
@@ -93,12 +95,14 @@ type CaseResult = {
   caseId: string
   domain: string
   subdomain: string | null
+  ragMode: RagMode
   prompt: string
   response: string
   finishMetadata: UiStreamPart['messageMetadata'] | null
   userMessageId: string | null
   assistantMessageId: string | null
   score: ReturnType<typeof scoreRubric>
+  evidence: ReturnType<typeof collectCaseEvidence>
 }
 
 const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -151,6 +155,20 @@ function envValue(name: string, fallback: string): string {
   return process.env[name] && process.env[name]!.length > 0
     ? process.env[name]!
     : fallback
+}
+
+function requireExplicitEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} must be set explicitly for --rag-mode real`)
+  }
+  return value
+}
+
+function parseRagMode(value: string | boolean | undefined): RagMode {
+  if (value === undefined || value === false) return 'inline'
+  if (value === 'inline' || value === 'real') return value
+  throw new Error('--rag-mode must be inline or real')
 }
 
 function base64url(value: string | Buffer) {
@@ -272,8 +290,16 @@ function disclosureInstruction(
   return 'Give a hint or scaffold only; do not reveal the final answer.'
 }
 
-function buildTutorRuntimeMessage(testCase: GenericTutorCase) {
+function buildTutorRuntimeMessage(
+  testCase: GenericTutorCase,
+  ragMode: RagMode
+) {
   const constraints = testCase.constraints ?? {}
+  const includeSourceMaterial = ragMode === 'inline'
+  const hasSourceMaterial =
+    includeSourceMaterial &&
+    testCase.sourceMaterial &&
+    testCase.sourceMaterial.length > 0
   const parts = [
     'TutorBench evaluation case. Respond as the student-facing tutor, not as a grader.',
     `Domain: ${testCase.domain}${testCase.subdomain ? ` / ${testCase.subdomain}` : ''}`,
@@ -288,8 +314,14 @@ function buildTutorRuntimeMessage(testCase: GenericTutorCase) {
     Number.isFinite(constraints.maxSentences)
       ? `Use at most ${constraints.maxSentences} sentence(s).`
       : '',
-    constraints.requiresCitation
+    constraints.requiresCitation && ragMode === 'inline'
       ? 'Use the provided source material and cite it.'
+      : '',
+    constraints.requiresCitation && ragMode === 'real'
+      ? 'Use available course context from the tutor runtime and cite it; if course context is missing, say what is missing.'
+      : '',
+    ragMode === 'real'
+      ? 'Do not assume hidden source text in this prompt; rely on the tutor runtime retrieval path.'
       : '',
     constraints.outputFormat
       ? `Output format: ${constraints.outputFormat}`
@@ -298,7 +330,7 @@ function buildTutorRuntimeMessage(testCase: GenericTutorCase) {
     'Task:',
     testCase.task,
     '',
-    testCase.sourceMaterial && testCase.sourceMaterial.length > 0
+    hasSourceMaterial
       ? [
           'Source material:',
           formatSourceMaterial(testCase.sourceMaterial),
@@ -504,6 +536,75 @@ function forbiddenKeywordPenalty(forbiddenKeywords: string[], text: string) {
   return hits.length === 0 ? 1 : 0
 }
 
+function keywordEvidence(expectedKeywords: string[], text: string) {
+  const normalized = normalizeText(text)
+  const matched = expectedKeywords.filter((keyword) =>
+    normalized.includes(normalizeText(keyword))
+  )
+  const missing = expectedKeywords.filter(
+    (keyword) => !matched.includes(keyword)
+  )
+  return {
+    expected: expectedKeywords,
+    matched,
+    missing,
+    coverage:
+      expectedKeywords.length > 0
+        ? matched.length / expectedKeywords.length
+        : null,
+  }
+}
+
+function extractCitationMarkers(text: string) {
+  const markers = new Set<string>()
+  for (const match of text.matchAll(/https?:\/\/[^\s)]+/gi)) {
+    markers.add(match[0])
+  }
+  for (const match of text.matchAll(/\[[^\]\n]{1,80}\]/g)) {
+    markers.add(match[0])
+  }
+  for (const match of text.matchAll(
+    /\b(?:source|reference|quelle)\b[:\s-]*/gi
+  )) {
+    markers.add(match[0].trim())
+  }
+  return Array.from(markers)
+}
+
+function collectCaseEvidence(testCase: GenericTutorCase, responseText: string) {
+  const expectedRetrievalKeywords = metadataStringArray(
+    testCase.metadata,
+    'expectedRetrievalKeywords'
+  )
+  const expectedCitationKeywords = metadataStringArray(
+    testCase.metadata,
+    'expectedCitationKeywords'
+  )
+  const forbiddenCitationMarkers = metadataStringArray(
+    testCase.metadata,
+    'forbiddenCitationMarkers'
+  )
+  const normalizedResponse = normalizeText(responseText)
+  const forbiddenCitationHits = forbiddenCitationMarkers.filter((marker) =>
+    normalizedResponse.includes(normalizeText(marker))
+  )
+
+  return {
+    citationMarkers: extractCitationMarkers(responseText),
+    retrievalTraceStatus: 'unavailable',
+    retrievalKeywordEvidence: keywordEvidence(
+      expectedRetrievalKeywords,
+      responseText
+    ),
+    citationKeywordEvidence: keywordEvidence(
+      expectedCitationKeywords,
+      responseText
+    ),
+    forbiddenCitationMarkers,
+    forbiddenCitationHits,
+  }
+}
+
 function scoreRubric(testCase: GenericTutorCase, responseText: string) {
   const questionCount = countQuestions(responseText)
   const sentenceCount = countSentences(responseText)
@@ -625,13 +726,21 @@ function writeJson(path: string, value: unknown) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf-8')
 }
 
+function averageNullable(values: Array<number | null>) {
+  const scored = values.filter((value): value is number => value !== null)
+  return scored.length > 0
+    ? scored.reduce((sum, value) => sum + value, 0) / scored.length
+    : null
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const repoRoot = findRepoRoot(process.cwd())
   const dryRun = args['dry-run'] === true
+  const ragMode = parseRagMode(args['rag-mode'])
   const casesPath =
     typeof args.cases === 'string'
-      ? resolve(args.cases)
+      ? resolve(repoRoot, args.cases)
       : join(repoRoot, 'project/evals/tutor-generic/cases.json')
   const runId =
     typeof args['run-id'] === 'string' && args['run-id'].length > 0
@@ -658,22 +767,32 @@ async function main() {
   const cases = loadCases(casesPath).slice(0, maxCases ?? undefined)
   mkdirSync(outputRoot, { recursive: true })
 
-  const chatApiBaseUrl = envValue(
-    'TUTORBENCH_CHAT_API_BASE_URL',
-    'http://127.0.0.1:3305'
+  const realRagCasesNeedRuntime = cases.some(
+    (testCase) =>
+      metadataStringArray(testCase.metadata, 'expectedRetrievalKeywords')
+        .length > 0 ||
+      metadataStringArray(testCase.metadata, 'expectedCitationKeywords')
+        .length > 0
   )
-  const chatbotId = envValue('TUTORBENCH_CHATBOT_ID', DEFAULT_CHATBOT_ID)
-  const participantId = envValue(
-    'TUTORBENCH_PARTICIPANT_ID',
-    DEFAULT_PARTICIPANT_ID
-  )
+  const chatApiBaseUrl =
+    ragMode === 'real' && !dryRun && realRagCasesNeedRuntime
+      ? requireExplicitEnv('TUTORBENCH_CHAT_API_BASE_URL')
+      : envValue('TUTORBENCH_CHAT_API_BASE_URL', 'http://127.0.0.1:3305')
+  const chatbotId =
+    ragMode === 'real' && !dryRun && realRagCasesNeedRuntime
+      ? requireExplicitEnv('TUTORBENCH_CHATBOT_ID')
+      : envValue('TUTORBENCH_CHATBOT_ID', DEFAULT_CHATBOT_ID)
+  const participantId =
+    ragMode === 'real' && !dryRun && realRagCasesNeedRuntime
+      ? requireExplicitEnv('TUTORBENCH_PARTICIPANT_ID')
+      : envValue('TUTORBENCH_PARTICIPANT_ID', DEFAULT_PARTICIPANT_ID)
   const selectedModel = envValue('TUTORBENCH_SELECTED_MODEL', 'local-e2e-model')
   const selectedMode = envValue('TUTORBENCH_SELECTED_MODE', 'tutor')
   const appSecret = dryRun ? null : requireEnv('APP_SECRET')
 
   const caseResults: CaseResult[] = []
   for (const testCase of cases) {
-    const prompt = buildTutorRuntimeMessage(testCase)
+    const prompt = buildTutorRuntimeMessage(testCase, ragMode)
     const response = dryRun
       ? {
           userMessageId: null,
@@ -693,16 +812,19 @@ async function main() {
         })
 
     const score = scoreRubric(testCase, response.text)
+    const evidence = collectCaseEvidence(testCase, response.text)
     caseResults.push({
       caseId: testCase.id,
       domain: testCase.domain,
       subdomain: testCase.subdomain ?? null,
+      ragMode,
       prompt,
       response: response.text,
       finishMetadata: response.finish?.messageMetadata ?? null,
       userMessageId: response.userMessageId,
       assistantMessageId: response.assistantMessageId,
       score,
+      evidence,
     })
   }
 
@@ -712,6 +834,7 @@ async function main() {
   const summary = {
     runId,
     dryRun,
+    ragMode,
     casesPath,
     caseCount: caseResults.length,
     scoredCaseCount: scored.length,
@@ -748,11 +871,29 @@ async function main() {
         }
       )
     ),
+    rag: {
+      retrievalTraceStatus: 'unavailable',
+      averageRetrievalKeywordCoverage: averageNullable(
+        caseResults.map(
+          (result) => result.evidence.retrievalKeywordEvidence.coverage
+        )
+      ),
+      averageCitationKeywordCoverage: averageNullable(
+        caseResults.map(
+          (result) => result.evidence.citationKeywordEvidence.coverage
+        )
+      ),
+      forbiddenCitationHitCount: caseResults.reduce(
+        (sum, result) => sum + result.evidence.forbiddenCitationHits.length,
+        0
+      ),
+    },
   }
 
   writeJson(join(outputRoot, 'manifest.json'), {
     runId,
     dryRun,
+    ragMode,
     casesPath,
     caseFile: basename(casesPath),
     chatApiBaseUrl,
