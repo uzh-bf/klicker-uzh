@@ -9,7 +9,6 @@ import {
   CreateGroupActivityMutationVariables,
   EditGroupActivityMutation,
   EditGroupActivityMutationVariables,
-  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { GroupActivityFormValues } from '../WizardLayout'
@@ -39,6 +38,7 @@ interface GroupActivityFormSubmissionProps {
       | undefined
   ) => Promise<FetchResult<EditGroupActivityMutation>>
   setIsWizardCompleted: (isCompleted: boolean) => void
+  invalidateCourseDetail: (courseId: string) => Promise<void>
   onError: () => void
 }
 
@@ -49,6 +49,7 @@ async function submitGroupActivityForm({
   createGroupActivity,
   editGroupActivity,
   setIsWizardCompleted,
+  invalidateCourseDetail,
   onError,
 }: GroupActivityFormSubmissionProps) {
   try {
@@ -75,60 +76,17 @@ async function submitGroupActivityForm({
             order: 0,
           },
         },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.editGroupActivity?.courseId) return
-
-          // if the course assignment changed, remove the microlearning from the previous course
-          if (
-            previousCourseId &&
-            res.editGroupActivity.courseId !== previousCourseId
-          ) {
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: previousCourseId },
-              },
-              (data) => {
-                if (!data?.course) return data
-
-                return {
-                  course: {
-                    ...data.course,
-                    groupActivitiesInfo:
-                      data.course.groupActivitiesInfo?.filter(
-                        (ga) => ga.id !== res.editGroupActivity!.id
-                      ),
-                  },
-                }
-              }
-            )
-          }
-
-          // updated / add the group activity in the currently assigned course
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.editGroupActivity.courseId },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              const activities = [
-                ...(data.course.groupActivitiesInfo?.filter(
-                  (ga) => ga.id !== res.editGroupActivity!.id
-                ) ?? []),
-                res.editGroupActivity!,
-              ]
-              return {
-                course: { ...data.course, groupActivitiesInfo: activities },
-              }
-            }
-          )
-        },
       })
 
       success = Boolean(result?.editGroupActivity)
+      if (result?.editGroupActivity?.courseId) {
+        const courseIds = new Set(
+          [previousCourseId, result.editGroupActivity.courseId].filter(
+            (courseId): courseId is string => Boolean(courseId)
+          )
+        )
+        await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
+      }
     } else {
       const { data: result } = await createGroupActivity({
         variables: {
@@ -150,34 +108,12 @@ async function submitGroupActivityForm({
             order: 0,
           },
         },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.createGroupActivity?.courseId) return
-
-          // change the status of the group activity on the course overview back to draft
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.createGroupActivity.courseId },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              return {
-                course: {
-                  ...data.course,
-                  groupActivitiesInfo: [
-                    ...(data.course.groupActivitiesInfo ?? []),
-                    res.createGroupActivity!,
-                  ],
-                },
-              }
-            }
-          )
-        },
       })
 
       success = Boolean(result?.createGroupActivity)
+      if (result?.createGroupActivity?.courseId) {
+        await invalidateCourseDetail(result.createGroupActivity.courseId)
+      }
     }
 
     if (success) {

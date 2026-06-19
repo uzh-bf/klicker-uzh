@@ -14,6 +14,7 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
@@ -272,6 +273,14 @@ function MicroLearningWizard({
   const [editMicroLearning, { data: editingData }] = useMutation(
     EditMicroLearningDocument
   )
+  const utils = trpc.useUtils()
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
+  )
+
   const handleSubmit = useCallback(
     async (values: MicroLearningFormValues) => {
       submitMicrolearningForm({
@@ -281,6 +290,7 @@ function MicroLearningWizard({
         editMode,
         createMicroLearning,
         editMicroLearning,
+        invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -299,7 +309,14 @@ function MicroLearningWizard({
           }),
       })
     },
-    [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
+    [
+      createMicroLearning,
+      editMicroLearning,
+      editMode,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateCourseDetail,
+    ]
   )
 
   const activityId =

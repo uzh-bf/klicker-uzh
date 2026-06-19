@@ -9,7 +9,6 @@ import {
   CreateLiveQuizMutationVariables,
   EditLiveQuizMutation,
   EditLiveQuizMutationVariables,
-  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
 
@@ -39,6 +38,7 @@ interface LiveQuizFormSubmissionProps {
       | undefined
   ) => Promise<FetchResult<EditLiveQuizMutation>>
   setIsWizardCompleted: (isCompleted: boolean) => void
+  invalidateCourseDetail: (courseId: string) => Promise<void>
   onError: () => void
 }
 
@@ -50,6 +50,7 @@ async function submitLiveQuizForm({
   createLiveQuiz,
   editLiveQuiz,
   setIsWizardCompleted,
+  invalidateCourseDetail,
   onError,
 }: LiveQuizFormSubmissionProps) {
   const blockSubmission = values.blocks.map(
@@ -96,62 +97,16 @@ async function submitLiveQuizForm({
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
         },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful or no course was assigned (and the activity was not removed from another course), return early
-          if (
-            !res?.editLiveQuiz ||
-            (!res.editLiveQuiz.courseId && !previousCourseId)
-          )
-            return
-
-          // if the course was changed, remove the live quiz from the previous course
-          if (
-            previousCourseId &&
-            previousCourseId !== res.editLiveQuiz.courseId
-          ) {
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: previousCourseId },
-              },
-              (data) => {
-                if (!data?.course) return data
-
-                const activities = data.course.liveQuizzesInfo?.filter(
-                  (ga) => ga.id !== res.editLiveQuiz!.id
-                )
-                return {
-                  course: { ...data.course, liveQuizzesInfo: activities },
-                }
-              }
-            )
-          }
-
-          // replace / add the live quiz in the course overview with the new version
-          if (res.editLiveQuiz.courseId) {
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: res.editLiveQuiz.courseId! },
-              },
-              (data) => {
-                if (!data?.course) return data
-
-                const activities = [
-                  ...(data.course.liveQuizzesInfo?.filter(
-                    (ga) => ga.id !== res.editLiveQuiz!.id
-                  ) ?? []),
-                  res.editLiveQuiz!,
-                ]
-                return {
-                  course: { ...data.course, liveQuizzesInfo: activities },
-                }
-              }
-            )
-          }
-        },
       })
       success = Boolean(liveQuiz.data?.editLiveQuiz)
+      if (liveQuiz.data?.editLiveQuiz) {
+        const courseIds = new Set(
+          [previousCourseId, liveQuiz.data.editLiveQuiz.courseId].filter(
+            (courseId): courseId is string => Boolean(courseId)
+          )
+        )
+        await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
+      }
     } else {
       const liveQuiz = await createLiveQuiz({
         variables: {
@@ -172,33 +127,11 @@ async function submitLiveQuizForm({
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
         },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.createLiveQuiz?.courseId) return
-
-          // change the status of the live quiz on the course overview back to draft
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.createLiveQuiz.courseId },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              return {
-                course: {
-                  ...data.course,
-                  liveQuizzesInfo: [
-                    ...(data.course.liveQuizzesInfo ?? []),
-                    res.createLiveQuiz!,
-                  ],
-                },
-              }
-            }
-          )
-        },
       })
       success = Boolean(liveQuiz.data?.createLiveQuiz)
+      if (liveQuiz.data?.createLiveQuiz?.courseId) {
+        await invalidateCourseDetail(liveQuiz.data.createLiveQuiz.courseId)
+      }
     }
 
     if (success) {

@@ -15,6 +15,7 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
@@ -254,6 +255,14 @@ function PracticeQuizWizard({
   const [editPracticeQuiz, { data: editingData }] = useMutation(
     EditPracticeQuizDocument
   )
+  const utils = trpc.useUtils()
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
+  )
+
   const handleSubmit = useCallback(
     async (values: PracticeQuizFormValues) => {
       submitPracticeQuizForm({
@@ -263,6 +272,7 @@ function PracticeQuizWizard({
         editMode,
         createPracticeQuiz,
         editPracticeQuiz,
+        invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -281,7 +291,14 @@ function PracticeQuizWizard({
           }),
       })
     },
-    [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
+    [
+      createPracticeQuiz,
+      editMode,
+      editPracticeQuiz,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateCourseDetail,
+    ]
   )
 
   const activityId =

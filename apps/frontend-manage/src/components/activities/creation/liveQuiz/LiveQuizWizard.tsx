@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
@@ -283,6 +284,13 @@ function LiveQuizWizard({
     CreateLiveQuizDocument
   )
   const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
+  const utils = trpc.useUtils()
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
+  )
 
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
@@ -293,6 +301,7 @@ function LiveQuizWizard({
         values,
         createLiveQuiz,
         editLiveQuiz,
+        invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -311,7 +320,14 @@ function LiveQuizWizard({
           }),
       })
     },
-    [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
+    [
+      createLiveQuiz,
+      editMode,
+      editLiveQuiz,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateCourseDetail,
+    ]
   )
 
   const isActivityReviewer =

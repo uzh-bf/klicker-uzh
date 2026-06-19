@@ -280,6 +280,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Activity Authoring Submit Refetch Cleanup
+
+Status: complete for the remaining S04L authoring refetch cleanup. Scope was
+limited to replacing `GetSingleCourseDocument` Apollo cache updates in the live
+quiz, practice quiz, microlearning, and group activity submit helpers with a
+wizard-provided `course.detail` invalidation callback. This did not migrate the
+underlying GraphQL create/edit mutations, realtime subscriptions, S05, or S06
+cleanup.
+
+Slice: S04L Activity Authoring Submit Refetch Cleanup
+
+Behavior source:
+
+- Existing GraphQL create/edit activity mutations and their
+  `GetSingleCourseDocument` cache update behavior.
+- `course.detail` tRPC read from the completed S04J course detail slice.
+
+Implemented:
+
+- Add a narrow `invalidateCourseDetail(courseId)` callback from each authoring
+  wizard via `trpc.useUtils()`.
+- Remove `GetSingleCourseDocument` cache update blocks from the four submit
+  helpers and invalidate previous/current course IDs after successful mutation
+  results.
+- Keep GraphQL create/edit mutations, Apollo provider/runtime, generated
+  artifacts, and realtime consumers live.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04L authoring files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with the existing Next module-type, next-intl, Browserslist,
+  `MISSING_MESSAGE` for `/qr/[...args]`, and large-page-data warnings.
+- `rg -n "GetSingleCourseDocument|GetSingleCourse" apps/frontend-manage/src`:
+  no matches.
+- Browser smoke used the local backend/auth/manage stack on localhost, with a
+  generated local Hatchet token and backend `NODE_ENV=development` so arbitrary
+  local GraphQL operations remain allowed during coexistence. Verified delegated
+  lecturer login, course detail render for `Testkurs`, opened the `Live Quiz 3`
+  action menu, and opened `Edit Quiz` without submitting changes.
+- Screenshot evidence:
+  `/tmp/agent-browser-shots/s04-authoring-refetch-01-login.png`,
+  `/tmp/agent-browser-shots/s04-authoring-refetch-02-course-detail.png`,
+  `/tmp/agent-browser-shots/s04-authoring-refetch-03-live-quiz-edit-wizard.png`.
+
+Residual risk / next S04 work:
+
+- S05 realtime and S06 cleanup were not started.
+- Continue only remaining S04 findings; pause before S05/S06.
+
 ### 2026-06-19 Completed: S04L Course Activity Refetch Cleanup
 
 Status: complete for a narrow S04L refetch cleanup. Scope was limited to replacing

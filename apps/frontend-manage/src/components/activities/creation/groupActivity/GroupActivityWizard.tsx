@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {
@@ -306,6 +307,13 @@ function GroupActivityWizard({
   const [editGroupActivity, { data: editingData }] = useMutation(
     EditGroupActivityDocument
   )
+  const utils = trpc.useUtils()
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
+  )
 
   const handleSubmit = useCallback(
     async (values: GroupActivityFormValues) => {
@@ -315,6 +323,7 @@ function GroupActivityWizard({
         values,
         createGroupActivity,
         editGroupActivity,
+        invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -333,7 +342,13 @@ function GroupActivityWizard({
           }),
       })
     },
-    [createGroupActivity, editGroupActivity, initialValues?.id]
+    [
+      createGroupActivity,
+      editGroupActivity,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateCourseDetail,
+    ]
   )
 
   const selectedCourseId =

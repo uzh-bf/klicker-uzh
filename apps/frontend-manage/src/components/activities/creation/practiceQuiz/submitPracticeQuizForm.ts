@@ -9,7 +9,6 @@ import {
   CreatePracticeQuizMutationVariables,
   EditPracticeQuizMutation,
   EditPracticeQuizMutationVariables,
-  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
 
@@ -39,6 +38,7 @@ interface PracticeQuizFormSubmissionProps {
       | undefined
   ) => Promise<FetchResult<EditPracticeQuizMutation>>
   setIsWizardCompleted: (isCompleted: boolean) => void
+  invalidateCourseDetail: (courseId: string) => Promise<void>
   onError: () => void
 }
 
@@ -50,6 +50,7 @@ async function submitPracticeQuizForm({
   createPracticeQuiz,
   editPracticeQuiz,
   setIsWizardCompleted,
+  invalidateCourseDetail,
   onError,
 }: PracticeQuizFormSubmissionProps) {
   try {
@@ -89,89 +90,26 @@ async function submitPracticeQuizForm({
     if (editMode && id) {
       const result = await editPracticeQuiz({
         variables: { id, ...createOrUpdateJSON },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.editPracticeQuiz?.courseId) return
-
-          // if the course assignment changed, remove the practice quiz from the previous course
-          if (
-            previousCourseId &&
-            res.editPracticeQuiz.courseId !== previousCourseId
-          ) {
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: previousCourseId! },
-              },
-              (data) => {
-                if (!data?.course) return data
-
-                const activities =
-                  data.course.practiceQuizzesInfo?.filter(
-                    (pq) => pq.id !== res.editPracticeQuiz!.id
-                  ) ?? []
-                return {
-                  course: { ...data.course, practiceQuizzesInfo: activities },
-                }
-              }
-            )
-          }
-
-          // updated / add the practice quiz in the currently assigned course
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.editPracticeQuiz.courseId },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              const activities = [
-                ...(data.course.practiceQuizzesInfo?.filter(
-                  (pq) => pq.id !== res.editPracticeQuiz!.id
-                ) ?? []),
-                res.editPracticeQuiz!,
-              ]
-              return {
-                course: { ...data.course, practiceQuizzesInfo: activities },
-              }
-            }
-          )
-        },
       })
 
       success = Boolean(result.data?.editPracticeQuiz)
+      if (result.data?.editPracticeQuiz?.courseId) {
+        const courseIds = new Set(
+          [previousCourseId, result.data.editPracticeQuiz.courseId].filter(
+            (courseId): courseId is string => Boolean(courseId)
+          )
+        )
+        await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
+      }
     } else {
       const result = await createPracticeQuiz({
         variables: createOrUpdateJSON,
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.createPracticeQuiz?.courseId) return
-
-          // change the status of the practice quiz on the course overview back to draft
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.createPracticeQuiz.courseId! },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              return {
-                course: {
-                  ...data.course,
-                  practiceQuizzesInfo: [
-                    ...(data.course.practiceQuizzesInfo ?? []),
-                    res.createPracticeQuiz!,
-                  ],
-                },
-              }
-            }
-          )
-        },
       })
 
       success = Boolean(result.data?.createPracticeQuiz)
+      if (result.data?.createPracticeQuiz?.courseId) {
+        await invalidateCourseDetail(result.data.createPracticeQuiz.courseId)
+      }
     }
 
     if (success) {
