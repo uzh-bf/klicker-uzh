@@ -397,6 +397,290 @@ Remove email from non-assessment leaderboard APIs and exports. Add privacy-prese
 
 Recommendation: implement claim code first. It solves prize verification without reintroducing global email.
 
+## Account Linking and Data Merge
+
+### Product Rule
+
+Do not auto-link participant accounts by email, username, display name, or similar-looking profile data. Once email is removed as a durable identifier, a link must prove control of both sides:
+
+- an active manual account session plus password/passkey/recovery re-auth;
+- a fresh signed LTI launch;
+- an active passkey/recovery-code login;
+- for assessment, a verified Edu-ID assessment session plus stricter course rules.
+
+This means a manual account and a later LTI-created account can only be combined through an explicit account-link ceremony. The ceremony should say "link login methods" for identity-only cases and "merge account data" only when stored course activity must be reconciled.
+
+### Identity Model
+
+Treat `Participant` as the profile and data owner. Login methods attach to one participant:
+
+- username/password;
+- passkeys;
+- recovery codes/files;
+- LTI external identities;
+- assessment Edu-ID external identities;
+- legacy email claim only during migration.
+
+Future schema should allow more than one external identity of the same provider type per participant. Current `ParticipantAccount` has `@@unique([participantId, ssoType])`, which blocks a participant from linking multiple LTI identities with the same `ssoType`. The `ParticipantExternalIdentity` replacement should instead make the external subject hash unique, not the participant/provider pair.
+
+Recommended additional tables:
+
+```prisma
+model ParticipantAccountLinkIntent {
+  id String @id @default(uuid()) @db.Uuid
+  initiatorParticipantId String @db.Uuid
+  targetParticipantId String? @db.Uuid
+  provider ParticipantIdentityProvider?
+  subjectHash String?
+  courseId String? @db.Uuid
+  stateHash String @unique
+  status ParticipantAccountLinkStatus @default(PENDING)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model ParticipantMerge {
+  id String @id @default(uuid()) @db.Uuid
+  primaryParticipantId String @db.Uuid
+  secondaryParticipantId String @db.Uuid
+  status ParticipantMergeStatus @default(PLANNED)
+  plannedAt DateTime @default(now())
+  executedAt DateTime?
+  rowCounts Json
+  decisions Json
+}
+```
+
+Keep audit data minimal: participant ids, course ids, selected side, row counts, timestamps, and executor. Do not store email in merge/link logs.
+
+### Link Flows
+
+#### Manual Account, Then LTI Launch
+
+When a participant is logged in manually and arrives through a signed LTI launch:
+
+1. Verify LTI signature and derive the external subject hash.
+2. If subject hash is already linked to the same participant, continue and ensure course participation.
+3. If subject hash is unlinked, show an explicit choice:
+   - link this LMS login to the current Klicker account;
+   - continue with a separate LMS account.
+4. Require recent manual re-auth before linking.
+5. Create `ParticipantExternalIdentity` for the current participant and ensure course participation.
+
+Default should not silently link. Shared devices and lab computers make "current browser session" an unsafe signal by itself.
+
+#### LTI Account, Then Manual Account
+
+When a participant is in an LTI-authenticated session and wants to use an existing manual account:
+
+1. Start "I already have a Klicker account" from the LTI landing/login page.
+2. Authenticate the manual account with username + password/passkey/recovery code.
+3. If the manual participant has no conflicting course data, attach the LTI identity to the manual participant.
+4. If both participants have stored data, open the merge preview.
+
+If the LTI participant has no meaningful data yet, prefer identity linking and delete the empty LTI participant after moving the external identity.
+
+#### Existing LTI Identity Points To Another Participant
+
+If a signed LTI launch resolves to participant B while the browser is logged in as participant A:
+
+1. Do not silently switch or link.
+2. Show "This LMS login is already linked to another Klicker account."
+3. Offer:
+   - switch to the linked LTI account;
+   - merge accounts after proving control of both accounts;
+   - cancel.
+
+This catches accidental shared-device states and duplicate account creation.
+
+#### Account Settings
+
+Add a participant account settings area:
+
+- linked login methods;
+- add passkey;
+- add recovery codes/file;
+- link LMS account;
+- merge another account;
+- unlink login method only if another recovery/auth method remains.
+
+The steady-state UX should steer users to "one account, multiple login methods" before duplicate data exists.
+
+### Merge Trigger
+
+Run a merge planner whenever two proved participant accounts need to become one:
+
+- manual account exists, LTI account already has data;
+- two LTI identities belong to same human and both have course data;
+- migration discovers a legacy email match but cannot auto-link safely;
+- support/admin resolves a duplicate-account request.
+
+The planner should be dry-run first and return:
+
+- profile differences;
+- linked login methods to move;
+- courses only present on one side;
+- courses present on both sides;
+- assessment-course blockers;
+- row counts by table;
+- irreversible deletes needed after user choice.
+
+### Primary Account Choice
+
+User chooses one primary participant profile:
+
+- username/display identity;
+- avatar/settings/profile visibility;
+- locale;
+- password/passkeys/recovery credentials to keep;
+- public profile id after merge.
+
+Login methods from both accounts move to the primary participant, subject to uniqueness checks. Secondary sessions are revoked after merge. A fresh participant token is issued for the primary account.
+
+Global `Participant.xp` should not be summed directly. Recompute it from kept course data and achievements where possible; otherwise preserve the selected primary profile value and enqueue a gamification rebuild.
+
+### Course Data Rules
+
+Use the course as the conflict unit. This matches the product question: if both accounts are in the same course, the participant chooses which course data to keep.
+
+#### Course Exists On One Side Only
+
+Move the whole course participation to the primary participant:
+
+- `Participation`;
+- course leaderboard entry;
+- practice quiz and microlearning responses/details;
+- live quiz responses and applied point corrections;
+- timeline entries;
+- bookmarks and completed microlearnings;
+- push subscriptions;
+- group assignment pool entry;
+- group membership and group messages;
+- group activity clue assignments;
+- participant achievements, titles, awards for that course;
+- feedback and element feedback;
+- course-scoped chat threads/usage records.
+
+Then invalidate analytics and leaderboard caches for the course.
+
+#### Course Exists On Both Sides
+
+Show a course conflict card with:
+
+- course name and assessment flag;
+- usernames/accounts involved;
+- points, XP, response count, last activity;
+- group memberships;
+- assessment/result warning if applicable;
+- "keep manual account data" / "keep LMS account data" selection.
+
+On execute:
+
+1. Keep the selected participation and all selected course-scoped rows.
+2. Delete or archive the unselected duplicate participation rows for that course.
+3. Move the selected rows to the primary participant if they were attached to the secondary participant.
+4. Recompute course leaderboard, timeline, gamification, and analytics from kept rows.
+
+Do not offer "combine best scores" or "sum both accounts" for gamified courses. That would let users inflate points by answering from two accounts. For non-gamified practice data, a later enhancement could offer per-activity merge, but the first version should be course-level and deterministic.
+
+#### Assessment Course Conflict
+
+Assessment overlap must not be self-service:
+
+- If only one side has assessment identity/results, keep that side and link login methods only after verified re-auth.
+- If both sides have assessment attempts/results in the same course, block automatic merge and create an admin/support review item.
+- Never combine assessment responses or choose best scores.
+- Keep both records until course/legal retention policy allows cleanup.
+- Lecturer/admin review decides which participant record is official and how duplicate attempts are handled.
+
+Assessment identity encryption stays course-scoped. Merge audit for assessment must avoid raw email; use participant ids, course id, and encrypted identity references.
+
+### Table-Level Merge Notes
+
+Rows that can usually be reassigned when no unique conflict exists:
+
+- `ParticipantAccount` / future `ParticipantExternalIdentity`;
+- `ParticipantInvitation.participantId`;
+- `QuestionResponseDetail`;
+- `Feedback`;
+- `GroupMessage`;
+- `ChatThread`;
+- `PointCorrection.participantId` and many-to-many participant correction links when no assessment blocker exists.
+
+Rows with uniqueness conflicts that need selected-side or recompute logic:
+
+- `Participation @@unique([courseId, participantId])`;
+- `QuestionResponse @@unique([participantId, elementInstanceId])`;
+- `LiveQuizResponse @@unique([instanceId, elementBlockExecution, participantId])`;
+- `LeaderboardEntry @@unique([type, participantId, courseId])` and `@@unique([type, participantId, liveQuizId])`;
+- `ElementFeedback @@unique([participantId, elementInstanceId])`;
+- `ParticipantAnalytics @@unique([type, courseId, participantId, timestamp])`;
+- `ParticipantCourseAnalytics @@unique([courseId, participantId])`;
+- `ParticipantPerformance @@unique([participantId, courseId])`;
+- `ParticipantActivityPerformance @@unique([participantId, practiceQuizId])` / `@@unique([participantId, microLearningId])`;
+- `ParticipantAchievementInstance @@unique([participantId, achievementId])`;
+- `GroupAssignmentPoolEntry @@unique([courseId, participantId])`;
+- `PushSubscription @@unique([participantId, courseId, endpoint])`;
+- `ChatUsageCredits @@id([participantId, chatbotId])`.
+
+Derived rows should be deleted and recomputed instead of merged where possible:
+
+- participant analytics;
+- course analytics;
+- participant performance;
+- activity performance;
+- timeline summaries if recomputable from responses;
+- leaderboard entries.
+
+Source-of-truth rows should follow selected-side semantics:
+
+- question responses;
+- live quiz responses;
+- applied point corrections through selected live quiz responses;
+- assessment responses/results;
+- group membership and clue assignments in conflict courses;
+- manually submitted feedback/messages if the user chooses to discard the duplicate course side.
+
+### Execution Strategy
+
+Use a two-phase executor:
+
+1. `previewParticipantMerge(primaryId, secondaryId)` builds a deterministic merge plan and row counts.
+2. `executeParticipantMerge(planId, courseDecisions)` locks both participant ids, verifies the plan is still current, blocks new writes for both accounts, applies changes, invalidates caches, revokes secondary sessions, and issues a new primary token.
+
+Implementation details:
+
+- Use a stable lock order for participant ids to avoid deadlocks.
+- Add a `MERGING` state or short-lived Redis/db lock so response writes cannot race with reassignment.
+- Keep small merges in one transaction; large merges can use a job with checkpoints but must block both accounts until done.
+- Mark affected courses `areAnalyticsValid=false`.
+- Emit cache invalidations for participant, participation, leaderboard, and course views.
+- Keep the secondary participant only as a tombstone if needed for audit or rollback, with no login methods and no email. Otherwise delete it after all rows move/delete.
+
+### Privacy and Security Controls
+
+- Require recent authentication for both accounts.
+- Require explicit confirmation for every course conflict.
+- Use short-lived, single-use link intents with CSRF/state binding.
+- Rate-limit link and merge attempts.
+- Show provider/course context, but do not show email for non-assessment accounts.
+- Do not expose whether a username or LTI subject exists beyond authenticated flows.
+- Log participant ids and event ids, not raw identifiers.
+- Notify both active sessions after merge; for no-email accounts, use in-app notice/session banner.
+
+### Implementation Slices
+
+1. Add external identity schema that supports multiple LTI identities per participant.
+2. Add account link intents and a "linked login methods" read model.
+3. Implement identity-only linking for manual session plus fresh LTI launch.
+4. Build merge planner dry-run with row counts and course overlap detection.
+5. Implement no-overlap merge executor.
+6. Implement same-course conflict UI and selected-side executor for non-assessment courses.
+7. Add assessment conflict blocker/admin review workflow.
+8. Add rebuild/invalidation jobs for analytics, leaderboards, gamification, and sessions.
+9. Add browser/e2e tests for manual-to-LTI, LTI-to-manual, duplicate course conflict, and assessment blocker.
+
 ## Migration Plan
 
 ### Slice 0 - Inventory, Flags, and Policy
