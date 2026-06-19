@@ -1,7 +1,4 @@
-import { useMutation } from '@apollo/client'
 import {
-  CreatePracticeQuizDocument,
-  EditPracticeQuizDocument,
   Element,
   ElementOrderType,
   ElementType,
@@ -249,12 +246,8 @@ function PracticeQuizWizard({
         : formDefaultValues.resetTimeDays,
   })
 
-  const [createPracticeQuiz, { data: creationData }] = useMutation(
-    CreatePracticeQuizDocument
-  )
-  const [editPracticeQuiz, { data: editingData }] = useMutation(
-    EditPracticeQuizDocument
-  )
+  const createPracticeQuiz = trpc.activity.createPracticeQuiz.useMutation()
+  const editPracticeQuiz = trpc.activity.editPracticeQuiz.useMutation()
   const utils = trpc.useUtils()
   const invalidateCourseDetail = useCallback(
     async (courseId: string) => {
@@ -270,8 +263,8 @@ function PracticeQuizWizard({
         previousCourseId: initialValues?.course?.id,
         values,
         editMode,
-        createPracticeQuiz,
-        editPracticeQuiz,
+        createPracticeQuiz: createPracticeQuiz.mutateAsync,
+        editPracticeQuiz: editPracticeQuiz.mutateAsync,
         invalidateCourseDetail,
         setIsWizardCompleted,
         onError: () =>
@@ -292,9 +285,9 @@ function PracticeQuizWizard({
       })
     },
     [
-      createPracticeQuiz,
+      createPracticeQuiz.mutateAsync,
       editMode,
-      editPracticeQuiz,
+      editPracticeQuiz.mutateAsync,
       initialValues?.course?.id,
       initialValues?.id,
       invalidateCourseDetail,
@@ -302,13 +295,14 @@ function PracticeQuizWizard({
   )
 
   const activityId =
-    creationData?.createPracticeQuiz?.id ?? editingData?.editPracticeQuiz?.id
+    createPracticeQuiz.data?.createPracticeQuiz?.id ??
+    editPracticeQuiz.data?.editPracticeQuiz?.id
   const selectedCourseId =
-    creationData?.createPracticeQuiz?.courseId ??
-    editingData?.editPracticeQuiz?.courseId
+    createPracticeQuiz.data?.createPracticeQuiz?.courseId ??
+    editPracticeQuiz.data?.editPracticeQuiz?.courseId
   const isActivityReviewer =
-    creationData?.createPracticeQuiz?.isActivityReviewer ??
-    editingData?.editPracticeQuiz?.isActivityReviewer
+    createPracticeQuiz.data?.createPracticeQuiz?.isActivityReviewer ??
+    editPracticeQuiz.data?.editPracticeQuiz?.isActivityReviewer
 
   return (
     <WizardLayout

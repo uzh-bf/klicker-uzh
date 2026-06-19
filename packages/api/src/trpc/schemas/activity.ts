@@ -1,4 +1,5 @@
 import {
+  ElementOrderType,
   ElementType,
   PointCorrectionType,
   PublicationStatus,
@@ -47,6 +48,39 @@ export const activityIdInput = z.object({
 export const changeActivityNameInput = activityDetailsInput.extend({
   name: z.string(),
   displayName: z.string(),
+})
+
+const activityInstanceInput = z.object({
+  elementId: z.number().int(),
+  order: z.number().int(),
+  existingInstanceId: z
+    .number()
+    .int()
+    .nullish()
+    .transform((value) => value ?? null),
+  duplicateInstance: z.boolean(),
+})
+
+const activityElementStackInput = z.object({
+  order: z.number().int(),
+  displayName: z.string().nullish(),
+  description: z.string().nullish(),
+  elements: z.array(activityInstanceInput),
+})
+
+export const practiceQuizManipulationInput = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string().nullish(),
+  stacks: z.array(activityElementStackInput),
+  courseId: z.string(),
+  multiplier: z.number().int(),
+  order: z.nativeEnum(ElementOrderType),
+  resetTimeDays: z.number().int(),
+})
+
+export const editPracticeQuizInput = practiceQuizManipulationInput.extend({
+  id: z.string(),
 })
 
 export const publishActivityInput = activityDetailsInput.extend({

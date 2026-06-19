@@ -1,16 +1,10 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreatePracticeQuizMutation,
-  CreatePracticeQuizMutationVariables,
-  EditPracticeQuizMutation,
-  EditPracticeQuizMutationVariables,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { RouterInputs, RouterOutputs } from '../../../../lib/trpc'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
+
+type CreatePracticeQuizInput = RouterInputs['activity']['createPracticeQuiz']
+type CreatePracticeQuizResult = RouterOutputs['activity']['createPracticeQuiz']
+type EditPracticeQuizInput = RouterInputs['activity']['editPracticeQuiz']
+type EditPracticeQuizResult = RouterOutputs['activity']['editPracticeQuiz']
 
 interface PracticeQuizFormSubmissionProps {
   id?: string
@@ -18,25 +12,11 @@ interface PracticeQuizFormSubmissionProps {
   values: PracticeQuizFormValues
   editMode: boolean
   createPracticeQuiz: (
-    options?:
-      | MutationFunctionOptions<
-          CreatePracticeQuizMutation,
-          CreatePracticeQuizMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<CreatePracticeQuizMutation>>
+    input: CreatePracticeQuizInput
+  ) => Promise<CreatePracticeQuizResult>
   editPracticeQuiz: (
-    options?:
-      | MutationFunctionOptions<
-          EditPracticeQuizMutation,
-          EditPracticeQuizMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<EditPracticeQuizMutation>>
+    input: EditPracticeQuizInput
+  ) => Promise<EditPracticeQuizResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
   onError: () => void
@@ -83,32 +63,28 @@ async function submitPracticeQuizForm({
       }),
       multiplier: parseInt(values.multiplier),
       courseId: values.courseId!,
-      order: values.order,
+      order: values.order as CreatePracticeQuizInput['order'],
       resetTimeDays: parseInt(values.resetTimeDays),
     }
 
     if (editMode && id) {
-      const result = await editPracticeQuiz({
-        variables: { id, ...createOrUpdateJSON },
-      })
+      const result = await editPracticeQuiz({ id, ...createOrUpdateJSON })
 
-      success = Boolean(result.data?.editPracticeQuiz)
-      if (result.data?.editPracticeQuiz?.courseId) {
+      success = Boolean(result.editPracticeQuiz)
+      if (result.editPracticeQuiz?.courseId) {
         const courseIds = new Set(
-          [previousCourseId, result.data.editPracticeQuiz.courseId].filter(
+          [previousCourseId, result.editPracticeQuiz.courseId].filter(
             (courseId): courseId is string => Boolean(courseId)
           )
         )
         await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
       }
     } else {
-      const result = await createPracticeQuiz({
-        variables: createOrUpdateJSON,
-      })
+      const result = await createPracticeQuiz(createOrUpdateJSON)
 
-      success = Boolean(result.data?.createPracticeQuiz)
-      if (result.data?.createPracticeQuiz?.courseId) {
-        await invalidateCourseDetail(result.data.createPracticeQuiz.courseId)
+      success = Boolean(result.createPracticeQuiz)
+      if (result.createPracticeQuiz?.courseId) {
+        await invalidateCourseDetail(result.createPracticeQuiz.courseId)
       }
     }
 

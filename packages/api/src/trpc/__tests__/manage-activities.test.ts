@@ -1,5 +1,6 @@
 import {
   ElementInstanceType,
+  ElementOrderType,
   ElementType,
   Locale,
   PermissionLevel,
@@ -2595,6 +2596,71 @@ describe('manage activity read routers', () => {
         scheduledEndAt: endDate,
         stacks: [],
       },
+    })
+  })
+
+  test('returns null when editing a practice quiz without write permission', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      derivedPermission: { findFirst: permissionFindFirst },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.editPracticeQuiz({
+        id: 'practice-quiz-1',
+        name: 'Practice Quiz',
+        displayName: 'Displayed Practice Quiz',
+        description: null,
+        stacks: [],
+        courseId: 'course-1',
+        multiplier: 1,
+        order: ElementOrderType.SEQUENTIAL,
+        resetTimeDays: 6,
+      })
+    ).resolves.toEqual({ editPracticeQuiz: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        practiceQuizId: 'practice-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+  })
+
+  test('maps missing target course to a not-found error when creating a practice quiz', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      course: { findUnique: courseFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.createPracticeQuiz({
+        name: 'Practice Quiz',
+        displayName: 'Displayed Practice Quiz',
+        description: null,
+        stacks: [],
+        courseId: 'missing-course',
+        multiplier: 1,
+        order: ElementOrderType.SPACED_REPETITION,
+        resetTimeDays: 6,
+      })
+    ).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      message: 'Course not found',
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'missing-course' },
+      select: { isGamificationEnabled: true, isAssessmentEnabled: true },
     })
   })
 

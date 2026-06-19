@@ -280,6 +280,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Practice Quiz Authoring Submit
+
+Status: complete for the practice quiz authoring submit slice. Scope stayed
+limited to replacing the practice quiz create/edit wizard submit path with tRPC.
+This did not start S05 realtime migration, S06 cleanup, microlearning/group/live
+authoring submit migration, or live-quiz start/cockpit work.
+
+Slice: S04L Practice Quiz Authoring Submit
+
+GraphQL operation(s):
+
+- `CreatePracticeQuizDocument`
+- `EditPracticeQuizDocument`
+
+Behavior source:
+
+- `packages/graphql/src/schema/mutation.ts` `createPracticeQuiz` /
+  `editPracticeQuiz` wrappers
+- `packages/graphql/src/services/practiceQuizzes.ts`
+  `manipulatePracticeQuiz`
+- `packages/graphql/src/services/liveQuizzes.ts` `splitActivityInstances`
+
+Write scope:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/creation/practiceQuiz/PracticeQuizWizard.tsx`
+- `apps/frontend-manage/src/components/activities/creation/practiceQuiz/submitPracticeQuizForm.ts`
+- this plan progress entry
+
+Implementation notes:
+
+- Added `activity.createPracticeQuiz` and `activity.editPracticeQuiz` tRPC
+  mutations.
+- Ported the small `splitActivityInstances` helper into `packages/api` to avoid
+  a runtime dependency on GraphQL services.
+- Preserved create full-access behavior and edit WRITE permission behavior.
+- Replaced `PracticeQuizWizard` Apollo mutation tuples with tRPC mutations.
+- Replaced Apollo mutation function types in `submitPracticeQuizForm` with
+  `RouterInputs` / `RouterOutputs`.
+- Kept the generated GraphQL `ElementOrderType` form boundary for later S04P
+  generated type cleanup.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L practice quiz authoring files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, 40 files and 419 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-data warnings.
+- `rg -n "CreatePracticeQuizDocument|EditPracticeQuizDocument|@apollo/client|CreatePracticeQuizMutation|EditPracticeQuizMutation" apps/frontend-manage/src/components/activities/creation/practiceQuiz packages/api/src/trpc --glob '!**/*.d.ts'`:
+  no matches.
+- `git diff --check`: passed.
+- Direct non-destructive procedure coverage is in the focused API test file:
+  edit without WRITE permission returns `{ editPracticeQuiz: null }`, and create
+  against a missing course returns `NOT_FOUND`.
+- Browser attempt: `curl -sS -I http://127.0.0.1:3002` failed with connection
+  refused. `npx agent-browser open http://127.0.0.1:3002/activities` failed
+  with `net::ERR_CONNECTION_REFUSED`. Screenshot:
+  `/tmp/agent-browser-shots/s04-practice-quiz-authoring-01-connection-refused.png`
+  (blank white after failed navigation).
+
+Residual S04 scope:
+
+- `MicroLearningWizard` and `submitMicrolearningForm` still use Apollo
+  create/edit mutations.
+- `GroupActivityWizard` and `submitGroupActivityForm` still use Apollo
+  create/edit mutations.
+- `LiveQuizWizard` and `submitLiveQuizForm` still use Apollo create/edit and
+  live-quiz start/running-live-quiz logic.
+- S04P generated type leak cleanup and S04Q API no-GraphQL runtime dependency
+  gates remain open.
+
 ### 2026-06-19 Completed: S04L Activity Creation Authoring Reads
 
 Status: complete for the activity-creation authoring-read slice. Scope stayed

@@ -24,12 +24,15 @@ import {
   ActivityType,
   SortByType,
   type CaseStudyElementData,
+  type ElementBlockInput,
   type ElementData,
   type ElementManipulationInput,
   type ElementOptionsInput,
+  type ElementStackInput,
   type SelectionElementData,
 } from '@klicker-uzh/types'
 import {
+  getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
@@ -38,7 +41,9 @@ import {
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
 } from '@klicker-uzh/util'
+import { TRPCError } from '@trpc/server'
 import type { Redis } from 'ioredis'
+import { randomUUID } from 'node:crypto'
 import type { z } from 'zod'
 import {
   startLiveQuiz,
@@ -63,6 +68,7 @@ import {
 } from '../../services/manageGroupActivityGrading.js'
 import { getPrisma, type TRPCContext } from '../context.js'
 import {
+  toActivityPermissionBooleans,
   toAsyncActivityDetails,
   toLiveQuizActivityDetails,
   toOutdatedElementInstanceInfo,
@@ -100,6 +106,7 @@ import {
   createLiveQuizFromTemplateInput,
   deleteActivityTemplateInput,
   editActivityTemplateInput,
+  editPracticeQuizInput,
   endedLiveQuizzesCourseInput,
   extendActivityInput,
   finalizeGroupActivityGradingInput,
@@ -109,6 +116,7 @@ import {
   matchingUserElementsTemplateInput,
   openGroupActivityInput,
   outdatedElementInstancesInput,
+  practiceQuizManipulationInput,
   previousPointCorrectionsInput,
   publishActivityInput,
   scheduleLiveQuizInput,
@@ -246,6 +254,12 @@ const uuidRegex =
 type CreateLiveQuizFromTemplateInput = z.infer<
   typeof createLiveQuizFromTemplateInput
 >
+
+type PracticeQuizManipulationInput = z.infer<
+  typeof practiceQuizManipulationInput
+>
+
+type EditPracticeQuizInput = z.infer<typeof editPracticeQuizInput>
 
 type TemplateElementWithCollections = Element & {
   answerCollection?:
@@ -963,6 +977,390 @@ function getResultTotal(results: Prisma.JsonValue | null | undefined) {
 
   const total = (results as { total?: unknown }).total
   return typeof total === 'number' ? total : 0
+}
+
+type ActivityInstanceWithElement = ElementInstance & { element: Element }
+
+async function splitActivityInstances({
+  ctx,
+  stacksOrBlocks,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  stacksOrBlocks: ElementStackInput[] | ElementBlockInput[]
+}) {
+  const prisma = getPrisma(ctx)
+  const persistentInstanceOrderMap = stacksOrBlocks.reduce<
+    Record<number, number>
+  >((acc, block) => {
+    block.elements
+      .filter(
+        (element) =>
+          element.existingInstanceId != null && !element.duplicateInstance
+      )
+      .forEach((element) => {
+        acc[element.existingInstanceId!] = element.order
+      })
+    return acc
+  }, {})
+
+  const persistentInstanceIds = Object.keys(persistentInstanceOrderMap).map(
+    (id) => parseInt(id)
+  )
+
+  const persistentInstances = (await prisma.elementInstance.findMany({
+    where: { id: { in: persistentInstanceIds } },
+    include: { element: true },
+  })) as ActivityInstanceWithElement[]
+
+  const duplicateInstanceIds = stacksOrBlocks.flatMap((stackOrBlock) =>
+    stackOrBlock.elements
+      .filter(
+        (element) =>
+          element.existingInstanceId != null && element.duplicateInstance
+      )
+      .map((element) => element.existingInstanceId!)
+  )
+
+  const duplicationInstances = (await prisma.elementInstance.findMany({
+    where: {
+      id: { in: duplicateInstanceIds },
+      element: {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+    },
+    include: { element: true },
+  })) as ActivityInstanceWithElement[]
+
+  const allInstances = [...persistentInstances, ...duplicationInstances]
+  const anyInstanceOutdated = allInstances.some((instance) => {
+    const instanceElementDataId = getAuthoringObjectProperty(
+      instance.elementData,
+      'id'
+    )
+    if (typeof instanceElementDataId !== 'string') return false
+
+    const [, instanceVersion] = instanceElementDataId.split('-v')
+    return (
+      instanceVersion && parseInt(instanceVersion) !== instance.element.version
+    )
+  })
+
+  const requiredElementsIds = stacksOrBlocks
+    .flatMap((block) => block.elements)
+    .filter((element) => element.existingInstanceId == null)
+    .map((blockElem) => blockElem.elementId)
+
+  const dbElements = await prisma.element.findMany({
+    where: {
+      id: { in: requiredElementsIds },
+      isDeleted: false,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [PermissionLevel.OWNER, PermissionLevel.ADMIN],
+          },
+        },
+      },
+    },
+    include: {
+      answerCollection: { include: { entries: true } },
+      answerCollectionItems: true,
+    },
+  })
+
+  const uniqueElements = new Set(dbElements.map((element) => element.id))
+  if (dbElements.length !== uniqueElements.size) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Not all elements could be found',
+    })
+  }
+
+  const elementMap = dbElements.reduce<Record<number, Element>>(
+    (acc, element) => {
+      acc[element.id] = element
+      return acc
+    },
+    {}
+  )
+
+  return {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+    anyInstanceOutdated,
+  }
+}
+
+async function manipulatePracticeQuiz({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: PracticeQuizManipulationInput | EditPracticeQuizInput
+}) {
+  const prisma = getPrisma(ctx)
+  const id = 'id' in input ? input.id : undefined
+
+  let existingActivity: PracticeQuiz | null = null
+  if (id) {
+    existingActivity = await prisma.practiceQuiz.findUnique({
+      where: { id, isDeleted: false },
+    })
+
+    if (!existingActivity) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Practice quiz not found',
+      })
+    }
+    if (existingActivity.status === PublicationStatus.PUBLISHED) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Cannot edit a published practice quiz',
+      })
+    }
+  }
+
+  const course = await prisma.course.findUnique({
+    where: { id: input.courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Course not found' })
+  }
+
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+    anyInstanceOutdated,
+  } = await splitActivityInstances({ ctx, stacksOrBlocks: input.stacks })
+
+  let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = []
+  let stacksToDelete: number[] = []
+  if (id) {
+    const instances = await prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementStack: { practiceQuizId: id },
+      },
+    })
+
+    const stacks = await prisma.elementStack.findMany({
+      where: { practiceQuizId: id },
+    })
+
+    instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
+    stacksToDelete = stacks.map((stack) => stack.id)
+  }
+
+  const createOrUpdateJSON = {
+    name: input.name.trim(),
+    displayName: input.displayName.trim(),
+    description: input.description,
+    pointsMultiplier: input.multiplier,
+    orderType: input.order,
+    resetTimeDays: input.resetTimeDays,
+    areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.courseId !== input.courseId
+        ? ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === ReviewStatus.REVIEWED
+          ? ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
+    stacks: {
+      create: input.stacks.map((stack) => ({
+        type: ElementStackType.PRACTICE_QUIZ,
+        order: stack.order,
+        displayName: stack.displayName?.trim() ?? '',
+        description: stack.description ?? '',
+        elements: {
+          connectOrCreate: stack.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.PRACTICE_QUIZ,
+              activityMultiplier: input.multiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+              additionalInstanceOptions: {
+                resetTimeDays: input.resetTimeDays,
+              },
+            })
+          ),
+        },
+      })),
+    },
+    course: { connect: { id: input.courseId } },
+  }
+
+  const activity = await prisma.$transaction(
+    async (tx) => {
+      await tx.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
+      })
+
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          getAuthoringObjectProperty(
+            instance.elementData,
+            'pointsMultiplier'
+          ) ?? 1
+
+        await tx.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...(isAuthoringRecord(instance.options) ? instance.options : {}),
+              resetTimeDays: input.resetTimeDays,
+              pointsMultiplier:
+                input.multiplier *
+                (typeof elementMultiplier === 'number' ? elementMultiplier : 1),
+            },
+          },
+        })
+      }
+
+      await tx.elementStack.deleteMany({
+        where: { id: { in: stacksToDelete } },
+      })
+
+      const upsertedQuiz = await tx.practiceQuiz.upsert({
+        where: { id: id ?? randomUUID() },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } },
+        },
+        update: createOrUpdateJSON,
+        include: {
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
+            include: {
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          stacks: {
+            include: { _count: { select: { elements: true } } },
+            orderBy: { order: 'asc' },
+          },
+          _count: { select: { permissions: true } },
+        },
+      })
+
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, tx)
+        }
+      }
+
+      await recomputeDerivedPermissions({ practiceQuizId: upsertedQuiz.id }, tx)
+
+      return upsertedQuiz
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id: activity.id,
+  })
+
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const directPermission = activity.permissions[0]?.directPermission
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = toActivityPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission: Boolean(
+      directPermission && directPermission.userGroupId !== null
+    ),
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
+    type: ActivityType.PRACTICE_QUIZ,
+    status: activity.status,
+    courseId: activity.course?.id,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.stacks.length,
+    numOfElements: activity.stacks.reduce(
+      (acc, stack) => acc + stack._count.elements,
+      0
+    ),
+    automaticPublicationAt: activity.availableFrom,
+    scheduledStartAt: null,
+    scheduledEndAt: null,
+    groupDeadlineDate: null,
+    numOfParticipantGroups: null,
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: null,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    isActivityReviewer: (activity.course?._count.permissions ?? 0) > 0,
+    sharingType,
+    updatedAt: activity.updatedAt,
+  }
 }
 
 async function changeActivityNameForType({
@@ -4836,6 +5234,31 @@ export const activityRouter = router({
     .query(async ({ ctx, input }) => ({
       groupActivity: await getAuthoringGroupActivity({ ctx, input }),
     })),
+
+  createPracticeQuiz: userFullAccessProcedure
+    .input(practiceQuizManipulationInput)
+    .mutation(async ({ ctx, input }) => ({
+      createPracticeQuiz: await manipulatePracticeQuiz({ ctx, input }),
+    })),
+
+  editPracticeQuiz: userFullAccessProcedure
+    .input(editPracticeQuizInput)
+    .mutation(async ({ ctx, input }) => {
+      const canWrite = await hasActivityPermission(
+        ctx,
+        {
+          activityId: input.id,
+          activityType: ActivityType.PRACTICE_QUIZ,
+        },
+        PermissionLevel.WRITE
+      )
+
+      if (!canWrite) return { editPracticeQuiz: null }
+
+      return {
+        editPracticeQuiz: await manipulatePracticeQuiz({ ctx, input }),
+      }
+    }),
 
   liveQuizSummary: userProcedure
     .input(activityIdInput)
