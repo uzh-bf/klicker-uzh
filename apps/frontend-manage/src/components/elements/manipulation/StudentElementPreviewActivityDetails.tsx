@@ -1,9 +1,13 @@
-import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import type { ActivityElementInstance } from '../../../lib/constants/activityEnums'
 import StudentElementPreviewWrapper from './StudentElementPreviewWrapper'
 
+type StudentElementPreviewWrapperProps = Parameters<
+  typeof StudentElementPreviewWrapper
+>[0]
+
 interface StudentElementPreviewActivityDetailsProps {
-  instance: ElementInstance
+  instance: ActivityElementInstance
 }
 
 function StudentElementPreviewActivityDetails({
@@ -11,8 +15,10 @@ function StudentElementPreviewActivityDetails({
 }: StudentElementPreviewActivityDetailsProps): React.ReactElement {
   return (
     <StudentElementPreviewWrapper
-      values={instance.elementData}
-      instance={instance}
+      values={
+        instance.elementData as StudentElementPreviewWrapperProps['values']
+      }
+      instance={instance as StudentElementPreviewWrapperProps['instance']}
     />
   )
 }

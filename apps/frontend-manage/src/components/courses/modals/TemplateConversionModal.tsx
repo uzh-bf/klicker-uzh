@@ -5,8 +5,6 @@ import {
   faArrowsRotate,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import {
   Button,
   FormLabel,
@@ -17,7 +15,8 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
-import { trpc } from '../../../lib/trpc'
+import { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ConversionTypeMonitor from './ConversionTypeMonitor'
 import TemplateFormFields from './TemplateFormFields'
@@ -31,13 +30,6 @@ interface TemplateConversionModalProps {
   refetchActivities?: () => Promise<void>
 }
 
-const trpcActivityTypeByGraphqlActivityType = {
-  [ActivityType.GroupActivity]: ApiActivityType.GROUP_ACTIVITY,
-  [ActivityType.LiveQuiz]: ApiActivityType.LIVE_QUIZ,
-  [ActivityType.MicroLearning]: ApiActivityType.MICRO_LEARNING,
-  [ActivityType.PracticeQuiz]: ApiActivityType.PRACTICE_QUIZ,
-} satisfies Record<ActivityType, ApiActivityType>
-
 function TemplateConversionModal({
   onClose,
   activityId,
@@ -47,7 +39,6 @@ function TemplateConversionModal({
   refetchActivities,
 }: TemplateConversionModalProps) {
   const t = useTranslations()
-  const trpcActivityType = trpcActivityTypeByGraphqlActivityType[activityType]
   const [currentStep, setCurrentStep] = useState(0)
   const [confirmations, setConfirmations] = useState({
     activityConversion: false,
@@ -60,7 +51,8 @@ function TemplateConversionModal({
   const { data, isLoading: loading } =
     trpc.activity.checkTemplateInfoAvailable.useQuery({
       activityId,
-      activityType: trpcActivityType,
+      activityType:
+        activityType as RouterInputs['activity']['checkTemplateInfoAvailable']['activityType'],
     })
   const templateInfo = data?.checkTemplateInfoAvailable
 
@@ -132,7 +124,8 @@ function TemplateConversionModal({
           try {
             const result = await createActivityTemplate.mutateAsync({
               activityId,
-              activityType: trpcActivityType,
+              activityType:
+                activityType as RouterInputs['activity']['createActivityTemplate']['activityType'],
               templateName: values.name,
               templateDescription: values.description,
               templateInstructions: values.instructions,

@@ -1,9 +1,9 @@
-import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
+import type { ActivityInfo } from '../../../lib/constants/activityEnums'
 import ActivityListEntry from './ActivityListEntry'
 
 function ActivityList({

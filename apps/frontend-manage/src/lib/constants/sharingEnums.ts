@@ -28,3 +28,11 @@ export const PermissionLevel = {
 
 export type PermissionLevel =
   (typeof PermissionLevel)[keyof typeof PermissionLevel]
+
+export const SharingType = {
+  Dependency: 'DEPENDENCY',
+  Owned: 'OWNED',
+  Shared: 'SHARED',
+} as const
+
+export type SharingType = (typeof SharingType)[keyof typeof SharingType]

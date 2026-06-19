@@ -1,11 +1,10 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
-import { trpc } from '../../../lib/trpc'
+import { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateEditModalProps {
@@ -17,13 +16,6 @@ interface TemplateEditModalProps {
   refetchActivities?: () => Promise<void>
 }
 
-const trpcActivityTypeByGraphqlActivityType = {
-  [ActivityType.GroupActivity]: ApiActivityType.GROUP_ACTIVITY,
-  [ActivityType.LiveQuiz]: ApiActivityType.LIVE_QUIZ,
-  [ActivityType.MicroLearning]: ApiActivityType.MICRO_LEARNING,
-  [ActivityType.PracticeQuiz]: ApiActivityType.PRACTICE_QUIZ,
-} satisfies Record<ActivityType, ApiActivityType>
-
 function TemplateEditModal({
   activityId,
   activityType,
@@ -33,12 +25,12 @@ function TemplateEditModal({
   refetchActivities,
 }: TemplateEditModalProps) {
   const t = useTranslations()
-  const trpcActivityType = trpcActivityTypeByGraphqlActivityType[activityType]
   const editActivityTemplate = trpc.activity.editTemplate.useMutation()
   const { data, isLoading } = trpc.activity.templateInformation.useQuery(
     {
       activityId,
-      activityType: trpcActivityType,
+      activityType:
+        activityType as RouterInputs['activity']['templateInformation']['activityType'],
     },
     { enabled: Boolean(activityId) }
   )
@@ -83,7 +75,8 @@ function TemplateEditModal({
             try {
               const result = await editActivityTemplate.mutateAsync({
                 activityId,
-                activityType: trpcActivityType,
+                activityType:
+                  activityType as RouterInputs['activity']['editTemplate']['activityType'],
                 templateId: info.templateId,
                 name: values.name,
                 description: values.description,

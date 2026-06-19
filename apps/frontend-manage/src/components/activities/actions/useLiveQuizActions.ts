@@ -26,7 +26,7 @@ import {
   ActivityType,
   type ActivityInfo,
 } from '../../../lib/constants/activityEnums'
-import { trpc } from '../../../lib/trpc'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function useLiveQuizActions({
@@ -206,7 +206,8 @@ function useLiveQuizActions({
         onClick: async () => {
           const result = await unpublishLiveQuiz.mutateAsync({
             activityId: quiz.id,
-            activityType: ActivityType.LiveQuiz,
+            activityType:
+              ActivityType.LiveQuiz as RouterInputs['activity']['unpublish']['activityType'],
           })
           if (quiz.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({ courseId: quiz.courseId })

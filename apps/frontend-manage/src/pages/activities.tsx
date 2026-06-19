@@ -1,10 +1,4 @@
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  PublicationStatus,
-  SharingType,
-  type ActivityInfo,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -20,6 +14,12 @@ import ActivityOverviewFilters from '../components/activities/overview/ActivityO
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
 import Pagination from '../components/common/Pagination'
 import Layout from '../components/Layout'
+import {
+  ActivityType,
+  PublicationStatus,
+  type ActivityInfo,
+} from '../lib/constants/activityEnums'
+import { SharingType } from '../lib/constants/sharingEnums'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useActivitySortingAndFiltering'
@@ -132,8 +132,7 @@ function Activities() {
     refetchOnMount: 'always',
   })
   const numOfActivities = dataActivities?.userActivities.numOfActivities || 0
-  const activities = (dataActivities?.userActivities.activities ??
-    []) as unknown as ActivityInfo[]
+  const activities = dataActivities?.userActivities.activities ?? []
 
   // on change, store new page size in local storage
   useEffect(() => {

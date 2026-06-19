@@ -1,8 +1,8 @@
 import { faEllipsis, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { ActivityType } from '../../../lib/constants/activityEnums'
 import { ActivityAction } from '../actions/useAvailableActions'
 
 function ActivityActions({

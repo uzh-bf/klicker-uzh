@@ -27,15 +27,15 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
+import { Accordion, Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import {
   ActivityType,
   PublicationStatus,
   ReviewStatus,
-  SharingType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Accordion, Button } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
+} from '../../../lib/constants/activityEnums'
+import { SharingType } from '../../../lib/constants/sharingEnums'
 import type { ActivityModeFilters } from '../../../lib/hooks/useActivitySortingAndFiltering'
 import FilterItem from '../../elements/tags/FilterItem'
 import { SHARING_TYPE_FILTERS } from '../../elements/tags/FilterList'

@@ -7,11 +7,6 @@ import {
   faXmarkSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityDetails,
-  ActivityType,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   Button,
@@ -29,7 +24,33 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  ActivityDetails,
+  ActivityDetailsElement,
+  ActivityType,
+} from '../../../../lib/constants/activityEnums'
 import ActivityOutdatedElementWarning from '../ActivityOutdatedElementWarning'
+
+const ElementType = {
+  CaseStudy: 'CASE_STUDY',
+  FreeText: 'FREE_TEXT',
+  Kprim: 'KPRIM',
+  Mc: 'MC',
+  Numerical: 'NUMERICAL',
+  Sc: 'SC',
+  Selection: 'SELECTION',
+} as const
+
+const QUESTION_ELEMENT_TYPES: ActivityDetailsElement['instance']['elementType'][] =
+  [
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.Numerical,
+    ElementType.FreeText,
+    ElementType.Selection,
+    ElementType.CaseStudy,
+  ]
 
 function ActivityOverviewTable({
   details,
@@ -154,15 +175,9 @@ function ActivityOverviewTable({
             {stack.elements.map((element, instanceIx) => {
               const instanceId = String(element.instance.id)
               const isOutdated = outdatedInstances.includes(element.instance.id)
-              const isInstanceQuestion = [
-                ElementType.Sc,
-                ElementType.Mc,
-                ElementType.Kprim,
-                ElementType.Numerical,
-                ElementType.FreeText,
-                ElementType.Selection,
-                ElementType.CaseStudy,
-              ].includes(element.instance.elementType)
+              const isInstanceQuestion = QUESTION_ELEMENT_TYPES.includes(
+                element.instance.elementType
+              )
 
               return (
                 <ShadcnTableRow

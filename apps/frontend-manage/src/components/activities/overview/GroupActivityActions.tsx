@@ -1,11 +1,11 @@
+import { ObjectType } from '@lib/constants/sharingEnums'
+import { useTranslations } from 'next-intl'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityInfo,
   ActivityType,
   PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ObjectType } from '@lib/constants/sharingEnums'
-import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+} from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeletionModal'
@@ -60,6 +60,14 @@ const statusActionMap = {
     'deleteGroupActivity',
   ],
   [PublicationStatus.Template]: [],
+}
+
+function toDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value)
+}
+
+function toDateString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value
 }
 
 function GroupActivityActions({
@@ -155,24 +163,26 @@ function GroupActivityActions({
             refetchActivities={refetchActivities}
           />
         ) : null}
-        {publishingModal && (
-          <PublishConfirmationModal
-            onClose={() => setPublishingModal(false)}
-            activityType="GROUP_ACTIVITY"
-            activityId={groupActivity.id}
-            startAt={groupActivity.scheduledStartAt}
-            endAt={groupActivity.scheduledEndAt}
-            title={groupActivity.name}
-            courseId={groupActivity.courseId!}
-            refetchActivities={refetchActivities}
-          />
-        )}
-        {extensionModal && (
+        {publishingModal &&
+          groupActivity.scheduledStartAt &&
+          groupActivity.scheduledEndAt && (
+            <PublishConfirmationModal
+              onClose={() => setPublishingModal(false)}
+              activityType="GROUP_ACTIVITY"
+              activityId={groupActivity.id}
+              startAt={toDate(groupActivity.scheduledStartAt)}
+              endAt={toDate(groupActivity.scheduledEndAt)}
+              title={groupActivity.name}
+              courseId={groupActivity.courseId!}
+              refetchActivities={refetchActivities}
+            />
+          )}
+        {extensionModal && groupActivity.scheduledEndAt && (
           <ExtensionModal
             onClose={() => setExtensionModal(false)}
             type="groupActivity"
             id={groupActivity.id}
-            currentEndDate={groupActivity.scheduledEndAt}
+            currentEndDate={toDate(groupActivity.scheduledEndAt)}
             courseId={groupActivity.courseId!}
             title={t('manage.course.extendGroupActivity')}
             description={t('manage.course.extendGroupActivityDescription')}
@@ -207,17 +217,19 @@ function GroupActivityActions({
             refetchActivities={refetchActivities}
           />
         )}
-        {startingModal && (
-          <GroupActivityStartingModal
-            onClose={() => setStartingModal(false)}
-            activityId={groupActivity.id}
-            activityEndDate={groupActivity.scheduledEndAt}
-            groupDeadlineDate={groupActivity.groupDeadlineDate}
-            numOfParticipantGroups={groupActivity.numOfParticipantGroups ?? 0}
-            courseId={groupActivity.courseId!}
-            refetchActivities={refetchActivities}
-          />
-        )}
+        {startingModal &&
+          groupActivity.scheduledEndAt &&
+          groupActivity.groupDeadlineDate && (
+            <GroupActivityStartingModal
+              onClose={() => setStartingModal(false)}
+              activityId={groupActivity.id}
+              activityEndDate={toDateString(groupActivity.scheduledEndAt)}
+              groupDeadlineDate={toDateString(groupActivity.groupDeadlineDate)}
+              numOfParticipantGroups={groupActivity.numOfParticipantGroups ?? 0}
+              courseId={groupActivity.courseId!}
+              refetchActivities={refetchActivities}
+            />
+          )}
 
         {groupActivity && activityLogOpen ? (
           <ActivityLogDialog

@@ -1,6 +1,6 @@
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { ActivityType } from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from '../../courses/modals/ActivityConfirmationModal'

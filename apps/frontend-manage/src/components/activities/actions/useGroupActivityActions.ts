@@ -17,7 +17,7 @@ import {
   ActivityType,
   type ActivityInfo,
 } from '../../../lib/constants/activityEnums'
-import { trpc } from '../../../lib/trpc'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function useGroupActivityActions({
@@ -78,7 +78,8 @@ function useGroupActivityActions({
         onClick: async () => {
           const result = await unpublishGroupActivity.mutateAsync({
             activityId: groupActivity.id,
-            activityType: ActivityType.GroupActivity,
+            activityType:
+              ActivityType.GroupActivity as RouterInputs['activity']['unpublish']['activityType'],
           })
           if (groupActivity.courseId && result.unpublishActivity?.id) {
             await utils.course.detail.invalidate({

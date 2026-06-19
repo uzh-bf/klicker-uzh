@@ -280,6 +280,108 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Active: S04P Activity Creation Generated Type Cleanup
+
+Status: in progress. Scope is limited to removing generated GraphQL enum/type
+imports from already-migrated activity creation wizard components. This does
+not touch S05 realtime/cockpit/PWA runtime migration or S06 GraphQL cleanup.
+
+Slice: S04P Activity Creation Generated Type Cleanup
+
+GraphQL operation(s): none; generated type/enum import cleanup only.
+
+Behavior source:
+
+- Existing generated enum string values.
+- tRPC activity creation mutation input/output DTO shapes already migrated in
+  S04 activity authoring slices.
+- Local mixed-state constants/types introduced by S04P action/overview cleanup.
+
+Write scope:
+
+- `apps/frontend-manage/src/components/activities/creation/**`
+- `apps/frontend-manage/src/lib/constants/activityEnums.ts` only if another
+  shared structural boundary type is needed
+- this plan progress entry
+
+Intended verification:
+
+- Prettier on touched files.
+- `@klicker-uzh/frontend-manage` check/build.
+- Targeted source audit for generated GraphQL imports in activity creation.
+- `git diff --check`.
+- Browser verification if the local manage app is reachable; otherwise record
+  the local-stack gap and stop S04 with that caveat.
+
+### 2026-06-19 Completed: S04P Activity Overview Generated Type Cleanup
+
+Status: complete. Scope was limited to removing generated GraphQL enum/type
+imports from the already-migrated activity overview/list/action wrapper
+components. This does not touch S05 realtime/cockpit/PWA runtime migration,
+creation-wizard generated type cleanup, shared components, or S06 GraphQL
+cleanup.
+
+Slice: S04P Activity Overview Generated Type Cleanup
+
+GraphQL operation(s): none; generated type/enum import cleanup only.
+
+Behavior source:
+
+- Existing generated enum string values.
+- tRPC activity overview/details DTO shapes.
+- Local `activityEnums.ts` mixed-state constants/types from the action cleanup
+  slice.
+
+Write scope:
+
+- `apps/frontend-manage/src/components/activities/overview/**`
+- `apps/frontend-manage/src/components/activities/actions/**`
+- `apps/frontend-manage/src/components/courses/modals/TemplateConversionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/TemplateDeletionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx`
+- `apps/frontend-manage/src/components/elements/manipulation/StudentElementPreviewActivityDetails.tsx`
+- `apps/frontend-manage/src/lib/constants/sharingEnums.ts`
+- `apps/frontend-manage/src/lib/hooks/useActivitySortingAndFiltering.ts`
+- `apps/frontend-manage/src/lib/constants/activityEnums.ts`
+- `apps/frontend-manage/src/pages/activities.tsx`
+- this plan progress entry
+
+Changes:
+
+- Extended local activity/sharing constants into mixed-state structural types so
+  overview components can accept both GraphQL-backed course-detail lists and
+  tRPC-backed `/activities` results while generated imports are removed.
+- Replaced generated imports in the activity overview page, filters, list,
+  action wrappers, batch modal, details modal/table, and template modals reached
+  from live-quiz actions.
+- Kept tRPC enum casts only at router input boundaries where the router expects
+  the shared package enum type.
+
+Verification:
+
+- `pnpm exec prettier --write <S04P overview/action/template files>`: passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed; only existing
+  Node 20 engine warnings under local Node v26.3.0.
+- `pnpm --filter @klicker-uzh/frontend-manage build`: passed; existing warnings
+  included Node engine mismatch, next-intl config warning, `MISSING_MESSAGE`
+  during `/qr/[...args]` static generation, and large page data warnings.
+- Source audit passed for overview/action/page/template cleanup:
+  `rg -n "@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/pages/activities.tsx apps/frontend-manage/src/lib/hooks/useActivitySortingAndFiltering.ts apps/frontend-manage/src/components/activities/actions apps/frontend-manage/src/components/activities/overview apps/frontend-manage/src/components/courses/modals/TemplateDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx apps/frontend-manage/src/components/courses/modals/TemplateConversionModal.tsx apps/frontend-manage/src/components/elements/manipulation/StudentElementPreviewActivityDetails.tsx --glob '!**/*.d.ts'`
+  returned no matches.
+- Remaining S04P audit is limited to activity creation wizard files:
+  `rg -n "@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/components/activities/creation --glob '!**/*.d.ts'`.
+- `git diff --check`: passed.
+- Browser verification unavailable: `curl -sS -I http://127.0.0.1:3002/activities`
+  failed with connection refused, and `npx agent-browser open
+  http://127.0.0.1:3002/activities` failed with
+  `net::ERR_CONNECTION_REFUSED`. Failure screenshot:
+  `/tmp/agent-browser-shots/s04-activity-overview-type-cleanup-connection-refused.png`.
+
+Residual S04P:
+
+- Activity creation wizard files still import generated GraphQL types/enums and
+  are the next S04-only cleanup target.
+
 ### 2026-06-19 Completed: S04P Activity Action Generated Type Cleanup
 
 Status: complete for the scoped activity action cleanup. Scope stayed limited

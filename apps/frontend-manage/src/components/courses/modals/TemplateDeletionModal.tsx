@@ -1,10 +1,9 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { trpc } from '../../../lib/trpc'
+import { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 interface TemplateDeletionModalProps {
   activityId: string
@@ -16,13 +15,6 @@ interface TemplateDeletionModalProps {
   refetchActivities?: () => Promise<void>
 }
 
-const trpcActivityTypeByGraphqlActivityType = {
-  [ActivityType.GroupActivity]: ApiActivityType.GROUP_ACTIVITY,
-  [ActivityType.LiveQuiz]: ApiActivityType.LIVE_QUIZ,
-  [ActivityType.MicroLearning]: ApiActivityType.MICRO_LEARNING,
-  [ActivityType.PracticeQuiz]: ApiActivityType.PRACTICE_QUIZ,
-} satisfies Record<ActivityType, ApiActivityType>
-
 function TemplateDeletionModal({
   activityId,
   activityType,
@@ -32,7 +24,6 @@ function TemplateDeletionModal({
   refetchActivities,
 }: TemplateDeletionModalProps) {
   const t = useTranslations()
-  const trpcActivityType = trpcActivityTypeByGraphqlActivityType[activityType]
   const deleteActivityTemplate = trpc.activity.deleteTemplate.useMutation()
 
   return (
@@ -55,7 +46,8 @@ function TemplateDeletionModal({
         try {
           const data = await deleteActivityTemplate.mutateAsync({
             activityId,
-            activityType: trpcActivityType,
+            activityType:
+              activityType as RouterInputs['activity']['deleteTemplate']['activityType'],
           })
 
           if (data?.deleteActivityTemplate) {

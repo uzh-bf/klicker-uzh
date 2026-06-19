@@ -1,10 +1,9 @@
-import type { ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
-import { trpc } from '../../../lib/trpc'
+import type { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 interface ActivityNameChangeModalProps {
   id: string
@@ -15,13 +14,6 @@ interface ActivityNameChangeModalProps {
   onClose: () => void
   refetchActivities?: () => Promise<void>
 }
-
-const trpcActivityTypeByGraphqlActivityType = {
-  GROUP_ACTIVITY: ApiActivityType.GROUP_ACTIVITY,
-  LIVE_QUIZ: ApiActivityType.LIVE_QUIZ,
-  MICRO_LEARNING: ApiActivityType.MICRO_LEARNING,
-  PRACTICE_QUIZ: ApiActivityType.PRACTICE_QUIZ,
-} satisfies Record<ActivityType, ApiActivityType>
 
 function ActivityNameChangeModal({
   id,
@@ -36,7 +28,6 @@ function ActivityNameChangeModal({
   const utils = trpc.useUtils()
 
   const changeActivityName = trpc.activity.changeName.useMutation()
-  const trpcActivityType = trpcActivityTypeByGraphqlActivityType[type]
   const schema = Yup.object().shape({
     name: Yup.string().required(t('manage.activityWizard.activityName')),
     displayName: Yup.string().required(
@@ -65,7 +56,8 @@ function ActivityNameChangeModal({
           setSubmitting(true)
           const result = await changeActivityName.mutateAsync({
             activityId: id,
-            activityType: trpcActivityType,
+            activityType:
+              type as RouterInputs['activity']['changeName']['activityType'],
             name: values.name,
             displayName: values.displayName,
           })

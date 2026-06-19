@@ -1,14 +1,13 @@
-import {
-  ActivityInfo,
-  ActivityType,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
-import { trpc } from '../../../lib/trpc'
+import {
+  ActivityInfo,
+  ActivityType,
+  PublicationStatus,
+} from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
@@ -24,6 +23,8 @@ import useLiveQuizActions from '../actions/useLiveQuizActions'
 import useStartLiveQuiz from '../actions/useStartLiveQuiz'
 import ActivityActions from './ActivityActions'
 import ActivityRemovalModal from './ActivityRemovalModal'
+
+type LiveQuizQRModalProps = Parameters<typeof LiveQuizQRModal>[0]
 
 // create a map between the activity status and the available actions (in order)
 const statusActionMap = {
@@ -79,6 +80,11 @@ const statusActionMap = {
     'deleteTemplate',
   ],
   [PublicationStatus.Graded]: [],
+}
+
+function toDateString(value: Date | string | null | undefined) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
 }
 
 function LiveQuizActions({
@@ -218,7 +224,7 @@ function LiveQuizActions({
             activityId={liveQuiz.id}
             title={liveQuiz.name}
             courseId={liveQuiz.courseId}
-            courseStartDate={liveQuiz.courseStartDate}
+            courseStartDate={toDateString(liveQuiz.courseStartDate)}
             onClose={() => setSchedulingModal(false)}
           />
         )}
@@ -230,7 +236,8 @@ function LiveQuizActions({
             onDelete={async () => {
               const result = await deleteLiveQuiz.mutateAsync({
                 activityId: liveQuiz.id,
-                activityType: ApiActivityType.LIVE_QUIZ,
+                activityType:
+                  ActivityType.LiveQuiz as RouterInputs['activity']['delete']['activityType'],
               })
               if (liveQuiz.courseId && result.deleteActivity?.id) {
                 await utils.course.detail.invalidate({
@@ -306,7 +313,9 @@ function LiveQuizActions({
             quizId={liveQuiz.id}
             quizPin={liveQuiz.pinCode}
             isAssessmentEnabled={liveQuiz.isAssessmentEnabled ?? false}
-            language={liveQuiz.courseLanguage}
+            language={
+              liveQuiz.courseLanguage as LiveQuizQRModalProps['language']
+            }
             onClose={() => setQRModal(false)}
           />
         )}

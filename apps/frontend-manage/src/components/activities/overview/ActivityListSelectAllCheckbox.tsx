@@ -1,7 +1,10 @@
-import { ActivityInfo, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Checkbox } from '@uzh-bf/design-system'
 import { Dispatch, SetStateAction } from 'react'
 import { isEmpty } from 'remeda'
+import {
+  ActivityInfo,
+  PublicationStatus,
+} from '../../../lib/constants/activityEnums'
 
 function ActivityListSelectAllCheckbox({
   activities,

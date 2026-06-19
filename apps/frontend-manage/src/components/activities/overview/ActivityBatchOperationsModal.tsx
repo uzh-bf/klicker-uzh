@@ -1,16 +1,16 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityInfo,
-  ActivityType,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { isShallowEqual } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import {
+  ActivityInfo,
+  ActivityType,
+  PublicationStatus,
+} from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import ActivityBatchOperationsInfo from './batchOperations/ActivityBatchOperationsInfo'
 import ActivityCourseCard from './batchOperations/ActivityCourseCard'

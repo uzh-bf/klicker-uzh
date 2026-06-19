@@ -1,23 +1,27 @@
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityDetails,
-  ActivityType,
-  ElementInstance,
-  PublicationStatus,
-  ReviewStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import {
+  ActivityType,
+  PublicationStatus,
+  ReviewStatus,
+} from '../../../../lib/constants/activityEnums'
 import { trpc, type RouterInputs } from '../../../../lib/trpc'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
 import ActivityDetailsActions from './ActivityDetailsActions'
 import ActivityInformation from './ActivityInformation'
 import ActivityOverviewTable from './ActivityOverviewTable'
+
+const OUTDATED_INSTANCE_STATUSES: PublicationStatus[] = [
+  PublicationStatus.Draft,
+  PublicationStatus.Scheduled,
+  PublicationStatus.Template,
+]
 
 function ActivityDetailsModal({
   activityId,
@@ -34,7 +38,7 @@ function ActivityDetailsModal({
   const detailsInput: RouterInputs['activity']['details'] = {
     activityId,
     activityType:
-      activityType as unknown as RouterInputs['activity']['details']['activityType'],
+      activityType as RouterInputs['activity']['details']['activityType'],
   }
 
   // fetch activity details
@@ -45,10 +49,8 @@ function ActivityDetailsModal({
 
   const details = detailsData?.activityDetails
   const stacks = details?.stacks ?? []
-  const detailsStatus = details?.status as unknown as PublicationStatus
-  const detailsReviewStatus = details?.reviewStatus as unknown as
-    | ReviewStatus
-    | undefined
+  const detailsStatus = details?.status
+  const detailsReviewStatus = details?.reviewStatus ?? ReviewStatus.Incomplete
   const isReviewed = detailsReviewStatus === ReviewStatus.Reviewed
   const instanceIds = useMemo(
     () =>
@@ -70,11 +72,7 @@ function ActivityDetailsModal({
   const outdatedInstances = useMemo(() => {
     if (!detailsStatus) return []
 
-    return [
-      PublicationStatus.Draft,
-      PublicationStatus.Scheduled,
-      PublicationStatus.Template,
-    ].includes(detailsStatus)
+    return OUTDATED_INSTANCE_STATUSES.includes(detailsStatus)
       ? (data?.outdatedElementInstances.map((instance) => instance.id) ?? [])
       : []
   }, [data?.outdatedElementInstances, detailsStatus])
@@ -114,19 +112,19 @@ function ActivityDetailsModal({
         <div className="flex h-auto min-h-0 flex-col gap-2 lg:flex-row xl:h-full xl:max-h-full xl:flex-row">
           <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-2 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
             <ActivityDetailsActions
-              details={details as unknown as ActivityDetails}
+              details={details}
               activityType={activityType}
               isReviewed={isReviewed}
               setSelectedInstanceId={setSelectedInstanceId}
             />
             <ActivityInformation
-              details={details as unknown as ActivityDetails}
+              details={details}
               activityType={activityType}
-              activityReviewStatus={detailsReviewStatus as ReviewStatus}
+              activityReviewStatus={detailsReviewStatus}
             />
 
             <ActivityOverviewTable
-              details={details as unknown as ActivityDetails}
+              details={details}
               activityType={activityType}
               outdatedInstances={outdatedInstances}
               selectedInstanceId={selectedInstanceId}
@@ -141,7 +139,7 @@ function ActivityDetailsModal({
                     {t('manage.general.elementPreviewDescription')}:
                   </h4>
                   <StudentElementPreviewActivityDetails
-                    instance={selected.instance as unknown as ElementInstance}
+                    instance={selected.instance}
                   />
                 </div>
                 <div className="flex flex-row items-center justify-center gap-5">

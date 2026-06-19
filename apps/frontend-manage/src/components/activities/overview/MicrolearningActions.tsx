@@ -1,11 +1,11 @@
+import { ObjectType } from '@lib/constants/sharingEnums'
+import { useTranslations } from 'next-intl'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityInfo,
   ActivityType,
   PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ObjectType } from '@lib/constants/sharingEnums'
-import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+} from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import MicroLearningDeletionModal from '../../courses/modals/MicroLearningDeletionModal'
@@ -70,6 +70,10 @@ const statusActionMap = {
   ],
   [PublicationStatus.Template]: [],
   [PublicationStatus.Graded]: [],
+}
+
+function toDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value)
 }
 
 function MicrolearningActions({
@@ -171,18 +175,20 @@ function MicrolearningActions({
             refetchActivities={refetchActivities}
           />
         ) : null}
-        {publishModal && (
-          <PublishConfirmationModal
-            onClose={() => setPublishModal(false)}
-            activityType="MICROLEARNING"
-            activityId={microLearning.id}
-            startAt={microLearning.scheduledStartAt}
-            endAt={microLearning.scheduledEndAt}
-            title={microLearning.name}
-            courseId={microLearning.courseId!}
-            refetchActivities={refetchActivities}
-          />
-        )}
+        {publishModal &&
+          microLearning.scheduledStartAt &&
+          microLearning.scheduledEndAt && (
+            <PublishConfirmationModal
+              onClose={() => setPublishModal(false)}
+              activityType="MICROLEARNING"
+              activityId={microLearning.id}
+              startAt={toDate(microLearning.scheduledStartAt)}
+              endAt={toDate(microLearning.scheduledEndAt)}
+              title={microLearning.name}
+              courseId={microLearning.courseId!}
+              refetchActivities={refetchActivities}
+            />
+          )}
 
         {removalModal && microLearning.isRemovable && (
           <ActivityRemovalModal
@@ -211,11 +217,11 @@ function MicrolearningActions({
             refetchActivities={refetchActivities}
           />
         )}
-        {extensionModal && (
+        {extensionModal && microLearning.scheduledEndAt && (
           <ExtensionModal
             type="microLearning"
             id={microLearning.id}
-            currentEndDate={microLearning.scheduledEndAt}
+            currentEndDate={toDate(microLearning.scheduledEndAt)}
             courseId={microLearning.courseId!}
             title={t('manage.course.extendMicroLearning')}
             description={t('manage.course.extendMicroLearningDescription')}

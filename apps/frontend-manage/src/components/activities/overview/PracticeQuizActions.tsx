@@ -1,10 +1,10 @@
+import { ObjectType } from '@lib/constants/sharingEnums'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityInfo,
   ActivityType,
   PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ObjectType } from '@lib/constants/sharingEnums'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+} from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
@@ -55,6 +55,10 @@ const statusActionMap = {
   [PublicationStatus.Ended]: [],
   [PublicationStatus.Template]: [],
   [PublicationStatus.Graded]: [],
+}
+
+function toDateString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value
 }
 
 function PracticeQuizActions({
@@ -135,13 +139,13 @@ function PracticeQuizActions({
         openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
-        {publishModal && (
+        {publishModal && practiceQuiz.courseStartDate && (
           <PracticeQuizPublishingModal
             activityId={practiceQuiz.id}
             title={practiceQuiz.name}
             onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}
-            courseStartDate={practiceQuiz.courseStartDate}
+            courseStartDate={toDateString(practiceQuiz.courseStartDate)}
             refetchActivities={refetchActivities}
           />
         )}

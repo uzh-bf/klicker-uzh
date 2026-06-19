@@ -1,7 +1,7 @@
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ActivityType } from '../../../../lib/constants/activityEnums'
 import { trpc, type RouterInputs } from '../../../../lib/trpc'
 
 function ActivityReviewButton({
@@ -20,7 +20,7 @@ function ActivityReviewButton({
   const detailsInput: RouterInputs['activity']['details'] = {
     activityId,
     activityType:
-      activityType as unknown as RouterInputs['activity']['details']['activityType'],
+      activityType as RouterInputs['activity']['details']['activityType'],
   }
   const setActivityReviewStatus = trpc.activity.setReviewStatus.useMutation()
 
@@ -33,7 +33,7 @@ function ActivityReviewButton({
         const res = await setActivityReviewStatus.mutateAsync({
           activityId,
           activityType:
-            activityType as unknown as RouterInputs['activity']['setReviewStatus']['activityType'],
+            activityType as RouterInputs['activity']['setReviewStatus']['activityType'],
           isReviewed: !isReviewed,
         })
 
