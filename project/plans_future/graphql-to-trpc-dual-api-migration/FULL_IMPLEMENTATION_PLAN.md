@@ -196,7 +196,12 @@ Current next action:
   locally. It removes the generated GraphQL option-type import from the
   `SELECTIONAnswerOptions` leaf component by using a narrow local structural
   option type.
-- S05G-U next: continue with the next smallest shared-components generated
+- S05G-U case-study case leaf generated option type cleanup is complete
+  locally. Scope was limited to replacing the `CSCase` leaf component's generated
+  `CaseStudyElementOptions` import with a narrow local structural option type.
+  Broader case-study question/evaluation generated types stay live for later
+  slices.
+- S05G-V next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1764,6 +1769,55 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/questions/SELECTIONAnswerOptions.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed after formatting.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/questions/SELECTIONAnswerOptions.tsx packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-U Case-Study Case Leaf Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove the generated GraphQL
+option-type import from the `CSCase` leaf component without changing
+case-study rendering, validation, slider behavior, or broader case-study
+question/evaluation payload types.
+
+Slice: S05G-U Case-Study Case Leaf Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `CaseStudyElementOptions` shape;
+the `CSCase` component only reads case title/description, item `id` / `value`,
+criterion slider fields, optional criterion units, and optional slider labels.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/questions/CSCase.tsx`
+- `packages/shared-components/src/CaseStudyQuestion.tsx`
+
+Intended behavior:
+
+- Keep case-study case rendering and slider behavior unchanged.
+- Remove the generated GraphQL option-type import from `CSCase.tsx`.
+- Keep generated GraphQL option payloads accepted by structural typing while
+  already migrated tRPC DTO payloads can also call the leaf component.
+
+What changed:
+
+- Added local structural `CaseStudyElementOptions` in
+  `packages/shared-components/src/elementTypes.ts`.
+- Switched `packages/shared-components/src/questions/CSCase.tsx` to the local
+  option type instead of the generated GraphQL operation type.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/questions/CSCase.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/questions/CSCase.tsx packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 
@@ -12267,10 +12321,8 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Run the focused GraphQL package tests from `packages/graphql` and the new
-   `packages/api` tRPC package parity test together; mark S05G-R complete only
-   when both pass.
-2. Continue S05G-S with the next smallest active shared-components generated
+1. Commit and push S05G-U after final formatting and hook verification.
+2. Continue S05G-V with the next smallest active shared-components generated
    enum/type cleanup while keeping GraphQL/Apollo live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

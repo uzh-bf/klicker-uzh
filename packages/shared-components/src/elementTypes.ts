@@ -53,3 +53,30 @@ export type SelectionElementOptions = {
   } | null
   numberOfInputs?: number | null
 }
+
+export type CaseStudyElementOptions = {
+  cases: {
+    description: string
+    id: string
+    title: string
+  }[]
+  criteria: {
+    id: string
+    labels?: {
+      max: string
+      mid?: string | null
+      min: string
+    } | null
+    max: number
+    min: number
+    name: string
+    step: number
+    unit?: string | null
+  }[]
+  items?:
+    | {
+        id: number
+        value: string
+      }[]
+    | null
+}
