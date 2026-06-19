@@ -96,6 +96,10 @@ Current next action:
   manage cockpit/lecturer GraphQL feedback `subscribeToMore` subscriptions with
   tRPC invalidation subscriptions while keeping existing GraphQL
   cockpit/lecturer queries and mutations.
+- S05F app-side GraphQL WS cleanup is complete locally. Scope was limited to removing
+  Apollo GraphQL websocket links and direct app `graphql-ws` dependencies now
+  that app GraphQL subscription consumers are gone; Apollo HTTP GraphQL stays
+  live for remaining queries and mutations.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -594,6 +598,40 @@ Verification:
 - Runtime WebSocket parity probe passed on the local backend: GraphQL received
   `feedbackCreated` and `feedbackPinned`; tRPC received the matching compact
   `{ id, liveQuizId }` events for the same live quiz.
+
+### 2026-06-19 Completed: S05F App-Side GraphQL WS Client Removal
+
+Status: complete locally. Scope was limited to app-side GraphQL websocket
+clients:
+
+- Remove `GraphQLWsLink` / `graphql-ws` use from PWA Apollo setup.
+- Remove `GraphQLWsLink` / `graphql-ws` use from manage Apollo setup.
+- Remove direct `graphql-ws` dependencies from PWA/manage manifests and update
+  `pnpm-lock.yaml`.
+
+Intended behavior:
+
+- Keep Apollo HTTP GraphQL queries and mutations working in PWA/manage.
+- Keep backend `/api/graphql`, GraphQL WS support, and `packages/graphql` until
+  S06.
+- Keep tRPC websocket subscriptions in PWA/manage.
+
+Verification:
+
+- Gate audit passed: no `GraphQLWsLink`, direct app `graphql-ws`,
+  `subscribeToMore`, or Apollo `SubscribeToMoreOptions` usage remains in
+  frontend control, PWA, or manage.
+- `pnpm install --lockfile-only` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm --filter @klicker-uzh/frontend-manage build` passed with existing
+  Next/i18n/page-data warning noise and existing QR `MISSING_MESSAGE` warning
+  noise.
+- `pnpm run check:syncpack` passed.
+- `pnpm exec prettier --check` passed for touched files.
+- `git diff --check` passed.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
