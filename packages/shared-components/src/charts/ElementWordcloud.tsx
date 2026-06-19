@@ -1,12 +1,9 @@
-import {
-  type ElementInstanceEvaluation,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { TagCloud } from 'react-tagcloud'
 import { twMerge } from 'tailwind-merge'
+import { ElementType, type ElementInstanceEvaluation } from '../elementTypes'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 
 interface ElementWordcloudProps {
@@ -30,7 +27,10 @@ function ElementWordcloud({
   className,
 }: ElementWordcloudProps) {
   const t = useTranslations()
-  const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
+  const supportedElementTypes: ElementType[] = [
+    ElementType.Numerical,
+    ElementType.FreeText,
+  ]
 
   const processedData =
     instance.__typename === 'NumericalActivityEvaluationData'

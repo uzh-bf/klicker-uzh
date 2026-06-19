@@ -1,6 +1,6 @@
-import { type ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { type EvaluationTableRowType } from '../charts/ElementTableChart'
+import { type ElementInstanceEvaluation } from '../elementTypes'
 
 interface UseEvaluationTableColumnsProps {
   instance: ElementInstanceEvaluation

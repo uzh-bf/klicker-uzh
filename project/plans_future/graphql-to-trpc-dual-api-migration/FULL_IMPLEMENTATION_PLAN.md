@@ -221,7 +221,12 @@ Current next action:
   complete locally. Scope was limited to replacing generated numerical
   option/evaluation, histogram range/statistics, and `ElementType` imports in
   the numerical shared-component leaf path with local structural types.
-- S05G-AA next: continue with the next smallest shared-components generated
+- S05G-AA shared evaluation chart generated activity-evaluation type cleanup is
+  complete locally. Scope was limited to replacing generated
+  `ElementInstanceEvaluation` and `ElementType` imports in the table/bar/word-cloud
+  chart leaf components and their small data hooks with local structural
+  activity-evaluation types.
+- S05G-AB next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -2118,6 +2123,67 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/NumericalQuestion.tsx packages/shared-components/src/evaluation/NREvaluation.tsx packages/shared-components/src/charts/ElementHistogram.tsx packages/shared-components/src/hooks/useEvaluationHistogramData.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/NumericalQuestion.tsx packages/shared-components/src/evaluation/NREvaluation.tsx packages/shared-components/src/charts/ElementHistogram.tsx packages/shared-components/src/hooks/useEvaluationHistogramData.ts packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-AA Evaluation Chart Activity Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove generated GraphQL
+imports from the generic shared evaluation chart leaf components without touching
+GraphQL/Apollo runtime paths.
+
+Slice: S05G-AA Evaluation Chart Activity Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `ElementInstanceEvaluation` activity
+evaluation union, `ElementType`, and the result fields consumed by table, bar,
+and word-cloud charts.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/charts/ElementTableChart.tsx`
+- `packages/shared-components/src/charts/ElementBarChart.tsx`
+- `packages/shared-components/src/charts/ElementWordcloud.tsx`
+- `packages/shared-components/src/hooks/useEvaluationTableData.ts`
+- `packages/shared-components/src/hooks/useEvaluationBarChartData.ts`
+- `apps/frontend-manage/src/components/evaluation/ElementChart.tsx`
+
+Intended behavior:
+
+- Keep table chart rows for choices, numerical, free-text, selection, and
+  flashcards unchanged.
+- Keep bar chart labels/colors for choices and flashcards unchanged.
+- Keep word-cloud data for numerical and free-text unchanged.
+- Remove generated GraphQL imports from the chart leaf cluster by using local
+  structural shared-component activity-evaluation types.
+
+What changed:
+
+- Added local structural activity-evaluation chart result types in
+  `packages/shared-components/src/elementTypes.ts` for choices, numerical,
+  free-text, selection, and flashcard activity evaluations.
+- Switched `packages/shared-components/src/charts/ElementTableChart.tsx`,
+  `packages/shared-components/src/charts/ElementBarChart.tsx`,
+  `packages/shared-components/src/charts/ElementWordcloud.tsx`,
+  `packages/shared-components/src/hooks/useEvaluationTableData.ts`, and
+  `packages/shared-components/src/hooks/useEvaluationBarChartData.ts` to local
+  structural activity-evaluation types and local `ElementType`.
+- Added explicit `ElementType[]` annotations for chart supported-type lists so
+  TypeScript does not over-narrow local enum arrays.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/charts/ElementBarChart.tsx packages/shared-components/src/charts/ElementTableChart.tsx packages/shared-components/src/charts/ElementWordcloud.tsx packages/shared-components/src/hooks/useEvaluationTableData.ts packages/shared-components/src/hooks/useEvaluationBarChartData.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/charts/ElementBarChart.tsx packages/shared-components/src/charts/ElementTableChart.tsx packages/shared-components/src/charts/ElementWordcloud.tsx packages/shared-components/src/hooks/useEvaluationTableData.ts packages/shared-components/src/hooks/useEvaluationBarChartData.ts packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 

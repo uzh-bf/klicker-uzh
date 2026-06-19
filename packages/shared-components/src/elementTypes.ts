@@ -104,6 +104,96 @@ export type Statistics = {
   sd: number
 }
 
+type ActivityEvaluationBase = {
+  content: string
+  explanation?: string | null
+  hasAnswerFeedbacks: boolean
+  hasSampleSolution: boolean
+  id: number
+  name: string
+  type: ElementType
+}
+
+type CountedTextResult = {
+  correct?: boolean | null
+  count: number
+  feedback?: string | null
+  value: string
+}
+
+type CountedNumericalResult = {
+  correct?: boolean | null
+  count: number
+  value: number
+}
+
+export type ChoicesActivityEvaluationData = ActivityEvaluationBase & {
+  __typename: 'ChoicesActivityEvaluationData'
+  results: {
+    anonymousAnswers: number
+    choices: CountedTextResult[]
+    totalAnswers: number
+  }
+}
+
+export type NumericalActivityEvaluationData = ActivityEvaluationBase & {
+  __typename: 'NumericalActivityEvaluationData'
+  results: {
+    anonymousAnswers: number
+    exactSolutions?: number[] | null
+    maxValue?: number | null
+    minValue?: number | null
+    responseValues: CountedNumericalResult[]
+    solutionRanges?: NumericalSolutionRange[] | null
+    totalAnswers: number
+  }
+  statistics?: Statistics | null
+}
+
+export type FreeTextActivityEvaluationData = ActivityEvaluationBase & {
+  __typename: 'FreeTextActivityEvaluationData'
+  results: {
+    anonymousAnswers: number
+    maxLength?: number | null
+    responses: CountedTextResult[]
+    solutions?: string[] | null
+    totalAnswers: number
+  }
+}
+
+export type SelectionActivityEvaluationData = ActivityEvaluationBase & {
+  __typename: 'SelectionActivityEvaluationData'
+  results: {
+    anonymousAnswers: number
+    answerSolutionIds?: number[] | null
+    numberOfInputs?: number | null
+    selectionResponses: {
+      answerId: number
+      count: number
+      value: string
+    }[]
+    totalAnswers: number
+  }
+}
+
+export type FlashcardActivityEvaluationData = ActivityEvaluationBase & {
+  __typename: 'FlashcardActivityEvaluationData'
+  results: {
+    anonymousAnswers: number
+    correctCount: number
+    incorrectCount: number
+    partialCount: number
+    totalAnswers: number
+  }
+}
+
+export type ElementInstanceEvaluation =
+  | ChoicesActivityEvaluationData
+  | NumericalActivityEvaluationData
+  | FreeTextActivityEvaluationData
+  | SelectionActivityEvaluationData
+  | FlashcardActivityEvaluationData
+
 export type ContentElementInstance = {
   elementData: {
     content: string

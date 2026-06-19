@@ -1,12 +1,9 @@
-import {
-  type ElementInstanceEvaluation,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import DataTable from '../DataTable'
+import { ElementType, type ElementInstanceEvaluation } from '../elementTypes'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
 import useEvaluationTableData from '../hooks/useEvaluationTableData'
@@ -37,7 +34,7 @@ function ElementTableChart({
 }: ElementTableChartProps) {
   const t = useTranslations()
 
-  const supportedElementTypes = [
+  const supportedElementTypes: ElementType[] = [
     ElementType.Sc,
     ElementType.Mc,
     ElementType.Kprim,

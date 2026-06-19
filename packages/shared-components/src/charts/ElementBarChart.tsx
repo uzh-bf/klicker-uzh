@@ -1,7 +1,3 @@
-import {
-  type ElementInstanceEvaluation,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
@@ -17,6 +13,7 @@ import {
 } from 'recharts'
 import { twMerge } from 'tailwind-merge'
 import { CHART_COLORS, CHART_SOLUTION_COLORS } from '../constants'
+import { ElementType, type ElementInstanceEvaluation } from '../elementTypes'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import useEvaluationBarChartData from '../hooks/useEvaluationBarChartData'
 
@@ -43,7 +40,7 @@ function ElementBarChart({
   className,
 }: ElementBarChartProps) {
   const t = useTranslations()
-  const supportedElementTypes = [
+  const supportedElementTypes: ElementType[] = [
     ElementType.Sc,
     ElementType.Mc,
     ElementType.Kprim,
