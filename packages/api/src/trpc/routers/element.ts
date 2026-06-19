@@ -27,6 +27,10 @@ import {
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
 } from '@klicker-uzh/util'
+import {
+  getFileUploadSas,
+  getUserMediaFiles,
+} from '../../services/mediaFiles.js'
 import { getPrisma, type TRPCContext } from '../context.js'
 import { toPreviewElementData } from '../dto/elementPreview.js'
 import { router } from '../init.js'
@@ -38,6 +42,7 @@ import {
   changeElementStatusInput,
   editTagInput,
   elementIdInput,
+  fileUploadSasInput,
   flagOutdatedElementInstancesInput,
   instanceUpdateActivitiesInput,
   listElementsInput,
@@ -2081,6 +2086,30 @@ export const elementRouter = router({
     const element = await getSingleElementForEdit({ ctx, id: input.id })
     return { element }
   }),
+
+  mediaFiles: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return {
+      mediaFiles: await getUserMediaFiles({
+        prisma,
+        userId: ctx.user.sub,
+      }),
+    }
+  }),
+
+  fileUploadSas: userFullAccessProcedure
+    .input(fileUploadSasInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        fileUploadSas: await getFileUploadSas(input, {
+          prisma,
+          userId: ctx.user.sub,
+        }),
+      }
+    }),
 
   artificialInstance: userProcedure
     .input(artificialInstanceInput)

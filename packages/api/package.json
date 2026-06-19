@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@azure/storage-blob": "12.25.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",

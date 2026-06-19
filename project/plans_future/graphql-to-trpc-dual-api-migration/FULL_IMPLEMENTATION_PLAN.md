@@ -280,6 +280,103 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04M Manage Media Library Uploads
+
+Status: complete for the scoped slice. Scope was limited to the Manage rich-text
+media library used by `ContentInput` for element/content authoring. This slice
+migrated the media-file list query and upload-SAS mutation from GraphQL/Apollo to
+tRPC, kept the Azure blob upload behavior unchanged, and did not start S05
+realtime or S06 cleanup.
+
+Operation mapping:
+
+```text
+Slice: S04M Manage Media Library Uploads
+GraphQL operation(s): GetUserMediaFiles, GetFileUploadSas
+GraphQL resolver(s): userMediaFiles, getFileUploadSas
+Behavior source: packages/graphql/src/schema/query.ts userMediaFiles, packages/graphql/src/schema/mutation.ts getFileUploadSas, packages/graphql/src/services/elements.ts getFileUploadSas
+tRPC router.procedure: element.mediaFiles, element.fileUploadSas
+Input schema: fileUploadSasInput
+Output DTO: mediaFiles list and fileUploadSas payload consumed by apps/frontend-manage/src/components/common/MediaLibrary.tsx
+Active frontend consumers: apps/frontend-manage/src/components/common/MediaLibrary.tsx via ContentInput image picker
+Apollo cache/refetch/subscription behavior: GetUserMediaFiles Suspense query plus upload mutation with refetchQueries [GetUserMediaFilesDocument]
+React Query replacement: element.mediaFiles query plus element.fileUploadSas mutation with element.mediaFiles invalidation after successful Azure upload
+Browser verification path: open an element/content authoring surface, open the image picker, verify media-file list uses /api/trpc and no /api/graphql for this component. Upload click is API-tested if local Azure secrets are unavailable.
+Cleanup blocked until: remaining S04 consumers, S04P generated type leak cleanup, S05 realtime, and S06 cleanup gates.
+```
+
+Implementation:
+
+- Added `packages/api/src/services/mediaFiles.ts` with API-owned media-file
+  behavior based on the existing GraphQL query/mutation/service path, including
+  user media-file ordering, Azure blob container setup, writable SAS generation,
+  and media-file row creation.
+- Added pinned `@azure/storage-blob@12.25.0` to `@klicker-uzh/api` and synced
+  `pnpm-lock.yaml` so the API package owns the Node-side Azure SDK runtime it
+  imports.
+- Added `element.mediaFiles` and `element.fileUploadSas` procedures plus
+  `fileUploadSasInput`.
+- Migrated `apps/frontend-manage/src/components/common/MediaLibrary.tsx` from
+  Apollo/generated operations to tRPC queries/mutation and React Query
+  invalidation after successful blob upload.
+- Added `packages/api/src/trpc/__tests__/media-files.test.ts` with mocked Azure
+  storage behavior so the SAS/container/media-row side effects are tested without
+  network calls.
+
+Verification:
+
+- Context7 Azure SDK documentation was checked before adding the Node-side Azure
+  storage imports to `packages/api`.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04M files>`:
+  passed, unchanged.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/media-files.test.ts`:
+  passed; the package script ran the full API Vitest suite (`38` files,
+  `358` tests), including the new media-file tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with the known Manage build warnings (`MODULE_TYPELESS_PACKAGE_JSON`,
+  next-intl `i18n`, PWA output, stale Browserslist, `/qr/[...args]`
+  `MISSING_MESSAGE`, and large page data warnings).
+- Focused operation audit
+  `rg -n "GetFileUploadSasDocument|GetUserMediaFilesDocument|GetFileUploadSas|GetUserMediaFiles|useApolloClient|useSuspenseQuery|@apollo/client" apps/frontend-manage/src/components/common/MediaLibrary.tsx packages/api/src --glob '!**/*.d.ts'`:
+  no matches.
+- Broader media operation audit
+  `rg -n "GetFileUploadSasDocument|GetUserMediaFilesDocument|GetFileUploadSas|GetUserMediaFiles" apps/frontend-manage/src packages/api/src --glob '!**/*.d.ts'`:
+  no matches.
+- Compact S04 coexistence audit
+  `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`:
+  `205`, confirming GraphQL/Apollo remain intentionally live for other
+  S04/S05/S06 work.
+- `git diff --check`: passed.
+- Browser verification used `AGENT_BROWSER_SESSION=s04-media` against
+  branch-local backend/auth on `3103`/`3106` and a temporary Manage dev server on
+  `localhost:3116` with local public URL overrides.
+- Browser screenshots:
+  `/tmp/agent-browser-shots/s04-media-04-manage-3116.png`,
+  `/tmp/agent-browser-shots/s04-media-08-edit-modal.png`, and
+  `/tmp/agent-browser-shots/s04-media-10-media-library-open-actual.png`.
+- Browser network evidence after opening the rich-text image picker showed
+  `element.mediaFiles` on `/api/trpc` with HTTP `200`, rendered `Media Library`
+  and `Upload Media`, and reported no `/api/graphql` resource entries for the
+  component check.
+
+Residual risk / next S04 work:
+
+- Browser verification covered the media-library read/render path. The actual
+  file upload was not clicked in browser because it would require real Azure blob
+  credentials and would upload a file; the SAS/container/media-row behavior is
+  covered by isolated API tests with Azure mocks.
+- Agent-browser accessibility clicks hung on dense modal toolbar controls, so the
+  final image-button interaction used the rendered `SlateButton` DOM node after
+  the seeded edit modal was open. The resulting component render and network
+  evidence still exercised the real React handler and tRPC query.
+- Continue remaining S04-only findings and pause before S05/S06.
+
 ### 2026-06-19 Completed: S04K Manage Chatbot Resources
 
 Status: complete for the scoped slice. Scope was limited to the Manage resources

@@ -10,6 +10,11 @@ export const artificialInstanceInput = z.object({
   elementId: z.number().int(),
 })
 
+export const fileUploadSasInput = z.object({
+  fileName: z.string(),
+  contentType: z.string(),
+})
+
 export const listElementsInput = z.object({
   status: z.nativeEnum(ElementStatus).nullish(),
   type: z.nativeEnum(ElementType).nullish(),
