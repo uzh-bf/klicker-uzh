@@ -4,10 +4,10 @@ import {
   ActivityDetails,
   ActivityType,
   ElementInstance,
-  ObjectType,
   PublicationStatus,
   ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'

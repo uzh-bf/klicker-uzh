@@ -1,5 +1,5 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import {
   Button,
   FormikSelectField,

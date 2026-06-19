@@ -11,11 +11,7 @@ import {
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ObjectAccess,
-  ObjectType,
-  toGraphqlObjectType,
-} from '@lib/constants/catalogEnums'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -309,7 +305,7 @@ function CatalogObjectItem({
           <ObjectSharingModalWrapper
             objectUuid={object.objectUuid}
             objectName={object.name}
-            objectType={toGraphqlObjectType(object.objectType)}
+            objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
             onClose={() => setSharingModal(false)}
           />
@@ -317,7 +313,7 @@ function CatalogObjectItem({
           <ObjectSharingModalWrapper
             objectId={object.objectId!}
             objectName={object.name}
-            objectType={toGraphqlObjectType(object.objectType)}
+            objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
             onClose={() => setSharingModal(false)}
           />

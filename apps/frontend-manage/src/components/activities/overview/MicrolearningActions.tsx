@@ -2,9 +2,9 @@ import {
   ActivityInfo,
   ActivityType,
   ElementInstanceType,
-  ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { trpc } from '../../../lib/trpc'

@@ -1,4 +1,4 @@
-import type { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import type { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import { trpc, type RouterInputs } from '../../lib/trpc'
 
 type ObjectPermissionsInput = RouterInputs['sharing']['objectPermissions']

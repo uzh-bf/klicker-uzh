@@ -1,4 +1,4 @@
-import { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { SelectField, UserNotification } from '@uzh-bf/design-system'
 import { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'

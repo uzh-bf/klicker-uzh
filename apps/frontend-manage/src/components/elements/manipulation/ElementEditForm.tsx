@@ -4,8 +4,8 @@ import {
   ElementData,
   ElementStatus,
   ElementType,
-  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import {
   Button,
   H3,

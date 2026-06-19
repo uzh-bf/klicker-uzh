@@ -8,11 +8,8 @@ import {
   faPencil,
   faShare,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  Course,
-  GetSingleCourseDocument,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Course, GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'

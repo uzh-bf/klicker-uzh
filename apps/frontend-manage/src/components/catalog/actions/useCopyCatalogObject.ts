@@ -1,4 +1,4 @@
-import { ObjectType } from '@lib/constants/catalogEnums'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 // function to trigger object import, returns success boolean

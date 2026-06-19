@@ -1,7 +1,7 @@
 import { faClock, IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faMessage, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'

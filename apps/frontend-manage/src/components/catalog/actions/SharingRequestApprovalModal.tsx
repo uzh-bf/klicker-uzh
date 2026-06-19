@@ -1,10 +1,5 @@
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  ObjectType,
-  PermissionLevel,
-  toGraphqlObjectType,
-  toGraphqlPermissionLevel,
-} from '@lib/constants/catalogEnums'
+import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import { Button, Modal, SelectField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -34,7 +29,7 @@ function SharingRequestApprovalModal({
   )
   const objectType = request.objectType as unknown as ObjectType
   const permissionLevelSelectItems = usePermissionLevelSelection({
-    type: toGraphqlObjectType(objectType),
+    type: objectType,
   })
   const utils = trpc.useUtils()
   const approveObjectSharingRequest =
@@ -143,14 +138,14 @@ function SharingRequestApprovalModal({
 
       <div className="mt-6">
         <PermissionsTable
-          objectType={toGraphqlObjectType(objectType)}
-          activePermissionLevel={toGraphqlPermissionLevel(permissionLevel)}
+          objectType={objectType}
+          activePermissionLevel={permissionLevel}
         />
       </div>
 
       <PropagatedPermissionsTable
-        objectType={toGraphqlObjectType(objectType)}
-        activePermissionLevel={toGraphqlPermissionLevel(permissionLevel)}
+        objectType={objectType}
+        activePermissionLevel={permissionLevel}
         showPropagationSetting={objectType === ObjectType.Course}
       />
     </Modal>

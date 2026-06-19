@@ -1,4 +1,4 @@
-import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import { useTranslations } from 'next-intl'
 
 function usePermissionLevelSelection({ type }: { type: ObjectType }) {

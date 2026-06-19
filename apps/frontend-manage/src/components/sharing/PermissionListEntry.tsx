@@ -1,5 +1,5 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@lib/constants/sharingEnums'
 import { Button, Select, SelectItem, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'

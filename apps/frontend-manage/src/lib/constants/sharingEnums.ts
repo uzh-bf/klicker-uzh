@@ -1,8 +1,3 @@
-import type {
-  ObjectType as GraphqlObjectType,
-  PermissionLevel as GraphqlPermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
-
 export const ObjectAccess = {
   Public: 'PUBLIC',
   Restricted: 'RESTRICTED',
@@ -33,11 +28,3 @@ export const PermissionLevel = {
 
 export type PermissionLevel =
   (typeof PermissionLevel)[keyof typeof PermissionLevel]
-
-export function toGraphqlObjectType(objectType: ObjectType) {
-  return objectType as unknown as GraphqlObjectType
-}
-
-export function toGraphqlPermissionLevel(permissionLevel: PermissionLevel) {
-  return permissionLevel as unknown as GraphqlPermissionLevel
-}

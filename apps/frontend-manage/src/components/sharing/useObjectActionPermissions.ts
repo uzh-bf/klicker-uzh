@@ -1,4 +1,4 @@
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { useTranslations } from 'next-intl'
 
 function useObjectActionPermissions({

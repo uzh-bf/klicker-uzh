@@ -17,9 +17,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
-  ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Badge, Checkbox, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'

@@ -1,4 +1,4 @@
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { useState } from 'react'
 import ObjectSharingModal from './ObjectSharingModal'
 import TransferOwnershipModal from './TransferOwnershipModal'

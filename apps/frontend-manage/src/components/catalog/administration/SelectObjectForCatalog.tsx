@@ -1,5 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { ObjectType } from '@lib/constants/catalogEnums'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'

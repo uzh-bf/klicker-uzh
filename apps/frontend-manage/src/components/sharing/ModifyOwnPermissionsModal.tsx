@@ -1,4 +1,4 @@
-import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@lib/constants/sharingEnums'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 

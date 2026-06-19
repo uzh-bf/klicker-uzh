@@ -1,5 +1,5 @@
-import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { PermissionLevel } from '@lib/constants/sharingEnums'
 import {
   AlertDialog,
   AlertDialogCancel,

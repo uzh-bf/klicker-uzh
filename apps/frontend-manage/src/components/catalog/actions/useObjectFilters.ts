@@ -1,4 +1,4 @@
-import { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import * as JsSearch from 'js-search'
 import { useMemo } from 'react'
 import type {

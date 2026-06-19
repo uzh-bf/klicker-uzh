@@ -1,4 +1,4 @@
-import { ObjectAccess } from '@lib/constants/catalogEnums'
+import { ObjectAccess } from '@lib/constants/sharingEnums'
 import {
   Button,
   FormikTextField,

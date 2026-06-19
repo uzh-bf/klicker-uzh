@@ -1,7 +1,7 @@
 import { faBan, faDownload } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { ObjectType } from '@lib/constants/catalogEnums'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'

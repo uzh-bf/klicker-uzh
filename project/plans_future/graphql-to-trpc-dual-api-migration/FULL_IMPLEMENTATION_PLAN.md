@@ -280,6 +280,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04P Sharing Generated Enum Cleanup
+
+Status: complete for the scoped sharing cleanup. Scope was limited to manage
+sharing modal/hooks, generated `ObjectType` / `PermissionLevel` value imports,
+and the already-migrated catalog/resource/course/action call sites that open
+`ObjectSharingModalWrapper`.
+
+Slice: S04P Sharing Generated Enum Cleanup
+GraphQL operation(s): none; this is generated enum import cleanup only.
+GraphQL resolver(s): none.
+Behavior source: existing enum string values from generated GraphQL output and
+Prisma-backed tRPC DTO values.
+tRPC router.procedure: unchanged.
+Input schema: unchanged.
+Output DTO: unchanged.
+Active frontend consumers:
+`apps/frontend-manage/src/components/sharing/**`,
+`apps/frontend-manage/src/lib/hooks/usePermissionLevelSelection.ts`,
+`apps/frontend-manage/src/lib/hooks/useObjectActivity.ts`, and catalog/resource
+call sites that open `ObjectSharingModalWrapper`.
+Apollo cache/refetch/subscription behavior: none.
+React Query replacement: none.
+Browser verification path: open a Manage sharing surface as a seeded lecturer
+and verify the sharing modal still renders permission controls after the enum
+source swap.
+
+Implementation:
+
+- Renamed the local enum constant module to
+  `apps/frontend-manage/src/lib/constants/sharingEnums.ts`.
+- Repointed manage sharing components/hooks and `ObjectSharingModalWrapper`
+  call sites from generated GraphQL enum value imports to local literal enum
+  constants.
+- Removed the temporary `toGraphqlObjectType` / `toGraphqlPermissionLevel`
+  compatibility helpers and casts from the catalog sharing boundaries.
+
+Verification:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write ...`
+- `pnpm --filter @klicker-uzh/frontend-manage check`
+- `pnpm --filter @klicker-uzh/frontend-manage build`
+- `rg -nU "import \{[^}]*\bObjectType\b[^}]*\} from '@klicker-uzh/graphql/dist/ops'" apps/frontend-manage/src -g '*.ts' -g '*.tsx'`
+  returned no matches.
+- `rg -nU "import \{[^}]*\bPermissionLevel\b[^}]*\} from '@klicker-uzh/graphql/dist/ops'" apps/frontend-manage/src -g '*.ts' -g '*.tsx'`
+  returned no matches.
+- `rg -n "@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/components/sharing apps/frontend-manage/src/lib/hooks/usePermissionLevelSelection.ts apps/frontend-manage/src/lib/hooks/useObjectActivity.ts apps/frontend-manage/src/lib/constants/sharingEnums.ts -g '*.ts' -g '*.tsx'`
+  returned no matches.
+- Browser verification with seeded `lecturer` user on
+  `http://localhost:3116/resources/answerCollections`:
+  `/tmp/agent-browser-shots/s04-sharing-enums-01-answer-collections.png`,
+  `/tmp/agent-browser-shots/s04-sharing-enums-02-action-menu.png`,
+  `/tmp/agent-browser-shots/s04-sharing-enums-03-share-modal.png`.
+- Browser resource timing for the sharing modal showed
+  `/api/trpc/resources.answerCollectionsInfo`, `/api/trpc/sharing.objectPermissions`,
+  `/api/trpc/sharing.userGroups`, and `/api/trpc/user.profile`; no `/api/graphql`
+  request appeared for this interaction.
+
+Cleanup blocked until: remaining S04 generated type leaks outside sharing,
+S05 realtime, and S06 cleanup gates.
+
 ### 2026-06-19 Completed: S04P Catalog Generated Enum Cleanup
 
 Status: complete for the scoped catalog cleanup. Scope was limited to catalog
@@ -302,12 +362,13 @@ React Query replacement: none.
 
 Implementation:
 
-- Added local catalog enum constants in
-  `apps/frontend-manage/src/lib/constants/catalogEnums.ts` and repointed the
-  scoped catalog components/hooks away from direct generated GraphQL enum value
-  imports.
-- Kept type-only compatibility casts for still-Apollo sharing boundaries that
-  still expect generated `ObjectType` / `PermissionLevel` inputs.
+- Added local catalog enum constants and repointed the scoped catalog
+  components/hooks away from direct generated GraphQL enum value imports. The
+  follow-up sharing cleanup renamed this module to
+  `apps/frontend-manage/src/lib/constants/sharingEnums.ts`.
+- Kept temporary compatibility casts for sharing boundaries that still expected
+  generated `ObjectType` / `PermissionLevel` inputs; the follow-up sharing
+  cleanup removed those casts.
 
 Verification:
 
@@ -326,8 +387,7 @@ Verification:
   `/tmp/agent-browser-shots/s04-catalog-enums-03-row-action.png`.
 
 Cleanup blocked until: remaining S04 generated type leaks outside catalog,
-sharing-boundary generated enum compatibility casts, S05 realtime, and S06
-cleanup gates.
+S05 realtime, and S06 cleanup gates.
 
 ### 2026-06-19 Completed: S04K Catalog Copy/Import Apollo Refetch Cleanup
 

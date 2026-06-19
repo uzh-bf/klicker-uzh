@@ -1,6 +1,6 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import type { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import type { ObjectType } from '@lib/constants/sharingEnums'
 import { Button, TextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'

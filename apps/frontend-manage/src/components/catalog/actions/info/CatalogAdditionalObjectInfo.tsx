@@ -1,4 +1,4 @@
-import { ObjectType } from '@lib/constants/catalogEnums'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import CatalogInfoAnswerCollection from './CatalogInfoAnswerCollection'
 
 function CatalogAdditionalObjectInfo({

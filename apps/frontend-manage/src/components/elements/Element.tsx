@@ -8,10 +8,10 @@ import {
   type Element as ElementObject,
   ElementStatus,
   type ElementType,
-  ObjectType,
   type Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'

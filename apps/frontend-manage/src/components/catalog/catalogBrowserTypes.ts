@@ -1,4 +1,4 @@
-import type { ObjectAccess, ObjectType } from '@lib/constants/catalogEnums'
+import type { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import type { RouterOutputs } from '../../lib/trpc'
 
 type SharingOutputs = RouterOutputs['sharing']

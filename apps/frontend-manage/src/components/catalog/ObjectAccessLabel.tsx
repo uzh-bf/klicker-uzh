@@ -1,6 +1,6 @@
 import { faLockOpen, faUserLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ObjectAccess } from '@lib/constants/catalogEnums'
+import { ObjectAccess } from '@lib/constants/sharingEnums'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 

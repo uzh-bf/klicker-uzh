@@ -4,9 +4,9 @@ import {
   ActivityType,
   DeleteLiveQuizDocument,
   GetSingleCourseDocument,
-  ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'

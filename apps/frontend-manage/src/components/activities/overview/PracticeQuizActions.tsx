@@ -1,9 +1,9 @@
 import {
   ActivityInfo,
   ActivityType,
-  ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'

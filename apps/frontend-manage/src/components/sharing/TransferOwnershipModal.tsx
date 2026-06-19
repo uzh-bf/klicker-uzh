@@ -1,5 +1,5 @@
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
