@@ -188,7 +188,11 @@ Current next action:
   the focused GraphQL package tests visibly running against `packages/graphql`
   and adds a `packages/api` parity test covering the same stack-feedback and
   random-group behavior in the tRPC API package workflow.
-- S05G-S next: continue with the next smallest shared-components generated
+- S05G-S shared validate-response generated option type cleanup is complete
+  locally. It removes the generated GraphQL option-type import from shared
+  `validateResponse` by adding narrow local structural option types, while
+  keeping GraphQL/Apollo live.
+- S05G-T next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1655,6 +1659,57 @@ Verification:
 - `pnpm --filter @klicker-uzh/api check` passed.
 - `pnpm exec prettier --check packages/api/src/services/hatchetHandlers.ts packages/api/src/services/participantStackEvaluations.ts packages/api/src/trpc/__tests__/graphql-package-parity.test.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-S Shared Validate Response Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove the generated GraphQL
+option-type import from the shared response validator without changing validator
+behavior or any active GraphQL/Apollo callers.
+
+Slice: S05G-S Shared Validate Response Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `FreeTextElementOptions` and
+`NumericalElementOptions` shapes; validator code only reads
+`restrictions.maxLength`, `restrictions.min`, and `restrictions.max`.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/utils/validateResponse.ts`
+- `packages/shared-components/src/FreeTextQuestion.tsx`
+- `packages/shared-components/src/NumericalQuestion.tsx`
+- `apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`
+
+Intended behavior:
+
+- Keep all response validation semantics unchanged.
+- Replace generated GraphQL option imports in `validateResponse.ts` with narrow
+  local structural option types.
+- Keep generated GraphQL option payloads accepted by structural typing while
+  already migrated tRPC DTO payloads can also call the validators.
+
+What changed:
+
+- Added local structural `FreeTextElementOptions` and
+  `NumericalElementOptions` types in `packages/shared-components/src/elementTypes.ts`.
+- Switched `packages/shared-components/src/utils/validateResponse.ts` to import
+  those local option types instead of generated GraphQL operation types.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/utils/validateResponse.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/utils/validateResponse.ts packages/shared-components/src/elementTypes.ts`
+  returned no matches.
 - `git diff --check` passed.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity

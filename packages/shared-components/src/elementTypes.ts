@@ -28,3 +28,16 @@ export type Choice = {
 }
 
 export type QuestionFeedback = Choice
+
+export type FreeTextElementOptions = {
+  restrictions?: {
+    maxLength?: number | null
+  } | null
+}
+
+export type NumericalElementOptions = {
+  restrictions?: {
+    max?: number | null
+    min?: number | null
+  } | null
+}
