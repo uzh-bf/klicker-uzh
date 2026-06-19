@@ -280,9 +280,9 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
-### 2026-06-19 Active: S04P Activity Creation Generated Type Cleanup
+### 2026-06-19 Completed: S04P Activity Creation Generated Type Cleanup
 
-Status: in progress. Scope is limited to removing generated GraphQL enum/type
+Status: complete. Scope was limited to removing generated GraphQL enum/type
 imports from already-migrated activity creation wizard components. This does
 not touch S05 realtime/cockpit/PWA runtime migration or S06 GraphQL cleanup.
 
@@ -299,19 +299,46 @@ Behavior source:
 
 Write scope:
 
+- `apps/frontend-manage/src/components/activities/ActivityCreation.tsx`
 - `apps/frontend-manage/src/components/activities/creation/**`
-- `apps/frontend-manage/src/lib/constants/activityEnums.ts` only if another
-  shared structural boundary type is needed
+- `apps/frontend-manage/src/lib/constants/activityEnums.ts`
+- `apps/frontend-manage/src/pages/index.tsx`
 - this plan progress entry
 
-Intended verification:
+Implementation:
 
-- Prettier on touched files.
-- `@klicker-uzh/frontend-manage` check/build.
-- Targeted source audit for generated GraphQL imports in activity creation.
-- `git diff --check`.
-- Browser verification if the local manage app is reachable; otherwise record
-  the local-stack gap and stop S04 with that caveat.
+- Added local structural activity-creation types for elements, blocks, stacks,
+  clues, and authoring activities so creation wizards no longer import
+  generated GraphQL operation types.
+- Repointed creation wizard components and settings/clue helpers to local
+  enum/value constants for activity, element, order, and parameter types.
+- Kept the homepage element-list boundary on the existing element-list prop
+  shape, but bridged the selected element map into the migrated creation modal
+  with a narrow local structural cast.
+
+Verification:
+
+- `pnpm exec prettier --write <S04P creation files>`: passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed. Expected warning:
+  Node engine mismatch because the shell uses Node 26 while the repo pins Node
+  20.
+- `pnpm --filter @klicker-uzh/frontend-manage build`: passed. Expected warning
+  set remained Node 26 engine mismatch, `next-intl` Pages/App Router config
+  warning, stale Browserslist data, large page-data warnings, and existing
+  `MISSING_MESSAGE` output for `/qr/[...args]`.
+- Targeted source audit passed:
+  `rg -n "@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/components/activities/ActivityCreation.tsx apps/frontend-manage/src/components/activities/creation apps/frontend-manage/src/pages/index.tsx --glob '!**/*.d.ts'`.
+- Browser runtime verification could not run because the local manage app was
+  not listening on `127.0.0.1:3002`. `curl -sS -I
+  http://127.0.0.1:3002/activities` failed with connection refused, and
+  `npx agent-browser open http://127.0.0.1:3002/activities` failed with
+  `net::ERR_CONNECTION_REFUSED`. Screenshot evidence:
+  `/tmp/agent-browser-shots/s04-activity-creation-type-cleanup-connection-refused.png`.
+
+Residual S04:
+
+- S04Q API no-GraphQL runtime dependency gate remains to decide whether S04 can
+  be closed before S05.
 
 ### 2026-06-19 Completed: S04P Activity Overview Generated Type Cleanup
 

@@ -1,7 +1,7 @@
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, Form, Formik } from 'formik'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Element, ElementType } from '../../../lib/constants/activityEnums'
 import AddStackButton from './AddStackButton'
 import CreationFormValidator from './CreationFormValidator'
 import InstanceUpdateOption from './InstanceUpdateOption'

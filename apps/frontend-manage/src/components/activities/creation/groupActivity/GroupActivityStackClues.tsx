@@ -4,16 +4,16 @@ import {
   faPencil,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Element,
-  ElementType,
-  ParameterType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormLabel, Tooltip } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  Element,
+  ElementType,
+  ParameterType,
+} from '../../../../lib/constants/activityEnums'
 import CreationFormValidator from '../CreationFormValidator'
 import InstanceUpdateOption from '../InstanceUpdateOption'
 import StackBlockCreation from '../StackBlockCreation'

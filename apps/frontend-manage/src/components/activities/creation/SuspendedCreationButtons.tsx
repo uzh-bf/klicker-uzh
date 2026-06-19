@@ -1,5 +1,3 @@
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
-
 import {
   faChalkboardUser,
   faGraduationCap,
@@ -7,6 +5,7 @@ import {
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTranslations } from 'next-intl'
+import { ActivityType } from '../../../lib/constants/activityEnums'
 import { trpc } from '../../../lib/trpc'
 import CreationButton from './CreationButton'
 

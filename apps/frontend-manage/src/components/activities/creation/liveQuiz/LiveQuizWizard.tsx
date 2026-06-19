@@ -1,5 +1,4 @@
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
-import { Element, ElementType, LiveQuiz } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -14,6 +13,11 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import {
+  Element,
+  ElementType,
+  LiveQuiz,
+} from '../../../../lib/constants/activityEnums'
 import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
@@ -229,7 +233,8 @@ function LiveQuizWizard({
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
-                'options' in instance.elementData
+                'options' in instance.elementData &&
+                instance.elementData.options != null
                   ? (instance.elementData.options.hasSampleSolution ?? false)
                   : true,
               existingInstanceId: instance.id,

@@ -1,15 +1,16 @@
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  Element,
-  SharingType,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type ComponentProps,
+} from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
@@ -25,12 +26,21 @@ import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
 import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
+import {
+  ActivityType,
+  type Element as CreationElement,
+} from '../lib/constants/activityEnums'
+import { SharingType } from '../lib/constants/sharingEnums'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
 import { trpc, type RouterInputs } from '../lib/trpc'
 
 type ElementListInput = RouterInputs['element']['list']
+type ElementListElement = NonNullable<
+  ComponentProps<typeof ElementList>['elements']
+>[number]
+type ElementSelection = Record<number, ElementListElement>
 
 function Index() {
   const router = useRouter()
@@ -70,9 +80,7 @@ function Index() {
   const [isElementCreationModalOpen, setIsElementCreationModalOpen] =
     useState(false)
 
-  const [selectedElements, setSelectedElements] = useState<{
-    [elementId: number]: Element
-  }>({})
+  const [selectedElements, setSelectedElements] = useState<ElementSelection>({})
 
   // initialize the sorting and filtering state from local storage (if available)
   const [storedFiltering, _] = useState(() => {
@@ -123,9 +131,15 @@ function Index() {
     hasSampleSolution: filters.sampleSolution,
     hasAnswerFeedbacks: filters.answerFeedbacks,
     searchString: searchString.trim() || undefined,
-    showOwned: filters.sharingType.includes(SharingType.Owned),
-    showShared: filters.sharingType.includes(SharingType.Shared),
-    showDependencies: filters.sharingType.includes(SharingType.Dependency),
+    showOwned: filters.sharingType.includes(
+      SharingType.Owned as (typeof filters.sharingType)[number]
+    ),
+    showShared: filters.sharingType.includes(
+      SharingType.Shared as (typeof filters.sharingType)[number]
+    ),
+    showDependencies: filters.sharingType.includes(
+      SharingType.Dependency as (typeof filters.sharingType)[number]
+    ),
     tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
     activityId: filters.activityId,
     multiplier: filters.multiplier,
@@ -142,7 +156,7 @@ function Index() {
     refetch: refetchElements,
   } = trpc.element.list.useQuery(elementListInput)
   const numOfElements = dataElements?.numOfElements || 0
-  const elements = (dataElements?.elements ?? []) as Element[]
+  const elements = (dataElements?.elements ?? []) as ElementListElement[]
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -297,7 +311,9 @@ function Index() {
             editMode={router.query.editMode as ActivityType}
             conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as ActivityType}
-            selection={selectedElements}
+            selection={
+              selectedElements as Record<number, CreationElement | undefined>
+            }
             resetSelection={() => setSelectedElements({})}
           />
         </>
@@ -337,7 +353,11 @@ function Index() {
                   elements={elements}
                   selectedElements={selectedElements}
                   setSelectedElements={setSelectedElements}
-                  creationMode={creationMode}
+                  creationMode={
+                    creationMode as ComponentProps<
+                      typeof ElementListSelectAllCheckbox
+                    >['creationMode']
+                  }
                 />
                 <ElementListSearch setSearchString={setSearchString} />
                 <ElementListSorting
@@ -404,7 +424,10 @@ function Index() {
                         options: { duration: 4000 },
                       })
                     }
-                    setSelectedElements={(id: number, data: Element) => {
+                    setSelectedElements={(
+                      id: number,
+                      data: ElementListElement
+                    ) => {
                       setSelectedElements((prev) => {
                         const newSelected = { ...prev }
                         if (newSelected[id]) {

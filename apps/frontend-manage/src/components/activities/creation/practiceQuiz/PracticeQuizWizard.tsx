@@ -1,10 +1,3 @@
-import {
-  Element,
-  ElementOrderType,
-  ElementType,
-  PracticeQuiz,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { toast } from '@uzh-bf/design-system'
 import { FormikProps } from 'formik'
@@ -12,6 +5,13 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import {
+  Element,
+  ElementOrderType,
+  ElementType,
+  PracticeQuiz,
+  PublicationStatus,
+} from '../../../../lib/constants/activityEnums'
 import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
@@ -224,7 +224,8 @@ function PracticeQuizWizard({
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
-                'options' in instance.elementData
+                'options' in instance.elementData &&
+                instance.elementData.options != null
                   ? (instance.elementData.options.hasSampleSolution ?? false)
                   : true,
               existingInstanceId: instance.id,

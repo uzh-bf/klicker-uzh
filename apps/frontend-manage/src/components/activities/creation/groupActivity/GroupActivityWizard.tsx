@@ -1,9 +1,3 @@
-import {
-  Element,
-  ElementType,
-  GroupActivity,
-  ParameterType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
@@ -11,6 +5,12 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import {
+  Element,
+  ElementType,
+  GroupActivity,
+  ParameterType,
+} from '../../../../lib/constants/activityEnums'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
 import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'

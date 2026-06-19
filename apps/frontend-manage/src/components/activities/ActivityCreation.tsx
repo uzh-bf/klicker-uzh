@@ -1,15 +1,14 @@
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
 import {
   ActivityType,
-  Course,
   Element,
   GroupActivity,
   MicroLearning,
   PracticeQuiz,
   PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
+} from '../../lib/constants/activityEnums'
 import { trpc, type RouterInputs } from '../../lib/trpc'
 import GroupActivityWizard from './creation/groupActivity/GroupActivityWizard'
 import LiveQuizWizard from './creation/liveQuiz/LiveQuizWizard'
@@ -185,7 +184,7 @@ function ActivityCreation({
       description: microData.description,
       stacks: microData.stacks as unknown as PracticeQuiz['stacks'],
       pointsMultiplier: microData.pointsMultiplier,
-      course: microData.course as unknown as Course,
+      course: microData.course as unknown as PracticeQuiz['course'],
     }
   }
 
