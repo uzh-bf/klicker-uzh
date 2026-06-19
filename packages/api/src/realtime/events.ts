@@ -1,4 +1,7 @@
 export const realtimeEvents = {
+  feedbackAdded: 'feedbackAdded',
+  feedbackRemoved: 'feedbackRemoved',
+  feedbackUpdated: 'feedbackUpdated',
   groupActivityEnded: 'groupActivityEnded',
   groupActivityStarted: 'groupActivityStarted',
   liveQuizSettingsChanged: 'liveQuizSettingsChanged',
@@ -64,6 +67,16 @@ export type LiveQuizSettingsChangedSource = {
 }
 
 export type LiveQuizSettingsChangedEvent = LiveQuizSettingsChangedSource
+
+export type FeedbackSource = {
+  id: number
+  liveQuizId: string | null
+}
+
+export type FeedbackEvent = {
+  id: number
+  liveQuizId: string
+}
 
 type PubSubPublisher = {
   publish(event: string, payload: unknown): unknown
@@ -144,6 +157,17 @@ export function toLiveQuizSettingsChangedEvent(
   }
 }
 
+export function toFeedbackEvent(feedback: FeedbackSource): FeedbackEvent {
+  if (!feedback.liveQuizId) {
+    throw new Error('realtime.feedback.liveQuizId is required')
+  }
+
+  return {
+    id: feedback.id,
+    liveQuizId: feedback.liveQuizId,
+  }
+}
+
 function serializeEventDate(value: ActivityDate, fieldName: string): string {
   if (value instanceof Date) return value.toISOString()
   if (typeof value === 'string') return value
@@ -186,6 +210,27 @@ export function publishLiveQuizSettingsChanged(
   settings: LiveQuizSettingsChangedSource
 ) {
   return publishEvent(pubSub, realtimeEvents.liveQuizSettingsChanged, settings)
+}
+
+export function publishFeedbackAdded(
+  pubSub: unknown,
+  feedback: FeedbackSource
+) {
+  return publishEvent(pubSub, realtimeEvents.feedbackAdded, feedback)
+}
+
+export function publishFeedbackRemoved(
+  pubSub: unknown,
+  feedback: FeedbackSource
+) {
+  return publishEvent(pubSub, realtimeEvents.feedbackRemoved, feedback)
+}
+
+export function publishFeedbackUpdated(
+  pubSub: unknown,
+  feedback: FeedbackSource
+) {
+  return publishEvent(pubSub, realtimeEvents.feedbackUpdated, feedback)
 }
 
 export function publishGroupActivityStarted(
@@ -236,6 +281,18 @@ export function subscribeLiveQuizSettingsChanged(pubSub: unknown) {
     pubSub,
     realtimeEvents.liveQuizSettingsChanged
   )
+}
+
+export function subscribeFeedbackAdded(pubSub: unknown) {
+  return subscribeEvent<FeedbackSource>(pubSub, realtimeEvents.feedbackAdded)
+}
+
+export function subscribeFeedbackRemoved(pubSub: unknown) {
+  return subscribeEvent<FeedbackSource>(pubSub, realtimeEvents.feedbackRemoved)
+}
+
+export function subscribeFeedbackUpdated(pubSub: unknown) {
+  return subscribeEvent<FeedbackSource>(pubSub, realtimeEvents.feedbackUpdated)
 }
 
 export function subscribeGroupActivityStarted(pubSub: unknown) {

@@ -2,16 +2,22 @@ import { TRPCError } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
 import { z } from 'zod'
 import {
+  subscribeFeedbackAdded,
+  subscribeFeedbackRemoved,
+  subscribeFeedbackUpdated,
   subscribeGroupActivityEnded,
   subscribeGroupActivityStarted,
   subscribeLiveQuizSettingsChanged,
   subscribeMicroLearningEnded,
   subscribeRunningLiveQuizUpdated,
   subscribeSingleGroupActivityEnded,
+  toFeedbackEvent,
   toGroupActivityEvent,
   toLiveQuizSettingsChangedEvent,
   toMicroLearningEndedEvent,
   toRunningLiveQuizUpdatedEvent,
+  type FeedbackEvent,
+  type FeedbackSource,
   type GroupActivityEvent,
   type GroupActivitySource,
   type LiveQuizSettingsChangedEvent,
@@ -62,6 +68,33 @@ function createSubscription<TSource, TEvent>(
 }
 
 export const realtimeRouter = router({
+  feedbackAdded: publicProcedure
+    .input(z.object({ quizId: z.string() }))
+    .subscription(({ ctx, input }) =>
+      createSubscription<FeedbackSource, FeedbackEvent>(
+        subscribeFeedbackAdded(ctx.pubSub),
+        (feedback) => feedback.liveQuizId === input.quizId,
+        toFeedbackEvent
+      )
+    ),
+  feedbackRemoved: publicProcedure
+    .input(z.object({ quizId: z.string() }))
+    .subscription(({ ctx, input }) =>
+      createSubscription<FeedbackSource, FeedbackEvent>(
+        subscribeFeedbackRemoved(ctx.pubSub),
+        (feedback) => feedback.liveQuizId === input.quizId,
+        toFeedbackEvent
+      )
+    ),
+  feedbackUpdated: publicProcedure
+    .input(z.object({ quizId: z.string() }))
+    .subscription(({ ctx, input }) =>
+      createSubscription<FeedbackSource, FeedbackEvent>(
+        subscribeFeedbackUpdated(ctx.pubSub),
+        (feedback) => feedback.liveQuizId === input.quizId,
+        toFeedbackEvent
+      )
+    ),
   groupActivityEnded: publicProcedure
     .input(z.object({ courseId: z.string() }))
     .subscription(({ ctx, input }) =>

@@ -1,3 +1,8 @@
+import {
+  publishFeedbackAdded,
+  publishFeedbackRemoved,
+  publishFeedbackUpdated,
+} from '@klicker-uzh/api'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
@@ -89,7 +94,7 @@ export async function createFeedback(
   ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id: quizId })
 
   if (!quiz.isModerationEnabled) {
-    ctx.pubSub.publish('feedbackAdded', newFeedback)
+    publishFeedbackAdded(ctx.pubSub, newFeedback)
   }
 
   return newFeedback
@@ -124,10 +129,10 @@ export async function respondToFeedback(
   })
 
   if (!feedbackPublished) {
-    ctx.pubSub.publish('feedbackAdded', updatedFeedback)
-    ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+    publishFeedbackAdded(ctx.pubSub, updatedFeedback)
+    publishFeedbackUpdated(ctx.pubSub, updatedFeedback)
   } else {
-    ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+    publishFeedbackUpdated(ctx.pubSub, updatedFeedback)
   }
 
   ctx.emitter.emit('invalidate', {
@@ -192,9 +197,9 @@ export async function publishFeedback(
   })
 
   if (isPublished) {
-    ctx.pubSub.publish('feedbackAdded', updatedFeedback)
+    publishFeedbackAdded(ctx.pubSub, updatedFeedback)
   } else {
-    ctx.pubSub.publish('feedbackRemoved', updatedFeedback)
+    publishFeedbackRemoved(ctx.pubSub, updatedFeedback)
   }
 
   ctx.emitter.emit('invalidate', {
@@ -226,7 +231,7 @@ export async function pinFeedback(
     include: { responses: true },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+  publishFeedbackUpdated(ctx.pubSub, updatedFeedback)
   ctx.pubSub.publish('feedbackPinned', updatedFeedback)
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
@@ -260,7 +265,7 @@ export async function resolveFeedback(
     include: { responses: true },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+  publishFeedbackUpdated(ctx.pubSub, updatedFeedback)
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
     id: updatedFeedback.liveQuizId,
@@ -284,7 +289,7 @@ export async function deleteFeedback(
     where: { id },
   })
 
-  ctx.pubSub.publish('feedbackRemoved', deletedFeedback)
+  publishFeedbackRemoved(ctx.pubSub, deletedFeedback)
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
     id: deletedFeedback.liveQuizId,
@@ -319,7 +324,7 @@ export async function deleteFeedbackResponse(
     return null
   }
 
-  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+  publishFeedbackUpdated(ctx.pubSub, updatedFeedback)
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
     id: updatedFeedback.liveQuizId,

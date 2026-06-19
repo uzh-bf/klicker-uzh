@@ -3,6 +3,7 @@ import {
   deactivateLiveQuizBlock as executeDeactivateLiveQuizBlock,
   endLiveQuiz as executeEndLiveQuiz,
   startLiveQuiz as executeStartLiveQuiz,
+  publishFeedbackAdded,
   publishLiveQuizSettingsChanged,
   type LiveQuizExecutionContext,
 } from '@klicker-uzh/api'
@@ -1270,7 +1271,7 @@ export async function changeLiveQuizSettings(
       })
 
       currentQuiz.feedbacks.forEach((feedback) => {
-        ctx.pubSub.publish('feedbackAdded', feedback)
+        publishFeedbackAdded(ctx.pubSub, feedback)
       })
     }
   }

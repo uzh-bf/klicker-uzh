@@ -1,89 +1,50 @@
-import { SubscribeToMoreOptions } from '@apollo/client'
-import {
-  Feedback,
-  FeedbackAddedDocument,
-  FeedbackRemovedDocument,
-  FeedbackUpdatedDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useEffect } from 'react'
+import { api } from '@lib/trpc'
+import { useEffect, useRef } from 'react'
 
 function FeedbackAreaSubscriber({
-  subscribeToMore,
   quizId,
+  onChanged,
 }: {
   quizId: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onChanged: () => unknown | Promise<unknown>
 }) {
+  const onChangedRef = useRef(onChanged)
+
   useEffect(() => {
-    if (!quizId) return
+    onChangedRef.current = onChanged
+  }, [onChanged])
 
-    const feedbackAdded = subscribeToMore({
-      document: FeedbackAddedDocument,
-      variables: { quizId },
-      updateQuery: (
-        prev: { feedbacks: Feedback[] },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackAdded: Feedback } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const newItem = subscriptionData.data.feedbackAdded
-        if (prev.feedbacks?.map((item) => item.id).includes(newItem.id)) {
-          return prev
-        }
-        return { ...prev, feedbacks: [newItem, ...prev.feedbacks] }
+  api.realtime.feedbackAdded.useSubscription(
+    { quizId },
+    {
+      enabled: Boolean(quizId),
+      onData() {
+        void onChangedRef.current()
       },
-    })
-
-    const feedbackRemoved = subscribeToMore({
-      document: FeedbackRemovedDocument,
-      variables: { quizId },
-      updateQuery: (
-        prev: { feedbacks: Feedback[] },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackRemoved: string } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const removedItem = subscriptionData.data.feedbackRemoved
-        return {
-          ...prev,
-          feedbacks: prev.feedbacks?.filter(
-            (item) => item.id !== parseInt(removedItem)
-          ),
-        }
-      },
-    })
-
-    const feedbackUpdated = subscribeToMore({
-      document: FeedbackUpdatedDocument,
-      variables: { quizId },
-      updateQuery: (
-        prev: { feedbacks: Feedback[] },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackUpdated: Feedback } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const updatedItem = subscriptionData.data.feedbackUpdated
-        return {
-          ...prev,
-          feedbacks: prev.feedbacks?.map((item) => {
-            if (item.id === updatedItem.id) return updatedItem
-            return item
-          }),
-        }
-      },
-    })
-
-    return () => {
-      feedbackAdded && feedbackAdded()
-      feedbackRemoved && feedbackRemoved()
-      feedbackUpdated && feedbackUpdated()
     }
-  }, [subscribeToMore, quizId])
+  )
 
-  return <div></div>
+  api.realtime.feedbackRemoved.useSubscription(
+    { quizId },
+    {
+      enabled: Boolean(quizId),
+      onData() {
+        void onChangedRef.current()
+      },
+    }
+  )
+
+  api.realtime.feedbackUpdated.useSubscription(
+    { quizId },
+    {
+      enabled: Boolean(quizId),
+      onData() {
+        void onChangedRef.current()
+      },
+    }
+  )
+
+  return null
 }
 
 export default FeedbackAreaSubscriber

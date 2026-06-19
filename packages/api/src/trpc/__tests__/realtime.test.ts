@@ -1,5 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
+  publishFeedbackAdded,
+  publishFeedbackRemoved,
+  publishFeedbackUpdated,
   publishGroupActivityEnded,
   publishGroupActivityStarted,
   publishLiveQuizSettingsChanged,
@@ -7,6 +10,7 @@ import {
   publishRunningLiveQuizUpdated,
   publishSingleGroupActivityEnded,
   realtimeEvents,
+  type FeedbackSource,
   type GroupActivitySource,
   type LiveQuizSettingsChangedSource,
   type MicroLearningEndedSource,
@@ -139,6 +143,14 @@ function createLiveQuizSettings(
     liveQuizId: 'live-quiz-1',
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: false,
+    ...fields,
+  }
+}
+
+function createFeedback(fields: Partial<FeedbackSource> = {}): FeedbackSource {
+  return {
+    id: 1,
+    liveQuizId: 'live-quiz-1',
     ...fields,
   }
 }
@@ -283,6 +295,60 @@ describe('realtime router', () => {
     )
     expect(pubSub.subscribe).toHaveBeenCalledWith(
       realtimeEvents.liveQuizSettingsChanged
+    )
+  })
+
+  test('streams matching feedback events from the shared pubSub events', async () => {
+    const pubSub = createRealtimePubSub<FeedbackSource>()
+    const caller = appRouter.createCaller({ pubSub })
+
+    const addedStream = await caller.realtime.feedbackAdded({
+      quizId: 'live-quiz-1',
+    })
+    const removedStream = await caller.realtime.feedbackRemoved({
+      quizId: 'live-quiz-1',
+    })
+    const updatedStream = await caller.realtime.feedbackUpdated({
+      quizId: 'live-quiz-1',
+    })
+
+    const added = receiveNext(addedStream)
+    const removed = receiveNext(removedStream)
+    const updated = receiveNext(updatedStream)
+
+    publishFeedbackAdded(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackRemoved(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackUpdated(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+
+    publishFeedbackAdded(pubSub, createFeedback())
+    publishFeedbackRemoved(pubSub, createFeedback())
+    publishFeedbackUpdated(pubSub, createFeedback())
+
+    await expect(added).resolves.toEqual({ id: 1, liveQuizId: 'live-quiz-1' })
+    await expect(removed).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
+    await expect(updated).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
+
+    expect(pubSub.subscribe).toHaveBeenCalledWith(realtimeEvents.feedbackAdded)
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.feedbackRemoved
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.feedbackUpdated
     )
   })
 })

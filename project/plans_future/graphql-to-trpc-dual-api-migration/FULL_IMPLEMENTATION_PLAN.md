@@ -88,11 +88,12 @@ Current next action:
   new API package workflow runs against `packages/api`.
 - S05A PWA microlearning-ended realtime is complete.
 - S05D PWA group-activity realtime is complete and pushed.
-- S05B PWA live-quiz state/settings realtime is complete locally; commit,
-  push, and PR update are the next gates.
-- Continue remaining S05 realtime slices only after S05B is published. Do not
-  start S06 cleanup until all S05 realtime slices are complete and explicitly
-  reviewed.
+- S05B PWA live-quiz state/settings realtime is complete and pushed.
+- S05C PWA feedback realtime is complete locally. It replaces the PWA
+  feedback-area GraphQL `subscribeToMore` subscriptions with tRPC invalidation
+  subscriptions while keeping the existing GraphQL feedback query/mutations.
+- Do not start S06 cleanup until all S05 realtime slices are complete and
+  explicitly reviewed.
 
 Still intentionally live:
 
@@ -500,8 +501,51 @@ Review/simplification:
 
 Next step:
 
-- Commit, push, and update PR #5132 for S05B, then continue with remaining S05
+- Commit, push, and update PR #5132 for S05C, then continue with remaining S05
   realtime slices only. Do not start S06 cleanup.
+
+### 2026-06-19 Completed: S05C PWA Feedback tRPC Realtime
+
+Status: complete locally. Scope was limited to the PWA feedback-area realtime
+subscriptions:
+
+- `FeedbackAddedDocument`
+- `FeedbackRemovedDocument`
+- `FeedbackUpdatedDocument`
+
+Planned tRPC subscriptions:
+
+- `api.realtime.feedbackAdded.useSubscription({ quizId })`
+- `api.realtime.feedbackRemoved.useSubscription({ quizId })`
+- `api.realtime.feedbackUpdated.useSubscription({ quizId })`
+
+Intended behavior:
+
+- Preserve the existing GraphQL feedback subscription payloads and event keys on
+  `/api/graphql`.
+- Bridge existing GraphQL publishers through shared realtime helpers so tRPC and
+  GraphQL receive the same Redis-backed events.
+- Use the tRPC feedback subscriptions as invalidation signals for the existing
+  PWA `GetFeedbacksDocument` query. Do not duplicate the full feedback DTO in
+  `packages/api` in this slice.
+
+Verification:
+
+- Focused API realtime-router test passed for the three feedback event keys and
+  filtering by `quizId`.
+- `pnpm --filter @klicker-uzh/api test` passed: 41 files, 430 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/graphql build` passed with existing warnings only.
+- `pnpm exec prettier --check` passed for S05C touched files.
+- `git diff --check` passed.
+- Scoped audit confirmed the PWA feedback-area subscriber no longer imports
+  `FeedbackAddedDocument`, `FeedbackRemovedDocument`, `FeedbackUpdatedDocument`,
+  or Apollo `SubscribeToMoreOptions`.
+- Runtime WebSocket parity probe passed on the local backend: GraphQL received
+  `feedbackAdded`, `feedbackRemoved`, and `feedbackUpdated`; tRPC received the
+  matching compact `{ id, liveQuizId }` events for the same live quiz.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

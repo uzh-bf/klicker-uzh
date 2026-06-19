@@ -70,7 +70,7 @@ function FeedbackArea({
   const {
     loading: feedbacksLoading,
     data: feedbacksData,
-    subscribeToMore,
+    refetch: refetchFeedbacks,
   } = useQuery(GetFeedbacksDocument, {
     variables: {
       quizId: router.query.id as string,
@@ -234,10 +234,7 @@ function FeedbackArea({
     <div className={twMerge('h-full w-full pt-4 md:pt-2', className)}>
       <H2>{t('pwa.feedbacks.title')}</H2>
 
-      <FeedbackAreaSubscriber
-        quizId={quizId}
-        subscribeToMore={subscribeToMore}
-      />
+      <FeedbackAreaSubscriber quizId={quizId} onChanged={refetchFeedbacks} />
 
       {isLiveQAEnabled && (
         <div className="mb-8">
