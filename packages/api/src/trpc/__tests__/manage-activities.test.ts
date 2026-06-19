@@ -29,12 +29,14 @@ function createContext(
     scope?: UserLoginScope
     emitter?: TRPCContext['emitter']
     hatchet?: TRPCContext['hatchet']
+    tasks?: TRPCContext['tasks']
   }
 ): TRPCContext {
   return {
     prisma,
     emitter: options?.emitter,
     hatchet: options?.hatchet,
+    tasks: options?.tasks,
     user: {
       sub: user.id,
       role: UserRole.USER,
@@ -1771,6 +1773,289 @@ describe('manage activity read routers', () => {
       expect.any(Error)
     )
     consoleError.mockRestore()
+  })
+
+  test('schedules practice quiz publication through the activity router', async () => {
+    const availableFrom = new Date('2099-01-01T10:00:00.000Z')
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const practiceQuizUpdate = vi.fn().mockResolvedValue({
+      id: 'practice-quiz-1',
+      status: PublicationStatus.SCHEDULED,
+    })
+    const schedule = vi.fn().mockResolvedValue({
+      metadata: { id: 'publication-task' },
+    })
+    const emit = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      practiceQuiz: {
+        update: practiceQuizUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        tasks: {
+          publishScheduledPracticeQuiz: { schedule },
+        } as unknown as TRPCContext['tasks'],
+      })
+    )
+
+    await expect(
+      caller.activity.publish({
+        activityId: 'practice-quiz-1',
+        activityType: ActivityType.PRACTICE_QUIZ,
+        availableFrom,
+      })
+    ).resolves.toEqual({
+      publishActivity: {
+        id: 'practice-quiz-1',
+        status: PublicationStatus.SCHEDULED,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        practiceQuizId: 'practice-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(schedule).toHaveBeenCalledWith(availableFrom, {
+      practiceQuizId: 'practice-quiz-1',
+    })
+    expect(practiceQuizUpdate).toHaveBeenCalledWith({
+      where: { id: 'practice-quiz-1', isDeleted: false },
+      data: {
+        availableFrom,
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+      },
+      select: { id: true, status: true },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'PracticeQuiz',
+      id: 'practice-quiz-1',
+    })
+  })
+
+  test('publishes practice quiz immediately and connects stacks to the course', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const practiceQuizUpdate = vi.fn().mockResolvedValue({
+      id: 'practice-quiz-1',
+      status: PublicationStatus.PUBLISHED,
+      courseId: 'course-1',
+      stacks: [{ id: 11 }, { id: 12 }],
+    })
+    const courseUpdate = vi.fn().mockResolvedValue({ id: 'course-1' })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      practiceQuiz: {
+        update: practiceQuizUpdate,
+      },
+      course: {
+        update: courseUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.publish({
+        activityId: 'practice-quiz-1',
+        activityType: ActivityType.PRACTICE_QUIZ,
+      })
+    ).resolves.toEqual({
+      publishActivity: {
+        id: 'practice-quiz-1',
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    expect(practiceQuizUpdate).toHaveBeenCalledWith({
+      where: { id: 'practice-quiz-1', isDeleted: false },
+      data: { status: PublicationStatus.PUBLISHED },
+      select: {
+        id: true,
+        status: true,
+        courseId: true,
+        stacks: { select: { id: true } },
+      },
+    })
+    expect(courseUpdate).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      data: {
+        elementStacks: {
+          connect: [{ id: 11 }, { id: 12 }],
+        },
+      },
+    })
+  })
+
+  test.each([
+    {
+      activityType: ActivityType.MICRO_LEARNING,
+      modelName: 'microLearning',
+      permissionKey: 'microLearningId',
+      typename: 'MicroLearning',
+      publicationTaskName: 'publishScheduledMicroLearning',
+      completionTaskName: 'endExpiredMicroLearning',
+      publicationPayload: { microLearningId: 'activity-1' },
+      completionPayload: { microLearningId: 'activity-1' },
+    },
+    {
+      activityType: ActivityType.GROUP_ACTIVITY,
+      modelName: 'groupActivity',
+      permissionKey: 'groupActivityId',
+      typename: 'GroupActivity',
+      publicationTaskName: 'publishScheduledGroupActivity',
+      completionTaskName: 'endExpiredGroupActivity',
+      publicationPayload: { groupActivityId: 'activity-1' },
+      completionPayload: { groupActivityId: 'activity-1' },
+    },
+  ])(
+    'schedules $activityType publication and completion through the activity router',
+    async ({
+      activityType,
+      modelName,
+      permissionKey,
+      typename,
+      publicationTaskName,
+      completionTaskName,
+      publicationPayload,
+      completionPayload,
+    }) => {
+      const scheduledStartAt = new Date('2099-01-01T10:00:00.000Z')
+      const scheduledEndAt = new Date('2099-01-02T10:00:00.000Z')
+      const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+      const findUnique = vi.fn().mockResolvedValue({
+        id: 'activity-1',
+        scheduledStartAt,
+        scheduledEndAt,
+      })
+      const update = vi.fn().mockResolvedValue({
+        id: 'activity-1',
+        status: PublicationStatus.SCHEDULED,
+      })
+      const publicationSchedule = vi.fn().mockResolvedValue({
+        metadata: { id: 'publication-task' },
+      })
+      const completionSchedule = vi.fn().mockResolvedValue({
+        metadata: { id: 'completion-task' },
+      })
+      const emit = vi.fn()
+      const prisma = {
+        derivedPermission: {
+          findFirst: permissionFindFirst,
+        },
+        [modelName]: {
+          findUnique,
+          update,
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(
+        createContext(prisma, {
+          emitter: { emit } as unknown as TRPCContext['emitter'],
+          tasks: {
+            [publicationTaskName]: { schedule: publicationSchedule },
+            [completionTaskName]: { schedule: completionSchedule },
+          } as unknown as TRPCContext['tasks'],
+        })
+      )
+
+      await expect(
+        caller.activity.publish({
+          activityId: 'activity-1',
+          activityType,
+        })
+      ).resolves.toEqual({
+        publishActivity: {
+          id: 'activity-1',
+          status: PublicationStatus.SCHEDULED,
+        },
+      })
+
+      expect(permissionFindFirst).toHaveBeenCalledWith({
+        where: {
+          [permissionKey]: 'activity-1',
+          userId: user.id,
+          permissionLevel: {
+            in: [
+              PermissionLevel.EXECUTE,
+              PermissionLevel.WRITE,
+              PermissionLevel.ADMIN,
+              PermissionLevel.OWNER,
+            ],
+          },
+        },
+      })
+      expect(findUnique).toHaveBeenCalledWith({
+        where: {
+          id: 'activity-1',
+          isDeleted: false,
+          status: PublicationStatus.DRAFT,
+        },
+        select: {
+          id: true,
+          scheduledStartAt: true,
+          scheduledEndAt: true,
+        },
+      })
+      expect(publicationSchedule).toHaveBeenCalledWith(
+        scheduledStartAt,
+        publicationPayload
+      )
+      expect(completionSchedule).toHaveBeenCalledWith(
+        scheduledEndAt,
+        completionPayload
+      )
+      expect(update).toHaveBeenCalledWith({
+        where: { id: 'activity-1' },
+        data: {
+          status: PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: 'publication-task',
+          scheduledCompletionTaskId: 'completion-task',
+        },
+        select: { id: true, status: true },
+      })
+      expect(emit).toHaveBeenCalledWith('invalidate', {
+        typename,
+        id: 'activity-1',
+      })
+    }
+  )
+
+  test('returns null when activity publish execute permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const practiceQuizUpdate = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      practiceQuiz: {
+        update: practiceQuizUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.publish({
+        activityId: 'practice-quiz-1',
+        activityType: ActivityType.PRACTICE_QUIZ,
+      })
+    ).resolves.toEqual({ publishActivity: null })
+
+    expect(practiceQuizUpdate).not.toHaveBeenCalled()
   })
 
   test.each([

@@ -280,6 +280,83 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Activity Publish Actions
+
+Status: complete for practice quiz publish/schedule, microlearning publish, and
+group activity publish actions. Scope was limited to replacing Apollo publish
+mutations in the manage publish modals with `trpc.activity.publish`. This
+preserved EXECUTE permission checks, scheduled publication behavior, Hatchet
+scheduling, activity status transitions, object invalidation events, and
+course-detail/activity-list invalidation behavior. This did not migrate live
+quiz start/schedule/delete/reset, end/extend/delete modals, activity authoring
+create/edit wizards, realtime subscriptions, GraphQL schema/runtime, Apollo
+providers, S05, or S06 cleanup.
+
+Slice: S04L Activity Publish Actions
+
+GraphQL operation(s):
+
+- `PublishPracticeQuizDocument`
+- `PublishMicroLearningDocument`
+- `PublishGroupActivityDocument`
+
+Behavior source:
+
+- Existing GraphQL mutation behavior in `packages/graphql/src/schema/mutation.ts`.
+- Existing publish service behavior in
+  `packages/graphql/src/services/practiceQuizzes.ts`,
+  `packages/graphql/src/services/microLearning.ts`, and
+  `packages/graphql/src/services/groups.ts`.
+
+Implemented:
+
+- Added `activity.publish` tRPC procedure with type-specific branches for
+  practice quiz, microlearning, and group activity publish actions.
+- Added `publishActivityInput` with optional `availableFrom` date for practice
+  quiz scheduling.
+- Migrated `PracticeQuizPublishingModal` and `PublishConfirmationModal` to tRPC.
+- Updated microlearning and group activity publish-modal callers to pass stable
+  non-generated activity type strings.
+- Added focused API tests for scheduled practice quiz publish, immediate
+  practice quiz publish/stack connection, scheduled microlearning/group activity
+  publish, and missing execute permission.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L publish files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, including 40 API test files / 391 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known existing warnings.
+- Focused source audit for
+  `PublishPracticeQuizDocument|PublishMicroLearningDocument|PublishGroupActivityDocument|@apollo/client`:
+  no Apollo/generated publish document usage remains in the migrated modals.
+- Runtime HTTP smoke against local backend on `Practice Quiz 3`
+  (`fd169cb1-ea92-4df2-b2a1-e23368405311`): called
+  `/api/trpc/activity.publish` with a local signed lecturer JWT and received
+  `publishActivity.status = PUBLISHED`; database verification showed the
+  practice quiz was `PUBLISHED` and stack `3` was linked to course
+  `b8b1305e-bfe8-458b-bf26-9082fdca953f`. The local seed row was restored to
+  `DRAFT` and stack `3` was restored to `courseId = null`.
+- Browser attempt: backend/auth/manage dev servers started and `curl` confirmed
+  `http://127.0.0.1:3002` returned `200`, but `npx agent-browser` repeatedly
+  landed on `chrome-error://chromewebdata/` / blank screenshots before the UI
+  could be interacted with. Screenshots:
+  - `/tmp/agent-browser-shots/s04-publish-actions-01-initial.png`
+  - `/tmp/agent-browser-shots/s04-publish-actions-02-ready.png`
+  - `/tmp/agent-browser-shots/s04-publish-actions-03-blank-check.png`
+  - `/tmp/agent-browser-shots/s04-publish-actions-04-login-direct.png`
+
+Next: continue remaining S04-only action/modals and generated type cleanup;
+pause before S05/S06.
+
 ### 2026-06-19 Completed: S04K Suspended Course Leaderboard Operations
 
 Status: complete for the suspended course leaderboard read and recompute action.

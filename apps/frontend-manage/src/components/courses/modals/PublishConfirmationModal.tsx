@@ -1,25 +1,20 @@
-import { useMutation } from '@apollo/client'
 import {
   faArrowRight,
   faHourglassEnd,
   faHourglassStart,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementInstanceType,
-  PublishGroupActivityDocument,
-  PublishMicroLearningDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
 
+type PublishableScheduledActivityType = 'MICROLEARNING' | 'GROUP_ACTIVITY'
+
 interface PublishConfirmationModalProps {
   onClose: () => void
-  activityType:
-    | ElementInstanceType.Microlearning
-    | ElementInstanceType.GroupActivity
+  activityType: PublishableScheduledActivityType
   activityId: string
   startAt: Date
   endAt: Date
@@ -40,33 +35,23 @@ function PublishConfirmationModal({
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-
-  const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
-    PublishMicroLearningDocument,
-    { variables: { id: activityId } }
-  )
-
-  const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
-    PublishGroupActivityDocument,
-    { variables: { id: activityId } }
-  )
+  const publishActivity = trpc.activity.publish.useMutation()
+  const isMicroLearning = activityType === 'MICROLEARNING'
 
   return (
     <Modal
       open
       title={t(`manage.course.publishItem${activityType}`)}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={mlPublishLoading || gaPublishLoading}
+      primaryLoading={publishActivity.isLoading}
       onPrimaryAction={async () => {
-        let publishedActivityId: string | undefined
-        if (activityType === ElementInstanceType.Microlearning) {
-          const result = await publishMicroLearning()
-          publishedActivityId = result.data?.publishMicroLearning?.id
-        } else if (activityType === ElementInstanceType.GroupActivity) {
-          const result = await publishGroupActivity()
-          publishedActivityId = result.data?.publishGroupActivity?.id
-        }
-        if (publishedActivityId) {
+        const result = await publishActivity.mutateAsync({
+          activityId,
+          activityType: isMicroLearning
+            ? ActivityType.MICRO_LEARNING
+            : ActivityType.GROUP_ACTIVITY,
+        })
+        if (result.publishActivity?.id) {
           await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
@@ -85,7 +70,7 @@ function PublishConfirmationModal({
       <div className="mt-4 space-y-2 text-base">
         <div>
           {t.rich(
-            activityType === ElementInstanceType.Microlearning
+            isMicroLearning
               ? 'manage.course.confirmPublishingMicrolearning'
               : 'manage.course.confirmPublishingGroupActivity',
             { name: title, b: (text) => <b>{text}</b> }
@@ -118,7 +103,7 @@ function PublishConfirmationModal({
         </div>
         <div className="text-sm text-gray-600">
           {t(
-            activityType === ElementInstanceType.Microlearning
+            isMicroLearning
               ? 'manage.course.microlearningPublishingHint'
               : 'manage.course.groupActivityPublishingHint'
           )}

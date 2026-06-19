@@ -1,7 +1,6 @@
 import {
   ActivityInfo,
   ActivityType,
-  ElementInstanceType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ObjectType } from '@lib/constants/sharingEnums'
@@ -159,7 +158,7 @@ function GroupActivityActions({
         {publishingModal && (
           <PublishConfirmationModal
             onClose={() => setPublishingModal(false)}
-            activityType={ElementInstanceType.GroupActivity}
+            activityType="GROUP_ACTIVITY"
             activityId={groupActivity.id}
             startAt={groupActivity.scheduledStartAt}
             endAt={groupActivity.scheduledEndAt}

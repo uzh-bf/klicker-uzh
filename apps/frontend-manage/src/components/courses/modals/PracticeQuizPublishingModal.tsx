@@ -1,8 +1,7 @@
-import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PublishPracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
 import { Button, FormikDatetimePicker, H3, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -29,8 +28,7 @@ function PracticeQuizPublishingModal({
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
-    useMutation(PublishPracticeQuizDocument)
+  const publishPracticeQuiz = trpc.activity.publish.useMutation()
 
   return (
     <Modal
@@ -55,16 +53,17 @@ function PracticeQuizPublishingModal({
           <Button
             primary
             onClick={async () => {
-              const result = await publishPracticeQuiz({
-                variables: { id: activityId },
+              const result = await publishPracticeQuiz.mutateAsync({
+                activityId,
+                activityType: ActivityType.PRACTICE_QUIZ,
               })
-              if (result.data?.publishPracticeQuiz?.id) {
+              if (result.publishActivity?.id) {
                 await utils.course.detail.invalidate({ courseId })
               }
               await refetchActivities?.()
               onClose()
             }}
-            loading={practiceQuizPublishing}
+            loading={publishPracticeQuiz.isLoading}
             data={{ cy: 'publish-practice-quiz-immediately' }}
             className={{ root: 'float-right mt-3' }}
           >
@@ -87,13 +86,12 @@ function PracticeQuizPublishingModal({
             initialValues={{ availableFrom: undefined }}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
-              const result = await publishPracticeQuiz({
-                variables: {
-                  id: activityId,
-                  availableFrom: dayjs(values.availableFrom).utc().format(),
-                },
+              const result = await publishPracticeQuiz.mutateAsync({
+                activityId,
+                activityType: ActivityType.PRACTICE_QUIZ,
+                availableFrom: dayjs(values.availableFrom).utc().toDate(),
               })
-              if (result.data?.publishPracticeQuiz?.id) {
+              if (result.publishActivity?.id) {
                 await utils.course.detail.invalidate({ courseId })
               }
               await refetchActivities?.()
@@ -136,7 +134,7 @@ function PracticeQuizPublishingModal({
                   <Button
                     primary
                     type="submit"
-                    loading={practiceQuizPublishing}
+                    loading={publishPracticeQuiz.isLoading}
                     disabled={!isValid}
                     data={{ cy: 'schedule-practice-quiz-publication' }}
                     className={{ root: 'float-right mt-3' }}

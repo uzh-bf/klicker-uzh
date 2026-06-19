@@ -97,6 +97,7 @@ import {
   matchingUserElementsTemplateInput,
   outdatedElementInstancesInput,
   previousPointCorrectionsInput,
+  publishActivityInput,
   studentCourseResultsInput,
   templateInformationInput,
   templatePreviewAnswerCollectionEntriesInput,
@@ -700,6 +701,45 @@ type ScheduledHatchetClient = {
   }
 }
 
+type ScheduledTaskResult = {
+  metadata: {
+    id: string
+  }
+}
+
+type ActivitySchedulerTasks = {
+  publishScheduledPracticeQuiz?: {
+    schedule: (
+      date: Date,
+      payload: { practiceQuizId: string }
+    ) => Promise<ScheduledTaskResult>
+  }
+  publishScheduledMicroLearning?: {
+    schedule: (
+      date: Date,
+      payload: { microLearningId: string }
+    ) => Promise<ScheduledTaskResult>
+  }
+  endExpiredMicroLearning?: {
+    schedule: (
+      date: Date,
+      payload: { microLearningId: string }
+    ) => Promise<ScheduledTaskResult>
+  }
+  publishScheduledGroupActivity?: {
+    schedule: (
+      date: Date,
+      payload: { groupActivityId: string }
+    ) => Promise<ScheduledTaskResult>
+  }
+  endExpiredGroupActivity?: {
+    schedule: (
+      date: Date,
+      payload: { groupActivityId: string }
+    ) => Promise<ScheduledTaskResult>
+  }
+}
+
 type ScheduledActivityRecord = {
   scheduledPublicationTaskId?: string | null
   scheduledCompletionTaskId?: string | null
@@ -708,6 +748,19 @@ type ScheduledActivityRecord = {
 type UnpublishedActivityRecord = {
   id: string
   status: PublicationStatus
+}
+
+type PublishedActivityRecord = {
+  id: string
+  status: PublicationStatus
+}
+
+function getActivitySchedulerTasks(ctx: TRPCContext) {
+  return ctx.tasks as ActivitySchedulerTasks | undefined
+}
+
+function getScheduledTaskId(task: ScheduledTaskResult) {
+  return task.metadata.id
 }
 
 async function changeActivityNameForType({
@@ -818,6 +871,333 @@ async function unpublishScheduledActivity({
     id: updatedActivity.id,
     status: updatedActivity.status,
   }
+}
+
+async function publishPracticeQuiz({
+  ctx,
+  activityId,
+  availableFrom,
+}: {
+  ctx: TRPCContext
+  activityId: string
+  availableFrom?: Date | null
+}): Promise<PublishedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+
+  if (availableFrom && availableFrom > new Date()) {
+    try {
+      const scheduledTask = await getActivitySchedulerTasks(
+        ctx
+      )?.publishScheduledPracticeQuiz?.schedule(availableFrom, {
+        practiceQuizId: activityId,
+      })
+
+      if (!scheduledTask) {
+        throw new Error('Practice quiz publication scheduler unavailable')
+      }
+
+      const updatedQuiz = await prisma.practiceQuiz.update({
+        where: { id: activityId, isDeleted: false },
+        data: {
+          availableFrom,
+          status: PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: getScheduledTaskId(scheduledTask),
+        },
+        select: { id: true, status: true },
+      })
+
+      ctx.emitter?.emit('invalidate', {
+        typename: 'PracticeQuiz',
+        id: activityId,
+      })
+      return updatedQuiz
+    } catch (error) {
+      console.error('Error scheduling practice quiz publication:', error)
+      return null
+    }
+  }
+
+  const updatedQuiz = await prisma.practiceQuiz.update({
+    where: { id: activityId, isDeleted: false },
+    data: { status: PublicationStatus.PUBLISHED },
+    select: {
+      id: true,
+      status: true,
+      courseId: true,
+      stacks: { select: { id: true } },
+    },
+  })
+
+  await prisma.course.update({
+    where: { id: updatedQuiz.courseId },
+    data: {
+      elementStacks: {
+        connect: updatedQuiz.stacks.map((stack) => ({ id: stack.id })),
+      },
+    },
+  })
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id: activityId,
+  })
+  return {
+    id: updatedQuiz.id,
+    status: updatedQuiz.status,
+  }
+}
+
+async function publishMicroLearning({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext
+  activityId: string
+}): Promise<PublishedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const tasks = getActivitySchedulerTasks(ctx)
+  const microLearning = await prisma.microLearning.findUnique({
+    where: {
+      id: activityId,
+      isDeleted: false,
+      status: PublicationStatus.DRAFT,
+    },
+    select: {
+      id: true,
+      scheduledStartAt: true,
+      scheduledEndAt: true,
+    },
+  })
+
+  if (!microLearning) return null
+
+  if (microLearning.scheduledStartAt > new Date()) {
+    try {
+      const publicationTask =
+        await tasks?.publishScheduledMicroLearning?.schedule(
+          microLearning.scheduledStartAt,
+          { microLearningId: microLearning.id }
+        )
+      const completionTask = await tasks?.endExpiredMicroLearning?.schedule(
+        microLearning.scheduledEndAt,
+        { microLearningId: microLearning.id }
+      )
+
+      if (!publicationTask || !completionTask) {
+        throw new Error('Microlearning scheduler unavailable')
+      }
+
+      const updatedMicroLearning = await prisma.microLearning.update({
+        where: { id: activityId },
+        data: {
+          status: PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: getScheduledTaskId(publicationTask),
+          scheduledCompletionTaskId: getScheduledTaskId(completionTask),
+        },
+        select: { id: true, status: true },
+      })
+
+      ctx.emitter?.emit('invalidate', {
+        typename: 'MicroLearning',
+        id: activityId,
+      })
+      return updatedMicroLearning
+    } catch (error) {
+      console.error(
+        `Failed to schedule task for microlearning ${activityId}:`,
+        error
+      )
+      return null
+    }
+  }
+
+  if (microLearning.scheduledEndAt < new Date()) {
+    const updatedMicroLearning = await prisma.microLearning.update({
+      where: { id: activityId },
+      data: { status: PublicationStatus.ENDED },
+      select: { id: true, status: true },
+    })
+
+    ctx.emitter?.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: activityId,
+    })
+    return updatedMicroLearning
+  }
+
+  const completionTask = await tasks?.endExpiredMicroLearning?.schedule(
+    microLearning.scheduledEndAt,
+    { microLearningId: microLearning.id }
+  )
+
+  if (!completionTask) {
+    throw new Error('Microlearning completion scheduler unavailable')
+  }
+
+  const updatedMicroLearning = await prisma.microLearning.update({
+    where: { id: activityId },
+    data: {
+      status: PublicationStatus.PUBLISHED,
+      scheduledCompletionTaskId: getScheduledTaskId(completionTask),
+    },
+    select: { id: true, status: true },
+  })
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'MicroLearning',
+    id: activityId,
+  })
+  return updatedMicroLearning
+}
+
+async function publishGroupActivity({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext
+  activityId: string
+}): Promise<PublishedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const tasks = getActivitySchedulerTasks(ctx)
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: {
+      id: activityId,
+      isDeleted: false,
+      status: PublicationStatus.DRAFT,
+    },
+    select: {
+      id: true,
+      scheduledStartAt: true,
+      scheduledEndAt: true,
+    },
+  })
+
+  if (!groupActivity) return null
+
+  if (groupActivity.scheduledStartAt > new Date()) {
+    try {
+      const publicationTask =
+        await tasks?.publishScheduledGroupActivity?.schedule(
+          groupActivity.scheduledStartAt,
+          { groupActivityId: groupActivity.id }
+        )
+      const completionTask = await tasks?.endExpiredGroupActivity?.schedule(
+        groupActivity.scheduledEndAt,
+        { groupActivityId: groupActivity.id }
+      )
+
+      if (!publicationTask || !completionTask) {
+        throw new Error('Group activity scheduler unavailable')
+      }
+
+      const updatedGroupActivity = await prisma.groupActivity.update({
+        where: { id: activityId },
+        data: {
+          status: PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: getScheduledTaskId(publicationTask),
+          scheduledCompletionTaskId: getScheduledTaskId(completionTask),
+        },
+        select: { id: true, status: true },
+      })
+
+      ctx.emitter?.emit('invalidate', {
+        typename: 'GroupActivity',
+        id: activityId,
+      })
+      return updatedGroupActivity
+    } catch (error) {
+      console.error(
+        `Failed to schedule task for group activity ${activityId}:`,
+        error
+      )
+      return null
+    }
+  }
+
+  if (groupActivity.scheduledEndAt < new Date()) {
+    const updatedGroupActivity = await prisma.groupActivity.update({
+      where: { id: activityId },
+      data: { status: PublicationStatus.ENDED },
+      select: { id: true, status: true },
+    })
+
+    ctx.emitter?.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: activityId,
+    })
+    return updatedGroupActivity
+  }
+
+  const completionTask = await tasks?.endExpiredGroupActivity?.schedule(
+    groupActivity.scheduledEndAt,
+    { groupActivityId: groupActivity.id }
+  )
+
+  if (!completionTask) {
+    throw new Error('Group activity completion scheduler unavailable')
+  }
+
+  const updatedGroupActivity = await prisma.groupActivity.update({
+    where: { id: activityId },
+    data: {
+      status: PublicationStatus.PUBLISHED,
+      scheduledCompletionTaskId: getScheduledTaskId(completionTask),
+    },
+    select: { id: true, status: true },
+  })
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'GroupActivity',
+    id: activityId,
+  })
+  return updatedGroupActivity
+}
+
+async function publishActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+    availableFrom?: Date | null
+  }
+}) {
+  const canExecute = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.EXECUTE
+  )
+
+  if (!canExecute) return null
+
+  if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+    return await publishPracticeQuiz({
+      ctx,
+      activityId: input.activityId,
+      availableFrom: input.availableFrom,
+    })
+  }
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    return await publishMicroLearning({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
+
+  if (input.activityType === ActivityType.GROUP_ACTIVITY) {
+    return await publishGroupActivity({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
+
+  return null
 }
 
 async function unpublishActivity({
@@ -2652,6 +3032,12 @@ export const activityRouter = router({
     .input(changeActivityNameInput)
     .mutation(async ({ ctx, input }) => ({
       changeActivityName: await changeActivityName({ ctx, input }),
+    })),
+
+  publish: userFullAccessProcedure
+    .input(publishActivityInput)
+    .mutation(async ({ ctx, input }) => ({
+      publishActivity: await publishActivity({ ctx, input }),
     })),
 
   unpublish: userFullAccessProcedure

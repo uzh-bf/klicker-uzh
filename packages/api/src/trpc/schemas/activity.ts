@@ -45,6 +45,10 @@ export const changeActivityNameInput = activityDetailsInput.extend({
   displayName: z.string(),
 })
 
+export const publishActivityInput = activityDetailsInput.extend({
+  availableFrom: z.date().nullish(),
+})
+
 export const groupActivityGradingInput = z.object({
   id: z.string(),
 })

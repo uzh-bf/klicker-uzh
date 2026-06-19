@@ -1,7 +1,6 @@
 import {
   ActivityInfo,
   ActivityType,
-  ElementInstanceType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ObjectType } from '@lib/constants/sharingEnums'
@@ -175,7 +174,7 @@ function MicrolearningActions({
         {publishModal && (
           <PublishConfirmationModal
             onClose={() => setPublishModal(false)}
-            activityType={ElementInstanceType.Microlearning}
+            activityType="MICROLEARNING"
             activityId={microLearning.id}
             startAt={microLearning.scheduledStartAt}
             endAt={microLearning.scheduledEndAt}
