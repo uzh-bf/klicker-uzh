@@ -25,7 +25,9 @@ Implemented on branch `codex/tutor-research-mastra-plan`:
 - Slice 4: added move policy and prompt composer.
 - Slice 5: added verifier preflight and posthoc checks.
 - Slice 6: added evidence-id extraction and citation-fidelity tracking.
-- Slice 7: kept generated tutor guidance out of the first Prisma schema; the tutor starts from prompt policy plus LightRAG/Milvus retrieval.
+- Slice 7: kept generated tutor guidance out of the first Prisma schema; the
+  tutor starts from prompt policy and fixture-backed retrieval until the real
+  LightRAG/Milvus integrations are exposed.
 - Slice 8: added payload-minimized `TutorEvent` logging and feedback uptake detection.
 - Slice 9: added privacy gate for persistent tutor memory.
 - Slice 10: wired dormant Mastra Memory with Postgres storage behind the privacy gate.
@@ -55,8 +57,8 @@ Build a research-grounded tutor architecture that uses Mastra as the production 
 - pedagogical move selection
 - leakage and grounding verification
 - course-scoped learner memory
-- optional tutor guidance distilled asynchronously from LightRAG/Milvus context,
-  chats, and eval failures
+- optional tutor guidance distilled asynchronously from retrieval context,
+  chats, and eval failures once real retrieval traces are available
 - evaluation and observability
 - feedback uptake logging
 
@@ -136,9 +138,11 @@ This is the right substrate for the tutor work.
    Prefer a small hidden state object over a giant instruction blob.
 
 3. Retrieval before optional guidance.
-   Launch from LightRAG knowledge graph retrieval and Milvus chunks. Generate
-   misconception, hint-ladder, rubric, and directness guidance asynchronously
-   from chats/evals only when it adds measurable value.
+   Launch locally from a documented retrieval contract plus fixtures, then
+   switch to LightRAG knowledge graph retrieval and Milvus chunks once those
+   integrations are available. Generate misconception, hint-ladder, rubric, and
+   directness guidance asynchronously from chats/evals only when it adds
+   measurable value.
 
 4. Memory only after privacy gates.
    Persistent learner memory touches real participant data. Ship prompt/policy first; gate profile and semantic recall separately.

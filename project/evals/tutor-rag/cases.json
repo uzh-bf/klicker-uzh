@@ -1,7 +1,7 @@
 [
   {
     "id": "rag-finance-wacc-001",
-    "source": "Klicker real RAG TutorBench seed case",
+    "source": "Klicker TutorBench retrieval seed case",
     "domain": "finance",
     "subdomain": "WACC; capital structure",
     "task": "A Banking and Finance student asks about WACC using the course chatbot. The answer should use course context if retrieval is available.",
@@ -73,7 +73,7 @@
   },
   {
     "id": "rag-finance-capm-beta-001",
-    "source": "Klicker real RAG TutorBench seed case",
+    "source": "Klicker TutorBench retrieval seed case",
     "domain": "finance",
     "subdomain": "CAPM; beta",
     "task": "A Banking and Finance student asks about CAPM beta using the course chatbot. The answer should use course context if retrieval is available.",
@@ -145,7 +145,7 @@
   },
   {
     "id": "rag-finance-bond-yield-001",
-    "source": "Klicker real RAG TutorBench seed case",
+    "source": "Klicker TutorBench retrieval seed case",
     "domain": "finance",
     "subdomain": "bonds; yield and price",
     "task": "A Banking and Finance student asks about bond prices and yields using the course chatbot. The answer should use course context if retrieval is available.",

@@ -1,8 +1,10 @@
-# Real RAG TutorBench Validation
+# TutorBench Retrieval Plumbing Validation
 
 Date: 2026-06-19
 
-Goal: validate the real RAG TutorBench path with required e2e checks.
+Goal: validate the TutorBench retrieval plumbing with required e2e checks. This
+run did not validate live finance grounding because the LightRAG/Milvus finance
+retrieval integrations were not available in this branch.
 
 ## Implementation Validated
 
@@ -168,7 +170,8 @@ Passed:
 - Prompt inspection confirms no inline source snippets.
 - Local KB MCP stub reachable.
 - Local chat-api reachable.
-- One-case real `apps/chat-api` plus OpenRouter `deepseek-v4-pro` e2e run.
+- One-case real `apps/chat-api` plus OpenRouter `deepseek-v4-pro` e2e run
+  against the available local MCP stub.
 - MCP plumbing reached the local KB stub with the expected chatbot header.
 
 Blocked:
@@ -180,9 +183,11 @@ Blocked:
 
 Required for full e2e completion:
 
-1. Live finance-course `doc_query` MCP endpoint, or finance fixture data in a
-   local-only MCP stub.
+1. Add finance fixture data in a local-only MCP stub that matches
+   `retrieval-contract.md`.
 2. Re-run the command above for all three cases and inspect
    `project/evals/results/rag-tutorbench-deepseek-v4-pro-e2e/generic-tutorbench/cases.jsonl`.
 3. Expose structured retrieval events from chat-api so the eval can verify
    retrieved document IDs, not only visible response text and logs.
+4. Switch from fixture retrieval to live finance-course retrieval only after the
+   service is reachable in this branch or a shared validation environment.

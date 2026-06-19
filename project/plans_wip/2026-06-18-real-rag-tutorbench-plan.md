@@ -1,9 +1,10 @@
-# Real RAG TutorBench Plan
+# TutorBench Retrieval Plan
 
 Date: 2026-06-18
 
-Status: implementation complete, one-case real e2e passed; full finance RAG
-grounding still needs live finance KB data
+Status: implementation complete, one-case tutor/RAG plumbing e2e passed; live
+LightRAG and Milvus integrations are not available in this branch, so the next
+slice is contract-first and fixture-backed
 
 Branch: `codex/tutor-research-mastra-plan`
 
@@ -15,7 +16,8 @@ Run TutorBench against real Klicker tutor behavior:
 
 - real `apps/chat-api` tutor runtime;
 - real Mastra tutor path;
-- real course-grounded RAG;
+- real course-grounded RAG once the retrieval integrations are available;
+- fixture-backed retrieval validation until those integrations are available;
 - real model, first target `deepseek-v4-pro`;
 - reproducible eval artifacts under `project/evals/results/`;
 - scoring that separates deterministic guard checks from semantic tutor-quality
@@ -32,7 +34,7 @@ Done:
 - Dry-run validates prompt, output, and scoring layout.
 - Tutor prompt includes safe MathTutorBench pedagogy deltas.
 - `--rag-mode inline|real` implemented in the generic runner.
-- Real RAG finance case pack added under `project/evals/tutor-rag/`.
+- Finance retrieval case pack added under `project/evals/tutor-rag/`.
 - RAG evidence capture added for visible citations and expected keyword
   coverage.
 - Real-mode dry-run passed with no inline source snippets in prompts.
@@ -48,13 +50,21 @@ Done:
 Missing:
 
 - Real course/chatbot fixture IDs confirmed for repeatable local runs.
+- Direct LightRAG / Milvus access in this worktree.
+- Executable handoff from the retrieval contract to the service owner who will
+  expose the real course retrieval path.
+- Finance fixture MCP responses that match the future retrieval trace contract.
 - Structured retrieval trace exposed by `apps/chat-api`.
 - Semantic judging for diagnosis, hint quality, grounding, and leakage.
 - Multi-turn TutorBench cases.
-- Full three-case e2e against live finance RAG; current local MCP stub contains
-  algorithm fixtures, so it validates plumbing but not finance grounding.
+- Full three-case e2e against live finance retrieval; current local MCP stub
+  contains algorithm fixtures, so it validates plumbing but not finance
+  grounding.
 
-## Run Requirements
+## Future Live Run Requirements
+
+These requirements apply after the retrieval integrations are exposed to this
+branch or to a shared validation environment. They are not the next local slice.
 
 Runtime:
 
@@ -78,6 +88,14 @@ Data:
 - Tutor mode uses retrieval path, not just base prompt.
 - External model data egress is approved before `deepseek-v4-pro` run, or a
   local/private OpenAI-compatible model endpoint is configured.
+
+Current constraint:
+
+- LightRAG and Milvus integrations are not available to this branch/agent yet.
+- Do not block the next slice on provisioning real finance KB data.
+- Do not claim final finance grounding quality from the current local MCP stub.
+- Use fixture-backed MCP responses to validate tutor behavior, trace handling,
+  and evaluation mechanics until the real retrieval service is reachable.
 
 ## Slice 1: Real RAG Mode
 
@@ -207,11 +225,72 @@ Acceptance:
 - Single-turn cases still work.
 - Multi-turn run stores each turn and final aggregate score.
 
-## Slice 6: Full E2E Validation
+## Slice 6: Retrieval Contract And Fixture Validation
+
+Define the boundary the future retrieval integration must satisfy without
+requiring the integration to exist locally.
+
+Add contract note:
+
+```text
+project/evals/tutor-rag/retrieval-contract.md
+```
+
+Minimum contract:
+
+- request fields: chatbot ID, participant/course scope if available, query,
+  top-k, and selected mode;
+- response fields: evidence IDs, source/chunk titles, source URI or stable
+  source label, text snippet, score if available, citation marker, and retrieval
+  trace ID;
+- privacy fields: whether retrieved content can be sent to the selected model;
+- eval fields: expected concept tags and citation labels needed for scoring;
+- failure states: no results, weak retrieval, unauthorized, timeout, malformed
+  response.
+
+Fixture behavior:
+
+- create finance fixture responses for WACC, CAPM, and bond yield cases;
+- make the local MCP stub emit the same fields the contract requires;
+- record `retrievalTraceStatus: "fixture"` rather than pretending traces are
+  from live LightRAG/Milvus;
+- run all three cases against the real tutor/model path using fixture-backed
+  retrieval.
+
+Acceptance:
+
+- eval output distinguishes `inline`, `fixture`, and future `real` retrieval;
+- per-case JSONL captures the fixture evidence IDs and citation labels;
+- tutor does not receive inline `sourceMaterial` in fixture mode;
+- result notes clearly say the run validates tutor/RAG plumbing and pedagogy,
+  not live finance corpus grounding.
+
+## Slice 7: Retrieval Integration Handoff
+
+Prepare a concise handoff for the LightRAG/Milvus integration owner.
+
+Handoff content:
+
+- expected MCP endpoint shape and auth/header requirements;
+- request/response examples from the fixture server;
+- trace fields TutorBench will consume;
+- required stable IDs for chatbot, course, participant, and model;
+- egress and privacy assumptions for retrieved course context;
+- smoke command to run once a real endpoint exists;
+- expected artifacts to return: JSONL, service logs, and one human run note.
+
+Acceptance:
+
+- integration owner can implement or expose the service without reading the full
+  tutor plan;
+- when a real endpoint exists, the only expected evaluator change is switching
+  retrieval mode/configuration from fixture to real.
+
+## Slice 8: Future Full E2E Validation
 
 Run sequence:
 
-1. Start local stack with real seeded data.
+1. Confirm the real retrieval service is reachable from `apps/chat-api`.
 2. Verify chatbot/course/participant access.
 3. Run `--rag-mode real --dry-run`.
 4. Run one real case against local/private model if available.
@@ -233,32 +312,27 @@ Acceptance:
 - External model run sends prompts, tutor policy, and retrieved context to
   provider.
 - Keyword grounding can miss good paraphrases; semantic judge needed.
-- Existing pre-commit syncpack mismatch can block normal commits.
+- Root hooks can still be noisy on generated-output drift; use focused checks
+  plus PR CI for this branch.
 
 ## Next Steps
 
 1. Land or keep stacking on the Mastra baseline branch until PR #5129 is green
    against `codex/mastra-chat-openrouter-smoke`.
-2. Keep the current CI fixes narrow:
-   - `check-types.yml` builds `packages/chat-engine` before checking
-     `apps/chat-api`;
-   - syncpack allows the intentional zod v3/v4 split between existing runtimes
-     and the Mastra engine.
-3. Provision real finance/course data through the production retrieval path:
-   LightRAG knowledge graph plus Milvus chunks attached to a real chatbot and
-   accessible participant.
-4. Replace the local KB MCP stub with the real `doc_query` service and record
-   stable chatbot, course, participant, and model configuration in the run note.
-5. Expose structured retrieval traces from `apps/chat-api` / MCP / RAG into
-   TutorBench result rows: retrieval backend, query, evidence IDs, chunk titles,
-   citation IDs, and trace availability.
-6. Run the full three-case real-RAG TutorBench smoke against an approved real
-   model, then inspect and save JSONL plus a human run note under
-   `project/evals/tutor-rag/`.
-7. Add the semantic judge only after real retrieval traces exist, scoring
-   diagnosis, scaffold fit, ZPD/directness, grounding, citation fidelity, and
-   answer leakage separately from deterministic checks.
-8. Use real chats, eval failures, LightRAG concepts, and Milvus chunks to
-   generate optional guidance candidates asynchronously. Do not require
-   lecturers to author upfront misconception lists, hint ladders, or seed tutor
-   artifacts.
+2. Use `project/evals/tutor-rag/retrieval-contract.md` as the fixture and
+   integration boundary for request, response, trace, privacy, and failure-state
+   fields.
+3. Upgrade the local MCP stub from generic algorithm fixtures to finance
+   fixtures for WACC, CAPM, and bond/yield cases that match the contract.
+4. Extend the generic TutorBench runner/result rows to distinguish
+   `retrievalTraceStatus: "inline" | "fixture" | "real" | "unavailable"`.
+5. Run the three-case fixture-backed TutorBench smoke against the real
+   `apps/chat-api` tutor path and an approved model, then save JSONL plus a run
+   note that clearly scopes the result to tutor/RAG plumbing and pedagogy.
+6. Add semantic judging on fixture-backed outputs if useful, but keep scores
+   separate from any future live-retrieval claims.
+7. Prepare the retrieval integration handoff for whoever can expose the real
+   LightRAG/Milvus path: endpoint shape, auth/header needs, trace fields,
+   stable fixture IDs, smoke command, and expected artifacts.
+8. Only after a reachable real retrieval endpoint exists, switch the same cases
+   from fixture to real mode and evaluate finance grounding quality.
