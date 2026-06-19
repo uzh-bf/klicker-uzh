@@ -86,9 +86,12 @@ Current next action:
 - S04Q GraphQL/tRPC package test parity is complete and verified in CI:
   the GraphQL package workflow still runs against `packages/graphql`, and the
   new API package workflow runs against `packages/api`.
-- Continue with S05 realtime migration, starting with the narrow PWA
-  microlearning-ended subscription path. Do not start S06 cleanup until all S05
-  realtime slices are complete and explicitly reviewed.
+- S05A PWA microlearning-ended realtime is complete.
+- S05D PWA group-activity realtime is complete locally; commit/push and PR
+  update are the next gates.
+- Continue remaining S05 realtime slices after S05D is committed. Do not start
+  S06 cleanup until all S05 realtime slices are complete and explicitly
+  reviewed.
 
 Still intentionally live:
 
@@ -351,6 +354,83 @@ Verification:
 
 Cleanup blocked until: remaining S05 realtime subscription consumers and S06
 final GraphQL/Apollo cleanup.
+
+### 2026-06-19 Completed: S05D PWA Group Activity tRPC Realtime
+
+Status: complete locally. Scope was limited to PWA group-activity realtime
+subscriptions while keeping the existing GraphQL subscription fields and event
+keys live.
+
+Slice: S05D PWA Group Activity tRPC Realtime
+
+Operation mapping:
+
+- GraphQL subscriptions:
+  `GroupActivityStartedDocument`, `GroupActivityEndedDocument`,
+  `SingleGroupActivityEndedDocument`
+- tRPC subscriptions:
+  `api.realtime.groupActivityStarted.useSubscription({ courseId })`,
+  `api.realtime.groupActivityEnded.useSubscription({ courseId })`,
+  `api.realtime.singleGroupActivityEnded.useSubscription({ activityId })`
+- Event keys:
+  `groupActivityStarted`, `groupActivityEnded`, `singleGroupActivityEnded`
+
+Write scope:
+
+- `packages/api/src/realtime/events.ts`
+- `packages/api/src/index.ts`
+- `packages/api/src/services/hatchetHandlers.ts`
+- `packages/api/src/trpc/routers/realtime.ts`
+- `packages/api/src/trpc/__tests__/realtime.test.ts`
+- `packages/graphql/src/services/groups.ts`
+- `apps/frontend-pwa/src/components/groupActivity/GroupActivityListSubscriber.tsx`
+- `apps/frontend-pwa/src/components/groupActivity/GroupActivitySubscriber.tsx`
+
+Implemented behavior:
+
+- Added transport-neutral group activity event helpers in `packages/api` for the
+  existing GraphQL event keys.
+- Kept GraphQL publishers and API Hatchet publishers on the same Redis pub/sub
+  events through the shared helpers.
+- Added tRPC subscriptions that filter by `courseId` or `activityId` and emit
+  the DTO fields consumed by the current PWA group activity subscribers.
+- Migrated the PWA group activity list/detail subscribers from Apollo
+  subscriptions to tRPC subscriptions while preserving toast behavior, duplicate
+  event guards, and refresh callbacks.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/realtime.test.ts`:
+  passed with microlearning plus group activity started/ended/single-ended
+  event coverage.
+- `pnpm --filter @klicker-uzh/api check`: passed.
+- `pnpm --filter @klicker-uzh/api build`: passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check`: passed after rebuilding API
+  declarations.
+- `pnpm --filter @klicker-uzh/graphql build`: passed with existing GraphQL
+  build warnings.
+- Browser verification on the seeded PWA group tab:
+  `/tmp/agent-browser-shots/trpc-s05-group-before.png`,
+  `/tmp/agent-browser-shots/trpc-s05-group-started-immediate.png`, and
+  `/tmp/agent-browser-shots/trpc-s05-group-ended-immediate.png`.
+- `npx agent-browser errors`: no browser console errors after event checks.
+- Raw `/api/trpc` WebSocket probe received Redis-backed
+  `groupActivityStarted`.
+- Raw `/api/graphql` WebSocket probe still received Redis-backed
+  `groupActivityStarted`.
+- Raw `/api/trpc` WebSocket probe received Redis-backed
+  `singleGroupActivityEnded`.
+- Raw `/api/graphql` WebSocket probe still received Redis-backed
+  `singleGroupActivityEnded`.
+
+Residual:
+
+- The PWA detail-page `singleGroupActivityEnded` subscriber was verified at unit
+  and protocol level rather than through a seeded browser detail route; the
+  local seed did not expose a reliable group activity instance route for this
+  check.
+- Continue with remaining S05 realtime slices after commit/push/PR update. Do
+  not start S06 cleanup.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

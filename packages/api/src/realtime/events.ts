@@ -1,12 +1,40 @@
 export const realtimeEvents = {
+  groupActivityEnded: 'groupActivityEnded',
+  groupActivityStarted: 'groupActivityStarted',
   microLearningEnded: 'microLearningEnded',
+  singleGroupActivityEnded: 'singleGroupActivityEnded',
 } as const
+
+export type RealtimeEventName =
+  (typeof realtimeEvents)[keyof typeof realtimeEvents]
+
+type ActivityDate = Date | string | null
+
+export type GroupActivitySource = {
+  id: string
+  courseId: string
+  displayName: string
+  status: string
+  description: string | null
+  scheduledStartAt: ActivityDate
+  scheduledEndAt: ActivityDate
+}
+
+export type GroupActivityEvent = {
+  id: string
+  courseId: string
+  displayName: string
+  status: string
+  description: string | null
+  scheduledStartAt: string
+  scheduledEndAt: string
+}
 
 export type MicroLearningEndedSource = {
   id: string
   displayName: string
-  scheduledStartAt: Date | string | null
-  scheduledEndAt: Date | string | null
+  scheduledStartAt: ActivityDate
+  scheduledEndAt: ActivityDate
 }
 
 export type MicroLearningEndedEvent = {
@@ -59,29 +87,109 @@ export function toMicroLearningEndedEvent(
   }
 }
 
-function serializeEventDate(
-  value: Date | string | null,
-  fieldName: string
-): string {
+export function toGroupActivityEvent(
+  groupActivity: GroupActivitySource
+): GroupActivityEvent {
+  return {
+    id: groupActivity.id,
+    courseId: groupActivity.courseId,
+    displayName: groupActivity.displayName,
+    status: groupActivity.status,
+    description: groupActivity.description,
+    scheduledStartAt: serializeEventDate(
+      groupActivity.scheduledStartAt,
+      'scheduledStartAt'
+    ),
+    scheduledEndAt: serializeEventDate(
+      groupActivity.scheduledEndAt,
+      'scheduledEndAt'
+    ),
+  }
+}
+
+function serializeEventDate(value: ActivityDate, fieldName: string): string {
   if (value instanceof Date) return value.toISOString()
   if (typeof value === 'string') return value
 
-  throw new Error(`microLearningEnded.${fieldName} is required`)
+  throw new Error(`realtime.${fieldName} is required`)
+}
+
+function publishEvent(
+  pubSub: unknown,
+  event: RealtimeEventName,
+  payload: unknown
+) {
+  if (!hasPublish(pubSub)) return
+
+  return pubSub.publish(event, payload)
+}
+
+function subscribeEvent<T>(pubSub: unknown, event: RealtimeEventName) {
+  if (!hasSubscribe(pubSub)) return null
+
+  return pubSub.subscribe(event) as AsyncIterable<T>
 }
 
 export function publishMicroLearningEnded(
   pubSub: unknown,
   microLearning: MicroLearningEndedSource
 ) {
-  if (!hasPublish(pubSub)) return
+  return publishEvent(pubSub, realtimeEvents.microLearningEnded, microLearning)
+}
 
-  return pubSub.publish(realtimeEvents.microLearningEnded, microLearning)
+export function publishGroupActivityStarted(
+  pubSub: unknown,
+  groupActivity: GroupActivitySource
+) {
+  return publishEvent(
+    pubSub,
+    realtimeEvents.groupActivityStarted,
+    groupActivity
+  )
+}
+
+export function publishGroupActivityEnded(
+  pubSub: unknown,
+  groupActivity: GroupActivitySource
+) {
+  return publishEvent(pubSub, realtimeEvents.groupActivityEnded, groupActivity)
+}
+
+export function publishSingleGroupActivityEnded(
+  pubSub: unknown,
+  groupActivity: GroupActivitySource
+) {
+  return publishEvent(
+    pubSub,
+    realtimeEvents.singleGroupActivityEnded,
+    groupActivity
+  )
 }
 
 export function subscribeMicroLearningEnded(pubSub: unknown) {
-  if (!hasSubscribe(pubSub)) return null
-
-  return pubSub.subscribe(
+  return subscribeEvent<MicroLearningEndedSource>(
+    pubSub,
     realtimeEvents.microLearningEnded
-  ) as AsyncIterable<MicroLearningEndedSource>
+  )
+}
+
+export function subscribeGroupActivityStarted(pubSub: unknown) {
+  return subscribeEvent<GroupActivitySource>(
+    pubSub,
+    realtimeEvents.groupActivityStarted
+  )
+}
+
+export function subscribeGroupActivityEnded(pubSub: unknown) {
+  return subscribeEvent<GroupActivitySource>(
+    pubSub,
+    realtimeEvents.groupActivityEnded
+  )
+}
+
+export function subscribeSingleGroupActivityEnded(pubSub: unknown) {
+  return subscribeEvent<GroupActivitySource>(
+    pubSub,
+    realtimeEvents.singleGroupActivityEnded
+  )
 }

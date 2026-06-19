@@ -1,7 +1,13 @@
 export {
+  publishGroupActivityEnded,
+  publishGroupActivityStarted,
   publishMicroLearningEnded,
+  publishSingleGroupActivityEnded,
   realtimeEvents,
+  toGroupActivityEvent,
   toMicroLearningEndedEvent,
+  type GroupActivityEvent,
+  type GroupActivitySource,
   type MicroLearningEndedEvent,
   type MicroLearningEndedSource,
 } from './realtime/events.js'

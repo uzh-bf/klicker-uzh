@@ -1,8 +1,7 @@
-import { useSubscription } from '@apollo/client'
-import { SingleGroupActivityEndedDocument } from '@klicker-uzh/graphql/dist/ops'
+import { api } from '@lib/trpc'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 
 interface GroupActivitySubscriberProps {
   activityId: string
@@ -18,30 +17,24 @@ function GroupActivitySubscriber({
   setActivityEnded,
 }: GroupActivitySubscriberProps) {
   const t = useTranslations()
-  const { data } = useSubscription(SingleGroupActivityEndedDocument, {
-    variables: { activityId },
-  })
 
-  useEffect(() => {
-    if (!data?.singleGroupActivityEnded) return
+  api.realtime.singleGroupActivityEnded.useSubscription(
+    { activityId },
+    {
+      onData() {
+        setActivityEnded(true)
+        toast({
+          type: 'warning',
+          message: t('pwa.groupActivity.groupActivityEnded', {
+            activityName: groupActivityName,
+          }),
+          options: { duration: 10000 },
+        })
 
-    setActivityEnded(true)
-    toast({
-      type: 'warning',
-      message: t('pwa.groupActivity.groupActivityEnded', {
-        activityName: groupActivityName,
-      }),
-      options: { duration: 10000 },
-    })
-
-    void onEnded()
-  }, [
-    data?.singleGroupActivityEnded,
-    groupActivityName,
-    onEnded,
-    setActivityEnded,
-    t,
-  ])
+        void onEnded()
+      },
+    }
+  )
 
   return null
 }

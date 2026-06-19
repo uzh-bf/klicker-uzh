@@ -25,7 +25,11 @@ import {
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator'
-import { publishMicroLearningEnded } from '../realtime/events.js'
+import {
+  publishGroupActivityEnded,
+  publishMicroLearningEnded,
+  publishSingleGroupActivityEnded,
+} from '../realtime/events.js'
 
 dayjs.extend(utc)
 dayjs.extend(isoWeek)
@@ -1139,8 +1143,8 @@ export const hatchetHandlers: HatchetHandlers = {
         text: `Successfully ended expired group activity ${updatedGroupActivity.id}`,
       })
 
-      globalCtx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
-      globalCtx.pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
+      publishGroupActivityEnded(globalCtx.pubSub, updatedGroupActivity)
+      publishSingleGroupActivityEnded(globalCtx.pubSub, updatedGroupActivity)
       globalCtx.emitter.emit('invalidate', {
         typename: 'GroupActivity',
         id: updatedGroupActivity.id,
