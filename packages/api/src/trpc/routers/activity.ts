@@ -80,6 +80,7 @@ import {
   assessmentCourseParticipantsInput,
   assessmentResultsCourseInput,
   assessmentResultsLiveQuizInput,
+  changeActivityNameInput,
   checkTemplateElementExistsInput,
   checkTemplateInfoAvailableInput,
   correctAssessmentPointsInstanceInput,
@@ -678,6 +679,176 @@ async function updateTemplateActivityName(
   await tx.groupActivity.update({
     where,
     data: { name },
+  })
+}
+
+function modifiedReviewStatus(reviewStatus: ReviewStatus) {
+  return reviewStatus === ReviewStatus.REVIEWED
+    ? ReviewStatus.MODIFIED_AFTER_REVIEW
+    : undefined
+}
+
+type ActivityNameRecord = {
+  name: string
+  displayName: string
+  reviewStatus: ReviewStatus
+}
+
+async function changeActivityNameForType({
+  input,
+  findActivity,
+  updateActivity,
+  emitInvalidation,
+  errorMessage,
+}: {
+  input: {
+    activityId: string
+    name: string
+    displayName: string
+  }
+  findActivity: () => Promise<ActivityNameRecord | null>
+  updateActivity: (data: {
+    name: string
+    displayName: string
+    reviewStatus?: ReviewStatus
+  }) => Promise<unknown>
+  emitInvalidation: () => void
+  errorMessage: string
+}) {
+  const activity = await findActivity()
+
+  if (!activity) return false
+
+  if (
+    activity.name === input.name &&
+    activity.displayName === input.displayName
+  ) {
+    return true
+  }
+
+  try {
+    await updateActivity({
+      name: input.name,
+      displayName: input.displayName,
+      reviewStatus: modifiedReviewStatus(activity.reviewStatus),
+    })
+
+    emitInvalidation()
+    return true
+  } catch (error) {
+    console.error(errorMessage, error)
+    return false
+  }
+}
+
+async function changeActivityName({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    activityType: ActivityType
+    name: string
+    displayName: string
+  }
+}) {
+  const prisma = getPrisma(ctx)
+  const canWrite = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: input.activityType,
+    },
+    PermissionLevel.WRITE
+  )
+
+  if (!canWrite) return null
+
+  if (input.activityType === ActivityType.LIVE_QUIZ) {
+    return await changeActivityNameForType({
+      input,
+      findActivity: () =>
+        prisma.liveQuiz.findUnique({
+          where: { id: input.activityId },
+          select: { name: true, displayName: true, reviewStatus: true },
+        }),
+      updateActivity: (data) =>
+        prisma.liveQuiz.update({
+          where: { id: input.activityId },
+          data,
+        }),
+      emitInvalidation: () =>
+        ctx.emitter?.emit('invalidate', {
+          typename: 'LiveQuiz',
+          id: input.activityId,
+        }),
+      errorMessage: 'Error changing live quiz name:',
+    })
+  }
+
+  if (input.activityType === ActivityType.PRACTICE_QUIZ) {
+    return await changeActivityNameForType({
+      input,
+      findActivity: () =>
+        prisma.practiceQuiz.findUnique({
+          where: { id: input.activityId },
+          select: { name: true, displayName: true, reviewStatus: true },
+        }),
+      updateActivity: (data) =>
+        prisma.practiceQuiz.update({
+          where: { id: input.activityId },
+          data,
+        }),
+      emitInvalidation: () =>
+        ctx.emitter?.emit('invalidate', {
+          typename: 'PracticeQuiz',
+          id: input.activityId,
+        }),
+      errorMessage: 'Error changing practice quiz name:',
+    })
+  }
+
+  if (input.activityType === ActivityType.MICRO_LEARNING) {
+    return await changeActivityNameForType({
+      input,
+      findActivity: () =>
+        prisma.microLearning.findUnique({
+          where: { id: input.activityId },
+          select: { name: true, displayName: true, reviewStatus: true },
+        }),
+      updateActivity: (data) =>
+        prisma.microLearning.update({
+          where: { id: input.activityId },
+          data,
+        }),
+      emitInvalidation: () =>
+        ctx.emitter?.emit('invalidate', {
+          typename: 'MicroLearning',
+          id: input.activityId,
+        }),
+      errorMessage: 'Error changing microlearning name:',
+    })
+  }
+
+  return await changeActivityNameForType({
+    input,
+    findActivity: () =>
+      prisma.groupActivity.findUnique({
+        where: { id: input.activityId },
+        select: { name: true, displayName: true, reviewStatus: true },
+      }),
+    updateActivity: (data) =>
+      prisma.groupActivity.update({
+        where: { id: input.activityId },
+        data,
+      }),
+    emitInvalidation: () =>
+      ctx.emitter?.emit('invalidate', {
+        typename: 'GroupActivity',
+        id: input.activityId,
+      }),
+    errorMessage: 'Error changing group activity name:',
   })
 }
 
@@ -2221,6 +2392,12 @@ export const activityRouter = router({
 
       return { appliedCount }
     }),
+
+  changeName: userFullAccessProcedure
+    .input(changeActivityNameInput)
+    .mutation(async ({ ctx, input }) => ({
+      changeActivityName: await changeActivityName({ ctx, input }),
+    })),
 
   setReviewStatus: userFullAccessProcedure
     .input(activityReviewStatusInput)

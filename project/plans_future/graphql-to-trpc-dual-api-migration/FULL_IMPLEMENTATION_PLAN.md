@@ -83,11 +83,11 @@ Committed markers:
 
 Current next action:
 
-- Continue the manage vertical migration with the remaining adjacent
-  template-authoring surfaces, currently `EditActivityTemplateDocument` in
-  `TemplateEditModal` or `CreateLiveQuizFromTemplateDocument` in
-  `LiveQuizTemplate`. Keep generated GraphQL type cleanup, Apollo providers,
-  realtime, and GraphQL cleanup live for later slices.
+- Continue S04 pre-realtime manage consumers from the branch review: activity
+  creation/edit reads and mutations, publish/unpublish/start/schedule/end/reset
+  action modals, course action modals, and suspended course leaderboard
+  operations. Pause when S04 is complete; do not start S05 realtime migration
+  or S06 cleanup without explicit approval.
 
 Still intentionally live:
 
@@ -279,6 +279,96 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-19 Completed: S04L Activity Name Change Mutation
+
+Status: complete for the activity overview name-change mutation. Scope was
+limited to replacing the generated `ChangeActivityNameDocument` Apollo mutation
+in `ActivityNameChangeModal` with `trpc.activity.changeName`. This did not
+migrate activity create/edit mutations, publish/unpublish/start/end/reset
+mutations, realtime/live-session consumers, S05, or S06 cleanup.
+
+Slice: S04L Activity Name Change Mutation
+
+Behavior source:
+
+- `changeActivityName` GraphQL mutation in `packages/graphql/src/schema/mutation.ts`.
+- Existing GraphQL service methods
+  `changeLiveQuizName` / `changePracticeQuizName` /
+  `changeMicroLearningName` / `changeGroupActivityName`.
+
+Implemented:
+
+- Add `activity.changeName` to `packages/api` with shared Zod input,
+  `userFullAccessProcedure`, `hasActivityPermission(..., WRITE)`, nullable
+  boolean result parity, unchanged-name no-op, reviewed-to-modified review
+  status behavior, and object invalidation events.
+- Migrate `ActivityNameChangeModal` from Apollo `useMutation` to
+  `trpc.activity.changeName.useMutation()` while preserving course detail
+  invalidation, optional activity-list refetch, success/error toasts, and
+  unchanged form UX.
+- Keep the overview enum boundary narrow by mapping the existing generated
+  GraphQL activity enum values to the API enum locally; broader generated type
+  cleanup remains S04P/S04Q work.
+- Add API tests for all four activity-type update branches, unauthorized
+  access, unchanged-value no-op, and update failure behavior.
+
+Changed files:
+
+- `packages/api/src/trpc/schemas/activity.ts`
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/overview/ActivityNameChangeModal.tsx`
+- This progress entry.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write packages/api/src/trpc/routers/activity.ts packages/api/src/trpc/__tests__/manage-activities.test.ts apps/frontend-manage/src/components/activities/overview/ActivityNameChangeModal.tsx packages/api/src/trpc/schemas/activity.ts`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed; package command ran all 39 API test files, 375 tests total.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing warnings: module type warning, next-intl i18n config
+  warning, stale Browserslist data, `/qr/[...args]` `MISSING_MESSAGE`, and
+  large-page-data warnings.
+- `rg -n "ChangeActivityNameDocument|ChangeActivityName" apps/frontend-manage/src packages/api/src`:
+  no matches.
+- `rg -n "@apollo/client" apps/frontend-manage/src/components/activities/overview/ActivityNameChangeModal.tsx`:
+  no matches.
+- Residual manage GraphQL operation audit still shows other S04/S05 candidates,
+  including activity creation/editing, publish/unpublish/start/schedule/end
+  actions, course modals, live cockpit/feedback, and leaderboard operations;
+  `ChangeActivityNameDocument` is no longer present.
+
+Browser smoke:
+
+- Local stack used Docker Postgres/Redis/Hatchet plus local backend/auth/manage
+  dev servers on `localhost:3000`, `localhost:3010`, and `localhost:3002`.
+- Logged in through delegated access as local seeded lecturer.
+- Opened `http://localhost:3002/activities`, opened the name-change modal for
+  `Group Activity 3`, submitted unchanged values, and confirmed the modal
+  closed with the activities list still rendered.
+- Browser resource timing confirmed the migrated
+  `http://localhost:3000/api/trpc/activity.changeName?batch=1` request and the
+  subsequent `activity.userActivities` refetch.
+- Screenshots reviewed:
+  `/tmp/agent-browser-shots/s04-name-change-01-login.png`,
+  `/tmp/agent-browser-shots/s04-name-change-02-activities.png`,
+  `/tmp/agent-browser-shots/s04-name-change-03-modal.png`,
+  `/tmp/agent-browser-shots/s04-name-change-04-after-submit.png`.
+
+Next S04-only candidates:
+
+- Continue pre-realtime manage consumers from the branch review: activity
+  creation/edit reads and mutations, publish/unpublish/start/schedule/end/reset
+  action modals, and suspended course leaderboard operations.
+- Do not start S05 realtime migration or S06 cleanup.
 
 ### 2026-06-19 Completed: S04L Activity Authoring Submit Refetch Cleanup
 

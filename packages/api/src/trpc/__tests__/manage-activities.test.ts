@@ -25,10 +25,11 @@ const user = {
 
 function createContext(
   prisma: TRPCContext['prisma'],
-  options?: { scope?: UserLoginScope }
+  options?: { scope?: UserLoginScope; emitter?: TRPCContext['emitter'] }
 ): TRPCContext {
   return {
     prisma,
+    emitter: options?.emitter,
     user: {
       sub: user.id,
       role: UserRole.USER,
@@ -1552,6 +1553,219 @@ describe('manage activity read routers', () => {
         },
       },
     })
+  })
+
+  test.each([
+    {
+      activityType: ActivityType.LIVE_QUIZ,
+      modelName: 'liveQuiz',
+      permissionKey: 'liveQuizId',
+      typename: 'LiveQuiz',
+    },
+    {
+      activityType: ActivityType.PRACTICE_QUIZ,
+      modelName: 'practiceQuiz',
+      permissionKey: 'practiceQuizId',
+      typename: 'PracticeQuiz',
+    },
+    {
+      activityType: ActivityType.MICRO_LEARNING,
+      modelName: 'microLearning',
+      permissionKey: 'microLearningId',
+      typename: 'MicroLearning',
+    },
+    {
+      activityType: ActivityType.GROUP_ACTIVITY,
+      modelName: 'groupActivity',
+      permissionKey: 'groupActivityId',
+      typename: 'GroupActivity',
+    },
+  ])(
+    'changes $activityType activity names through the activity router',
+    async ({ activityType, modelName, permissionKey, typename }) => {
+      const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+      const findUnique = vi.fn().mockResolvedValue({
+        name: 'Old name',
+        displayName: 'Old display name',
+        reviewStatus: ReviewStatus.REVIEWED,
+      })
+      const update = vi.fn().mockResolvedValue({ id: 'activity-1' })
+      const emit = vi.fn()
+      const prisma = {
+        derivedPermission: {
+          findFirst: permissionFindFirst,
+        },
+        [modelName]: {
+          findUnique,
+          update,
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(
+        createContext(prisma, {
+          emitter: { emit } as unknown as TRPCContext['emitter'],
+        })
+      )
+
+      await expect(
+        caller.activity.changeName({
+          activityId: 'activity-1',
+          activityType,
+          name: 'New name',
+          displayName: 'New display name',
+        })
+      ).resolves.toEqual({ changeActivityName: true })
+
+      expect(permissionFindFirst).toHaveBeenCalledWith({
+        where: {
+          [permissionKey]: 'activity-1',
+          userId: user.id,
+          permissionLevel: {
+            in: [
+              PermissionLevel.WRITE,
+              PermissionLevel.ADMIN,
+              PermissionLevel.OWNER,
+            ],
+          },
+        },
+      })
+      expect(findUnique).toHaveBeenCalledWith({
+        where: { id: 'activity-1' },
+        select: { name: true, displayName: true, reviewStatus: true },
+      })
+      expect(update).toHaveBeenCalledWith({
+        where: { id: 'activity-1' },
+        data: {
+          name: 'New name',
+          displayName: 'New display name',
+          reviewStatus: ReviewStatus.MODIFIED_AFTER_REVIEW,
+        },
+      })
+      expect(emit).toHaveBeenCalledWith('invalidate', {
+        typename,
+        id: 'activity-1',
+      })
+    }
+  )
+
+  test('returns null when activity name change write permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const liveQuizFindUnique = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.changeName({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        name: 'New name',
+        displayName: 'New display name',
+      })
+    ).resolves.toEqual({ changeActivityName: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(liveQuizFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('skips activity name updates when values are unchanged', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const liveQuizFindUnique = vi.fn().mockResolvedValue({
+      name: 'Existing name',
+      displayName: 'Existing display name',
+      reviewStatus: ReviewStatus.REVIEWED,
+    })
+    const liveQuizUpdate = vi.fn()
+    const emit = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+        update: liveQuizUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+      })
+    )
+
+    await expect(
+      caller.activity.changeName({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        name: 'Existing name',
+        displayName: 'Existing display name',
+      })
+    ).resolves.toEqual({ changeActivityName: true })
+
+    expect(liveQuizUpdate).not.toHaveBeenCalled()
+    expect(emit).not.toHaveBeenCalled()
+  })
+
+  test('returns false when activity name update fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const liveQuizFindUnique = vi.fn().mockResolvedValue({
+      name: 'Old name',
+      displayName: 'Old display name',
+      reviewStatus: ReviewStatus.INCOMPLETE,
+    })
+    const liveQuizUpdate = vi.fn().mockRejectedValue(new Error('update failed'))
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+        update: liveQuizUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.changeName({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+        name: 'New name',
+        displayName: 'New display name',
+      })
+    ).resolves.toEqual({ changeActivityName: false })
+
+    expect(liveQuizUpdate).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1' },
+      data: {
+        name: 'New name',
+        displayName: 'New display name',
+        reviewStatus: undefined,
+      },
+    })
+    expect(consoleError).toHaveBeenCalledWith(
+      'Error changing live quiz name:',
+      expect.any(Error)
+    )
+    consoleError.mockRestore()
   })
 
   test('returns null for group activity grading without execute permission', async () => {

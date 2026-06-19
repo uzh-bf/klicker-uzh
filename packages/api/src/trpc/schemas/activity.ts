@@ -40,6 +40,11 @@ export const activityDetailsInput = z.object({
   activityType: z.nativeEnum(ActivityType),
 })
 
+export const changeActivityNameInput = activityDetailsInput.extend({
+  name: z.string(),
+  displayName: z.string(),
+})
+
 export const groupActivityGradingInput = z.object({
   id: z.string(),
 })

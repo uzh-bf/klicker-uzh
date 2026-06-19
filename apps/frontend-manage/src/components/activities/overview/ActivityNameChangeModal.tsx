@@ -1,8 +1,5 @@
-import { useMutation } from '@apollo/client'
-import {
-  ActivityType,
-  ChangeActivityNameDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -19,6 +16,13 @@ interface ActivityNameChangeModalProps {
   refetchActivities?: () => Promise<void>
 }
 
+const trpcActivityTypeByGraphqlActivityType = {
+  GROUP_ACTIVITY: ApiActivityType.GROUP_ACTIVITY,
+  LIVE_QUIZ: ApiActivityType.LIVE_QUIZ,
+  MICRO_LEARNING: ApiActivityType.MICRO_LEARNING,
+  PRACTICE_QUIZ: ApiActivityType.PRACTICE_QUIZ,
+} satisfies Record<ActivityType, ApiActivityType>
+
 function ActivityNameChangeModal({
   id,
   type,
@@ -31,7 +35,8 @@ function ActivityNameChangeModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
 
-  const [changeActivityName] = useMutation(ChangeActivityNameDocument)
+  const changeActivityName = trpc.activity.changeName.useMutation()
+  const trpcActivityType = trpcActivityTypeByGraphqlActivityType[type]
   const schema = Yup.object().shape({
     name: Yup.string().required(t('manage.activityWizard.activityName')),
     displayName: Yup.string().required(
@@ -58,16 +63,14 @@ function ActivityNameChangeModal({
         }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          const result = await changeActivityName({
-            variables: {
-              id,
-              type,
-              name: values.name,
-              displayName: values.displayName,
-            },
+          const result = await changeActivityName.mutateAsync({
+            activityId: id,
+            activityType: trpcActivityType,
+            name: values.name,
+            displayName: values.displayName,
           })
 
-          if (result.data?.changeActivityName) {
+          if (result.changeActivityName) {
             if (courseId) {
               await utils.course.detail.invalidate({ courseId })
             }
