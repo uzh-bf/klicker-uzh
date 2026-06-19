@@ -1,4 +1,3 @@
-import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
@@ -11,13 +10,18 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
 import useCourseWeeklyDates from '../../lib/hooks/useCourseWeeklyDates'
+import type { RouterOutputs } from '../../lib/trpc'
 import SuspendedCourseLeaderboard from './SuspendedCourseLeaderboard'
 
 dayjs.extend(customParseFormat)
 
 export type InvididualLeaderboardEntry = Omit<
-  LeaderboardEntry,
-  'level' | 'participantId' | 'participation'
+  NonNullable<
+    NonNullable<
+      RouterOutputs['course']['leaderboard']['courseLeaderboard']
+    >['leaderboard']
+  >[number],
+  'level' | 'participantId'
 >
 
 interface IndividualLeaderboardProps {

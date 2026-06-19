@@ -280,6 +280,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04P Course Detail Generated Type Cleanup
+
+Status: complete. Scope was limited to generated GraphQL enum/type import
+cleanup in already-migrated manage course detail list and leaderboard child
+components. This did not touch S05 realtime/cockpit flows, Apollo provider
+removal, generated file deletion, or S06 cleanup.
+
+Slice: S04P Course Detail Generated Type Cleanup
+
+GraphQL operation(s): none; generated type/enum import cleanup only.
+
+Behavior source:
+
+- Existing generated enum string values.
+- `course.detail` and `course.leaderboard` tRPC outputs from completed S04J/S04K
+  course-detail and leaderboard slices.
+- Local mixed-state `ActivityInfo`/`ActivityType` and `LocaleType` constants.
+
+Write scope:
+
+- `apps/frontend-manage/src/pages/courses/[id]/index.tsx`
+- `apps/frontend-manage/src/components/courses/{GroupActivityList,LiveQuizList,MicroLearningList,PracticeQuizList,IndividualLeaderboard}.tsx`
+- this plan progress entry
+
+Implementation:
+
+- Repointed course activity list children from generated GraphQL activity types
+  to local mixed-state activity constants/types.
+- Reused local `LocaleType` for PWA/deep-link language construction.
+- Derived the individual leaderboard export type from
+  `RouterOutputs['course']['leaderboard']` instead of generated GraphQL
+  `LeaderboardEntry`.
+
+Verification:
+
+- `pnpm exec prettier --write <S04P course files>`: passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check`: passed. Expected warning:
+  Node engine mismatch because the shell uses Node 26 while the repo pins Node
+  20.
+- `pnpm --filter @klicker-uzh/frontend-manage build`: passed. Expected warning
+  set remained Node 26 engine mismatch, `next-intl` Pages/App Router config
+  warning, stale Browserslist data, large page-data warnings, and existing
+  `MISSING_MESSAGE` output for `/qr/[...args]`.
+- Targeted source audit passed:
+  `rg -n "@klicker-uzh/graphql/dist/ops" apps/frontend-manage/src/pages/courses/[id]/index.tsx apps/frontend-manage/src/components/courses/GroupActivityList.tsx apps/frontend-manage/src/components/courses/PracticeQuizList.tsx apps/frontend-manage/src/components/courses/MicroLearningList.tsx apps/frontend-manage/src/components/courses/LiveQuizList.tsx apps/frontend-manage/src/components/courses/IndividualLeaderboard.tsx --glob '!**/*.d.ts'`.
+- Browser runtime verification could not run because the local manage app was
+  not listening on `127.0.0.1:3002`. `curl -sS -I
+  http://127.0.0.1:3002/courses/test-course` failed with connection refused,
+  and `npx agent-browser open http://127.0.0.1:3002/courses/test-course`
+  failed with `net::ERR_CONNECTION_REFUSED`. Screenshot evidence:
+  `/tmp/agent-browser-shots/s04-course-type-cleanup-connection-refused.png`.
+
+Residual S04P:
+
+- Generated type cleanup remains open for migrated manage element list/edit
+  helper files.
+
 ### 2026-06-19 Completed: S04P Template and Question Preview Generated Type Cleanup
 
 Status: complete. Scope was limited to generated GraphQL enum/type import

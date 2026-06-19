@@ -4,7 +4,6 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { ActivityInfo, LocaleType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
@@ -29,6 +28,8 @@ import GroupActivityList from '../../../components/courses/GroupActivityList'
 import LiveQuizList from '../../../components/courses/LiveQuizList'
 import MicroLearningList from '../../../components/courses/MicroLearningList'
 import PracticeQuizList from '../../../components/courses/PracticeQuizList'
+import type { ActivityInfo } from '../../../lib/constants/activityEnums'
+import type { LocaleType } from '../../../lib/evaluationTypes'
 import { trpc } from '../../../lib/trpc'
 
 const REVIEW_STATUS_REVIEWED = 'REVIEWED'

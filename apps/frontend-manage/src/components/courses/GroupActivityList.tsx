@@ -1,7 +1,7 @@
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
-import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ActivityInfo, ActivityType } from '../../lib/constants/activityEnums'
 import ActivityList from '../activities/overview/ActivityList'
 import ActivityListLegend from '../activities/overview/ActivityListLegend'
 
