@@ -51,6 +51,18 @@ export type FreeTextElementOptions = {
   restrictions?: {
     maxLength?: number | null
   } | null
+  solutions?: string[] | null
+}
+
+export type FreeTextInstanceEvaluation = InstanceEvaluation & {
+  answers?:
+    | {
+        count: number
+        value: string
+      }[]
+    | null
+  explanation?: string | null
+  solutions?: string[] | null
 }
 
 export type NumericalElementOptions = {

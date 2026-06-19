@@ -213,7 +213,11 @@ Current next action:
   locally. Scope was limited to replacing the `PracticeQuizPoints` generated
   `InstanceEvaluation` import with a narrow local structural base evaluation
   type.
-- S05G-Y next: continue with the next smallest shared-components generated
+- S05G-Y free-text question/evaluation generated type cleanup is complete
+  locally. Scope was limited to replacing `FreeTextQuestion` / `FTEvaluation`
+  generated `FreeTextElementOptions` and `FreeTextInstanceEvaluation` imports
+  with narrow local structural types.
+- S05G-Z next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1991,6 +1995,59 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/evaluation/PracticeQuizPoints.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/evaluation/PracticeQuizPoints.tsx packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-Y Free-Text Question/Evaluation Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove generated GraphQL
+imports from the free-text shared question/evaluation leaf components without touching
+GraphQL/Apollo runtime paths.
+
+Slice: S05G-Y Free-Text Question/Evaluation Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `FreeTextElementOptions` and
+`FreeTextInstanceEvaluation` fields consumed by
+`packages/shared-components/src/FreeTextQuestion.tsx` and
+`packages/shared-components/src/evaluation/FTEvaluation.tsx`.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/FreeTextQuestion.tsx`
+- `packages/shared-components/src/evaluation/FTEvaluation.tsx`
+
+Intended behavior:
+
+- Keep free-text answer input validation and max-length behavior unchanged.
+- Keep practice-quiz free-text explanation, point summary, answer distribution,
+  and sample-solution rendering unchanged.
+- Remove generated GraphQL type imports from the two free-text leaf components
+  by using local structural shared-component types.
+
+What changed:
+
+- Extended local `FreeTextElementOptions` in
+  `packages/shared-components/src/elementTypes.ts` with optional `solutions`.
+- Added local structural `FreeTextInstanceEvaluation` in
+  `packages/shared-components/src/elementTypes.ts`.
+- Switched `packages/shared-components/src/FreeTextQuestion.tsx` and
+  `packages/shared-components/src/evaluation/FTEvaluation.tsx` to the local
+  structural free-text types.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/FreeTextQuestion.tsx packages/shared-components/src/evaluation/FTEvaluation.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/FreeTextQuestion.tsx packages/shared-components/src/evaluation/FTEvaluation.tsx packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 

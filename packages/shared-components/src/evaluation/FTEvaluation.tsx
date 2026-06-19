@@ -1,9 +1,9 @@
+import { useTranslations } from 'next-intl'
+import React from 'react'
 import type {
   FreeTextElementOptions,
   FreeTextInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
-import React from 'react'
+} from '../elementTypes'
 
 interface FTEvaluationProps {
   options: FreeTextElementOptions
