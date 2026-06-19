@@ -20,6 +20,15 @@ export const ElementType = {
 
 export type ElementType = (typeof ElementType)[keyof typeof ElementType]
 
+export const FlashcardCorrectness = {
+  Correct: 'CORRECT',
+  Incorrect: 'INCORRECT',
+  Partial: 'PARTIAL',
+} as const
+
+export type FlashcardCorrectness =
+  (typeof FlashcardCorrectness)[keyof typeof FlashcardCorrectness]
+
 export type Choice = {
   correct?: boolean | null
   feedback?: string | null

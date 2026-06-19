@@ -201,7 +201,11 @@ Current next action:
   `CaseStudyElementOptions` import with a narrow local structural option type.
   Broader case-study question/evaluation generated types stay live for later
   slices.
-- S05G-V next: continue with the next smallest shared-components generated
+- S05G-V flashcard correctness generated enum cleanup is complete locally.
+  Scope was limited to replacing the shared `Flashcard` / `StudentElement` generated
+  `FlashcardCorrectness` import with a local enum constant/type matching the
+  generated UI shape.
+- S05G-W next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1818,6 +1822,64 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/questions/CSCase.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/questions/CSCase.tsx packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-V Flashcard Correctness Enum Cleanup
+
+Status: complete locally. Scope remained S05 only: remove generated GraphQL
+`FlashcardCorrectness` imports from the shared flashcard rendering path while
+keeping broader `StudentElement` element/evaluation types generated until their
+own follow-up cleanup slice.
+
+Slice: S05G-V Flashcard Correctness Enum Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `FlashcardCorrectness` enum values
+for the shared flashcard UI; values stay `CORRECT`, `PARTIAL`, and `INCORRECT`
+with generated-compatible `Correct`, `Partial`, and `Incorrect` property names.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/Flashcard.tsx`
+- `packages/shared-components/src/StudentElement.tsx`
+
+Intended behavior:
+
+- Keep flashcard response button rendering and selected-state behavior
+  unchanged.
+- Remove generated GraphQL `FlashcardCorrectness` imports from the shared
+  flashcard path.
+- Keep generated GraphQL enum payload values accepted by structural typing while
+  already migrated tRPC DTO payloads can also call the component.
+
+What changed:
+
+- Added local `FlashcardCorrectness` constant/type in
+  `packages/shared-components/src/elementTypes.ts`.
+- Switched `packages/shared-components/src/Flashcard.tsx` to the local
+  correctness constant/type.
+- Switched `packages/shared-components/src/StudentElement.tsx` flashcard
+  response typing to the local correctness type so local flashcard values remain
+  assignable to shared student response state.
+
+Verification:
+
+- Initial `pnpm --filter @klicker-uzh/shared-components check` failed because
+  `StudentElement` still used the generated enum type while `Flashcard` returned
+  the local string-literal enum values.
+- `pnpm --filter @klicker-uzh/shared-components check` passed after moving
+  `StudentElement` flashcard response typing to the local type.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed after the same fix.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed after the same fix.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/Flashcard.tsx packages/shared-components/src/StudentElement.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "FlashcardCorrectness.*@klicker-uzh/graphql/dist/ops|@klicker-uzh/graphql/dist/ops.*FlashcardCorrectness" packages/shared-components/src/Flashcard.tsx packages/shared-components/src/StudentElement.tsx packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 

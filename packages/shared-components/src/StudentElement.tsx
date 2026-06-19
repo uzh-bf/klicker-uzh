@@ -1,6 +1,5 @@
 import type {
   ElementInstance,
-  FlashcardCorrectness,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
@@ -13,6 +12,7 @@ import Flashcard from './Flashcard'
 import FreeTextQuestion from './FreeTextQuestion'
 import NumericalQuestion from './NumericalQuestion'
 import SelectionQuestion from './SelectionQuestion'
+import type { FlashcardCorrectness } from './elementTypes'
 
 export type ElementChoicesType =
   | ElementType.Sc
