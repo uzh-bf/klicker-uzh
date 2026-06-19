@@ -12,12 +12,12 @@ import {
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
-  SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   FormikAlphaNumericPinField,
@@ -161,9 +161,7 @@ function Index({ id }: { id: string }) {
       variables: { id },
     }
   )
-  const { data: selfData } = useQuery(SelfDocument, {
-    variables: { liveQuizId: id },
-  })
+  const { data: selfData } = trpc.participant.self.useQuery({ liveQuizId: id })
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
   useEffect(() => {

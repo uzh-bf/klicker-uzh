@@ -121,6 +121,14 @@ Current next action:
   Scope was limited to replacing `GetLiveQuizLeaderboardDocument` in the PWA
   leaderboard component with a participant tRPC query while keeping GraphQL
   live. The larger PWA `/session/[id]` data query remains GraphQL.
+- S05G-E PWA live-quiz session self-query cleanup is complete locally. It keeps
+  test GraphQL coverage visibly running against `packages/graphql`, keeps the
+  matching tRPC API package coverage visibly running against `packages/api`, and
+  migrates only the PWA `/session/[id]` self-query from `SelfDocument` to
+  `trpc.participant.self`; pin and SSR live-quiz behavior remain GraphQL.
+- S05G-F next: migrate the PWA `/session/[id]` pin and running-live-quiz data
+  path in small slices, preserving GraphQL-equivalent PIN, assessment-domain,
+  auth redirect, and participation error semantics.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -842,6 +850,57 @@ Verification:
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining PWA `/session/[id]`
 GraphQL query is still a blocker for S06.
+
+### 2026-06-19 Completed: S05G-E PWA Live-Quiz Session Self Query Cleanup
+
+Status: complete locally. Scope was intentionally narrow: update the branch goal
+with the package-test parity requirement and replace only the PWA live-quiz
+session page's `SelfDocument` query with the existing tRPC participant self
+query.
+
+Slice: S05G-E PWA Live-Quiz Session Self Query Cleanup
+
+GraphQL operation(s): `SelfDocument` only for
+`apps/frontend-pwa/src/pages/session/[id].tsx`.
+
+GraphQL resolver(s): `Query.self`.
+
+tRPC router.procedure: existing `participant.self`.
+
+Active frontend consumer: `apps/frontend-pwa/src/pages/session/[id].tsx`.
+
+What changed:
+
+- Updated this plan's current next steps so GraphQL package tests remain tied to
+  `packages/graphql` while the tRPC API package tests cover `packages/api`.
+- Removed `SelfDocument` from the PWA live-quiz session page.
+- Replaced the Apollo self query with
+  `trpc.participant.self.useQuery({ liveQuizId: id })`.
+- Left `GetRunningLiveQuizDocument`, `SetLiveQuizPinDocument`, and the SSR
+  `GetFeedbacksDocument` prefetch on GraphQL for follow-up S05 slices.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm exec prettier --check <S05G-E touched files>` passed.
+- Focused audit confirmed `SelfDocument` no longer appears in
+  `apps/frontend-pwa/src/pages/session/[id].tsx`; remaining GraphQL hits in that
+  page are the intentionally deferred running-live-quiz query, pin mutation, and
+  SSR feedback prefetch.
+- `pnpm --filter @klicker-uzh/api test` passed: 42 files, 437 tests.
+- Direct local `pnpm --filter @klicker-uzh/graphql test` did not pass without
+  the CI-provisioned Postgres/Hatchet environment: failures were
+  `HATCHET_CLIENT_TOKEN` missing and database SASL password configuration. The
+  GitHub workflow remains the GraphQL test source of truth here: it starts
+  Postgres, Hatchet, Redis services, creates the Hatchet token, sets
+  `DATABASE_URL`, then runs `pnpm vitest run` from `packages/graphql`.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining PWA `/session/[id]`
+GraphQL live-quiz query and pin mutation are still blockers for PWA Apollo
+removal and S06.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -11343,7 +11402,11 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Run final focused checks for S05A after the WebSocket routing fix.
-2. Commit, push, update the PR, and monitor CI.
-3. Continue with remaining S05 realtime consumers only after S05A is green. Do
-   not start S06 cleanup without explicit approval.
+1. Verify the GraphQL package workflow still targets `packages/graphql` and the
+   tRPC API package workflow covers the same package-test purpose for
+   `packages/api`.
+2. Continue S05G in small app-level slices with the remaining PWA
+   `/session/[id]` pin mutation, running-live-quiz data query, and SSR redirect
+   behavior.
+3. Continue through the remaining S05 Apollo consumers only after each slice is
+   green. Do not start S06 cleanup without explicit approval.
