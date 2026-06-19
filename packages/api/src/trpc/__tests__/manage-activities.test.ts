@@ -2058,6 +2058,132 @@ describe('manage activity read routers', () => {
     expect(practiceQuizUpdate).not.toHaveBeenCalled()
   })
 
+  test('schedules live quiz publication through the activity router', async () => {
+    const availableFrom = new Date('2099-01-01T10:00:00.000Z')
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const liveQuizUpdate = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      name: 'Live Quiz',
+      status: PublicationStatus.SCHEDULED,
+      availableFrom,
+    })
+    const schedule = vi.fn().mockResolvedValue({
+      metadata: { id: 'publication-task' },
+    })
+    const emit = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        update: liveQuizUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        tasks: {
+          publishScheduledLiveQuiz: { schedule },
+        } as unknown as TRPCContext['tasks'],
+      })
+    )
+
+    await expect(
+      caller.activity.scheduleLiveQuiz({
+        activityId: 'live-quiz-1',
+        availableFrom,
+      })
+    ).resolves.toEqual({
+      scheduleLiveQuiz: {
+        id: 'live-quiz-1',
+        name: 'Live Quiz',
+        status: PublicationStatus.SCHEDULED,
+        availableFrom,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(schedule).toHaveBeenCalledWith(availableFrom, {
+      liveQuizId: 'live-quiz-1',
+    })
+    expect(liveQuizUpdate).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1', isDeleted: false },
+      data: {
+        availableFrom,
+        status: PublicationStatus.SCHEDULED,
+        scheduledPublicationTaskId: 'publication-task',
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        availableFrom: true,
+      },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'LiveQuiz',
+      id: 'live-quiz-1',
+    })
+  })
+
+  test('returns null when live quiz scheduling execute permission is missing', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue(null)
+    const liveQuizUpdate = vi.fn()
+    const schedule = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        update: liveQuizUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        tasks: {
+          publishScheduledLiveQuiz: { schedule },
+        } as unknown as TRPCContext['tasks'],
+      })
+    )
+
+    await expect(
+      caller.activity.scheduleLiveQuiz({
+        activityId: 'live-quiz-1',
+        availableFrom: new Date('2099-01-01T10:00:00.000Z'),
+      })
+    ).resolves.toEqual({ scheduleLiveQuiz: null })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(schedule).not.toHaveBeenCalled()
+    expect(liveQuizUpdate).not.toHaveBeenCalled()
+  })
+
   test.each([
     {
       activityType: ActivityType.MICRO_LEARNING,

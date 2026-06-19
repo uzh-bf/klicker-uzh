@@ -1,10 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetUserActivitiesDocument,
-  ScheduleLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -27,9 +22,7 @@ function LiveQuizSchedulingModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const [scheduleLiveQuiz, { loading: liveQuizScheduling }] = useMutation(
-    ScheduleLiveQuizDocument
-  )
+  const scheduleLiveQuiz = trpc.activity.scheduleLiveQuiz.useMutation()
 
   return (
     <Modal
@@ -52,17 +45,21 @@ function LiveQuizSchedulingModal({
         initialValues={{ availableFrom: undefined }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          const result = await scheduleLiveQuiz({
-            variables: {
-              id: activityId,
-              availableFrom: dayjs(values.availableFrom).utc().format(),
-            },
-            refetchQueries: [{ query: GetUserActivitiesDocument }],
-          })
-          if (courseId && result.data?.scheduleLiveQuiz?.id) {
-            await utils.course.detail.invalidate({ courseId })
+          try {
+            const result = await scheduleLiveQuiz.mutateAsync({
+              activityId,
+              availableFrom: dayjs(values.availableFrom).utc().toDate(),
+            })
+            if (result.scheduleLiveQuiz?.id) {
+              await utils.activity.userActivities.invalidate()
+              if (courseId) {
+                await utils.course.detail.invalidate({ courseId })
+              }
+            }
+            onClose()
+          } finally {
+            setSubmitting(false)
           }
-          onClose()
         }}
         validationSchema={yup.object().shape({
           availableFrom: yup
@@ -77,7 +74,7 @@ function LiveQuizSchedulingModal({
             ),
         })}
       >
-        {({ isValid }) => {
+        {({ isValid, isSubmitting }) => {
           return (
             <Form className="flex flex-row items-end justify-between">
               <FormikDatetimePicker
@@ -99,11 +96,11 @@ function LiveQuizSchedulingModal({
               <Button
                 primary
                 type="submit"
-                loading={liveQuizScheduling}
+                loading={isSubmitting}
                 disabled={!isValid}
                 data={{ cy: 'schedule-live-quiz-publication' }}
               >
-                <Button.Icon icon={faClock} loading={liveQuizScheduling} />
+                <Button.Icon icon={faClock} loading={isSubmitting} />
                 <Button.Label>
                   {t('manage.course.confirmScheduling')}
                 </Button.Label>

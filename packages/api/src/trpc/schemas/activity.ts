@@ -53,6 +53,11 @@ export const extendActivityInput = activityDetailsInput.extend({
   endDate: z.date(),
 })
 
+export const scheduleLiveQuizInput = z.object({
+  activityId: z.string(),
+  availableFrom: z.date().nullish(),
+})
+
 export const groupActivityGradingInput = z.object({
   id: z.string(),
 })

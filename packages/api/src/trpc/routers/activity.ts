@@ -38,6 +38,10 @@ import {
   type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import type { z } from 'zod'
+import {
+  startLiveQuiz,
+  type LiveQuizExecutionContext,
+} from '../../services/liveQuizExecution.js'
 import { applyManageActivityBatchOperations } from '../../services/manageActivityBatchOperations.js'
 import {
   correctAssessmentPointsInstance,
@@ -71,7 +75,11 @@ import {
 } from '../dto/manageAssessmentResults.js'
 import { router } from '../init.js'
 import { hasActivityPermission, hasCoursePermission } from '../permissions.js'
-import { userFullAccessProcedure, userProcedure } from '../procedures.js'
+import {
+  userFullAccessProcedure,
+  userProcedure,
+  userSessionExecProcedure,
+} from '../procedures.js'
 import {
   activityDetailsInput,
   activityReviewStatusInput,
@@ -99,6 +107,7 @@ import {
   outdatedElementInstancesInput,
   previousPointCorrectionsInput,
   publishActivityInput,
+  scheduleLiveQuizInput,
   studentCourseResultsInput,
   templateInformationInput,
   templatePreviewAnswerCollectionEntriesInput,
@@ -715,6 +724,12 @@ type ActivitySchedulerTasks = {
       payload: { practiceQuizId: string }
     ) => Promise<ScheduledTaskResult>
   }
+  publishScheduledLiveQuiz?: {
+    schedule: (
+      date: Date,
+      payload: { liveQuizId: string }
+    ) => Promise<ScheduledTaskResult>
+  }
   publishScheduledMicroLearning?: {
     schedule: (
       date: Date,
@@ -756,6 +771,13 @@ type PublishedActivityRecord = {
   status: PublicationStatus
 }
 
+type ScheduledLiveQuizRecord = {
+  id: string
+  name: string
+  status: PublicationStatus
+  availableFrom?: Date | null
+}
+
 type ExtendedActivityRecord = {
   id: string
   scheduledEndAt: Date
@@ -767,6 +789,17 @@ function getActivitySchedulerTasks(ctx: TRPCContext) {
 
 function getScheduledTaskId(task: ScheduledTaskResult) {
   return task.metadata.id
+}
+
+function toScheduledLiveQuizRecord(quiz: ScheduledLiveQuizRecord | null) {
+  if (!quiz) return null
+
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    status: quiz.status,
+    availableFrom: quiz.availableFrom ?? null,
+  }
 }
 
 async function changeActivityNameForType({
@@ -1204,6 +1237,73 @@ async function publishActivity({
   }
 
   return null
+}
+
+async function scheduleLiveQuizActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+    availableFrom?: Date | null
+  }
+}) {
+  const canExecute = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: ActivityType.LIVE_QUIZ,
+    },
+    PermissionLevel.EXECUTE
+  )
+
+  if (!canExecute) return null
+
+  if (input.availableFrom && input.availableFrom > new Date()) {
+    try {
+      const scheduledTask = await getActivitySchedulerTasks(
+        ctx
+      )?.publishScheduledLiveQuiz?.schedule(input.availableFrom, {
+        liveQuizId: input.activityId,
+      })
+
+      if (!scheduledTask) {
+        throw new Error('Live quiz publication scheduler unavailable')
+      }
+
+      const updatedQuiz = await getPrisma(ctx).liveQuiz.update({
+        where: { id: input.activityId, isDeleted: false },
+        data: {
+          availableFrom: input.availableFrom,
+          status: PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: getScheduledTaskId(scheduledTask),
+        },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          availableFrom: true,
+        },
+      })
+
+      ctx.emitter?.emit('invalidate', {
+        typename: 'LiveQuiz',
+        id: input.activityId,
+      })
+      return toScheduledLiveQuizRecord(updatedQuiz)
+    } catch (error) {
+      console.error('Error scheduling live quiz publication:', error)
+      return null
+    }
+  }
+
+  const startedLiveQuiz = await startLiveQuiz(
+    { id: input.activityId },
+    ctx as unknown as LiveQuizExecutionContext
+  )
+
+  return toScheduledLiveQuizRecord(startedLiveQuiz)
 }
 
 async function extendMicroLearningActivity({
@@ -3189,6 +3289,12 @@ export const activityRouter = router({
     .input(publishActivityInput)
     .mutation(async ({ ctx, input }) => ({
       publishActivity: await publishActivity({ ctx, input }),
+    })),
+
+  scheduleLiveQuiz: userSessionExecProcedure
+    .input(scheduleLiveQuizInput)
+    .mutation(async ({ ctx, input }) => ({
+      scheduleLiveQuiz: await scheduleLiveQuizActivity({ ctx, input }),
     })),
 
   extend: userFullAccessProcedure

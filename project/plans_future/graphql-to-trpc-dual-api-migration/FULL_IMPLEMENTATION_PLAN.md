@@ -280,6 +280,83 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Live Quiz Scheduling Action
+
+Status: complete for the scoped code migration and automated verification.
+Scope was limited to replacing `LiveQuizSchedulingModal`'s Apollo
+`ScheduleLiveQuizDocument` mutation and `GetUserActivitiesDocument` refetch with
+`trpc.activity.scheduleLiveQuiz` plus tRPC invalidation. This preserved
+session-exec auth, EXECUTE permission checks, future scheduled publication
+through Hatchet, the existing immediate-start fallback for non-future inputs,
+and course/activity list refresh. This did not migrate live quiz start
+hooks/wizards, delete/reset/end actions, cockpit/lecturer realtime pages, S05,
+or S06.
+
+Slice: S04L Live Quiz Scheduling Action
+
+GraphQL operation(s):
+
+- `ScheduleLiveQuizDocument`
+- `GetUserActivitiesDocument` refetch in the scheduling modal
+
+Behavior source:
+
+- `packages/graphql/src/services/liveQuizzes.ts` `scheduleLiveQuiz`
+- Existing GraphQL mutation permission wrapper in
+  `packages/graphql/src/schema/mutation.ts`
+- Existing tRPC live-quiz execution helper in
+  `packages/api/src/services/liveQuizExecution.ts`
+
+Implemented:
+
+- Added `scheduleLiveQuizInput` and `activity.scheduleLiveQuiz`.
+- Added the scheduled publication branch using `publishScheduledLiveQuiz`,
+  `LiveQuiz.status = SCHEDULED`, `availableFrom`, and
+  `scheduledPublicationTaskId`.
+- Preserved the existing non-future input fallback through the shared tRPC
+  `startLiveQuiz` execution helper instead of importing GraphQL runtime code.
+- Migrated `LiveQuizSchedulingModal` from Apollo generated mutation/refetch
+  documents to tRPC, passing a SuperJSON-serializable `Date` and invalidating
+  `activity.userActivities` plus course detail when relevant.
+- Added focused API tests for successful scheduled publication and missing
+  execute permission.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L live quiz scheduling files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`:
+  passed, including 40 API test files / 397 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known existing warnings.
+- Focused source audit for
+  `ScheduleLiveQuizDocument|GetUserActivitiesDocument|@apollo/client` in the
+  migrated scheduling files: no matches.
+- `git diff --check`: passed.
+- Browser attempt: frontend-manage dev server started and `curl` confirmed
+  `http://127.0.0.1:3002` returned `200`, but `npx agent-browser` landed on
+  `chrome-error://chromewebdata/` / blank screenshot before the UI could be
+  interacted with. Screenshot:
+  - `/tmp/agent-browser-shots/s04-livequiz-schedule-01-initial.png`
+- Runtime HTTP smoke: direct local POST to
+  `/api/trpc/activity.scheduleLiveQuiz` with a future `availableFrom`, a
+  nonexistent live quiz id, and a local signed lecturer JWT returned
+  `scheduleLiveQuiz: null`, verifying route registration, auth, permission
+  denial, and SuperJSON `Date` decoding without mutating local state.
+
+Residual risk / next S04 work:
+
+- Successful runtime verification of the scheduled-publication happy path still
+  needs a real local `HATCHET_CLIENT_TOKEN` that can create scheduled runs.
+- Continue remaining S04-only action/modals and generated type cleanup; pause
+  before S05/S06.
+
 ### 2026-06-19 Completed: S04L Activity Extension Actions
 
 Status: complete for the scoped code migration and automated verification.
