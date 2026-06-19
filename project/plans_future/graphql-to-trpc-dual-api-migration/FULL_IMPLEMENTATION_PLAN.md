@@ -184,7 +184,11 @@ Current next action:
   complete locally. It removes generated GraphQL imports from the choice
   answer-option/feedback components by using local enum constants and narrow
   structural `Choice` / `QuestionFeedback` types.
-- S05G-R next: continue with the next smallest shared-components generated
+- S05G-R GraphQL/tRPC package logic test parity is complete locally. It keeps
+  the focused GraphQL package tests visibly running against `packages/graphql`
+  and adds a `packages/api` parity test covering the same stack-feedback and
+  random-group behavior in the tRPC API package workflow.
+- S05G-S next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1601,6 +1605,57 @@ Verification:
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. Remaining shared-components generated
 GraphQL imports are still blockers for S06.
+
+### 2026-06-19 Completed: S05G-R GraphQL/tRPC Package Logic Test Parity
+
+Status: complete locally. User requested making sure the GraphQL package test still
+works against `packages/graphql` and that a new tRPC API package test covers the
+same behavior on the `packages/api` side before continuing remaining slices.
+
+Slice: S05G-R GraphQL/tRPC Package Logic Test Parity
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source:
+
+- `packages/graphql/test/responses.test.ts`
+- `packages/graphql/test/randomGroups.test.ts`
+
+tRPC router.procedure: none; this is `packages/api` package-logic parity inside
+the tRPC API package test workflow, not a new runtime endpoint.
+
+Intended behavior:
+
+- Keep `.github/workflows/test-graphql.yml` visibly running Vitest from
+  `packages/graphql`.
+- Keep `.github/workflows/test-api.yml` visibly running Vitest from
+  `packages/api`.
+- Add focused `packages/api` Vitest coverage for the same stack-feedback and
+  random-group logic currently guarded by the GraphQL package tests.
+- Keep GraphQL, Apollo, `/api/graphql`, generated operations, and GraphQL
+  package tests live.
+
+What changed:
+
+- Exported the API-local stack status and random-group helper functions so the
+  API package can test its own GraphQL-equivalent behavior directly.
+- Added `packages/api/src/trpc/__tests__/graphql-package-parity.test.ts`
+  mirroring the GraphQL package response and random-group test coverage.
+- Kept the API random-group final split helper non-mutating by copying the
+  participant id array before grouping.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/graphql exec vitest run test/responses.test.ts test/randomGroups.test.ts`
+  passed from `packages/graphql`: 2 files, 6 tests.
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/graphql-package-parity.test.ts`
+  passed from `packages/api`: 1 file, 6 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm exec prettier --check packages/api/src/services/hatchetHandlers.ts packages/api/src/services/participantStackEvaluations.ts packages/api/src/trpc/__tests__/graphql-package-parity.test.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `git diff --check` passed.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -12102,11 +12157,10 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Verify the GraphQL package workflow still targets `packages/graphql` and the
-   tRPC API package workflow covers the same package-test purpose for
-   `packages/api`; keep adding focused tRPC parity tests as GraphQL session
-   behavior is migrated.
-2. Continue S05G-R with the next smallest active shared-components generated
+1. Run the focused GraphQL package tests from `packages/graphql` and the new
+   `packages/api` tRPC package parity test together; mark S05G-R complete only
+   when both pass.
+2. Continue S05G-S with the next smallest active shared-components generated
    enum/type cleanup while keeping GraphQL/Apollo live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

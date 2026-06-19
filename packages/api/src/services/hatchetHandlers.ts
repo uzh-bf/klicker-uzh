@@ -171,7 +171,7 @@ interface RandomGroupAssignmentArgs {
   preferredGroupSize: number
 }
 
-function splitGroupsRunning({
+export function splitGroupsRunning({
   participantIds,
   preferredGroupSize,
 }: RandomGroupAssignmentArgs) {
@@ -190,7 +190,7 @@ function splitGroupsRunning({
   return { groups: [], remainingParticipantIds: participantIds }
 }
 
-function splitGroupsFinal({
+export function splitGroupsFinal({
   participantIds,
   preferredGroupSize,
 }: RandomGroupAssignmentArgs) {
@@ -198,11 +198,12 @@ function splitGroupsFinal({
     return []
   }
 
-  let studentsInPool = participantIds.length
+  const participantIdsCopy = [...participantIds]
+  let studentsInPool = participantIdsCopy.length
   if (studentsInPool % preferredGroupSize === 0) {
     const groups: string[][] = []
     while (studentsInPool > 0) {
-      const group = participantIds.splice(0, preferredGroupSize)
+      const group = participantIdsCopy.splice(0, preferredGroupSize)
       groups.push(group)
       studentsInPool -= preferredGroupSize
     }
@@ -214,7 +215,7 @@ function splitGroupsFinal({
   const groups: string[][] = Array.from({ length: numOfGroups }, () => [])
 
   let groupIx = 0
-  for (const participantId of participantIds) {
+  for (const participantId of participantIdsCopy) {
     groups[groupIx]!.push(participantId)
     groupIx = (groupIx + 1) % numOfGroups
   }

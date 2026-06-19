@@ -227,7 +227,7 @@ type EvaluationAggregationReturn = {
   stackScore: number | undefined
 }
 
-function combineStackStatus({
+export function combineStackStatus({
   prevStatus,
   newStatus,
 }: {
