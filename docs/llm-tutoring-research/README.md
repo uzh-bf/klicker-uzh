@@ -47,5 +47,5 @@ After all topic files exist:
 
 1. Check source coverage and citation quality.
 2. Extract reusable tutor skills and evaluation metrics.
-3. Merge findings into `project/LLM_TUTORING_RESEARCH.md`.
+3. Merge findings into `docs/llm-tutoring-research/LLM_TUTORING_RESEARCH.md`.
 4. Create an implementation slice for MathTutorBench plus `tutor-skills-v1`.

@@ -6,8 +6,8 @@ Status: implementation complete, validation in progress
 
 Inputs:
 
-- Research synthesis: `project/LLM_TUTORING_RESEARCH.md`
-- Topic notes: `project/llm-tutoring-research/`
+- Research synthesis: `docs/llm-tutoring-research/LLM_TUTORING_RESEARCH.md`
+- Topic notes: `docs/llm-tutoring-research/`
 - Current chat route: `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts`
 - Current Benibot prompt: `packages/prisma-data/src/data/data/tutorMode.txt`
 - Mastra worktree reviewed: `/Users/roland/.codex/worktrees/f891/klicker-uzh`, branch `codex/mastra-chat-openrouter-smoke` / `feat/chat-mastra-prototype`, head `6146ebfc14`
@@ -24,7 +24,7 @@ Implemented on branch `codex/tutor-research-mastra-plan`:
 - Slice 4: added move policy and prompt composer.
 - Slice 5: added verifier preflight and posthoc checks.
 - Slice 6: added evidence-id extraction and citation-fidelity tracking.
-- Slice 7: added lecturer-authored tutor artifact schema, migration, seed data, and chat-api lookup.
+- Slice 7: added lecturer-authored tutor artifact schema, migration, local seed fixtures, and chat-api lookup.
 - Slice 8: added payload-minimized tutor events and feedback uptake detection.
 - Slice 9: added privacy gate for persistent tutor memory.
 - Slice 10: wired dormant Mastra Memory with Postgres storage behind the privacy gate.

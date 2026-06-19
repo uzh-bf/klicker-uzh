@@ -6,6 +6,9 @@ type SeedTutorArtifactOptions = {
   skillPackPrompt: string
 }
 
+// Local/test fixture data for the seeded Benibot chatbot only.
+// Production tutor artifacts must be authored/imported into the DB per course,
+// not hardcoded here.
 const skillComponents = [
   {
     slug: 'wacc',

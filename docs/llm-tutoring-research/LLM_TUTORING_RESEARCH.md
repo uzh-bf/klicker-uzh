@@ -790,7 +790,7 @@ Main gaps against the research:
 
 ## Broader Research Consolidation
 
-This section consolidates the 15 topic notes in `project/llm-tutoring-research/`. Each note has its own sources and Scite-unavailable caveat.
+This section consolidates the 15 topic notes in `docs/llm-tutoring-research/`. Each note has its own sources and Scite-unavailable caveat.
 
 ### 1. Tutor Policy Should Come From ITS, Not Chat Personality
 
@@ -804,7 +804,7 @@ Klicker implication:
 - Version policy separately from model choice.
 - Evaluate local skill gains and transfer, not just chat quality.
 
-Relevant topic note: `project/llm-tutoring-research/01-classic-its.md`
+Relevant topic note: `docs/llm-tutoring-research/01-classic-its.md`
 
 ### 2. Learning Science Adds Routing Rules
 
@@ -821,7 +821,7 @@ Klicker implication:
 
 The tutor should not expose "Socratic mode" as a fixed personality. It should route between `socratic_question`, `hint`, `worked_micro_step`, `self_explain`, `retrieval_probe`, `fading`, and `mastery_gate`.
 
-Relevant topic note: `project/llm-tutoring-research/02-learning-science.md`
+Relevant topic note: `docs/llm-tutoring-research/02-learning-science.md`
 
 ### 3. Feedback Needs Feed-Up, Feed-Back, Feed-Forward
 
@@ -837,7 +837,7 @@ Klicker implication:
 
 Add a feedback rubric with independent scores for goal clarity, error diagnosis, next action, specificity, tone, and concision.
 
-Relevant topic note: `project/llm-tutoring-research/03-formative-feedback.md`
+Relevant topic note: `docs/llm-tutoring-research/03-formative-feedback.md`
 
 ### 4. Learner State Should Drive Skill Loading
 
@@ -868,7 +868,7 @@ Klicker implication:
 
 Do not build one giant tutor prompt. Load one small skill pack based on mastery, prerequisite gap, mistake type, and hint depth.
 
-Relevant topic note: `project/llm-tutoring-research/04-knowledge-tracing.md`
+Relevant topic note: `docs/llm-tutoring-research/04-knowledge-tracing.md`
 
 ### 5. Misconception Libraries Are High Leverage
 
@@ -890,7 +890,7 @@ Klicker implication:
 
 Add lecturer-authored misconception records before trying to infer all misconceptions from chat logs.
 
-Relevant topic note: `project/llm-tutoring-research/05-misconception-libraries.md`
+Relevant topic note: `docs/llm-tutoring-research/05-misconception-libraries.md`
 
 ### 6. Feedback Uptake Is A Product Metric
 
@@ -918,7 +918,7 @@ Klicker implication:
 
 Keep privacy-aware logging minimal first. The core question is not "was the feedback nice?" but "did the student act on it and improve?"
 
-Relevant topic note: `project/llm-tutoring-research/06-feedback-uptake.md`
+Relevant topic note: `docs/llm-tutoring-research/06-feedback-uptake.md`
 
 ### 7. Pedagogical Safety Needs Its Own Gate
 
@@ -939,7 +939,7 @@ Klicker pass rule:
 - average pedagogical safety score at least 1.5 on a 0-2 rubric
 - pass multi-turn pressure cases, not only one-turn examples
 
-Relevant topic note: `project/llm-tutoring-research/07-pedagogical-safety.md`
+Relevant topic note: `docs/llm-tutoring-research/07-pedagogical-safety.md`
 
 ### 8. Hints Need A Ladder And A Directness Policy
 
@@ -958,7 +958,7 @@ Klicker implication:
 
 Track hint depth per skill and make it visible to evaluation. Do not let the model choose arbitrary directness each turn.
 
-Relevant topic note: `project/llm-tutoring-research/08-adaptive-hints.md`
+Relevant topic note: `docs/llm-tutoring-research/08-adaptive-hints.md`
 
 ### 9. Socratic Tutoring Is One Move, Not The Whole Tutor
 
@@ -976,7 +976,7 @@ Klicker implication:
 
 Start Socratic near the answer, but switch quickly on stall or high error entropy. Fade guidance as mastery rises.
 
-Relevant topic note: `project/llm-tutoring-research/09-socratic-limits.md`
+Relevant topic note: `docs/llm-tutoring-research/09-socratic-limits.md`
 
 ### 10. Metacognition Should Be Sparse And Timed
 
@@ -994,7 +994,7 @@ Klicker implication:
 
 Use metacognitive prompts after solution attempts, repeated mistakes, or before advancing. Do not interrupt productive work.
 
-Relevant topic note: `project/llm-tutoring-research/10-metacognition.md`
+Relevant topic note: `docs/llm-tutoring-research/10-metacognition.md`
 
 ### 11. Motivation And Affect Should Stay Process-Oriented
 
@@ -1008,7 +1008,7 @@ Klicker tone policy:
 - offer choice when possible
 - keep the learner active
 
-Relevant topic note: `project/llm-tutoring-research/11-motivation-affect.md`
+Relevant topic note: `docs/llm-tutoring-research/11-motivation-affect.md`
 
 ### 12. Course-Grounded RAG Needs Citation Fidelity
 
@@ -1023,7 +1023,7 @@ Klicker policy:
 - surface conflict or uncertainty
 - never invent lecture references
 
-Relevant topic note: `project/llm-tutoring-research/12-course-grounded-rag.md`
+Relevant topic note: `docs/llm-tutoring-research/12-course-grounded-rag.md`
 
 ### 13. Multimodal Tutoring Needs Structured Extraction
 
@@ -1040,7 +1040,7 @@ Klicker implication:
 
 Treat image processing as structured extraction before tutoring. Extract visible text, symbols, graph axes, table headers, student markings, and uncertainty flags. If extraction is uncertain, ask the student to confirm before tutoring.
 
-Relevant topic note: `project/llm-tutoring-research/13-multimodal-tutoring.md`
+Relevant topic note: `docs/llm-tutoring-research/13-multimodal-tutoring.md`
 
 ### 14. Best Architecture Is Retriever -> Hidden Planner/Verifier -> Presenter
 
@@ -1053,7 +1053,7 @@ Recommended first architecture:
 
 This avoids a giant monolithic prompt while staying simpler than a full multi-agent tutor.
 
-Relevant topic note: `project/llm-tutoring-research/14-prompt-program-architectures.md`
+Relevant topic note: `docs/llm-tutoring-research/14-prompt-program-architectures.md`
 
 ### 15. Human-In-The-Loop Authoring Is Required For Course Quality
 
@@ -1069,7 +1069,7 @@ Lecturers should author stable pedagogical facts:
 
 LLM should draft variants and explanations, but lecturer review should approve publishable artifacts. Every artifact needs provenance, version, review metadata, and evaluation telemetry.
 
-Relevant topic note: `project/llm-tutoring-research/15-human-in-loop-authoring.md`
+Relevant topic note: `docs/llm-tutoring-research/15-human-in-loop-authoring.md`
 
 ## Consolidated Tutor Architecture
 
@@ -1593,22 +1593,22 @@ Systems, interventions, and prompts:
 
 Broader second-pass topic notes:
 
-- Classic ITS: `project/llm-tutoring-research/01-classic-its.md`
-- Learning science: `project/llm-tutoring-research/02-learning-science.md`
-- Formative feedback: `project/llm-tutoring-research/03-formative-feedback.md`
-- Knowledge tracing: `project/llm-tutoring-research/04-knowledge-tracing.md`
-- Misconception libraries: `project/llm-tutoring-research/05-misconception-libraries.md`
-- Feedback uptake: `project/llm-tutoring-research/06-feedback-uptake.md`
-- Pedagogical safety: `project/llm-tutoring-research/07-pedagogical-safety.md`
-- Adaptive hints: `project/llm-tutoring-research/08-adaptive-hints.md`
-- Socratic limits: `project/llm-tutoring-research/09-socratic-limits.md`
-- Metacognition: `project/llm-tutoring-research/10-metacognition.md`
-- Motivation and affect: `project/llm-tutoring-research/11-motivation-affect.md`
-- Course-grounded RAG: `project/llm-tutoring-research/12-course-grounded-rag.md`
-- Multimodal tutoring: `project/llm-tutoring-research/13-multimodal-tutoring.md`
-- Prompt/program architecture: `project/llm-tutoring-research/14-prompt-program-architectures.md`
-- Human-in-the-loop authoring: `project/llm-tutoring-research/15-human-in-loop-authoring.md`
-- Topic index: `project/llm-tutoring-research/README.md`
+- Classic ITS: `docs/llm-tutoring-research/01-classic-its.md`
+- Learning science: `docs/llm-tutoring-research/02-learning-science.md`
+- Formative feedback: `docs/llm-tutoring-research/03-formative-feedback.md`
+- Knowledge tracing: `docs/llm-tutoring-research/04-knowledge-tracing.md`
+- Misconception libraries: `docs/llm-tutoring-research/05-misconception-libraries.md`
+- Feedback uptake: `docs/llm-tutoring-research/06-feedback-uptake.md`
+- Pedagogical safety: `docs/llm-tutoring-research/07-pedagogical-safety.md`
+- Adaptive hints: `docs/llm-tutoring-research/08-adaptive-hints.md`
+- Socratic limits: `docs/llm-tutoring-research/09-socratic-limits.md`
+- Metacognition: `docs/llm-tutoring-research/10-metacognition.md`
+- Motivation and affect: `docs/llm-tutoring-research/11-motivation-affect.md`
+- Course-grounded RAG: `docs/llm-tutoring-research/12-course-grounded-rag.md`
+- Multimodal tutoring: `docs/llm-tutoring-research/13-multimodal-tutoring.md`
+- Prompt/program architecture: `docs/llm-tutoring-research/14-prompt-program-architectures.md`
+- Human-in-the-loop authoring: `docs/llm-tutoring-research/15-human-in-loop-authoring.md`
+- Topic index: `docs/llm-tutoring-research/README.md`
 
 Representative broader sources:
 

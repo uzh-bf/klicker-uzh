@@ -13,7 +13,7 @@ grounding, or privacy constraints.
 
 ## Research Summary
 
-Key findings from `project/llm-tutoring-research/14-prompt-optimization-dspy-zpd.md`:
+Key findings from `docs/llm-tutoring-research/14-prompt-optimization-dspy-zpd.md`:
 
 - DSPy is useful for offline optimization once we have stable TutorBench metrics.
 - Metric design is the main risk: optimize for pedagogy, leakage control,
