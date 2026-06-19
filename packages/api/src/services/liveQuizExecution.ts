@@ -5,6 +5,7 @@ import type {
   ElementResultsSelection,
 } from '@klicker-uzh/types'
 import {
+  getInitialInstanceResults,
   type PrismaTransactionClient,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
@@ -933,6 +934,111 @@ export async function endLiveQuiz(
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
       text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+    })
+    throw error
+  }
+}
+
+export async function cancelLiveQuiz(
+  { id }: { id: string },
+  ctx: LiveQuizExecutionContext
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      blocks: { include: { elements: true, activeInLiveQuiz: true } },
+    },
+  })
+
+  if (!quiz) return null
+
+  try {
+    if (quiz.status !== DB.PublicationStatus.PUBLISHED) {
+      throw new Error('Live quiz is not running')
+    }
+
+    if (
+      quiz.isAssessmentEnabled &&
+      (quiz.activeBlock ||
+        quiz.blocks.some(
+          (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
+        ))
+    ) {
+      throw new Error(
+        'Assessment quizzes can only be aborted before the first block is activated'
+      )
+    }
+
+    const instances = quiz.blocks.flatMap((block) => block.elements)
+    const [updatedQuiz] = await ctx.prisma.$transaction([
+      ctx.prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.DRAFT,
+          startedAt: null,
+          activeBlock: { disconnect: true },
+          leaderboard: { deleteMany: {} },
+          temporaryLeaderboard: { deleteMany: {} },
+          feedbacks: { deleteMany: {} },
+          confusionFeedbacks: { deleteMany: {} },
+          blocks: {
+            updateMany: {
+              where: {
+                status: {
+                  in: [
+                    DB.ElementBlockStatus.EXECUTED,
+                    DB.ElementBlockStatus.ACTIVE,
+                  ],
+                },
+              },
+              data: {
+                status: DB.ElementBlockStatus.SCHEDULED,
+                startedAt: null,
+                closedAt: null,
+                expiresAt: null,
+                execution: { increment: 1 },
+              },
+            },
+          },
+        },
+        include: {
+          activeBlock: true,
+          blocks: { include: { elements: true, activeInLiveQuiz: true } },
+        },
+      }),
+
+      ...instances.map((instance) => {
+        const initialResults = getInitialInstanceResults(instance.elementData)
+
+        return ctx.prisma.elementInstance.update({
+          where: { id: instance.id },
+          data: { results: initialResults, anonymousResults: initialResults },
+        })
+      }),
+    ])
+
+    const redis = quiz.isAssessmentEnabled
+      ? ctx.redisAssessmentExec
+      : ctx.redisExec
+
+    const keys = await redis.keys(`lq:${id}:*`)
+    const pipe = redis.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
+
+    await sendTeamsNotification({
+      scope: 'graphql/abortLiveQuiz',
+      text: `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
+
+    return updatedQuiz
+  } catch (error) {
+    await sendTeamsNotification({
+      scope: 'graphql/abortLiveQuiz',
+      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
     })
     throw error
   }

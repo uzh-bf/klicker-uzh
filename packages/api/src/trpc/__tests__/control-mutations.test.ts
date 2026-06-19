@@ -9,6 +9,7 @@ import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   activateLiveQuizBlock,
+  cancelLiveQuiz,
   deactivateLiveQuizBlock,
   endLiveQuiz,
   startLiveQuiz,
@@ -18,6 +19,7 @@ import { appRouter } from '../root.js'
 
 vi.mock('../../services/liveQuizExecution.js', () => ({
   activateLiveQuizBlock: vi.fn(),
+  cancelLiveQuiz: vi.fn(),
   deactivateLiveQuizBlock: vi.fn(),
   endLiveQuiz: vi.fn(),
   startLiveQuiz: vi.fn(),
@@ -79,6 +81,7 @@ function createContext({
 describe('control mutation routers', () => {
   beforeEach(() => {
     vi.mocked(activateLiveQuizBlock).mockReset()
+    vi.mocked(cancelLiveQuiz).mockReset()
     vi.mocked(deactivateLiveQuizBlock).mockReset()
     vi.mocked(endLiveQuiz).mockReset()
     vi.mocked(startLiveQuiz).mockReset()
@@ -193,6 +196,21 @@ describe('control mutation routers', () => {
       liveQuiz: {
         id: 'quiz-1',
         status: PublicationStatus.ENDED,
+      },
+    })
+  })
+
+  test('cancels a live quiz and returns the status DTO', async () => {
+    vi.mocked(cancelLiveQuiz).mockResolvedValue({
+      id: 'quiz-1',
+      status: PublicationStatus.DRAFT,
+    } as any)
+    const caller = appRouter.createCaller(createContext())
+
+    await expect(caller.liveQuiz.cancel({ id: 'quiz-1' })).resolves.toEqual({
+      liveQuiz: {
+        id: 'quiz-1',
+        status: PublicationStatus.DRAFT,
       },
     })
   })

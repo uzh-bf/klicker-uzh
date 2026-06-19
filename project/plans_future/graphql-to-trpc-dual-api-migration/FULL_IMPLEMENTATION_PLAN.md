@@ -144,7 +144,12 @@ Current next action:
 - S05G-I manage live-quiz QR modal profile-read cleanup is complete locally.
   It migrates the modal from Apollo `UserProfileDocument` to the existing tRPC
   `user.profile` query.
-- S05G-J next: continue with the next smallest active manage/PWA
+- S05G-J manage live-quiz cancellation cleanup is complete locally. It
+  migrates the cancel modal summary read and abort mutation from Apollo/GraphQL
+  to tRPC, keeps GraphQL live, keeps the GraphQL package workflow visibly tied
+  to `packages/graphql`, and adds focused `packages/api` tRPC parity coverage
+  for the GraphQL cancel behavior.
+- S05G-K next: continue with the next smallest active manage/PWA
   Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
   gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -11678,7 +11683,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-J with the next smallest active manage/PWA
+2. Continue S05G-K with the next smallest active manage/PWA
    Apollo/generated-operation consumer while keeping GraphQL live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

@@ -1,13 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  CancelLiveQuizDocument,
-  GetLiveQuizSummaryDocument,
-  GetUserRunningLiveQuizzesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { api } from '../../../lib/trpc'
 import LiveQuizAbortionConfirmations from './LiveQuizAbortionConfirmations'
 
 export interface LiveQuizAbortionConfirmationType {
@@ -28,6 +23,7 @@ function CancelLiveQuizModal({
 }) {
   const router = useRouter()
   const t = useTranslations()
+  const utils = api.useUtils()
 
   const initialConfirmations: LiveQuizAbortionConfirmationType = {
     deleteResponses: false,
@@ -41,53 +37,25 @@ function CancelLiveQuizModal({
       ...initialConfirmations,
     })
 
-  // fetch course information
-  const { data, loading: queryLoading } = useQuery(GetLiveQuizSummaryDocument, {
-    variables: { quizId },
-    fetchPolicy: 'network-only',
-  })
-
-  const [cancelLiveQuiz, { loading: quizDeleting }] = useMutation(
-    CancelLiveQuizDocument,
-    {
-      variables: { id: quizId },
-      update(cache, { data: res }) {
-        // return early if the mutation failed
-        if (!res?.cancelLiveQuiz) return
-
-        cache.updateQuery(
-          { query: GetUserRunningLiveQuizzesDocument },
-          (data) => {
-            // if no data is present, return early
-            if (!data?.userRunningLiveQuizzes) return data
-
-            // remove the cancelled live quiz from the existing list
-            return {
-              userRunningLiveQuizzes: data.userRunningLiveQuizzes.filter(
-                (q) => q.id !== res.cancelLiveQuiz!.id
-              ),
-            }
-          }
-        )
-      },
-    }
-  )
+  const { data, isLoading: queryLoading } =
+    api.activity.liveQuizSummary.useQuery({ activityId: quizId })
+  const cancelLiveQuiz = api.liveQuiz.cancel.useMutation()
 
   useEffect(() => {
-    if (!data?.getLiveQuizSummary) {
+    if (!data?.liveQuizSummary) {
       return
     }
 
     setConfirmations({
-      deleteResponses: data.getLiveQuizSummary.numOfResponses === 0,
-      deleteFeedbacks: data.getLiveQuizSummary.numOfFeedbacks === 0,
+      deleteResponses: data.liveQuizSummary.numOfResponses === 0,
+      deleteFeedbacks: data.liveQuizSummary.numOfFeedbacks === 0,
       deleteConfusionFeedbacks:
-        data.getLiveQuizSummary.numOfConfusionFeedbacks === 0,
+        data.liveQuizSummary.numOfConfusionFeedbacks === 0,
       deleteLeaderboardEntries:
-        data.getLiveQuizSummary.numOfLeaderboardEntries === 0,
+        data.liveQuizSummary.numOfLeaderboardEntries === 0,
     })
-  }, [data?.getLiveQuizSummary])
-  const summary = data?.getLiveQuizSummary
+  }, [data?.liveQuizSummary])
+  const summary = data?.liveQuizSummary
 
   return (
     <Modal
@@ -100,13 +68,19 @@ function CancelLiveQuizModal({
       title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
-      primaryLoading={quizDeleting}
+      primaryLoading={cancelLiveQuiz.isLoading}
       primaryDisabled={
         queryLoading ||
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        await cancelLiveQuiz()
+        const result = await cancelLiveQuiz.mutateAsync({ id: quizId })
+        if (result.liveQuiz?.id) {
+          await utils.liveQuiz.running.invalidate()
+          await utils.activity.liveQuizSummary.invalidate({
+            activityId: quizId,
+          })
+        }
         router.push('/activities')
         onClose()
         setConfirmations({ ...initialConfirmations })

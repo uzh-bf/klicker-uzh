@@ -2,6 +2,7 @@ import { PermissionLevel, PublicationStatus } from '@klicker-uzh/prisma/client'
 import { TRPCError } from '@trpc/server'
 import {
   activateLiveQuizBlock,
+  cancelLiveQuiz,
   deactivateLiveQuizBlock,
   endLiveQuiz,
   startLiveQuiz,
@@ -298,6 +299,23 @@ export const liveQuizRouter = router({
       )
 
       const quiz = await endLiveQuiz(
+        input,
+        getExecutionContext(ctx as TRPCContextWithUser)
+      )
+
+      return { liveQuiz: toLiveQuizStatus(quiz) }
+    }),
+
+  cancel: userSessionExecProcedure
+    .input(liveQuizIdInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.id,
+        PermissionLevel.EXECUTE
+      )
+
+      const quiz = await cancelLiveQuiz(
         input,
         getExecutionContext(ctx as TRPCContextWithUser)
       )

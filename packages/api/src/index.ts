@@ -30,6 +30,7 @@ export {
 export { hatchetHandlers } from './services/hatchetHandlers.js'
 export {
   activateLiveQuizBlock,
+  cancelLiveQuiz,
   deactivateLiveQuizBlock,
   endLiveQuiz,
   startLiveQuiz,
