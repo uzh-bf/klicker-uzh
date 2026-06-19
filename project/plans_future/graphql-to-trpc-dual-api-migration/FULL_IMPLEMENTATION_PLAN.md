@@ -149,7 +149,11 @@ Current next action:
   to tRPC, keeps GraphQL live, keeps the GraphQL package workflow visibly tied
   to `packages/graphql`, and adds focused `packages/api` tRPC parity coverage
   for the GraphQL cancel behavior.
-- S05G-K next: continue with the next smallest active manage/PWA
+- S05G-K manage live-quiz timeline generated type cleanup is complete locally.
+  It removes the `@klicker-uzh/graphql` `LocaleType` import from
+  `LiveQuizTimeline` while preserving the local `de` / `en` locale contract
+  shared with the QR modal.
+- S05G-L next: continue with the next smallest active manage/PWA
   Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
   gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -11683,7 +11687,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G-K with the next smallest active manage/PWA
+2. Continue S05G-L with the next smallest active manage/PWA
    Apollo/generated-operation consumer while keeping GraphQL live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

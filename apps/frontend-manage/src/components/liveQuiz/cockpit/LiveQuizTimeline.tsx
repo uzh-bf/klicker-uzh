@@ -10,7 +10,6 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H4, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -23,6 +22,8 @@ import CloseBlockConfirmDialog from './CloseBlockConfirmDialog'
 import LiveQuizBlock, { QuizTimelineBlock } from './LiveQuizBlock'
 import LiveQuizQRModal from './LiveQuizQRModal'
 import RuntimeCounter from './RuntimeCounter'
+
+type LocaleType = 'de' | 'en'
 
 interface LiveQuizTimelineProps {
   assessmentMode: boolean
