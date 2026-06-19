@@ -1,10 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Feedback,
-  GetLecturerViewLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Head from 'next/head'
 import { useEffect, useMemo, useRef } from 'react'
@@ -15,35 +10,41 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
-import { api } from '../../../lib/trpc'
+import { api, type RouterOutputs } from '../../../lib/trpc'
+
+type LecturerViewLiveQuiz = NonNullable<
+  RouterOutputs['liveQuiz']['lecturerView']['lecturerViewLiveQuiz']
+>
+type LecturerFeedback = LecturerViewLiveQuiz['feedbacks'][number]
 
 function LecturerView() {
   const t = useTranslations()
   const router = useRouter()
+  const quizId = typeof router.query.id === 'string' ? router.query.id : ''
 
   const {
     data,
-    loading,
+    isLoading,
     error,
     refetch: refetchLecturerView,
-  } = useQuery(GetLecturerViewLiveQuizDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    pollInterval: 10000, // polling only required for confusion feedbacks (lower priority)
-    skip: !router.query.id,
-  })
+  } = api.liveQuiz.lecturerView.useQuery(
+    { id: quizId },
+    {
+      enabled: Boolean(quizId),
+      refetchInterval: 10000, // polling only required for confusion feedbacks (lower priority)
+    }
+  )
   const refetchLecturerViewRef = useRef(refetchLecturerView)
-  const quizId = data?.getLecturerViewLiveQuiz?.id
+  const liveQuizId = data?.lecturerViewLiveQuiz?.id
 
   useEffect(() => {
     refetchLecturerViewRef.current = refetchLecturerView
   }, [refetchLecturerView])
 
   api.realtime.feedbackPinned.useSubscription(
-    { quizId: quizId ?? '' },
+    { quizId: liveQuizId ?? '' },
     {
-      enabled: Boolean(quizId),
+      enabled: Boolean(liveQuizId),
       onData() {
         void refetchLecturerViewRef.current()
       },
@@ -51,7 +52,7 @@ function LecturerView() {
   )
 
   const aggregateConfusion = useMemo(() => {
-    const quiz = data?.getLecturerViewLiveQuiz
+    const quiz = data?.lecturerViewLiveQuiz
 
     if (
       quiz &&
@@ -64,7 +65,7 @@ function LecturerView() {
       )
     }
     return 0
-  }, [data?.getLecturerViewLiveQuiz])
+  }, [data?.lecturerViewLiveQuiz])
 
   const borderColor = useMemo(() => {
     if (aggregateConfusion >= 1.4) {
@@ -78,7 +79,7 @@ function LecturerView() {
     return 'border-green-300'
   }, [aggregateConfusion])
 
-  if (loading) {
+  if (isLoading) {
     return <Loader />
   }
 
@@ -86,7 +87,7 @@ function LecturerView() {
     return <div className="p-4">{t('manage.lecturer.noDataAvailable')}</div>
   }
 
-  const quiz = data?.getLecturerViewLiveQuiz
+  const quiz = data?.lecturerViewLiveQuiz
   const isLiveQAEnabled = quiz?.isLiveQAEnabled
   const isConfusionFeedbackEnabled = quiz?.isConfusionFeedbackEnabled
   const confusionSummary = quiz?.confusionSummary
@@ -127,25 +128,27 @@ function LecturerView() {
             </div>
           )}
 
-          {feedbacks?.map(({ id, content, createdAt, votes }: Feedback) => (
-            <div
-              className="border-primary-100 mt-4 flex items-center rounded border border-solid"
-              key={id}
-            >
-              <div className="flex-1 p-4">
-                <p className="mb-0 text-2xl">{content}</p>
-                <div className="mt-2 flex flex-row text-lg text-gray-500">
-                  <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
+          {feedbacks?.map(
+            ({ id, content, createdAt, votes }: LecturerFeedback) => (
+              <div
+                className="border-primary-100 mt-4 flex items-center rounded border border-solid"
+                key={id}
+              >
+                <div className="flex-1 p-4">
+                  <p className="mb-0 text-2xl">{content}</p>
+                  <div className="mt-2 flex flex-row text-lg text-gray-500">
+                    <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
+                  </div>
+                </div>
+                <div className="flex flex-initial flex-col justify-between pr-4">
+                  <div className="text-3xl text-gray-500">
+                    {votes}{' '}
+                    <FontAwesomeIcon icon={faThumbsUp} className="mr-0.5" />
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-initial flex-col justify-between pr-4">
-                <div className="text-3xl text-gray-500">
-                  {votes}{' '}
-                  <FontAwesomeIcon icon={faThumbsUp} className="mr-0.5" />
-                </div>
-              </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       )}
 

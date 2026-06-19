@@ -137,9 +137,13 @@ Current next action:
   GraphQL-equivalent assessment-domain, auth redirect, participation, PIN,
   solution-stripping, and correlation-key semantics, and adds focused tRPC API
   parity tests for that behavior.
-- S05G-H next: audit the remaining PWA Apollo/generated-operation consumers and
-  migrate the next smallest app-level GraphQL consumer. Do not start S06 cleanup
-  until all S05 gates are clean and explicitly reviewed.
+- S05G-H manage lecturer live-quiz view cleanup is complete locally. It keeps
+  the GraphQL package workflow visibly tied to `packages/graphql`, adds focused
+  tRPC API coverage for the same lecturer-view behavior in `packages/api`, and
+  migrates only the active manage lecturer page consumer.
+- S05G-I next: continue with the next smallest active manage/PWA
+  Apollo/generated-operation consumer. Do not start S06 cleanup until all S05
+  gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -1045,6 +1049,78 @@ Verification:
 Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining PWA Apollo/generated
 type consumers are still blockers for PWA Apollo removal and S06.
+
+### 2026-06-19 Completed: S05G-H Manage Lecturer Live-Quiz View Cleanup
+
+Status: complete locally. Scope remained S05 only: migrate the active manage
+lecturer live-quiz read view to tRPC while keeping GraphQL live for remaining
+queries, mutations, generated types, codegen, and endpoint cleanup.
+
+User validation gate:
+
+- Keep the existing GraphQL package test path tied to `packages/graphql`.
+- Add focused tRPC API tests for the same lecturer-view semantics in
+  `packages/api`.
+
+Slice: S05G-H Manage Lecturer Live-Quiz View Cleanup
+
+GraphQL operation(s): `GetLecturerViewLiveQuizDocument`.
+
+GraphQL resolver(s): `Query.getLecturerViewLiveQuiz`.
+
+Behavior source: `packages/graphql/src/services/liveQuizzes.ts`
+`getLecturerViewLiveQuiz` and `aggregateFeedbacks`.
+
+tRPC router.procedure: new `liveQuiz.lecturerView`.
+
+Active frontend consumer:
+`apps/frontend-manage/src/pages/quizzes/[id]/lecturer.tsx`.
+
+Intended behavior:
+
+- Keep READ permission gating on the live quiz.
+- Return `null` for missing, unpublished, or unauthorized live quizzes.
+- Return the same lecturer-view flags consumed by the page.
+- Return pinned feedbacks with response DTOs.
+- Preserve the GraphQL 10-minute recent-confusion average and zero-summary
+  fallback.
+- Preserve the page's lower-priority 10-second polling and existing tRPC
+  feedback-pinned invalidation refetch.
+
+What changed:
+
+- Added `getLecturerViewLiveQuiz` in `packages/api` for the lecturer view DTO.
+- Added `liveQuiz.lecturerView` with existing READ permission checks.
+- Added focused tRPC API tests for permission, publication state, pinned
+  feedback DTOs, and recent-confusion aggregation.
+- Migrated the manage lecturer page from Apollo
+  `GetLecturerViewLiveQuizDocument` to `api.liveQuiz.lecturerView.useQuery`.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/live-quiz-lecturer-view.test.ts`
+  passed: 4 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed after rebuilding
+  `packages/api`.
+- `pnpm --filter @klicker-uzh/api test` passed: 44 files, 449 tests.
+- `pnpm --filter @klicker-uzh/frontend-manage build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm exec prettier --check <S05G-H touched files>` passed.
+- `git diff --check` passed.
+- Focused audit confirmed
+  `apps/frontend-manage/src/pages/quizzes/[id]/lecturer.tsx` no longer imports
+  Apollo, `GetLecturerViewLiveQuizDocument`, or the generated GraphQL
+  `Feedback` type.
+- Workflow audit confirmed `test-graphql.yml` names its package check
+  `packages/graphql Vitest`, and `test-api.yml` names its tRPC package check
+  `packages/api tRPC Vitest`; both workflows are requested for
+  `packages/graphql/**` and `packages/api/**` changes.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining active
+Apollo/generated-operation consumers in manage/PWA are still blockers for S06.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -11550,7 +11626,7 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`; keep adding focused tRPC parity tests as GraphQL session
    behavior is migrated.
-2. Continue S05G in small app-level slices with the remaining PWA
-   Apollo/generated-operation consumers.
+2. Continue S05G-I with the next smallest active manage/PWA
+   Apollo/generated-operation consumer while keeping GraphQL live.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.
