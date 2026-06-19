@@ -28,6 +28,11 @@ export const participantLiveQuizFeedbacksInput = z.object({
   quizId: z.string(),
 })
 
+export const participantLiveQuizLeaderboardInput = z.object({
+  quizId: z.string(),
+  hmac: z.string().nullish(),
+})
+
 export const participantCreateLiveQuizFeedbackInput = z.object({
   quizId: z.string(),
   content: z.string(),

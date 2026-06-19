@@ -1,5 +1,3 @@
-import { useQuery } from '@apollo/client'
-import { GetLiveQuizLeaderboardDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
 import { H2, UserNotification } from '@uzh-bf/design-system'
@@ -47,18 +45,22 @@ function LiveQuizLeaderboard({
   })
   const self = selfData?.self ?? null
 
-  const { data, loading } = useQuery(GetLiveQuizLeaderboardDocument, {
-    variables: { quizId },
-    // use network-only to trigger a refetch once the component is displayed
-    // TODO: replace this by a send of the leaderboard within the subscription
-    // TODO: otherwise, this could overload the server if 1000 simultaneous users are on the leaderboard
-    fetchPolicy: 'network-only',
-  })
+  const { data: leaderboardData, isLoading } =
+    trpc.participant.liveQuizLeaderboard.useQuery(
+      { quizId },
+      {
+        refetchOnMount: 'always',
+      }
+    )
+
+  // use a fresh request once the component is displayed
+  // TODO: replace this by a send of the leaderboard within the subscription
+  // TODO: otherwise, this could overload the server if 1000 simultaneous users are on the leaderboard
 
   // save the current leaderboard to local storage
   useEffect(() => {
     const asyncFunc = async () => {
-      const leaderboard = data?.liveQuizLeaderboard
+      const leaderboard = leaderboardData ?? []
 
       const selfEntry = leaderboard?.find(
         (entry) => entry.participantId === self?.id
@@ -91,13 +93,13 @@ function LiveQuizLeaderboard({
     }
 
     asyncFunc()
-  }, [data, self?.id])
+  }, [leaderboardData, self?.id])
 
-  if (loading || !data) {
+  if (isLoading || typeof leaderboardData === 'undefined') {
     return <Loader />
   }
 
-  const leaderboard = data.liveQuizLeaderboard ?? []
+  const leaderboard = leaderboardData ?? []
   return (
     <div
       className={twMerge(

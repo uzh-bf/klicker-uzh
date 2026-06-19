@@ -117,6 +117,10 @@ Current next action:
   Scope was limited to replacing the PWA feedback-area GraphQL query/mutations
   with participant tRPC procedures and focused API parity tests; live-quiz
   session and leaderboard data queries remain GraphQL.
+- S05G-D PWA live-quiz leaderboard data-query cleanup is complete locally.
+  Scope was limited to replacing `GetLiveQuizLeaderboardDocument` in the PWA
+  leaderboard component with a participant tRPC query while keeping GraphQL
+  live. The larger PWA `/session/[id]` data query remains GraphQL.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -773,6 +777,71 @@ Verification:
 - `gh pr checks 5132` before this commit still showed multiple ambiguous
   `test` entries; after this checkpoint is pushed, the package test jobs should
   surface as `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+
+### 2026-06-19 Completed: S05G-D PWA Live-Quiz Leaderboard Data Query Cleanup
+
+Status: complete locally. Scope was intentionally narrow: remove the PWA
+leaderboard data query's Apollo dependency without touching the larger
+`/session/[id]` live-quiz page or S06 GraphQL removal.
+
+Slice: S05G-D PWA Live-Quiz Leaderboard Data Query Cleanup
+
+GraphQL operation(s): `GetLiveQuizLeaderboardDocument`.
+
+GraphQL resolver(s): `Query.liveQuizLeaderboard`.
+
+Behavior source: `packages/graphql/src/services/liveQuizzes.ts`
+`getLiveQuizLeaderboard`.
+
+tRPC router.procedure: new `participant.liveQuizLeaderboard`.
+
+Input schema: `{ quizId: string, hmac?: string | null }`.
+
+Output DTO: array of leaderboard entries or `null`, matching the GraphQL field
+semantics for missing/non-gamified quizzes and existing display fields.
+
+Active frontend consumer:
+`apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx`.
+
+Apollo cache/refetch behavior: current Apollo query uses `network-only`; tRPC
+should refetch on mount to preserve the explicit refresh when the leaderboard is
+displayed.
+
+React Query replacement: tRPC `participant.liveQuizLeaderboard.useQuery`.
+
+What changed:
+
+- Added `packages/api/src/services/participantLiveQuizLeaderboard.ts` with a
+  transport-neutral implementation of the GraphQL leaderboard behavior source:
+  missing quiz returns `[]`, non-gamified quiz returns `null`, private profiles
+  stay anonymous unless visible to the viewer, inactive gamified-course
+  participations are skipped, regular and temporary entries are merged, last
+  executed block order is included, and entries are sorted/ranked.
+- Added `participant.liveQuizLeaderboard` and its input schema.
+- Migrated `apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx`
+  from Apollo `GetLiveQuizLeaderboardDocument` to tRPC.
+- Added focused API tests in
+  `packages/api/src/trpc/__tests__/participant-read.test.ts`.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/participant-read.test.ts`
+  passed: 28 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm exec prettier --check <S05G-D touched files>` passed.
+- `git diff --check` passed.
+- Focused audits confirmed `LiveQuizLeaderboard.tsx` no longer imports Apollo,
+  `GetLiveQuizLeaderboardDocument`, or `@klicker-uzh/graphql`, and the PWA
+  source no longer consumes `GetLiveQuizLeaderboardDocument`.
+- `pnpm --filter @klicker-uzh/api test` passed: 42 files, 437 tests.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining PWA `/session/[id]`
+GraphQL query is still a blocker for S06.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 

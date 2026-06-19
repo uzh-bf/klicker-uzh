@@ -1,5 +1,6 @@
 import {
   AwardType,
+  ElementBlockStatus,
   ElementType,
   Locale,
   PublicationStatus,
@@ -1000,6 +1001,132 @@ describe('participant read routers', () => {
         averageScore: 15,
       },
     })
+  })
+
+  test('returns live quiz leaderboard entries with GraphQL-compatible visibility and ranking', async () => {
+    const prisma = {
+      liveQuiz: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'quiz-1',
+          namespace: 'quiz-namespace',
+          isGamificationEnabled: true,
+          course: { isGamificationEnabled: true },
+          blocks: [
+            { status: ElementBlockStatus.EXECUTED, order: 1 },
+            { status: ElementBlockStatus.ACTIVE, order: 2 },
+            { status: ElementBlockStatus.EXECUTED, order: 3 },
+          ],
+          leaderboard: [
+            {
+              id: 1,
+              score: 10,
+              participant: {
+                id: 'participant-1',
+                username: 'Self',
+                avatar: 'self.svg',
+                isProfilePublic: true,
+                xp: 0,
+              },
+              sessionParticipation: { isActive: true },
+            },
+            {
+              id: 2,
+              score: 30,
+              participant: {
+                id: 'participant-2',
+                username: 'Private',
+                avatar: 'private.svg',
+                isProfilePublic: false,
+                xp: 0,
+              },
+              sessionParticipation: { isActive: true },
+            },
+            {
+              id: 3,
+              score: 40,
+              participant: {
+                id: 'participant-3',
+                username: 'Inactive',
+                avatar: 'inactive.svg',
+                isProfilePublic: true,
+                xp: 0,
+              },
+              sessionParticipation: { isActive: false },
+            },
+          ],
+          temporaryLeaderboard: [
+            {
+              id: 'temporary-1',
+              username: 'Temporary',
+              avatar: 'temporary.svg',
+              score: 20,
+            },
+          ],
+        }),
+      },
+      participant: {
+        findUnique: vi.fn().mockResolvedValue({ isProfilePublic: true }),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.liveQuizLeaderboard({ quizId: 'quiz-1' })
+    ).resolves.toEqual([
+      {
+        id: 2,
+        participantId: 'participant-2',
+        username: 'Anonymous',
+        avatar: null,
+        score: 30,
+        level: 1,
+        isTemporary: false,
+        lastBlockOrder: 3,
+        rank: 1,
+      },
+      {
+        id: expect.any(Number),
+        participantId: 'temporary-1',
+        username: 'Temporary',
+        avatar: 'temporary.svg',
+        score: 20,
+        level: 1,
+        isTemporary: true,
+        lastBlockOrder: 3,
+        rank: 2,
+      },
+      {
+        id: 1,
+        participantId: 'participant-1',
+        username: 'Self',
+        avatar: 'self.svg',
+        score: 10,
+        level: 1,
+        isTemporary: false,
+        lastBlockOrder: 3,
+        rank: 3,
+      },
+    ])
+  })
+
+  test('returns GraphQL-compatible empty and null live quiz leaderboard states', async () => {
+    const liveQuizFindUnique = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ isGamificationEnabled: false })
+    const prisma = {
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.liveQuizLeaderboard({ quizId: 'missing-quiz' })
+    ).resolves.toEqual([])
+    await expect(
+      caller.participant.liveQuizLeaderboard({ quizId: 'non-gamified-quiz' })
+    ).resolves.toBeNull()
   })
 
   test('returns course group activities and group activity instances', async () => {

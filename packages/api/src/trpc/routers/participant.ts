@@ -58,6 +58,7 @@ import {
   upvoteLiveQuizFeedback,
   voteLiveQuizFeedbackResponse,
 } from '../../services/participantLiveQuizFeedbacks.js'
+import { getLiveQuizLeaderboard } from '../../services/participantLiveQuizLeaderboard.js'
 import {
   getMicroLearningDetail,
   getParticipantCourseParticipation,
@@ -123,6 +124,7 @@ import {
   participantJoinGroupInput,
   participantLeaveGroupInput,
   participantLiveQuizFeedbacksInput,
+  participantLiveQuizLeaderboardInput,
   participantLoginInput,
   participantLoginTemporaryInput,
   participantLoginWithLtiInput,
@@ -1469,6 +1471,19 @@ export const participantRouter = router({
       const prisma = getPrisma(ctx)
 
       return getLiveQuizFeedbacks({ prisma, quizId: input.quizId })
+    }),
+
+  liveQuizLeaderboard: publicProcedure
+    .input(participantLiveQuizLeaderboardInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getLiveQuizLeaderboard({
+        hmac: input.hmac,
+        prisma,
+        quizId: input.quizId,
+        user: ctx.user,
+      })
     }),
 
   createLiveQuizFeedback: publicProcedure
