@@ -1,11 +1,13 @@
 import {
   PermissionLevel,
   PublicationStatus,
+  TimelineEntryType,
   type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
+import dayjs from 'dayjs'
 import type { EventEmitter } from 'node:events'
 import {
   adjectives,
@@ -13,6 +15,7 @@ import {
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator'
+import { updateWeeklyTimelineEntriesCourse } from '../../services/hatchetHandlers.js'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
   toActiveUserCourse,
@@ -38,6 +41,7 @@ import {
   courseActivityIdsInput,
   courseDetailInput,
   courseGroupsInput,
+  courseLeaderboardInput,
   courseSummaryInput,
   createCourseInput,
   deleteCourseInput,
@@ -133,9 +137,428 @@ interface RandomGroupAssignmentArgs {
   preferredGroupSize: number
 }
 
+type ManageCourseLeaderboardEntry = {
+  id: number
+  participantId?: string
+  username: string
+  email?: string | null
+  avatar?: string | null
+  score: number
+  rank: number
+  level?: number
+  isSelf?: boolean
+}
+
+type ManageCourseLeaderboard = {
+  numOfActiveParticipants: number
+  averageActiveScore: number
+  computedAt?: Date
+  leaderboard: ManageCourseLeaderboardEntry[]
+}
+
 type ScheduledHatchetClient = {
   scheduled: {
     delete: (taskId: string) => Promise<unknown>
+  }
+}
+
+function convertDateToUTCDatetime(dateString?: string | null) {
+  if (!dateString) return undefined
+
+  const [day, month, year] = dateString.split('.').map(Number)
+  return new Date(Date.UTC(year!, month! - 1, day))
+}
+
+async function getRollingCourseLeaderboard({
+  courseId,
+  days,
+  prisma,
+}: {
+  courseId: string
+  days: number
+  prisma: PrismaClient
+}): Promise<ManageCourseLeaderboard> {
+  const detailsEarliest = dayjs()
+    .subtract(days - 1, 'days')
+    .startOf('day')
+    .toDate()
+  const detailsLatest = dayjs().subtract(days, 'days').toDate()
+
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: {
+      liveQuizzes: {
+        where: { finishedAt: { lte: detailsEarliest, gt: detailsLatest } },
+        select: {
+          leaderboard: {
+            select: { participantId: true, score: true },
+          },
+        },
+      },
+      practiceQuizzes: {
+        select: {
+          responseDetails: {
+            where: { createdAt: { lte: detailsEarliest, gt: detailsLatest } },
+            select: { participantId: true, pointsAwarded: true },
+          },
+        },
+      },
+      microLearnings: {
+        select: {
+          responseDetails: {
+            where: { createdAt: { lte: detailsEarliest, gt: detailsLatest } },
+            select: { participantId: true, pointsAwarded: true },
+          },
+        },
+      },
+      participations: {
+        where: { isActive: true },
+        select: {
+          participant: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              avatar: true,
+              xp: true,
+            },
+          },
+        },
+      },
+      timelineEntries: {
+        where: {
+          type: TimelineEntryType.DAILY,
+          timestamp: { gt: dayjs().subtract(days, 'days').toDate() },
+          participation: { isActive: true },
+        },
+        select: {
+          collectedPoints: true,
+          participation: {
+            select: {
+              participantId: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) {
+    return {
+      numOfActiveParticipants: 0,
+      averageActiveScore: 0,
+      computedAt: new Date(),
+      leaderboard: [],
+    }
+  }
+
+  const leaderboardScores = course.participations.reduce<
+    Record<
+      string,
+      {
+        participantId: string
+        username: string
+        email: string | null
+        avatar: string | null
+        score: number
+        xp: number
+      }
+    >
+  >((acc, entry) => {
+    acc[entry.participant.id] = {
+      participantId: entry.participant.id,
+      username: entry.participant.username,
+      email: entry.participant.email,
+      avatar: entry.participant.avatar,
+      score: 0,
+      xp: entry.participant.xp,
+    }
+
+    return acc
+  }, {})
+
+  course.timelineEntries.forEach((entry) => {
+    const participantId = entry.participation.participantId
+    if (leaderboardScores[participantId]) {
+      leaderboardScores[participantId]!.score += entry.collectedPoints
+    }
+  })
+
+  course.practiceQuizzes.forEach((quiz) => {
+    quiz.responseDetails.forEach((detail) => {
+      if (leaderboardScores[detail.participantId]) {
+        leaderboardScores[detail.participantId]!.score +=
+          detail.pointsAwarded ?? 0
+      }
+    })
+  })
+
+  course.microLearnings.forEach((microLearning) => {
+    microLearning.responseDetails.forEach((detail) => {
+      if (leaderboardScores[detail.participantId]) {
+        leaderboardScores[detail.participantId]!.score +=
+          detail.pointsAwarded ?? 0
+      }
+    })
+  })
+
+  course.liveQuizzes.forEach((liveQuiz) => {
+    liveQuiz.leaderboard.forEach((entry) => {
+      if (leaderboardScores[entry.participantId]) {
+        leaderboardScores[entry.participantId]!.score += entry.score
+      }
+    })
+  })
+
+  const sortedScores = Object.values(leaderboardScores).sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score
+    return a.username.localeCompare(b.username)
+  })
+  const sum = sortedScores.reduce((acc, entry) => acc + entry.score, 0)
+
+  return {
+    numOfActiveParticipants: sortedScores.length,
+    averageActiveScore: sortedScores.length > 0 ? sum / sortedScores.length : 0,
+    computedAt: new Date(),
+    leaderboard: sortedScores.map((entry, ix) => ({
+      id: Math.floor(Math.random() * 1000000000),
+      participantId: entry.participantId,
+      username: entry.username,
+      email: entry.email,
+      avatar: entry.avatar,
+      score: entry.score,
+      rank: ix + 1,
+      level: levelFromXp(entry.xp),
+    })),
+  }
+}
+
+async function getCourseLeaderboard({
+  prisma,
+  input,
+}: {
+  prisma: PrismaClient
+  input: {
+    courseId: string
+    leaderboardType: 'course' | 'weekly' | '7rolling' | '14rolling' | 'custom'
+    weeklyStartDate?: string | null
+    customStartDate?: string | null
+    customEndDate?: string | null
+  }
+}): Promise<ManageCourseLeaderboard | null> {
+  if (input.leaderboardType === 'course') {
+    const course = await prisma.course.findUnique({
+      where: { id: input.courseId },
+      select: {
+        leaderboard: {
+          where: { participation: { isActive: true } },
+          orderBy: { score: 'desc' },
+          select: {
+            id: true,
+            participantId: true,
+            score: true,
+            participation: {
+              select: {
+                participant: {
+                  select: {
+                    email: true,
+                    username: true,
+                    avatar: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!course) return null
+
+    const sum = course.leaderboard.reduce((acc, entry) => acc + entry.score, 0)
+
+    return {
+      numOfActiveParticipants: course.leaderboard.length,
+      averageActiveScore:
+        course.leaderboard.length > 0 ? sum / course.leaderboard.length : 0,
+      leaderboard: course.leaderboard.map((entry, ix) => ({
+        id: entry.id,
+        participantId: entry.participantId,
+        username: entry.participation?.participant.username ?? '',
+        email: entry.participation?.participant.email ?? null,
+        avatar: entry.participation?.participant.avatar ?? null,
+        score: entry.score,
+        rank: ix + 1,
+      })),
+    }
+  }
+
+  if (
+    input.leaderboardType === '7rolling' ||
+    input.leaderboardType === '14rolling'
+  ) {
+    return await getRollingCourseLeaderboard({
+      courseId: input.courseId,
+      days: input.leaderboardType === '7rolling' ? 7 : 14,
+      prisma,
+    })
+  }
+
+  const startDate =
+    input.leaderboardType === 'weekly'
+      ? input.weeklyStartDate
+      : input.customStartDate
+  const endDate = input.customEndDate
+
+  if (input.leaderboardType === 'weekly' && !startDate) return null
+  if (input.leaderboardType === 'custom' && (!startDate || !endDate)) {
+    return null
+  }
+
+  const startDateUTC = convertDateToUTCDatetime(startDate)
+  const endDateUTC = convertDateToUTCDatetime(endDate)
+  const course = await prisma.course.findUnique({
+    where: { id: input.courseId },
+    select: {
+      timelineEntries: {
+        where: {
+          type: TimelineEntryType.WEEKLY,
+          timestamp:
+            input.leaderboardType === 'weekly'
+              ? startDateUTC
+              : {
+                  gte: startDateUTC!,
+                  lte: endDateUTC!,
+                },
+          participation: {
+            isActive: true,
+          },
+        },
+        select: {
+          id: true,
+          collectedPoints: true,
+          collectedXp: true,
+          timestamp: true,
+          computedAt: true,
+          participation: {
+            select: {
+              participantId: true,
+              participant: {
+                select: {
+                  email: true,
+                  username: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { collectedPoints: 'desc' },
+      },
+    },
+  })
+  const timelineEntries = course?.timelineEntries ?? []
+
+  if (
+    input.leaderboardType === 'weekly' ||
+    (input.leaderboardType === 'custom' && startDate === endDate)
+  ) {
+    let sum = 0
+    let lastUpdated: Date | undefined
+    const leaderboard = timelineEntries.map((entry, ix) => {
+      sum += entry.collectedPoints
+      if (!lastUpdated || entry.computedAt > lastUpdated) {
+        lastUpdated = entry.computedAt
+      }
+
+      return {
+        id: entry.id,
+        participantId: entry.participation.participantId,
+        username: entry.participation.participant.username,
+        email: entry.participation.participant.email,
+        avatar: entry.participation.participant.avatar,
+        score: entry.collectedPoints,
+        rank: ix + 1,
+      }
+    })
+
+    return {
+      numOfActiveParticipants: leaderboard.length,
+      averageActiveScore: leaderboard.length > 0 ? sum / leaderboard.length : 0,
+      computedAt: lastUpdated,
+      leaderboard,
+    }
+  }
+
+  const aggregatedTimelineEntries = timelineEntries.reduce<
+    Record<
+      string,
+      {
+        id: number
+        participantId: string
+        email: string | null
+        username: string
+        avatar: string | null
+        collectedPoints: number
+        lastUpdated: Date
+      }
+    >
+  >((acc, entry) => {
+    if (entry.collectedPoints === 0) return acc
+
+    const key = entry.participation.participantId
+    if (!acc[key]) {
+      acc[key] = {
+        id: entry.id,
+        participantId: key,
+        email: entry.participation.participant.email,
+        username: entry.participation.participant.username,
+        avatar: entry.participation.participant.avatar,
+        collectedPoints: 0,
+        lastUpdated: entry.timestamp,
+      }
+    }
+    acc[key].collectedPoints += entry.collectedPoints
+
+    if (entry.computedAt > acc[key].lastUpdated) {
+      acc[key].lastUpdated = entry.computedAt
+    }
+
+    return acc
+  }, {})
+
+  const sortedEntries = Object.values(aggregatedTimelineEntries).sort(
+    (a, b) => {
+      if (b.collectedPoints !== a.collectedPoints) {
+        return b.collectedPoints - a.collectedPoints
+      }
+      return a.username.localeCompare(b.username)
+    }
+  )
+  let sum = 0
+  let lastUpdated: Date | undefined
+  const leaderboard = sortedEntries.map((entry, ix) => {
+    sum += entry.collectedPoints
+    if (!lastUpdated || entry.lastUpdated > lastUpdated) {
+      lastUpdated = entry.lastUpdated
+    }
+
+    return {
+      id: entry.id,
+      participantId: entry.participantId,
+      username: entry.username,
+      email: entry.email,
+      avatar: entry.avatar,
+      score: entry.collectedPoints,
+      rank: ix + 1,
+    }
+  })
+
+  return {
+    numOfActiveParticipants: leaderboard.length,
+    averageActiveScore: leaderboard.length > 0 ? sum / leaderboard.length : 0,
+    computedAt: lastUpdated,
+    leaderboard,
   }
 }
 
@@ -1030,6 +1453,49 @@ export const courseRouter = router({
 
       return {
         courseGroups: toCourseGroups(course),
+      }
+    }),
+
+  leaderboard: userProcedure
+    .input(courseLeaderboardInput)
+    .query(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.courseId,
+          PermissionLevel.READ
+        ))
+      ) {
+        return { courseLeaderboard: null }
+      }
+
+      return {
+        courseLeaderboard: await getCourseLeaderboard({
+          prisma: getPrisma(ctx),
+          input,
+        }),
+      }
+    }),
+
+  updateWeeklyTimelineEntries: userFullAccessProcedure
+    .input(courseGroupsInput)
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !(await hasCoursePermission(
+          ctx as TRPCContextWithUser,
+          input.courseId,
+          PermissionLevel.READ
+        ))
+      ) {
+        return { updateWeeklyTimelineEntriesCourse: null }
+      }
+
+      return {
+        updateWeeklyTimelineEntriesCourse:
+          await updateWeeklyTimelineEntriesCourse(
+            { courseId: input.courseId },
+            getPrisma(ctx)
+          ),
       }
     }),
 

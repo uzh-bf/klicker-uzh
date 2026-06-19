@@ -280,6 +280,75 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04K Suspended Course Leaderboard Operations
+
+Status: complete for the suspended course leaderboard read and recompute action.
+Scope was limited to replacing Apollo
+`GetCourseLeaderboardDocument` and `UpdateWeeklyTimelineEntriesCourseDocument`
+inside `SuspendedCourseLeaderboard` with tRPC. This preserved course READ
+permission behavior, leaderboard mode semantics (`course`, `weekly`,
+`7rolling`, `14rolling`, `custom`), computed-at display, active participant
+averages, CSV email availability, and recompute/refetch behavior. This did not
+migrate course detail, activity action modals, activity authoring, live cockpit,
+realtime subscriptions, GraphQL schema/runtime, Apollo providers, S05, or S06
+cleanup.
+
+Slice: S04K Suspended Course Leaderboard Operations
+
+GraphQL operation(s):
+
+- `GetCourseLeaderboardDocument`
+- `UpdateWeeklyTimelineEntriesCourseDocument`
+
+Behavior source:
+
+- Existing GraphQL query and mutation behavior in
+  `packages/graphql/src/schema/query.ts` and
+  `packages/graphql/src/schema/mutation.ts`.
+- Existing weekly timeline recompute helper in
+  `packages/api/src/services/hatchetHandlers.ts`.
+
+Implemented:
+
+- Added `course.leaderboard` and `course.updateWeeklyTimelineEntries` tRPC
+  procedures with course READ permission checks.
+- Added `courseLeaderboardInput` schema and narrow leaderboard DTO mapping in
+  `packages/api`.
+- Exported and reused the existing Hatchet weekly timeline recompute helper.
+- Migrated `SuspendedCourseLeaderboard` to tRPC suspense query and mutation
+  hooks.
+- Added focused API tests for permission denial, course leaderboard reads,
+  weekly recompute delegation, and recompute permission denial.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04K course leaderboard files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- course-leaderboard.test.ts`:
+  passed, including 40 API test files / 386 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with known existing warnings.
+- `rg -n "GetCourseLeaderboardDocument|UpdateWeeklyTimelineEntriesCourseDocument|@apollo/client" apps/frontend-manage/src/components/courses/SuspendedCourseLeaderboard.tsx`:
+  no matches.
+- `git diff --check`: passed.
+- Browser smoke against local manage stack on course
+  `b8b1305e-bfe8-458b-bf26-9082fdca953f`: rendered course leaderboard, switched
+  to weekly mode, clicked Recompute, and confirmed browser resources for
+  `course.leaderboard` and `course.updateWeeklyTimelineEntries`.
+- Screenshots:
+  - `/tmp/agent-browser-shots/s04-course-leaderboard-01-initial.png`
+  - `/tmp/agent-browser-shots/s04-course-leaderboard-02-course.png`
+  - `/tmp/agent-browser-shots/s04-course-leaderboard-03-weekly.png`
+  - `/tmp/agent-browser-shots/s04-course-leaderboard-04-after-recompute.png`
+
+Next: continue remaining S04-only findings and pause before S05/S06.
+
 ### 2026-06-19 Completed: S04L Activity Unpublish Actions
 
 Status: complete for the manage activity unpublish actions. Scope was limited to

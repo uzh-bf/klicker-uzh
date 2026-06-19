@@ -37,6 +37,20 @@ export const courseGroupsInput = z.object({
   courseId: z.string(),
 })
 
+export const courseLeaderboardInput = z.object({
+  courseId: z.string(),
+  leaderboardType: z.enum([
+    'course',
+    'weekly',
+    '7rolling',
+    '14rolling',
+    'custom',
+  ]),
+  weeklyStartDate: z.string().nullish(),
+  customStartDate: z.string().nullish(),
+  customEndDate: z.string().nullish(),
+})
+
 export const createCourseInput = z.object({
   name: z.string(),
   displayName: z.string(),

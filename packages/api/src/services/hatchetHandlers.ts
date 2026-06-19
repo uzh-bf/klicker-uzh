@@ -631,7 +631,7 @@ async function updateWeeklyTimelineEntriesFromDailys({
   )
 }
 
-async function updateWeeklyTimelineEntriesCourse(
+export async function updateWeeklyTimelineEntriesCourse(
   { courseId }: { courseId: string },
   prisma: DB.PrismaClient,
   executionCtx?: Parameters<
