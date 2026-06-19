@@ -280,6 +280,100 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04M Manage Single Element Instance Preview
+
+Status: complete for the scoped slice. Scope was limited to the standalone Manage
+element-instance preview page at
+`apps/frontend-manage/src/pages/instances/[id].tsx`. This slice migrated the
+remaining `GetSingleElementInstance` Apollo read to tRPC while keeping shared
+GraphQL-shaped preview types, realtime, Apollo providers, S05, and S06 out of
+scope.
+
+Operation mapping:
+
+```text
+Slice: S04M Manage Single Element Instance Preview
+GraphQL operation(s): GetSingleElementInstance
+GraphQL resolver(s): getSingleElementInstance
+Behavior source: packages/graphql/src/services/elements.ts getSingleElementInstance
+tRPC router.procedure: element.singleInstance
+Input schema: singleInstanceInput
+Output DTO: singleInstance preview instance consumed by StudentElement on apps/frontend-manage/src/pages/instances/[id].tsx
+Active frontend consumers: apps/frontend-manage/src/pages/instances/[id].tsx
+Apollo cache/refetch/subscription behavior: no cache writes, refetches, mutations, or subscriptions; page performs a single read with skip until router id exists
+React Query replacement: element.singleInstance query with enabled guard after router id parsing
+Browser verification path: open a seeded Manage instance preview URL, verify preview renders and the page uses /api/trpc for element.singleInstance without GetSingleElementInstance /api/graphql traffic from this page
+Cleanup blocked until: remaining S04 consumers, S04P generated type leak cleanup, S05 realtime, and S06 cleanup gates.
+```
+
+Implementation:
+
+- Added `singleInstanceInput` and `element.singleInstance`, mirroring the
+  GraphQL service permission filter through live-quiz blocks and
+  practice-quiz, microlearning, and group-activity stacks.
+- Returned a narrow preview DTO with `__typename`, `id`, `type`, `elementType`,
+  and `elementData` converted through the existing `toPreviewElementData`
+  helper.
+- Migrated `apps/frontend-manage/src/pages/instances/[id].tsx` from Apollo
+  `useQuery(GetSingleElementInstanceDocument)` to
+  `trpc.element.singleInstance.useQuery` with the same router-id enabled guard
+  pattern used by the standalone question preview page.
+- Added focused router tests for the activity permission filter and preview DTO.
+
+Verification:
+
+- Context7 tRPC documentation was checked before adding the new tRPC procedure
+  and client query call.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04M single-instance files>`:
+  passed; only the test file changed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/manage-elements.test.ts`:
+  passed; the package script ran the full API Vitest suite (`38` files,
+  `360` tests), including the new single-instance tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with the known Manage build warnings (`MODULE_TYPELESS_PACKAGE_JSON`,
+  next-intl `i18n`, PWA output, stale Browserslist, `/qr/[...args]`
+  `MISSING_MESSAGE`, and large page data warnings).
+- Focused page/API audit
+  `rg -n "GetSingleElementInstanceDocument|GetSingleElementInstance|@apollo/client" apps/frontend-manage/src/pages/instances/[id].tsx packages/api/src --glob '!**/*.d.ts'`:
+  no matches.
+- Broader operation audit
+  `rg -n "GetSingleElementInstanceDocument|GetSingleElementInstance" apps/frontend-manage/src packages/api/src --glob '!**/*.d.ts'`:
+  no matches.
+- Compact S04 coexistence audit
+  `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`:
+  `205`, confirming GraphQL/Apollo remain intentionally live for other
+  S04/S05/S06 work.
+- `git diff --check`: passed before browser verification.
+- Browser verification used `AGENT_BROWSER_SESSION=s04-instance` against
+  branch-local backend/auth on `3103`/`3106` and a temporary Manage dev server on
+  `localhost:3116` with local public URL overrides.
+- Browser screenshots:
+  `/tmp/agent-browser-shots/s04-instance-01-login.png`,
+  `/tmp/agent-browser-shots/s04-instance-03-manage-3116.png`, and
+  `/tmp/agent-browser-shots/s04-instance-05-preview-id24.png`.
+- Browser verification opened readable seeded instance `/instances/24`, rendered
+  `Element Preview: Single Choice Question Title 1`, and browser resource
+  timings after `performance.clearResourceTimings()` showed
+  `http://localhost:3103/api/trpc/element.singleInstance?..."id":24...` with no
+  `/api/graphql` resource entry for the preview route.
+
+Residual risk / next S04 work:
+
+- The page still casts the tRPC preview DTO to the shared component's generated
+  `ElementInstance` type because `StudentElement` and
+  `useSingleStudentResponse` remain GraphQL-shaped shared components during the
+  mixed Apollo/tRPC state. That cleanup remains S04P/S06-gated.
+- `agent-browser network requests` did not capture requests in this session, so
+  resource timing entries were used as browser network evidence after clearing
+  timings immediately before opening the route.
+- Continue remaining S04-only findings and pause before S05/S06.
+
 ### 2026-06-19 Completed: S04M Manage Media Library Uploads
 
 Status: complete for the scoped slice. Scope was limited to the Manage rich-text

@@ -10,6 +10,10 @@ export const artificialInstanceInput = z.object({
   elementId: z.number().int(),
 })
 
+export const singleInstanceInput = z.object({
+  id: z.number().int(),
+})
+
 export const fileUploadSasInput = z.object({
   fileName: z.string(),
   contentType: z.string(),

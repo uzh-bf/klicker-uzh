@@ -17,6 +17,7 @@ import {
   SharingType,
   SortByType,
   type ActivityLogModificationDetails,
+  type ElementData,
   type ElementManipulationInput,
   type ElementOptionsInput,
 } from '@klicker-uzh/types'
@@ -53,6 +54,7 @@ import {
   manipulateFreeTextElementInput,
   manipulateNumericalElementInput,
   manipulateSelectionElementInput,
+  singleInstanceInput,
   tagOrderingInput,
   updateElementInstancesInput,
 } from '../schemas/element.js'
@@ -88,6 +90,18 @@ function reorderTags<T>(tags: T[], originIx: number, targetIx: number) {
   reorderedTags[targetIx] = originTag
 
   return reorderedTags
+}
+
+function toElementInstancePreviewDto(
+  instance: Pick<ElementInstance, 'id' | 'type' | 'elementType' | 'elementData'>
+) {
+  return {
+    __typename: 'ElementInstance' as const,
+    id: instance.id,
+    type: instance.type,
+    elementType: instance.elementType,
+    elementData: toPreviewElementData(instance.elementData as ElementData),
+  }
 }
 
 async function hasElementAdminPermission({
@@ -2145,6 +2159,51 @@ export const elementRouter = router({
           elementType: element.type,
           elementData: toPreviewElementData(elementData),
         },
+      }
+    }),
+
+  singleInstance: userProcedure
+    .input(singleInstanceInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const instance = await prisma.elementInstance.findUnique({
+        where: {
+          id: input.id,
+          OR: [
+            {
+              elementBlock: {
+                liveQuiz: {
+                  permissions: { some: { userId: ctx.user.sub } },
+                },
+              },
+            },
+            {
+              elementStack: {
+                OR: [
+                  {
+                    practiceQuiz: {
+                      permissions: { some: { userId: ctx.user.sub } },
+                    },
+                  },
+                  {
+                    microLearning: {
+                      permissions: { some: { userId: ctx.user.sub } },
+                    },
+                  },
+                  {
+                    groupActivity: {
+                      permissions: { some: { userId: ctx.user.sub } },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      })
+
+      return {
+        singleInstance: instance ? toElementInstancePreviewDto(instance) : null,
       }
     }),
 

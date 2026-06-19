@@ -1,7 +1,6 @@
-import { useQuery } from '@apollo/client'
 import {
   ElementType,
-  GetSingleElementInstanceDocument,
+  type ElementInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -13,18 +12,25 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function InstancePreview() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data, loading } = useQuery(GetSingleElementInstanceDocument, {
-    variables: {
-      id: Number(router.query.id),
+  const instanceId =
+    typeof router.query.id === 'string' ? Number(router.query.id) : -1
+  const shouldFetchInstance = Number.isInteger(instanceId) && instanceId > 0
+
+  const { data, isLoading } = trpc.element.singleInstance.useQuery(
+    {
+      id: instanceId,
     },
-    skip: !router.query.id,
-  })
-  const instance = data?.getSingleElementInstance
+    {
+      enabled: shouldFetchInstance,
+    }
+  )
+  const instance = data?.singleInstance as ElementInstance | null | undefined
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -40,7 +46,7 @@ function InstancePreview() {
     setStudentResponse,
   })
 
-  if (loading) {
+  if (!router.isReady || (shouldFetchInstance && isLoading)) {
     return <Loader />
   }
 

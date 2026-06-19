@@ -453,6 +453,115 @@ describe('manage element router', () => {
     })
   })
 
+  test('returns null single instance when activity permission is missing', async () => {
+    const elementInstanceFindUnique = vi.fn().mockResolvedValue(null)
+    const prisma = {
+      elementInstance: { findUnique: elementInstanceFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.element.singleInstance({ id: 23 })).resolves.toEqual({
+      singleInstance: null,
+    })
+    expect(elementInstanceFindUnique).toHaveBeenCalledWith({
+      where: {
+        id: 23,
+        OR: [
+          {
+            elementBlock: {
+              liveQuiz: {
+                permissions: { some: { userId: user.id } },
+              },
+            },
+          },
+          {
+            elementStack: {
+              OR: [
+                {
+                  practiceQuiz: {
+                    permissions: { some: { userId: user.id } },
+                  },
+                },
+                {
+                  microLearning: {
+                    permissions: { some: { userId: user.id } },
+                  },
+                },
+                {
+                  groupActivity: {
+                    permissions: { some: { userId: user.id } },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })
+  })
+
+  test('returns single instance preview data for permitted activity instances', async () => {
+    const elementInstanceFindUnique = vi.fn().mockResolvedValue({
+      id: 23,
+      type: ElementInstanceType.LIVE_QUIZ,
+      elementType: ElementType.SC,
+      elementData: {
+        id: '17-v2',
+        elementId: 17,
+        name: 'Instance question',
+        type: ElementType.SC,
+        content: 'Question content',
+        explanation: null,
+        basePoints: true,
+        pointsMultiplier: 2,
+        options: {
+          hasSampleSolution: true,
+          hasAnswerFeedbacks: true,
+          displayMode: 'LIST',
+          choices: [{ ix: 0, value: 'A', correct: true, feedback: 'Correct' }],
+        },
+      },
+    })
+    const prisma = {
+      elementInstance: { findUnique: elementInstanceFindUnique },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.element.singleInstance({ id: 23 })).resolves.toEqual({
+      singleInstance: {
+        __typename: 'ElementInstance',
+        id: 23,
+        type: ElementInstanceType.LIVE_QUIZ,
+        elementType: ElementType.SC,
+        elementData: {
+          __typename: 'ChoicesElementData',
+          id: '17-v2',
+          elementId: 17,
+          name: 'Instance question',
+          type: ElementType.SC,
+          content: 'Question content',
+          explanation: null,
+          basePoints: true,
+          pointsMultiplier: 2,
+          options: {
+            __typename: 'ChoiceElementOptions',
+            hasSampleSolution: true,
+            hasAnswerFeedbacks: true,
+            displayMode: 'LIST',
+            choices: [
+              {
+                ix: 0,
+                correct: true,
+                feedback: 'Correct',
+                value: 'A',
+              },
+            ],
+          },
+        },
+      },
+    })
+  })
+
   test('returns null instance update activities when write permission is missing', async () => {
     const findFirst = vi.fn().mockResolvedValue(null)
     const elementFindUnique = vi.fn()
