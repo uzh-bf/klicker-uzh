@@ -1,7 +1,6 @@
-import { useQuery } from '@apollo/client'
-import { GetLiveQuizSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -17,10 +16,8 @@ function LiveQuizDeletionModal({
   deleting: boolean
 }) {
   const t = useTranslations()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetLiveQuizSummaryDocument,
-    { variables: { quizId }, fetchPolicy: 'network-only' }
-  )
+  const { data: summaryData, isLoading: summaryLoading } =
+    trpc.activity.liveQuizSummary.useQuery({ activityId: quizId })
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -30,21 +27,21 @@ function LiveQuizDeletionModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getLiveQuizSummary) {
+    if (summaryData?.liveQuizSummary) {
       setConfirmations({
-        deleteResponses: summaryData?.getLiveQuizSummary.numOfResponses === 0,
+        deleteResponses: summaryData.liveQuizSummary.numOfResponses === 0,
         deleteLeaderboardEntries:
-          summaryData.getLiveQuizSummary.numOfLeaderboardEntries === 0,
-        deleteFeedbacks: summaryData.getLiveQuizSummary.numOfFeedbacks === 0,
+          summaryData.liveQuizSummary.numOfLeaderboardEntries === 0,
+        deleteFeedbacks: summaryData.liveQuizSummary.numOfFeedbacks === 0,
         deleteConfusionFeedbacks:
-          summaryData.getLiveQuizSummary.numOfConfusionFeedbacks === 0,
+          summaryData.liveQuizSummary.numOfConfusionFeedbacks === 0,
       })
     }
-  }, [summaryData?.getLiveQuizSummary])
+  }, [summaryData?.liveQuizSummary])
 
-  if (!summaryData?.getLiveQuizSummary) return null
+  if (!summaryData?.liveQuizSummary) return null
 
-  const summary = summaryData.getLiveQuizSummary
+  const summary = summaryData.liveQuizSummary
 
   return (
     <ActivityConfirmationModal

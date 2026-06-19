@@ -280,6 +280,94 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Live Quiz Action Modals
+
+Status: complete for the live-quiz action/modal migration slice. Scope stayed
+limited to replacing Apollo/generated GraphQL live-quiz action consumers in
+`LiveQuizActions`, `LiveQuizDeletionModal`, `LiveQuizResetModal`, and
+`useStartLiveQuiz` with tRPC reads/mutations. The slice preserved READ summary
+checks, FULL_ACCESS plus ADMIN delete/reset checks, assessment-course admin
+restrictions, scheduled task cleanup, reset audit events/cache clearing, and
+running-live-quiz invalidation for starts. It did not migrate live quiz
+authoring create/edit, the wizard start path, cancel/cockpit runtime modals,
+`/quizzes/[id]/cockpit`, `/quizzes/[id]/lecturer`, S05, or S06.
+
+Slice: S04L Live Quiz Action Modals
+
+GraphQL operation(s):
+
+- `GetLiveQuizSummaryDocument`
+- `DeleteLiveQuizDocument`
+- `ResetAssessmentLiveQuizDocument`
+- `StartLiveQuizDocument`
+- `GetUserRunningLiveQuizzesDocument` only in `useStartLiveQuiz`
+
+Behavior source:
+
+- `packages/graphql/src/services/liveQuizzes.ts` `getLiveQuizSummary`,
+  `deleteLiveQuiz`, `resetAssessmentLiveQuiz`, and `startLiveQuiz`
+- `packages/api/src/services/liveQuizExecution.ts` `startLiveQuiz`
+- Existing GraphQL query/mutation permission wrappers in
+  `packages/graphql/src/schema/query.ts` and
+  `packages/graphql/src/schema/mutation.ts`
+
+Write scope:
+
+- `packages/api/src/trpc/routers/activity.ts`
+- `packages/api/src/trpc/__tests__/manage-activities.test.ts`
+- `apps/frontend-manage/src/components/activities/overview/LiveQuizActions.tsx`
+- `apps/frontend-manage/src/components/activities/actions/useStartLiveQuiz.ts`
+- `apps/frontend-manage/src/components/courses/modals/LiveQuizDeletionModal.tsx`
+- `apps/frontend-manage/src/components/courses/modals/LiveQuizResetModal.tsx`
+- this plan progress entry
+
+Implementation notes:
+
+- Added `activity.liveQuizSummary`, `activity.delete` support for
+  `ActivityType.LIVE_QUIZ`, and `activity.resetAssessmentLiveQuiz` to the
+  activity tRPC router.
+- Migrated `LiveQuizDeletionModal` and `LiveQuizResetModal` summary/reset reads
+  to `trpc.activity.*` hooks.
+- Migrated `LiveQuizActions` deletion to `trpc.activity.delete` and preserved
+  course-detail invalidation plus activity refetch.
+- Migrated `useStartLiveQuiz` to the existing `trpc.liveQuiz.start` mutation and
+  `utils.liveQuiz.running.invalidate()`.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write <S04L live-quiz action files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts live-quiz-running.test.ts`:
+  passed, 40 files and 414 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-data warnings.
+- Source audit found no `@apollo/client`, `DeleteLiveQuizDocument`,
+  `GetLiveQuizSummaryDocument`, `ResetAssessmentLiveQuizDocument`,
+  `StartLiveQuizDocument`, or `GetUserRunningLiveQuizzesDocument` in the
+  migrated live-quiz action files.
+- Browser attempt: branch-local `frontend-manage` returned HTTP 200 on
+  `http://127.0.0.1:3002`, but `npx agent-browser` ended at
+  `chrome-error://chromewebdata/` with no interactive elements. Screenshot:
+  `/tmp/agent-browser-shots/s04-live-quiz-actions-01-initial.png` (blank white).
+- Direct tRPC HTTP smoke against branch-local backend with local smoke JWT:
+  `activity.liveQuizSummary` nonexistent returned `{ liveQuizSummary: null }`,
+  `activity.delete` with `LIVE_QUIZ` nonexistent returned
+  `{ deleteActivity: null }`, and `activity.resetAssessmentLiveQuiz` nonexistent
+  returned `{ resetAssessmentLiveQuiz: null }`.
+
+Residual S04 scope:
+
+- Live quiz authoring create/edit and `LiveQuizWizard` start/read paths remain
+  for a later S04 authoring slice.
+- Cockpit/cancel runtime screens and `/quizzes/[id]/cockpit` or
+  `/quizzes/[id]/lecturer` remain out of scope until S05.
+
 ### 2026-06-19 Completed: S04L Async Activity Deletion Modals
 
 Status: complete for the scoped code migration and automated verification.

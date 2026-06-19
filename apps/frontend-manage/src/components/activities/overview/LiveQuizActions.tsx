@@ -1,10 +1,9 @@
-import { useMutation } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
-  DeleteLiveQuizDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType as ApiActivityType } from '@klicker-uzh/types'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -119,10 +118,7 @@ function LiveQuizActions({
     name: liveQuiz.name,
   })
 
-  const [deleteLiveQuiz, { loading: deleting }] = useMutation(
-    DeleteLiveQuizDocument,
-    { variables: { id: liveQuiz.id } }
-  )
+  const deleteLiveQuiz = trpc.activity.delete.useMutation()
   const { data: user } = trpc.user.profile.useQuery()
 
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
@@ -232,15 +228,18 @@ function LiveQuizActions({
             quizId={liveQuiz.id}
             onClose={() => setDeletionModal(false)}
             onDelete={async () => {
-              const result = await deleteLiveQuiz()
-              if (liveQuiz.courseId && result.data?.deleteLiveQuiz?.id) {
+              const result = await deleteLiveQuiz.mutateAsync({
+                activityId: liveQuiz.id,
+                activityType: ApiActivityType.LIVE_QUIZ,
+              })
+              if (liveQuiz.courseId && result.deleteActivity?.id) {
                 await utils.course.detail.invalidate({
                   courseId: liveQuiz.courseId,
                 })
               }
               await refetchActivities?.()
             }}
-            deleting={deleting}
+            deleting={deleteLiveQuiz.isLoading}
           />
         )}
 

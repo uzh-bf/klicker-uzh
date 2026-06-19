@@ -31,6 +31,8 @@ function createContext(
     hatchet?: TRPCContext['hatchet']
     pubSub?: TRPCContext['pubSub']
     tasks?: TRPCContext['tasks']
+    redisExec?: TRPCContext['redisExec']
+    redisAssessmentExec?: TRPCContext['redisAssessmentExec']
   }
 ): TRPCContext {
   return {
@@ -39,6 +41,8 @@ function createContext(
     hatchet: options?.hatchet,
     pubSub: options?.pubSub,
     tasks: options?.tasks,
+    redisExec: options?.redisExec,
+    redisAssessmentExec: options?.redisAssessmentExec,
     user: {
       sub: user.id,
       role: UserRole.USER,
@@ -2320,6 +2324,81 @@ describe('manage activity read routers', () => {
     expect(findUnique).not.toHaveBeenCalled()
   })
 
+  test('returns a live quiz summary through the activity router', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      _count: {
+        feedbacks: 2,
+        confusionFeedbacks: 1,
+        leaderboard: 3,
+        temporaryLeaderboard: 4,
+      },
+      blocks: [
+        {
+          elements: [
+            { results: { total: 5 }, anonymousResults: { total: 2 } },
+            { results: { total: 3 }, anonymousResults: { total: 1 } },
+          ],
+        },
+      ],
+      activeBlock: null,
+      isAssessmentEnabled: false,
+    })
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.liveQuizSummary({
+        activityId: 'live-quiz-1',
+      })
+    ).resolves.toEqual({
+      liveQuizSummary: {
+        numOfResponses: 11,
+        numOfFeedbacks: 2,
+        numOfConfusionFeedbacks: 1,
+        numOfLeaderboardEntries: 7,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1' },
+      include: {
+        _count: {
+          select: {
+            feedbacks: true,
+            confusionFeedbacks: true,
+            leaderboard: true,
+            temporaryLeaderboard: true,
+          },
+        },
+        blocks: { include: { elements: true } },
+        activeBlock: { include: { elements: true } },
+      },
+    })
+  })
+
   test('returns a microlearning summary through the activity router', async () => {
     const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
     const findUnique = vi.fn().mockResolvedValue({
@@ -3180,6 +3259,245 @@ describe('manage activity read routers', () => {
       },
     })
     expect(practiceQuizFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('hard deletes scheduled live quizzes through the activity router', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      status: PublicationStatus.SCHEDULED,
+      isAssessmentEnabled: false,
+      blocks: [],
+      course: null,
+    })
+    const deleteLiveQuiz = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      status: PublicationStatus.SCHEDULED,
+      scheduledPublicationTaskId: 'publication-task',
+    })
+    const transaction = vi.fn().mockImplementation(async (callback) =>
+      callback({
+        liveQuiz: { delete: deleteLiveQuiz },
+      })
+    )
+    const scheduledDelete = vi.fn().mockResolvedValue(undefined)
+    const emit = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        hatchet: {
+          scheduled: { delete: scheduledDelete },
+        } as unknown as TRPCContext['hatchet'],
+      })
+    )
+
+    await expect(
+      caller.activity.delete({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({ deleteActivity: { id: 'live-quiz-1' } })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1' },
+      include: {
+        blocks: { include: { elements: true } },
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: user.id,
+                    permissionLevel: {
+                      in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+    expect(deleteLiveQuiz).toHaveBeenCalledWith({
+      where: {
+        id: 'live-quiz-1',
+        status: {
+          in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+        },
+      },
+    })
+    expect(scheduledDelete).toHaveBeenCalledWith('publication-task')
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'LiveQuiz',
+      id: 'live-quiz-1',
+    })
+  })
+
+  test('returns null when deleting a running live quiz', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      status: PublicationStatus.PUBLISHED,
+      isAssessmentEnabled: false,
+      blocks: [],
+      course: null,
+    })
+    const transaction = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.delete({
+        activityId: 'live-quiz-1',
+        activityType: ActivityType.LIVE_QUIZ,
+      })
+    ).resolves.toEqual({ deleteActivity: null })
+
+    expect(transaction).not.toHaveBeenCalled()
+  })
+
+  test('resets ended assessment live quizzes through the activity router', async () => {
+    const permissionFindFirst = vi.fn().mockResolvedValue({ id: 1 })
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      isAssessmentEnabled: true,
+      blocks: [],
+    })
+    const updateLiveQuiz = vi.fn().mockResolvedValue({
+      id: 'live-quiz-1',
+      status: PublicationStatus.DRAFT,
+    })
+    const transaction = vi.fn().mockImplementation(async (callback) =>
+      callback({
+        liveQuiz: { update: updateLiveQuiz },
+        elementBlock: { update: vi.fn() },
+        elementInstance: { update: vi.fn() },
+      })
+    )
+    const auditPush = vi.fn().mockResolvedValue(undefined)
+    const redisKeys = vi.fn().mockResolvedValue([])
+    const emit = vi.fn()
+    const prisma = {
+      derivedPermission: {
+        findFirst: permissionFindFirst,
+      },
+      liveQuiz: {
+        findUnique,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext(prisma, {
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        hatchet: {
+          events: { push: auditPush },
+        } as unknown as TRPCContext['hatchet'],
+        redisAssessmentExec: {
+          keys: redisKeys,
+        } as unknown as TRPCContext['redisAssessmentExec'],
+      })
+    )
+
+    await expect(
+      caller.activity.resetAssessmentLiveQuiz({
+        activityId: 'live-quiz-1',
+      })
+    ).resolves.toEqual({
+      resetAssessmentLiveQuiz: {
+        id: 'live-quiz-1',
+        status: PublicationStatus.DRAFT,
+      },
+    })
+
+    expect(permissionFindFirst).toHaveBeenCalledWith({
+      where: {
+        liveQuizId: 'live-quiz-1',
+        userId: user.id,
+        permissionLevel: {
+          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+        },
+      },
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'live-quiz-1',
+        isAssessmentEnabled: true,
+        status: PublicationStatus.ENDED,
+        course: {
+          permissions: {
+            some: {
+              userId: user.id,
+              permissionLevel: {
+                in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
+      include: {
+        blocks: {
+          include: {
+            elements: {
+              include: { liveQuizResponses: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+    expect(updateLiveQuiz).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1' },
+      data: {
+        status: PublicationStatus.DRAFT,
+        startedAt: null,
+        finishedAt: null,
+        feedbacks: { deleteMany: {} },
+        confusionFeedbacks: { deleteMany: {} },
+        leaderboard: { deleteMany: {} },
+        temporaryLeaderboard: { deleteMany: {} },
+      },
+      select: { id: true, status: true },
+    })
+    expect(auditPush).toHaveBeenCalledWith('create-audit-log-entry', {
+      info: expect.stringContaining('initiated reset'),
+    })
+    expect(auditPush).toHaveBeenCalledWith('create-audit-log-entry', {
+      info: expect.stringContaining('Successfully reset'),
+    })
+    expect(redisKeys).toHaveBeenCalledWith('lq:live-quiz-1:*')
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'LiveQuiz',
+      id: 'live-quiz-1',
+    })
   })
 
   test.each([

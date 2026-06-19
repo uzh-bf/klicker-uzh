@@ -30,6 +30,7 @@ import {
   type SelectionElementData,
 } from '@klicker-uzh/types'
 import {
+  getCachedBlockResults,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
@@ -37,6 +38,7 @@ import {
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
 } from '@klicker-uzh/util'
+import type { Redis } from 'ioredis'
 import type { z } from 'zod'
 import {
   startLiveQuiz,
@@ -717,6 +719,12 @@ type ScheduledHatchetClient = {
   }
 }
 
+type HatchetEventClient = {
+  events?: {
+    push?: (eventName: string, payload: { info: string }) => Promise<unknown>
+  }
+}
+
 type ScheduledTaskResult = {
   metadata: {
     id: string
@@ -804,6 +812,13 @@ type GroupActivitySummaryRecord = {
   numOfSubmissions: number
 }
 
+type LiveQuizSummaryRecord = {
+  numOfResponses: number
+  numOfFeedbacks: number
+  numOfConfusionFeedbacks: number
+  numOfLeaderboardEntries: number
+}
+
 type EndedActivityRecord = {
   id: string
   status: PublicationStatus
@@ -817,6 +832,11 @@ type ExtendedActivityRecord = {
 
 type DeletedActivityRecord = {
   id: string
+}
+
+type ResetLiveQuizRecord = {
+  id: string
+  status: PublicationStatus
 }
 
 function getActivitySchedulerTasks(ctx: TRPCContext) {
@@ -911,6 +931,36 @@ async function deleteScheduledHatchetTask({
     await hatchet.scheduled.delete(taskId)
   } catch (error) {
     console.error(failureMessage, error)
+  }
+}
+
+async function pushHatchetAuditLogEvent({
+  ctx,
+  info,
+}: {
+  ctx: TRPCContext
+  info: string
+}) {
+  const hatchet = ctx.hatchet as HatchetEventClient | undefined
+
+  if (!hatchet?.events?.push) {
+    throw new Error('Hatchet event client unavailable')
+  }
+
+  await hatchet.events.push('create-audit-log-entry', { info })
+}
+
+async function pushHatchetAuditLogEventSafely({
+  ctx,
+  info,
+}: {
+  ctx: TRPCContext
+  info: string
+}) {
+  try {
+    await pushHatchetAuditLogEvent({ ctx, info })
+  } catch (error) {
+    console.error('Failed to create reset live quiz audit log entry:', error)
   }
 }
 
@@ -1547,6 +1597,86 @@ async function getPracticeQuizSummary({
   }
 }
 
+async function getLiveQuizSummary({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+  }
+}): Promise<LiveQuizSummaryRecord | null> {
+  const canRead = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: ActivityType.LIVE_QUIZ,
+    },
+    PermissionLevel.READ
+  )
+
+  if (!canRead) return null
+
+  const liveQuiz = await getPrisma(ctx).liveQuiz.findUnique({
+    where: { id: input.activityId },
+    include: {
+      _count: {
+        select: {
+          feedbacks: true,
+          confusionFeedbacks: true,
+          leaderboard: true,
+          temporaryLeaderboard: true,
+        },
+      },
+      blocks: { include: { elements: true } },
+      activeBlock: { include: { elements: true } },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  let storedResponses = liveQuiz.blocks.reduce((blockAcc, block) => {
+    blockAcc += block.elements.reduce((instanceAcc, instance) => {
+      instanceAcc +=
+        getResultTotal(instance.results) +
+        getResultTotal(instance.anonymousResults)
+      return instanceAcc
+    }, 0)
+    return blockAcc
+  }, 0)
+
+  const redis = (
+    liveQuiz.isAssessmentEnabled ? ctx.redisAssessmentExec : ctx.redisExec
+  ) as Redis | undefined
+
+  if (liveQuiz.activeBlock && redis) {
+    const cachedResults = await getCachedBlockResults({
+      redisExec: redis,
+      activeBlock: liveQuiz.activeBlock,
+    })
+
+    if (cachedResults) {
+      storedResponses += liveQuiz.activeBlock.elements.reduce(
+        (acc, instance) => {
+          acc +=
+            cachedResults.instanceResults[instance.id]?.anonymousResults
+              .total ?? 0
+          return acc
+        },
+        0
+      )
+    }
+  }
+
+  return {
+    numOfResponses: storedResponses,
+    numOfFeedbacks: liveQuiz._count.feedbacks,
+    numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
+    numOfLeaderboardEntries:
+      liveQuiz._count.leaderboard + liveQuiz._count.temporaryLeaderboard,
+  }
+}
+
 async function getGroupActivitySummary({
   ctx,
   input,
@@ -1589,6 +1719,273 @@ async function getGroupActivitySummary({
   return {
     numOfStartedInstances,
     numOfSubmissions,
+  }
+}
+
+async function deleteLiveQuizActivity({
+  ctx,
+  activityId,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  activityId: string
+}): Promise<DeletedActivityRecord | null> {
+  const prisma = getPrisma(ctx)
+  const liveQuiz = await prisma.liveQuiz.findUnique({
+    where: { id: activityId },
+    include: {
+      blocks: { include: { elements: true } },
+      course: {
+        include: {
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz || liveQuiz.status === PublicationStatus.PUBLISHED) {
+    return null
+  }
+
+  if (liveQuiz.status === PublicationStatus.ENDED) {
+    if (liveQuiz.isAssessmentEnabled) return null
+
+    const deletedLiveQuiz = await prisma.$transaction(
+      async (tx) => {
+        const quiz = await tx.liveQuiz.update({
+          where: { id: activityId, status: PublicationStatus.ENDED },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} },
+          },
+        })
+
+        await recomputeDerivedPermissions({ liveQuizId: quiz.id }, tx)
+
+        return quiz
+      },
+      { timeout: 60000 }
+    )
+
+    ctx.emitter?.emit('invalidate', {
+      typename: 'LiveQuiz',
+      id: activityId,
+    })
+    return { id: deletedLiveQuiz.id }
+  }
+
+  if (liveQuiz.isAssessmentEnabled) {
+    const isCourseAdminOwner =
+      !!liveQuiz.course?._count?.permissions &&
+      liveQuiz.course._count.permissions > 0
+
+    if (!isCourseAdminOwner) return null
+  }
+
+  const deletedLiveQuiz = await prisma.$transaction(
+    async (tx) => {
+      const quiz = await tx.liveQuiz.delete({
+        where: {
+          id: activityId,
+          status: {
+            in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+          },
+        },
+      })
+
+      if (
+        quiz.status === PublicationStatus.SCHEDULED &&
+        quiz.scheduledPublicationTaskId
+      ) {
+        await deleteScheduledHatchetTask({
+          ctx,
+          taskId: quiz.scheduledPublicationTaskId,
+          failureMessage: `Failed to delete scheduled task for live quiz ${activityId}:`,
+        })
+      }
+
+      await propagateActivityToElements(
+        { stacks: liveQuiz.blocks, updateAccessRequests: true },
+        tx
+      )
+
+      return quiz
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter?.emit('invalidate', {
+    typename: 'LiveQuiz',
+    id: activityId,
+  })
+  return { id: deletedLiveQuiz.id }
+}
+
+async function resetAssessmentLiveQuizActivity({
+  ctx,
+  input,
+}: {
+  ctx: TRPCContext & { user: { sub: string } }
+  input: {
+    activityId: string
+  }
+}): Promise<ResetLiveQuizRecord | null> {
+  const canAdmin = await hasActivityPermission(
+    ctx,
+    {
+      activityId: input.activityId,
+      activityType: ActivityType.LIVE_QUIZ,
+    },
+    PermissionLevel.ADMIN
+  )
+
+  if (!canAdmin) return null
+
+  const prisma = getPrisma(ctx)
+  const liveQuiz = await prisma.liveQuiz.findUnique({
+    where: {
+      id: input.activityId,
+      isAssessmentEnabled: true,
+      status: PublicationStatus.ENDED,
+      course: {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            include: { liveQuizResponses: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  try {
+    await pushHatchetAuditLogEvent({
+      ctx,
+      info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${input.activityId}.`,
+    })
+
+    for (const block of liveQuiz.blocks) {
+      for (const instance of block.elements) {
+        await Promise.all(
+          instance.liveQuizResponses.map((response) =>
+            pushHatchetAuditLogEvent({
+              ctx,
+              info: `[INFO] [Reset Assessment Live Quiz] Deducted ${response.basePoints} base points, ${response.correctnessPoints} correctness points, and ${response.bonusPoints} bonus points from participant with ID ${response.participantId} for element instance with ID ${instance.id} in block with ID ${block.id} in live quiz with ID ${input.activityId}.`,
+            })
+          )
+        )
+      }
+    }
+
+    const updatedQuiz = await prisma.$transaction(
+      async (tx) => {
+        const quiz = await tx.liveQuiz.update({
+          where: { id: input.activityId },
+          data: {
+            status: PublicationStatus.DRAFT,
+            startedAt: null,
+            finishedAt: null,
+            feedbacks: { deleteMany: {} },
+            confusionFeedbacks: { deleteMany: {} },
+            leaderboard: { deleteMany: {} },
+            temporaryLeaderboard: { deleteMany: {} },
+          },
+          select: { id: true, status: true },
+        })
+
+        for (const block of liveQuiz.blocks) {
+          await tx.elementBlock.update({
+            where: { id: block.id },
+            data: {
+              status: 'SCHEDULED',
+              startedAt: null,
+              closedAt: null,
+              expiresAt: null,
+              execution: { increment: 1 },
+            },
+          })
+
+          for (const instance of block.elements) {
+            const initialResults = getInitialInstanceResults(
+              instance.elementData
+            )
+
+            await tx.elementInstance.update({
+              where: { id: instance.id },
+              data: {
+                liveQuizResponses: { deleteMany: {} },
+                results: initialResults,
+                anonymousResults: initialResults,
+              },
+            })
+          }
+        }
+
+        return quiz
+      },
+      { timeout: 60000 }
+    )
+
+    await pushHatchetAuditLogEvent({
+      ctx,
+      info: `[INFO] [Reset Assessment Live Quiz] Successfully reset assessment live quiz with ID ${input.activityId}.`,
+    })
+
+    ctx.emitter?.emit('invalidate', {
+      typename: 'LiveQuiz',
+      id: input.activityId,
+    })
+
+    const redis = (
+      liveQuiz.isAssessmentEnabled ? ctx.redisAssessmentExec : ctx.redisExec
+    ) as Redis | undefined
+
+    if (!redis) {
+      throw new Error('Redis client unavailable')
+    }
+
+    const keys = await redis.keys(`lq:${liveQuiz.id}:*`)
+    if (keys.length > 0) {
+      const pipe = redis.pipeline()
+      for (const key of keys) {
+        pipe.unlink(key)
+      }
+      await pipe.exec()
+    }
+
+    return updatedQuiz
+  } catch (error) {
+    await pushHatchetAuditLogEventSafely({
+      ctx,
+      info: `[ERROR] [Reset Assessment Live Quiz] Failed to reset live quiz with ID ${input.activityId}: ${error}`,
+    })
+
+    return null
   }
 }
 
@@ -1891,6 +2288,13 @@ async function deleteActivity({
   )
 
   if (!canAdmin) return null
+
+  if (input.activityType === ActivityType.LIVE_QUIZ) {
+    return await deleteLiveQuizActivity({
+      ctx,
+      activityId: input.activityId,
+    })
+  }
 
   if (input.activityType === ActivityType.PRACTICE_QUIZ) {
     return await deletePracticeQuizActivity({
@@ -4009,6 +4413,12 @@ export const activityRouter = router({
       changeActivityName: await changeActivityName({ ctx, input }),
     })),
 
+  liveQuizSummary: userProcedure
+    .input(activityIdInput)
+    .query(async ({ ctx, input }) => ({
+      liveQuizSummary: await getLiveQuizSummary({ ctx, input }),
+    })),
+
   practiceQuizSummary: userProcedure
     .input(activityIdInput)
     .query(async ({ ctx, input }) => ({
@@ -4055,6 +4465,15 @@ export const activityRouter = router({
     .input(activityDetailsInput)
     .mutation(async ({ ctx, input }) => ({
       deleteActivity: await deleteActivity({ ctx, input }),
+    })),
+
+  resetAssessmentLiveQuiz: userFullAccessProcedure
+    .input(activityIdInput)
+    .mutation(async ({ ctx, input }) => ({
+      resetAssessmentLiveQuiz: await resetAssessmentLiveQuizActivity({
+        ctx,
+        input,
+      }),
     })),
 
   extend: userFullAccessProcedure
