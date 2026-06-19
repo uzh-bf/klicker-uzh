@@ -1,8 +1,4 @@
-import { useApolloClient } from '@apollo/client'
-import {
-  GetAnswerCollectionsInfoDocument,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 // function to trigger object import, returns success boolean
@@ -17,7 +13,6 @@ function useCopyCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  const apolloClient = useApolloClient()
   const utils = trpc.useUtils()
   const copyCatalogObjectToAccount =
     trpc.sharing.copyCatalogObjectToAccount.useMutation()
@@ -48,9 +43,6 @@ function useCopyCatalogObject({
         })
         if (objectType === ObjectType.AnswerCollection) {
           void utils.resources.answerCollectionsInfo.invalidate()
-          void apolloClient.refetchQueries({
-            include: [GetAnswerCollectionsInfoDocument],
-          })
         }
         return true
       }

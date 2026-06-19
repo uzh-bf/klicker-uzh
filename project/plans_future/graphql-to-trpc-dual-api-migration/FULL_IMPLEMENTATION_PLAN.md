@@ -280,6 +280,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04K Catalog Copy/Import Apollo Refetch Cleanup
+
+Status: complete for the scoped cleanup. Scope was limited to the two catalog
+copy/import hooks that already execute tRPC mutations and already invalidate
+tRPC catalog/resource queries, but still imported Apollo solely to refetch the
+now-migrated `GetAnswerCollectionsInfoDocument`.
+
+Slice: S04K Catalog Copy/Import Apollo Refetch Cleanup
+GraphQL operation(s): `GetAnswerCollectionsInfoDocument`
+GraphQL resolver(s): none in this slice; the active read consumer is already
+`resources.answerCollectionsInfo`.
+Behavior source: existing tRPC invalidation in the same hooks.
+tRPC router.procedure: existing `sharing.copyCatalogObjectToAccount`,
+`sharing.importCatalogObject`, and `resources.answerCollectionsInfo`.
+Input schema: unchanged.
+Output DTO: unchanged.
+Active frontend consumers:
+`apps/frontend-manage/src/components/catalog/actions/useCopyCatalogObject.ts`,
+`apps/frontend-manage/src/components/catalog/actions/useImportCatalogObject.ts`
+Apollo cache/refetch/subscription behavior: legacy `apolloClient.refetchQueries`
+for `GetAnswerCollectionsInfoDocument`; no subscription behavior.
+React Query replacement: keep existing
+`utils.resources.answerCollectionsInfo.invalidate()` and
+`utils.sharing.catalogObjects.invalidate(...)`.
+Browser verification path: use the same seeded non-owner catalog import modal
+flow and confirm the mutation still completes or, if avoiding local data
+mutation, confirm modal load remains correct after removing the Apollo-only
+refetch bridge.
+Cleanup blocked until: remaining S04 consumers, S04P generated type leak cleanup,
+S05 realtime, and S06 cleanup gates.
+
+Implementation:
+
+- Removed `useApolloClient` and `GetAnswerCollectionsInfoDocument` from
+  `useCopyCatalogObject` and `useImportCatalogObject`.
+- Kept existing tRPC invalidations for `sharing.catalogObjects` and
+  `resources.answerCollectionsInfo`.
+- Left generated `ObjectType` imports untouched for mixed-state S04P cleanup.
+
+Verification:
+
+- `rg -n "GetAnswerCollectionsInfoDocument|resources.answerCollectionsInfo|answerCollectionsInfo" apps/frontend-manage/src packages/api/src -g '*.ts' -g '*.tsx'`
+  confirmed the active answer-collection list consumer is already tRPC-backed
+  and the GraphQL operation was only still referenced by these two hooks.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04K copy/import cleanup files>`:
+  passed.
+- Focused audits
+  `rg -n "GetAnswerCollectionsInfoDocument|useApolloClient|@apollo/client" apps/frontend-manage/src/components/catalog/actions/useCopyCatalogObject.ts apps/frontend-manage/src/components/catalog/actions/useImportCatalogObject.ts`
+  and
+  `rg -n "GetAnswerCollectionsInfoDocument" apps/frontend-manage/src packages/api/src --glob '!**/*.d.ts'`
+  returned no matches.
+- Compact S04 coexistence audit
+  `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`:
+  `204`; the count did not drop because both hooks still intentionally import
+  generated `ObjectType` until S04P/S06 cleanup.
+- `git diff --check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/PWA/i18n/page-data warnings. As with the previous
+  slice, the branch-local Manage dev server was restarted after the build before
+  browser verification.
+- Browser verification with `npx agent-browser`: in the authenticated seeded
+  non-owner `free` session, opened `http://localhost:3116/resources/catalog`,
+  submitted the public answer collection import modal, and verified the object
+  row changed to `Access granted`.
+- Browser resource timing after clearing entries showed
+  `/api/trpc/sharing.answerCollectionCatalogInfo`,
+  `/api/trpc/sharing.importCatalogObject`, and
+  `/api/trpc/sharing.catalogObjects`; no `/api/graphql` request was recorded for
+  this flow.
+- Browser screenshot:
+  `/tmp/agent-browser-shots/s04-catalog-copy-import-01-import-success.png`.
+
+Residual risk / next S04 work:
+
+- The copy hook was covered by type/build and the same removed Apollo refetch
+  pattern as the runtime-verified import hook; it was not separately executed in
+  the browser to avoid extra local data churn.
+- Continue remaining S04-only findings and pause before S05/S06.
+
 ### 2026-06-19 Completed: S04K Catalog Answer Collection Info
 
 Status: complete for the scoped slice. Scope was the read-only manage catalog
