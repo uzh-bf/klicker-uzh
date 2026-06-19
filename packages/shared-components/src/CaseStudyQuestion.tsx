@@ -4,15 +4,15 @@ import {
   faInfoCircle,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type {
-  CaseStudyElementOptions,
-  CaseStudyInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type {
+  CaseStudyElementOptions,
+  CaseStudyInstanceEvaluation,
+} from './elementTypes'
 import CSEvaluation from './evaluation/CSEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'

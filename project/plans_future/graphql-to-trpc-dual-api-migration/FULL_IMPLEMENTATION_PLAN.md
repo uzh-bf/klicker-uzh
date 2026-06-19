@@ -514,6 +514,53 @@ S05G-AD next: continue with the shared case-study question/evaluation generated
 type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup until
 all S05 gates are clean and explicitly reviewed.
 
+### 2026-06-19 Completed: S05G-AD Case-Study Question/Evaluation Generated Type Cleanup
+
+Status: complete locally. Scope was limited to the shared case-study
+question/evaluation leaf path and its local case-study evaluation hooks while
+keeping GraphQL/Apollo live.
+
+Slice: S05G-AD case-study question/evaluation generated type cleanup
+
+Operation mapping:
+
+- GraphQL generated imports:
+  `CaseStudyElementOptions` and `CaseStudyInstanceEvaluation` from
+  `@klicker-uzh/graphql/dist/ops`
+- Replacement:
+  local structural `CaseStudyElementOptions` / `CaseStudyInstanceEvaluation`
+  types from `packages/shared-components`
+- Active consumers:
+  `CaseStudyQuestion`, `CSEvaluation`, `useCaseStudySolutionsObject`,
+  `useEvaluationCaseStudyResults`
+- React Query replacement:
+  none; this is a shared-component generated type cleanup, not an API call
+  migration
+- Browser verification path:
+  no new UI behavior; use package checks and coexistence import audits for this
+  leaf cleanup
+- Cleanup blocked until:
+  remaining shared `StudentElement` and student-response generated imports are
+  removed and S06 is explicitly approved
+
+Intended verification:
+
+- `pnpm --filter @klicker-uzh/shared-components check` passed
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed
+- focused Prettier check on touched files passed
+- generated type import audit for the touched case-study files passed with no
+  matches
+- `git diff --check` passed
+
+Residual generated imports after this slice are limited to shared
+`StudentElement`, `useSingleStudentResponse`, and `useStudentResponse`.
+
+S05G-AE next: remove generated `ElementType`, `ElementInstance`, and
+`ElementStack` imports from the remaining shared student element/response path
+while keeping GraphQL/Apollo live. Do not start S06 cleanup until all S05 gates
+are clean and explicitly reviewed.
+
 ### 2026-06-19 Completed: S05A PWA Microlearning tRPC Realtime
 
 Status: completed. User requested continuing the goal after the S04Q test-parity

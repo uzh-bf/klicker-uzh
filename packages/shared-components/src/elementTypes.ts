@@ -247,11 +247,23 @@ export type SelectionInstanceEvaluation = InstanceEvaluation & {
 }
 
 export type CaseStudyElementOptions = {
+  answerCollectionId?: number | null
   cases: {
     description: string
     id: string
+    solutions?:
+      | {
+          criteriaSolutions: {
+            criterionId: string
+            max: number
+            min: number
+          }[]
+          itemId: number
+        }[]
+      | null
     title: string
   }[]
+  collectionItemIds?: number[] | null
   criteria: {
     id: string
     labels?: {
@@ -265,10 +277,38 @@ export type CaseStudyElementOptions = {
     step: number
     unit?: string | null
   }[]
+  hasSampleSolution?: boolean | null
   items?:
     | {
         id: number
         value: string
+      }[]
+    | null
+}
+
+export type CaseStudyInstanceEvaluation = InstanceEvaluation & {
+  assessments?:
+    | {
+        caseId: string
+        criterionId: string
+        itemId: number
+        responseValues: number[]
+      }[]
+    | null
+  explanation?: string | null
+  studySolutions?:
+    | {
+        caseId: string
+        solutions?:
+          | {
+              criteriaSolutions: {
+                criterionId: string
+                max: number
+                min: number
+              }[]
+              itemId: number
+            }[]
+          | null
       }[]
     | null
 }
