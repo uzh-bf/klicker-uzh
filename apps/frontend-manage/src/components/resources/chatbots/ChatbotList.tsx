@@ -1,8 +1,8 @@
-import { Chatbot } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ChatbotItem from './ChatbotItem'
+import type { Chatbot } from './types'
 
 function ChatbotList({
   chatbots,

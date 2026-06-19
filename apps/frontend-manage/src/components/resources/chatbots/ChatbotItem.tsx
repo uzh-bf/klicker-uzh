@@ -1,6 +1,6 @@
-import { Chatbot } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import type { Chatbot } from './types'
 
 function ChatbotItem({
   chatbot,

@@ -280,6 +280,95 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04K Manage Chatbot Resources
+
+Status: complete for the scoped slice. Scope was limited to the Manage resources
+chatbot page and its model-settings save action. This slice migrated the page's
+remaining chatbot GraphQL operations to tRPC and kept realtime flows,
+cockpit/live quiz subscribers, Apollo providers, generated type cleanup, S05,
+and S06 out of scope.
+
+Operation mapping:
+
+```text
+Slice: S04K Manage Chatbot Resources
+GraphQL operation(s): GetChatbotsInfo, GetChatModelRegistry, UpdateChatbotModelSettings
+GraphQL resolver(s): getChatbotsInfo, getChatModelRegistry, updateChatbotModelSettings
+Behavior source: packages/graphql/src/services/chatbots.ts and packages/graphql/src/schema/resource.ts
+tRPC router.procedure: resources.chatbotsInfo, resources.chatModelRegistry, resources.updateChatbotModelSettings
+Input schema: updateChatbotModelSettingsInput
+Output DTO: chatbot resource summaries and chat model capabilities consumed by the Manage resources chatbot UI
+Active frontend consumers:
+- apps/frontend-manage/src/components/resources/Chatbots.tsx
+- apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx
+- apps/frontend-manage/src/components/resources/chatbots/ChatbotList.tsx
+- apps/frontend-manage/src/components/resources/chatbots/ChatbotItem.tsx
+Apollo cache/refetch/subscription behavior: network-only chatbot info query, cache-first model registry query, and mutation refetching GetChatbotsInfo.
+React Query replacement: tRPC chatbot queries with explicit resources.chatbotsInfo invalidation after model-settings mutation.
+Browser verification path: local manage resources chatbot page with network trace confirming /api/trpc resources calls when local stack/data allow.
+Cleanup blocked until: remaining S04 consumers, S04P generated type leak cleanup, S05 realtime, and S06 cleanup gates.
+```
+
+Implementation:
+
+- Added `packages/api/src/services/chatbots.ts` with API-owned chatbot resource
+  behavior based on the existing GraphQL chatbot service, without adding a
+  `packages/api` runtime dependency on `@klicker-uzh/graphql`.
+- Added `resources.chatbotsInfo`, `resources.chatModelRegistry`, and
+  `resources.updateChatbotModelSettings` to the tRPC resources router, with a
+  Zod input for the model-settings mutation.
+- Migrated `Chatbots`, `ChatbotDetails`, `ChatbotList`, and `ChatbotItem` from
+  Apollo/generated GraphQL operation types to tRPC queries, mutation, and
+  router-derived UI types.
+- Tightened the tRPC DTO shape so raw internal `course` and `disclaimer` select
+  fields are not exposed; the UI receives `courses`, `usageSummary`,
+  `disclaimerSummary`, and `mcpConfigurations`.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04K files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__/resources-chatbots.test.ts`:
+  passed; the package script ran the full API Vitest suite (`37` files,
+  `354` tests) including the new chatbot resource tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- Focused operation audit
+  `rg -n "GetChatbotsInfoDocument|GetChatModelRegistryDocument|UpdateChatbotModelSettingsDocument|GetChatbotsInfo|GetChatModelRegistry|UpdateChatbotModelSettings" apps/frontend-manage/src packages/api/src/trpc packages/api/src/services --glob '!**/*.d.ts'`:
+  no matches.
+- Compact S04 coexistence audit
+  `rg -l "@apollo/client|@klicker-uzh/graphql/dist/ops|api/graphql" apps/frontend-manage/src apps/backend-docker/src packages/api/src | wc -l`:
+  `206`, confirming GraphQL/Apollo remain intentionally live for other
+  S04/S05/S06 work.
+- `git diff --check`: passed.
+- Browser verification used `AGENT_BROWSER_SESSION=s04-chatbots` against
+  branch-local backend/auth on `3103`/`3106`. Traefik was not reachable and the
+  existing manage server on `3104` returned an app-wide stale 500, so a
+  temporary manage server was started on `localhost:3116` with local public URL
+  overrides for auth/API.
+- Browser screenshots:
+  `/tmp/agent-browser-shots/s04-chatbots-07-localhost-auth.png` and
+  `/tmp/agent-browser-shots/s04-chatbots-10-chatbots-page.png`.
+- Browser network evidence on `/resources/chatbots` showed a batched
+  `/api/trpc/...resources.chatbotsInfo,resources.chatModelRegistry...` request
+  and no `/api/graphql` resource entries.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with the known manage build warnings (`MODULE_TYPELESS_PACKAGE_JSON`,
+  next-intl `i18n`, PWA output, stale Browserslist, `/qr/[...args]`
+  `MISSING_MESSAGE`, and large page data warnings).
+
+Residual risk / next S04 work:
+
+- The local seeded DB had no chatbots for the lecturer account, so browser
+  verification covered the rendered empty state plus tRPC read/network path. The
+  model-settings save mutation is covered by isolated API tests, not a browser
+  save click in this slice.
+- Continue remaining S04-only findings and pause before S05/S06.
+
 ### 2026-06-19 Completed: S04L Authoring Outdated Element Instances
 
 Status: complete for the scoped slice. Scope was limited to the remaining Manage

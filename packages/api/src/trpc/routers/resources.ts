@@ -8,6 +8,11 @@ import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import {
+  getChatbotsInfo,
+  getPublicChatModelRegistry,
+  updateChatbotModelSettings,
+} from '../../services/chatbots.js'
 import { getPrisma } from '../context.js'
 import {
   toAnswerCollectionEntry,
@@ -30,6 +35,7 @@ import {
   deleteAnswerCollectionInput,
   modifyAnswerCollectionInput,
   singleAnswerCollectionInput,
+  updateChatbotModelSettingsInput,
 } from '../schemas/resources.js'
 
 function emitAnswerCollectionInvalidation({
@@ -753,6 +759,36 @@ async function deleteAnswerCollectionEntry({
 }
 
 export const resourcesRouter = router({
+  chatbotsInfo: userProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return {
+      chatbotsInfo: await getChatbotsInfo({
+        prisma,
+        userId: ctx.user.sub,
+      }),
+    }
+  }),
+
+  chatModelRegistry: userProcedure.query(() => {
+    return {
+      chatModelRegistry: getPublicChatModelRegistry(),
+    }
+  }),
+
+  updateChatbotModelSettings: userProcedure
+    .input(updateChatbotModelSettingsInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return {
+        chatbot: await updateChatbotModelSettings(input, {
+          prisma,
+          userId: ctx.user.sub,
+        }),
+      }
+    }),
+
   answerCollectionsInfo: userProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)
 

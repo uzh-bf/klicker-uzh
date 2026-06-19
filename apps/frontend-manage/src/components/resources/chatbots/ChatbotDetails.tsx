@@ -1,13 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ChatModelCapability,
-  Chatbot,
-  CreditResetPeriod,
-  GetChatbotsInfoDocument,
-  UpdateChatbotModelSettingsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Badge,
@@ -22,6 +14,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
+import {
+  CreditResetPeriod,
+  type ChatModelCapability,
+  type Chatbot,
+} from './types'
 
 type ReasoningConfigState = Record<string, string[]>
 
@@ -73,9 +71,10 @@ function ChatbotDetails({
 }) {
   const t = useTranslations()
   const { locale } = useRouter()
-  const [updateChatbotModelSettings, { loading: isSaving }] = useMutation(
-    UpdateChatbotModelSettingsDocument
-  )
+  const utils = trpc.useUtils()
+  const updateChatbotModelSettings =
+    trpc.resources.updateChatbotModelSettings.useMutation()
+  const isSaving = updateChatbotModelSettings.isLoading
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
@@ -231,16 +230,13 @@ function ChatbotDetails({
     })
 
     try {
-      await updateChatbotModelSettings({
-        variables: {
-          chatbotId: chatbot.id,
-          modelSelection: modelSelectionEnabled,
-          allowedModelIds: normalizedAllowedModelIds,
-          allowedReasoningEffortsByModel: normalizedReasoningConfig,
-        },
-        refetchQueries: [{ query: GetChatbotsInfoDocument }],
-        awaitRefetchQueries: true,
+      await updateChatbotModelSettings.mutateAsync({
+        chatbotId: chatbot.id,
+        modelSelection: modelSelectionEnabled,
+        allowedModelIds: normalizedAllowedModelIds,
+        allowedReasoningEffortsByModel: normalizedReasoningConfig,
       })
+      await utils.resources.chatbotsInfo.invalidate()
 
       setSaveSuccess(true)
     } catch (error) {

@@ -43,3 +43,17 @@ export const deleteAnswerCollectionEntryInput = z.object({
   id: z.number().int(),
   collectionId: z.number().int(),
 })
+
+export const chatbotReasoningConfigInput = z.object({
+  modelId: z.string().min(1),
+  efforts: z.array(z.string().min(1)),
+})
+
+export const updateChatbotModelSettingsInput = z.object({
+  chatbotId: z.string().min(1),
+  modelSelection: z.boolean(),
+  allowedModelIds: z.array(z.string().min(1)),
+  allowedReasoningEffortsByModel: z
+    .array(chatbotReasoningConfigInput)
+    .nullish(),
+})

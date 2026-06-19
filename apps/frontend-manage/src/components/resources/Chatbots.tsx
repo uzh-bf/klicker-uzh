@@ -1,32 +1,27 @@
-import { useQuery } from '@apollo/client'
-import {
-  Chatbot,
-  ChatModelCapability,
-  GetChatbotsInfoDocument,
-  GetChatModelRegistryDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { trpc } from '../../lib/trpc'
 import ChatbotDetails from './chatbots/ChatbotDetails'
 import ChatbotList from './chatbots/ChatbotList'
+import type { Chatbot } from './chatbots/types'
 
 function Chatbots() {
   const t = useTranslations()
   const router = useRouter()
-  const { data, loading } = useQuery(GetChatbotsInfoDocument, {
-    fetchPolicy: 'network-only',
-  })
-  const { data: modelRegistryData, loading: modelRegistryLoading } = useQuery(
-    GetChatModelRegistryDocument,
+  const { data, isLoading: loading } = trpc.resources.chatbotsInfo.useQuery(
+    undefined,
     {
-      fetchPolicy: 'cache-first',
+      refetchOnMount: 'always',
     }
   )
+  const { data: modelRegistryData, isLoading: modelRegistryLoading } =
+    trpc.resources.chatModelRegistry.useQuery(undefined, {
+      staleTime: Infinity,
+    })
 
-  const chatbots = data?.getChatbotsInfo ?? []
-  const modelRegistry: ChatModelCapability[] =
-    modelRegistryData?.getChatModelRegistry ?? []
+  const chatbots = data?.chatbotsInfo ?? []
+  const modelRegistry = modelRegistryData?.chatModelRegistry ?? []
   const selectedId =
     typeof router.query?.chatbotId === 'string'
       ? router.query.chatbotId
