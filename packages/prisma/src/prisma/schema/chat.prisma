@@ -41,6 +41,7 @@ model ChatThread {
   title String?
 
   messages ChatMessage[]
+  tutorEvents TutorEvent[]
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
@@ -65,6 +66,7 @@ model ChatMessage {
   creditsUsed      Decimal? @db.Decimal(18, 6)
 
   attachments ChatAttachment[]
+  tutorEvents TutorEvent[]
 
   thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
@@ -80,7 +82,7 @@ model ChatAttachment {
 
   type             ChatAttachmentType
   position         Int
-  imageBase64      String?            @db.Text // base64 data URL for display 
+  imageBase64      String?            @db.Text // base64 data URL for display
   imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
   imageDescription String?            @db.Text // AI-generated description for context injection
 
@@ -127,6 +129,7 @@ model Chatbot {
   mcpConfigurations ChatbotMCPConfig[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  tutorEvents       TutorEvent[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -136,6 +139,31 @@ model Chatbot {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TutorEvent {
+  id        String @id @default(uuid()) @db.Uuid
+  eventType String
+  payload   Json
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  thread   ChatThread? @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  threadId String?     @db.Uuid
+
+  message   ChatMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  messageId String?      @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@index([chatbotId, eventType, createdAt])
+  @@index([participantId, chatbotId, createdAt])
+  @@index([threadId])
+  @@index([messageId])
 }
 
 model ChatbotMCPServer {

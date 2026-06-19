@@ -14,11 +14,21 @@
 import { serve } from '@hono/node-server'
 import {
   buildAgent,
+  buildTutorMastraMemoryRuntime,
+  buildTutorObservabilityAttributes,
   calcCost,
+  composeTutorInstructionsSuffix,
+  composeTutorMemoryInstructionsSuffix,
+  composeTutorVerifierInstructionsSuffix,
+  evaluateTutorMemoryGate,
+  extractEvidenceIdsFromToolPayload,
   responsesProviderOptions,
+  runTutorVerifierPreflight,
   shutdownObservability,
+  verifyTutorOutputText,
   withObservability,
   type ChatbotConfig,
+  type TutorMemoryGateConfig,
 } from '@klicker-uzh/chat-engine'
 import { prisma } from '@klicker-uzh/prisma'
 import { toAISdkStream } from '@mastra/ai-sdk'
@@ -48,6 +58,14 @@ import {
 } from './lib/persistedContent.js'
 import { DEFAULT_PROMPT } from './lib/prompts.js'
 import { type ReasoningEffort } from './lib/reasoning.js'
+import {
+  detectTutorFeedbackUptake,
+  loadLatestTutorFeedbackEvent,
+  logTutorEvent,
+  summarizeTutorUserMessage,
+  tutorStateEventPayload,
+} from './lib/tutorEvents.js'
+import { isTutorMode, planTutorTurnState } from './lib/tutorState.js'
 import { CreditsService } from './services/credits.js'
 import { DisclaimersService } from './services/disclaimers.js'
 import { ThreadService } from './services/threads.js'
@@ -61,6 +79,28 @@ const PORT = Number(process.env.PORT ?? 3005)
 // chat-api has no ingress body cap yet). 32 MB covers the schema's worst case
 // (3 image data URLs at ~7 MB each) plus message history and headroom.
 const MAX_BODY_BYTES = 32 * 1024 * 1024
+
+function envFlag(name: string) {
+  return process.env[name] === '1' || process.env[name] === 'true'
+}
+
+function resolveTutorMemoryGateConfig(): TutorMemoryGateConfig {
+  const retentionDays = Number(process.env.CHAT_TUTOR_MEMORY_RETENTION_DAYS)
+  return {
+    enabled: envFlag('CHAT_TUTOR_MEMORY_ENABLED'),
+    privacyApproved: envFlag('CHAT_TUTOR_MEMORY_PRIVACY_APPROVED'),
+    deletionSupported: envFlag('CHAT_TUTOR_MEMORY_DELETION_SUPPORTED'),
+    studentTransparencyEnabled: envFlag(
+      'CHAT_TUTOR_MEMORY_STUDENT_TRANSPARENCY_ENABLED'
+    ),
+    embeddingEndpointApproved: envFlag(
+      'CHAT_TUTOR_MEMORY_EMBEDDING_ENDPOINT_APPROVED'
+    ),
+    ...(Number.isFinite(retentionDays) && retentionDays > 0
+      ? { retentionDays }
+      : {}),
+  }
+}
 
 // APP_SECRET is required to verify participant_token JWTs and decrypt per-chatbot
 // secrets. Without it, jose.jwtVerify runs with an empty key (rejecting every
@@ -618,16 +658,239 @@ app.post(
       openaiBaseUrl: providerConfig.baseUrl ?? null,
     }
 
+    const tutorPlannerMessages = modelMessages.map((message) => ({
+      role: message.role,
+      content:
+        typeof message.content === 'string'
+          ? message.content
+          : message.content
+              .map((part) =>
+                part.type === 'text' ? part.text : '[Attached image]'
+              )
+              .join('\n'),
+    }))
+    const tutorModeSelected = isTutorMode(selectedMode)
+    const latestTutorUserMessage =
+      [...tutorPlannerMessages]
+        .reverse()
+        .find((message) => message.role === 'user')?.content ?? ''
+    const previousTutorFeedbackEvent = tutorModeSelected
+      ? await loadLatestTutorFeedbackEvent({
+          prisma,
+          requestId,
+          chatbotId,
+          threadId: currentThreadId,
+        })
+      : null
+
+    if (tutorModeSelected && latestTutorUserMessage) {
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'student_attempt_received',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload: {
+          selectedMode,
+          modelId: selectedModelConfig.id,
+          messageSummary: summarizeTutorUserMessage(latestTutorUserMessage),
+        },
+      })
+
+      const uptake = detectTutorFeedbackUptake({
+        latestUserMessage: latestTutorUserMessage,
+        previousFeedbackEvent: previousTutorFeedbackEvent,
+      })
+      if (uptake) {
+        await logTutorEvent({
+          prisma,
+          requestId,
+          eventType: 'feedback_uptake_detected',
+          participantId,
+          chatbotId,
+          threadId: currentThreadId,
+          messageId: userMessageId,
+          payload: {
+            selectedMode,
+            ...uptake,
+          },
+        })
+      }
+    }
+
+    const tutorPromptVersion = selectedMode
+    const tutorMemoryGate = tutorModeSelected
+      ? evaluateTutorMemoryGate(resolveTutorMemoryGateConfig())
+      : null
+    const tutorMastraMemory =
+      tutorMemoryGate && tutorModeSelected
+        ? buildTutorMastraMemoryRuntime({
+            decision: tutorMemoryGate,
+            connectionString: process.env.DATABASE_URL,
+            participantId,
+            chatbotId,
+            courseId: chatbot.courseId,
+            threadId: currentThreadId,
+          })
+        : null
+
+    const tutorStateResult = isTutorMode(selectedMode)
+      ? await planTutorTurnState({
+          messages: tutorPlannerMessages,
+          model: buildImageDescriptionModel(
+            providerConfig,
+            process.env.CHAT_TUTOR_STATE_MODEL_ID ??
+              selectedModelConfig.deploymentId
+          ),
+          providerOptions: responsesProviderOptions(
+            selectedModelConfig.deploymentId,
+            undefined,
+            getOpenAIResponsesStore()
+          ).options,
+          skillPackVersion: tutorPromptVersion,
+        })
+      : null
+
+    const tutorVerifierPreflight = tutorStateResult
+      ? runTutorVerifierPreflight({
+          state: tutorStateResult.state,
+          latestUserMessage: latestTutorUserMessage,
+        })
+      : null
+
+    if (
+      tutorStateResult &&
+      (process.env.NODE_ENV !== 'production' ||
+        process.env.CHAT_TUTOR_STATE_LOG === '1')
+    ) {
+      console.info('[chat-api] tutor turn state', {
+        requestId,
+        source: tutorStateResult.source,
+        state: tutorStateResult.state,
+        attributes: buildTutorObservabilityAttributes({
+          chatbotId,
+          courseId: chatbot.courseId,
+          selectedMode,
+          modelId: selectedModelConfig.id,
+          state: tutorStateResult.state,
+          verifierPreflight: tutorVerifierPreflight,
+          memoryGate: tutorMemoryGate,
+        }),
+        ...(tutorStateResult.errorMessage
+          ? { error: tutorStateResult.errorMessage }
+          : {}),
+      })
+    }
+
+    if (tutorStateResult) {
+      const payload = {
+        selectedMode,
+        source: tutorStateResult.source,
+        ...tutorStateEventPayload(tutorStateResult.state),
+      }
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'tutor_state_planned',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload,
+      })
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'tutor_move_selected',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload: {
+          selectedMode,
+          source: tutorStateResult.source,
+          allowedMove: tutorStateResult.state.allowedMove,
+          hintDepth: tutorStateResult.state.hintDepth,
+          leakageAllowed: tutorStateResult.state.leakageAllowed,
+          retrievalNeeded: tutorStateResult.state.retrievalNeeded,
+          misconceptionLabel:
+            tutorStateResult.state.misconception?.label ?? null,
+        },
+      })
+    }
+    if (tutorMemoryGate) {
+      if (
+        tutorMemoryGate.status === 'blocked' &&
+        process.env.CHAT_TUTOR_MEMORY_ENABLED
+      ) {
+        console.warn('[chat-api] tutor memory blocked by privacy gate', {
+          requestId,
+          missingRequirements: tutorMemoryGate.missingRequirements,
+        })
+      }
+      await logTutorEvent({
+        prisma,
+        requestId,
+        eventType: 'tutor_memory_gate_decision',
+        participantId,
+        chatbotId,
+        threadId: currentThreadId,
+        messageId: userMessageId,
+        payload: {
+          selectedMode,
+          status: tutorMemoryGate.status,
+          scope: tutorMemoryGate.scope,
+          allowedCategories: tutorMemoryGate.allowedCategories,
+          missingRequirements: tutorMemoryGate.missingRequirements,
+          retentionDays: tutorMemoryGate.retentionDays ?? null,
+          mastraMemoryStatus: tutorMastraMemory?.status ?? 'inactive',
+          mastraMemoryReason: tutorMastraMemory?.reason ?? null,
+        },
+      })
+    }
+
+    if (
+      tutorVerifierPreflight &&
+      (process.env.NODE_ENV !== 'production' ||
+        process.env.CHAT_TUTOR_VERIFIER_LOG === '1')
+    ) {
+      console.info('[chat-api] tutor verifier preflight', {
+        requestId,
+        risk: tutorVerifierPreflight.risk,
+        failures: tutorVerifierPreflight.failures,
+      })
+    }
+
+    const agentExtras = {
+      ...(mcpToolset.toolNames.length > 0
+        ? { tools: mcpToolset.tools as never }
+        : {}),
+      ...(tutorStateResult
+        ? {
+            instructionsSuffix: [
+              composeTutorInstructionsSuffix(tutorStateResult.state),
+              tutorMemoryGate
+                ? composeTutorMemoryInstructionsSuffix(tutorMemoryGate)
+                : '',
+              tutorVerifierPreflight
+                ? composeTutorVerifierInstructionsSuffix(tutorVerifierPreflight)
+                : '',
+            ].join(''),
+          }
+        : {}),
+      ...(tutorMastraMemory?.agentMemory
+        ? { memory: tutorMastraMemory.agentMemory }
+        : {}),
+    }
+
     const agent = withObservability(
       buildAgent(
         chatbotConfig,
         selectedMode,
         selectedModelConfig.deploymentId,
-        // Cast bridges the engine's deep ToolsInput type (see lib/mcp.ts); the
-        // runtime value is the merged Mastra toolset.
-        mcpToolset.toolNames.length > 0
-          ? { tools: mcpToolset.tools as never }
-          : {}
+        agentExtras
       )
     )
 
@@ -708,6 +971,9 @@ app.post(
       providerOptions,
       toolChoice: 'auto',
       maxSteps: 5,
+      ...(tutorMastraMemory?.runMemory
+        ? { memory: tutorMastraMemory.runMemory }
+        : {}),
       ...(maxOutputTokens ? { modelSettings: { maxOutputTokens } } : {}),
 
       // Accumulate partial text/reasoning synchronously inside the Mastra loop so
@@ -780,6 +1046,87 @@ app.post(
             )
           } catch (error) {
             console.error('Failed to deduct credits:', { requestId, error })
+          }
+        }
+
+        if (tutorStateResult && partialContent.trim()) {
+          const retrievedEvidenceIds = extractEvidenceIdsFromToolPayload(
+            event.steps ?? []
+          )
+          if (
+            retrievedEvidenceIds.length > 0 &&
+            (process.env.NODE_ENV !== 'production' ||
+              process.env.CHAT_TUTOR_VERIFIER_LOG === '1')
+          ) {
+            console.info('[chat-api] tutor retrieved evidence ids', {
+              requestId,
+              retrievedEvidenceIds,
+            })
+          }
+
+          const outputVerification = verifyTutorOutputText({
+            state: tutorStateResult.state,
+            text: partialContent,
+            retrievedEvidenceIds,
+          })
+          const tutorAttributes = buildTutorObservabilityAttributes({
+            chatbotId,
+            courseId: chatbot.courseId,
+            selectedMode,
+            modelId: modelConfig.id,
+            state: tutorStateResult.state,
+            verifierPreflight: tutorVerifierPreflight,
+            outputVerification,
+            memoryGate: tutorMemoryGate,
+            retrievedEvidenceIds,
+          })
+          await logTutorEvent({
+            prisma,
+            requestId,
+            eventType: 'feedback_delivered',
+            participantId,
+            chatbotId,
+            threadId: currentThreadId,
+            messageId: assistantMessageId,
+            payload: {
+              selectedMode,
+              modelId: modelConfig.id,
+              textLength: partialContent.length,
+              verifierPassed: outputVerification.passed,
+              verifierFailures: outputVerification.failures,
+              verifierStats: outputVerification.stats,
+              attributes: tutorAttributes,
+              ...tutorStateEventPayload(tutorStateResult.state),
+              retrievedEvidenceIds,
+            },
+          })
+          if (outputVerification.failures.includes('unsupported_citation')) {
+            await logTutorEvent({
+              prisma,
+              requestId,
+              eventType: 'citation_fidelity_failed',
+              participantId,
+              chatbotId,
+              threadId: currentThreadId,
+              messageId: assistantMessageId,
+              payload: {
+                selectedMode,
+                retrievedEvidenceIds,
+                verifierFailures: outputVerification.failures,
+              },
+            })
+          }
+          if (
+            !outputVerification.passed ||
+            process.env.CHAT_TUTOR_VERIFIER_LOG === '1'
+          ) {
+            console.warn('[chat-api] tutor verifier posthoc', {
+              requestId,
+              passed: outputVerification.passed,
+              failures: outputVerification.failures,
+              stats: outputVerification.stats,
+              attributes: tutorAttributes,
+            })
           }
         }
       },

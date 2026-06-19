@@ -28,6 +28,9 @@ out/
 .rollup.cache/
 scratchpad.md
 
+project/evals/results/*
+!project/evals/results/.gitkeep
+
 ssl/
 
 dist/

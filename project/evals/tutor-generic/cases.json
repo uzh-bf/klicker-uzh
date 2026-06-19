@@ -1,0 +1,210 @@
+[
+  {
+    "id": "generic-math-ignatius-bicycles-001",
+    "source": "MathTutorBench/MathDial bridge",
+    "domain": "math",
+    "subdomain": "word problems; multiplicative comparison",
+    "task": "Ignatius owns 4 bicycles. A friend of his owns different types of cycles, which have three times as many tires as Ignatius's bikes have. He has one unicycle, a tricycle, and the rest are bikes. How many bicycles does the friend own?",
+    "dialogHistory": [
+      {
+        "role": "teacher",
+        "content": "Tell me your solution."
+      },
+      {
+        "role": "student",
+        "content": "I think the friend has 4 bicycles. Since Ignatius owns 4 bicycles, and his friend has more tires, then his friend must have 3 x 4 = 12 bicycle tires. The unicycle has 1 tire, and the tricycle has 3 tires, so the total number of tires accounted for is 1 + 3 = 4. Therefore, the friend must have 12 - 4 = 8 bicycle tires from the remaining cycles. Since each bike has 2 tires, then the friend must have 8 / 2 = 4 bicycles."
+      }
+    ],
+    "studentAttempt": "I think the friend has 4 bicycles.",
+    "studentState": "misconception",
+    "learningObjective": "Distinguish between multiplying the number of bicycles and multiplying the number of tires.",
+    "expertSolution": "Ignatius has 4 bicycles, so Ignatius's bicycles have 8 tires. The friend has 24 tires total. The unicycle and tricycle account for 4 tires, leaving 20 tires for bicycles. Each bicycle has 2 tires, so the friend has 10 bicycles.",
+    "expectedOutcome": 10,
+    "goldDiagnosis": {
+      "isCorrect": false,
+      "firstIssueStep": 1,
+      "firstIssue": "The student multiplied three times the number of bicycles instead of three times the number of tires on Ignatius's bicycles.",
+      "misconception": "Confuses count of objects with count of tires.",
+      "missingConcept": "Unit tracking in multiplicative comparisons."
+    },
+    "goldNextMove": "ask",
+    "allowedDisclosure": "hint_only",
+    "constraints": {
+      "language": "en",
+      "maxQuestions": 1,
+      "maxSentences": 2,
+      "forbidFinalAnswer": true
+    },
+    "rubric": [
+      {
+        "criterion": "issue_diagnosis",
+        "weight": 2,
+        "description": "Identifies that the first issue is using bicycles instead of tires."
+      },
+      {
+        "criterion": "scaffolding_quality",
+        "weight": 2,
+        "description": "Guides the learner to compute Ignatius's tire count first."
+      },
+      {
+        "criterion": "question_quality",
+        "weight": 1,
+        "description": "Asks one targeted next-action question."
+      },
+      {
+        "criterion": "answer_leakage_control",
+        "weight": 2,
+        "description": "Does not reveal the final answer."
+      },
+      {
+        "criterion": "tone_and_clarity",
+        "weight": 1,
+        "description": "Is concise and supportive."
+      }
+    ],
+    "metadata": {
+      "expectedResponseKeywords": ["tires", "Ignatius", "4 bicycles"],
+      "forbiddenResponseKeywords": ["10 bicycles"]
+    }
+  },
+  {
+    "id": "generic-finance-wacc-001",
+    "source": "Klicker synthetic tutorbench case",
+    "domain": "finance",
+    "subdomain": "WACC",
+    "task": "A student is learning weighted average cost of capital. They need to compute WACC for a firm financed by debt and equity.",
+    "sourceMaterial": [
+      {
+        "id": "finance-wacc-definition",
+        "title": "WACC definition",
+        "text": "WACC is the weighted average cost of a firm's financing sources. The weights should reflect the relative shares of debt and equity, and the after-tax cost of debt is used when taxes matter."
+      }
+    ],
+    "dialogHistory": [
+      {
+        "role": "student",
+        "content": "I added the interest rate on debt and the expected return on equity and divided by two. That should be the WACC, right?"
+      }
+    ],
+    "studentAttempt": "I averaged the debt interest rate and equity return directly.",
+    "studentState": "misconception",
+    "learningObjective": "Understand that WACC is a weighted average using capital structure weights, not a simple average.",
+    "expertSolution": "WACC weights the cost of equity and after-tax cost of debt by their market-value shares in the capital structure.",
+    "goldDiagnosis": {
+      "isCorrect": false,
+      "firstIssue": "The student used an unweighted simple average instead of capital-structure weights.",
+      "misconception": "Confuses a simple average with a weighted average.",
+      "missingConcept": "Debt and equity weights."
+    },
+    "goldNextMove": "hint",
+    "allowedDisclosure": "micro_step",
+    "constraints": {
+      "language": "en",
+      "maxQuestions": 1,
+      "maxSentences": 3,
+      "requiresCitation": false,
+      "forbidFinalAnswer": true
+    },
+    "rubric": [
+      {
+        "criterion": "issue_diagnosis",
+        "weight": 2,
+        "description": "Identifies that WACC needs debt/equity weights."
+      },
+      {
+        "criterion": "scaffolding_quality",
+        "weight": 2,
+        "description": "Asks the learner to identify the capital structure weights before calculating."
+      },
+      {
+        "criterion": "question_quality",
+        "weight": 1,
+        "description": "Asks one targeted next-action question."
+      },
+      {
+        "criterion": "correctness",
+        "weight": 2,
+        "description": "Does not describe WACC as a simple average."
+      },
+      {
+        "criterion": "tone_and_clarity",
+        "weight": 1,
+        "description": "Is concise and supportive."
+      }
+    ],
+    "metadata": {
+      "expectedResponseKeywords": ["weighted", "debt", "equity"],
+      "forbiddenResponseKeywords": ["simple average is correct"]
+    }
+  },
+  {
+    "id": "generic-programming-recursion-001",
+    "source": "Klicker synthetic tutorbench case",
+    "domain": "programming",
+    "subdomain": "recursion",
+    "task": "A learner is writing a recursive factorial function in Python.",
+    "dialogHistory": [
+      {
+        "role": "student",
+        "content": "My factorial function keeps running until Python crashes."
+      },
+      {
+        "role": "assistant",
+        "content": "What condition should stop the recursive calls?"
+      },
+      {
+        "role": "student",
+        "content": "I guess it stops when n is small, but I didn't write that part."
+      }
+    ],
+    "studentAttempt": "def factorial(n): return n * factorial(n - 1)",
+    "studentState": "stuck",
+    "learningObjective": "Recognize that recursive functions need a base case before the recursive call.",
+    "expertSolution": "A factorial function should return 1 when n is 0 or 1, and only recurse for larger n.",
+    "goldDiagnosis": {
+      "isCorrect": false,
+      "firstIssue": "The function has no base case.",
+      "misconception": "Assumes recursion stops automatically.",
+      "missingConcept": "Base case."
+    },
+    "goldNextMove": "worked_micro_step",
+    "allowedDisclosure": "micro_step",
+    "constraints": {
+      "language": "en",
+      "maxQuestions": 1,
+      "maxSentences": 3,
+      "forbidFinalAnswer": false
+    },
+    "rubric": [
+      {
+        "criterion": "issue_diagnosis",
+        "weight": 2,
+        "description": "Identifies the missing base case."
+      },
+      {
+        "criterion": "scaffolding_quality",
+        "weight": 2,
+        "description": "Shows or asks for a minimal base-case step without overexplaining."
+      },
+      {
+        "criterion": "question_quality",
+        "weight": 1,
+        "description": "Asks one targeted next-action question if asking."
+      },
+      {
+        "criterion": "correctness",
+        "weight": 2,
+        "description": "Does not introduce incorrect factorial behavior."
+      },
+      {
+        "criterion": "tone_and_clarity",
+        "weight": 1,
+        "description": "Is concise and supportive."
+      }
+    ],
+    "metadata": {
+      "expectedResponseKeywords": ["base case", "n"],
+      "forbiddenResponseKeywords": ["recursion stops automatically"]
+    }
+  }
+]

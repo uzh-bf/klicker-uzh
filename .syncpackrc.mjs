@@ -54,6 +54,13 @@ export default {
       dependencies: ['remark-math'],
       isIgnored: true,
     },
+    {
+      // Mastra uses zod v4, while the existing chat and GraphQL runtimes remain on zod v3.
+      // Keep this branch from forcing a repo-wide zod major upgrade.
+      label: 'zod can differ between Mastra chat-engine and existing runtimes',
+      dependencies: ['zod'],
+      isIgnored: true,
+    },
   ],
   sortAz: [
     'dependencies',
