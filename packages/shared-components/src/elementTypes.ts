@@ -29,6 +29,15 @@ export const FlashcardCorrectness = {
 export type FlashcardCorrectness =
   (typeof FlashcardCorrectness)[keyof typeof FlashcardCorrectness]
 
+export type InstanceEvaluation = {
+  newPointsFrom?: Date | number | string | null
+  newXpFrom?: Date | number | string | null
+  pointsAwarded?: number | null
+  pointsMultiplier?: number | null
+  score: number
+  xpAwarded?: number | null
+}
+
 export type Choice = {
   correct?: boolean | null
   feedback?: string | null

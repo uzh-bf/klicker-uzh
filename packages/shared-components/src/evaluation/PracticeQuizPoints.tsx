@@ -1,7 +1,7 @@
-import type { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import React from 'react'
+import type { InstanceEvaluation } from '../elementTypes'
 
 interface PracticeQuizPointsProps {
   evaluation: InstanceEvaluation
@@ -9,6 +9,10 @@ interface PracticeQuizPointsProps {
 
 function PracticeQuizPoints({ evaluation }: PracticeQuizPointsProps) {
   const t = useTranslations()
+  const newPointsFrom = evaluation.newPointsFrom ?? null
+  const newXpFrom = evaluation.newXpFrom ?? null
+  const pointsAwarded = evaluation.pointsAwarded ?? null
+  const xpAwarded = evaluation.xpAwarded ?? null
 
   return (
     <div className="block">
@@ -27,35 +31,34 @@ function PracticeQuizPoints({ evaluation }: PracticeQuizPointsProps) {
             {evaluation.score} {t('shared.leaderboard.points')}
           </div>
         </div>
-        {(evaluation.pointsAwarded !== null ||
-          evaluation.xpAwarded !== null) && (
+        {(pointsAwarded !== null || xpAwarded !== null) && (
           <div className="mb-2">
             <div className="font-bold">{t('shared.leaderboard.collected')}</div>
             <div>
-              {evaluation.pointsAwarded !== null && (
+              {pointsAwarded !== null && (
                 <div className="text-lg">
-                  {evaluation.pointsAwarded} {t('shared.leaderboard.points')}
+                  {pointsAwarded} {t('shared.leaderboard.points')}
                 </div>
               )}
-              {evaluation.xpAwarded !== null && (
-                <div className="text-lg">{evaluation.xpAwarded} XP</div>
+              {xpAwarded !== null && (
+                <div className="text-lg">{xpAwarded} XP</div>
               )}
             </div>
           </div>
         )}
       </div>
 
-      {(evaluation.newPointsFrom !== null || evaluation.newXpFrom !== null) && (
+      {(newPointsFrom !== null || newXpFrom !== null) && (
         <div>
           <div className="font-bold">{t('pwa.practiceQuiz.newPointsFrom')}</div>
-          {evaluation.newPointsFrom !== null && (
+          {newPointsFrom !== null && (
             <div className="text-lg">
-              {dayjs(evaluation.newPointsFrom).format('DD.MM.YYYY HH:mm')}
+              {dayjs(newPointsFrom).format('DD.MM.YYYY HH:mm')}
             </div>
           )}
-          {evaluation.newXpFrom !== null && (
+          {newXpFrom !== null && (
             <div className="text-lg">
-              {dayjs(evaluation.newXpFrom).format('DD.MM.YYYY HH:mm')}
+              {dayjs(newXpFrom).format('DD.MM.YYYY HH:mm')}
             </div>
           )}
         </div>

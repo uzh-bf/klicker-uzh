@@ -209,7 +209,11 @@ Current next action:
   Scope was limited to replacing the `ContentElement` leaf component's generated
   `ElementInstance` import with a narrow local structural content instance
   shape.
-- S05G-X next: continue with the next smallest shared-components generated
+- S05G-X practice-quiz points generated evaluation type cleanup is complete
+  locally. Scope was limited to replacing the `PracticeQuizPoints` generated
+  `InstanceEvaluation` import with a narrow local structural base evaluation
+  type.
+- S05G-Y next: continue with the next smallest shared-components generated
   enum/type cleanup while keeping GraphQL/Apollo live. Do not start S06 cleanup
   until all S05 gates are clean and explicitly reviewed.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
@@ -1932,6 +1936,61 @@ Verification:
 - `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/ContentElement.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/ContentElement.tsx packages/shared-components/src/elementTypes.ts`
+  returned no matches.
+- `git diff --check` passed.
+
+### 2026-06-19 Completed: S05G-X Practice Quiz Points Evaluation Type Cleanup
+
+Status: complete locally. Scope remained S05 only: remove the generated
+GraphQL `InstanceEvaluation` import from `PracticeQuizPoints` by introducing a
+narrow local structural base evaluation type.
+
+Slice: S05G-X Practice Quiz Points Evaluation Type Cleanup
+
+GraphQL operation(s): none newly migrated.
+
+GraphQL resolver(s): none.
+
+Behavior source: existing generated GraphQL `InstanceEvaluation` fields used by
+the point summary UI: `score`, `pointsMultiplier`, awarded points / XP, and
+new-award timestamps.
+
+tRPC router.procedure: none.
+
+Active frontend/shared consumers:
+
+- `packages/shared-components/src/evaluation/PracticeQuizPoints.tsx`
+- shared question components passing generated evaluation payloads
+
+Intended behavior:
+
+- Keep computed/collected/new-points rendering unchanged for defined generated
+  values.
+- Treat missing optional generated fields the same as `null`, avoiding
+  accidental rendering of `undefined`.
+- Remove the generated GraphQL `InstanceEvaluation` import from
+  `PracticeQuizPoints.tsx`.
+
+What changed:
+
+- Added local structural `InstanceEvaluation` in
+  `packages/shared-components/src/elementTypes.ts`.
+- Switched `packages/shared-components/src/evaluation/PracticeQuizPoints.tsx`
+  to the local base evaluation type.
+- Normalized optional awarded-point and timestamp fields with `?? null` before
+  rendering.
+
+Verification:
+
+- Initial `pnpm --filter @klicker-uzh/shared-components check` failed because
+  several generated evaluation types mark new-award fields optional.
+- `pnpm --filter @klicker-uzh/shared-components check` passed after making the
+  local base fields optional and normalizing missing values to `null`.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed after the same fix.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed after the same fix.
+- `pnpm exec prettier --check packages/shared-components/src/elementTypes.ts packages/shared-components/src/evaluation/PracticeQuizPoints.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `rg -n "@klicker-uzh/graphql/dist/ops" packages/shared-components/src/evaluation/PracticeQuizPoints.tsx packages/shared-components/src/elementTypes.ts`
   returned no matches.
 - `git diff --check` passed.
 
