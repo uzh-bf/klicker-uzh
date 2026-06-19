@@ -1,8 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetLiveQuizLeaderboardDocument,
-  SelfDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetLiveQuizLeaderboardDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
 import { H2, UserNotification } from '@uzh-bf/design-system'
@@ -45,10 +42,10 @@ function LiveQuizLeaderboard({
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
   const logoutParticipant = trpc.participant.logout.useMutation()
 
-  const { data: selfData } = useQuery(SelfDocument, {
-    variables: { liveQuizId: quizId },
-    fetchPolicy: 'cache-only',
+  const { data: selfData } = trpc.participant.self.useQuery({
+    liveQuizId: quizId,
   })
+  const self = selfData?.self ?? null
 
   const { data, loading } = useQuery(GetLiveQuizLeaderboardDocument, {
     variables: { quizId },
@@ -64,7 +61,7 @@ function LiveQuizLeaderboard({
       const leaderboard = data?.liveQuizLeaderboard
 
       const selfEntry = leaderboard?.find(
-        (entry) => entry.participantId === selfData?.self?.id
+        (entry) => entry.participantId === self?.id
       )
 
       if (selfEntry) {
@@ -94,7 +91,7 @@ function LiveQuizLeaderboard({
     }
 
     asyncFunc()
-  }, [data, selfData?.self?.id])
+  }, [data, self?.id])
 
   if (loading || !data) {
     return <Loader />
@@ -113,7 +110,7 @@ function LiveQuizLeaderboard({
         {leaderboard.length && leaderboard.length > 0 ? (
           <Leaderboard
             leaderboard={leaderboard ?? []}
-            participant={selfData?.self}
+            participant={self}
             podiumImgSrc={{
               rank1: Rank1Img,
               rank2: Rank2Img,
@@ -132,8 +129,8 @@ function LiveQuizLeaderboard({
 
       {/* live quiz is not part of gamified course, but still gamified, 
       participant is logged in with standard account, participation not relevant */}
-      {selfData?.self?.id &&
-      !selfData.self.scopeQuizId && // regular user login
+      {self?.id &&
+      !self.scopeQuizId && // regular user login
       showLeaderboardGamifiedQuizHint &&
       !isPartOfGamifiedCourse &&
       isBeforeFirstBlock ? (
@@ -162,9 +159,9 @@ function LiveQuizLeaderboard({
       ) : null}
 
       {/* live quiz is part of gamified course, but user has no participation in course */}
-      {selfData?.self?.id &&
-      !selfData.self.scopeQuizId && // regular user login
-      !selfData.self.isCourseParticipant && // user is not a participant in the course
+      {self?.id &&
+      !self.scopeQuizId && // regular user login
+      !self.isCourseParticipant && // user is not a participant in the course
       showLeaderboardGamifiedQuizHint &&
       isPartOfGamifiedCourse &&
       isBeforeFirstBlock ? (
@@ -198,10 +195,10 @@ function LiveQuizLeaderboard({
       ) : null}
 
       {/* live quiz is part of gamified course, but user has an inactive participation in course */}
-      {selfData?.self?.id &&
-      !selfData.self.scopeQuizId && // regular user login
-      selfData.self.isCourseParticipant && // user is a participant of the course
-      selfData.self.isCourseParticipationActive === false && // but participation is inactive
+      {self?.id &&
+      !self.scopeQuizId && // regular user login
+      self.isCourseParticipant && // user is a participant of the course
+      self.isCourseParticipationActive === false && // but participation is inactive
       showLeaderboardGamifiedQuizHint &&
       isPartOfGamifiedCourse &&
       isBeforeFirstBlock ? (

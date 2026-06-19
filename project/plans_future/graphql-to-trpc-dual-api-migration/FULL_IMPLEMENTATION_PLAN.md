@@ -104,6 +104,11 @@ Current next action:
   Scope was limited to replacing the modal's Apollo `SelfDocument` query with
   the existing `trpc.participant.self` query; the broader live-quiz session,
   feedback, and leaderboard GraphQL consumers remain live for follow-up slices.
+- S05G-B PWA live-quiz leaderboard self-query cleanup is complete locally.
+  Scope was limited to replacing the leaderboard's Apollo `SelfDocument` query
+  with `trpc.participant.self` and decoupling the shared `Leaderboard`
+  participant prop from the generated GraphQL `Participant` type; the leaderboard
+  data query itself remains GraphQL.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -661,6 +666,35 @@ Verification:
 - `git diff --check` passed.
 - Narrow audit confirmed `AccountSelector` no longer imports Apollo or generated
   GraphQL operations.
+
+### 2026-06-19 Completed: S05G-B PWA Leaderboard Self Query Cleanup
+
+Status: complete locally. Scope was deliberately narrow: the PWA live-quiz
+leaderboard data query remains on GraphQL, but the component no longer uses
+Apollo `SelfDocument` for participant identity.
+
+Slice:
+
+- Replace `apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx`
+  Apollo `SelfDocument` usage with the existing `trpc.participant.self` query.
+- Keep `GetLiveQuizLeaderboardDocument` on GraphQL until the larger leaderboard
+  data migration slice.
+- Replace `packages/shared-components/src/Leaderboard.tsx`'s generated GraphQL
+  `Participant` prop dependency with the minimal local participant identity
+  shape it actually reads.
+
+Verification:
+
+- `pnpm exec prettier --write` applied to the touched files.
+- `pnpm exec prettier --check` passed for the touched files and plan.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/shared-components check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/i18n/page-data warning noise.
+- `git diff --check` passed.
+- Narrow audit confirmed `LiveQuizLeaderboard` no longer imports `SelfDocument`.
+- Narrow audit confirmed shared `Leaderboard` no longer imports generated
+  GraphQL types.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
