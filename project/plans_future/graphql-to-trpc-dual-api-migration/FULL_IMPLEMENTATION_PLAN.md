@@ -126,9 +126,15 @@ Current next action:
   matching tRPC API package coverage visibly running against `packages/api`, and
   migrates only the PWA `/session/[id]` self-query from `SelfDocument` to
   `trpc.participant.self`; pin and SSR live-quiz behavior remain GraphQL.
-- S05G-F next: migrate the PWA `/session/[id]` pin and running-live-quiz data
-  path in small slices, preserving GraphQL-equivalent PIN, assessment-domain,
-  auth redirect, and participation error semantics.
+- S05G-F PWA live-quiz session PIN mutation cleanup is complete locally. It
+  ports GraphQL-equivalent published-quiz, invalid-PIN, stale-cookie clearing,
+  and one-day PIN-cookie behavior into `packages/api`, adds tRPC tests, and
+  migrates `/session/[id]` from `SetLiveQuizPinDocument` to
+  `trpc.participant.setLiveQuizPin`.
+- S05G-G next: migrate the PWA `/session/[id]` running-live-quiz data query and
+  SSR redirect behavior in small slices, preserving GraphQL-equivalent
+  assessment-domain, auth redirect, participation, PIN, solution-stripping, and
+  correlation-key semantics.
 - Do not start S06 cleanup until all S05 realtime slices are complete and
   explicitly reviewed.
 
@@ -901,6 +907,61 @@ Runtime browser verification was not run for this slice because the local dev
 stack was not started in this checkpoint. The remaining PWA `/session/[id]`
 GraphQL live-quiz query and pin mutation are still blockers for PWA Apollo
 removal and S06.
+
+### 2026-06-19 Completed: S05G-F PWA Live-Quiz Session PIN Mutation Cleanup
+
+Status: complete locally. Scope was intentionally narrow: replace only the PWA
+live-quiz session PIN mutation with tRPC while leaving the running-live-quiz
+data query and SSR behavior on GraphQL.
+
+Slice: S05G-F PWA Live-Quiz Session PIN Mutation Cleanup
+
+GraphQL operation(s): `SetLiveQuizPinDocument`.
+
+GraphQL resolver(s): `Mutation.setLiveQuizPin`.
+
+Behavior source: `packages/graphql/src/services/liveQuizzes.ts`
+`setLiveQuizPinCookie`.
+
+tRPC router.procedure: new `participant.setLiveQuizPin`.
+
+Active frontend consumer: `apps/frontend-pwa/src/pages/session/[id].tsx`.
+
+What changed:
+
+- Added `packages/api/src/services/participantLiveQuizSession.ts` with a
+  transport-neutral PIN-cookie implementation matching GraphQL behavior:
+  unavailable/non-published quizzes reject with `LIVE_QUIZ_PIN_INVALID`, wrong
+  PINs clear the stale PIN cookie and reject, and valid PINs set the
+  `live-quiz-pin-<quizId>` HTTP-only cookie for one day.
+- Added `participant.setLiveQuizPin` and its input schema.
+- Added focused tRPC tests for valid PIN, invalid PIN, and unavailable quiz.
+- Migrated `/session/[id]` from Apollo `SetLiveQuizPinDocument` to
+  `trpc.participant.setLiveQuizPin.useMutation()`.
+- Left `GetRunningLiveQuizDocument` and the SSR `GetFeedbacksDocument` prefetch
+  on GraphQL for follow-up S05 slices.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/participant-live-quiz-session.test.ts`
+  passed: 3 tests.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed after rebuilding
+  `packages/api` so the PWA tRPC client saw the new procedure type.
+- `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing
+  Next/i18n/page-data warning noise.
+- `pnpm exec prettier --check <S05G-F touched files>` passed.
+- `git diff --check` passed.
+- Focused audit confirmed `SetLiveQuizPinDocument` and Apollo `useMutation` no
+  longer appear in `apps/frontend-pwa/src/pages/session/[id].tsx`; remaining
+  GraphQL hits in that page are the intentionally deferred
+  `GetRunningLiveQuizDocument` and SSR `GetFeedbacksDocument` prefetch.
+- `pnpm --filter @klicker-uzh/api test` passed: 43 files, 440 tests.
+
+Runtime browser verification was not run for this slice because the local dev
+stack was not started in this checkpoint. The remaining PWA `/session/[id]`
+GraphQL live-quiz query is still a blocker for PWA Apollo removal and S06.
 
 ### 2026-06-19 Completed: S04Q GraphQL/tRPC Package Test Parity
 
@@ -11406,7 +11467,6 @@ Stop within a slice if:
    tRPC API package workflow covers the same package-test purpose for
    `packages/api`.
 2. Continue S05G in small app-level slices with the remaining PWA
-   `/session/[id]` pin mutation, running-live-quiz data query, and SSR redirect
-   behavior.
+   `/session/[id]` running-live-quiz data query and SSR redirect behavior.
 3. Continue through the remaining S05 Apollo consumers only after each slice is
    green. Do not start S06 cleanup without explicit approval.

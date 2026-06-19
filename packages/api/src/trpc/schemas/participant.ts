@@ -33,6 +33,11 @@ export const participantLiveQuizLeaderboardInput = z.object({
   hmac: z.string().nullish(),
 })
 
+export const participantSetLiveQuizPinInput = z.object({
+  liveQuizId: z.string(),
+  pin: z.string(),
+})
+
 export const participantCreateLiveQuizFeedbackInput = z.object({
   quizId: z.string(),
   content: z.string(),

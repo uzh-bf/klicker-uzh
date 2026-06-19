@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -12,7 +12,6 @@ import {
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
-  SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
@@ -154,7 +153,7 @@ function Index({ id }: { id: string }) {
   )
   const [isDesktop, setIsDesktop] = useState<boolean>(false)
 
-  const [setLiveQuizPin] = useMutation(SetLiveQuizPinDocument)
+  const setLiveQuizPin = trpc.participant.setLiveQuizPin.useMutation()
   const { data, loading, error, refetch } = useQuery(
     GetRunningLiveQuizDocument,
     {
@@ -299,8 +298,9 @@ function Index({ id }: { id: string }) {
             })}
             onSubmit={async (values, { setSubmitting }) => {
               try {
-                await setLiveQuizPin({
-                  variables: { liveQuizId: id, pin: values.pin },
+                await setLiveQuizPin.mutateAsync({
+                  liveQuizId: id,
+                  pin: values.pin,
                 })
                 await refetch()
               } catch (e: any) {
