@@ -22,13 +22,13 @@ import {
 import {
   ActivityInfo,
   ActivityType,
-  GetSingleCourseDocument,
   UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import { trpc } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function useMicroLearningActions({
@@ -54,6 +54,7 @@ function useMicroLearningActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
+  const utils = trpc.useUtils()
   const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
     UnpublishMicroLearningDocument
   )
@@ -197,39 +198,17 @@ function useMicroLearningActions({
         label: t('manage.course.unpublishMicrolearning'),
         icon: faLock,
         onClick: async () => {
-          await unpublishMicroLearning({
+          const result = await unpublishMicroLearning({
             variables: { id: microLearning.id! },
-            update: (cache, { data: res }) => {
-              // if the mutation was not successful, return early
-              if (!res?.unpublishMicroLearning?.id) return
-
-              // change the status of the practice quiz on the course overview back to draft
-              cache.updateQuery(
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: microLearning.courseId! },
-                },
-                (data) => {
-                  if (!data?.course) return data
-
-                  return {
-                    course: {
-                      ...data.course,
-                      microLearningsInfo: data.course.microLearningsInfo?.map(
-                        (quiz) =>
-                          quiz.id === res.unpublishMicroLearning?.id
-                            ? {
-                                ...quiz,
-                                status: res.unpublishMicroLearning?.status,
-                              }
-                            : quiz
-                      ),
-                    },
-                  }
-                }
-              )
-            },
           })
+          if (
+            microLearning.courseId &&
+            result.data?.unpublishMicroLearning?.id
+          ) {
+            await utils.course.detail.invalidate({
+              courseId: microLearning.courseId,
+            })
+          }
           await refetchActivities?.()
         },
         disabled: unpublishing,
@@ -272,6 +251,7 @@ function useMicroLearningActions({
       setEndingModal,
       setSharingModal,
       unpublishMicroLearning,
+      utils,
       setDeletionModal,
       setRemovalModal,
       setActivityLogOpen,

@@ -23,13 +23,13 @@ import {
 import {
   ActivityInfo,
   ActivityType,
-  GetSingleCourseDocument,
   GetUserActivitiesDocument,
   UnpublishLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import { trpc } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function useLiveQuizActions({
@@ -71,6 +71,7 @@ function useLiveQuizActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
+  const utils = trpc.useUtils()
   const [unpublishLiveQuiz] = useMutation(UnpublishLiveQuizDocument)
 
   const actions = useMemo(
@@ -210,20 +211,13 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.unpublishLiveQuiz'),
         icon: faLock,
         onClick: async () => {
-          await unpublishLiveQuiz({
+          const result = await unpublishLiveQuiz({
             variables: { id: quiz.id },
-            refetchQueries: [
-              ...(quiz.courseId
-                ? [
-                    {
-                      query: GetSingleCourseDocument,
-                      variables: { courseId: quiz.courseId },
-                    },
-                  ]
-                : []),
-              { query: GetUserActivitiesDocument },
-            ],
+            refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
+          if (quiz.courseId && result.data?.unpublishLiveQuiz?.id) {
+            await utils.course.detail.invalidate({ courseId: quiz.courseId })
+          }
         },
         data: { cy: `unpublish-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
@@ -268,6 +262,8 @@ function useLiveQuizActions({
       quiz.templateId,
       onStart,
       starting,
+      unpublishLiveQuiz,
+      utils,
       setEmbeddingModal,
       setQRModal,
       setTemplateEditingModal,

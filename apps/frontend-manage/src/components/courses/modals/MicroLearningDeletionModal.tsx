@@ -2,10 +2,10 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   DeleteMicroLearningDocument,
   GetMicroLearningSummaryDocument,
-  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -21,6 +21,7 @@ function MicroLearningDeletionModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetMicroLearningSummaryDocument,
     {
@@ -31,34 +32,7 @@ function MicroLearningDeletionModal({
 
   const [deleteMicroLearning, { loading: deletingMicroLearning }] = useMutation(
     DeleteMicroLearningDocument,
-    {
-      variables: { id: activityId },
-      update: (cache, { data: res }) => {
-        // if the microlearning is not part of a course or the mutation was not successful, return early
-        if (!res?.deleteMicroLearning?.id) return
-
-        // change the status of the microlearning on the course overview back to draft
-        cache.updateQuery(
-          {
-            query: GetSingleCourseDocument,
-            variables: { courseId },
-          },
-          (data) => {
-            if (!data?.course) return data
-
-            return {
-              course: {
-                ...data.course,
-                microLearningsInfo:
-                  data.course.microLearningsInfo?.filter(
-                    (ml) => ml.id !== res.deleteMicroLearning!.id
-                  ) ?? [],
-              },
-            }
-          }
-        )
-      },
-    }
+    { variables: { id: activityId } }
   )
 
   const [confirmations, setConfirmations] = useState({
@@ -87,7 +61,10 @@ function MicroLearningDeletionModal({
       title={t('manage.course.deleteMicroLearning')}
       message={t('manage.course.deleteMicroLearningMessage')}
       onSubmit={async () => {
-        await deleteMicroLearning()
+        const result = await deleteMicroLearning()
+        if (result.data?.deleteMicroLearning?.id) {
+          await utils.course.detail.invalidate({ courseId })
+        }
         await refetchActivities?.()
       }}
       submitting={deletingMicroLearning}

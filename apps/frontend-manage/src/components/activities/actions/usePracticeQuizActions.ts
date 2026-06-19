@@ -19,13 +19,13 @@ import {
 import {
   ActivityInfo,
   ActivityType,
-  GetSingleCourseDocument,
   UnpublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import { trpc } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function usePracticeQuizActions({
@@ -47,6 +47,7 @@ function usePracticeQuizActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
+  const utils = trpc.useUtils()
   const [unpublishPracticeQuiz, { loading: unpublishing }] = useMutation(
     UnpublishPracticeQuizDocument
   )
@@ -161,39 +162,14 @@ function usePracticeQuizActions({
         label: t('manage.course.unpublishPracticeQuiz'),
         icon: faLock,
         onClick: async () => {
-          await unpublishPracticeQuiz({
+          const result = await unpublishPracticeQuiz({
             variables: { id: practiceQuiz.id! },
-            update: (cache, { data: res }) => {
-              // if the mutation was not successful, return early
-              if (!res?.unpublishPracticeQuiz?.id) return
-
-              // change the status of the practice quiz on the course overview back to draft
-              cache.updateQuery(
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: practiceQuiz.courseId! },
-                },
-                (data) => {
-                  if (!data?.course) return data
-
-                  return {
-                    course: {
-                      ...data.course,
-                      practiceQuizzesInfo: data.course.practiceQuizzesInfo?.map(
-                        (quiz) =>
-                          quiz.id === res.unpublishPracticeQuiz?.id
-                            ? {
-                                ...quiz,
-                                status: res.unpublishPracticeQuiz?.status,
-                              }
-                            : quiz
-                      ),
-                    },
-                  }
-                }
-              )
-            },
           })
+          if (practiceQuiz.courseId && result.data?.unpublishPracticeQuiz?.id) {
+            await utils.course.detail.invalidate({
+              courseId: practiceQuiz.courseId,
+            })
+          }
           await refetchActivities?.()
         },
         disabled: unpublishing,
@@ -235,6 +211,7 @@ function usePracticeQuizActions({
       setSharingModal,
       setRemovalModal,
       unpublishPracticeQuiz,
+      utils,
       setDeletionModal,
       setActivityLogOpen,
     ]

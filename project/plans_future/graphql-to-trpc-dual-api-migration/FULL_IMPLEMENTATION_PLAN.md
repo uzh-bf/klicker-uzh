@@ -280,6 +280,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-19 Completed: S04L Course Activity Refetch Cleanup
+
+Status: complete for a narrow S04L refetch cleanup. Scope was limited to replacing
+`GetSingleCourseDocument` Apollo cache updates/refetches in manage activity
+action hooks and course activity modals with `course.detail` tRPC invalidation.
+This does not migrate the underlying GraphQL mutations, authoring submit
+helpers, realtime subscriptions, S05, or S06 cleanup.
+
+Slice: S04L Course Activity Refetch Cleanup
+
+Behavior source:
+
+- Existing GraphQL activity mutations and their `GetSingleCourseDocument`
+  cache/refetch behavior.
+- `course.detail` tRPC read from the completed S04J course detail slice.
+
+Implemented:
+
+- Replaced Apollo `GetSingleCourseDocument` cache updates/refetches in activity
+  action hooks with `utils.course.detail.invalidate({ courseId })`.
+- Applied the same invalidation bridge to publish/schedule/extend/end/delete/reset
+  course activity modals.
+- Kept remaining GraphQL mutations, activity authoring submit helpers, Apollo
+  providers, generated artifacts, GraphQL runtime, and realtime consumers live.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04L refetch cleanup files>`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage check`:
+  passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-manage build`:
+  passed with existing Next/module/Browserslist/i18n/page-data warnings.
+- Targeted operation audit
+  `rg -n "GetSingleCourseDocument|GetSingleCourse" <S04L hook/modal files>`:
+  no matches.
+- Broad residual audit
+  `rg -n "GetSingleCourseDocument|GetSingleCourse" apps/frontend-manage/src`
+  now only reports activity authoring submit helpers for live quiz, practice
+  quiz, microlearning, and group activity creation/edit/duplication flows.
+- Browser smoke against local manage/auth/backend loaded
+  `/courses/b8b1305e-bfe8-458b-bf26-9082fdca953f`, opened the
+  `actions-LIVE_QUIZ-Live Quiz 3` menu, and opened the non-destructive
+  `Schedule Live Quiz` modal without submitting it. Screenshots:
+  `/tmp/agent-browser-shots/s04-refetch-cleanup-01-course-detail.png` and
+  `/tmp/agent-browser-shots/s04-refetch-cleanup-02-schedule-modal.png`.
+
+Residual scope:
+
+- S04 remains open for the four activity authoring submit helpers that still
+  refetch `GetSingleCourseDocument`.
+- S05 realtime/subscription migration and S06 cleanup were not started.
+
 ### 2026-06-19 Completed: S04J Manage Course Detail Read
 
 Status: complete for the scoped course-detail read slice. Scope was limited to

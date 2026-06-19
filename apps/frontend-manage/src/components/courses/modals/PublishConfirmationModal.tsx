@@ -7,13 +7,13 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceType,
-  GetSingleCourseDocument,
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 interface PublishConfirmationModalProps {
   onClose: () => void
@@ -39,69 +39,16 @@ function PublishConfirmationModal({
   refetchActivities,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
   const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
     PublishMicroLearningDocument,
-    {
-      variables: { id: activityId },
-      update(cache, { data }) {
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            const publishedMicro = data?.publishMicroLearning
-            if (!qData?.course?.microLearningsInfo || !publishedMicro)
-              return qData
-
-            return {
-              course: {
-                ...qData.course,
-                microLearningsInfo: qData.course.microLearningsInfo.map(
-                  (micro) =>
-                    micro.id === publishedMicro.id
-                      ? {
-                          ...micro,
-                          status: publishedMicro.status,
-                        }
-                      : micro
-                ),
-              },
-            }
-          }
-        )
-      },
-    }
+    { variables: { id: activityId } }
   )
 
   const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
     PublishGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      update(cache, { data }) {
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            const publishedGa = data?.publishGroupActivity
-            if (!qData?.course?.groupActivitiesInfo || !publishedGa)
-              return qData
-
-            return {
-              course: {
-                ...qData.course,
-                groupActivitiesInfo: qData.course.groupActivitiesInfo.map(
-                  (groupActivity) =>
-                    groupActivity.id === publishedGa.id
-                      ? {
-                          ...groupActivity,
-                          status: publishedGa.status,
-                        }
-                      : groupActivity
-                ),
-              },
-            }
-          }
-        )
-      },
-    }
+    { variables: { id: activityId } }
   )
 
   return (
@@ -111,10 +58,16 @@ function PublishConfirmationModal({
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={mlPublishLoading || gaPublishLoading}
       onPrimaryAction={async () => {
+        let publishedActivityId: string | undefined
         if (activityType === ElementInstanceType.Microlearning) {
-          await publishMicroLearning()
+          const result = await publishMicroLearning()
+          publishedActivityId = result.data?.publishMicroLearning?.id
         } else if (activityType === ElementInstanceType.GroupActivity) {
-          await publishGroupActivity()
+          const result = await publishGroupActivity()
+          publishedActivityId = result.data?.publishGroupActivity?.id
+        }
+        if (publishedActivityId) {
+          await utils.course.detail.invalidate({ courseId })
         }
         await refetchActivities?.()
         onClose()

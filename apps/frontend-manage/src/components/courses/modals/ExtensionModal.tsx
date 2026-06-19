@@ -2,13 +2,13 @@ import { useMutation } from '@apollo/client'
 import {
   ExtendGroupActivityDocument,
   ExtendMicroLearningDocument,
-  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 interface ExtensionModalProps {
   type: 'microLearning' | 'groupActivity'
@@ -32,6 +32,7 @@ function ExtensionModal({
   refetchActivities,
 }: ExtensionModalProps) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
   const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument)
 
@@ -60,7 +61,7 @@ function ExtensionModal({
             setSubmitting(true)
 
             if (type === 'microLearning') {
-              await extendMicroLearning({
+              const result = await extendMicroLearning({
                 variables: { id, endDate: utcEndDate },
                 optimisticResponse: {
                   __typename: 'Mutation',
@@ -70,39 +71,13 @@ function ExtensionModal({
                     scheduledEndAt: utcEndDate,
                   },
                 },
-                update: (cache, { data }) => {
-                  // check if the extension was successful
-                  if (!data?.extendMicroLearning) return
-
-                  // update the end date of the modified microlearning in the cache
-                  cache.updateQuery(
-                    { query: GetSingleCourseDocument, variables: { courseId } },
-                    (qData) => {
-                      if (!qData?.course) return qData
-
-                      return {
-                        course: {
-                          ...qData.course,
-                          microLearningsInfo: (
-                            qData.course.microLearningsInfo ?? []
-                          ).map((ml) =>
-                            ml.id === data.extendMicroLearning!.id
-                              ? {
-                                  ...ml,
-                                  scheduledEndAt:
-                                    data.extendMicroLearning!.scheduledEndAt,
-                                }
-                              : ml
-                          ),
-                        },
-                      }
-                    }
-                  )
-                },
               })
+              if (result.data?.extendMicroLearning?.id) {
+                await utils.course.detail.invalidate({ courseId })
+              }
               await refetchActivities?.()
             } else if (type === 'groupActivity') {
-              await extendGroupActivity({
+              const result = await extendGroupActivity({
                 variables: { id, endDate: utcEndDate },
                 optimisticResponse: {
                   __typename: 'Mutation',
@@ -112,36 +87,10 @@ function ExtensionModal({
                     scheduledEndAt: utcEndDate,
                   },
                 },
-                update: (cache, { data }) => {
-                  // check if the extension was successful
-                  if (!data?.extendGroupActivity) return
-
-                  // update the end date of the modified group activity in the cache
-                  cache.updateQuery(
-                    { query: GetSingleCourseDocument, variables: { courseId } },
-                    (qData) => {
-                      if (!qData?.course) return qData
-
-                      return {
-                        course: {
-                          ...qData.course,
-                          groupActivitiesInfo: (
-                            qData.course.groupActivitiesInfo ?? []
-                          ).map((ga) =>
-                            ga.id === data.extendGroupActivity!.id
-                              ? {
-                                  ...ga,
-                                  scheduledEndAt:
-                                    data.extendGroupActivity!.scheduledEndAt,
-                                }
-                              : ga
-                          ),
-                        },
-                      }
-                    }
-                  )
-                },
               })
+              if (result.data?.extendGroupActivity?.id) {
+                await utils.course.detail.invalidate({ courseId })
+              }
               await refetchActivities?.()
             }
 

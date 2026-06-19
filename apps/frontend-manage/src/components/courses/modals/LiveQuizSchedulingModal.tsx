@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetSingleCourseDocument,
   GetUserActivitiesDocument,
   ScheduleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -11,6 +10,7 @@ import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 function LiveQuizSchedulingModal({
   activityId,
@@ -26,6 +26,7 @@ function LiveQuizSchedulingModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [scheduleLiveQuiz, { loading: liveQuizScheduling }] = useMutation(
     ScheduleLiveQuizDocument
   )
@@ -51,20 +52,16 @@ function LiveQuizSchedulingModal({
         initialValues={{ availableFrom: undefined }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          await scheduleLiveQuiz({
+          const result = await scheduleLiveQuiz({
             variables: {
               id: activityId,
               availableFrom: dayjs(values.availableFrom).utc().format(),
             },
-            // TODO: replace with cache update
-            refetchQueries: [
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId },
-              },
-              { query: GetUserActivitiesDocument },
-            ],
+            refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
+          if (courseId && result.data?.scheduleLiveQuiz?.id) {
+            await utils.course.detail.invalidate({ courseId })
+          }
           onClose()
         }}
         validationSchema={yup.object().shape({

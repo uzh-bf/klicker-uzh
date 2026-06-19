@@ -14,12 +14,12 @@ import {
 import {
   ActivityInfo,
   ActivityType,
-  GetSingleCourseDocument,
   UnpublishGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import { trpc } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function useGroupActivityActions({
@@ -47,6 +47,7 @@ function useGroupActivityActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
+  const utils = trpc.useUtils()
   const [unpublishGroupActivity, { loading: unpublishing }] = useMutation(
     UnpublishGroupActivityDocument
   )
@@ -79,39 +80,17 @@ function useGroupActivityActions({
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
         onClick: async () => {
-          await unpublishGroupActivity({
+          const result = await unpublishGroupActivity({
             variables: { id: groupActivity.id! },
-            update: (cache, { data: res }) => {
-              // if the mutation was not successful, return early
-              if (!res?.unpublishGroupActivity?.id) return
-
-              // change the status of the practice quiz on the course overview back to draft
-              cache.updateQuery(
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: groupActivity.courseId! },
-                },
-                (data) => {
-                  if (!data?.course) return data
-
-                  return {
-                    course: {
-                      ...data.course,
-                      groupActivitiesInfo: data.course.groupActivitiesInfo?.map(
-                        (quiz) =>
-                          quiz.id === res.unpublishGroupActivity?.id
-                            ? {
-                                ...quiz,
-                                status: res.unpublishGroupActivity?.status,
-                              }
-                            : quiz
-                      ),
-                    },
-                  }
-                }
-              )
-            },
           })
+          if (
+            groupActivity.courseId &&
+            result.data?.unpublishGroupActivity?.id
+          ) {
+            await utils.course.detail.invalidate({
+              courseId: groupActivity.courseId,
+            })
+          }
           await refetchActivities?.()
         },
         disabled: unpublishing,
@@ -185,8 +164,10 @@ function useGroupActivityActions({
       router,
       groupActivity.id,
       groupActivity.name,
+      groupActivity.courseId,
       unpublishGroupActivity,
       unpublishing,
+      utils,
       setRemovalModal,
       setDeletionModal,
       setEndingModal,

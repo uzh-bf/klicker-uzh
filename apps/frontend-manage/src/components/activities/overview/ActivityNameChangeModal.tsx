@@ -1,15 +1,13 @@
 import { useMutation } from '@apollo/client'
 import {
-  ActivityInfo,
   ActivityType,
   ChangeActivityNameDocument,
-  GetSingleCourseDocument,
-  ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 interface ActivityNameChangeModalProps {
   id: string
@@ -31,6 +29,7 @@ function ActivityNameChangeModal({
   refetchActivities,
 }: ActivityNameChangeModalProps) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
   const [changeActivityName] = useMutation(ChangeActivityNameDocument)
   const schema = Yup.object().shape({
@@ -66,83 +65,12 @@ function ActivityNameChangeModal({
               name: values.name,
               displayName: values.displayName,
             },
-            update: (cache, { data }) => {
-              // if modification was not toggled from course view or failed, return early
-              if (!courseId || !data?.changeActivityName) return
-
-              // update the corresponding activity list in the course overview
-              cache.updateQuery(
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId },
-                },
-                (data) => {
-                  if (!data?.course) return data
-
-                  let updatedActivities: ActivityInfo[] = []
-                  let updatedActivitiesKey:
-                    | 'liveQuizzesInfo'
-                    | 'practiceQuizzesInfo'
-                    | 'microLearningsInfo'
-                    | 'groupActivitiesInfo' = 'liveQuizzesInfo'
-
-                  switch (type) {
-                    case ActivityType.LiveQuiz:
-                      updatedActivities = [
-                        ...(data.course.liveQuizzesInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'liveQuizzesInfo'
-                      break
-                    case ActivityType.PracticeQuiz:
-                      updatedActivities = [
-                        ...(data.course.practiceQuizzesInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'practiceQuizzesInfo'
-                      break
-                    case ActivityType.MicroLearning:
-                      updatedActivities = [
-                        ...(data.course.microLearningsInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'microLearningsInfo'
-                      break
-                    case ActivityType.GroupActivity:
-                      updatedActivities = [
-                        ...(data.course.groupActivitiesInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'groupActivitiesInfo'
-                      break
-                    default:
-                      break
-                  }
-
-                  // update the activity name in the list
-                  updatedActivities = updatedActivities.map((activity) => {
-                    if (activity.id === id) {
-                      return {
-                        ...activity,
-                        name: values.name,
-                        displayName: values.displayName,
-                        reviewStatus:
-                          activity.reviewStatus === ReviewStatus.Reviewed
-                            ? ReviewStatus.ModifiedAfterReview
-                            : activity.reviewStatus,
-                      }
-                    }
-                    return activity
-                  })
-
-                  return {
-                    course: {
-                      ...data.course,
-                      [updatedActivitiesKey]: updatedActivities,
-                    },
-                  }
-                }
-              )
-            },
           })
 
           if (result.data?.changeActivityName) {
+            if (courseId) {
+              await utils.course.detail.invalidate({ courseId })
+            }
             await refetchActivities?.()
             toast({
               type: 'success',

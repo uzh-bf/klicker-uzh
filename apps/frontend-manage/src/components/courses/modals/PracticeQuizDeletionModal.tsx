@@ -2,10 +2,10 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   DeletePracticeQuizDocument,
   GetPracticeQuizSummaryDocument,
-  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -21,6 +21,7 @@ function PracticeQuizDeletionModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetPracticeQuizSummaryDocument,
     {
@@ -31,34 +32,7 @@ function PracticeQuizDeletionModal({
 
   const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
     DeletePracticeQuizDocument,
-    {
-      variables: { id: activityId },
-      update: (cache, { data: res }) => {
-        // if the practice quiz is not part of a course or the mutation was not successful, return early
-        if (!res?.deletePracticeQuiz?.id) return
-
-        // change the status of the practice quiz on the course overview back to draft
-        cache.updateQuery(
-          {
-            query: GetSingleCourseDocument,
-            variables: { courseId },
-          },
-          (data) => {
-            if (!data?.course) return data
-
-            return {
-              course: {
-                ...data.course,
-                practiceQuizzesInfo:
-                  data.course.practiceQuizzesInfo?.filter(
-                    (pq) => pq.id !== res.deletePracticeQuiz!.id
-                  ) ?? [],
-              },
-            }
-          }
-        )
-      },
-    }
+    { variables: { id: activityId } }
   )
 
   const [confirmations, setConfirmations] = useState({
@@ -87,7 +61,10 @@ function PracticeQuizDeletionModal({
       title={t('manage.course.deletePracticeQuiz')}
       message={t('manage.course.deletePracticeQuizMessage')}
       onSubmit={async () => {
-        await deletePracticeQuiz()
+        const result = await deletePracticeQuiz()
+        if (result.data?.deletePracticeQuiz?.id) {
+          await utils.course.detail.invalidate({ courseId })
+        }
         await refetchActivities?.()
       }}
       submitting={deletingPracticeQuiz}

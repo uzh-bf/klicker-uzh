@@ -2,10 +2,10 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   DeleteGroupActivityDocument,
   GetGroupActivitySummaryDocument,
-  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -21,6 +21,7 @@ function GroupActivityDeletionModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetGroupActivitySummaryDocument,
     {
@@ -31,34 +32,7 @@ function GroupActivityDeletionModal({
 
   const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
     DeleteGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      update: (cache, { data: res }) => {
-        // if the group activity is not part of a course or the mutation was not successful, return early
-        if (!res?.deleteGroupActivity?.id) return
-
-        // change the status of the group activity on the course overview back to draft
-        cache.updateQuery(
-          {
-            query: GetSingleCourseDocument,
-            variables: { courseId },
-          },
-          (data) => {
-            if (!data?.course) return data
-
-            return {
-              course: {
-                ...data.course,
-                groupActivitiesInfo:
-                  data.course.groupActivitiesInfo?.filter(
-                    (ga) => ga.id !== res.deleteGroupActivity!.id
-                  ) ?? [],
-              },
-            }
-          }
-        )
-      },
-    }
+    { variables: { id: activityId } }
   )
 
   const [confirmations, setConfirmations] = useState({
@@ -87,7 +61,10 @@ function GroupActivityDeletionModal({
       title={t('manage.course.deleteGroupActivity')}
       message={t('manage.course.deleteGroupActivityMessage')}
       onSubmit={async () => {
-        await deleteGroupActivity()
+        const result = await deleteGroupActivity()
+        if (result.data?.deleteGroupActivity?.id) {
+          await utils.course.detail.invalidate({ courseId })
+        }
         await refetchActivities?.()
       }}
       submitting={deletingGroupActivity}

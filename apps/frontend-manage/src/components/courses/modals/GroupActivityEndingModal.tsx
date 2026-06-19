@@ -2,11 +2,11 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   EndGroupActivityDocument,
   GetGroupActivitySummaryDocument,
-  GetSingleCourseDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -22,6 +22,7 @@ function GroupActivityEndingModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetGroupActivitySummaryDocument,
     {
@@ -42,31 +43,6 @@ function GroupActivityEndingModal({
           scheduledEndAt: new Date(),
           __typename: 'GroupActivity',
         },
-      },
-      update(cache, { data }) {
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            const endedGa = data?.endGroupActivity
-            if (!qData?.course?.groupActivitiesInfo || !endedGa) return qData
-
-            return {
-              course: {
-                ...qData.course,
-                groupActivitiesInfo: qData.course.groupActivitiesInfo.map(
-                  (groupActivity) =>
-                    groupActivity.id === endedGa.id
-                      ? {
-                          ...groupActivity,
-                          scheduledEndAt: endedGa.scheduledEndAt,
-                          status: endedGa.status,
-                        }
-                      : groupActivity
-                ),
-              },
-            }
-          }
-        )
       },
     }
   )
@@ -95,7 +71,10 @@ function GroupActivityEndingModal({
       title={t('manage.course.endGroupActivity')}
       message={t('manage.course.endGroupActivityMessage')}
       onSubmit={async () => {
-        await endGroupActivity()
+        const result = await endGroupActivity()
+        if (result.data?.endGroupActivity?.id) {
+          await utils.course.detail.invalidate({ courseId })
+        }
         await refetchActivities?.()
       }}
       submitting={endingGroupActivity}

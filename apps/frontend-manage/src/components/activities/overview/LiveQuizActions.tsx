@@ -3,7 +3,6 @@ import {
   ActivityInfo,
   ActivityType,
   DeleteLiveQuizDocument,
-  GetSingleCourseDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ObjectType } from '@lib/constants/sharingEnums'
@@ -113,6 +112,7 @@ function LiveQuizActions({
     activityId: string
     activityType: ActivityType
   }>({ open: false, activityId: '', activityType: ActivityType.LiveQuiz })
+  const utils = trpc.useUtils()
 
   const { onStart, starting } = useStartLiveQuiz({
     id: liveQuiz.id,
@@ -121,34 +121,7 @@ function LiveQuizActions({
 
   const [deleteLiveQuiz, { loading: deleting }] = useMutation(
     DeleteLiveQuizDocument,
-    {
-      variables: { id: liveQuiz.id },
-      update: (cache, { data: res }) => {
-        // if the live quiz is not part of a course or the mutation was not successful, return early
-        if (!liveQuiz.courseId || !res?.deleteLiveQuiz?.id) return
-
-        // change the status of the live quiz on the course overview back to draft
-        cache.updateQuery(
-          {
-            query: GetSingleCourseDocument,
-            variables: { courseId: liveQuiz.courseId! },
-          },
-          (data) => {
-            if (!data?.course) return data
-
-            return {
-              course: {
-                ...data.course,
-                liveQuizzesInfo:
-                  data.course.liveQuizzesInfo?.filter(
-                    (lq) => lq.id !== res.deleteLiveQuiz!.id
-                  ) ?? [],
-              },
-            }
-          }
-        )
-      },
-    }
+    { variables: { id: liveQuiz.id } }
   )
   const { data: user } = trpc.user.profile.useQuery()
 
@@ -258,7 +231,12 @@ function LiveQuizActions({
             quizId={liveQuiz.id}
             onClose={() => setDeletionModal(false)}
             onDelete={async () => {
-              await deleteLiveQuiz()
+              const result = await deleteLiveQuiz()
+              if (liveQuiz.courseId && result.data?.deleteLiveQuiz?.id) {
+                await utils.course.detail.invalidate({
+                  courseId: liveQuiz.courseId,
+                })
+              }
               await refetchActivities?.()
             }}
             deleting={deleting}

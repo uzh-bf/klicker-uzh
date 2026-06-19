@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   GetLiveQuizSummaryDocument,
-  GetSingleCourseDocument,
   ResetAssessmentLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -23,6 +23,7 @@ function LiveQuizResetModal({
   courseId?: string | null
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetLiveQuizSummaryDocument,
     { variables: { quizId }, fetchPolicy: 'network-only' }
@@ -30,28 +31,7 @@ function LiveQuizResetModal({
 
   const [resetLiveQuiz, { loading: resetting }] = useMutation(
     ResetAssessmentLiveQuizDocument,
-    {
-      variables: { id: quizId },
-      update(cache, { data }) {
-        const updatedLiveQuiz = data?.resetAssessmentLiveQuiz
-        if (!updatedLiveQuiz || !courseId) return
-
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            if (!qData?.course?.liveQuizzesInfo) return qData
-            return {
-              course: {
-                ...qData.course,
-                liveQuizzesInfo: qData.course.liveQuizzesInfo.map((lq) =>
-                  lq.id === updatedLiveQuiz.id ? updatedLiveQuiz : lq
-                ),
-              },
-            }
-          }
-        )
-      },
-    }
+    { variables: { id: quizId } }
   )
 
   const [confirmations, setConfirmations] = useState({
@@ -83,7 +63,10 @@ function LiveQuizResetModal({
       title={t('manage.liveQuizzes.resetLiveQuiz')}
       message={t('manage.liveQuizzes.resetLiveQuizMessage')}
       onSubmit={async () => {
-        await resetLiveQuiz()
+        const result = await resetLiveQuiz()
+        if (courseId && result.data?.resetAssessmentLiveQuiz?.id) {
+          await utils.course.detail.invalidate({ courseId })
+        }
         await onSuccess?.()
       }}
       submitting={resetting}

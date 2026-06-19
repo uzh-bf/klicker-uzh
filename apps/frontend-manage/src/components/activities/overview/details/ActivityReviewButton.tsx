@@ -1,10 +1,5 @@
-import { useApolloClient } from '@apollo/client'
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  GetSingleCourseDocument,
-  ReviewStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc, type RouterInputs } from '../../../../lib/trpc'
@@ -22,7 +17,6 @@ function ActivityReviewButton({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const apolloClient = useApolloClient()
   const detailsInput: RouterInputs['activity']['details'] = {
     activityId,
     activityType:
@@ -44,47 +38,8 @@ function ActivityReviewButton({
         })
 
         if (res.reviewStatus) {
-          // Keep the Apollo course cache coherent until course details move to tRPC.
           if (courseId) {
-            apolloClient.cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId },
-              },
-              (queryData) => {
-                if (!queryData?.course) return null
-
-                const activityKey:
-                  | 'liveQuizzesInfo'
-                  | 'practiceQuizzesInfo'
-                  | 'microLearningsInfo'
-                  | 'groupActivitiesInfo' =
-                  activityType === ActivityType.LiveQuiz
-                    ? 'liveQuizzesInfo'
-                    : activityType === ActivityType.PracticeQuiz
-                      ? 'practiceQuizzesInfo'
-                      : activityType === ActivityType.MicroLearning
-                        ? 'microLearningsInfo'
-                        : 'groupActivitiesInfo'
-
-                const updatedActivities =
-                  queryData.course?.[activityKey]?.map((act) =>
-                    act.id === activityId
-                      ? {
-                          ...act,
-                          reviewStatus: res.reviewStatus as ReviewStatus,
-                        }
-                      : act
-                  ) ?? []
-
-                return {
-                  course: {
-                    ...queryData.course,
-                    [activityKey]: updatedActivities,
-                  },
-                }
-              }
-            )
+            await utils.course.detail.invalidate({ courseId })
           }
 
           await utils.activity.details.invalidate(detailsInput)

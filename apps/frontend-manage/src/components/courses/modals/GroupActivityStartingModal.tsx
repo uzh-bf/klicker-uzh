@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import {
-  GetSingleCourseDocument,
   OpenGroupActivityDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -8,6 +7,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -31,6 +31,7 @@ function GroupActivityStartingModal({
   refetchActivities,
 }: GroupActivityStartingModalProps) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [openGroupActivity, { loading: openingGroupActivity }] = useMutation(
     OpenGroupActivityDocument,
     {
@@ -43,36 +44,6 @@ function GroupActivityStartingModal({
           scheduledStartAt: new Date(),
           __typename: 'GroupActivity',
         },
-      },
-      update: (cache, { data }) => {
-        // check if the starting was successful
-        if (!data?.openGroupActivity) return
-
-        // update the group activity on the course overview
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            if (!qData?.course) return qData
-
-            return {
-              course: {
-                ...qData.course,
-                groupActivitiesInfo: (
-                  qData.course.groupActivitiesInfo ?? []
-                ).map((ga) =>
-                  ga.id === data.openGroupActivity!.id
-                    ? {
-                        ...ga,
-                        status: data.openGroupActivity!.status,
-                        scheduledStartAt:
-                          data.openGroupActivity!.scheduledStartAt,
-                      }
-                    : ga
-                ),
-              },
-            }
-          }
-        )
       },
     }
   )
@@ -96,7 +67,10 @@ function GroupActivityStartingModal({
       title={t('manage.course.startGroupActivityNow')}
       message={t('manage.course.startGroupActivityNowMessage')}
       onSubmit={async () => {
-        await openGroupActivity()
+        const result = await openGroupActivity()
+        if (result.data?.openGroupActivity?.id) {
+          await utils.course.detail.invalidate({ courseId })
+        }
         await refetchActivities?.()
       }}
       submitting={openingGroupActivity}
