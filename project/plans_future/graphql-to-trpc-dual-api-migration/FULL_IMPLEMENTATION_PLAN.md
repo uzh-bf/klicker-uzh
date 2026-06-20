@@ -459,6 +459,10 @@ First-pass findings and fixes:
   exposes button loading.
 - PR blocker cleanup: the control tRPC embedding-info test no longer uses the
   password-like `test-secret` HMAC fixture literal flagged by scanners.
+- GitGuardian forward cleanup: participant auth/account-creation tRPC tests no
+  longer use literal credential-like fixture values in current head. Existing
+  GitGuardian incidents still reference older branch commits and may require
+  dashboard dismissal or history rewrite.
 
 Verification:
 
@@ -467,6 +471,8 @@ Verification:
 - `pnpm exec prettier --check apps/frontend-pwa/src/components/forms/CreateAccountJoinForm.tsx apps/frontend-pwa/src/pages/join.tsx packages/api/src/trpc/__tests__/control-read.test.ts project/plans_future/graphql-to-trpc-dual-api-migration/GOAL_PROMPT.md project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   passed.
 - `pnpm --filter @klicker-uzh/api test src/trpc/__tests__/control-read.test.ts`
+  passed.
+- `pnpm --filter @klicker-uzh/api test src/trpc/__tests__/participant-account-creation.test.ts src/trpc/__tests__/participant-auth.test.ts`
   passed.
 - `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
 - `pnpm --filter @klicker-uzh/api build` passed.

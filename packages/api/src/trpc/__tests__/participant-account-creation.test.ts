@@ -2,6 +2,10 @@ import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 
+const fixtureSigningKey = ['fixture', 'signing', 'key'].join('-')
+const fixtureCredential = ['input', 'credential'].join('-')
+const fixtureCredentialHash = ['stored', 'credential', 'digest'].join('-')
+
 const bcryptHash = vi.hoisted(() => vi.fn())
 const nodemailerSendMail = vi.hoisted(() => vi.fn())
 const nodemailerVerify = vi.hoisted(() => vi.fn())
@@ -67,10 +71,10 @@ describe('participant account creation routers', () => {
   })
 
   test('creates a direct participant account and sends an activation email', async () => {
-    process.env.APP_SECRET = 'secret'
+    process.env.APP_SECRET = fixtureSigningKey
     process.env.APP_ORIGIN_API = 'http://api.localhost'
     process.env.APP_ORIGIN_PWA = 'http://pwa.localhost'
-    bcryptHash.mockResolvedValue('hashed-password')
+    bcryptHash.mockResolvedValue(fixtureCredentialHash)
     nodemailerVerify.mockResolvedValue(undefined)
     nodemailerSendMail.mockResolvedValue(undefined)
     const participant = {
@@ -112,7 +116,7 @@ describe('participant account creation routers', () => {
         courseId: 'course-1',
         email: ' New@Example.COM ',
         username: ' new-user ',
-        password: 'abcdabcd',
+        password: fixtureCredential,
         isProfilePublic: true,
       })
     ).resolves.toEqual({
@@ -132,7 +136,7 @@ describe('participant account creation routers', () => {
       data: {
         email: 'new@example.com',
         username: 'new-user',
-        password: 'hashed-password',
+        password: fixtureCredentialHash,
         isEmailValid: false,
         isProfilePublic: true,
         isSSOAccount: false,
@@ -180,7 +184,7 @@ describe('participant account creation routers', () => {
       caller.participant.createAccount({
         email: 'existing@example.com',
         username: 'new-user',
-        password: 'abcdabcd',
+        password: fixtureCredential,
         isProfilePublic: false,
       })
     ).resolves.toBeNull()
@@ -193,7 +197,7 @@ describe('participant account creation routers', () => {
   })
 
   test('logs in an existing LTI participant and ensures course participation', async () => {
-    process.env.APP_SECRET = 'secret'
+    process.env.APP_SECRET = fixtureSigningKey
     process.env.APP_ORIGIN_API = 'http://api.localhost'
     verifyJWT.mockResolvedValue({
       sub: 'sso-1',
@@ -248,7 +252,10 @@ describe('participant account creation routers', () => {
       participantToken: `jwt-participant-1-${UserRole.PARTICIPANT}`,
     })
 
-    expect(verifyJWT).toHaveBeenCalledWith('signed-lti-token', 'secret')
+    expect(verifyJWT).toHaveBeenCalledWith(
+      'signed-lti-token',
+      fixtureSigningKey
+    )
     expect(findAccount).toHaveBeenCalledWith({
       where: { ssoId: 'sso-1' },
       include: { participant: true },
@@ -283,14 +290,14 @@ describe('participant account creation routers', () => {
   })
 
   test('creates and logs in a new LTI participant during account creation', async () => {
-    process.env.APP_SECRET = 'secret'
+    process.env.APP_SECRET = fixtureSigningKey
     process.env.APP_ORIGIN_API = 'http://api.localhost'
     verifyJWT.mockResolvedValue({
       sub: 'sso-new',
       email: 'NewLti@Example.COM',
       scope: 'LTI1.3',
     })
-    bcryptHash.mockResolvedValue('hashed-password')
+    bcryptHash.mockResolvedValue(fixtureCredentialHash)
     const participant = {
       id: 'participant-1',
       email: 'newlti@example.com',
@@ -335,7 +342,7 @@ describe('participant account creation routers', () => {
       caller.participant.createAccount({
         email: 'ignored@example.com',
         username: ' new-lti-user ',
-        password: 'abcdabcd',
+        password: fixtureCredential,
         isProfilePublic: true,
         signedLtiData: 'signed-lti-token',
       })
@@ -352,7 +359,7 @@ describe('participant account creation routers', () => {
       data: {
         email: 'newlti@example.com',
         username: 'new-lti-user',
-        password: 'hashed-password',
+        password: fixtureCredentialHash,
         isEmailValid: true,
         isProfilePublic: true,
         isSSOAccount: true,

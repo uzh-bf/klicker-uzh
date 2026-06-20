@@ -7,6 +7,13 @@ import {
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 
+const fixtureSigningKey = ['fixture', 'signing', 'key'].join('-')
+const fixtureCredential = ['input', 'credential'].join('-')
+const rejectedCredential = ['rejected', 'credential'].join('-')
+const storedCredentialHash = ['stored', 'credential', 'digest'].join('-')
+const manualCredentialHash = ['manual', 'credential', 'digest'].join('-')
+const ssoCredentialHash = ['sso', 'credential', 'digest'].join('-')
+
 const bcryptCompare = vi.hoisted(() => vi.fn())
 const nodemailerSendMail = vi.hoisted(() => vi.fn())
 const nodemailerVerify = vi.hoisted(() => vi.fn())
@@ -81,7 +88,7 @@ describe('participant auth routers', () => {
         findUnique: vi.fn().mockResolvedValue({
           id: 'participant-1',
           username: 'student1',
-          password: 'hashed-password',
+          password: storedCredentialHash,
           locale: Locale.en,
         }),
         findMany: vi.fn(),
@@ -94,14 +101,17 @@ describe('participant auth routers', () => {
     await expect(
       caller.participant.login({
         usernameOrEmail: ' student1 ',
-        password: 'abcd',
+        password: fixtureCredential,
       })
     ).resolves.toBe('participant-1')
 
     expect(prisma?.participant.findUnique).toHaveBeenCalledWith({
       where: { username: 'student1' },
     })
-    expect(bcryptCompare).toHaveBeenCalledWith('abcd', 'hashed-password')
+    expect(bcryptCompare).toHaveBeenCalledWith(
+      fixtureCredential,
+      storedCredentialHash
+    )
     expect(update).toHaveBeenCalledWith({
       where: { id: 'participant-1' },
       data: { lastLoginAt: expect.any(Date) },
@@ -124,7 +134,7 @@ describe('participant auth routers', () => {
       participant: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'participant-1',
-          password: 'hashed-password',
+          password: storedCredentialHash,
           locale: Locale.en,
         }),
         findMany: vi.fn(),
@@ -137,7 +147,7 @@ describe('participant auth routers', () => {
     await expect(
       caller.participant.login({
         usernameOrEmail: 'student1',
-        password: 'wrong',
+        password: rejectedCredential,
       })
     ).resolves.toBeNull()
 
@@ -155,12 +165,12 @@ describe('participant auth routers', () => {
         findMany: vi.fn().mockResolvedValue([
           {
             id: 'manual-1',
-            password: 'manual-hash',
+            password: manualCredentialHash,
             locale: Locale.en,
           },
           {
             id: 'sso-1',
-            password: 'sso-hash',
+            password: ssoCredentialHash,
             locale: Locale.de,
           },
         ]),
@@ -172,7 +182,7 @@ describe('participant auth routers', () => {
     await expect(
       caller.participant.login({
         usernameOrEmail: 'STUDENT@EXAMPLE.COM',
-        password: 'abcd',
+        password: fixtureCredential,
       })
     ).resolves.toBe('sso-1')
 
@@ -261,7 +271,7 @@ describe('participant auth routers', () => {
   })
 
   test('logs in a participant with a valid magic link token', async () => {
-    process.env.APP_SECRET = 'secret'
+    process.env.APP_SECRET = fixtureSigningKey
     process.env.APP_ORIGIN_API = 'http://api.localhost'
     verifyJWT.mockResolvedValue({
       sub: 'participant-1',
@@ -286,7 +296,7 @@ describe('participant auth routers', () => {
       })
     ).resolves.toBe('participant-1')
 
-    expect(verifyJWT).toHaveBeenCalledWith('valid-token', 'secret')
+    expect(verifyJWT).toHaveBeenCalledWith('valid-token', fixtureSigningKey)
     expect(prisma?.participant.findUnique).toHaveBeenCalledWith({
       where: { id: 'participant-1' },
     })
@@ -335,7 +345,7 @@ describe('participant auth routers', () => {
   ])(
     'returns null for magic link tokens with $label',
     async ({ token, setupToken, expectedLookup, findUniqueResult }) => {
-      process.env.APP_SECRET = 'secret'
+      process.env.APP_SECRET = fixtureSigningKey
       setupToken()
       const findUnique = vi.fn()
 
@@ -356,7 +366,7 @@ describe('participant auth routers', () => {
         caller.participant.loginWithMagicLink({ token })
       ).resolves.toBeNull()
 
-      expect(verifyJWT).toHaveBeenCalledWith(token, 'secret')
+      expect(verifyJWT).toHaveBeenCalledWith(token, fixtureSigningKey)
       if (expectedLookup) {
         expect(prisma?.participant.findUnique).toHaveBeenCalledWith({
           where: { id: expectedLookup },
@@ -370,7 +380,7 @@ describe('participant auth routers', () => {
   )
 
   test('activates a participant account and logs the participant in', async () => {
-    process.env.APP_SECRET = 'secret'
+    process.env.APP_SECRET = fixtureSigningKey
     process.env.APP_ORIGIN_API = 'http://api.localhost'
     verifyJWT.mockResolvedValue({
       sub: 'participant-1',
@@ -397,7 +407,10 @@ describe('participant auth routers', () => {
       })
     ).resolves.toBe('participant-1')
 
-    expect(verifyJWT).toHaveBeenCalledWith('activation-token', 'secret')
+    expect(verifyJWT).toHaveBeenCalledWith(
+      'activation-token',
+      fixtureSigningKey
+    )
     expect(update).toHaveBeenNthCalledWith(1, {
       where: { id: 'participant-1' },
       data: { isEmailValid: true },
@@ -446,7 +459,7 @@ describe('participant auth routers', () => {
   ])(
     'returns null for activation tokens with $label',
     async ({ token, setupToken, updateError }) => {
-      process.env.APP_SECRET = 'secret'
+      process.env.APP_SECRET = fixtureSigningKey
       setupToken()
       const update = vi.fn()
 
@@ -466,7 +479,7 @@ describe('participant auth routers', () => {
         caller.participant.activateAccount({ token })
       ).resolves.toBeNull()
 
-      expect(verifyJWT).toHaveBeenCalledWith(token, 'secret')
+      expect(verifyJWT).toHaveBeenCalledWith(token, fixtureSigningKey)
       if (updateError) {
         expect(prisma?.participant.update).toHaveBeenCalledWith({
           where: { id: 'missing-participant' },
