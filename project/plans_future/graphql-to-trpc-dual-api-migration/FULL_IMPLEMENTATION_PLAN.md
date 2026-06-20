@@ -423,6 +423,47 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-20 Completed: Staging Dual-API Deploy Readiness Review
+
+Status: complete for the deploy-readiness follow-up. Scope was limited to
+making the existing dual API branch deployable to staging with `/api/graphql`
+and `/api/trpc` live in the same backend image, while keeping frontend switching
+compatible with existing API URL settings.
+
+Findings and changes:
+
+- Staging backend ingress already routes `api.klicker.stg.df-app.ch` at `/`,
+  so both `/api/graphql` and `/api/trpc` can reach the backend service.
+- Frontend staging env files still point `NEXT_PUBLIC_API_URL` at
+  `/api/graphql`; current tRPC clients intentionally derive `/api/trpc` from
+  that value, so old GraphQL callers and new tRPC callers can share the same API
+  origin during testing.
+- Fixed the backend Docker runtime image by copying `packages/api/dist` beside
+  the existing GraphQL/prisma/shared package dist folders. Without this,
+  deployed backend images could miss the runtime package imported by the tRPC
+  mount.
+- Added `packages/api/**` to the staging backend image workflow path filter so
+  API-only tRPC fixes trigger a backend image build.
+
+Verification:
+
+- `pnpm exec prettier --check .github/workflows/v3_backend-docker-stg.yml`
+  passed.
+- `pnpm --filter @klicker-uzh/backend-docker check` passed.
+- `pnpm --filter @klicker-uzh/backend-docker build` passed.
+- `test -d packages/api/dist` passed after the backend build.
+- `docker build --target runtime -f apps/backend-docker/Dockerfile ...` was
+  attempted twice but could not reach Docker Hub auth for the base image
+  metadata (`TLS handshake timeout`) before local Dockerfile validation started.
+
+Next:
+
+- Let CI build the backend image, or rerun the local Docker build once Docker Hub
+  auth is reachable.
+- Deploy backend image to staging first, verify `/api/graphql` and `/api/trpc`
+  health/caller behavior, then switch frontend images for workflow testing.
+- Do not start S06 cleanup as part of staging deployment.
+
 ### 2026-06-19 Completed: S05G-AB Choice Question/Evaluation Generated Type Cleanup
 
 Status: complete locally. Scope was limited to the shared choice
