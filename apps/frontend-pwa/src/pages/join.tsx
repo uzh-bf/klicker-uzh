@@ -42,17 +42,26 @@ function JoinPage() {
           validationSchema={joinCourseWithPinSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
-            const participant = await joinCourseWithPin.mutateAsync({
-              pin: Number(values.pin.replace(/\s/g, '')),
-            })
+            setError(false)
 
-            if (participant) {
-              await utils.participant.participations.invalidate()
-              router.push('/')
-            } else {
+            try {
+              const participant = await joinCourseWithPin.mutateAsync({
+                pin: Number(values.pin.replace(/\s/g, '')),
+              })
+
+              if (participant) {
+                await utils.participant.participations.invalidate()
+                await router.push('/')
+                return
+              }
+
               setError(t('pwa.joinCourse.invalidPin'))
+            } catch (error) {
+              console.error(error)
+              setError(t('pwa.joinCourse.genericError'))
+            } finally {
+              setSubmitting(false)
             }
-            setSubmitting(false)
           }}
         >
           {({ isSubmitting, isValid }) => {
@@ -71,6 +80,7 @@ function JoinPage() {
                   primary
                   type="submit"
                   disabled={isSubmitting || !isValid}
+                  loading={isSubmitting}
                   className={{
                     root: 'float-right mt-2',
                   }}

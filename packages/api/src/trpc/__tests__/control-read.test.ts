@@ -1106,7 +1106,7 @@ describe('control read routers', () => {
   })
 
   test('returns live quiz embedding info when read permission exists', async () => {
-    process.env.APP_SECRET = 'test-secret'
+    process.env.APP_SECRET = 'fixture-value'
     const prisma = {
       derivedPermission: {
         findFirst: vi.fn().mockResolvedValue({
@@ -1129,7 +1129,7 @@ describe('control read routers', () => {
       },
     } as unknown as TRPCContext['prisma']
     const caller = appRouter.createCaller(createContext(prisma))
-    const hmac = createHmac('sha256', 'test-secret')
+    const hmac = createHmac('sha256', 'fixture-value')
       .update('namespace-1quiz-1')
       .digest('hex')
 

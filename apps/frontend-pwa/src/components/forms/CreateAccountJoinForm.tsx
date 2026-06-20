@@ -32,24 +32,37 @@ function CreateAccountJoinForm() {
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           setSubmitting(true)
 
-          const courseId = await utils.participant.checkValidCoursePin.fetch({
-            pin: parseInt(values.pin.replace(/\s/g, '')),
-          })
+          const normalizedPin = values.pin.replace(/\s/g, '')
 
-          if (courseId) {
-            router.push(
-              `/course/${courseId}/join?pin=${values.pin.replace(/\s/g, '')}`
-            )
-          } else {
+          try {
+            const courseId = await utils.participant.checkValidCoursePin.fetch({
+              pin: Number(normalizedPin),
+            })
+
+            if (courseId) {
+              await router.push({
+                pathname: '/course/[courseId]/join',
+                query: { courseId, pin: normalizedPin },
+              })
+              return
+            }
+
             toast({
               type: 'error',
               message: t('pwa.login.coursePinInvalid'),
               options: { duration: 6000 },
             })
             resetForm()
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 6000 },
+            })
+          } finally {
+            setSubmitting(false)
           }
-
-          setSubmitting(false)
         }}
       >
         {({ isSubmitting }) => (
@@ -68,6 +81,7 @@ function CreateAccountJoinForm() {
               type="submit"
               // TODO: add validation and disable button for invalid / incomplete pints
               disabled={isSubmitting}
+              loading={isSubmitting}
               className={{ root: 'self-end' }}
               data={{ cy: 'signup-course' }}
             >

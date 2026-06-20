@@ -423,6 +423,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-20 Completed: tRPC UX and Client Quality Audit First Pass
+
+Status: complete for the first pass. User requested a fresh UX/client-quality
+goal for the migrated tRPC surfaces. Scope was limited to already migrated tRPC
+workflows, dual-API staging readiness, and PR #5132 review/CI follow-up. S06
+GraphQL cleanup was not started, and no new migration slice was opened.
+
+Goal prompt:
+
+- `project/plans_future/graphql-to-trpc-dual-api-migration/GOAL_PROMPT.md`
+
+Audit focus:
+
+- Loading states and skeleton/fallback quality.
+- Mutation pending state, double-submit prevention, and form reset behavior.
+- Recoverable failure handling and toasts/inline errors.
+- React Query/tRPC cache invalidation scope, `enabled` guards, and SSR/prefetch
+  behavior.
+- Optimistic updates only where rollback is straightforward.
+- Installed API compatibility: `@trpc/*` `10.45.2` with
+  `@tanstack/react-query` `4.42.0`; avoid v11-only adapter changes.
+
+First-pass findings and fixes:
+
+- PWA create-account course PIN join used `utils.participant.checkValidCoursePin.fetch`
+  without a `try` / `finally`, so a network/server error could leave the Formik
+  submit state stuck. It now shows a system-error toast, resets submit state in
+  `finally`, exposes button loading, and uses Next route object navigation for
+  the dynamic join route.
+- PWA standalone join form used `joinCourseWithPin.mutateAsync` without
+  failure recovery and could leave the submit state stuck. It now clears stale
+  errors at submit start, shows inline invalid/generic errors, resets submit
+  state in `finally`, invalidates participant participations on success, and
+  exposes button loading.
+- PR blocker cleanup: the control tRPC embedding-info test no longer uses the
+  password-like `test-secret` HMAC fixture literal flagged by scanners.
+
+Verification:
+
+- Current tRPC docs checked through Context7 for React Query/tRPC cache helpers,
+  mutation lifecycle, batching/link setup, and SuperJSON compatibility.
+- `pnpm exec prettier --check apps/frontend-pwa/src/components/forms/CreateAccountJoinForm.tsx apps/frontend-pwa/src/pages/join.tsx packages/api/src/trpc/__tests__/control-read.test.ts project/plans_future/graphql-to-trpc-dual-api-migration/GOAL_PROMPT.md project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `pnpm --filter @klicker-uzh/api test src/trpc/__tests__/control-read.test.ts`
+  passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `git diff --check` passed.
+- Browser screenshots were not captured because no local PWA route was already
+  running: `curl -I http://127.0.0.1:3001` and
+  `curl -I https://pwa.klicker.com` both failed to connect. The full dev stack
+  was not started in this pass.
+
+Residual UX risks:
+
+- Many migrated pages still use full-page loaders instead of skeletons. This is
+  acceptable for this first pass unless a workflow has visible jank, stale data,
+  or blocked interaction.
+- Most mutations use success invalidation rather than optimistic updates.
+  Optimistic updates should be added only for low-risk local toggles/lists with
+  obvious rollback.
+- Browser UX screenshots still require a running seeded Klicker stack; code-only
+  checks do not prove visual polish.
+
+Next:
+
+- Commit, push, then monitor PR #5132 CI/reviews.
+
 ### 2026-06-20 Completed: Staging Dual-API Deploy Readiness Review
 
 Status: complete for the deploy-readiness follow-up. Scope was limited to
