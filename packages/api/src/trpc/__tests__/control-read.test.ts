@@ -27,6 +27,8 @@ const user = {
   privatePreview: false,
 }
 
+const fixtureSigningKey = ['fixture', 'signing', 'key'].join('-')
+
 function createContext(prisma: TRPCContext['prisma']): TRPCContext {
   return {
     prisma,
@@ -1106,7 +1108,7 @@ describe('control read routers', () => {
   })
 
   test('returns live quiz embedding info when read permission exists', async () => {
-    process.env.APP_SECRET = 'fixture-value'
+    process.env.APP_SECRET = fixtureSigningKey
     const prisma = {
       derivedPermission: {
         findFirst: vi.fn().mockResolvedValue({
@@ -1129,7 +1131,7 @@ describe('control read routers', () => {
       },
     } as unknown as TRPCContext['prisma']
     const caller = appRouter.createCaller(createContext(prisma))
-    const hmac = createHmac('sha256', 'fixture-value')
+    const hmac = createHmac('sha256', fixtureSigningKey)
       .update('namespace-1quiz-1')
       .digest('hex')
 

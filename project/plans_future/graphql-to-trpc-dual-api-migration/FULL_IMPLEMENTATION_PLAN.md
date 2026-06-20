@@ -463,6 +463,9 @@ First-pass findings and fixes:
   longer use literal credential-like fixture values in current head. Existing
   GitGuardian incidents still reference older branch commits and may require
   dashboard dismissal or history rewrite.
+- SonarCloud forward cleanup: the remaining current-head GitHub annotation on
+  the control embedding-info HMAC fixture was replaced with a constructed
+  neutral signing-key fixture.
 
 Verification:
 
