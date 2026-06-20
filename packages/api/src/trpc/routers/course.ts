@@ -16,6 +16,11 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator'
 import { updateWeeklyTimelineEntriesCourse } from '../../services/hatchetHandlers.js'
+import {
+  randomNineDigitCode,
+  randomSixDigitCode,
+  stableNumericId,
+} from '../../services/responseIdentifiers.js'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
   toActiveUserCourse,
@@ -321,7 +326,7 @@ async function getRollingCourseLeaderboard({
     averageActiveScore: sortedScores.length > 0 ? sum / sortedScores.length : 0,
     computedAt: new Date(),
     leaderboard: sortedScores.map((entry, ix) => ({
-      id: Math.floor(Math.random() * 1000000000),
+      id: stableNumericId(entry.participantId),
       participantId: entry.participantId,
       username: entry.username,
       email: entry.email,
@@ -736,7 +741,7 @@ async function manualRandomGroupAssignmentsByCourseId(
           separator: ' ',
           style: 'capital',
         }) + 's',
-      code: 100000 + Math.floor(Math.random() * 900000),
+      code: randomSixDigitCode(),
       participants: { connect: group.map((id) => ({ id })) },
     }))
 
@@ -1201,7 +1206,7 @@ export const courseRouter = router({
     .input(createCourseInput)
     .mutation(async ({ ctx, input }) => {
       const prisma = getPrisma(ctx)
-      const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
+      const randomPin = randomNineDigitCode()
 
       const course = await prisma.$transaction(
         async (tx) => {

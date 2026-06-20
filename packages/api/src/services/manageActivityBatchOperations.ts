@@ -9,6 +9,7 @@ import {
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
 } from '@klicker-uzh/util'
+import { randomIndex } from './responseIdentifiers.js'
 
 const ASSESSMENT_PIN_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
@@ -35,10 +36,7 @@ type InstanceWithMultiplier = BatchOperationElementInstance & {
 function generateAssessmentPinCode() {
   let pin = ''
   for (let ix = 0; ix < 6; ix++) {
-    pin +=
-      ASSESSMENT_PIN_CHARS[
-        Math.floor(Math.random() * ASSESSMENT_PIN_CHARS.length)
-      ]!
+    pin += ASSESSMENT_PIN_CHARS[randomIndex(ASSESSMENT_PIN_CHARS.length)]!
   }
   return pin
 }

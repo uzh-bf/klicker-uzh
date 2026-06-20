@@ -1,5 +1,6 @@
 import { LeaderboardType, type PrismaClient } from '@klicker-uzh/prisma/client'
 import type { EventEmitter } from 'node:events'
+import { randomSixDigitCode } from './responseIdentifiers.js'
 
 export async function createParticipantGroup({
   courseId,
@@ -24,7 +25,7 @@ export async function createParticipantGroup({
     return null
   }
 
-  const code = 100000 + Math.floor(Math.random() * 900000)
+  const code = randomSixDigitCode()
   const participantGroup = await prisma.participantGroup.create({
     data: {
       name: trimmedName,

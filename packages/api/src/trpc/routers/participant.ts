@@ -81,6 +81,7 @@ import {
   getPreviousStackEvaluation,
   respondToElementStack,
 } from '../../services/participantStackEvaluations.js'
+import { stableNumericId } from '../../services/responseIdentifiers.js'
 import { getPrisma } from '../context.js'
 import {
   toCourseGroupActivity,
@@ -350,7 +351,7 @@ async function getRollingCourseLeaderboard({
   })
 
   const leaderboard = sortedScores.map((entry, ix) => ({
-    id: Math.floor(Math.random() * 1000000000),
+    id: stableNumericId(entry.participantId),
     participantId: entry.participantId,
     username: entry.username,
     avatar: entry.avatar,

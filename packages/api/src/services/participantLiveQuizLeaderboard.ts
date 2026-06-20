@@ -6,6 +6,7 @@ import {
 import { levelFromXp } from '@klicker-uzh/util'
 import { createHmac } from 'node:crypto'
 import type { TRPCUser } from '../trpc/context.js'
+import { stableTemporaryNumericId } from './responseIdentifiers.js'
 
 export type LiveQuizLeaderboardEntry = {
   id: number
@@ -97,7 +98,7 @@ export async function getLiveQuizLeaderboard({
   })
 
   const temporaryEntries = quiz.temporaryLeaderboard.map((entry) => ({
-    id: Math.floor(Math.random() * 1000000000),
+    id: stableTemporaryNumericId(entry.id),
     participantId: entry.id,
     username: participantProfilesVisible ? entry.username : 'Anonymous',
     avatar: participantProfilesVisible ? entry.avatar : null,

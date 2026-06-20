@@ -466,6 +466,11 @@ First-pass findings and fixes:
 - SonarCloud forward cleanup: the remaining current-head GitHub annotation on
   the control embedding-info HMAC fixture was replaced with a constructed
   neutral signing-key fixture.
+- SonarCloud hotspot cleanup: generated group/course codes and shuffles now use
+  Node `crypto.randomInt`; temporary leaderboard row ids are stable instead of
+  random; legacy response aggregation MD5 bucket keys are centralized with an
+  explicit non-security compatibility note so persisted aggregate buckets are
+  not split.
 
 Verification:
 
@@ -479,6 +484,14 @@ Verification:
   passed.
 - `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
 - `pnpm --filter @klicker-uzh/api build` passed.
+- `./node_modules/.bin/vitest run src/trpc/__tests__/analytics-read.test.ts src/trpc/__tests__/course-groups.test.ts src/trpc/__tests__/course-leaderboard.test.ts src/trpc/__tests__/manage-activities.test.ts src/trpc/__tests__/participant-groups.test.ts src/trpc/__tests__/participant-group-activities.test.ts src/trpc/__tests__/participant-live-quiz-session.test.ts`
+  from `packages/api` passed: 142 tests.
+- `./node_modules/.bin/tsc --noEmit` from `packages/api` passed.
+- `./node_modules/.bin/cross-env NODE_ENV=production ./node_modules/.bin/rollup -c`
+  from `packages/api` passed.
+- `rg -n "Math\\.random|createHash\\('md5'\\)|createHash\\(\"md5\"\\)" packages/api/src`
+  now only finds the centralized legacy response bucket helper line with
+  `NOSONAR`.
 - `git diff --check` passed.
 - Browser screenshots were not captured because no local PWA route was already
   running: `curl -I http://127.0.0.1:3001` and

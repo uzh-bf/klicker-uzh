@@ -38,6 +38,7 @@ import {
   updateNumericalResults,
   updateSelectionResults,
 } from './participantStackEvaluations.js'
+import { randomIndex } from './responseIdentifiers.js'
 
 type GroupActivityClueSource = {
   displayName: string
@@ -176,7 +177,7 @@ function shuffleItems<T>(items: T[]) {
   const shuffled = [...items]
 
   for (let ix = shuffled.length - 1; ix > 0; ix -= 1) {
-    const swapIx = Math.floor(Math.random() * (ix + 1))
+    const swapIx = randomIndex(ix + 1)
     const item = shuffled[ix]
     shuffled[ix] = shuffled[swapIx]!
     shuffled[swapIx] = item!

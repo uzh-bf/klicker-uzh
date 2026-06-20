@@ -9,6 +9,7 @@ import { ActivityType } from '@klicker-uzh/types'
 import { getCachedBlockResults } from '@klicker-uzh/util'
 import type { Redis } from 'ioredis'
 import { createHmac } from 'node:crypto'
+import { stableTemporaryNumericId } from '../../services/responseIdentifiers.js'
 import { getPrisma, type TRPCContextWithUser } from '../context.js'
 import {
   toActivityAnalytics,
@@ -223,7 +224,7 @@ function toLiveQuizEvaluationLeaderboard({
     })
     .concat(
       quiz.temporaryLeaderboard.map((entry) => ({
-        id: Math.floor(Math.random() * 1000000000),
+        id: stableTemporaryNumericId(entry.id),
         participantId: entry.id,
         username: participantProfilesVisible ? entry.username : 'Anonymous',
         avatar: participantProfilesVisible ? entry.avatar : null,

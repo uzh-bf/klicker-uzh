@@ -16,7 +16,6 @@ import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek.js'
 import utc from 'dayjs/plugin/utc.js'
 import type { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
 import type { EventEmitter } from 'node:events'
 import nodemailer from 'nodemailer'
 import {
@@ -30,6 +29,10 @@ import {
   publishMicroLearningEnded,
   publishSingleGroupActivityEnded,
 } from '../realtime/events.js'
+import {
+  hashResponseBucket,
+  randomSixDigitCode,
+} from './responseIdentifiers.js'
 
 dayjs.extend(utc)
 dayjs.extend(isoWeek)
@@ -230,7 +233,7 @@ async function createRandomGroup(
   }: { courseId: string; groupParticipantIds: string[] },
   prisma: DB.PrismaClient
 ) {
-  const code = 100000 + Math.floor(Math.random() * 900000)
+  const code = randomSixDigitCode()
   const groupName =
     uniqueNamesGenerator({
       dictionaries: [colors, adjectives, animals],
@@ -404,9 +407,7 @@ function aggregateLiveQuizResponses({
 
         const cleanResponseValue = parseFloat(String(submission.response.value))
         if (!isNaN(cleanResponseValue)) {
-          const MD5 = createHash('md5')
-          MD5.update(String(cleanResponseValue))
-          const responseHash = MD5.digest('hex')
+          const responseHash = hashResponseBucket(String(cleanResponseValue))
           if (responseHash in acc.responses) {
             acc.responses[responseHash]!.count += 1
           } else {
@@ -436,9 +437,7 @@ function aggregateLiveQuizResponses({
 
         const cleanResponseValue = submission.response.value.trim()
         if (cleanResponseValue.length > 0) {
-          const MD5 = createHash('md5')
-          MD5.update(cleanResponseValue)
-          const responseHash = MD5.digest('hex')
+          const responseHash = hashResponseBucket(cleanResponseValue)
           if (responseHash in acc.responses) {
             acc.responses[responseHash]!.count += 1
           } else {
@@ -504,9 +503,9 @@ function aggregateLiveQuizResponses({
                     return acc
                   }
 
-                  const MD5 = createHash('md5')
-                  MD5.update(String(criterionResponse))
-                  const responseHash = MD5.digest('hex')
+                  const responseHash = hashResponseBucket(
+                    String(criterionResponse)
+                  )
 
                   if (
                     acc.assessments[caseId]![itemId]![criterionId]![

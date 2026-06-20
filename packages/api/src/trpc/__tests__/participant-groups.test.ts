@@ -30,7 +30,6 @@ describe('participant group routers', () => {
   })
 
   test('creates a participant group when course group creation is enabled', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.123456)
     const emit = vi.fn()
     const create = vi.fn().mockResolvedValue({ id: 'group-1' })
     const prisma = {
@@ -65,12 +64,15 @@ describe('participant group routers', () => {
     expect(create).toHaveBeenCalledWith({
       data: {
         name: 'Team Alpha',
-        code: 211110,
+        code: expect.any(Number),
         course: { connect: { id: 'course-1' } },
         participants: { connect: { id: 'participant-1' } },
       },
       select: { id: true },
     })
+    const code = create.mock.calls[0]?.[0].data.code
+    expect(code).toBeGreaterThanOrEqual(100000)
+    expect(code).toBeLessThan(1000000)
     expect(emit).toHaveBeenCalledWith('invalidate', {
       typename: 'ParticipantGroup',
       id: 'group-1',

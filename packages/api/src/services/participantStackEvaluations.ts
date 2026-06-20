@@ -57,7 +57,7 @@ import {
   type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import { createHash } from 'node:crypto'
+import { hashResponseBucket } from './responseIdentifiers.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -1489,7 +1489,7 @@ export function updateNumericalResults({
   }
 
   const value = String(parsedValue)
-  const hashedValue = createHash('md5').update(value).digest('hex')
+  const hashedValue = hashResponseBucket(value)
   const previousEntry = previousResults.responses[hashedValue]
 
   return {
@@ -1536,7 +1536,7 @@ export function updateFreeTextResults({
   }
 
   const value = response.value.trim().toLowerCase()
-  const hashedValue = createHash('md5').update(value).digest('hex')
+  const hashedValue = hashResponseBucket(value)
   const previousEntry = previousResults.responses[hashedValue]
 
   return {
@@ -1639,9 +1639,7 @@ export function updateCaseStudyResults({
       itemResponse.criterionResponses.forEach((criterionResponse) => {
         const criterionId = criterionResponse.criterionId
         const responseValue = criterionResponse.response
-        const responseHash = createHash('md5')
-          .update(String(responseValue))
-          .digest('hex')
+        const responseHash = hashResponseBucket(String(responseValue))
         const existingCombinedResponses =
           newAssessments[caseId]?.[String(itemId)]?.[criterionId]
         const sampleSolution =
@@ -1896,7 +1894,7 @@ function computeAggregatedResponsesOpen({
     getInitialInstanceResults(
       instance.elementData as ElementData
     )) as ElementResultsOpen
-  const hashedValue = createHash('md5').update(responseValue).digest('hex')
+  const hashedValue = hashResponseBucket(responseValue)
   const previousEntry = previous.responses[hashedValue]
 
   return {
