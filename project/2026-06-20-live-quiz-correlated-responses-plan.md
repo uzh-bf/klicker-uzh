@@ -23,7 +23,7 @@ Status: planning
 - Standard worker aggregates into Redis and later `ElementInstance.anonymousResults`; it does not write durable `LiveQuizResponse`.
 - Assessment worker already writes durable `LiveQuizResponse` rows and rejects duplicates as first-response-wins.
 - `LiveQuizResponse` is currently hard-linked to `Participant`, so it cannot store anonymous / temporary leaderboard respondents without schema change.
-- `TemporaryLeaderboardEntry` already models quiz-scoped non-account identity for gamified temporary pseudonyms, backed by `temporary_participant_token`.
+- `TemporaryLeaderboardEntry` already models quiz-scoped non-account identity for gamified temporary pseudonyms. The row identity is `TemporaryLeaderboardEntry.id`; browser continuity is carried by the signed `temporary_participant_token` cookie/JWT created in `accounts.ts`.
 - Current export package reads `LiveQuizResponse` and emits one row per response, not one row per respondent.
 
 ## Resolved Grill Decisions
@@ -86,6 +86,7 @@ Fields:
 - `username?`
 - `avatar?`
 - `score`
+- `verificationSecretHash?` or signed-token equivalent for anonymous correlated respondents
 - `createdAt`
 - `updatedAt`
 
@@ -101,6 +102,7 @@ Migration strategy:
 - First add `LiveQuizRespondent`.
 - Either migrate `TemporaryLeaderboardEntry` usage immediately or add compatibility layer and migrate in follow-up if blast radius too high.
 - Avoid adding new `UserRole` if possible; use quiz respondent token only in response-api / worker. GraphQL self/leaderboard may need compatibility for temporary pseudonym flow.
+- Do not trust a browser-stored respondent id by itself. Anonymous correlated identity needs an opaque token or `id + random secret`; the server stores/verifies the secret, preferably hashed.
 
 ### Durable Responses
 
@@ -113,6 +115,14 @@ Constraint:
 
 - exactly one identity field set.
 - unique per `instanceId + elementBlockExecution + respondent identity`.
+
+Migration note:
+
+- Prisma cannot express the full constraint set with `@@unique` once `participantId` is nullable.
+- Add raw SQL in the migration for `CHECK (num_nonnulls("participantId", "respondentId") = 1)`.
+- Replace the current single unique constraint with two partial unique indexes:
+  - `("instanceId", "elementBlockExecution", "participantId") WHERE "participantId" IS NOT NULL`
+  - `("instanceId", "elementBlockExecution", "respondentId") WHERE "respondentId" IS NOT NULL`
 
 In `CORRELATED_EXPORT`:
 
@@ -172,6 +182,8 @@ Do:
 
 - Add Prisma enum + `LiveQuiz.responseCollectionMode`.
 - Add `LiveQuizRespondent` or staged equivalent.
+- Add `LiveQuizResponse.respondentId` and make `participantId` nullable only together with raw SQL constraints / partial unique indexes.
+- Patch existing response-level export in the same slice so nullable `participant` cannot break compile/runtime. At minimum, guard `row.participant`, remove participant-email-only ordering assumptions, and keep assessment rows unchanged.
 - Update generated schema flow.
 - Expose mode through GraphQL `LiveQuiz`.
 - Add create/update inputs and service writes.
@@ -180,15 +192,18 @@ Do:
 Files:
 
 - `packages/prisma/src/prisma/schema/*.prisma`
+- raw SQL migration file
 - `packages/graphql/src/schema/liveQuiz.ts`
 - `packages/graphql/src/services/liveQuizzes.ts`
 - `packages/graphql/src/graphql/ops/*.graphql`
+- `packages/export/src/liveQuizResponses.ts`
 - generated GraphQL outputs
 
 Check:
 
 - Prisma generate / GraphQL generate.
 - Focused GraphQL tests or service unit tests for default + lock.
+- Export package typecheck/test or focused compile check for existing `LiveQuizResponse` export.
 
 Commit:
 
@@ -251,10 +266,11 @@ Commit:
 Do:
 
 - Create quiz-scoped anonymous correlated respondent when mode is `CORRELATED_EXPORT`.
-- Persist id in browser/cookie where possible; no cross-quiz reuse.
+- Persist opaque token or `id + secret` in browser/cookie where possible; no cross-quiz reuse.
 - Forward respondent token through `response-api`.
-- Worker verifies token and maps to `LiveQuizRespondent`.
-- Persist `LiveQuizResponse` rows in correlated mode for logged-in, temporary pseudonym, anonymous correlated.
+- Worker verifies token secret / signature and maps to `LiveQuizRespondent`; respondent id alone is not accepted.
+- Persist `LiveQuizResponse` rows in correlated mode for logged-in and anonymous correlated respondents.
+- Do not persist temporary pseudonym responses through the unified respondent model in this slice unless Slice 5 is moved before Slice 4.
 - Keep aggregate Redis updates unchanged.
 - Duplicate response handling mirrors assessment.
 
@@ -263,14 +279,12 @@ Files:
 - `apps/response-api/src/index.ts`
 - `apps/hatchet-worker-response-processor/src/processors/processor.ts`
 - `apps/hatchet-worker-response-processor/src/processors/helpers.ts`
-- `packages/graphql/src/services/accounts.ts`
-- `packages/graphql/src/services/participants.ts`
-- `apps/frontend-pwa/src/components/liveQuiz/AccountSelector.tsx`
 - `apps/frontend-pwa/src/pages/session/[id].tsx`
 
 Check:
 
 - Unit/focused tests for token parsing, duplicate handling, persistence branch.
+- Negative test: forged respondent id without valid secret/signature is rejected.
 - Manual or browser E2E: anonymous correlated reload keeps same respondent row.
 
 Commit:
@@ -282,6 +296,7 @@ Commit:
 Do:
 
 - Align `TemporaryLeaderboardEntry` with `LiveQuizRespondent`.
+- Move this slice before Slice 4 if the first worker-persistence implementation must include temporary pseudonym respondents.
 - Preserve current gamified UX and leaderboard display.
 - Keep token compatibility or provide migration.
 - Ensure temporary pseudonym responses export as anonymous respondent labels.
@@ -356,6 +371,7 @@ Commit:
 - Schema change to `LiveQuizResponse` can disturb assessment corrections. Keep assessment tests focused.
 - Replacing `TemporaryLeaderboardEntry` in one slice may be too large. If risky, keep compatibility bridge and migrate later.
 - Token stored in browser can split respondents when cookies/storage blocked. Notice/export should tolerate multiple rows.
+- Browser-stored respondent ids are bearer identifiers. Use a signed token or separate secret and verify it server-side before writing correlated responses.
 - Free text can identify participants despite export pseudonyms. Warning required.
 - Row export can be mistaken for anonymity/DP. Avoid DP language.
 - Live worker has Redis-first design; DB writes must not slow response path enough to harm live quiz UX.
@@ -381,7 +397,8 @@ Later research:
 
 - 2026-06-20: Codebase mapped: standard responses aggregate only; assessment persists `LiveQuizResponse`; temp leaderboard uses quiz-scoped token + `TemporaryLeaderboardEntry`.
 - 2026-06-20: Grill decisions resolved with user. Summary captured above.
-- 2026-06-20: Plan file created. Independent plan review pending before implementation.
+- 2026-06-20: Plan file created and published as draft PR before implementation.
+- 2026-06-20: Greptile plan review integrated: export compatibility moved into Slice 1, raw SQL constraints called out, respondent token verification added, temporary-pseudonym persistence deferred to alignment slice, and temporary token wording corrected.
 
 ## Goal Prompt Requirements
 
@@ -398,7 +415,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Run independent plan review.
-2. Integrate accepted review findings.
-3. Commit plan alone.
-4. Start Slice 1.
+1. Start Slice 1 with schema, raw SQL migration constraints, and existing export compatibility in the same commit.
+2. Keep temporary-pseudonym response persistence out of Slice 4 unless Slice 5 is moved earlier.
+3. Re-run plan review before implementation if the slice order changes.
