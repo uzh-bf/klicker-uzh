@@ -73,7 +73,7 @@ function ElementEditModal({
       undefined
     )
 
-  const { isLoading: loadingQuestion, data: dataQuestion } =
+  const { isInitialLoading: loadingQuestion, data: dataQuestion } =
     trpc.element.single.useQuery(
       { id: elementId! },
       {
