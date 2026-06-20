@@ -227,30 +227,28 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   it('Sign in into lecturer account', () => {
+    const manageUrl = Cypress.env('URL_MANAGE')
+    const authUrl = Cypress.env('URL_AUTH')
+
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_MANAGE'))
-    cy.wait(1000)
+    cy.clearAllSessionStorage()
+    cy.visit(`${authUrl}?redirectTo=${encodeURIComponent(manageUrl)}`)
 
-    // opertions on different url than first visited need to be wrapped in cy.origin
-    cy.origin(Cypress.env('URL_AUTH'), () => {
-      cy.get('[data-cy="delegated-login-button"').then((btn) => {
-        if (btn.is(':disabled')) {
-          cy.get('button[data-cy="tos-checkbox"]').click()
-        }
-      })
-
-      cy.get('[data-cy="delegated-login-button"').should('be.enabled').click()
-      cy.get('[data-cy="identifier-field"]').type(
-        Cypress.env('LECTURER_SHORTNAME')
-      )
-      cy.get('[data-cy="password-field"]').type(
-        Cypress.env('LECTURER_PASSWORD')
-      )
-      cy.get('form > button[type=submit]').click()
+    cy.get('[data-cy="delegated-login-button"]').then((btn) => {
+      if (btn.is(':disabled')) {
+        cy.get('button[data-cy="tos-checkbox"]').click()
+      }
     })
 
-    cy.url().should('include', Cypress.env('URL_MANAGE'))
+    cy.get('[data-cy="delegated-login-button"]').should('be.enabled').click()
+    cy.get('[data-cy="identifier-field"]').type(
+      Cypress.env('LECTURER_SHORTNAME')
+    )
+    cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'))
+    cy.get('form > button[type=submit]').click()
+
+    cy.url().should('include', manageUrl)
     cy.get('[data-cy="homepage"]').should('exist')
     cy.get('[data-cy="user-menu"]').click()
   })

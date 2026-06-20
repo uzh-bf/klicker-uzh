@@ -80,6 +80,16 @@ Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
   })
 })
 
+function clearPersistedClientState() {
+  cy.clearAllCookies()
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+
+  return cy.wrap(null, { log: false }).then(async () => {
+    await localforage.clear()
+  })
+}
+
 Cypress.Commands.add('seed', () => {
   // seed all required initial data directly into the database
   cy.task('seedDatabase').then((result: boolean) => {
@@ -90,7 +100,7 @@ Cypress.Commands.add('seed', () => {
       )
     }
   })
-  cy.reload()
+  clearPersistedClientState()
 })
 
 Cypress.Commands.add('seedActivities', () => {
@@ -103,7 +113,7 @@ Cypress.Commands.add('seedActivities', () => {
       )
     }
   })
-  cy.reload()
+  clearPersistedClientState()
 })
 
 Cypress.Commands.add('cleanup', () => {
@@ -114,14 +124,8 @@ Cypress.Commands.add('cleanup', () => {
       throw new Error('An error occurred while resetting the database!')
     }
   })
-  cy.reload()
+  clearPersistedClientState()
 })
-
-const clearPersistedClientState = () => {
-  return cy.wrap(null, { log: false }).then(async () => {
-    await localforage.clear()
-  })
-}
 
 const assertManageSession = () => {
   cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
