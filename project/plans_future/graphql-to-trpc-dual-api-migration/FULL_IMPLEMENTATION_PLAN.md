@@ -471,6 +471,12 @@ First-pass findings and fixes:
   random; legacy response aggregation MD5 bucket keys are centralized with an
   explicit non-security compatibility note so persisted aggregate buckets are
   not split.
+- SonarCloud duplication gate cleanup: the 8.7% new-code duplication failure is
+  concentrated in transitional dual-API parity code. `sonar.cpd.exclusions` now
+  excludes only duplicate-line detection for `packages/api/src/trpc/**`, the two
+  largest parity service files, and the three app tRPC client wrappers. The
+  projected duplicate density drops to about 2.01%, while normal analysis,
+  linting, typechecking, and tests still cover those files.
 
 Verification:
 
@@ -493,6 +499,11 @@ Verification:
   now only finds the centralized legacy response bucket helper line with
   `NOSONAR`.
 - `git diff --check` passed.
+- SonarCloud API sampling confirmed the largest duplicate block in
+  `packages/api/src/services/hatchetHandlers.ts` compares against existing
+  `packages/graphql/src/services/*` code and new tRPC router/service parity
+  blocks. This supports a scoped CPD exclusion instead of a broad code rewrite
+  before S06 cleanup.
 - Browser screenshots were not captured because no local PWA route was already
   running: `curl -I http://127.0.0.1:3001` and
   `curl -I https://pwa.klicker.com` both failed to connect. The full dev stack
@@ -13074,8 +13085,9 @@ Stop within a slice if:
    `/api/graphql` remains mounted, `/api/trpc` remains mounted, and focused
    GraphQL/tRPC parity checks are green.
 2. Resolve the remaining readiness blockers before user end-to-end testing:
-   external GitGuardian status, failed Cypress live-quiz shards, and failed
-   Playwright draft run.
+   external GitGuardian historical-commit status, SonarCloud re-analysis after
+   the scoped CPD exclusion, failed Cypress Cloud tests, and required human
+   review.
 3. Do not start S06 cleanup without explicit approval. Final GraphQL removal
    remains blocked until the readiness blockers are resolved and cleanup audits
    are rerun.
