@@ -12939,8 +12939,12 @@ Stop within a slice if:
 
 ## Next Steps
 
-1. Commit and push S05G-U after final formatting and hook verification.
-2. Continue S05G-V with the next smallest active shared-components generated
-   enum/type cleanup while keeping GraphQL/Apollo live.
-3. Continue through the remaining S05 Apollo consumers only after each slice is
-   green. Do not start S06 cleanup without explicit approval.
+1. Keep PR 5132 before S06. GraphQL and tRPC coexistence is currently intact:
+   `/api/graphql` remains mounted, `/api/trpc` remains mounted, and focused
+   GraphQL/tRPC parity checks are green.
+2. Resolve the remaining readiness blockers before user end-to-end testing:
+   external GitGuardian status, failed Cypress live-quiz shards, and failed
+   Playwright draft run.
+3. Do not start S06 cleanup without explicit approval. Final GraphQL removal
+   remains blocked until the readiness blockers are resolved and cleanup audits
+   are rerun.
