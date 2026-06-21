@@ -1,4 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -18,7 +19,7 @@ function PracticeQuizEvaluation() {
       { enabled: !!id }
     )
 
-  if (isLoading || !id) {
+  if (!id || (isLoading && !data)) {
     return (
       <Layout displayName={t('manage.evaluation.practiceQuizEvaluation')}>
         <Loader />
@@ -27,8 +28,26 @@ function PracticeQuizEvaluation() {
   }
 
   // TODO: potentially display message here that practice quiz might not be published yet?
-  if (error || !data) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+  if (error && !data) {
+    return (
+      <Layout displayName={t('manage.evaluation.practiceQuizEvaluation')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!data) {
+    return (
+      <Layout displayName={t('manage.evaluation.practiceQuizEvaluation')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
   }
 
   const evaluation = data?.practiceQuizEvaluation

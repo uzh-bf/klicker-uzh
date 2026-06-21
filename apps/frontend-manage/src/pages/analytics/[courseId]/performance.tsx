@@ -36,7 +36,7 @@ function PerformanceDashboard() {
   const course = data?.coursePerformanceAnalytics
 
   // loading state
-  if (isLoading || !courseId) {
+  if (!courseId || (isLoading && !course)) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.performanceDashboard')}
@@ -46,7 +46,16 @@ function PerformanceDashboard() {
   }
 
   // error state
-  if (course === null || typeof course === 'undefined' || error) {
+  if (error && !course) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (course === null || typeof course === 'undefined') {
     return (
       <AnalyticsErrorView
         title={t('manage.analytics.performanceDashboard')}

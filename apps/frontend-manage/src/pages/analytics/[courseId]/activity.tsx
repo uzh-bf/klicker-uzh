@@ -28,7 +28,7 @@ function ActivityDashboard() {
   )
 
   // loading state
-  if (isLoading || !courseId) {
+  if (!courseId || (isLoading && !course)) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.activityDashboard')}
@@ -38,7 +38,16 @@ function ActivityDashboard() {
   }
 
   // error state
-  if (course === null || typeof course === 'undefined' || error) {
+  if (error && !course) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (course === null || typeof course === 'undefined') {
     return (
       <AnalyticsErrorView
         title={t('manage.analytics.activityDashboard')}

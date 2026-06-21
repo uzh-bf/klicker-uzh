@@ -591,6 +591,10 @@ Second-pass UX/cache cleanup prepared:
   and timeline pages now keep cached tRPC data visible during refetch failures
   and only switch to the existing system-error notification when the initial
   migrated query has no usable data.
+- Manage activity/performance/quiz analytics dashboards and practice-quiz /
+  microlearning evaluation pages now keep cached tRPC data visible during
+  refetch failures; failed initial loads still render the existing analytics
+  error view or localized system-error notification.
 
 Second-pass verification:
 
@@ -794,15 +798,26 @@ Second-pass verification:
 - Browser verification for the PWA self/list page cleanup remains blocked:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` failed with connection
   refused, so no local backend or PWA dev server was available for screenshots.
+- Context7 docs checked for TanStack Query v4 background fetching / stale-data
+  behavior and tRPC React Query hook semantics before the manage analytics /
+  evaluation query-state cleanup.
+- `node_modules/.bin/prettier --check` on the six changed manage analytics /
+  evaluation page files passed after the manage query-state cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the PR worktree into the
+  dependency checkout.
+- `git diff --check` passed after the manage analytics / evaluation query-state
+  cleanup.
+- Browser verification for the manage analytics / evaluation cleanup remains
+  blocked: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
+  connection refused, so no local backend or manage dev server was available
+  for screenshots.
 
-PR #5132 status after `3f08c69a`:
+PR #5132 status after `dd69a6e84`:
 
-- Passing at last poll: format, one check job, one regular test job, package
-  API tRPC Vitest, Claude review, CodeQL Java/Kotlin and Python analyses, and
-  one visible amd/arm build pair.
-- Pending at last poll: lint, SonarCloud, remaining check/test jobs,
-  packages/graphql Vitest, Cypress Cloud, CodeQL JavaScript/TypeScript and
-  JavaScript analyses, and remaining visible amd/arm builds.
+- Pending at immediate post-push poll: format, lint, check, SonarCloud, CodeQL
+  analyses, package API tRPC Vitest, regular tests, Claude review, and visible
+  amd/arm builds.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

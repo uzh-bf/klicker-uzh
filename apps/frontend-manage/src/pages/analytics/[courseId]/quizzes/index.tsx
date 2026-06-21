@@ -85,7 +85,7 @@ function ActivityDashboard() {
   }, [microSearch, course?.microLearnings, microSearchEngine])
 
   // loading state
-  if (isLoading || !courseId) {
+  if (!courseId || (isLoading && !course)) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.quizDashboard')}
@@ -95,7 +95,16 @@ function ActivityDashboard() {
   }
 
   // error state
-  if (course === null || typeof course === 'undefined' || error) {
+  if (error && !course) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (course === null || typeof course === 'undefined') {
     return (
       <AnalyticsErrorView
         title={t('manage.analytics.quizDashboard')}

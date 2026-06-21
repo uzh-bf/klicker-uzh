@@ -36,7 +36,7 @@ function QuizAnalytics() {
   }
 
   // loading state
-  if (isLoading || !activityId) {
+  if (!activityId || (isLoading && !analytics)) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.quizDashboard')}
@@ -46,7 +46,16 @@ function QuizAnalytics() {
   }
 
   // error state
-  if (analytics === null || typeof analytics === 'undefined' || error) {
+  if (error && !analytics) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (analytics === null || typeof analytics === 'undefined') {
     return (
       <AnalyticsErrorView
         title={t('manage.analytics.quizDashboard')}
