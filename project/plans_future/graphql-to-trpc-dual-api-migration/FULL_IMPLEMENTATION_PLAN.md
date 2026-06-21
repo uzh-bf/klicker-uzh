@@ -726,6 +726,11 @@ Second-pass UX/cache cleanup prepared:
   best-effort refresh after confirmed tRPC logout success, so a cache-refresh
   failure cannot keep the user on the current page after the server has already
   cleared their session.
+- Manage user-group edit actions now surface rejected or falsy tRPC mutation
+  results with a generic error toast and treat `sharing.userGroups`
+  invalidation as best-effort after confirmed success. This covers group rename,
+  owner transfer, member removal, admin promotion, and admin demotion from the
+  edit modal.
 
 Second-pass verification:
 
@@ -866,6 +871,20 @@ Second-pass verification:
 - Browser verification remains blocked for this PWA header logout cleanup:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` failed with connection
   refused, so no local backend or PWA dev server was available for screenshots.
+- Context7 docs checked for current TanStack Query v4 `mutateAsync` error
+  handling and mutation-success invalidation semantics before the manage
+  user-group edit action failure-handling cleanup.
+- `node_modules/.bin/prettier --check` on the changed manage user-group edit
+  hook files plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed user-group edit hook
+  files.
+- `git diff --check` passed after the manage user-group edit action
+  failure-handling cleanup.
+- Browser verification remains blocked for this manage user-group edit action
+  cleanup: `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
+  `127.0.0.1:3002` failed with connection refused, so no local manage dev
+  server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.
