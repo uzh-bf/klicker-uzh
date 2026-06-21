@@ -747,6 +747,11 @@ Second-pass UX/cache cleanup prepared:
   success. This removes duplicate child invalidation plus parent refetch work
   and prevents a failed refresh from turning a successful profile/avatar update
   into a failure toast.
+- PWA direct and course-join account creation forms now catch rejected
+  `participant.createAccount` mutations, release Formik submitting state, and
+  show the existing localized failure UI. The shared submit button is disabled
+  during Formik submission to avoid duplicate account creation attempts, and
+  redirects only run after a confirmed participant or participant-token result.
 
 Second-pass verification:
 
@@ -938,6 +943,24 @@ Second-pass verification:
   cleanup: `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
   `127.0.0.1:3001` failed with connection refused, so no local PWA dev server
   was available for screenshots.
+- Context7 docs checked for Formik async `onSubmit` submitting-state behavior
+  and tRPC `mutateAsync` error handling before the PWA account creation failure
+  cleanup.
+- `node_modules/.bin/prettier --check` on the changed PWA account creation
+  files plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed PWA account creation
+  files.
+- `git diff --check` passed after the PWA account creation failure cleanup.
+- `pnpm --filter @klicker-uzh/frontend-pwa lint` from the dependency checkout
+  failed before ESLint because the local pnpm shim refused to switch to
+  `pnpm@11.5.0` after registry signature verification failed. The fallback
+  `./node_modules/.bin/next lint` from `apps/frontend-pwa` passed with the
+  existing hook dependency warnings in unrelated files.
+- Browser verification remains blocked for this PWA account creation failure
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with
+  connection refused, so no local backend or PWA dev server was available for
+  screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

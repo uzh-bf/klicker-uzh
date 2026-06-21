@@ -154,21 +154,35 @@ function JoinCourse({
                 symbols: false,
                 numbers: true,
               })}
-              handleSubmit={async (values) => {
-                await createParticipantAccount.mutateAsync({
-                  email: values.email.trim().toLowerCase(),
-                  username: values.username.trim(),
-                  password: values.password.trim(),
-                  isProfilePublic: values.isProfilePublic,
-                  courseId,
-                })
+              handleSubmit={async (values, { setSubmitting }) => {
+                setSubmitting(true)
+                setError(false)
 
-                await router.push({
-                  pathname: '/login',
-                  query: {
-                    newAccount: true,
-                  },
-                })
+                try {
+                  const createResult =
+                    await createParticipantAccount.mutateAsync({
+                      email: values.email.trim().toLowerCase(),
+                      username: values.username.trim(),
+                      password: values.password.trim(),
+                      isProfilePublic: values.isProfilePublic,
+                      courseId,
+                    })
+
+                  if (createResult?.participant) {
+                    await router.push({
+                      pathname: '/login',
+                      query: {
+                        newAccount: true,
+                      },
+                    })
+                    return
+                  }
+                } catch (error) {
+                  console.error(error)
+                }
+
+                setError(t('pwa.joinCourse.genericError'))
+                setSubmitting(false)
               }}
             />
           </div>

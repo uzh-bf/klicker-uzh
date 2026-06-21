@@ -13,16 +13,27 @@ import {
   H4,
   Prose,
 } from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
+import { Form, Formik, type FormikHelpers } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
+interface CreateAccountFormValues {
+  email: string
+  username: string
+  password: string
+  passwordRepetition: string
+  isProfilePublic: boolean
+}
+
 interface Props {
   initialUsername?: string
   initialEmail?: string
-  handleSubmit: (values: any, formikExtra: any) => void
+  handleSubmit: (
+    values: CreateAccountFormValues,
+    formikExtra: FormikHelpers<CreateAccountFormValues>
+  ) => void | Promise<void>
 }
 
 function CreateAccountForm({
@@ -80,7 +91,7 @@ function CreateAccountForm({
       isInitialValid={false}
       initialValues={{
         email: initialEmail?.toLowerCase() ?? '',
-        username: initialUsername,
+        username: initialUsername ?? '',
         password: '',
         passwordRepetition: '',
         isProfilePublic: true,
@@ -124,7 +135,7 @@ function CreateAccountForm({
               <Button
                 primary
                 type="submit"
-                disabled={!tosChecked || !isValid}
+                disabled={isSubmitting || !tosChecked || !isValid}
                 loading={isSubmitting}
                 className={{
                   root: 'h-8 w-full flex-none md:w-max',

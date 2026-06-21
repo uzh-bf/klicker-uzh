@@ -47,37 +47,41 @@ function CreateAccount({
         handleSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
 
-          const createResult = await createParticipantAccount.mutateAsync({
-            email: values.email.trim().toLowerCase(),
-            username: values.username.trim(),
-            password: values.password.trim(),
-            isProfilePublic: values.isProfilePublic,
-            signedLtiData,
-          })
-
-          const participantToken = createResult?.participantToken ?? null
-
-          if (participantToken) {
-            await router.replace(
-              `/editProfile?newAccount=true&participantToken=${participantToken}`,
-              {
-                pathname: '/editProfile',
-                query: {
-                  newAccount: true,
-                  participantToken,
-                },
-              }
-            )
-            return
-          }
-
-          // keep legacy non-LTI behavior for direct /createAccount usage
-          if (!signedLtiData && createResult?.participant) {
-            await router.push({
-              pathname: '/login',
-              query: { newAccount: true },
+          try {
+            const createResult = await createParticipantAccount.mutateAsync({
+              email: values.email.trim().toLowerCase(),
+              username: values.username.trim(),
+              password: values.password.trim(),
+              isProfilePublic: values.isProfilePublic,
+              signedLtiData,
             })
-            return
+
+            const participantToken = createResult?.participantToken ?? null
+
+            if (participantToken) {
+              await router.replace(
+                `/editProfile?newAccount=true&participantToken=${participantToken}`,
+                {
+                  pathname: '/editProfile',
+                  query: {
+                    newAccount: true,
+                    participantToken,
+                  },
+                }
+              )
+              return
+            }
+
+            // keep legacy non-LTI behavior for direct /createAccount usage
+            if (!signedLtiData && createResult?.participant) {
+              await router.push({
+                pathname: '/login',
+                query: { newAccount: true },
+              })
+              return
+            }
+          } catch (error) {
+            console.error(error)
           }
 
           toast({
@@ -85,7 +89,6 @@ function CreateAccount({
             message: t('pwa.profile.createProfileFailed'),
             options: { duration: 6000 },
           })
-
           setSubmitting(false)
         }}
       />
