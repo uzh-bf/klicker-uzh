@@ -953,9 +953,10 @@ Second-pass UX/cache cleanup prepared:
   feedback.
 - Manage element edit and live-quiz template inline answer-collection flows now
   treat confirmed tRPC writes as the success boundary. Element detail/tag/list
-  refreshes and inline answer-collection list invalidations run as best-effort
-  follow-up work, while requested instance update/outdated writes remain awaited
-  because they are part of the user's save action.
+  refreshes, modal-close list refreshes, and inline answer-collection list
+  invalidations run as best-effort follow-up work, while requested instance
+  update/outdated writes remain awaited because they are part of the user's save
+  action.
 
 Second-pass verification:
 
@@ -963,8 +964,9 @@ Second-pass verification:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the
   diff limited to post-success React Query invalidation timing and plan/notes;
-  GraphQL/Apollo coexistence is preserved, and requested instance
-  update/outdated writes remain awaited as part of the save action.
+  GraphQL/Apollo coexistence is preserved, close-path URL cleanup no longer
+  depends on a list refresh, and requested instance update/outdated writes
+  remain awaited as part of the save action.
 - Verification for the manage element/template save-refresh cleanup: Context7
   TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and
   post-success invalidation behavior. `prettier --check` on

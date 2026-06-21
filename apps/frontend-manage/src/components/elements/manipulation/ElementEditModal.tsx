@@ -133,12 +133,14 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
-      onClose={async () => {
+      onClose={() => {
         // close the modal
         handleSetIsOpen(false)
 
         // refetch elements here, since element status might have changed and refetch cannot be used there to avoid closing modal
-        await refetchElements?.()
+        void refetchElements?.().catch((error) => {
+          console.error('Error refreshing elements after closing modal:', error)
+        })
 
         // remove potential query parameters that open element edit modal on reload
         const {
@@ -147,7 +149,7 @@ function ElementEditModal({
           contextActivityType,
           ...query
         } = router.query
-        router.push({ pathname: '/', query }, undefined, { shallow: true })
+        void router.push({ pathname: '/', query }, undefined, { shallow: true })
       }}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
