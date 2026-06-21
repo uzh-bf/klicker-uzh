@@ -28,14 +28,16 @@ function ExistingElementSelectionModal({
     name: string
   } | null>(null)
 
-  const { data, isLoading } =
+  const { data, error, isLoading } =
     trpc.activity.matchingUserElementsTemplate.useQuery({
       elementType:
         requiredElementType as MatchingUserElementsTemplateInput['elementType'],
       hasSampleSolution,
       hasAnswerFeedbacks,
     })
-  const availableElements = data?.matchingUserElementsTemplate ?? []
+  const availableElements = data?.matchingUserElementsTemplate
+  const initialLoading = isLoading && !availableElements
+  const elementsUnavailable = Boolean(error && !availableElements)
 
   const elementDescriptors = [
     ...(hasSampleSolution !== null && typeof hasSampleSolution !== 'undefined'
@@ -58,7 +60,7 @@ function ExistingElementSelectionModal({
       open
       escapeDisabled
       hideCloseButton
-      loading={isLoading}
+      loading={initialLoading}
       title={t('manage.template.selectExistingElement')}
       onClose={() => {
         setSelectedElement(null)
@@ -71,7 +73,7 @@ function ExistingElementSelectionModal({
       }}
       dataSecondaryAction={{ cy: 'cancel-select-existing-element' }}
       primaryLabel={t('shared.generic.confirm')}
-      primaryDisabled={selectedElement === null}
+      primaryDisabled={selectedElement === null || elementsUnavailable}
       onPrimaryAction={() => {
         if (selectedElement === null) return
         replaceWithExistingElement(selectedElement!.id, selectedElement!.name)
@@ -90,14 +92,20 @@ function ExistingElementSelectionModal({
 
       <div className="mt-2 max-h-[calc(80vh-12rem)] overflow-y-auto rounded-md border border-gray-200 p-3">
         <div className="flex flex-col gap-2">
-          {availableElements.length === 0 && !isLoading && (
+          {elementsUnavailable ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+          ) : availableElements?.length === 0 && !isLoading ? (
             <UserNotification
               type="warning"
               message={t('manage.template.noMatchingQuestionsFound')}
             />
-          )}
+          ) : null}
 
-          {availableElements.length > 0 &&
+          {availableElements &&
+            availableElements.length > 0 &&
             availableElements.map((element) => (
               <Button
                 active={selectedElement?.id === element.id}

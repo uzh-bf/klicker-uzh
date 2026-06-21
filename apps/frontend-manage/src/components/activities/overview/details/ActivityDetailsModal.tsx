@@ -42,12 +42,17 @@ function ActivityDetailsModal({
   }
 
   // fetch activity details
-  const { data: detailsData, isLoading: loading } =
-    trpc.activity.details.useQuery(detailsInput, {
-      refetchOnMount: 'always',
-    })
+  const {
+    data: detailsData,
+    error: detailsError,
+    isLoading: loading,
+  } = trpc.activity.details.useQuery(detailsInput, {
+    refetchOnMount: 'always',
+  })
 
   const details = detailsData?.activityDetails
+  const initialLoading = loading && !details
+  const detailsUnavailable = Boolean((detailsError || !loading) && !details)
   const stacks = details?.stacks ?? []
   const detailsStatus = details?.status
   const detailsReviewStatus = details?.reviewStatus ?? ReviewStatus.Incomplete
@@ -96,7 +101,7 @@ function ActivityDetailsModal({
     <Modal
       open
       fullScreen
-      loading={loading}
+      loading={initialLoading}
       title={t('manage.activities.activityDetails')}
       onClose={() => {
         refetchActivities?.()
@@ -108,7 +113,7 @@ function ActivityDetailsModal({
       data={{ cy: 'activity-details-modal' }}
       dataCloseButton={{ cy: 'close-activity-details-modal' }}
     >
-      {!!details ? (
+      {details ? (
         <div className="flex h-auto min-h-0 flex-col gap-2 lg:flex-row xl:h-full xl:max-h-full xl:flex-row">
           <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-2 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
             <ActivityDetailsActions
@@ -180,9 +185,16 @@ function ActivityDetailsModal({
             )}
           </div>
         </div>
-      ) : (
-        <UserNotification type="error" message={t('shared.generic.error')} />
-      )}
+      ) : detailsUnavailable ? (
+        <UserNotification
+          type="error"
+          message={
+            detailsError
+              ? t('shared.generic.systemError')
+              : t('shared.generic.error')
+          }
+        />
+      ) : null}
     </Modal>
   )
 }

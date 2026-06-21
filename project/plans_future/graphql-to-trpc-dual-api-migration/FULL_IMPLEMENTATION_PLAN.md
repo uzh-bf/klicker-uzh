@@ -655,6 +655,13 @@ Second-pass UX/cache cleanup prepared:
   mounting selector controls with empty failed data, and previous-correction
   history panels/modals no longer present failed history queries as "no
   corrections."
+- Manage activity details and existing-element template selection modals now
+  distinguish failed initial tRPC loads from missing/no-match states. Activity
+  details keeps any cached detail payload mounted during refetch failures and
+  only shows a system-error notification for failed no-data loads; the
+  existing-element selector no longer reports a failed matching-elements query
+  as "no matching questions found" and disables confirm while selector data is
+  unavailable.
 
 Second-pass verification:
 
@@ -995,6 +1002,22 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
   refused, so no local backend or manage dev server was available for
   screenshots.
+- Context7 docs checked again for TanStack Query v4 background-fetching /
+  stale-data behavior plus tRPC React Query hook semantics before the activity
+  detail/template selector modal cleanup.
+- `node_modules/.bin/prettier --check` on the two changed manage modal files
+  plus `project/CODEBASE_NOTES.md` and this plan file passed from the
+  dependency checkout after formatting the two JSX files and copying them back
+  to the source checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the activity detail/template selector
+  cleanup.
+- `git diff --check` passed after the activity detail/template selector
+  cleanup.
+- Browser verification for the activity detail/template selector cleanup remains
+  blocked: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
+  connection refused, so no local backend or manage dev server was available
+  for screenshots.
 
 PR #5132 status after `bb92153b` before the manage overview-list batch:
 
