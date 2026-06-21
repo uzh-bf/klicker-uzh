@@ -109,7 +109,6 @@ function UpdateAccountInfoForm({
           if (!result) {
             onError()
           } else {
-            await utils.participant.self.invalidate()
             await onSuccess()
           }
         } catch {

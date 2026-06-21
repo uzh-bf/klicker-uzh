@@ -45,7 +45,6 @@ interface AvatarUpdateFormProps {
 function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
   const t = useTranslations()
   const updateParticipantAvatar = trpc.participant.updateAvatar.useMutation()
-  const utils = trpc.useUtils()
 
   return (
     <Formik
@@ -103,7 +102,6 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
           })
 
           if (result) {
-            await utils.participant.self.invalidate()
             await onSuccess()
           } else {
             onError()

@@ -742,6 +742,11 @@ Second-pass UX/cache cleanup prepared:
   `self`/`participations` invalidations as best-effort refreshes. A failed
   post-join cache refresh no longer strands an already-enrolled participant on
   the join form with a generic error instead of navigating home.
+- PWA profile and avatar update forms now rely on the edit-profile page for a
+  single best-effort `participant.self` refetch after confirmed mutation
+  success. This removes duplicate child invalidation plus parent refetch work
+  and prevents a failed refresh from turning a successful profile/avatar update
+  into a failure toast.
 
 Second-pass verification:
 
@@ -919,6 +924,18 @@ Second-pass verification:
 - `git diff --check` passed after the PWA join-course refresh cleanup.
 - Browser verification remains blocked for this PWA join-course refresh cleanup:
   `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
+  `127.0.0.1:3001` failed with connection refused, so no local PWA dev server
+  was available for screenshots.
+- Context7 docs checked for current TanStack Query v4 mutation-success
+  invalidation behavior before the PWA profile/avatar refresh cleanup.
+- `node_modules/.bin/prettier --check` on the changed PWA profile/avatar files
+  plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed PWA profile/avatar
+  files.
+- `git diff --check` passed after the PWA profile/avatar refresh cleanup.
+- Browser verification remains blocked for this PWA profile/avatar refresh
+  cleanup: `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
   `127.0.0.1:3001` failed with connection refused, so no local PWA dev server
   was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation

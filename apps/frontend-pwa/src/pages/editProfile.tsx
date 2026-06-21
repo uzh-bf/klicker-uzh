@@ -34,8 +34,8 @@ function EditProfile({
       message: t('pwa.profile.editProfileSuccess'),
       options: { duration: 3500 },
     })
-  const onProfileMutationSuccess = async () => {
-    await refetch()
+  const onProfileMutationSuccess = () => {
+    void refetch().catch(console.error)
     onSuccess()
   }
 
