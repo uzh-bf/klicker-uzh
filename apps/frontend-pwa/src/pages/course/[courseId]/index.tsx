@@ -134,7 +134,10 @@ function CourseOverview({
     }
   }, [data])
 
-  if (!data?.courseOverview || !data.courseOverview.course || isLoading) {
+  const courseOverview = data?.courseOverview
+  const course = courseOverview?.course
+
+  if (isLoading && !course) {
     return (
       <Layout displayName={t('shared.generic.leaderboard')}>
         <Loader />
@@ -142,18 +145,32 @@ function CourseOverview({
     )
   }
 
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+  if (error && !course) {
+    return (
+      <Layout displayName={t('shared.generic.leaderboard')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!courseOverview || !course) {
+    return (
+      <Layout displayName={t('shared.generic.leaderboard')}>
+        <Loader />
+      </Layout>
+    )
   }
 
   const {
-    course,
     participant,
     participation,
     groupLeaderboard,
     groupLeaderboardStatistics,
     inRandomGroupPool,
-  } = data.courseOverview
+  } = courseOverview
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
     (group) => group.score > 0

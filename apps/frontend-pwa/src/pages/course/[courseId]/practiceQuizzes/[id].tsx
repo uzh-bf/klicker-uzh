@@ -201,12 +201,23 @@ function PracticeQuizPage({
     totalSteps,
   ])
 
-  if (isLoading)
+  if (isLoading && !practiceQuiz)
     return (
       <Layout embedded={embedded}>
         <Loader />
       </Layout>
     )
+
+  if (error && !practiceQuiz) {
+    return (
+      <Layout embedded={embedded}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
 
   if (!practiceQuiz) {
     return (
@@ -216,12 +227,6 @@ function PracticeQuizPage({
           message={t('pwa.practiceQuiz.notFound')}
         />
       </Layout>
-    )
-  }
-
-  if (error) {
-    return (
-      <Layout embedded={embedded}>{t('shared.generic.systemError')}</Layout>
     )
   }
 

@@ -58,7 +58,7 @@ function GroupActivityDetails() {
   }, [refetch])
   const startGroupActivity = trpc.participant.startGroupActivity.useMutation()
 
-  if (!routeParamsAvailable || isLoading) {
+  if (!routeParamsAvailable || (isLoading && !data)) {
     return (
       <Layout>
         <Loader />
@@ -66,8 +66,15 @@ function GroupActivityDetails() {
     )
   }
 
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+  if (error && !data?.groupActivityDetails) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
   }
 
   if (!data?.groupActivityDetails) {

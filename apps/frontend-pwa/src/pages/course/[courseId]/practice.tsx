@@ -30,12 +30,23 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
   const { data, error, isLoading } =
     trpc.participant.coursePracticeQuiz.useQuery({ courseId })
 
-  if (isLoading)
+  if (isLoading && !data)
     return (
       <Layout>
         <Loader />
       </Layout>
     )
+
+  if (error && !data?.practiceQuiz) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
 
   if (!data?.practiceQuiz) {
     return (
@@ -46,10 +57,6 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
         />
       </Layout>
     )
-  }
-
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
   const handleNextQuestion = () => {

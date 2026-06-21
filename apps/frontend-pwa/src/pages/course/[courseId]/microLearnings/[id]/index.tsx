@@ -52,10 +52,21 @@ function MicrolearningIntroduction({
     enabled: !(data?.microLearning?.isOwner ?? false),
   })
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <Layout>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error && !data?.microLearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }
@@ -69,10 +80,6 @@ function MicrolearningIntroduction({
         />
       </Layout>
     )
-  }
-
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
   const microLearning = data.microLearning

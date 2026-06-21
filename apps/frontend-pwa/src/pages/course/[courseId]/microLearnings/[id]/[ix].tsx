@@ -29,8 +29,19 @@ function MicrolearningInstance() {
     enabled: !(data?.microLearning?.isOwner ?? false),
   })
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <Loader />
+  }
+
+  if (error && !data?.microLearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
   }
 
   if (!data?.microLearning) {
@@ -42,10 +53,6 @@ function MicrolearningInstance() {
         />
       </Layout>
     )
-  }
-
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
   const microLearning = data.microLearning

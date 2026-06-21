@@ -582,6 +582,11 @@ Second-pass UX/cache cleanup prepared:
   keep stale tRPC data visible during refetch failures and replace remaining
   raw tRPC error-message rendering with the existing localized system-error
   notification on failed initial loads.
+- PWA course overview, course practice quiz, standalone practice quiz,
+  microlearning intro/stack, and group-activity detail pages now distinguish
+  failed initial tRPC loads from successful not-found/empty responses, render
+  the existing system-error notification instead of plain text, and keep stale
+  page data visible during refetch failures.
 
 Second-pass verification:
 
@@ -762,15 +767,22 @@ Second-pass verification:
   but produced no output for roughly two minutes and was stopped with Ctrl-C;
   the GitHub `packages/api tRPC Vitest` check remains the current tRPC test
   signal for this slice.
+- `node_modules/.bin/prettier --check` on the six changed PWA page files passed
+  after the PWA page-level query-state cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after syncing the PR worktree into the dependency
+  checkout.
+- `git diff --check` passed after the PWA page-level query-state cleanup.
+- Browser verification for the PWA page-level cleanup remains blocked: `curl`
+  to `127.0.0.1:3000` and `127.0.0.1:3001` failed with connection refused, so
+  no local backend or PWA dev server was available for screenshots.
 
-PR #5132 status after `c09670e6`:
+PR #5132 status before the PWA follow-up commit, after `7e6ce5ecd`:
 
-- Passing at last poll: format, lint, Claude review, CodeQL Java/Kotlin,
-  JavaScript/TypeScript, and Python analyses, plus one visible amd/arm build
-  pair.
-- Pending at last poll: SonarCloud, check, package API tRPC Vitest,
-  packages/graphql Vitest, regular tests, Cypress Cloud, and remaining visible
-  amd/arm builds.
+- Pending at last poll after the `7e6ce5ecd` push: format, lint, check,
+  SonarCloud, CodeQL analyses, package API tRPC Vitest, packages/graphql
+  Vitest, regular tests, Cypress Cloud, Claude review, and visible amd/arm
+  builds.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 
