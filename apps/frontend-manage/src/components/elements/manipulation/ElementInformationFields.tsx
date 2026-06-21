@@ -4,6 +4,7 @@ import {
   FormikSelectField,
   FormikTextField,
   SelectField,
+  toast,
 } from '@uzh-bf/design-system'
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -65,19 +66,38 @@ function ElementInformationFields({
             onChange={async (newValue) => {
               setStatusSaving(true)
 
-              if (typeof elementId !== 'undefined') {
-                const result = await changeElementStatus.mutateAsync({
-                  elementId,
-                  status: newValue as ChangeElementStatusInput['status'],
-                })
+              try {
+                if (typeof elementId !== 'undefined') {
+                  const result = await changeElementStatus.mutateAsync({
+                    elementId,
+                    status: newValue as ChangeElementStatusInput['status'],
+                  })
 
-                if (result.success) {
-                  await utils.element.single.invalidate({ id: elementId })
+                  if (!result.success) {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 6000 },
+                    })
+                    return
+                  }
+
+                  void utils.element.single
+                    .invalidate({ id: elementId })
+                    .catch(console.error)
                 }
-              }
 
-              setFieldValue('status', newValue as ElementStatus)
-              setStatusSaving(false)
+                setFieldValue('status', newValue as ElementStatus)
+              } catch (error) {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 6000 },
+                })
+              } finally {
+                setStatusSaving(false)
+              }
             }}
             contentPosition="popper"
             disabled={isSubmitting || statusSaving}

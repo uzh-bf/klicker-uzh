@@ -760,6 +760,11 @@ Second-pass UX/cache cleanup prepared:
   destructive delete controls while pending, update the `element.tags` cache
   directly from returned tRPC payloads, and treat element-list refresh after
   confirmed deletion as best-effort.
+- Manage element status changes now keep the local Formik status unchanged until
+  `element.changeStatus` confirms success, release the saving guard in
+  `finally`, show the existing localized system-error toast on rejected/falsy
+  tRPC results, and treat the follow-up `element.single` invalidation as
+  best-effort refresh work.
 
 Second-pass verification:
 
@@ -999,6 +1004,22 @@ Second-pass verification:
 - Browser verification remains blocked for this manage question-pool tag action
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` both failed with
   connection refused, so no local backend or manage dev server was available for
+  screenshots.
+- Context7 docs checked for tRPC `mutateAsync` error handling and invalidation
+  helpers before the manage element status failure-handling cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-manage/src/components/elements/manipulation/ElementInformationFields.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed element status file.
+- `./node_modules/.bin/next lint` from the dependency checkout
+  `apps/frontend-manage` passed with existing hook dependency warnings in
+  unrelated files.
+- `git diff --check` passed after the manage element status
+  failure-handling cleanup.
+- Browser verification remains blocked for this manage element status cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` both failed with connection
+  refused, so no local backend or manage dev server was available for
   screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
