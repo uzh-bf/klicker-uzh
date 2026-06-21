@@ -94,7 +94,7 @@ function Cockpit() {
                 return
               }
 
-              await utils.liveQuiz.running.invalidate()
+              void utils.liveQuiz.running.invalidate().catch(console.error)
               await router.push('/activities')
             } catch {
               showCockpitActionError()
@@ -106,7 +106,9 @@ function Cockpit() {
                 quizId: id,
                 blockId,
               })
-              await utils.liveQuiz.cockpit.invalidate({ id })
+              void utils.liveQuiz.cockpit
+                .invalidate({ id })
+                .catch(console.error)
             } catch {
               showCockpitActionError()
             }
@@ -117,7 +119,9 @@ function Cockpit() {
                 quizId: id,
                 blockId,
               })
-              await utils.liveQuiz.cockpit.invalidate({ id })
+              void utils.liveQuiz.cockpit
+                .invalidate({ id })
+                .catch(console.error)
             } catch {
               showCockpitActionError()
             }

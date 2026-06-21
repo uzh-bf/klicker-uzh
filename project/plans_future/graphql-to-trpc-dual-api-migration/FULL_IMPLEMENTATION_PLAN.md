@@ -487,6 +487,10 @@ Second-pass UX/cache cleanup prepared:
 - Frontend-manage live quiz cockpit activation, deactivation, and end-quiz
   actions now catch tRPC mutation failures, show a system-error toast, and avoid
   invalidating/navigating on failed or false end-quiz responses.
+- Frontend-manage live quiz start/cockpit actions now run
+  `liveQuiz.running` and `liveQuiz.cockpit` invalidations as best-effort
+  refreshes after confirmed tRPC mutation success. Failed refreshes no longer
+  turn successful starts/block changes/end actions into visible action failures.
 - PWA live-quiz feedback submission now always releases the submit state,
   surfaces failed tRPC submission with a system-error toast, and refetches the
   feedback list after successful submission without turning a failed refetch into
@@ -1144,6 +1148,19 @@ Second-pass verification:
 - `pnpm --filter @klicker-uzh/frontend-manage check` passed.
 - `pnpm --filter @klicker-uzh/frontend-manage lint` passed with pre-existing
   hook warnings only.
+- Context7 docs checked for TanStack Query v4 mutation success invalidation and
+  promise-returning lifecycle callback behavior before the manage live-quiz
+  action-refresh cleanup.
+- `node_modules/.bin/prettier --check` on the changed manage live-quiz
+  start/cockpit files plus `project/CODEBASE_NOTES.md` and this plan passed
+  after one Prettier write on the cockpit page.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed live-quiz files.
+- `git diff --check` passed after the manage live-quiz action-refresh cleanup.
+- Browser verification remains blocked for this manage live-quiz action-refresh
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
+  connection refused, so no local backend or manage dev server was available
+  for screenshots.
 - Context7 docs checked for TanStack Query v4 optimistic update and rollback
   behavior before the PWA feedback vote rollback changes.
 - `prettier --check` on the two changed PWA live-quiz feedback files passed.
