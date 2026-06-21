@@ -44,18 +44,37 @@ function ObjectImport({
   const [accessTypeFilter, setAccessTypeFilter] = useState<
     ObjectAccess | 'all'
   >('all')
+  const collectionsEnabled = typeof catalogCollectionId === 'undefined'
 
   // fetch all available catalog collections
-  const { data: collectionsData, isLoading: collectionsLoading } =
-    trpc.sharing.catalogCollections.useQuery(undefined, {
-      enabled: typeof catalogCollectionId === 'undefined',
-    })
+  const {
+    data: collectionsData,
+    isLoading: collectionsLoading,
+    error: collectionsError,
+  } = trpc.sharing.catalogCollections.useQuery(undefined, {
+    enabled: collectionsEnabled,
+  })
   const collections = (collectionsData?.catalogCollections ??
     []) as CatalogBrowserCollection[]
 
-  const { data: objectsData, isLoading: objectsLoading } =
-    trpc.sharing.catalogObjects.useQuery({ catalogCollectionId })
+  const {
+    data: objectsData,
+    isLoading: objectsLoading,
+    error: objectsError,
+  } = trpc.sharing.catalogObjects.useQuery({ catalogCollectionId })
   const objects = (objectsData?.catalogObjects ?? []) as CatalogBrowserObject[]
+  const collectionsUnavailable =
+    collectionsEnabled && !!collectionsError && !collectionsData
+  const objectsUnavailable = !!objectsError && !objectsData
+  const hasQueryError =
+    !!objectsError || (collectionsEnabled && !!collectionsError)
+  const hasCatalogData =
+    !!objectsData || (collectionsEnabled && !!collectionsData)
+  const showUnavailableError =
+    (collectionsUnavailable || objectsUnavailable) && !hasCatalogData
+  const initialLoading =
+    (objectsLoading && !objectsData) ||
+    (collectionsEnabled && collectionsLoading && !collectionsData)
 
   const { filteredObjects, filteredCatalogCollections } = useObjectFilters({
     objects,
@@ -64,6 +83,10 @@ function ObjectImport({
     typeFilter,
     accessTypeFilter,
   })
+  const showEmptyState =
+    !hasQueryError &&
+    filteredObjects.length === 0 &&
+    filteredCatalogCollections.length === 0
 
   // set initial filter values based on query params
   useEffect(() => {
@@ -71,10 +94,6 @@ function ObjectImport({
       setTypeFilter(router.query.filter as ObjectType)
     }
   }, [router.query])
-
-  if (objectsLoading || collectionsLoading) {
-    return <Loader />
-  }
 
   return (
     <div className="pb-4">
@@ -127,45 +146,65 @@ function ObjectImport({
         </div>
       </div>
       <div className="mt-2 flex flex-col">
-        {typeof catalogCollectionId === 'undefined' &&
-        filteredCatalogCollections.length > 0 ? (
-          <div>
-            <CatalogSeparatorTitle title={t('shared.generic.collections')} />
-            {filteredCatalogCollections.map((collection) => (
-              <CatalogCollectionListItem
-                key={collection.id}
-                collection={collection}
-              />
-            ))}
-          </div>
-        ) : null}
-        {filteredObjects.length > 0 ? (
-          <div>
-            <CatalogSeparatorTitle title={t('shared.generic.objects')} />
-
-            {filteredObjects.map((object) => (
-              <CatalogObjectItem
-                key={`catalog-object-${object.id}-${object.objectType}-${object.name}`}
-                object={object}
-                catalogCollectionId={catalogCollectionId}
-                // if element is in catalog collection -> collection permissions apply regarding object management in catalog collection
-                // if element is shown on top level of catalog -> permissions on the object itself apply
-                managedAccess={
-                  typeof catalogCollectionId !== 'undefined'
-                    ? collectionEditor
-                    : object.isManager
-                }
-              />
-            ))}
-          </div>
-        ) : null}
-        {filteredObjects.length === 0 &&
-        filteredCatalogCollections.length === 0 ? (
+        {initialLoading ? (
+          <Loader />
+        ) : showUnavailableError ? (
           <UserNotification
-            message={t('manage.catalog.noObjectsFoundInCatalog')}
+            type="error"
+            message={t('shared.generic.systemError')}
             className={{ root: 'mt-2' }}
           />
-        ) : null}
+        ) : (
+          <>
+            {hasQueryError ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+                className={{ root: 'mt-2' }}
+              />
+            ) : null}
+            {typeof catalogCollectionId === 'undefined' &&
+            filteredCatalogCollections.length > 0 ? (
+              <div>
+                <CatalogSeparatorTitle
+                  title={t('shared.generic.collections')}
+                />
+                {filteredCatalogCollections.map((collection) => (
+                  <CatalogCollectionListItem
+                    key={collection.id}
+                    collection={collection}
+                  />
+                ))}
+              </div>
+            ) : null}
+            {filteredObjects.length > 0 ? (
+              <div>
+                <CatalogSeparatorTitle title={t('shared.generic.objects')} />
+
+                {filteredObjects.map((object) => (
+                  <CatalogObjectItem
+                    key={`catalog-object-${object.id}-${object.objectType}-${object.name}`}
+                    object={object}
+                    catalogCollectionId={catalogCollectionId}
+                    // if element is in catalog collection -> collection permissions apply regarding object management in catalog collection
+                    // if element is shown on top level of catalog -> permissions on the object itself apply
+                    managedAccess={
+                      typeof catalogCollectionId !== 'undefined'
+                        ? collectionEditor
+                        : object.isManager
+                    }
+                  />
+                ))}
+              </div>
+            ) : null}
+            {showEmptyState ? (
+              <UserNotification
+                message={t('manage.catalog.noObjectsFoundInCatalog')}
+                className={{ root: 'mt-2' }}
+              />
+            ) : null}
+          </>
+        )}
       </div>
       {collectionEditor && objectAdditionModalOpen ? (
         <AddObjectToCatalogModal

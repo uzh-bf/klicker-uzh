@@ -680,6 +680,12 @@ Second-pass UX/cache cleanup prepared:
   group lists visible during refetch failures with a compact system-error
   notification, and treats `userGroups` invalidation after create/add/leave/delete
   as best-effort work after confirmed server success.
+- Manage catalog browser and add-to-catalog object selectors now distinguish
+  failed migrated tRPC catalog queries from successful empty catalog states. The
+  catalog overview keeps loaded collection/object data visible if the other
+  query fails or a background refetch fails, and the add-to-catalog selector
+  renders the existing localized system-error notification instead of treating a
+  failed selector load as "no objects available."
 
 Second-pass verification:
 
@@ -710,6 +716,20 @@ Second-pass verification:
   also produced no output for 60 seconds and was interrupted. These package-test
   attempts are inconclusive, not passing evidence.
 - Browser verification remains blocked for this manage sharing cleanup: `curl`
+  to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection refused, so no
+  local backend or manage dev server was available for screenshots.
+- Context7 docs checked for current TanStack Query v4 `useQuery` loading,
+  fetching, error, disabled-query, and stale-data semantics before the manage
+  catalog browser cleanup.
+- `node_modules/.bin/prettier --check` on the two changed manage catalog files
+  plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed catalog files.
+- `git diff --check` passed after the manage catalog browser cleanup.
+- `pnpm --filter @klicker-uzh/frontend-manage lint` was attempted from the
+  dependency checkout but produced no output for 90 seconds and was interrupted;
+  this lint attempt is inconclusive, not passing evidence.
+- Browser verification remains blocked for this manage catalog cleanup: `curl`
   to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection refused, so no
   local backend or manage dev server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
