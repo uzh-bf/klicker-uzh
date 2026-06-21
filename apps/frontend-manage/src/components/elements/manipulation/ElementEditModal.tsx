@@ -53,16 +53,25 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
-  const refetchAfterElementManipulation = async (
+  const refreshAfterElementManipulation = (
     updatedElementId?: number | null
   ) => {
-    await Promise.all([
-      updatedElementId
-        ? utils.element.single.invalidate({ id: updatedElementId })
-        : Promise.resolve(),
-      utils.element.tags.invalidate(),
-      refetchElements(),
-    ])
+    void (async () => {
+      await Promise.all([
+        updatedElementId
+          ? utils.element.single.invalidate({ id: updatedElementId })
+          : Promise.resolve(),
+        utils.element.tags.invalidate(),
+        refetchElements(),
+      ])
+    })().catch((error) => {
+      console.error('Error refreshing element after manipulation:', error)
+    })
+  }
+  const refreshAnswerCollectionsInfo = () => {
+    void utils.resources.answerCollectionsInfo.invalidate().catch((error) => {
+      console.error('Error refreshing answer collections:', error)
+    })
   }
 
   const [autoSavedElement, setAutoSavedElement] =
@@ -145,6 +154,8 @@ function ElementEditModal({
       includeTemplateUpdates={includeTemplateUpdates}
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
       onSubmitElement={async (values) => {
+        let updatedElementId: number | null = null
+
         try {
           switch (values.type) {
             case ElementType.Content: {
@@ -161,7 +172,7 @@ function ElementEditModal({
                 return false
               }
 
-              await refetchAfterElementManipulation(data.id)
+              updatedElementId = data.id
               break
             }
 
@@ -179,7 +190,7 @@ function ElementEditModal({
                 return false
               }
 
-              await refetchAfterElementManipulation(data.id)
+              updatedElementId = data.id
               break
             }
 
@@ -199,7 +210,7 @@ function ElementEditModal({
                 return false
               }
 
-              await refetchAfterElementManipulation(data.id)
+              updatedElementId = data.id
               break
             }
 
@@ -217,7 +228,7 @@ function ElementEditModal({
                 return false
               }
 
-              await refetchAfterElementManipulation(data.id)
+              updatedElementId = data.id
               break
             }
 
@@ -235,7 +246,7 @@ function ElementEditModal({
                 return false
               }
 
-              await refetchAfterElementManipulation(data.id)
+              updatedElementId = data.id
               break
             }
 
@@ -252,8 +263,7 @@ function ElementEditModal({
                           )
                         return res.answerCollection
                       },
-                      onAnswerCollectionCreated: () =>
-                        utils.resources.answerCollectionsInfo.invalidate(),
+                      onAnswerCollectionCreated: refreshAnswerCollectionsInfo,
                     })
                   : undefined
 
@@ -281,7 +291,7 @@ function ElementEditModal({
                 return false
               }
 
-              await refetchAfterElementManipulation(data.id)
+              updatedElementId = data.id
               break
             }
 
@@ -298,8 +308,7 @@ function ElementEditModal({
                           )
                         return res.answerCollection
                       },
-                      onAnswerCollectionCreated: () =>
-                        utils.resources.answerCollectionsInfo.invalidate(),
+                      onAnswerCollectionCreated: refreshAnswerCollectionsInfo,
                     })
                   : undefined
 
@@ -327,7 +336,7 @@ function ElementEditModal({
                 return false
               }
 
-              await refetchAfterElementManipulation(data.id)
+              updatedElementId = data.id
               break
             }
 
@@ -358,6 +367,10 @@ function ElementEditModal({
         } catch (err) {
           console.error('Error submitting element:', err)
           return false
+        } finally {
+          if (updatedElementId !== null) {
+            refreshAfterElementManipulation(updatedElementId)
+          }
         }
       }}
       onSuccess={() => {

@@ -30,6 +30,11 @@ function useProcessLiveQuizTemplateBlocksData() {
     trpc.resources.createAnswerCollection.useMutation()
   const utils = trpc.useUtils()
   const readyStatus = ElementStatus.Ready as ElementFormTypes['status']
+  const refreshAnswerCollectionsInfo = () => {
+    void utils.resources.answerCollectionsInfo.invalidate().catch((error) => {
+      console.error('Error refreshing answer collections:', error)
+    })
+  }
 
   const processLiveQuizTemplateBlocksData = async ({
     data,
@@ -149,8 +154,7 @@ function useProcessLiveQuizTemplateBlocksData() {
                             )
                           return res.answerCollection
                         },
-                        onAnswerCollectionCreated: () =>
-                          utils.resources.answerCollectionsInfo.invalidate(),
+                        onAnswerCollectionCreated: refreshAnswerCollectionsInfo,
                       })
                     : undefined
 
@@ -195,8 +199,7 @@ function useProcessLiveQuizTemplateBlocksData() {
                             )
                           return res.answerCollection
                         },
-                        onAnswerCollectionCreated: () =>
-                          utils.resources.answerCollectionsInfo.invalidate(),
+                        onAnswerCollectionCreated: refreshAnswerCollectionsInfo,
                       })
                     : undefined
 

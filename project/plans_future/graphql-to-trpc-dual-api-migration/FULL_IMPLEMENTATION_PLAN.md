@@ -951,9 +951,32 @@ Second-pass UX/cache cleanup prepared:
   element/activity list refreshes as best-effort background work, while sharing
   mutation hooks continue to own permission-cache updates and success/failure
   feedback.
+- Manage element edit and live-quiz template inline answer-collection flows now
+  treat confirmed tRPC writes as the success boundary. Element detail/tag/list
+  refreshes and inline answer-collection list invalidations run as best-effort
+  follow-up work, while requested instance update/outdated writes remain awaited
+  because they are part of the user's save action.
 
 Second-pass verification:
 
+- Review/simplification for the manage element/template save-refresh cleanup:
+  subagent review was skipped because the available multi-agent tool currently
+  requires an explicit user request for subagents. Local self-review found the
+  diff limited to post-success React Query invalidation timing and plan/notes;
+  GraphQL/Apollo coexistence is preserved, and requested instance
+  update/outdated writes remain awaited as part of the save action.
+- Verification for the manage element/template save-refresh cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and
+  post-success invalidation behavior. `prettier --check` on
+  `apps/frontend-manage/src/components/elements/manipulation/ElementEditModal.tsx`,
+  `apps/frontend-manage/src/components/activities/templates/liveQuiz/useProcessLiveQuizTemplateBlocksData.ts`,
+  `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
+  checkout's Prettier binary with local ignored dependency links. `tsc
+  --noEmit` for `apps/frontend-manage` passed using the dependency checkout's
+  TypeScript binary plus ignored package dependency links. `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000` and `127.0.0.1:3002` refuse connections, so no local backend
+  or manage dev server was available for screenshots.
 - Verification for the PWA temporary pseudonym login refresh cleanup: Context7
   TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and post-success
   refresh handling. `prettier --check` on
