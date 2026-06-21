@@ -66,8 +66,7 @@ function ElementRemovalModal({
           objectId: String(elementId),
           objectType: 'ELEMENT',
         })
-        await refetchElements()
-        setModalOpen(false)
+        void refetchElements().catch(console.error)
       }}
       submitting={removeObject.isLoading}
       confirmations={summary ? confirmations : { summaryLoaded: false }}

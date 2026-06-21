@@ -73,12 +73,11 @@ function ElementDeletionModal({
       })}
       onSubmit={async () => {
         await deleteElement.mutateAsync({ id: elementId })
-        await Promise.all([
+        void Promise.all([
           utils.resources.answerCollectionsInfo.invalidate(),
           utils.element.tags.invalidate(),
-        ])
-        await refetchElements()
-        setModalOpen(false)
+          refetchElements(),
+        ]).catch(console.error)
       }}
       submitting={deleteElement.isLoading}
       confirmations={summary ? confirmations : { summaryLoaded: false }}

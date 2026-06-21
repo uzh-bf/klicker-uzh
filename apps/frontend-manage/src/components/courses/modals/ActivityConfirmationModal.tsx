@@ -31,17 +31,22 @@ function ActivityConfirmationModal({
   const disabled =
     confirmationsInitializing ||
     Object.values(confirmations).some((confirmation) => !confirmation)
+  const handleClose = () => {
+    if (!submitting) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       loading={loading}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'w-full! max-w-200' }}
       title={title}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={submitting}
-      primaryDisabled={disabled}
+      primaryDisabled={disabled || submitting}
       primaryButtonStyle={
         confirmationType === 'delete'
           ? 'destructive'
@@ -64,7 +69,7 @@ function ActivityConfirmationModal({
       }}
       dataPrimaryAction={{ cy: 'confirmation-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'confirmation-modal-cancel' }}
       dataCloseButton={{ cy: 'confirmation-modal-close' }}
     >

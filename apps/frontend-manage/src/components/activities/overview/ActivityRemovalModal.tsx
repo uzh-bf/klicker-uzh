@@ -63,9 +63,8 @@ function ActivityRemovalModal({
             objectId: activityId,
             objectType,
           })
-          await refetchActivities?.()
+          void refetchActivities?.().catch(console.error)
         }
-        setModalOpen(false)
       }}
       submitting={removeObject.isLoading}
       confirmations={confirmations}

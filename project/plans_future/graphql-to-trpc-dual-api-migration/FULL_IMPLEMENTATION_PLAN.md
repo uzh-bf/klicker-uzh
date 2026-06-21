@@ -687,6 +687,12 @@ Second-pass UX/cache cleanup prepared:
   as best-effort work after confirmed mutation success. Failed refreshes no
   longer turn successful activity overview actions into unhandled rejections or
   false failure states.
+- Manage shared destructive confirmation modals now guard close/cancel/confirm
+  while a submit is in flight. Activity removal, element permission removal,
+  and element hard-delete tRPC mutations now close on confirmed write success
+  and treat parent list, tag, and answer-collection refreshes as best-effort
+  work, so a refresh failure does not turn the confirmed destructive action
+  into a generic failure toast or keep the modal open.
 - Manage publish/schedule/extension/template modals now keep real tRPC mutation
   failures on the modal with the existing generic error feedback and treat
   `course.detail`, `activity.userActivities`, and parent `refetchActivities`
@@ -1006,6 +1012,15 @@ Second-pass verification:
   verification remains blocked because `127.0.0.1:3000` and `3002` refuse
   connections, so no local backend or manage dev server was available for
   screenshots.
+- Verification for the manage destructive confirmation refresh cleanup:
+  Context7 TanStack Query v4 and tRPC React Query docs from the batch cleanup
+  also apply to these `mutateAsync`, `isLoading`, and `useUtils` invalidation
+  changes. `prettier --check` on the four changed confirmation/removal files
+  passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-manage` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000` and `3002` refuse connections, so no local backend or manage
+  dev server was available for screenshots.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
