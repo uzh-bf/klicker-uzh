@@ -67,19 +67,23 @@ async function submitGroupActivityForm({
             (courseId): courseId is string => Boolean(courseId)
           )
         )
-        await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
+        void Promise.all(
+          Array.from(courseIds).map(invalidateCourseDetail)
+        ).catch(console.error)
       }
     } else {
       const result = await createGroupActivity(createUpdateJSON)
 
       success = Boolean(result.createGroupActivity)
       if (result.createGroupActivity?.courseId) {
-        await invalidateCourseDetail(result.createGroupActivity.courseId)
+        void invalidateCourseDetail(result.createGroupActivity.courseId).catch(
+          console.error
+        )
       }
     }
 
     if (success) {
-      await invalidateActivities()
+      void invalidateActivities().catch(console.error)
       setIsWizardCompleted(true)
     } else {
       onError()

@@ -83,7 +83,9 @@ async function submitLiveQuizForm({
             (courseId): courseId is string => Boolean(courseId)
           )
         )
-        await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
+        void Promise.all(
+          Array.from(courseIds).map(invalidateCourseDetail)
+        ).catch(console.error)
       }
     } else {
       const result = await createLiveQuiz({
@@ -93,12 +95,14 @@ async function submitLiveQuizForm({
 
       success = Boolean(result.createLiveQuiz)
       if (result.createLiveQuiz?.courseId) {
-        await invalidateCourseDetail(result.createLiveQuiz.courseId)
+        void invalidateCourseDetail(result.createLiveQuiz.courseId).catch(
+          console.error
+        )
       }
     }
 
     if (success) {
-      await invalidateActivities()
+      void invalidateActivities().catch(console.error)
       setIsWizardCompleted(true)
     } else {
       onError()

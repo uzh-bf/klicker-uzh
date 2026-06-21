@@ -79,19 +79,23 @@ async function submitPracticeQuizForm({
             (courseId): courseId is string => Boolean(courseId)
           )
         )
-        await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
+        void Promise.all(
+          Array.from(courseIds).map(invalidateCourseDetail)
+        ).catch(console.error)
       }
     } else {
       const result = await createPracticeQuiz(createOrUpdateJSON)
 
       success = Boolean(result.createPracticeQuiz)
       if (result.createPracticeQuiz?.courseId) {
-        await invalidateCourseDetail(result.createPracticeQuiz.courseId)
+        void invalidateCourseDetail(result.createPracticeQuiz.courseId).catch(
+          console.error
+        )
       }
     }
 
     if (success) {
-      await invalidateActivities()
+      void invalidateActivities().catch(console.error)
       setIsWizardCompleted(true)
     } else {
       onError()

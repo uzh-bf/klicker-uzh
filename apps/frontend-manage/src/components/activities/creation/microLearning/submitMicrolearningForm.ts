@@ -79,18 +79,22 @@ async function submitMicrolearningForm({
             (courseId): courseId is string => Boolean(courseId)
           )
         )
-        await Promise.all(Array.from(courseIds).map(invalidateCourseDetail))
+        void Promise.all(
+          Array.from(courseIds).map(invalidateCourseDetail)
+        ).catch(console.error)
       }
     } else {
       const result = await createMicroLearning(createUpdateJSON)
       success = Boolean(result.createMicroLearning)
       if (result.createMicroLearning?.courseId) {
-        await invalidateCourseDetail(result.createMicroLearning.courseId)
+        void invalidateCourseDetail(result.createMicroLearning.courseId).catch(
+          console.error
+        )
       }
     }
 
     if (success) {
-      await invalidateActivities()
+      void invalidateActivities().catch(console.error)
       setIsWizardCompleted(true)
     } else {
       onError()

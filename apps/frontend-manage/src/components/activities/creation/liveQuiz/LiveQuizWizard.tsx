@@ -394,15 +394,33 @@ function LiveQuizWizard({
             <Button
               data={{ cy: 'quick-start' }}
               onClick={async () => {
-                const result = await startLiveQuiz.mutateAsync({
-                  id: liveQuizId,
-                })
-                if (!result.liveQuiz) return
+                try {
+                  const result = await startLiveQuiz.mutateAsync({
+                    id: liveQuizId,
+                  })
+                  if (!result.liveQuiz) {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
+                    return
+                  }
 
-                router.push(`/quizzes/${liveQuizId}/cockpit`)
+                  await router.push(`/quizzes/${liveQuizId}/cockpit`)
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                }
               }}
+              disabled={startLiveQuiz.isLoading}
+              loading={startLiveQuiz.isLoading}
             >
-              <Button.Icon icon={faPlay} />
+              <Button.Icon icon={faPlay} loading={startLiveQuiz.isLoading} />
               <Button.Label>
                 {t('manage.activityWizard.liveQuizStartNow')}
               </Button.Label>

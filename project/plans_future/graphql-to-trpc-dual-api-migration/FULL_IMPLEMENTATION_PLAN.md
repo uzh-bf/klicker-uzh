@@ -694,6 +694,13 @@ Second-pass UX/cache cleanup prepared:
   schedule, extension, template edit/delete, and template conversion actions no
   longer depend on follow-up refresh callbacks for their user-facing success
   state.
+- Manage live-quiz, practice-quiz, microlearning, and group-activity creation
+  wizard submit helpers now treat confirmed tRPC create/edit payloads as the
+  success boundary and run course-detail plus activity invalidations as
+  best-effort work. The live-quiz completion quick-start button now catches
+  rejected/falsy starts, shows the generic system-error toast, awaits cockpit
+  navigation, and exposes loading/disabled state while the start mutation is in
+  flight.
 - Manage group-activity grading save/finalize now treats the confirmed tRPC
   mutation result as the success boundary and runs
   `activity.groupActivityGrading` invalidation as best-effort. Save/finalize
@@ -976,6 +983,15 @@ Second-pass verification:
   this lint attempt is inconclusive, not passing evidence. Browser verification
   remains blocked because `127.0.0.1:3000` and `3002` refuse connections, so no
   local backend or manage dev server was available for screenshots.
+- Verification for the manage activity wizard refresh cleanup: Context7
+  TanStack Query v4 and tRPC React Query docs from the audience interaction
+  cleanup also apply to these `mutateAsync`, `isLoading`, and `useUtils`
+  invalidation changes. `prettier --check` on the five changed wizard helper /
+  live-quiz files passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-manage` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000` and `3002` refuse connections, so no local backend or manage
+  dev server was available for screenshots.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
