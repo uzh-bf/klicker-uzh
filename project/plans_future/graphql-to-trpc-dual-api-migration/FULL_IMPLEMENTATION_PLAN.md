@@ -610,6 +610,12 @@ Second-pass UX/cache cleanup prepared:
 - PWA microlearning evaluation and assessment-results panels now preserve
   cached tRPC data during background refetch failures and use existing
   error/not-found notifications for failed or missing initial data.
+- PWA practice course list, shortname live-quiz join list, and course-scoped
+  live-quiz / microlearning / practice-quiz overview lists now distinguish true
+  initial loading, failed initial tRPC queries, and successful empty states. The
+  pages keep existing list data visible during background refetch failures and
+  no longer show "no active items" or "no repetition" when the request itself
+  failed.
 
 Second-pass verification:
 
@@ -861,14 +867,25 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
   `127.0.0.1:3003` all failed with connection refused, so no local backend,
   PWA, manage, or control dev server was available for screenshots.
+- Context7 docs checked again for tRPC React Query hooks and TanStack Query v4
+  stale-data / background-fetch behavior before the PWA overview-list cleanup.
+- `node_modules/.bin/prettier --check` on the five changed PWA list/overview
+  page files passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after the PWA overview-list cleanup.
+- `git diff --check` passed after the PWA overview-list cleanup.
+- Browser verification for the PWA overview-list cleanup remains blocked:
+  `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
+  `127.0.0.1:3003` all failed with connection refused, so no local backend,
+  PWA, manage, or control dev server was available for screenshots.
 
-PR #5132 status after `a9a9d0a6` before this batch:
+PR #5132 status after `c8ca1edc` before this batch:
 
-- Passing at last poll: CodeQL analyses, SonarCloud, format, lint, check,
-  Claude review, visible build jobs that had completed, `packages/api tRPC
-  Vitest`, and one regular `test` job.
-- Pending at last poll: `packages/graphql Vitest`, Cypress Cloud, some broad
-  `test`/amd/arm build jobs.
+- Passing at last poll: CodeQL Python.
+- Pending at last poll: CodeQL Java/Kotlin, JavaScript, and TypeScript
+  analyses; SonarCloud; format; lint; check; Claude review; `packages/api tRPC
+  Vitest`; `packages/graphql Vitest`; Cypress Cloud; broad test jobs; and
+  visible amd/arm build jobs.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

@@ -34,7 +34,7 @@ function MicroLearningsOverview({
     cookiesAvailable,
   })
 
-  const { data, isLoading } =
+  const { data, error, isLoading } =
     trpc.participant.coursePublishedMicroLearnings.useQuery(
       { courseId },
       {
@@ -53,6 +53,21 @@ function MicroLearningsOverview({
 
   const microLearnings = data?.microLearnings
   const course = microLearnings?.[0]?.course
+  if (!isInactive && error && !microLearnings) {
+    return (
+      <Layout>
+        <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+          <H2>{t.rich('shared.generic.activeMicroLearnings')}</H2>
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'text-base' }}
+          />
+        </div>
+      </Layout>
+    )
+  }
+
   if (
     isInactive ||
     !microLearnings ||

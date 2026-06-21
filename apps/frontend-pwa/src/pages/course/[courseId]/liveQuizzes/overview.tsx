@@ -33,7 +33,7 @@ function LiveQuizOverview({
     cookiesAvailable,
   })
 
-  const { data, isLoading } =
+  const { data, error, isLoading } =
     trpc.participant.courseRunningLiveQuizzes.useQuery(
       { courseId },
       {
@@ -50,9 +50,25 @@ function LiveQuizOverview({
     )
   }
 
-  const liveQuizzes = data?.liveQuizzes ?? []
-  const course = liveQuizzes[0]?.course
-  if (isInactive || liveQuizzes.length === 0 || !course) {
+  const liveQuizzes = data?.liveQuizzes
+  const course = liveQuizzes?.[0]?.course
+
+  if (!isInactive && error && !liveQuizzes) {
+    return (
+      <Layout>
+        <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+          <H2>{t.rich('shared.generic.activeLiveQuizzes')}</H2>
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'text-base' }}
+          />
+        </div>
+      </Layout>
+    )
+  }
+
+  if (isInactive || !liveQuizzes || liveQuizzes.length === 0 || !course) {
     return (
       <Layout>
         <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">

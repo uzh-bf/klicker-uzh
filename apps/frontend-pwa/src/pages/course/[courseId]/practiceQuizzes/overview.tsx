@@ -33,7 +33,7 @@ function PracticeQuizOverview({
     cookiesAvailable,
   })
 
-  const { data, isLoading } =
+  const { data, error, isLoading } =
     trpc.participant.coursePublishedPracticeQuizzes.useQuery(
       { courseId },
       {
@@ -52,6 +52,21 @@ function PracticeQuizOverview({
 
   const quizzes = data?.practiceQuizzes
   const course = quizzes?.[0]?.course
+  if (!isInactive && error && !quizzes) {
+    return (
+      <Layout>
+        <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+          <H2>{t.rich('shared.generic.activePracticeQuizzes')}</H2>
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'text-base' }}
+          />
+        </div>
+      </Layout>
+    )
+  }
+
   if (
     isInactive ||
     !quizzes ||

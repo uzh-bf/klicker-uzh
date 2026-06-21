@@ -4,6 +4,7 @@ import {
   faLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import getParticipantToken from '@lib/getParticipantToken'
 import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -34,16 +35,44 @@ function Join({
     cookiesAvailable,
   })
 
-  const { data } = trpc.participant.shortnameQuizzes.useQuery(
+  const { data, error, isLoading } = trpc.participant.shortnameQuizzes.useQuery(
     { shortname },
     {
       enabled: !isInactive,
       initialData: initialShortnameQuizData,
     }
   )
-  const shortnameQuizzes = data?.shortnameQuizzes ?? []
+  const shortnameQuizzes = data?.shortnameQuizzes
 
-  if (isInactive || shortnameQuizzes.length === 0) {
+  if (!isInactive && isLoading && !shortnameQuizzes) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
+
+  if (!isInactive && error && !shortnameQuizzes) {
+    return (
+      <Layout>
+        <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+          <H2>
+            {t.rich('pwa.general.activeLiveQuizzesBy', {
+              i: (text) => <span className="italic">{text}</span>,
+              name: shortname,
+            })}
+          </H2>
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'text-base' }}
+          />
+        </div>
+      </Layout>
+    )
+  }
+
+  if (isInactive || !shortnameQuizzes || shortnameQuizzes.length === 0) {
     return (
       <Layout>
         <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">

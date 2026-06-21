@@ -1,4 +1,5 @@
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -9,7 +10,8 @@ import { trpc } from '../lib/trpc'
 
 function Practice() {
   const t = useTranslations()
-  const { data } = trpc.participant.practiceCourses.useQuery()
+  const { data, error, isLoading } = trpc.participant.practiceCourses.useQuery()
+  const practiceCourses = data?.practiceCourses
 
   return (
     <Layout
@@ -20,7 +22,16 @@ function Practice() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.practiceTitle')}
         </H1>
-        {data?.practiceCourses?.map((course) => {
+        {isLoading && !practiceCourses ? <Loader /> : null}
+
+        {error && !practiceCourses ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
+        {practiceCourses?.map((course) => {
           return (
             <LinkButton
               key={course.id}
@@ -38,7 +49,7 @@ function Practice() {
           )
         })}
 
-        {(!data?.practiceCourses || data.practiceCourses.length === 0) && (
+        {!error && practiceCourses?.length === 0 && (
           <UserNotification
             type="info"
             message={t('pwa.practiceQuiz.noRepetition')}
