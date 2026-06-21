@@ -221,6 +221,8 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Chat PWA login redirects**: `apps/chat/src/app/noLogin/page.tsx` must pass an absolute chat URL to the PWA login `redirect_to`; a relative chatbot path makes the PWA redirect to its own domain and 404. Local chat dev also needs ignored local env values for the backend `APP_SECRET` and `DATABASE_URL` so participant cookies verify and Prisma can load chatbot data.
 - **Chat Vitest alias resolution**: `apps/chat/vitest.config.ts` mirrors the app `@/*` alias from `apps/chat/tsconfig.json`; keep this in sync when adding client tests for modules that import from `@/src/...`.
 - **Live-quiz Cypress response path**: `O-live-quiz` and template-created live quiz flows submit answers through `apps/response-api` on port `7078`; if `/AddResponse` stays pending and submit buttons remain enabled, verify/restart response-api before debugging PWA rendering. (`cypress/cypress/e2e/O-live-quiz-workflow.cy.ts`, `apps/response-api/`)
+- **Cypress TS 6 webpack preprocessor**: Cypress spec bundling can surface TS 6 deprecation errors independently of `tsc`; keep `ignoreDeprecations: "6.0"` in `cypress/tsconfig.json` while Cypress/ts-loader still injects deprecated compiler options.
+- **Next font build dependency**: Next app builds fetch Google fonts from `packages/shared-components/src/font.ts`; offline/sandboxed builds fail at `next/font` before app code validation unless the fonts are cached or network access is available.
 
 ## Factory Skills (AI Assistance)
 

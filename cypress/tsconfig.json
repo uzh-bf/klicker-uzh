@@ -4,6 +4,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
     "target": "es2022",
     "module": "es2022",
     "moduleResolution": "bundler",
