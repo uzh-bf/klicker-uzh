@@ -1,6 +1,6 @@
 import { faClipboard } from '@fortawesome/free-solid-svg-icons'
 import { trpc } from '@lib/trpc'
-import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { Button, H2, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
@@ -49,49 +49,68 @@ function EmbeddingModal({
   quizId: string
 }) {
   const t = useTranslations()
-  const { data, isLoading: loading } = trpc.liveQuiz.embeddingInfo.useQuery(
+  const {
+    data,
+    error,
+    isLoading: loading,
+  } = trpc.liveQuiz.embeddingInfo.useQuery(
     { id: quizId },
     { enabled: !!quizId }
   )
   const embeddingInfo = data?.embeddingInfo
+  const initialLoading = loading && !embeddingInfo
+  const embeddingUnavailable = Boolean((error || !loading) && !embeddingInfo)
 
   return (
     <Modal
       open
       hideCloseButton
-      loading={loading}
+      loading={initialLoading}
       onClose={onClose}
       onSecondaryAction={onClose}
       secondaryLabel={t('shared.generic.close')}
       dataSecondaryAction={{ cy: 'close-embedding-modal' }}
     >
       <H2>{t('control.course.pptEmbedding')}</H2>
-      <div className="flex flex-col gap-3">
-        {embeddingInfo?.instances.map((instance, ix) => {
-          return (
-            <div key={instance.id}>
-              <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
-                instance.name
-              }`}</div>
-              <HMACLink
-                quizId={quizId}
-                hmac={embeddingInfo.hmac}
-                params={`questionIx=${ix}&hideControls=true`}
-                identifier={`question-${ix}`}
-              />
-            </div>
-          )
-        })}
-      </div>
-      <div className="mt-3">
-        <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
-        <HMACLink
-          quizId={quizId}
-          hmac={embeddingInfo?.hmac ?? ''}
-          params={`leaderboard=true&hideControls=true`}
-          identifier={`leaderboard`}
+      {embeddingUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
         />
-      </div>
+      ) : null}
+
+      {embeddingInfo ? (
+        <>
+          <div className="flex flex-col gap-3">
+            {embeddingInfo.instances.map((instance, ix) => {
+              return (
+                <div key={instance.id}>
+                  <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
+                    instance.name
+                  }`}</div>
+                  <HMACLink
+                    quizId={quizId}
+                    hmac={embeddingInfo.hmac}
+                    params={`questionIx=${ix}&hideControls=true`}
+                    identifier={`question-${ix}`}
+                  />
+                </div>
+              )
+            })}
+          </div>
+          <div className="mt-3">
+            <div className="w-30 font-bold">
+              {t('shared.generic.leaderboard')}:
+            </div>
+            <HMACLink
+              quizId={quizId}
+              hmac={embeddingInfo.hmac}
+              params={`leaderboard=true&hideControls=true`}
+              identifier={`leaderboard`}
+            />
+          </div>
+        </>
+      ) : null}
     </Modal>
   )
 }

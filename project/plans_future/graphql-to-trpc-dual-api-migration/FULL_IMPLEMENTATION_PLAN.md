@@ -633,6 +633,15 @@ Second-pass UX/cache cleanup prepared:
   loads, keep stale data visible when present, and answer-collection view/edit
   modals render a closable error state instead of an endless loading modal when
   `singleAnswerCollection` fails or returns no collection.
+- Manage/control embedding and destructive-summary modals now distinguish
+  failed initial tRPC detail loads from successful data. Element delete/remove
+  and live-quiz cancellation modals keep destructive primary actions disabled
+  until summary data exists and show the existing system-error notification on
+  failed summaries; manage/control HMAC embedding modals no longer render empty
+  or invalid links when `embeddingInfo` fails or returns no payload. Live-quiz
+  cancellation also keeps the modal open with a system-error toast on rejected
+  or falsy tRPC cancel results, while cache invalidation after success remains
+  best-effort.
 
 Second-pass verification:
 
@@ -928,6 +937,22 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
   `127.0.0.1:3003` all failed with connection refused, so no local backend,
   PWA, manage, or control dev server was available for screenshots.
+- Context7 docs checked again for TanStack Query v4 query-state semantics
+  before the manage/control modal detail-query cleanup.
+- `node_modules/.bin/prettier --check` on the five changed manage/control modal
+  files passed from the dependency checkout after formatting the files there and
+  copying the formatted output back to the source checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage modal detail-query cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-control` passed after the control embedding modal cleanup.
+- `git diff --check` passed after the manage/control modal detail-query
+  cleanup.
+- Browser verification for the manage/control modal detail-query cleanup remains
+  blocked: `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`,
+  `127.0.0.1:3002`, and `127.0.0.1:3003` all failed with connection refused,
+  so no local backend, PWA, manage, or control dev server was available for
+  screenshots.
 
 PR #5132 status after `bb92153b` before the manage overview-list batch:
 

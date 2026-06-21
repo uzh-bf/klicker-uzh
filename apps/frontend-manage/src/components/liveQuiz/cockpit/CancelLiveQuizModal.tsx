@@ -1,4 +1,4 @@
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -37,8 +37,11 @@ function CancelLiveQuizModal({
       ...initialConfirmations,
     })
 
-  const { data, isLoading: queryLoading } =
-    api.activity.liveQuizSummary.useQuery({ activityId: quizId })
+  const {
+    data,
+    error: summaryError,
+    isLoading: queryLoading,
+  } = api.activity.liveQuizSummary.useQuery({ activityId: quizId })
   const cancelLiveQuiz = api.liveQuiz.cancel.useMutation()
 
   useEffect(() => {
@@ -56,11 +59,15 @@ function CancelLiveQuizModal({
     })
   }, [data?.liveQuizSummary])
   const summary = data?.liveQuizSummary
+  const initialSummaryLoading = queryLoading && !summary
+  const summaryUnavailable = Boolean(
+    (summaryError || !queryLoading) && !summary
+  )
 
   return (
     <Modal
       open
-      loading={queryLoading || !summary}
+      loading={initialSummaryLoading}
       onClose={() => {
         onClose()
         setConfirmations({ ...initialConfirmations })
@@ -70,20 +77,39 @@ function CancelLiveQuizModal({
       primaryButtonStyle="destructive"
       primaryLoading={cancelLiveQuiz.isLoading}
       primaryDisabled={
-        queryLoading ||
+        initialSummaryLoading ||
+        summaryUnavailable ||
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        const result = await cancelLiveQuiz.mutateAsync({ id: quizId })
-        if (result.liveQuiz?.id) {
-          await utils.liveQuiz.running.invalidate()
-          await utils.activity.liveQuizSummary.invalidate({
-            activityId: quizId,
+        try {
+          const result = await cancelLiveQuiz.mutateAsync({ id: quizId })
+          if (!result.liveQuiz?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
+          await Promise.all([
+            utils.liveQuiz.running.invalidate(),
+            utils.activity.liveQuizSummary.invalidate({
+              activityId: quizId,
+            }),
+          ]).catch(console.error)
+          await router.push('/activities')
+          onClose()
+          setConfirmations({ ...initialConfirmations })
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
           })
         }
-        router.push('/activities')
-        onClose()
-        setConfirmations({ ...initialConfirmations })
       }}
       dataPrimaryAction={{ cy: 'confirm-cancel-live-quiz' }}
       secondaryLabel={t('shared.generic.close')}
@@ -94,13 +120,20 @@ function CancelLiveQuizModal({
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
       className={{ content: 'max-w-240' }}
     >
-      {summary && (
+      {summaryUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {summary ? (
         <LiveQuizAbortionConfirmations
           summary={summary}
           confirmations={confirmations}
           setConfirmations={setConfirmations}
         />
-      )}
+      ) : null}
     </Modal>
   )
 }
