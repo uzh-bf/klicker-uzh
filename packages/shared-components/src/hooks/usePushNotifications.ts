@@ -8,11 +8,11 @@ interface PushNotificationsOptions {
   subscribeToPush: (
     subscriptionObject: PushSubscription,
     courseId: string
-  ) => void
+  ) => Promise<void> | void
   unsubscribeFromPush: (
     subscriptionObject: PushSubscription,
     courseId: string
-  ) => void
+  ) => Promise<void> | void
 }
 
 const usePushNotifications = ({
@@ -54,11 +54,11 @@ const usePushNotifications = ({
    * stored on the backend.
    */
   async function subscribeUserToPush(courseId: string) {
-    // There is a valid subscription to the push service
-    if (subscription) {
-      subscribeToPush(subscription, courseId)
-    } else {
-      try {
+    try {
+      // There is a valid subscription to the push service
+      if (subscription) {
+        await subscribeToPush(subscription, courseId)
+      } else {
         if (!registration) {
           throw new Error('Service worker registration is not available.')
         }
@@ -68,32 +68,32 @@ const usePushNotifications = ({
         setSubscription(newSubscription)
 
         // Store new subscription object on the server
-        subscribeToPush(newSubscription, courseId)
-      } catch (e) {
-        console.error(
-          'An error occured while subscribing a user to push notifications: ',
-          e
-        )
+        await subscribeToPush(newSubscription, courseId)
+      }
+    } catch (e) {
+      console.error(
+        'An error occured while subscribing a user to push notifications: ',
+        e
+      )
 
-        // push notifications are disabled
-        if (Notification.permission === 'denied') {
-          setPushDisabled(true)
-          setUserInfo(
-            `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
+      // push notifications are disabled
+      if (Notification.permission === 'denied') {
+        setPushDisabled(true)
+        setUserInfo(
+          `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
             abonnieren möchten, aktivieren Sie diese in Ihrem Browser und laden Sie die Seite neu.`
-          )
-          // User has clicked away the prompt without allowing nor blocking
-        } else if (e instanceof DOMException && e.name === 'NotAllowedError') {
-          setUserInfo(
-            'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
-          )
-          // An error occured
-        } else {
-          console.log('error occured: ', e)
-          setUserInfo(
-            'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
-          )
-        }
+        )
+        // User has clicked away the prompt without allowing nor blocking
+      } else if (e instanceof DOMException && e.name === 'NotAllowedError') {
+        setUserInfo(
+          'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
+        )
+        // An error occured
+      } else {
+        console.log('error occured: ', e)
+        setUserInfo(
+          'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
+        )
       }
     }
   }
@@ -104,12 +104,22 @@ const usePushNotifications = ({
    */
   async function unsubscribeUserFromPush(courseId: string) {
     if (subscription) {
-      // remove subscription from browser's push service
-      await subscription.unsubscribe()
-      setSubscription(null)
+      try {
+        // remove subscription from browser's push service
+        await subscription.unsubscribe()
+        setSubscription(null)
 
-      // remove subscription from backend
-      unsubscribeFromPush(subscription, courseId)
+        // remove subscription from backend
+        await unsubscribeFromPush(subscription, courseId)
+      } catch (e) {
+        console.error(
+          'An error occured while unsubscribing a user from push notifications: ',
+          e
+        )
+        setUserInfo(
+          'Beim Versuch, Sie von Push-Benachrichtigungen abzumelden, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
+        )
+      }
     }
   }
 

@@ -574,6 +574,11 @@ Second-pass UX/cache cleanup prepared:
   system-error notification instead of an indefinite full-page loader, while a
   successful empty participation list still reaches the existing empty-course
   flow.
+- PWA push notification subscribe/unsubscribe callbacks now await the async
+  tRPC backend work inside the shared hook so server failures reach the hook's
+  visible error state, while the follow-up `participant.participations`
+  invalidation runs as best-effort after confirmed subscribe/unsubscribe
+  success.
 - Manage analytics navigation, quiz analytics navigation, course-comparison,
   and element activity-filter controls now preserve surrounding navigation or
   stale selector data when available, but show compact existing
@@ -1282,6 +1287,20 @@ Second-pass verification:
   `127.0.0.1:3000`, `127.0.0.1:3001`, and `127.0.0.1:3002` all failed with
   connection refused, so no local backend, PWA, or manage dev server was
   available for screenshots.
+- Context7 docs checked for TanStack Query v4 mutation success invalidation and
+  promise-returning lifecycle callback behavior before the PWA push callback
+  cleanup.
+- `node_modules/.bin/prettier --check` on the changed PWA home page, shared
+  push hook, `project/CODEBASE_NOTES.md`, and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `packages/shared-components` passed after mirroring the changed push hook.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed PWA home page and
+  shared hook.
+- `git diff --check` passed after the PWA push callback cleanup.
+- Browser verification remains blocked for this PWA push callback cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` failed with connection
+  refused, so no local backend or PWA dev server was available for screenshots.
 - Review/simplification: local self-review kept the selector cleanup scoped to
   no-data rendering and center-control loaders; empty successful lists and
   surrounding navigation stay unchanged, and no shared abstraction was added.

@@ -96,10 +96,12 @@ function Index() {
       courseId,
     })
 
-    await utils.participant.participations.invalidate({
-      endpoint: subscriptionObject.endpoint,
-      assessmentOnly,
-    })
+    void utils.participant.participations
+      .invalidate({
+        endpoint: subscriptionObject.endpoint,
+        assessmentOnly,
+      })
+      .catch(console.error)
   }
 
   async function unsubscribeUser(
@@ -111,10 +113,12 @@ function Index() {
       endpoint: subscriptionObject.endpoint,
     })
 
-    await utils.participant.participations.invalidate({
-      endpoint: subscriptionObject.endpoint,
-      assessmentOnly,
-    })
+    void utils.participant.participations
+      .invalidate({
+        endpoint: subscriptionObject.endpoint,
+        assessmentOnly,
+      })
+      .catch(console.error)
   }
 
   const {
