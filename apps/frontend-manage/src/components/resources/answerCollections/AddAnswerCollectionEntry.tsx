@@ -1,6 +1,6 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { faPlusCircle, faX } from '@fortawesome/free-solid-svg-icons'
-import { Button, FormikTextField } from '@uzh-bf/design-system'
+import { Button, FormikTextField, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
@@ -35,6 +35,23 @@ function AddAnswerCollectionEntry({
   const [fieldOpen, setFieldOpen] = useState(false)
   const addAnswerCollectionOption =
     trpc.resources.addAnswerCollectionOption.useMutation()
+  const refreshInlineAnswerCollections = () => {
+    if (inlineEditing && refetchAnswerCollections) {
+      void refetchAnswerCollections().catch(console.error)
+    }
+  }
+  const invalidateAnswerCollection = () => {
+    void utils.resources.answerCollectionsInfo.invalidate().catch(console.error)
+    void utils.resources.singleAnswerCollection
+      .invalidate({ id: collectionId })
+      .catch(console.error)
+  }
+  const showErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   const entryValues = useMemo(
     () => entries.map((entry) => entry.value),
@@ -72,23 +89,21 @@ function AddAnswerCollectionEntry({
           .notOneOf(entryValues, t('manage.resources.uniqueValuesRequired')),
       })}
       onSubmit={async (values) => {
-        await addAnswerCollectionOption.mutateAsync({
-          collectionId,
-          value: values.newValue!,
-        })
+        try {
+          await addAnswerCollectionOption.mutateAsync({
+            collectionId,
+            value: values.newValue!,
+          })
 
-        // if the answer collection is edited inline (in a question context), refetch the selection
-        if (inlineEditing) {
-          await refetchAnswerCollections?.()
+          refreshInlineAnswerCollections()
+          invalidateAnswerCollection()
+          setFieldOpen(false)
+          setOptionsEditingDisabled(false)
+          onSuccess()
+        } catch (error) {
+          console.error('Error adding answer collection option:', error)
+          showErrorToast()
         }
-
-        void utils.resources.answerCollectionsInfo.invalidate()
-        void utils.resources.singleAnswerCollection.invalidate({
-          id: collectionId,
-        })
-        setFieldOpen(false)
-        setOptionsEditingDisabled(false)
-        onSuccess()
       }}
     >
       {({ isValid, isSubmitting }) => (
@@ -103,7 +118,7 @@ function AddAnswerCollectionEntry({
             primary
             type="submit"
             className={{ root: 'h-9 py-0' }}
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             loading={isSubmitting}
             data={{ cy: 'save-new-answer-option' }}
           >
@@ -113,6 +128,7 @@ function AddAnswerCollectionEntry({
           <Button
             type="button"
             className={{ root: 'h-9 w-9' }}
+            disabled={isSubmitting}
             data={{ cy: 'abort-adding-answer-option' }}
             onClick={() => {
               setFieldOpen(false)

@@ -1,7 +1,7 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faPencil, faSave, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, FormikTextField } from '@uzh-bf/design-system'
+import { Button, FormikTextField, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
@@ -47,6 +47,24 @@ function AnswerCollectionOption({
     trpc.resources.deleteAnswerCollectionEntry.useMutation()
   const deletionNotAllowed =
     deletionDisabled || (entry.numSolutionUsages ?? 0) > 0
+  const deleting = deleteAnswerCollectionEntry.isLoading
+  const refreshInlineAnswerCollections = () => {
+    if (inlineEditing && refetchAnswerCollections) {
+      void refetchAnswerCollections().catch(console.error)
+    }
+  }
+  const invalidateAnswerCollection = () => {
+    void utils.resources.answerCollectionsInfo.invalidate().catch(console.error)
+    void utils.resources.singleAnswerCollection
+      .invalidate({ id: collectionId })
+      .catch(console.error)
+  }
+  const showErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   return (
     <div
@@ -61,27 +79,25 @@ function AnswerCollectionOption({
             'h-8 w-8 items-center justify-center border border-red-600'
           ),
         }}
-        disabled={deletionNotAllowed}
+        disabled={deletionNotAllowed || deleting}
         data={{ cy: `delete-answer-option-${entry.value}` }}
         onClick={async () => {
-          await deleteAnswerCollectionEntry.mutateAsync({
-            id: entry.id,
-            collectionId,
-          })
+          try {
+            await deleteAnswerCollectionEntry.mutateAsync({
+              id: entry.id,
+              collectionId,
+            })
 
-          // if the answer collection is edited inline (in a question context), refetch the selection
-          if (inlineEditing) {
-            await refetchAnswerCollections?.()
+            refreshInlineAnswerCollections()
+            invalidateAnswerCollection()
+            onSuccess()
+          } catch (error) {
+            console.error('Error deleting answer collection option:', error)
+            showErrorToast()
           }
-
-          void utils.resources.answerCollectionsInfo.invalidate()
-          void utils.resources.singleAnswerCollection.invalidate({
-            id: collectionId,
-          })
-          onSuccess()
         }}
       >
-        <Button.Icon withoutLabel icon={faTrashCan} />
+        <Button.Icon withoutLabel icon={faTrashCan} loading={deleting} />
       </Button>
       {!editMode ? (
         <Button
@@ -119,21 +135,26 @@ function AnswerCollectionOption({
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
 
-              if (entry.value !== values.value) {
-                await editAnswerCollectionEntry.mutateAsync({
-                  id: entry.id,
-                  value: values.value,
-                  collectionId,
-                })
-              }
+              try {
+                if (entry.value !== values.value) {
+                  await editAnswerCollectionEntry.mutateAsync({
+                    id: entry.id,
+                    value: values.value,
+                    collectionId,
+                  })
+                }
 
-              void utils.resources.singleAnswerCollection.invalidate({
-                id: collectionId,
-              })
-              setSubmitting(false)
-              setEditMode(false)
-              setEditDisabled(false)
-              onSuccess()
+                refreshInlineAnswerCollections()
+                invalidateAnswerCollection()
+                setEditMode(false)
+                setEditDisabled(false)
+                onSuccess()
+              } catch (error) {
+                console.error('Error editing answer collection option:', error)
+                showErrorToast()
+              } finally {
+                setSubmitting(false)
+              }
             }}
           >
             {({ isSubmitting, isValid }) => (
@@ -145,7 +166,11 @@ function AnswerCollectionOption({
                   className={{ root: 'h-8 w-8' }}
                   data={{ cy: 'save-edit-answer-option' }}
                 >
-                  <Button.Icon withoutLabel icon={faSave} />
+                  <Button.Icon
+                    withoutLabel
+                    icon={faSave}
+                    loading={isSubmitting}
+                  />
                 </Button>
                 <FormikTextField
                   name="value"

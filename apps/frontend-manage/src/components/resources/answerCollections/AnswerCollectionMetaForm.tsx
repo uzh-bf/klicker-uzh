@@ -1,5 +1,5 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { Button, FormikTextField } from '@uzh-bf/design-system'
+import { Button, FormikTextField, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -31,6 +31,23 @@ function AnswerCollectionMetaForm({
   const utils = trpc.useUtils()
   const modifyAnswerCollection =
     trpc.resources.modifyAnswerCollection.useMutation()
+  const refreshInlineAnswerCollections = () => {
+    if (inlineEditing && refetchAnswerCollections) {
+      void refetchAnswerCollections().catch(console.error)
+    }
+  }
+  const invalidateAnswerCollection = () => {
+    void utils.resources.answerCollectionsInfo.invalidate().catch(console.error)
+    void utils.resources.singleAnswerCollection
+      .invalidate({ id: collection.id })
+      .catch(console.error)
+  }
+  const showErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   return (
     <Formik
@@ -40,27 +57,28 @@ function AnswerCollectionMetaForm({
         description: collection.description,
       }}
       onSubmit={async (values, { resetForm }) => {
-        const res = await modifyAnswerCollection.mutateAsync({
-          id: collection.id,
-          name: values.name !== collection.name ? values.name : undefined,
-          description:
-            values.description !== collection.description
-              ? values.description
-              : undefined,
-        })
+        try {
+          const res = await modifyAnswerCollection.mutateAsync({
+            id: collection.id,
+            name: values.name !== collection.name ? values.name : undefined,
+            description:
+              values.description !== collection.description
+                ? values.description
+                : undefined,
+          })
 
-        if (res.answerCollection?.id) {
-          // if the answer collection is edited inline (in a question context), refetch the selection
-          if (inlineEditing) {
-            await refetchAnswerCollections?.()
+          if (!res.answerCollection?.id) {
+            showErrorToast()
+            return
           }
 
-          void utils.resources.answerCollectionsInfo.invalidate()
-          void utils.resources.singleAnswerCollection.invalidate({
-            id: collection.id,
-          })
+          refreshInlineAnswerCollections()
+          invalidateAnswerCollection()
           onSuccess()
           resetForm()
+        } catch (error) {
+          console.error('Error updating answer collection metadata:', error)
+          showErrorToast()
         }
       }}
       validationSchema={Yup.object({
@@ -98,7 +116,7 @@ function AnswerCollectionMetaForm({
           <Button
             primary
             type="submit"
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             loading={isSubmitting}
             className={{
               root: 'self-end',

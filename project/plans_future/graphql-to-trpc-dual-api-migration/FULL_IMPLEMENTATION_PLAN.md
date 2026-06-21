@@ -652,6 +652,11 @@ Second-pass UX/cache cleanup prepared:
   loads, keep stale data visible when present, and answer-collection view/edit
   modals render a closable error state instead of an endless loading modal when
   `singleAnswerCollection` fails or returns no collection.
+- Manage answer-collection edit mutations now catch rejected metadata and option
+  tRPC writes, show the existing generic system-error toast, and run inline
+  selector refetches plus answer-collection list/detail invalidations as
+  best-effort work after confirmed success. Failed refreshes no longer block
+  option form reset, edit-mode close, or the existing success toast.
 - Manage media-library uploads now show a system-error toast when the tRPC SAS
   mutation or Azure upload fails, render a system-error notification when the
   initial `element.mediaFiles` query has no data, and treat media-list
@@ -930,6 +935,14 @@ Second-pass verification:
   `tsc --noEmit` for `apps/frontend-pwa` passed in the dependency checkout;
   `git diff --check` passed in the commit worktree. Browser verification remains
   blocked because `127.0.0.1:3000` and `3001` refuse connections.
+- Verification for the manage answer-collection edit cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync` try/catch and invalidation
+  behavior before replacing awaited selector refreshes with best-effort
+  follow-up work. `prettier --check` on the changed answer-collection files
+  plus docs passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-manage` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000` and `3002` refuse connections.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
