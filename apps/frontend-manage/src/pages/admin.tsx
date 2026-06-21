@@ -51,47 +51,60 @@ function AdminPanel() {
                       .email(t('manage.admin.grantAccessEmailError'))
                       .required(t('manage.admin.grantAccessEmailRequired')),
                   })}
-                  onSubmit={async (values, { resetForm }) => {
-                    const success = await grantPrivatePreviewAccess.mutateAsync(
-                      {
-                        email: values.email,
-                      }
-                    )
-                    await utils.user.privatePreviewUsers.invalidate()
+                  onSubmit={async (values, { resetForm, setSubmitting }) => {
+                    setSubmitting(true)
 
-                    if (success === 0) {
-                      // success toast - access granted successfully
-                      toast({
-                        type: 'success',
-                        message: t('manage.admin.accessGranted'),
-                      })
-                      resetForm()
-                      return
-                    } else if (success === 1) {
-                      // error toast - user does not exist
+                    try {
+                      const success =
+                        await grantPrivatePreviewAccess.mutateAsync({
+                          email: values.email,
+                        })
+
+                      if (success === 0) {
+                        void utils.user.privatePreviewUsers
+                          .invalidate()
+                          .catch(console.error)
+                        toast({
+                          type: 'success',
+                          message: t('manage.admin.accessGranted'),
+                        })
+                        resetForm()
+                        return
+                      } else if (success === 1) {
+                        toast({
+                          type: 'error',
+                          message: t('manage.admin.userNotExist'),
+                          options: { duration: 6000 },
+                        })
+                        return
+                      } else if (success === 2) {
+                        void utils.user.privatePreviewUsers
+                          .invalidate()
+                          .catch(console.error)
+                        toast({
+                          type: 'success',
+                          message: t('manage.admin.alreadyAccess'),
+                          options: { duration: 6000 },
+                        })
+                        resetForm()
+                        return
+                      }
+
                       toast({
                         type: 'error',
-                        message: t('manage.admin.userNotExist'),
+                        message: t('manage.admin.grantAccessError'),
                         options: { duration: 6000 },
                       })
-                      return
-                    } else if (success === 2) {
-                      // success toast - user already has private preview access
+                    } catch (error) {
+                      console.error(error)
                       toast({
-                        type: 'success',
-                        message: t('manage.admin.alreadyAccess'),
+                        type: 'error',
+                        message: t('manage.admin.grantAccessError'),
                         options: { duration: 6000 },
                       })
-                      resetForm()
-                      return
+                    } finally {
+                      setSubmitting(false)
                     }
-
-                    // error toast - mutation failed / insufficient permissions for user triggering it
-                    toast({
-                      type: 'error',
-                      message: t('manage.admin.grantAccessError'),
-                      options: { duration: 6000 },
-                    })
                   }}
                 >
                   {({ isValid, isSubmitting }) => (

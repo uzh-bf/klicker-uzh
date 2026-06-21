@@ -547,6 +547,10 @@ Second-pass UX/cache cleanup prepared:
   password changes. Controls are disabled while their mutations are pending,
   forms always release their submitting state, and cache refreshes run as
   best-effort work after confirmed server success.
+- Manage private-preview access and course creation now release form submitting
+  state on rejected tRPC mutations, preserve existing user-facing toasts/errors,
+  and treat post-success list invalidation/navigation as best-effort work so a
+  successful server mutation is not reported as a failed submit.
 
 Second-pass verification:
 
@@ -640,6 +644,12 @@ Second-pass verification:
   `apps/frontend-manage` passed after the manage settings cleanup; `rsync` only
   warned about stale Rollup cache directories.
 - `git diff --check` passed after the manage settings cleanup.
+- `node_modules/.bin/prettier --check` on the changed manage admin/course-list
+  page files passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage page-level mutation cleanup;
+  `rsync` only warned about stale Rollup cache directories.
+- `git diff --check` passed after the manage page-level mutation cleanup.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is
   listening on `127.0.0.1:3000`, and no local control dev server is listening

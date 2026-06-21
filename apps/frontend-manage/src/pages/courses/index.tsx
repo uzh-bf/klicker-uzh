@@ -183,14 +183,19 @@ function CourseSelectionPage() {
                     ),
                   })
 
-                  if (result.course) {
-                    await utils.course.userCourses.invalidate()
-                    showCreateCourseModal(false)
-                    router.push(`/courses/${result.course.id}`)
-                  } else {
+                  if (!result.course) {
                     onError()
                     setSubmitting(false)
+                    return
                   }
+
+                  void utils.course.userCourses
+                    .invalidate()
+                    .catch(console.error)
+                  showCreateCourseModal(false)
+                  void router
+                    .push(`/courses/${result.course.id}`)
+                    .catch(console.error)
                 } catch (error) {
                   onError()
                   setSubmitting(false)
