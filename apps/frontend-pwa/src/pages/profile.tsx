@@ -14,8 +14,9 @@ const Profile = () => {
   const router = useRouter()
   const { data, error, isLoading } =
     trpc.participant.selfWithAchievements.useQuery()
+  const profile = data?.selfWithAchievements
 
-  if (isLoading)
+  if (isLoading && !profile)
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -25,7 +26,7 @@ const Profile = () => {
       </Layout>
     )
 
-  if (error || !data?.selfWithAchievements) {
+  if (error && !profile) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -39,7 +40,21 @@ const Profile = () => {
     )
   }
 
-  const { participant, achievements } = data.selfWithAchievements
+  if (!profile) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.profile.myProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  const { participant, achievements } = profile
 
   return (
     <Layout

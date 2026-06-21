@@ -30,6 +30,7 @@ function Bookmarks() {
     { courseId },
     { enabled: courseId !== '' }
   )
+  const hasBookmarksPageData = typeof bookmarksPageData !== 'undefined'
 
   const name = t('pwa.courses.bookmarkedQuestionsTitle', {
     courseName: bookmarksPageData?.course?.displayName ?? '',
@@ -52,7 +53,7 @@ function Bookmarks() {
     } as unknown as BookmarksPracticeQuiz
   }, [name, description, bookmarksPageData?.course, bookmarksPageData?.stacks])
 
-  if (courseId === '' || isLoading) {
+  if (courseId === '' || (isLoading && !hasBookmarksPageData)) {
     return (
       <Layout displayName={t('shared.generic.bookmarks')}>
         <Loader />
@@ -60,7 +61,7 @@ function Bookmarks() {
     )
   }
 
-  if (error) {
+  if (error && !hasBookmarksPageData) {
     return (
       <Layout displayName={t('shared.generic.bookmarks')}>
         <UserNotification

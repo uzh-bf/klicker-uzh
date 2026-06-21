@@ -10,8 +10,9 @@ function Repetition() {
   const t = useTranslations()
   const { data, error, isLoading } =
     trpc.participant.practiceQuizList.useQuery()
+  const practiceQuizList = data?.practiceQuizList
 
-  if (isLoading) {
+  if (isLoading && !practiceQuizList) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -22,7 +23,21 @@ function Repetition() {
     )
   }
 
-  if (error || !data) {
+  if (error && !practiceQuizList) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.practiceQuiz.repetitionTitle')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!practiceQuizList) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -37,7 +52,7 @@ function Repetition() {
   }
 
   // reduce the data to a map of course names to a list of elements together with their corresponding type
-  const courses = data.practiceQuizList.map((course) => {
+  const courses = practiceQuizList.map((course) => {
     return {
       id: course.id,
       displayName: course.displayName,

@@ -19,7 +19,8 @@ function EditProfile({
   cookiesAvailable?: boolean
 }) {
   const t = useTranslations()
-  const { data, isLoading, refetch } = trpc.participant.self.useQuery()
+  const { data, error, isLoading, refetch } = trpc.participant.self.useQuery()
+  const self = data?.self
 
   const onError = () =>
     toast({
@@ -44,7 +45,7 @@ function EditProfile({
     callback: () => void refetch(),
   })
 
-  if (isLoading && !data) {
+  if (isLoading && !self) {
     return (
       <Layout
         course={{ displayName: t('shared.generic.title') }}
@@ -55,7 +56,21 @@ function EditProfile({
     )
   }
 
-  if (!data?.self) {
+  if (error && !self) {
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!self) {
     return (
       <Layout
         course={{ displayName: t('shared.generic.title') }}
@@ -78,14 +93,14 @@ function EditProfile({
         <div className="flex w-full flex-col gap-8 md:flex-row md:gap-4">
           <div className="w-full md:h-full md:w-1/2">
             <UpdateAccountInfoForm
-              user={data.self}
+              user={self}
               onError={onError}
               onSuccess={onProfileMutationSuccess}
             />
           </div>
           <div className="w-full md:h-full md:w-1/2">
             <AvatarUpdateForm
-              user={data.self}
+              user={self}
               onError={onError}
               onSuccess={onProfileMutationSuccess}
             />

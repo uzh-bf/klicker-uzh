@@ -587,6 +587,10 @@ Second-pass UX/cache cleanup prepared:
   failed initial tRPC loads from successful not-found/empty responses, render
   the existing system-error notification instead of plain text, and keep stale
   page data visible during refetch failures.
+- PWA profile, edit-profile, repetition, global bookmarks, course bookmarks,
+  and timeline pages now keep cached tRPC data visible during refetch failures
+  and only switch to the existing system-error notification when the initial
+  migrated query has no usable data.
 
 Second-pass verification:
 
@@ -776,13 +780,29 @@ Second-pass verification:
 - Browser verification for the PWA page-level cleanup remains blocked: `curl`
   to `127.0.0.1:3000` and `127.0.0.1:3001` failed with connection refused, so
   no local backend or PWA dev server was available for screenshots.
+- Context7 docs checked again for TanStack Query v4 background fetching /
+  stale-data behavior and tRPC React Query hook semantics before the PWA
+  self/list page query-state cleanup.
+- `node_modules/.bin/prettier --check` on `profile.tsx`, `editProfile.tsx`,
+  `repetition.tsx`, `bookmarks.tsx`, `insights/timeline.tsx`, and
+  `course/[courseId]/bookmarks.tsx` passed after the PWA self/list page
+  query-state cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after syncing the PR worktree into the dependency
+  checkout.
+- `git diff --check` passed after the PWA self/list page query-state cleanup.
+- Browser verification for the PWA self/list page cleanup remains blocked:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` failed with connection
+  refused, so no local backend or PWA dev server was available for screenshots.
 
-PR #5132 status before the PWA follow-up commit, after `7e6ce5ecd`:
+PR #5132 status after `3f08c69a`:
 
-- Pending at last poll after the `7e6ce5ecd` push: format, lint, check,
-  SonarCloud, CodeQL analyses, package API tRPC Vitest, packages/graphql
-  Vitest, regular tests, Cypress Cloud, Claude review, and visible amd/arm
-  builds.
+- Passing at last poll: format, one check job, one regular test job, package
+  API tRPC Vitest, Claude review, CodeQL Java/Kotlin and Python analyses, and
+  one visible amd/arm build pair.
+- Pending at last poll: lint, SonarCloud, remaining check/test jobs,
+  packages/graphql Vitest, Cypress Cloud, CodeQL JavaScript/TypeScript and
+  JavaScript analyses, and remaining visible amd/arm builds.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

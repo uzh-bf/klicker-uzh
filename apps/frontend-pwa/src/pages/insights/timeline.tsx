@@ -10,8 +10,9 @@ function StudentTimelines() {
   const t = useTranslations()
   const { data, error, isLoading } =
     trpc.participant.courseStudentTimelines.useQuery()
+  const courses = data?.courseStudentTimelines
 
-  if (isLoading) {
+  if (isLoading && !courses) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -22,7 +23,7 @@ function StudentTimelines() {
     )
   }
 
-  if (error) {
+  if (error && !courses) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -35,8 +36,6 @@ function StudentTimelines() {
       </Layout>
     )
   }
-
-  const courses = data?.courseStudentTimelines
 
   return (
     <Layout
