@@ -24,9 +24,9 @@
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "run-s build:ts",
+    "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c && chmod +x dist/scripts/export-course.js",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit && chmod +x dist/scripts/export-course.js",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "export": "node dist/scripts/export-course.js",

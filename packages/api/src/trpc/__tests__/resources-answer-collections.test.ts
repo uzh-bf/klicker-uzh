@@ -176,6 +176,61 @@ describe('resources answer collection router', () => {
     )
   })
 
+  test('lists answer collections with the strongest permission when multiple permissions exist', async () => {
+    const createdAt = new Date('2026-01-01T10:00:00.000Z')
+    const updatedAt = new Date('2026-01-02T10:00:00.000Z')
+    const answerCollection = {
+      id: 21,
+      name: 'Shared answers',
+      description: 'Shared description',
+      originalId: null,
+      isDeleted: false,
+      createdAt,
+      updatedAt,
+      owner: { shortname: 'other-owner' },
+      _count: {
+        entries: 3,
+        permissions: 3,
+        linkedElements: 0,
+        linkedTemplates: 0,
+      },
+    }
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          objects: [
+            {
+              permissionLevel: PermissionLevel.READ,
+              derived: true,
+              directPermission: null,
+              answerCollection,
+            },
+            {
+              permissionLevel: PermissionLevel.ADMIN,
+              derived: false,
+              directPermission: { userGroupId: null },
+              answerCollection,
+            },
+          ],
+        }),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(caller.resources.answerCollectionsInfo()).resolves.toEqual({
+      answerCollections: [
+        expect.objectContaining({
+          id: 21,
+          permissionLevel: PermissionLevel.ADMIN,
+          isManager: true,
+          isEditor: true,
+          isRemovable: true,
+          sharingType: SharingType.SHARED,
+        }),
+      ],
+    })
+  })
+
   test('returns answer collections available for element editing including accessible template collections', async () => {
     const userFindUnique = vi.fn().mockResolvedValue({
       objects: [

@@ -51,6 +51,14 @@ function emitAnswerCollectionInvalidation({
   })
 }
 
+const permissionRank: Record<PermissionLevel, number> = {
+  [PermissionLevel.READ]: 1,
+  [PermissionLevel.EXECUTE]: 2,
+  [PermissionLevel.WRITE]: 3,
+  [PermissionLevel.ADMIN]: 4,
+  [PermissionLevel.OWNER]: 5,
+}
+
 async function hasAnswerCollectionPermission({
   ctx,
   collectionId,
@@ -150,7 +158,27 @@ async function getAnswerCollectionsInfo({
 
   if (!user) return []
 
-  return user.objects.flatMap((object) => {
+  const bestObjectsByCollection = user.objects.reduce((acc, object) => {
+    const collectionId = object.answerCollection?.id
+    if (!collectionId) return acc
+
+    const current = acc.get(collectionId)
+    if (
+      !current ||
+      permissionRank[object.permissionLevel] >
+        permissionRank[current.permissionLevel] ||
+      (permissionRank[object.permissionLevel] ===
+        permissionRank[current.permissionLevel] &&
+        current.derived &&
+        !object.derived)
+    ) {
+      acc.set(collectionId, object)
+    }
+
+    return acc
+  }, new Map<number, (typeof user.objects)[number]>())
+
+  return Array.from(bestObjectsByCollection.values()).flatMap((object) => {
     const collection = toAnswerCollectionInfo(object)
     return collection ? [collection] : []
   })

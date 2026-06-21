@@ -33,6 +33,13 @@ function usePermissionRevocation({
     objectId: String(objectId),
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
+
+  const invalidateAnswerCollectionList = async () => {
+    if (objectType === ObjectType.AnswerCollection) {
+      await utils.resources.answerCollectionsInfo.invalidate()
+    }
+  }
+
   const revokeObjectAccess = trpc.sharing.revokeObjectAccess.useMutation({
     onSuccess: (data) => {
       if (data.revokedPermissionId == null) return
@@ -77,6 +84,8 @@ function usePermissionRevocation({
       const res = await revokeObjectAccess.mutateAsync(input)
 
       if (res.revokedPermissionId != null) {
+        await invalidateAnswerCollectionList()
+
         // if own permission was revoked, refetch elements and activities depending on object type
         if (isOwn && objectType === ObjectType.Element) {
           await refetchElements?.()

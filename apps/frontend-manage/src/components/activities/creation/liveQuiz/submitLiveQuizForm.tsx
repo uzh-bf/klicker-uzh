@@ -15,6 +15,7 @@ interface LiveQuizFormSubmissionProps {
   editLiveQuiz: (input: EditLiveQuizInput) => Promise<EditLiveQuizResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
+  invalidateActivities: () => Promise<void>
   onError: () => void
 }
 
@@ -27,6 +28,7 @@ async function submitLiveQuizForm({
   editLiveQuiz,
   setIsWizardCompleted,
   invalidateCourseDetail,
+  invalidateActivities,
   onError,
 }: LiveQuizFormSubmissionProps) {
   const blockSubmission = values.blocks.map(
@@ -96,6 +98,7 @@ async function submitLiveQuizForm({
     }
 
     if (success) {
+      await invalidateActivities()
       setIsWizardCompleted(true)
     } else {
       onError()

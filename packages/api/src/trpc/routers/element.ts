@@ -841,6 +841,12 @@ async function hasTemplateAnswerCollectionAccess({
   templateId: string
   answerCollectionId: number
 }) {
+  if (
+    await hasAnswerCollectionReadAccess({ prisma, userId, answerCollectionId })
+  ) {
+    return true
+  }
+
   const template = await prisma.activityTemplate.findUnique({
     where: { id: templateId },
     include: {

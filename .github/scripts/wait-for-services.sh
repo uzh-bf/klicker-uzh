@@ -95,8 +95,10 @@ echo "🚀 Starting service..."
 echo "📋 Service logs will be streamed below:"
 echo "----------------------------------------"
 
-# Start service and stream logs in real-time
-pnpm run start:test:ci > service.log 2>&1 &
+# Build test bundles before starting Next.js production servers. NEXT_PUBLIC_*
+# values are inlined by next build, so stale .next output can point tests at
+# deployed backends instead of the local API.
+nohup pnpm run start:test > service.log 2>&1 < /dev/null &
 
 # Store the PID of the background process
 SERVICE_PID=$!

@@ -274,6 +274,18 @@ function MicroLearningWizard({
     },
     [utils]
   )
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringMicroLearning.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
 
   const handleSubmit = useCallback(
     async (values: MicroLearningFormValues) => {
@@ -285,6 +297,7 @@ function MicroLearningWizard({
         createMicroLearning: createMicroLearning.mutateAsync,
         editMicroLearning: editMicroLearning.mutateAsync,
         invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -309,6 +322,7 @@ function MicroLearningWizard({
       editMode,
       initialValues?.course?.id,
       initialValues?.id,
+      invalidateActivities,
       invalidateCourseDetail,
     ]
   )

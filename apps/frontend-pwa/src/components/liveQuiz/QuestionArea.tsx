@@ -240,22 +240,12 @@ function QuestionArea({
   }
 
   function showStatusCodeToast(statusCode: number) {
-    // status code 200 (regular and assessment responses) -> successful submission
-    if (statusCode === 200) {
-      toast({
-        message: t('pwa.assessment.submissionSuccessful'),
-        type: 'success',
-      })
-    }
-    // status code 208 (assessment responses) -> already recorded
-    else if (statusCode === 208) {
-      toast({
-        message: t('pwa.assessment.submissionAlreadyRecorded'),
-        type: 'success',
-      })
-    }
+    // Successful submissions update the inline responded-at state. Avoid
+    // stacking success toasts over the live-quiz controls during rapid answers.
+    if (statusCode === 200 || statusCode === 208) return
+
     // status code 400 (regular and assessment responses) -> invalid request
-    else if (statusCode === 400) {
+    if (statusCode === 400) {
       toast({
         message: t('pwa.assessment.submissionGeneralError'),
         type: 'error',

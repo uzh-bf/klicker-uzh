@@ -24,6 +24,7 @@ interface MicroLearningFormSubmissionProps {
   ) => Promise<EditMicroLearningResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
+  invalidateActivities: () => Promise<void>
   onError: () => void
 }
 
@@ -36,6 +37,7 @@ async function submitMicrolearningForm({
   editMicroLearning,
   setIsWizardCompleted,
   invalidateCourseDetail,
+  invalidateActivities,
   onError,
 }: MicroLearningFormSubmissionProps) {
   try {
@@ -88,6 +90,7 @@ async function submitMicrolearningForm({
     }
 
     if (success) {
+      await invalidateActivities()
       setIsWizardCompleted(true)
     } else {
       onError()

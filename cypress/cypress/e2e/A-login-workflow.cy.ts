@@ -16,13 +16,8 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   it('Sign in to student account', () => {
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
-    cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
     cy.get('[data-cy="homepage"]').should('exist')
     cy.wait(1000)
     cy.get('[data-cy="header-avatar"]').click()
@@ -31,13 +26,8 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   it('Sign in to student account on mobile', () => {
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('iphone-x')
-    cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
     cy.get('[data-cy="homepage"]').should('exist')
     cy.wait(1000)
     cy.get('[data-cy="header-avatar"]').click()
@@ -47,12 +37,8 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   it('Sign in to the student account and tries to modify the profile settings', () => {
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
-    cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+    cy.viewport('macbook-16')
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
     cy.get('[data-cy="homepage"]').should('exist')
 
     cy.get('[data-cy="header-avatar"]').click()
@@ -154,13 +140,8 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   it('Sign in into student account and modifies the password', function () {
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
-    cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
     cy.get('[data-cy="homepage"]').should('exist')
     cy.wait(1000)
 
@@ -179,11 +160,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="logout"]').click()
     cy.get('[data-cy="login-logo"]').should('exist')
-    cy.reload()
-    cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(this.data.newPassword)
-    cy.get('[data-cy="submit-login"]').click()
+    cy.loginStudentPassword({
+      username: Cypress.env('STUDENT_USERNAME'),
+      password: this.data.newPassword,
+    })
     cy.get('[data-cy="homepage"]').should('exist')
 
     // modify password back to original value
@@ -203,22 +183,13 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="logout"]').click()
     cy.get('[data-cy="login-logo"]').should('exist')
-    cy.reload()
-    cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
     cy.get('[data-cy="homepage"]').should('exist')
   })
 
   it('Sign in into student account with the students email', () => {
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
-    cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_EMAIL'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_EMAIL') })
     cy.get('[data-cy="homepage"]').should('exist')
     cy.wait(1000)
     cy.get('[data-cy="header-avatar"]').click()
@@ -237,7 +208,11 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
     cy.get('[data-cy="delegated-login-button"]').then((btn) => {
       if (btn.is(':disabled')) {
-        cy.get('button[data-cy="tos-checkbox"]').click()
+        cy.get('[data-cy="tos-checkbox"]').should('be.visible')
+        cy.wait(500)
+        cy.get('[data-cy="tos-checkbox"]')
+          .realClick()
+          .should('have.attr', 'data-state', 'checked')
       }
     })
 
@@ -248,8 +223,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'))
     cy.get('form > button[type=submit]').click()
 
-    cy.url().should('include', manageUrl)
-    cy.get('[data-cy="homepage"]').should('exist')
-    cy.get('[data-cy="user-menu"]').click()
+    cy.origin(manageUrl, { args: { manageUrl } }, ({ manageUrl }) => {
+      cy.url().should('include', manageUrl)
+      cy.get('[data-cy="homepage"]').should('exist')
+      cy.get('[data-cy="user-menu"]').click()
+    })
   })
 })

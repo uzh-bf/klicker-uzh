@@ -20,6 +20,7 @@ interface GroupActivityFormSubmissionProps {
   ) => Promise<EditGroupActivityResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
+  invalidateActivities: () => Promise<void>
   onError: () => void
 }
 
@@ -31,6 +32,7 @@ async function submitGroupActivityForm({
   editGroupActivity,
   setIsWizardCompleted,
   invalidateCourseDetail,
+  invalidateActivities,
   onError,
 }: GroupActivityFormSubmissionProps) {
   try {
@@ -77,7 +79,10 @@ async function submitGroupActivityForm({
     }
 
     if (success) {
+      await invalidateActivities()
       setIsWizardCompleted(true)
+    } else {
+      onError()
     }
   } catch (error) {
     console.log(error)

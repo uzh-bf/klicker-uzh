@@ -1316,14 +1316,8 @@ describe('Different live-quiz workflows', function () {
         cy.wrap(text).as('publicLinkLeaderboard')
       })
 
-    // log out as a lecturer
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.wait(500)
-    cy.reload()
-    cy.origin(Cypress.env('URL_AUTH'), () => {
-      cy.get('button[data-cy="tos-checkbox"]').should('exist')
-    })
+    // log out as a lecturer before checking public evaluation links
+    cy.logoutUser()
 
     // check out generic evaluation
     cy.get('@publicLinkEvaluation').then((link) => {
@@ -1947,7 +1941,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the first block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -1961,6 +1955,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(`[data-cy="live-quiz-${data.liveQuiz.displayName}"]`).click()
 
         // answer the elements in the first block
@@ -1990,7 +1985,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the second block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -2004,6 +1999,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(`[data-cy="live-quiz-${data.liveQuiz.displayName}"]`).click()
 
         // answer the elements in the second block
@@ -2100,7 +2096,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the first block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -2114,6 +2110,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(
           `[data-cy="live-quiz-${data.liveQuiz.duplicateDisplayName}"]`
         ).click()
@@ -2147,7 +2144,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the second block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -2161,6 +2158,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(
           `[data-cy="live-quiz-${data.liveQuiz.duplicateDisplayName}"]`
         ).click()
@@ -3561,6 +3559,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="username-field"]').type(username)
           cy.get('[data-cy="password-field"]').type(password)
           cy.get('[data-cy="submit-login"]').click()
+          cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
           cy.get(`[data-cy="live-quiz-${data.modes.displayName}"]`).click()
           cy.wait(1000)
 
@@ -3692,6 +3691,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="username-field"]').type(username)
           cy.get('[data-cy="password-field"]').type(password)
           cy.get('[data-cy="submit-login"]').click()
+          cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
           cy.wait(1000) // wait for the live quiz to load
 
           // verify that the participant has been automatically redirected to the live quiz
@@ -4279,8 +4279,13 @@ describe('Different live-quiz workflows', function () {
     loggedIn: boolean,
     gamified: boolean
   ) {
-    // open the live quiz link and participate in the live quiz anonymously
-    cy.visit(Cypress.env('URL_STUDENT'))
+    if (!loggedIn) {
+      cy.logoutUser()
+    }
+
+    cy.visit(
+      loggedIn ? Cypress.env('URL_STUDENT_LOGIN') : Cypress.env('URL_STUDENT')
+    )
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -4294,7 +4299,7 @@ describe('Different live-quiz workflows', function () {
           gamified,
         },
       },
-      async ({
+      ({
         username,
         password,
         scQuestion,
@@ -4308,6 +4313,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="username-field"]').click().type(username)
           cy.get('[data-cy="password-field"]').click().type(password)
           cy.get('[data-cy="submit-login"]').click()
+          cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         }
 
         // visit the live quiz directly through the link and verify that the PIN is already filled in
@@ -4638,6 +4644,7 @@ describe('Different live-quiz workflows', function () {
       studentAccountLinkAccess(String(link), this.data, false, true)
     })
 
+    cy.visit(Cypress.env('URL_MANAGE'))
     cy.get('@protectedQuizLink2').then(function (link) {
       studentAccountLinkAccess(String(link), this.data, false, false)
     })

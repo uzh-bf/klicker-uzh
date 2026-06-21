@@ -307,6 +307,18 @@ function GroupActivityWizard({
     },
     [utils]
   )
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringGroupActivity.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
 
   const handleSubmit = useCallback(
     async (values: GroupActivityFormValues) => {
@@ -317,6 +329,7 @@ function GroupActivityWizard({
         createGroupActivity: createGroupActivity.mutateAsync,
         editGroupActivity: editGroupActivity.mutateAsync,
         invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -338,6 +351,7 @@ function GroupActivityWizard({
     [
       createGroupActivity.mutateAsync,
       editGroupActivity.mutateAsync,
+      invalidateActivities,
       initialValues?.course?.id,
       initialValues?.id,
       invalidateCourseDetail,

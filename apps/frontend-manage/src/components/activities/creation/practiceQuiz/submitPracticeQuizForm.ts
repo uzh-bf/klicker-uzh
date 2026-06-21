@@ -19,6 +19,7 @@ interface PracticeQuizFormSubmissionProps {
   ) => Promise<EditPracticeQuizResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
   invalidateCourseDetail: (courseId: string) => Promise<void>
+  invalidateActivities: () => Promise<void>
   onError: () => void
 }
 
@@ -31,6 +32,7 @@ async function submitPracticeQuizForm({
   editPracticeQuiz,
   setIsWizardCompleted,
   invalidateCourseDetail,
+  invalidateActivities,
   onError,
 }: PracticeQuizFormSubmissionProps) {
   try {
@@ -89,6 +91,7 @@ async function submitPracticeQuizForm({
     }
 
     if (success) {
+      await invalidateActivities()
       setIsWizardCompleted(true)
     } else {
       onError()

@@ -145,8 +145,18 @@ export function prepareNumericalArgs({
         values.options.hasSampleSolution &&
         values.options.solutionType === 'range'
           ? values.options.solutionRanges?.map((range) => ({
-              min: range.min === '' ? undefined : parseFloat(String(range.min)),
-              max: range.max === '' ? undefined : parseFloat(String(range.max)),
+              min:
+                range.min === '' ||
+                range.min === null ||
+                typeof range.min === 'undefined'
+                  ? undefined
+                  : parseFloat(String(range.min)),
+              max:
+                range.max === '' ||
+                range.max === null ||
+                typeof range.max === 'undefined'
+                  ? undefined
+                  : parseFloat(String(range.max)),
             }))
           : undefined,
       exactSolutions:
@@ -304,7 +314,9 @@ export function prepareSelectionArgs({
       hasSampleSolution: values.options.hasSampleSolution,
       answerCollection: parseInt(values.options.answerCollection!),
       numberOfInputs: parseInt(values.options.numberOfInputs),
-      correctAnswers: values.options.correctAnswers,
+      correctAnswers: values.options.hasSampleSolution
+        ? values.options.correctAnswers
+        : undefined,
     },
 
     tags: values.tags,

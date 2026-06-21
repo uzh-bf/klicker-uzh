@@ -983,6 +983,64 @@ describe('manage element router', () => {
     })
   })
 
+  test('applies element batch base points only to question elements', async () => {
+    const elementFindMany = vi
+      .fn()
+      .mockResolvedValue([{ id: 17, type: ElementType.SC }])
+    const elementUpdate = vi.fn(async ({ where }) => ({ id: where.id }))
+    const transactionClient = {
+      element: { update: elementUpdate },
+    }
+    const transaction = vi.fn(async (callback) => callback(transactionClient))
+    const prisma = {
+      element: { findMany: elementFindMany },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.element.applyBatchOperations({
+        elementIds: [17, 18, 19],
+        archive: false,
+        unarchive: false,
+        basePoints: false,
+        updateInstances: false,
+        updateTemplateInstances: false,
+      })
+    ).resolves.toEqual({ updatedCount: 1 })
+    expect(elementFindMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: [17, 18, 19] },
+        isDeleted: false,
+        permissions: {
+          some: {
+            userId: user.id,
+            permissionLevel: {
+              in: [
+                PermissionLevel.OWNER,
+                PermissionLevel.ADMIN,
+                PermissionLevel.WRITE,
+              ],
+            },
+          },
+        },
+        isArchived: undefined,
+        options: undefined,
+        type: { notIn: [ElementType.FLASHCARD, ElementType.CONTENT] },
+      },
+    })
+    expect(elementUpdate).toHaveBeenCalledWith({
+      where: { id: 17 },
+      data: {
+        version: { increment: 1 },
+        isArchived: undefined,
+        status: undefined,
+        pointsMultiplier: undefined,
+        basePoints: false,
+      },
+    })
+  })
+
   test('updates element instances during element batch operations when requested', async () => {
     const elementFindMany = vi
       .fn()

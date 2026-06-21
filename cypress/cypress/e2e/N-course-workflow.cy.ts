@@ -324,15 +324,7 @@ describe('Test course creation and editing functionalities', function () {
           Cypress.env('STUDENT_USERNAME9'),
           Cypress.env('STUDENT_USERNAME10'),
         ]) {
-          cy.clearAllCookies()
-          cy.clearAllLocalStorage()
-          cy.visit(Cypress.env('URL_STUDENT'))
-
-          cy.get('[data-cy="username-field"]').click().type(studentUsername)
-          cy.get('[data-cy="password-field"]')
-            .click()
-            .type(Cypress.env('STUDENT_PASSWORD'))
-          cy.get('[data-cy="submit-login"]').click()
+          cy.loginStudentPassword({ username: studentUsername })
 
           // join the course
           cy.get('[data-cy="join-new-course"]').click()
@@ -368,16 +360,7 @@ describe('Test course creation and editing functionalities', function () {
         }
 
         // student 11 joins course and creates a group by himself
-        cy.clearAllCookies()
-        cy.clearAllLocalStorage()
-        cy.visit(Cypress.env('URL_STUDENT'))
-        cy.get('[data-cy="username-field"]')
-          .click()
-          .type(Cypress.env('STUDENT_USERNAME11'))
-        cy.get('[data-cy="password-field"]')
-          .click()
-          .type(Cypress.env('STUDENT_PASSWORD'))
-        cy.get('[data-cy="submit-login"]').click()
+        cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME11') })
 
         // join the course
         cy.get('[data-cy="join-new-course"]').click()
@@ -398,16 +381,7 @@ describe('Test course creation and editing functionalities', function () {
         cy.wait(1000)
 
         // student 12 joins course and creates a group by himself
-        cy.clearAllCookies()
-        cy.clearAllLocalStorage()
-        cy.visit(Cypress.env('URL_STUDENT'))
-        cy.get('[data-cy="username-field"]')
-          .click()
-          .type(Cypress.env('STUDENT_USERNAME12'))
-        cy.get('[data-cy="password-field"]')
-          .click()
-          .type(Cypress.env('STUDENT_PASSWORD'))
-        cy.get('[data-cy="submit-login"]').click()
+        cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME12') })
 
         // join the course
         cy.get('[data-cy="join-new-course"]').click()

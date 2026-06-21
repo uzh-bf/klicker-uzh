@@ -288,6 +288,18 @@ function LiveQuizWizard({
     },
     [utils]
   )
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringLiveQuiz.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
 
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
@@ -299,6 +311,7 @@ function LiveQuizWizard({
         createLiveQuiz: createLiveQuiz.mutateAsync,
         editLiveQuiz: editLiveQuiz.mutateAsync,
         invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -323,6 +336,7 @@ function LiveQuizWizard({
       editLiveQuiz.mutateAsync,
       initialValues?.course?.id,
       initialValues?.id,
+      invalidateActivities,
       invalidateCourseDetail,
     ]
   )

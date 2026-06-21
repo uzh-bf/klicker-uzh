@@ -414,6 +414,8 @@ async function ensureTemplateAnswerCollectionAccess({
     },
     update: {},
   })
+
+  await recomputeDerivedPermissions({ answerCollectionId, userId }, tx)
 }
 
 async function createLiveQuizFromTemplate({

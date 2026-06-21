@@ -4,14 +4,20 @@ import { Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import LoginForm from '../components/forms/LoginForm'
 
+function getSafeRedirectPath(redirectPath: string) {
+  if (!redirectPath.startsWith('/') || redirectPath.startsWith('//')) {
+    return '/'
+  }
+
+  return redirectPath
+}
+
 function Login() {
   const t = useTranslations()
-  const router = useRouter()
   const utils = trpc.useUtils()
 
   const loginParticipant = trpc.participant.login.useMutation()
@@ -40,7 +46,13 @@ function Login() {
     const urlParams = new URLSearchParams(window?.location?.search)
     const redirectTo = urlParams?.get('redirect_to')
     if (redirectTo) {
-      setDecodedRedirectPath(decodeURIComponent(redirectTo))
+      try {
+        setDecodedRedirectPath(
+          getSafeRedirectPath(decodeURIComponent(redirectTo))
+        )
+      } catch {
+        setDecodedRedirectPath('/')
+      }
     }
   }, [])
 
@@ -66,7 +78,7 @@ function Login() {
         await utils.participant.self.fetch(undefined)
 
         // redirect to the specified redirect path (default: question pool)
-        router.push(decodedRedirectPath)
+        window.location.assign(getSafeRedirectPath(decodedRedirectPath))
       }
     } catch (e) {
       console.error(e)

@@ -1,4 +1,8 @@
-import type { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
+import {
+  ObjectType as SharingObjectType,
+  type ObjectType,
+  type PermissionLevel,
+} from '@lib/constants/sharingEnums'
 import { trpc, type RouterInputs } from '../../lib/trpc'
 
 type ObjectPermissionsInput = RouterInputs['sharing']['objectPermissions']
@@ -30,6 +34,13 @@ function usePermissionLevelChange({
     objectId: String(objectId),
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
+
+  const invalidateAnswerCollectionList = async () => {
+    if (objectType === SharingObjectType.AnswerCollection) {
+      await utils.resources.answerCollectionsInfo.invalidate()
+    }
+  }
+
   const changePermissionLevel = trpc.sharing.changePermissionLevel.useMutation({
     onSuccess: (data, variables) => {
       if (!data.changed) return
@@ -85,6 +96,7 @@ function usePermissionLevelChange({
       const res = await changePermissionLevel.mutateAsync(input)
 
       if (res.changed) {
+        await invalidateAnswerCollectionList()
         return true
       } else {
         return false

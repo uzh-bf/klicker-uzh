@@ -41,8 +41,54 @@ function ElementBatchOperationsModal({
   const [selectedActions, setSelectedActions] =
     useState<ElementBatchOperationActions>(INITIAL_ELEMENT_BATCH_OPERATIONS)
 
+  const utils = trpc.useUtils()
   const applyElementBatchOperations =
     trpc.element.applyBatchOperations.useMutation()
+
+  const refreshAffectedElementDetails = async () => {
+    const affectedElementIds = affectedElements
+      .filter((element) => element.actionsApplied)
+      .map((element) => element.id)
+
+    if (typeof window !== 'undefined') {
+      affectedElementIds.forEach((id) => {
+        window.localStorage.removeItem(`autosave-element-${id}`)
+      })
+    }
+
+    affectedElementIds.forEach((id) => {
+      utils.element.single.setData({ id }, (data) => {
+        if (!data?.element) {
+          return data
+        }
+
+        return {
+          ...data,
+          element: {
+            ...data.element,
+            status: selectedActions.status ?? data.element.status,
+            pointsMultiplier:
+              typeof selectedActions.multiplier !== 'undefined' &&
+              selectedActions.multiplier !== ''
+                ? parseInt(selectedActions.multiplier, 10)
+                : data.element.pointsMultiplier,
+            basePoints:
+              typeof selectedActions.basePoints !== 'undefined'
+                ? selectedActions.basePoints
+                : data.element.basePoints,
+          },
+        }
+      })
+    })
+
+    await Promise.all(
+      affectedElementIds.map((id) =>
+        utils.element.single.invalidate({
+          id,
+        })
+      )
+    )
+  }
 
   // whenever the applied filters change, update the affected elements
   useEffect(() => {
@@ -228,7 +274,10 @@ function ElementBatchOperationsModal({
                         selectedActions.multiplier !== ''
                           ? parseInt(selectedActions.multiplier, 10)
                           : null,
-                      basePoints: selectedActions.basePoints ?? undefined,
+                      basePoints:
+                        typeof selectedActions.basePoints !== 'undefined'
+                          ? selectedActions.basePoints
+                          : undefined,
                       updateInstances: selectedActions.updateInstances,
                       updateTemplateInstances:
                         selectedActions.updateTemplateInstances,
@@ -236,6 +285,7 @@ function ElementBatchOperationsModal({
 
                     // in case of success, reset the selected elements and refetch the elements
                     if (res.updatedCount === numOfUpdatedElements) {
+                      await refreshAffectedElementDetails()
                       resetSelectedElements()
                       await refetchElements()
                       toast({
@@ -245,6 +295,7 @@ function ElementBatchOperationsModal({
                       })
                       onClose()
                     } else if (res.updatedCount !== 0) {
+                      await refreshAffectedElementDetails()
                       resetSelectedElements()
                       await refetchElements()
                       toast({

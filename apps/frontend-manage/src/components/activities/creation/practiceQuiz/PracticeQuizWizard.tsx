@@ -256,6 +256,18 @@ function PracticeQuizWizard({
     },
     [utils]
   )
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringPracticeQuiz.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
 
   const handleSubmit = useCallback(
     async (values: PracticeQuizFormValues) => {
@@ -267,6 +279,7 @@ function PracticeQuizWizard({
         createPracticeQuiz: createPracticeQuiz.mutateAsync,
         editPracticeQuiz: editPracticeQuiz.mutateAsync,
         invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -291,6 +304,7 @@ function PracticeQuizWizard({
       editPracticeQuiz.mutateAsync,
       initialValues?.course?.id,
       initialValues?.id,
+      invalidateActivities,
       invalidateCourseDetail,
     ]
   )

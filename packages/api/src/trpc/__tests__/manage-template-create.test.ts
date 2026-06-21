@@ -1,4 +1,5 @@
 import {
+  ElementStatus,
   ElementType,
   PublicationStatus,
   UserLoginScope,
@@ -319,5 +320,155 @@ describe('manage live quiz template creation router', () => {
         templateCreationInput({ courseId: null })
       )
     ).rejects.toThrow('create failed')
+  })
+
+  test('creates new selection elements with owned inline answer collections', async () => {
+    const activityTemplateFindUnique = vi
+      .fn()
+      .mockResolvedValueOnce(accessibleTemplate())
+      .mockResolvedValueOnce({
+        liveQuizId: 'template-live-quiz-1',
+        answerCollections: [],
+      })
+    const liveQuizFindUnique = vi.fn().mockResolvedValue(templateLiveQuiz())
+    const courseFindUnique = vi.fn()
+    const derivedPermissionFindFirst = vi
+      .fn()
+      .mockResolvedValue({ answerCollectionId: 101, userId: user.id })
+    const activityLogEntryCreate = vi.fn().mockResolvedValue({})
+    const now = new Date('2026-01-01T00:00:00.000Z')
+    const createdElement = {
+      id: 31,
+      version: 1,
+      name: 'Inline Selection',
+      status: ElementStatus.READY,
+      type: ElementType.SELECTION,
+      content: 'Inline selection content',
+      explanation: null,
+      basePoints: true,
+      pointsMultiplier: 1,
+      options: {
+        hasSampleSolution: false,
+        numberOfInputs: 2,
+      },
+      answerCollectionId: 101,
+      answerCollectionItems: [],
+      tags: [],
+      createdAt: now,
+      updatedAt: now,
+    }
+    const elementUpsert = vi.fn().mockResolvedValue(createdElement)
+    const elementFindUnique = vi.fn().mockResolvedValue({
+      ...createdElement,
+      answerCollection: {
+        id: 101,
+        entries: [
+          { id: 201, value: 'A' },
+          { id: 202, value: 'B' },
+        ],
+      },
+      answerCollectionItems: [],
+    })
+    const liveQuizCreate = vi.fn().mockResolvedValue({ id: 'new-live-quiz-1' })
+    const tx = {
+      derivedPermission: {
+        findFirst: derivedPermissionFindFirst,
+      },
+      activityLogEntry: {
+        create: activityLogEntryCreate,
+      },
+      element: {
+        findUnique: elementFindUnique,
+        upsert: elementUpsert,
+      },
+      liveQuiz: {
+        create: liveQuizCreate,
+      },
+    }
+    const transaction = vi
+      .fn()
+      .mockImplementation(async (callback) => callback(tx))
+    const prisma = {
+      activityTemplate: {
+        findUnique: activityTemplateFindUnique,
+      },
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+      course: {
+        findUnique: courseFindUnique,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext(prisma))
+
+    await expect(
+      caller.activity.createLiveQuizFromTemplate(
+        templateCreationInput({
+          courseId: null,
+          blocks: [
+            {
+              order: 0,
+              timeLimit: null,
+              elements: [
+                {
+                  order: 0,
+                  useExistingElement: false,
+                  existingElementId: null,
+                  useNewElement: true,
+                  newElement: {
+                    status: ElementStatus.READY,
+                    type: ElementType.SELECTION,
+                    name: 'Inline Selection',
+                    content: 'Inline selection content',
+                    explanation: null,
+                    basePoints: true,
+                    pointsMultiplier: 1,
+                    tags: [],
+                    selectionOptions: {
+                      hasSampleSolution: false,
+                      answerCollection: 101,
+                      numberOfInputs: 2,
+                      correctAnswers: undefined,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        })
+      )
+    ).resolves.toEqual({ createLiveQuizFromTemplate: 'new-live-quiz-1' })
+
+    expect(derivedPermissionFindFirst).toHaveBeenCalledTimes(2)
+    expect(activityTemplateFindUnique).toHaveBeenCalledTimes(2)
+    expect(elementUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          answerCollection: { connect: { id: 101 } },
+        }),
+      })
+    )
+    expect(liveQuizCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        blocks: {
+          create: [
+            {
+              order: 0,
+              timeLimit: null,
+              elements: {
+                create: [
+                  expect.objectContaining({
+                    elementType: ElementType.SELECTION,
+                    order: 0,
+                    element: { connect: { id: 31 } },
+                  }),
+                ],
+              },
+            },
+          ],
+        },
+      }),
+    })
   })
 })

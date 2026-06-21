@@ -145,6 +145,14 @@ function hasLiveQuizError(error: any, message: string) {
   )
 }
 
+function hasLiveQuizPinError(error: any) {
+  return (
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING') ||
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT') ||
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_INVALID')
+  )
+}
+
 function Index({ id }: { id: string }) {
   const t = useTranslations()
   const router = useRouter()
@@ -163,7 +171,13 @@ function Index({ id }: { id: string }) {
     isLoading: loading,
     error,
     refetch,
-  } = trpc.participant.runningLiveQuiz.useQuery({ id })
+  } = trpc.participant.runningLiveQuiz.useQuery(
+    { id },
+    {
+      retry: (failureCount, error) =>
+        hasLiveQuizPinError(error) ? false : failureCount < 3,
+    }
+  )
   const { data: selfData } = trpc.participant.self.useQuery({ liveQuizId: id })
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
@@ -259,14 +273,6 @@ function Index({ id }: { id: string }) {
     }
   }, [data?.studentLiveQuiz])
 
-  if (loading) {
-    return (
-      <Layout>
-        <Loader />
-      </Layout>
-    )
-  }
-
   // pin error handling
   const isPinMissing =
     hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING') ||
@@ -334,6 +340,14 @@ function Index({ id }: { id: string }) {
             )}
           </Formik>
         </div>
+      </Layout>
+    )
+  }
+
+  if (loading) {
+    return (
+      <Layout>
+        <Loader />
       </Layout>
     )
   }
