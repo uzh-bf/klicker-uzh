@@ -6,11 +6,13 @@ import type { Chatbot } from './types'
 
 function ChatbotList({
   chatbots,
+  error,
   loading,
   selectedId,
   onSelect,
 }: {
   chatbots?: Chatbot[]
+  error: boolean
   loading: boolean
   selectedId?: string
   onSelect: (chatbot: Chatbot) => void
@@ -19,6 +21,14 @@ function ChatbotList({
 
   if (loading) {
     return <Loader />
+  }
+
+  if (error) {
+    return (
+      <UserNotification className={{ root: 'mt-1.5' }} type="error">
+        {t('shared.generic.systemError')}
+      </UserNotification>
+    )
   }
 
   return (

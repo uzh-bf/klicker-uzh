@@ -10,9 +10,11 @@ type AnswerCollectionInfo =
 
 function AnswerCollectionList({
   collections,
+  error,
   loading,
 }: {
   collections?: AnswerCollectionInfo[]
+  error: boolean
   loading: boolean
 }) {
   const t = useTranslations()
@@ -20,6 +22,14 @@ function AnswerCollectionList({
 
   if (loading) {
     return <Loader />
+  }
+
+  if (error) {
+    return (
+      <UserNotification className={{ root: 'mt-1.5' }} type="error">
+        {t('shared.generic.systemError')}
+      </UserNotification>
+    )
   }
 
   return (

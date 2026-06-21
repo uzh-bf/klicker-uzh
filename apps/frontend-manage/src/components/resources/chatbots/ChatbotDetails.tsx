@@ -62,10 +62,12 @@ const buildReasoningConfigState = (
 
 function ChatbotDetails({
   chatbot,
+  error,
   modelRegistry,
   loading,
 }: {
   chatbot?: Chatbot
+  error: boolean
   modelRegistry: ChatModelCapability[]
   loading: boolean
 }) {
@@ -113,6 +115,14 @@ function ChatbotDetails({
 
   if (loading) {
     return <Loader />
+  }
+
+  if (error) {
+    return (
+      <UserNotification className={{ root: 'mt-1.5' }} type="error">
+        {t('shared.generic.systemError')}
+      </UserNotification>
+    )
   }
 
   if (!chatbot) {

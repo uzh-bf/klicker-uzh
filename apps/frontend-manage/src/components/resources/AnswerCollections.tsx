@@ -7,7 +7,8 @@ import AnswerCollectionList from './answerCollections/AnswerCollectionList'
 
 function AnswerCollections() {
   const t = useTranslations()
-  const { data, isLoading } = trpc.resources.answerCollectionsInfo.useQuery()
+  const { data, error, isLoading } =
+    trpc.resources.answerCollectionsInfo.useQuery()
 
   return (
     <div className="h-full w-full">
@@ -30,7 +31,8 @@ function AnswerCollections() {
         </div>
         <div className="lg:w-1/2 lg:pr-4">
           <AnswerCollectionList
-            collections={data?.answerCollections ?? []}
+            collections={data?.answerCollections}
+            error={Boolean(error && !data)}
             loading={isLoading}
           />
         </div>

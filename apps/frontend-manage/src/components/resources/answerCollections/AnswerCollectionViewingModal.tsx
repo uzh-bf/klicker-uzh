@@ -22,10 +22,13 @@ function AnswerCollectionViewingModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const { data, isLoading } = trpc.resources.singleAnswerCollection.useQuery({
-    id: collectionId,
-  })
+  const { data, error, isLoading } =
+    trpc.resources.singleAnswerCollection.useQuery({
+      id: collectionId,
+    })
   const collection = data?.answerCollection
+  const initialLoading = isLoading && !collection
+  const missingCollection = Boolean((error || !isLoading) && !collection)
 
   // initialize search
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,14 +57,19 @@ function AnswerCollectionViewingModal({
   return (
     <Modal
       open
-      loading={isLoading || !collection}
+      loading={initialLoading}
       onClose={onClose}
       title={
         <div
           className="flex flex-row items-end gap-2"
           data-cy="viewing-collection-title"
         >
-          <div className="text-lg font-semibold">{collection?.name}</div>
+          <div className="text-lg font-semibold">
+            {collection?.name ??
+              (initialLoading
+                ? t('shared.generic.loading')
+                : t('shared.generic.unknown'))}
+          </div>
           <div className="mb-0.5 hidden text-base font-normal text-gray-500 md:block">
             {t('manage.resources.byOwner', {
               owner: collection?.ownerShortname ?? t('shared.generic.unknown'),
@@ -72,7 +80,14 @@ function AnswerCollectionViewingModal({
       dataCloseButton={{ cy: 'close-viewing-collection-modal' }}
       className={{ content: 'max-w-2xl pb-2' }}
     >
-      {collection && (
+      {missingCollection ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {collection ? (
         <Accordion
           collapsible
           type="single"
@@ -136,7 +151,7 @@ function AnswerCollectionViewingModal({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      )}
+      ) : null}
     </Modal>
   )
 }

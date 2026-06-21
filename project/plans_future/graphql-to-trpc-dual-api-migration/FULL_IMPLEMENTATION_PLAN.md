@@ -627,6 +627,12 @@ Second-pass UX/cache cleanup prepared:
   loading or failed instead of returning `null`. The primary action stays
   disabled until summary data exists, failed initial summary loads show the
   existing system-error notification, and users can still close the modal.
+- Manage resource answer-collection and chatbot surfaces now distinguish failed
+  initial tRPC loads from successful empty states. Answer-collection and chatbot
+  lists/details show the existing system-error notification on failed initial
+  loads, keep stale data visible when present, and answer-collection view/edit
+  modals render a closable error state instead of an endless loading modal when
+  `singleAnswerCollection` fails or returns no collection.
 
 Second-pass verification:
 
@@ -907,6 +913,18 @@ Second-pass verification:
   `apps/frontend-manage` passed after the manage summary-modal cleanup.
 - `git diff --check` passed after the manage summary-modal cleanup.
 - Browser verification for the manage summary-modal cleanup remains blocked:
+  `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
+  `127.0.0.1:3003` all failed with connection refused, so no local backend,
+  PWA, manage, or control dev server was available for screenshots.
+- Context7 docs checked again for TanStack Query v4 query-state semantics plus
+  tRPC React Query integration before the manage resources query-state cleanup.
+- `node_modules/.bin/prettier --check` on the seven changed manage resources
+  files passed from the dependency checkout after formatting
+  `AnswerCollectionEditModal.tsx` and copying it back to the source checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage resources query-state cleanup.
+- `git diff --check` passed after the manage resources query-state cleanup.
+- Browser verification for the manage resources cleanup remains blocked:
   `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
   `127.0.0.1:3003` all failed with connection refused, so no local backend,
   PWA, manage, or control dev server was available for screenshots.

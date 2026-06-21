@@ -58,10 +58,11 @@ function AnswerCollectionEditModal({
     })
   }
 
-  const { data, isLoading, isFetching } =
+  const { data, error, isLoading } =
     trpc.resources.singleAnswerCollection.useQuery({ id: collectionId })
-  const loading = isLoading || isFetching
   const collection = data?.answerCollection
+  const initialLoading = isLoading && !collection
+  const missingCollection = Boolean((error || !isLoading) && !collection)
 
   // setup search
   const [searchQuery, setSearchQuery] = useState('')
@@ -91,16 +92,15 @@ function AnswerCollectionEditModal({
     <Modal
       open
       escapeDisabled
-      loading={loading || !collection}
+      loading={initialLoading}
       onClose={() => {
         setOptionsEditingDisabled(false)
         onClose()
       }}
       title={t('manage.resources.answerCollection', {
-        name:
-          loading || !collection
-            ? t('shared.generic.loading')
-            : collection.name,
+        name: initialLoading
+          ? t('shared.generic.loading')
+          : (collection?.name ?? t('shared.generic.unknown')),
       })}
       dataCloseButton={{ cy: 'close-answer-collection-edit-modal' }}
       className={{
@@ -108,7 +108,14 @@ function AnswerCollectionEditModal({
         overlay: className?.overlay,
       }}
     >
-      {collection && (
+      {missingCollection ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {collection ? (
         <Accordion
           collapsible
           type="single"
@@ -221,7 +228,7 @@ function AnswerCollectionEditModal({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      )}
+      ) : null}
     </Modal>
   )
 }
