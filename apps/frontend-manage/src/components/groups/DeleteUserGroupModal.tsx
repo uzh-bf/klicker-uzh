@@ -21,6 +21,13 @@ function DeleteUserGroupModal({
   const utils = trpc.useUtils()
   const deleteUserGroup = trpc.sharing.deleteUserGroup.useMutation()
   const loading = deleteUserGroup.isPending
+  const refreshUserGroups = async () => {
+    try {
+      await utils.sharing.userGroups.invalidate()
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   const [confirmations, setConfirmations] = useState({
     resolveGroup: false,
@@ -62,7 +69,7 @@ function DeleteUserGroupModal({
         try {
           const success = await deleteUserGroup.mutateAsync({ groupId })
           if (success.deleted) {
-            await utils.sharing.userGroups.invalidate()
+            await refreshUserGroups()
             onSuccess()
           } else {
             onErrorToast()

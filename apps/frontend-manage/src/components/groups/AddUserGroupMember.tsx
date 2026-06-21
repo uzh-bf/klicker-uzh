@@ -17,6 +17,13 @@ function AddUserGroupMember({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const addUserToUserGroup = trpc.sharing.addUserToUserGroup.useMutation()
+  const refreshUserGroups = async () => {
+    try {
+      await utils.sharing.userGroups.invalidate()
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   const onErrorToast = () =>
     toast({
@@ -43,9 +50,8 @@ function AddUserGroupMember({
             asAdmin: adminMode,
           })
 
-          setSubmitting(false)
           if (addedUser.user) {
-            await utils.sharing.userGroups.invalidate()
+            await refreshUserGroups()
             resetForm()
             toast({
               type: 'success',
@@ -57,8 +63,9 @@ function AddUserGroupMember({
           }
         } catch (error) {
           console.error(error)
-          setSubmitting(false)
           onErrorToast()
+        } finally {
+          setSubmitting(false)
         }
       }}
     >
@@ -82,7 +89,7 @@ function AddUserGroupMember({
               cy: `add-${adminMode ? 'admin' : 'member'}-group-confirm`,
             }}
           >
-            <Button.Icon icon={faPlus} />
+            <Button.Icon icon={faPlus} loading={isSubmitting} />
             <Button.Label>{t('manage.userGroups.addUser')}</Button.Label>
           </Button>
         </Form>

@@ -22,6 +22,13 @@ function LeaveUserGroupModal({
   const utils = trpc.useUtils()
   const leaveUserGroup = trpc.sharing.leaveUserGroup.useMutation()
   const loading = leaveUserGroup.isPending
+  const refreshUserGroups = async () => {
+    try {
+      await utils.sharing.userGroups.invalidate()
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   const onErrorToast = () =>
     toast({
@@ -46,7 +53,7 @@ function LeaveUserGroupModal({
         try {
           const success = await leaveUserGroup.mutateAsync({ groupId })
           if (success.left) {
-            await utils.sharing.userGroups.invalidate()
+            await refreshUserGroups()
             onSuccess()
           } else {
             onErrorToast()

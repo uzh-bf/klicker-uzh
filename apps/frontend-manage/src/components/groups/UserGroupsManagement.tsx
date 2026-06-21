@@ -7,8 +7,10 @@ import UserGroupEntry from './UserGroupEntry'
 
 function UserGroupsManagement() {
   const t = useTranslations()
-  const { data, isLoading } = trpc.sharing.userGroups.useQuery()
+  const { data, error, isLoading } = trpc.sharing.userGroups.useQuery()
   const userGroups = data?.userGroups
+  const userGroupsError = Boolean(error)
+  const userGroupsUnavailable = userGroupsError && !userGroups
 
   return (
     <div>
@@ -23,17 +25,39 @@ function UserGroupsManagement() {
             <H3>{t('manage.userGroups.existingUserGroups')}</H3>
             {isLoading ? (
               <Loader />
-            ) : userGroups == null || userGroups.length === 0 ? (
-              <UserNotification message={t('manage.userGroups.noGroups')} />
             ) : (
-              <div className="mt-1.5 flex flex-col gap-2">
-                {userGroups?.map((group) => (
-                  <UserGroupEntry
-                    key={`group-item-${group.id}`}
-                    group={group}
+              <>
+                {userGroupsUnavailable ? (
+                  <UserNotification
+                    type="error"
+                    message={t('shared.generic.systemError')}
                   />
-                ))}
-              </div>
+                ) : (
+                  <>
+                    {userGroupsError ? (
+                      <UserNotification
+                        type="error"
+                        message={t('shared.generic.systemError')}
+                        className={{ root: 'mb-2' }}
+                      />
+                    ) : null}
+                    {userGroups == null || userGroups.length === 0 ? (
+                      <UserNotification
+                        message={t('manage.userGroups.noGroups')}
+                      />
+                    ) : (
+                      <div className="mt-1.5 flex flex-col gap-2">
+                        {userGroups.map((group) => (
+                          <UserGroupEntry
+                            key={`group-item-${group.id}`}
+                            group={group}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </div>
         </div>

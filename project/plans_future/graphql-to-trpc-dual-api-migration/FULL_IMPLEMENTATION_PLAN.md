@@ -675,9 +675,26 @@ Second-pass UX/cache cleanup prepared:
   loads, keeps direct shortname/email sharing usable when only the optional
   user-group selector fails, and fixes the direct-share form so failed callbacks
   release Formik submitting state.
+- Manage user-group management now distinguishes a failed initial
+  `sharing.userGroups` load from the successful no-groups state, keeps stale
+  group lists visible during refetch failures with a compact system-error
+  notification, and treats `userGroups` invalidation after create/add/leave/delete
+  as best-effort work after confirmed server success.
 
 Second-pass verification:
 
+- Context7 docs checked for current TanStack Query v4 `useQuery` loading,
+  fetching, error, refetch-error, and stale-data semantics before the manage
+  user-group management cleanup.
+- `node_modules/.bin/prettier --check` on the five changed manage user-group
+  files plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed files.
+- `git diff --check` passed after the manage user-group management cleanup.
+- Browser verification remains blocked for this manage user-group cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
+  refused, so no local backend or manage dev server was available for
+  screenshots.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
