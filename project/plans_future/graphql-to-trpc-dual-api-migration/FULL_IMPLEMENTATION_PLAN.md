@@ -495,6 +495,10 @@ Second-pass UX/cache cleanup prepared:
   optimistic update with rollback: failed tRPC vote mutations restore local UI
   state plus `localForage`, show a system-error toast, and disable duplicate
   clicks while a vote is pending.
+- PWA participant group controls now disable form submits while mutations are
+  loading, show button-mode loading states, and surface unexpected create,
+  join-by-code, random-pool join, and random-pool leave failures with
+  system-error toasts while preserving existing invalid/full group messages.
 
 Second-pass verification:
 
@@ -523,6 +527,10 @@ Second-pass verification:
 - Context7 docs checked for TanStack Query v4 optimistic update and rollback
   behavior before the PWA feedback vote rollback changes.
 - `prettier --check` on the two changed PWA live-quiz feedback files passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with pre-existing hook
+  warnings only.
+- `prettier --check` on the five changed PWA group-control files passed.
 - `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
 - `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with pre-existing hook
   warnings only.

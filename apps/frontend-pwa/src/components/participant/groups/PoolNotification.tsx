@@ -1,4 +1,4 @@
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
 
@@ -23,13 +23,25 @@ function PoolNotification({
       <Button
         destructive
         disabled={leaveRandomCourseGroupPool.isLoading}
+        loading={leaveRandomCourseGroupPool.isLoading}
         onClick={async () => {
-          const result = await leaveRandomCourseGroupPool.mutateAsync({
-            courseId,
-          })
-          if (result) {
-            await onCourseOverviewChanged?.()
+          try {
+            const result = await leaveRandomCourseGroupPool.mutateAsync({
+              courseId,
+            })
+            if (result) {
+              await onCourseOverviewChanged?.()
+              return
+            }
+          } catch (error) {
+            console.error(error)
           }
+
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
         }}
         data={{ cy: 'leave-random-group-pool' }}
       >

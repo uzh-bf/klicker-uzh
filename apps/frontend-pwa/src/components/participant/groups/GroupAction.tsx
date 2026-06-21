@@ -86,7 +86,7 @@ function GroupAction({
                   type="submit"
                   data={data}
                   loading={loading}
-                  disabled={!isValid}
+                  disabled={!isValid || loading}
                   className={{ root: 'h-8' }}
                 >
                   {textSubmit}
@@ -106,6 +106,7 @@ function GroupAction({
       }}
       onClick={onClick}
       disabled={loading}
+      loading={loading}
       data={data}
     >
       <TitleIcon />

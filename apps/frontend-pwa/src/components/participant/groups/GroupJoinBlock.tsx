@@ -32,26 +32,35 @@ function GroupJoinBlock({
             }),
         })}
         onSubmit={async (value) => {
-          const result = await joinParticipantGroup.mutateAsync({
-            courseId,
-            code: Number(value) >> 0,
-          })
+          try {
+            const result = await joinParticipantGroup.mutateAsync({
+              courseId,
+              code: Number(value) >> 0,
+            })
 
-          if (!result || result === 'FAILURE') {
+            if (!result || result === 'FAILURE') {
+              toast({
+                type: 'error',
+                message: t('pwa.courses.joinGroupError'),
+                options: { duration: 6000 },
+              })
+            } else if (result === 'FULL') {
+              toast({
+                type: 'warning',
+                message: t('pwa.courses.joinGroupFull'),
+                options: { duration: 6000 },
+              })
+            } else {
+              await onCourseOverviewChanged?.()
+              setSelectedTab(result)
+            }
+          } catch (error) {
+            console.error(error)
             toast({
               type: 'error',
-              message: t('pwa.courses.joinGroupError'),
-              options: { duration: 6000 },
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
             })
-          } else if (result === 'FULL') {
-            toast({
-              type: 'warning',
-              message: t('pwa.courses.joinGroupFull'),
-              options: { duration: 6000 },
-            })
-          } else {
-            await onCourseOverviewChanged?.()
-            setSelectedTab(result)
           }
         }}
         loading={joinParticipantGroup.isLoading}

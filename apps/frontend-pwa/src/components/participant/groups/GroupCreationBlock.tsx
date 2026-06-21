@@ -1,4 +1,5 @@
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import { trpc } from '../../../lib/trpc'
@@ -30,15 +31,26 @@ function GroupCreationBlock({
           }),
       })}
       onSubmit={async (value) => {
-        const result = await createParticipantGroup.mutateAsync({
-          courseId,
-          name: value,
-        })
+        try {
+          const result = await createParticipantGroup.mutateAsync({
+            courseId,
+            name: value,
+          })
 
-        if (result?.id) {
-          await onCourseOverviewChanged?.()
-          setSelectedTab(result.id)
+          if (result?.id) {
+            await onCourseOverviewChanged?.()
+            setSelectedTab(result.id)
+            return
+          }
+        } catch (error) {
+          console.error(error)
         }
+
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
       }}
       loading={createParticipantGroup.isLoading}
       placeholder={t('pwa.courses.groupName')}
