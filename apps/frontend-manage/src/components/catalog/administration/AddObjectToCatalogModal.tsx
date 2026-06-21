@@ -30,12 +30,18 @@ function AddObjectToCatalogModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const addObjectToCatalog = trpc.sharing.addObjectToCatalog.useMutation()
+  const adding = addObjectToCatalog.isLoading
+  const handleClose = () => {
+    if (!adding) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.catalog.addObjectToCatalogTitle')}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'max-w-2xl pb-2' }}
       dataCloseButton={{ cy: 'close-add-object-modal' }}
     >
@@ -160,9 +166,15 @@ function AddObjectToCatalogModal({
               <Button
                 primary
                 type="submit"
-                disabled={!isValid || !dirty || !values.objectId}
+                disabled={
+                  !isValid ||
+                  !dirty ||
+                  !values.objectId ||
+                  isSubmitting ||
+                  adding
+                }
                 data={{ cy: 'submit-add-object-button' }}
-                loading={isSubmitting}
+                loading={isSubmitting || adding}
               >
                 <Button.Label>{t('shared.generic.save')}</Button.Label>
               </Button>

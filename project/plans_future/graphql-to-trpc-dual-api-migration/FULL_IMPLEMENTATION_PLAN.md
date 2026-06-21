@@ -704,6 +704,11 @@ Second-pass UX/cache cleanup prepared:
   is in flight, rename confirm is disabled while submitting, and collection
   deletion guards close/secondary/primary actions while the destructive tRPC
   mutation is loading.
+- Manage catalog add-object and access-change modals now use the same pending
+  guard pattern. Add-object submit is explicitly disabled while the tRPC write
+  is loading, and add-object/access-change close or secondary actions are
+  ignored while their mutations are in flight so users cannot hide pending
+  writes or duplicate access changes.
 
 Second-pass verification:
 
@@ -786,6 +791,20 @@ Second-pass verification:
   modal files.
 - `git diff --check` passed after the manage catalog collection modal cleanup.
 - Browser verification remains blocked for this manage catalog collection modal
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
+  connection refused, so no local backend or manage dev server was available for
+  screenshots.
+- Context7 docs checked for current TanStack Query v4 mutation loading and tRPC
+  `useUtils` cache helpers before the manage catalog add/access modal
+  pending-guard cleanup.
+- `node_modules/.bin/prettier --check` on the changed manage catalog add/access
+  modal files plus `project/CODEBASE_NOTES.md` and this plan passed after a
+  Prettier write on `AddObjectToCatalogModal.tsx`.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed catalog add/access
+  modal files.
+- `git diff --check` passed after the manage catalog add/access modal cleanup.
+- Browser verification remains blocked for this manage catalog add/access modal
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
   connection refused, so no local backend or manage dev server was available for
   screenshots.

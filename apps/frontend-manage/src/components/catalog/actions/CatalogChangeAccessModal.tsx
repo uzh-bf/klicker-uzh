@@ -24,12 +24,20 @@ function CatalogChangeAccessModal({
     trpc.sharing.changeCatalogObjectAccess.useMutation()
   const changeCatalogCollectionAccess =
     trpc.sharing.changeCatalogCollectionAccess.useMutation()
+  const changing =
+    changeCatalogObjectAccess.isLoading ||
+    changeCatalogCollectionAccess.isLoading
+  const handleClose = () => {
+    if (!changing) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.catalog.changeAccessTitle')}
-      onClose={onClose}
+      onClose={handleClose}
       primaryLabel={t('manage.catalog.changeAccessConfirm')}
       onPrimaryAction={async () => {
         let success = false
@@ -106,13 +114,11 @@ function CatalogChangeAccessModal({
           })
         }
       }}
-      primaryLoading={
-        changeCatalogObjectAccess.isLoading ||
-        changeCatalogCollectionAccess.isLoading
-      }
+      primaryLoading={changing}
+      primaryDisabled={changing}
       dataPrimaryAction={{ cy: 'confirm-access-change' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-access-change' }}
       className={{ content: 'max-w-lg' }}
       data={{ cy: 'change-access-modal' }}
