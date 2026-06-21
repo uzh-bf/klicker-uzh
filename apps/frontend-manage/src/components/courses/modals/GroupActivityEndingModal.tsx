@@ -1,4 +1,5 @@
 import { ActivityType } from '@klicker-uzh/types'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -18,8 +19,11 @@ function GroupActivityEndingModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, isLoading: summaryLoading } =
-    trpc.activity.groupActivitySummary.useQuery({ activityId })
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.groupActivitySummary.useQuery({ activityId })
   const endActivity = trpc.activity.end.useMutation()
 
   const [confirmations, setConfirmations] = useState({
@@ -37,8 +41,29 @@ function GroupActivityEndingModal({
     }
   }, [summaryData?.groupActivitySummary])
 
-  if (!summaryData?.groupActivitySummary) return null
-  const summary = summaryData.groupActivitySummary
+  const summary = summaryData?.groupActivitySummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.course.endGroupActivity')}
+        message={t('manage.course.endGroupActivityMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="confirm"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
   return (
     <ActivityConfirmationModal

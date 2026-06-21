@@ -621,6 +621,12 @@ Second-pass UX/cache cleanup prepared:
   states. Failed initial list queries render the existing system-error
   notification instead of an indefinite loader or empty list, while cached list
   data stays visible during background refetch failures.
+- Manage summary-backed confirmation modals for live-quiz delete/reset,
+  practice-quiz delete, microlearning delete/end, and group-activity delete/end
+  now render the existing confirmation modal while their summary tRPC query is
+  loading or failed instead of returning `null`. The primary action stays
+  disabled until summary data exists, failed initial summary loads show the
+  existing system-error notification, and users can still close the modal.
 
 Second-pass verification:
 
@@ -889,6 +895,18 @@ Second-pass verification:
   `apps/frontend-manage` passed after the manage overview-list cleanup.
 - `git diff --check` passed after the manage overview-list cleanup.
 - Browser verification for the manage overview-list cleanup remains blocked:
+  `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
+  `127.0.0.1:3003` all failed with connection refused, so no local backend,
+  PWA, manage, or control dev server was available for screenshots.
+- Context7 TanStack Query v4 docs were checked for query-state semantics before
+  the manage summary-modal cleanup.
+- `node_modules/.bin/prettier --check` on the seven changed manage summary
+  modal files passed from the dependency checkout after mirroring the source
+  files there for local dependency resolution.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage summary-modal cleanup.
+- `git diff --check` passed after the manage summary-modal cleanup.
+- Browser verification for the manage summary-modal cleanup remains blocked:
   `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
   `127.0.0.1:3003` all failed with connection refused, so no local backend,
   PWA, manage, or control dev server was available for screenshots.

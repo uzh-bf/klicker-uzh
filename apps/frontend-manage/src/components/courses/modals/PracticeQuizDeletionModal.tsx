@@ -1,4 +1,5 @@
 import { ActivityType } from '@klicker-uzh/types'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -18,8 +19,11 @@ function PracticeQuizDeletionModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, isLoading: summaryLoading } =
-    trpc.activity.practiceQuizSummary.useQuery({ activityId })
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.practiceQuizSummary.useQuery({ activityId })
   const deleteActivity = trpc.activity.delete.useMutation()
 
   const [confirmations, setConfirmations] = useState({
@@ -37,9 +41,29 @@ function PracticeQuizDeletionModal({
     }
   }, [summaryData?.practiceQuizSummary])
 
-  if (!summaryData?.practiceQuizSummary) return null
-
-  const summary = summaryData.practiceQuizSummary
+  const summary = summaryData?.practiceQuizSummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.course.deletePracticeQuiz')}
+        message={t('manage.course.deletePracticeQuizMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="delete"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
   return (
     <ActivityConfirmationModal

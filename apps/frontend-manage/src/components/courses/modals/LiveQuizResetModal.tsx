@@ -1,3 +1,4 @@
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -19,8 +20,11 @@ function LiveQuizResetModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, isLoading: summaryLoading } =
-    trpc.activity.liveQuizSummary.useQuery({ activityId: quizId })
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.liveQuizSummary.useQuery({ activityId: quizId })
   const resetLiveQuiz = trpc.activity.resetAssessmentLiveQuiz.useMutation()
 
   const [confirmations, setConfirmations] = useState({
@@ -43,8 +47,29 @@ function LiveQuizResetModal({
     }
   }, [summaryData?.liveQuizSummary])
 
-  if (!summaryData?.liveQuizSummary) return null
-  const summary = summaryData.liveQuizSummary
+  const summary = summaryData?.liveQuizSummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.liveQuizzes.resetLiveQuiz')}
+        message={t('manage.liveQuizzes.resetLiveQuizMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="delete"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
   return (
     <ActivityConfirmationModal

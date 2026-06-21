@@ -1,4 +1,5 @@
 import { ActivityType } from '@klicker-uzh/types'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
@@ -17,12 +18,36 @@ function MicroLearningEndingModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data: summaryData, isLoading: summaryLoading } =
-    trpc.activity.microLearningSummary.useQuery({ activityId })
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.microLearningSummary.useQuery({ activityId })
   const endActivity = trpc.activity.end.useMutation()
 
-  if (!summaryData?.microLearningSummary) return null
-  const summary = summaryData.microLearningSummary
+  const summary = summaryData?.microLearningSummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.course.endMicroLearning')}
+        message={t('manage.course.endMicroLearningMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="confirm"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
   return (
     <ActivityConfirmationModal
