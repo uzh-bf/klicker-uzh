@@ -246,7 +246,7 @@ function ChatbotDetails({
         allowedModelIds: normalizedAllowedModelIds,
         allowedReasoningEffortsByModel: normalizedReasoningConfig,
       })
-      await utils.resources.chatbotsInfo.invalidate()
+      void utils.resources.chatbotsInfo.invalidate().catch(console.error)
 
       setSaveSuccess(true)
     } catch (error) {

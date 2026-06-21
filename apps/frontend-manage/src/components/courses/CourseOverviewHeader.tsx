@@ -245,7 +245,9 @@ function CourseOverviewHeader({
               const updatedCourseResult = result.course
 
               if (updatedCourseResult) {
-                await utils.course.detail.invalidate({ courseId: course.id })
+                void utils.course.detail
+                  .invalidate({ courseId: course.id })
+                  .catch(console.error)
                 setCourseSettingsModal(false)
               } else {
                 onError()

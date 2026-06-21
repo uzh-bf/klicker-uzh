@@ -647,6 +647,27 @@ Second-pass UX/cache cleanup prepared:
   initial `element.mediaFiles` query has no data, and treat media-list
   invalidation as best-effort after a confirmed upload so insertion of the
   uploaded image is not blocked by a refresh failure.
+- Manage chatbot model-settings saves now treat the confirmed
+  `resources.updateChatbotModelSettings` mutation as the success boundary and
+  run `resources.chatbotsInfo` invalidation as best-effort follow-up work so a
+  refresh failure does not show a failed save.
+- Manage course settings saves now treat the confirmed `course.updateSettings`
+  payload as the success boundary and run `course.detail` invalidation as
+  best-effort follow-up work so a refresh failure does not keep the settings
+  modal open or surface the generic form error.
+- Review/simplification for the chatbot/course-settings refresh cleanup:
+  correctness review returned no findings and confirmed GraphQL/tRPC coexistence
+  is preserved. Simplification suggested awaiting caught invalidations to
+  preserve old refresh timing, but this was explicitly deferred because the
+  current UX cleanup pattern for migrated post-success refreshes is non-blocking
+  `void invalidate().catch(console.error)`.
+- Verification for the chatbot/course-settings refresh cleanup: Context7
+  TanStack Query v4 docs checked mutation callback/invalidation promise
+  behavior; `prettier --check` on the four changed files passed in the
+  dependency checkout; `tsc --noEmit` for `apps/frontend-manage` passed in the
+  dependency checkout; `git diff --check` passed in the commit worktree. Browser
+  verification is blocked because `127.0.0.1:3000`, `3002`, `3103`, and `3104`
+  all refuse connections.
 - Manage/control embedding and destructive-summary modals now distinguish
   failed initial tRPC detail loads from successful data. Element delete/remove
   and live-quiz cancellation modals keep destructive primary actions disabled
