@@ -520,6 +520,11 @@ Second-pass UX/cache cleanup prepared:
 - PWA practice element rating now catches rejected tRPC rating mutations,
   preserves the current visible vote on failure, and shows the existing
   rating-error toast.
+- PWA practice rating and flag-feedback mutations now treat the confirmed tRPC
+  mutation result as the UX success boundary and run
+  `participant.stackElementFeedbacks` invalidation as best-effort. A feedback
+  refresh failure no longer turns a confirmed vote or flag submission into the
+  visible rating/feedback error path.
 - PWA header participant locale changes now catch rejected tRPC locale updates,
   await the locale route change, and keep failed cache invalidation from
   blocking a successful locale switch.
@@ -674,6 +679,17 @@ Second-pass UX/cache cleanup prepared:
   success toasts and form reset/close behavior no longer depend on the follow-up
   refresh callback, while rejected finalize mutations now show the existing
   finalize-error toast instead of surfacing as an unhandled action failure.
+- Review/simplification for the PWA practice feedback refresh cleanup: local
+  diff review found the scope limited to `rateElement` / `flagElement`
+  post-success feedback-list invalidations plus docs. GraphQL/tRPC coexistence
+  is preserved because the change only adjusts tRPC mutation callback timing and
+  does not touch Apollo or GraphQL operations.
+- Verification for the PWA practice feedback refresh cleanup: Context7 TanStack
+  Query v4 docs checked mutation side-effect promise behavior; `prettier --check`
+  on the changed PWA files plus docs passed in the dependency checkout;
+  `tsc --noEmit` for `apps/frontend-pwa` passed in the dependency checkout;
+  `git diff --check` passed in the commit worktree. Browser verification remains
+  blocked because `127.0.0.1:3000` and `3001` refuse connections.
 - Review/simplification for the group-activity grading refresh cleanup:
   correctness review returned no findings and confirmed GraphQL/tRPC coexistence
   is preserved. Simplification found only cosmetic duplication in finalize
