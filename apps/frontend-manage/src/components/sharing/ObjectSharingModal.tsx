@@ -72,19 +72,24 @@ function ObjectSharingModal({
     ownerPermission,
     isOwner,
     loading: permissionsLoading,
+    error: permissionsError,
+    unavailable: permissionsUnavailable,
   } = useObjectPermissions({
     objectId,
     objectType,
-    skip: !open,
+    skip: false,
   })
 
   // get all permissions that have already been granted for this object
-  const { derivedPermissions, loading: derivedPermissionsLoading } =
-    useDerivedObjectPermissions({
-      objectId,
-      objectType,
-      skip: !open || !derivedPermissionsAvailable || !showDerivedPermissions,
-    })
+  const {
+    derivedPermissions,
+    loading: derivedPermissionsLoading,
+    error: derivedPermissionsError,
+  } = useDerivedObjectPermissions({
+    objectId,
+    objectType,
+    skip: !derivedPermissionsAvailable || !showDerivedPermissions,
+  })
 
   // mutation to change the access level of a certain permission
   const { onPermissionLevelChange, permissionChanging } =
@@ -143,6 +148,8 @@ function ObjectSharingModal({
           permissions={permissions ?? []}
           ownerPermission={ownerPermission}
           permissionsLoading={permissionsLoading}
+          permissionsError={permissionsError}
+          permissionsUnavailable={permissionsUnavailable}
           changeLoading={permissionChanging}
           isOwner={isOwner}
           showPropagationSetting={showPropagationSetting}
@@ -187,6 +194,7 @@ function ObjectSharingModal({
               <DerivedPermissionsTable
                 derivedPermissions={derivedPermissions ?? []}
                 derivedPermissionsLoading={derivedPermissionsLoading}
+                derivedPermissionsError={derivedPermissionsError}
                 setShowDerivedPermissions={setShowDerivedPermissions}
               />
             </div>

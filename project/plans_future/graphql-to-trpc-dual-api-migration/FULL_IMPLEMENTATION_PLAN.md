@@ -668,9 +668,33 @@ Second-pass UX/cache cleanup prepared:
   selector data visible during refetch failures, and disables only the course
   reassignment card with the existing system-error notification when course
   selector data is unavailable.
+- Manage object-sharing permission surfaces now distinguish failed tRPC
+  permission/user-group/origin loads from successful empty data. The sharing
+  modal keeps stale direct/derived permission rows visible during refetch
+  failures, renders existing system-error notifications for failed no-data
+  loads, keeps direct shortname/email sharing usable when only the optional
+  user-group selector fails, and fixes the direct-share form so failed callbacks
+  release Formik submitting state.
 
 Second-pass verification:
 
+- Context7 docs checked for current TanStack Query v4 `useQuery` loading,
+  fetching, error, refetch-error, and stale-data semantics plus tRPC client
+  cache helpers before the manage sharing permission-state cleanup.
+- `node_modules/.bin/prettier --check` on the seven changed manage sharing
+  files plus `project/CODEBASE_NOTES.md` and this plan passed after a mechanical
+  Prettier write/copy-back pass.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed files.
+- `git diff --check` passed after the manage sharing permission-state cleanup.
+- `pnpm --filter @klicker-uzh/api test` produced no output for 90 seconds and
+  was interrupted with Ctrl-C; a narrowed
+  `pnpm --filter @klicker-uzh/api exec vitest run src/trpc/__tests__/sharing-permissions.test.ts --reporter=dot`
+  also produced no output for 60 seconds and was interrupted. These package-test
+  attempts are inconclusive, not passing evidence.
+- Browser verification remains blocked for this manage sharing cleanup: `curl`
+  to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection refused, so no
+  local backend or manage dev server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

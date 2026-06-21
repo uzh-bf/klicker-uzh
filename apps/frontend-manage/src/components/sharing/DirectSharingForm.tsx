@@ -6,6 +6,7 @@ import {
   FormikSwitchField,
   SelectField,
   TextField,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
@@ -37,10 +38,16 @@ function DirectSharingForm({
 }) {
   const t = useTranslations()
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
-  const { data, isLoading } = trpc.sharing.userGroups.useQuery(undefined, {
-    refetchOnMount: 'always',
-  })
-  const userGroups = data?.userGroups ?? []
+  const { data, error, isLoading } = trpc.sharing.userGroups.useQuery(
+    undefined,
+    {
+      refetchOnMount: 'always',
+    }
+  )
+  const userGroupData = data?.userGroups
+  const userGroups = userGroupData ?? []
+  const userGroupsError = Boolean(error)
+  const userGroupsUnavailable = userGroupsError && !userGroupData
 
   // fetch own user to disable sharing with self
   const { data: user } = trpc.user.profile.useQuery()
@@ -70,22 +77,27 @@ function DirectSharingForm({
           (typeof values.shortnameOrEmail !== 'undefined' &&
             values.shortnameOrEmail !== '')
         ) {
-          const success = await shareObjectCallback({
-            shortnameOrEmail:
-              typeof values.shortnameOrEmail !== 'undefined' &&
-              values.shortnameOrEmail !== ''
-                ? values.shortnameOrEmail
-                : undefined,
-            userGroupId:
-              typeof values.userGroupId !== 'undefined'
-                ? parseInt(values.userGroupId)
-                : undefined,
-            permissionLevel: values.permissionLevel,
-            propagation: values.propagation,
-          })
+          try {
+            const success = await shareObjectCallback({
+              shortnameOrEmail:
+                typeof values.shortnameOrEmail !== 'undefined' &&
+                values.shortnameOrEmail !== ''
+                  ? values.shortnameOrEmail
+                  : undefined,
+              userGroupId:
+                typeof values.userGroupId !== 'undefined'
+                  ? parseInt(values.userGroupId)
+                  : undefined,
+              permissionLevel: values.permissionLevel,
+              propagation: values.propagation,
+            })
 
-          if (success) {
-            resetForm()
+            if (success) {
+              resetForm()
+            }
+          } catch {
+            onFailure()
+          } finally {
             setSubmitting(false)
           }
         } else {
@@ -172,11 +184,15 @@ function DirectSharingForm({
           <td className="px-4 py-3 text-sm text-gray-900">
             <SelectField
               key={`userGroupId-${values.userGroupId}`}
-              disabled={isSubmitting || userGroups.length === 0}
+              disabled={
+                isSubmitting || userGroups.length === 0 || userGroupsUnavailable
+              }
               placeholder={
-                userGroups.length === 0
-                  ? t('manage.sharing.noUserGroupsAvailable')
-                  : t('manage.sharing.noUserGroupSelected')
+                userGroupsUnavailable
+                  ? t('shared.generic.systemError')
+                  : userGroups.length === 0
+                    ? t('manage.sharing.noUserGroupsAvailable')
+                    : t('manage.sharing.noUserGroupSelected')
               }
               value={values.userGroupId}
               onChange={(newValue) => {
@@ -189,7 +205,7 @@ function DirectSharingForm({
                 }, 0)
               }}
               items={
-                isLoading
+                isLoading || userGroupsUnavailable
                   ? []
                   : sortBy(
                       userGroups.map((group) => ({
@@ -213,6 +229,13 @@ function DirectSharingForm({
               }}
               data={{ cy: 'new-permission-user-group' }}
             />
+            {userGroupsError ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+                className={{ root: 'mt-2 text-sm' }}
+              />
+            ) : null}
           </td>
           <td className="w-40 px-4 py-1.5 text-sm text-gray-900">
             <FormikSelectField

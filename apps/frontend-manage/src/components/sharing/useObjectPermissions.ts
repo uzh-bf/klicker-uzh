@@ -20,21 +20,28 @@ function useObjectPermissions({
   ownerPermission?: PermissionInfo
   isOwner: boolean
   loading: boolean
+  error: boolean
+  unavailable: boolean
 } {
   const input: ObjectPermissionsInput = {
     objectId: String(objectId),
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
-  const { data, isLoading } = trpc.sharing.objectPermissions.useQuery(input, {
-    enabled: !skip && Boolean(objectId),
-    refetchOnMount: 'always',
-  })
+  const { data, isError, isLoading } = trpc.sharing.objectPermissions.useQuery(
+    input,
+    {
+      enabled: !skip && Boolean(objectId),
+      refetchOnMount: 'always',
+    }
+  )
 
   return {
     permissions: data?.objectPermissions?.permissions ?? [],
     ownerPermission: data?.objectPermissions?.ownerPermission ?? undefined,
     isOwner: data?.objectPermissions?.isOwner ?? false,
     loading: isLoading,
+    error: isError,
+    unavailable: isError && !data,
   }
 }
 

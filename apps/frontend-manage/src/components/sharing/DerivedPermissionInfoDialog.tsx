@@ -8,6 +8,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -28,10 +29,11 @@ function DerivedPermissionInfoDialog({
 }) {
   const t = useTranslations()
 
-  const { data, isLoading } = trpc.sharing.derivedPermissionOrigin.useQuery(
-    { id: derivedPermissionOriginAlert.permissionId ?? -1 },
-    { enabled: Boolean(derivedPermissionOriginAlert.permissionId) }
-  )
+  const { data, error, isLoading } =
+    trpc.sharing.derivedPermissionOrigin.useQuery(
+      { id: derivedPermissionOriginAlert.permissionId ?? -1 },
+      { enabled: Boolean(derivedPermissionOriginAlert.permissionId) }
+    )
   const info = data?.derivedPermissionOrigin
 
   return (
@@ -55,6 +57,11 @@ function DerivedPermissionInfoDialog({
           <AlertDialogDescription>
             {isLoading ? (
               <Loader />
+            ) : error ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+              />
             ) : (
               <>
                 <span className="mb-2">

@@ -2,7 +2,7 @@ import { faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3 } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import DerivedPermissionInfoDialog from './DerivedPermissionInfoDialog'
@@ -11,10 +11,12 @@ import type { DerivedPermissionInfo } from './useDerivedObjectPermissions'
 function DerivedPermissionsTable({
   derivedPermissions,
   derivedPermissionsLoading,
+  derivedPermissionsError,
   setShowDerivedPermissions,
 }: {
   derivedPermissions: DerivedPermissionInfo[]
   derivedPermissionsLoading: boolean
+  derivedPermissionsError: boolean
   setShowDerivedPermissions: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
@@ -24,6 +26,39 @@ function DerivedPermissionsTable({
       permissionId: undefined,
       username: undefined,
     })
+  const derivedPermissionRows = derivedPermissions.map((permission, index) => (
+    <tr
+      key={index}
+      className="border-t border-gray-200 hover:bg-gray-50"
+      data-cy={`derived-permission-${permission.username}`}
+    >
+      <td className="px-4 py-1.5 text-sm text-gray-900">
+        <div>
+          {permission.username
+            ? `${permission.username} (${permission.userEmail})${
+                permission.isOwn ? ' ' + t('manage.sharing.ownAccess') : ''
+              }`
+            : '-'}
+        </div>
+        <div
+          className="text-primary-100 flex cursor-pointer flex-row items-center gap-1.5 hover:underline"
+          onClick={() => {
+            setDerivedPermissionOriginAlert({
+              open: true,
+              permissionId: permission.permissionId,
+              username: permission.username,
+            })
+          }}
+        >
+          <FontAwesomeIcon icon={faArrowRight} />
+          <span>{t('manage.sharing.whereDoesThisPermissionOriginate')}</span>
+        </div>
+      </td>
+      <td className="px-4 py-1.5 text-sm text-gray-900">
+        {t(`manage.sharing.permissions${permission.permissionLevel}`)}
+      </td>
+    </tr>
+  ))
 
   return (
     <>
@@ -67,6 +102,19 @@ function DerivedPermissionsTable({
                 <Loader />
               </td>
             </tr>
+          ) : derivedPermissionsError ? (
+            <>
+              <tr>
+                <td colSpan={2} className="py-3">
+                  <UserNotification
+                    type="error"
+                    message={t('shared.generic.systemError')}
+                    className={{ root: 'mx-4 text-sm' }}
+                  />
+                </td>
+              </tr>
+              {derivedPermissionRows}
+            </>
           ) : derivedPermissions.length === 0 ? (
             <tr>
               <td
@@ -77,43 +125,7 @@ function DerivedPermissionsTable({
               </td>
             </tr>
           ) : (
-            derivedPermissions.map((permission, index) => (
-              <tr
-                key={index}
-                className="border-t border-gray-200 hover:bg-gray-50"
-                data-cy={`derived-permission-${permission.username}`}
-              >
-                <td className="px-4 py-1.5 text-sm text-gray-900">
-                  <div>
-                    {permission.username
-                      ? `${permission.username} (${permission.userEmail})${
-                          permission.isOwn
-                            ? ' ' + t('manage.sharing.ownAccess')
-                            : ''
-                        }`
-                      : '-'}
-                  </div>
-                  <div
-                    className="text-primary-100 flex cursor-pointer flex-row items-center gap-1.5 hover:underline"
-                    onClick={() => {
-                      setDerivedPermissionOriginAlert({
-                        open: true,
-                        permissionId: permission.permissionId,
-                        username: permission.username,
-                      })
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faArrowRight} />
-                    <span>
-                      {t('manage.sharing.whereDoesThisPermissionOriginate')}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 py-1.5 text-sm text-gray-900">
-                  {t(`manage.sharing.permissions${permission.permissionLevel}`)}
-                </td>
-              </tr>
-            ))
+            derivedPermissionRows
           )}
         </tbody>
       </table>
