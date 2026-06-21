@@ -14,8 +14,9 @@ function Index() {
     error: errorCourses,
     data: dataCourses,
   } = trpc.course.controlCourses.useQuery()
+  const hasCoursesData = typeof dataCourses !== 'undefined'
 
-  if (loadingCourses) {
+  if (loadingCourses && !hasCoursesData) {
     return (
       <Layout title={t('control.home.courseSelection')}>
         <Loader />
@@ -23,7 +24,20 @@ function Index() {
     )
   }
 
-  if ((!loadingCourses && !dataCourses) || errorCourses) {
+  if (errorCourses && !hasCoursesData) {
+    return (
+      <Layout title={t('control.home.courseSelection')}>
+        <UserNotification
+          type="error"
+          className={{ root: 'text-base' }}
+          message="Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen
+        Sie es später erneut."
+        />
+      </Layout>
+    )
+  }
+
+  if (!dataCourses) {
     return (
       <Layout title={t('control.home.courseSelection')}>
         <UserNotification

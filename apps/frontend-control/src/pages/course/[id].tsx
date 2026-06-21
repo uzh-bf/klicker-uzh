@@ -35,7 +35,9 @@ function Course() {
     }
   }, [data, router])
 
-  if (loading) {
+  const controlCourse = data?.controlCourse
+
+  if (loading && !controlCourse) {
     return (
       <Layout title={t('control.course.courseOverview')}>
         <Loader />
@@ -43,7 +45,7 @@ function Course() {
     )
   }
 
-  if (!data?.controlCourse || error) {
+  if (error && !controlCourse) {
     return (
       <Layout title={t('control.course.courseOverview')}>
         <UserNotification
@@ -55,7 +57,17 @@ function Course() {
     )
   }
 
-  const { controlCourse } = data
+  if (!controlCourse) {
+    return (
+      <Layout title={t('control.course.courseOverview')}>
+        <UserNotification
+          type="error"
+          className={{ root: 'text-base' }}
+          message={t('control.course.loadingFailed')}
+        />
+      </Layout>
+    )
+  }
 
   const runningQuizzes = controlCourse.liveQuizzes?.filter(
     (quiz) => quiz.status === publicationStatus.published

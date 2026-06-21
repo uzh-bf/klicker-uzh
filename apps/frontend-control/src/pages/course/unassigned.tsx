@@ -20,6 +20,7 @@ function UnassignedLiveQuizzes() {
     isLoading: loading,
     error,
   } = trpc.liveQuiz.unassigned.useQuery()
+  const hasLiveQuizData = typeof data !== 'undefined'
 
   const runningQuizzes = useMemo(() => {
     return data?.liveQuizzes.filter(
@@ -35,14 +36,25 @@ function UnassignedLiveQuizzes() {
     )
   }, [data])
 
-  if (loading) {
+  if (loading && !hasLiveQuizData) {
     return (
       <Layout title={t('control.home.liveQuizzesNoCourse')}>
         <Loader />
       </Layout>
     )
   }
-  if (error || !data) {
+  if (error && !hasLiveQuizData) {
+    return (
+      <Layout title={t('control.home.liveQuizzesNoCourse')}>
+        <UserNotification
+          type="error"
+          className={{ root: 'text-base' }}
+          message={t('control.home.loadingLiveQuizzesFailed')}
+        />
+      </Layout>
+    )
+  }
+  if (!data) {
     return (
       <Layout title={t('control.home.liveQuizzesNoCourse')}>
         <UserNotification

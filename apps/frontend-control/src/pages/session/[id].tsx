@@ -77,7 +77,9 @@ function RunningLiveQuiz() {
     )
   }, [quizData?.controlLiveQuiz?.blocks])
 
-  if (quizLoading) {
+  const controlLiveQuiz = quizData?.controlLiveQuiz
+
+  if (quizLoading && !controlLiveQuiz) {
     return (
       <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <Loader />
@@ -85,7 +87,7 @@ function RunningLiveQuiz() {
     )
   }
 
-  if (!quizData?.controlLiveQuiz || quizError) {
+  if (quizError && !controlLiveQuiz) {
     return (
       <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <UserNotification
@@ -96,7 +98,18 @@ function RunningLiveQuiz() {
     )
   }
 
-  const { id, name, course, blocks } = quizData?.controlLiveQuiz
+  if (!controlLiveQuiz) {
+    return (
+      <Layout title={t('control.liveQuiz.liveQuizControl')}>
+        <UserNotification
+          message={t('control.liveQuiz.errorLoadingLiveQuiz')}
+          type="error"
+        />
+      </Layout>
+    )
+  }
+
+  const { id, name, course, blocks } = controlLiveQuiz
 
   if (!blocks) {
     return (

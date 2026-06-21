@@ -595,6 +595,10 @@ Second-pass UX/cache cleanup prepared:
   microlearning evaluation pages now keep cached tRPC data visible during
   refetch failures; failed initial loads still render the existing analytics
   error view or localized system-error notification.
+- Control app layout, course selection, course live-quiz list, unassigned
+  live-quiz list, and running live-quiz controller now keep cached tRPC data
+  visible during refetch failures and only redirect/show error notifications
+  when the initial migrated query has no usable data.
 
 Second-pass verification:
 
@@ -812,12 +816,24 @@ Second-pass verification:
   blocked: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
   connection refused, so no local backend or manage dev server was available
   for screenshots.
+- `node_modules/.bin/prettier --check` on the five changed frontend-control
+  layout/page files passed after the control query-state cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-control` passed after syncing the PR worktree into the
+  dependency checkout.
+- `git diff --check` passed after the control query-state cleanup.
+- Browser verification for the control query-state cleanup remains blocked:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3003` failed with connection
+  refused, so no local backend or control dev server was available for
+  screenshots.
 
-PR #5132 status after `dd69a6e84`:
+PR #5132 status after `f3d779712`:
 
-- Pending at immediate post-push poll: format, lint, check, SonarCloud, CodeQL
-  analyses, package API tRPC Vitest, regular tests, Claude review, and visible
-  amd/arm builds.
+- Passing at last poll: Claude review plus CodeQL Java/Kotlin and Python
+  analyses.
+- Pending at last poll: format, lint, check, SonarCloud, package API tRPC
+  Vitest, packages/graphql Vitest, regular tests, Cypress Cloud, CodeQL
+  JavaScript/TypeScript and JavaScript analyses, and visible amd/arm builds.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

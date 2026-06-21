@@ -21,7 +21,7 @@ function Layout({ title, children, quizId, className }: LayoutProps) {
     data: dataUser,
   } = trpc.user.profile.useQuery()
 
-  if ((!dataUser && !loadingUser) || errorUser) {
+  if (!dataUser && (!loadingUser || errorUser)) {
     router.push('/login')
   }
   if (!dataUser) {
