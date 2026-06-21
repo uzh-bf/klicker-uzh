@@ -50,7 +50,9 @@ function JoinPage() {
               })
 
               if (participant) {
-                await utils.participant.participations.invalidate()
+                void utils.participant.participations
+                  .invalidate()
+                  .catch(console.error)
                 await router.push('/')
                 return
               }

@@ -737,6 +737,11 @@ Second-pass UX/cache cleanup prepared:
   unassigned-list, or current-quiz invalidation no longer turns a successful
   server action into an error toast or blocks navigation; the start modal also
   guards close/cancel/primary actions while the start mutation is pending.
+- PWA standalone and course-specific join forms now treat a confirmed
+  `joinCourseWithPin` result as authoritative and run participant
+  `self`/`participations` invalidations as best-effort refreshes. A failed
+  post-join cache refresh no longer strands an already-enrolled participant on
+  the join form with a generic error instead of navigating home.
 
 Second-pass verification:
 
@@ -905,6 +910,17 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
   `127.0.0.1:3003` failed with connection refused, so no local control dev
   server was available for screenshots.
+- Context7 docs checked for current TanStack Query v4 mutation-success
+  invalidation behavior before the PWA join-course refresh cleanup.
+- `node_modules/.bin/prettier --check` on the changed PWA join files plus
+  `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed PWA join files.
+- `git diff --check` passed after the PWA join-course refresh cleanup.
+- Browser verification remains blocked for this PWA join-course refresh cleanup:
+  `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
+  `127.0.0.1:3001` failed with connection refused, so no local PWA dev server
+  was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

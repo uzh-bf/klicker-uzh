@@ -98,10 +98,10 @@ function JoinCourse({
                   })
 
                   if (participant) {
-                    await Promise.all([
+                    void Promise.all([
                       utils.participant.self.invalidate(),
                       utils.participant.participations.invalidate(),
-                    ])
+                    ]).catch(console.error)
                     await router.push('/')
                     return
                   }
