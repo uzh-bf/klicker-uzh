@@ -898,6 +898,11 @@ Second-pass UX/cache cleanup prepared:
   `self`/`participations` invalidations as best-effort refreshes. A failed
   post-join cache refresh no longer strands an already-enrolled participant on
   the join form with a generic error instead of navigating home.
+- PWA participant group leave and message-send actions now catch rejected/falsy
+  tRPC mutation results, show the existing generic system-error toast, and guard
+  duplicate in-flight actions. Confirmed message sends reset the form and
+  confirmed group leaves switch back to the global tab, while course-overview
+  refresh remains best-effort follow-up work.
 - PWA profile and avatar update forms now rely on the edit-profile page for a
   single best-effort `participant.self` refetch after confirmed mutation
   success. This removes duplicate child invalidation plus parent refetch work
@@ -1049,6 +1054,25 @@ Second-pass verification:
   verification remains blocked because `127.0.0.1:3001` refuses connections, so
   no local PWA dev server was available for screenshots; `127.0.0.1:3000`
   responded with Express `404`.
+- Review/simplification for the PWA participant group action cleanup: subagent
+  review was skipped because the available multi-agent tool currently requires
+  an explicit user request for subagents. Local self-review confirmed the
+  service contract from `packages/api/src/services/participantGroups.ts` and
+  focused tRPC tests: `addMessageToGroup` returns a message or `null`, and
+  `leaveParticipantGroup` can return falsy. The diff is limited to failure
+  feedback, pending guards, and best-effort course-overview refresh handling in
+  `SuspendedGroupView`; GraphQL/Apollo coexistence is unchanged.
+- Verification for the PWA participant group action cleanup: Context7 Formik
+  docs checked manual `setSubmitting(false)` handling in submit handlers. Local
+  API service/tests were inspected for falsy mutation-result behavior.
+  `prettier --check` on
+  `apps/frontend-pwa/src/components/course/SuspendedGroupView.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
+  checkout's Prettier binary. `tsc --noEmit` for `apps/frontend-pwa` passed
+  using the dependency checkout's TypeScript binary. `git diff --check` passed
+  in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3001` refuses connections, so no local PWA dev server was
+  available for screenshots; `127.0.0.1:3000` responded with Express `404`.
 - Review/simplification for the manage element/template save-refresh cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the

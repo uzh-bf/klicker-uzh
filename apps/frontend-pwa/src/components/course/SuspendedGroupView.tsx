@@ -6,6 +6,7 @@ import {
   H3,
   TabContent,
   UserNotification,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -14,6 +15,7 @@ import Image from 'next/image'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
+import { useState } from 'react'
 import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -62,6 +64,7 @@ function SuspendedGroupView({
   const leaveParticipantGroup =
     trpc.participant.leaveParticipantGroup.useMutation()
   const addMessageToGroup = trpc.participant.addMessageToGroup.useMutation()
+  const [leaveGroupLoading, setLeaveGroupLoading] = useState(false)
 
   const { data: rawActivityInstances } =
     trpc.participant.groupActivityInstances.useQuery({
@@ -149,15 +152,39 @@ function SuspendedGroupView({
                   ? undefined
                   : () => {
                       void (async () => {
-                        const result = await leaveParticipantGroup.mutateAsync({
-                          courseId,
-                          groupId: group.id,
-                        })
+                        if (leaveGroupLoading) return
 
-                        if (!result) return
+                        try {
+                          setLeaveGroupLoading(true)
+                          const result =
+                            await leaveParticipantGroup.mutateAsync({
+                              courseId,
+                              groupId: group.id,
+                            })
 
-                        await onCourseOverviewChanged?.()
-                        setSelectedTab('global')
+                          if (!result) {
+                            toast({
+                              type: 'error',
+                              message: t('shared.generic.systemError'),
+                              options: { duration: 6000 },
+                            })
+                            return
+                          }
+
+                          setSelectedTab('global')
+                          void Promise.resolve(
+                            onCourseOverviewChanged?.()
+                          ).catch(console.error)
+                        } catch (error) {
+                          console.error(error)
+                          toast({
+                            type: 'error',
+                            message: t('shared.generic.systemError'),
+                            options: { duration: 6000 },
+                          })
+                        } finally {
+                          setLeaveGroupLoading(false)
+                        }
                       })()
                     }
               }
@@ -287,15 +314,33 @@ function SuspendedGroupView({
               })}
               onSubmit={async (values, { resetForm, setSubmitting }) => {
                 setSubmitting(true)
-                const result = await addMessageToGroup.mutateAsync({
-                  groupId: group.id,
-                  content: values.content,
-                })
-                if (result) {
-                  await onCourseOverviewChanged?.()
+                try {
+                  const result = await addMessageToGroup.mutateAsync({
+                    groupId: group.id,
+                    content: values.content,
+                  })
+                  if (result) {
+                    resetForm()
+                    void Promise.resolve(onCourseOverviewChanged?.()).catch(
+                      console.error
+                    )
+                  } else {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 6000 },
+                    })
+                  }
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 6000 },
+                  })
+                } finally {
+                  setSubmitting(false)
                 }
-                resetForm()
-                setSubmitting(false)
               }}
             >
               {({ isValid, isSubmitting }) => (
@@ -319,6 +364,7 @@ function SuspendedGroupView({
                     <Button.Icon
                       withoutLabel
                       icon={faPaperPlane}
+                      loading={isSubmitting}
                       className={{ root: 'mr-0.5' }}
                     />
                   </Button>
