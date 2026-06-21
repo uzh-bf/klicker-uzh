@@ -778,6 +778,11 @@ Second-pass UX/cache cleanup prepared:
   leaderboard data visible during background refetch errors, and treats
   leaderboard/course-overview invalidations after join/leave mutations as
   best-effort refresh work.
+- Manage live-quiz evaluation now treats failed initial
+  `analytics.liveQuizEvaluation` tRPC loads as transport failures instead of
+  not-found redirects. The page renders the existing system-error notification
+  when no evaluation payload is available and keeps stale evaluation data
+  visible during polling/refetch errors.
 
 Second-pass verification:
 
@@ -1081,6 +1086,25 @@ Second-pass verification:
 - Browser verification remains blocked for this PWA course leaderboard cleanup:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with connection
   refused, so no local backend or PWA dev server was available for screenshots.
+- Context7 docs checked for TanStack Query v4 `useQuery` initial loading,
+  background refetch error, and stale-data behavior before the manage
+  live-quiz evaluation failure-state cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-manage/src/pages/quizzes/[id]/evaluation.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed after one Prettier write on
+  the evaluation page.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed evaluation page.
+- `git diff --check` passed after the manage live-quiz evaluation failure-state
+  cleanup.
+- `./node_modules/.bin/next lint` from the dependency checkout
+  `apps/frontend-manage` was interrupted after about 90 seconds with no final
+  result; it only printed the existing Next lint deprecation, next-intl config,
+  and module-type warnings before hanging.
+- Browser verification remains blocked for this manage live-quiz evaluation
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` both failed with
+  connection refused, so no local backend or manage dev server was available
+  for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

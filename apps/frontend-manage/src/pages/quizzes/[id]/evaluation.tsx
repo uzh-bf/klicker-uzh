@@ -1,12 +1,14 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 import { trpc } from '../../../lib/trpc'
 
 function LiveQuizEvaluation() {
   const router = useRouter()
+  const t = useTranslations()
 
   // fetch evaluation data
   const id = router.query.id as string | undefined
@@ -22,14 +24,22 @@ function LiveQuizEvaluation() {
   const evaluation = data?.liveQuizEvaluation
   const leaderboard = data?.liveQuizLeaderboard
 
-  useEffect(() => {
-    if (error && !evaluation) {
-      void router.push('/404')
-    }
-  }, [error, evaluation, router])
-
-  if ((isLoading && !evaluation) || !id || (error && !evaluation)) {
+  if (!id || (isLoading && !data)) {
     return <Loader />
+  }
+
+  if (error && !data) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center">
+        <UserNotification
+          className={{
+            root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
+          }}
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </div>
+    )
   }
 
   if (
