@@ -1,6 +1,7 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
+  faCheck,
   faExclamationCircle,
   faQuestion,
   faRankingStar,
@@ -305,11 +306,29 @@ function Index({ id }: { id: string }) {
                   liveQuizId: id,
                   pin: values.pin,
                 })
-                await refetch()
-              } catch (e: any) {
-                // show toast on invalid pin
-                const msg = t('pwa.liveQuiz.invalidPin')
-                toast({ type: 'error', message: msg })
+
+                try {
+                  await refetch({ throwOnError: true })
+                } catch (error) {
+                  console.error(
+                    'Error loading live quiz after PIN entry:',
+                    error
+                  )
+                  toast({
+                    type: 'error',
+                    message: hasLiveQuizPinError(error)
+                      ? t('pwa.liveQuiz.invalidPin')
+                      : t('shared.generic.systemError'),
+                  })
+                }
+              } catch (error) {
+                console.error('Error setting live quiz PIN:', error)
+                toast({
+                  type: 'error',
+                  message: hasLiveQuizPinError(error)
+                    ? t('pwa.liveQuiz.invalidPin')
+                    : t('shared.generic.systemError'),
+                })
               } finally {
                 setSubmitting(false)
               }
@@ -334,6 +353,7 @@ function Index({ id }: { id: string }) {
                   className={{ root: 'w-full' }}
                   data={{ cy: 'live-quiz-submit-pin' }}
                 >
+                  <Button.Icon icon={faCheck} loading={isSubmitting} />
                   <Button.Label>{t('pwa.liveQuiz.submitPin')}</Button.Label>
                 </Button>
               </Form>

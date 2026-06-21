@@ -499,6 +499,11 @@ Second-pass UX/cache cleanup prepared:
   optimistic update with rollback: failed tRPC vote mutations restore local UI
   state plus `localForage`, show a system-error toast, and disable duplicate
   clicks while a vote is pending.
+- PWA live-quiz PIN submission now separates failed `participant.setLiveQuizPin`
+  mutations from failed `participant.runningLiveQuiz` refetches after a
+  confirmed PIN write. Invalid-PIN feedback is limited to PIN-specific errors,
+  non-PIN refresh failures show the generic system error, and the submit button
+  uses the standard loading icon while the Formik submit is in flight.
 - PWA participant group controls now disable form submits while mutations are
   loading, show button-mode loading states, and surface unexpected create,
   join-by-code, random-pool join, and random-pool leave failures with
@@ -918,6 +923,13 @@ Second-pass verification:
   in the dependency checkout; `git diff --check` passed in the commit worktree.
   Browser verification remains blocked because `127.0.0.1:3000` and `3002`
   refuse connections.
+- Verification for the PWA live-quiz PIN cleanup: Context7 TanStack Query v4
+  docs checked `refetch` error/result behavior before splitting mutation
+  failures from post-success live-quiz refetch failures. `prettier --check` on
+  the changed PWA session page plus docs passed after formatting;
+  `tsc --noEmit` for `apps/frontend-pwa` passed in the dependency checkout;
+  `git diff --check` passed in the commit worktree. Browser verification remains
+  blocked because `127.0.0.1:3000` and `3001` refuse connections.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
