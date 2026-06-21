@@ -1,5 +1,6 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faKey } from '@fortawesome/free-solid-svg-icons'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormikSelectField,
@@ -7,6 +8,7 @@ import {
   H4,
   Label,
   Prose,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -40,10 +42,29 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
     loginId?: string
   }>({ open: false, loginId: undefined })
   const [deletingLoginId, setDeletingLoginId] = useState<string | null>(null)
-  const { data } = trpc.user.delegatedAccess.useQuery()
+  const { data, error, isLoading } = trpc.user.delegatedAccess.useQuery()
 
   const createUserLogin = trpc.user.createUserLogin.useMutation()
   const deleteUserLogin = trpc.user.deleteUserLogin.useMutation()
+
+  if (isLoading && !data) {
+    return (
+      <Setting title={t('auth.delegatedAccess')}>
+        <Loader />
+      </Setting>
+    )
+  }
+
+  if (error && !data) {
+    return (
+      <Setting title={t('auth.delegatedAccess')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Setting>
+    )
+  }
 
   if (
     typeof data?.userScope === 'undefined' ||
@@ -66,6 +87,13 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
   return (
     <Setting title={t('auth.delegatedAccess')}>
       <div className="mb-5">
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-2 py-1' }}
+          />
+        ) : null}
         <div className="flex flex-col gap-1">
           {data.userLogins.map((login) => (
             <div

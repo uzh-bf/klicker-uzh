@@ -28,17 +28,14 @@ function Layout({
   const t = useTranslations()
   const router = useRouter()
 
-  const {
-    isLoading: loadingUser,
-    error: errorUser,
-    data: dataUser,
-  } = trpc.user.profile.useQuery()
+  const { isLoading: loadingUser, data: dataUser } =
+    trpc.user.profile.useQuery()
 
   if (!dataUser && !loadingUser) {
     router.push('/login')
   }
 
-  if (loadingUser) {
+  if (loadingUser && !dataUser) {
     return (
       <div className="mx-auto my-auto">
         <Loader />
@@ -46,10 +43,10 @@ function Layout({
     )
   }
 
-  if (!dataUser || (!loadingUser && errorUser)) {
+  if (!dataUser) {
     return (
       <UserNotification type="error">
-        {errorUser?.message || t('shared.generic.systemError')}
+        {t('shared.generic.systemError')}
       </UserNotification>
     )
   }

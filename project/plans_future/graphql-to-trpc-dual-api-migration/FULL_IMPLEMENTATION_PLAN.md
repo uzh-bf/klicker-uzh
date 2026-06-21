@@ -1041,6 +1041,10 @@ Second-pass UX/cache cleanup prepared:
   silently presenting Catalyst-required activity buttons as unavailable because
   the profile request failed. Stale profile data remains usable during
   background refetch failures.
+- Manage layout and user settings now preserve stale migrated `user.profile`
+  data during background refetch failures, replace raw layout error-message
+  rendering with the localized generic system error, and distinguish failed
+  initial profile/delegated-access loads from successful no-access states.
 
 Second-pass verification:
 
@@ -1081,6 +1085,21 @@ Second-pass verification:
 - Verification for the manage creation-buttons cleanup: Context7 TanStack Query
   v4 docs checked stale-data/error handling earlier in this audit pass.
   `prettier --check` on `SuspendedCreationButtons.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
+  checkout's Prettier binary. `./node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-manage` passed. `git diff --check` passed in the commit
+  worktree. Browser verification remains blocked because `127.0.0.1:3000` and
+  `127.0.0.1:3002` refuse connections, so no local backend or manage dev server
+  was available for screenshots.
+- Review/simplification for the manage settings/profile fallback cleanup:
+  subagent review was skipped because the available multi-agent tool currently
+  requires an explicit user request for delegation. Local self-review found the
+  diff limited to manage layout/profile settings/delegated-access query
+  fallback handling plus docs; GraphQL/Apollo coexistence is unchanged.
+- Verification for the manage settings/profile fallback cleanup: Context7
+  TanStack Query v4 docs checked `useQuery` initial loading, initial error,
+  refetch-error, and stale-data semantics before the change. `prettier --check`
+  on `Layout.tsx`, `settings.tsx`, `DelegatedAccessSettings.tsx`,
   `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
   checkout's Prettier binary. `./node_modules/.bin/tsc --noEmit` from
   `apps/frontend-manage` passed. `git diff --check` passed in the commit
