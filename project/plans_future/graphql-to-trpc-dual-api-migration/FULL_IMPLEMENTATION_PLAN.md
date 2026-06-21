@@ -699,6 +699,11 @@ Second-pass UX/cache cleanup prepared:
   Copy/import/request/cancel/remove primary actions are explicitly disabled
   while their tRPC mutations are pending, and catalog object removal now catches
   rejected tRPC calls instead of leaving an unhandled failed mutation.
+- Manage catalog collection create/rename/delete modals now use stricter pending
+  guards. Create and rename cancel actions are disabled while Formik submission
+  is in flight, rename confirm is disabled while submitting, and collection
+  deletion guards close/secondary/primary actions while the destructive tRPC
+  mutation is loading.
 
 Second-pass verification:
 
@@ -770,6 +775,19 @@ Second-pass verification:
 - Browser verification remains blocked for this manage catalog action cleanup:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
   refused, so no local backend or manage dev server was available for
+  screenshots.
+- Context7 docs checked for current TanStack Query v4 mutation loading,
+  duplicate-submit prevention, and promise-returning callback semantics before
+  the manage catalog collection modal pending-guard cleanup.
+- `node_modules/.bin/prettier --check` on the three changed manage catalog
+  collection modal files plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed catalog collection
+  modal files.
+- `git diff --check` passed after the manage catalog collection modal cleanup.
+- Browser verification remains blocked for this manage catalog collection modal
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
+  connection refused, so no local backend or manage dev server was available for
   screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.

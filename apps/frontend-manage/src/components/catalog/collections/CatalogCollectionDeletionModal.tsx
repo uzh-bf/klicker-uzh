@@ -19,18 +19,25 @@ function CatalogCollectionDeletionModal({
   const utils = trpc.useUtils()
   const deleteCatalogCollection =
     trpc.sharing.deleteCatalogCollection.useMutation()
+  const loading = deleteCatalogCollection.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.catalog.deleteCatalogCollectionTitle')}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-delete-collection' }}
       primaryLabel={t('manage.catalog.deleteConfirm')}
       primaryButtonStyle="destructive"
-      primaryLoading={deleteCatalogCollection.isLoading}
+      primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
         try {
           const res = await deleteCatalogCollection.mutateAsync({

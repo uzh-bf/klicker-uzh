@@ -24,11 +24,17 @@ function CreateCatalogCollectionModal({
   const utils = trpc.useUtils()
   const createCatalogCollection =
     trpc.sharing.createCatalogCollection.useMutation()
+  const creating = createCatalogCollection.isLoading
+  const handleClose = () => {
+    if (!creating) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.catalog.createCatalogCollectionTitle')}
       data={{ cy: 'create-catalog-collection-modal' }}
       className={{ content: 'pb-1' }}
@@ -103,7 +109,8 @@ function CreateCatalogCollectionModal({
 
             <div className="flex justify-between gap-2">
               <Button
-                onClick={onClose}
+                onClick={handleClose}
+                disabled={isSubmitting || creating}
                 data={{ cy: 'cancel-catalog-collection-creation' }}
               >
                 <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -111,8 +118,8 @@ function CreateCatalogCollectionModal({
               <Button
                 type="submit"
                 primary
-                disabled={!isValid || isSubmitting}
-                loading={isSubmitting}
+                disabled={!isValid || isSubmitting || creating}
+                loading={isSubmitting || creating}
                 data={{ cy: 'create-catalog-collection-submit' }}
               >
                 <Button.Label>{t('shared.generic.create')}</Button.Label>

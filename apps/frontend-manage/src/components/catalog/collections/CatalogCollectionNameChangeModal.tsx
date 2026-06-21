@@ -17,6 +17,12 @@ function CatalogCollectionNameChangeModal({
   const utils = trpc.useUtils()
   const changeCatalogCollectionName =
     trpc.sharing.changeCatalogCollectionName.useMutation()
+  const changing = changeCatalogCollectionName.isLoading
+  const handleClose = () => {
+    if (!changing) {
+      onClose()
+    }
+  }
 
   const onErrorToast = () =>
     toast({
@@ -34,7 +40,7 @@ function CatalogCollectionNameChangeModal({
       open
       hideCloseButton
       escapeDisabled
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.catalog.changeCatalogCollectionName')}
       className={{ content: 'max-w-xl pb-1' }}
     >
@@ -106,7 +112,8 @@ function CatalogCollectionNameChangeModal({
             <div className="mt-3 flex flex-row justify-between">
               <Button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
+                disabled={isSubmitting || changing}
                 data={{ cy: 'catalog-collection-name-change-cancel' }}
               >
                 <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -114,8 +121,8 @@ function CatalogCollectionNameChangeModal({
               <Button
                 primary
                 type="submit"
-                disabled={!isValid}
-                loading={isSubmitting}
+                disabled={!isValid || isSubmitting || changing}
+                loading={isSubmitting || changing}
                 onClick={submitForm}
                 data={{ cy: 'catalog-collection-name-change-confirm' }}
               >
