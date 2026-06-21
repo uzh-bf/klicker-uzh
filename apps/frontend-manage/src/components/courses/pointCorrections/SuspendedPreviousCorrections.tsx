@@ -5,6 +5,7 @@ import {
   ShadcnCollapsible,
   ShadcnCollapsibleContent,
   ShadcnCollapsibleTrigger,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -30,14 +31,16 @@ function SuspendedPreviousCorrections({
   const validInstanceId =
     typeof parsedInstanceId === 'number' && !Number.isNaN(parsedInstanceId)
   const hasLiveQuizId = Boolean(liveQuizId)
-  const { data, isLoading } = trpc.activity.previousPointCorrections.useQuery(
-    {
-      liveQuizId,
-      instanceId: validInstanceId ? parsedInstanceId : undefined,
-    },
-    { enabled: hasLiveQuizId }
-  )
+  const { data, error, isLoading } =
+    trpc.activity.previousPointCorrections.useQuery(
+      {
+        liveQuizId,
+        instanceId: validInstanceId ? parsedInstanceId : undefined,
+      },
+      { enabled: hasLiveQuizId }
+    )
   const corrections = data?.previousPointCorrections ?? []
+  const correctionsUnavailable = Boolean(error && !data)
   const [collapsibleOpen, setCollapsibleOpen] = useState(false)
 
   if (!hasLiveQuizId) {
@@ -52,6 +55,15 @@ function SuspendedPreviousCorrections({
 
   if (isLoading) {
     return <Loader />
+  }
+
+  if (correctionsUnavailable) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
   if (corrections.length === 0) {

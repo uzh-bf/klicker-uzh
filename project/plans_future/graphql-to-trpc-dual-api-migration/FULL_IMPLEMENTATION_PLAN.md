@@ -648,6 +648,13 @@ Second-pass UX/cache cleanup prepared:
   notification instead of an endless modal loader, course deletion stays
   disabled until the course summary exists, and stale detail/profile data stays
   visible during background refetch failures.
+- Manage point-correction selector and history surfaces now distinguish failed
+  initial tRPC loads from successful empty selector/history states. The wizard
+  only blocks the active step that needs unavailable selector data, renders the
+  existing system-error notification inside the closable modal instead of
+  mounting selector controls with empty failed data, and previous-correction
+  history panels/modals no longer present failed history queries as "no
+  corrections."
 
 Second-pass verification:
 
@@ -973,6 +980,20 @@ Second-pass verification:
   blocked: `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`,
   `127.0.0.1:3002`, and `127.0.0.1:3003` all failed with connection refused,
   so no local backend, PWA, manage, or control dev server was available for
+  screenshots.
+- Context7 docs checked again for TanStack Query v4 background-fetching /
+  stale-data behavior plus tRPC React Query hook/cache helper semantics before
+  the point-correction query-state cleanup.
+- `node_modules/.bin/prettier --check` on the three changed manage
+  point-correction files plus this plan file passed from the dependency
+  checkout after formatting two files and copying them back to the source
+  checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the point-correction cleanup.
+- `git diff --check` passed after the point-correction cleanup.
+- Browser verification for the point-correction cleanup remains blocked:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
+  refused, so no local backend or manage dev server was available for
   screenshots.
 
 PR #5132 status after `bb92153b` before the manage overview-list batch:

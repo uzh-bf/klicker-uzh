@@ -1,4 +1,4 @@
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
 import PreviousPointCorrectionList from './PreviousPointCorrectionList'
@@ -23,30 +23,39 @@ function PreviousCorrectionsListModal({
       : undefined
   const validInstanceId =
     typeof parsedInstanceId === 'number' && !Number.isNaN(parsedInstanceId)
-  const { data: previousCorrectionsData, isLoading } =
-    trpc.activity.previousPointCorrections.useQuery(
-      {
-        courseId,
-        liveQuizId,
-        instanceId: validInstanceId ? parsedInstanceId : undefined,
-      },
-      {
-        enabled: Boolean(liveQuizId || courseId || validInstanceId),
-      }
-    )
+  const {
+    data: previousCorrectionsData,
+    error,
+    isLoading,
+  } = trpc.activity.previousPointCorrections.useQuery(
+    {
+      courseId,
+      liveQuizId,
+      instanceId: validInstanceId ? parsedInstanceId : undefined,
+    },
+    {
+      enabled: Boolean(liveQuizId || courseId || validInstanceId),
+    }
+  )
+  const corrections = previousCorrectionsData?.previousPointCorrections
+  const initialLoading = isLoading && !corrections
+  const correctionsUnavailable = Boolean(error && !corrections)
 
   return (
     <Modal
       open
-      loading={isLoading}
+      loading={initialLoading}
       onClose={onClose}
       title={t('manage.course.appliedCorrections')}
       className={{ content: 'max-w-3xl' }}
     >
-      {previousCorrectionsData?.previousPointCorrections ? (
-        <PreviousPointCorrectionList
-          corrections={previousCorrectionsData.previousPointCorrections}
+      {correctionsUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
         />
+      ) : corrections && corrections.length > 0 ? (
+        <PreviousPointCorrectionList corrections={corrections} />
       ) : (
         <div className="text-sm text-gray-600">
           {!!instanceId

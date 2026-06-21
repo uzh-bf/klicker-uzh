@@ -1,4 +1,4 @@
-import { Modal, toast } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { Form, Formik, getIn } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
@@ -59,16 +59,22 @@ function PointCorrectionsModal({
   const [activeStep, setActiveStep] = useState(0)
   const utils = trpc.useUtils()
 
-  const { data: endedQuizzesData, isLoading: endedQuizzesLoading } =
-    trpc.activity.endedLiveQuizzesCourse.useQuery(
-      { courseId },
-      { enabled: Boolean(courseId) }
-    )
-  const { data: courseParticipantsData, isLoading: courseParticipantsLoading } =
-    trpc.activity.assessmentCourseParticipants.useQuery(
-      { courseId },
-      { enabled: Boolean(courseId) }
-    )
+  const {
+    data: endedQuizzesData,
+    error: endedQuizzesError,
+    isLoading: endedQuizzesLoading,
+  } = trpc.activity.endedLiveQuizzesCourse.useQuery(
+    { courseId },
+    { enabled: Boolean(courseId) }
+  )
+  const {
+    data: courseParticipantsData,
+    error: courseParticipantsError,
+    isLoading: courseParticipantsLoading,
+  } = trpc.activity.assessmentCourseParticipants.useQuery(
+    { courseId },
+    { enabled: Boolean(courseId) }
+  )
   const correctAssessmentPointsInstance =
     trpc.activity.correctAssessmentPointsInstance.useMutation()
   const correctAssessmentPointsLiveQuiz =
@@ -340,6 +346,20 @@ function PointCorrectionsModal({
         submitForm,
         values,
       }) => {
+        const quizzes = endedQuizzesData?.endedLiveQuizzesCourse
+        const participants =
+          courseParticipantsData?.assessmentCourseParticipants
+        const initialQuizzesLoading = endedQuizzesLoading && !quizzes
+        const initialParticipantsLoading =
+          courseParticipantsLoading && !participants
+        const quizzesUnavailable = Boolean(
+          (endedQuizzesError || !endedQuizzesLoading) && !quizzes
+        )
+        const participantsUnavailable = Boolean(
+          (courseParticipantsError || !courseParticipantsLoading) &&
+            !participants
+        )
+
         const handleClose = () => {
           resetForm()
           setActiveStep(0)
@@ -367,27 +387,32 @@ function PointCorrectionsModal({
         const stepComponents = [
           <PointCorrectionsScopeStep
             key="scope"
-            quizzes={endedQuizzesData?.endedLiveQuizzesCourse ?? []}
+            quizzes={quizzes ?? []}
             disabledLiveQuizSelection={Boolean(preselectedLiveQuizId)}
             disabledInstanceSelection={Boolean(preselectedInstanceId)}
           />,
           <PointCorrectionsAudienceStep
             key="audience"
-            participants={
-              courseParticipantsData?.assessmentCourseParticipants ?? []
-            }
+            participants={participants ?? []}
             fixedParticipant={Boolean(preselectedParticipantId)}
           />,
           <PointCorrectionsAdjustmentsStep key="adjustments" />,
           <PointCorrectionsReasonStep key="reason" />,
           <PointCorrectionsSummaryStep
             key="summary"
-            quizzes={endedQuizzesData?.endedLiveQuizzesCourse ?? []}
-            participants={
-              courseParticipantsData?.assessmentCourseParticipants ?? []
-            }
+            quizzes={quizzes ?? []}
+            participants={participants ?? []}
           />,
         ]
+        const currentStepLoading =
+          (activeStep === 0 && initialQuizzesLoading) ||
+          (activeStep === 1 && initialParticipantsLoading) ||
+          (activeStep === 4 &&
+            (initialQuizzesLoading || initialParticipantsLoading))
+        const currentStepUnavailable =
+          (activeStep === 0 && quizzesUnavailable) ||
+          (activeStep === 1 && participantsUnavailable) ||
+          (activeStep === 4 && (quizzesUnavailable || participantsUnavailable))
 
         const scopeValid = Boolean(
           values.scopeType &&
@@ -416,14 +441,17 @@ function PointCorrectionsModal({
           allValid,
         ]
         const isLastStep = activeStep === stepComponents.length - 1
-        const primaryDisabled = isLastStep ? !allValid : !stepStatus[activeStep]
+        const primaryDisabled =
+          currentStepLoading ||
+          currentStepUnavailable ||
+          (isLastStep ? !allValid : !stepStatus[activeStep])
 
         return (
           <Form>
             <Modal
               open
               escapeDisabled
-              loading={endedQuizzesLoading || courseParticipantsLoading}
+              loading={currentStepLoading}
               title={t('manage.course.pointCorrections')}
               onClose={handleClose}
               secondaryLabel={
@@ -469,7 +497,14 @@ function PointCorrectionsModal({
                 </div>
 
                 <div className="rounded-md border border-gray-200 bg-white p-4 shadow-sm">
-                  {stepComponents[activeStep]}
+                  {currentStepUnavailable ? (
+                    <UserNotification
+                      type="error"
+                      message={t('shared.generic.systemError')}
+                    />
+                  ) : (
+                    stepComponents[activeStep]
+                  )}
                 </div>
               </div>
             </Modal>
