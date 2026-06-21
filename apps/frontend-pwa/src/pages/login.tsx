@@ -4,20 +4,27 @@ import { Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import LoginForm from '../components/forms/LoginForm'
 
-function getSafeRedirectPath(redirectPath: string) {
-  if (!redirectPath.startsWith('/') || redirectPath.startsWith('//')) {
+function getSafeRedirectPath(redirectPath: string, baseOrigin: string) {
+  try {
+    const parsed = new URL(redirectPath, baseOrigin)
+    if (parsed.origin !== baseOrigin) {
+      return '/'
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
     return '/'
   }
-
-  return redirectPath
 }
 
 function Login() {
   const t = useTranslations()
+  const router = useRouter()
   const utils = trpc.useUtils()
 
   const loginParticipant = trpc.participant.login.useMutation()
@@ -48,7 +55,10 @@ function Login() {
     if (redirectTo) {
       try {
         setDecodedRedirectPath(
-          getSafeRedirectPath(decodeURIComponent(redirectTo))
+          getSafeRedirectPath(
+            decodeURIComponent(redirectTo),
+            window.location.origin
+          )
         )
       } catch {
         setDecodedRedirectPath('/')
@@ -78,7 +88,9 @@ function Login() {
         await utils.participant.self.fetch(undefined)
 
         // redirect to the specified redirect path (default: question pool)
-        window.location.assign(getSafeRedirectPath(decodedRedirectPath))
+        await router.replace(
+          getSafeRedirectPath(decodedRedirectPath, window.location.origin)
+        )
       }
     } catch (e) {
       console.error(e)
@@ -166,7 +178,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const base = `${proto}://${host}`
 
     const redirectParam = (ctx.query.redirect_to as string) || '/'
-    const targetUrl = new URL(redirectParam, base).toString()
+    const targetPath = getSafeRedirectPath(redirectParam, base)
+    const targetUrl = new URL(targetPath, base).toString()
     const authBase =
       process.env.NEXT_PUBLIC_AUTH_URL || 'https://auth.klicker.uzh.ch'
 

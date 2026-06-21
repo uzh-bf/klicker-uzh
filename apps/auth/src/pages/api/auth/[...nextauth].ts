@@ -46,7 +46,7 @@ const SHARED_OPTIONS: Partial<NextAuthOptions> = {
   },
 }
 
-function useSecureAuthCookies() {
+function shouldUseSecureAuthCookies() {
   const authUrl = process.env.NEXTAUTH_URL || process.env.APP_ORIGIN_AUTH
   if (authUrl) {
     return authUrl.startsWith('https://')
@@ -60,7 +60,7 @@ function getParticipantConfig({
 }: {
   requestId: string
 }): NextAuthOptions {
-  const secureCookies = useSecureAuthCookies()
+  const secureCookies = shouldUseSecureAuthCookies()
 
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
@@ -256,7 +256,7 @@ function getLecturerConfig({
 }: {
   requestId: string
 }): NextAuthOptions {
-  const secureCookies = useSecureAuthCookies()
+  const secureCookies = shouldUseSecureAuthCookies()
 
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).

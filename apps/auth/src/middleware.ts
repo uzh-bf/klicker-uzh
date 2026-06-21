@@ -45,7 +45,7 @@ function isValidLecturerRedirectUrl(url: string): boolean {
   return isAllowedHost(url, LECTURER_HOSTS)
 }
 
-function useSecureAuthCookies() {
+function shouldUseSecureAuthCookies() {
   const authUrl = process.env.NEXTAUTH_URL || process.env.APP_ORIGIN_AUTH
   if (authUrl) {
     return authUrl.startsWith('https://')
@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
   }
   const cookieDomain =
     envAuthHost && envAuthHost === currentHost ? envAuthHost : undefined
-  const secureCookies = useSecureAuthCookies()
+  const secureCookies = shouldUseSecureAuthCookies()
   const commonCookieOpts = {
     httpOnly: true,
     sameSite: 'lax' as const,

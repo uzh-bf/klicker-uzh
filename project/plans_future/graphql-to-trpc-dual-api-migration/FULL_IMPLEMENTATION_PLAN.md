@@ -423,6 +423,50 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-21 In Progress: CI and Review Blocker Follow-up
+
+Status: in progress. Scope remains PR #5132 tRPC dual-API stabilization and
+already migrated client surfaces only. No S05/S06 cleanup or new migration slice
+has been started.
+
+Current branch-state review:
+
+- The active commit worktree is on `codex/trpc-dual-api-migration`; the original
+  Codex checkout path is not a usable git checkout in the current environment.
+- The current uncommitted changes add value for PR readiness because they address
+  concrete CI/review blockers: auth lint naming, CodeQL login redirect handling,
+  Cypress/Playwright build-origin drift, Cypress service startup rebuilds, and
+  the markdown build process not exiting reliably.
+- GitGuardian is still a historical branch finding on older commits; current
+  head no longer contains the credential-like literals. Passing that check will
+  require either dashboard dismissal or an approved history rewrite.
+
+Changes prepared:
+
+- Renamed auth helpers so React hook lint no longer treats them as hooks.
+- Hardened PWA login redirects to same-origin paths and switched the client
+  redirect to `router.replace`.
+- Kept Cypress and Playwright builds on local app origins while restoring service
+  startup to use already-built test services.
+- Added explicit Node 24 setup to the lint workflow.
+- Added `--forceExit` to the markdown Rollup build to avoid hanging test builds.
+
+Verification so far:
+
+- `pnpm --filter @klicker-uzh/auth lint`
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- `prettier --check` on the changed workflow/script/auth/PWA files.
+- `pnpm --filter @klicker-uzh/markdown build:test` passed after the Rollup
+  exit fix. It still prints the existing `@uzh-bf/design-system` type-resolution
+  warning during Rollup type declaration generation.
+
+Open after the next push:
+
+- Recheck CodeQL and Cypress Cloud on GitHub.
+- Triage remaining SonarCloud failure annotations separately.
+- Decide with the user whether to dismiss or rewrite historical GitGuardian
+  findings.
+
 ### 2026-06-20 Completed: tRPC UX and Client Quality Audit First Pass
 
 Status: complete for the first pass. User requested a fresh UX/client-quality
