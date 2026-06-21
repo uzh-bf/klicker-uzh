@@ -1,7 +1,7 @@
 import { faChevronLeft } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { SelectField } from '@uzh-bf/design-system'
+import { SelectField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -21,10 +21,6 @@ function QuizAnalyticsNavigation({
   const t = useTranslations()
   const router = useRouter()
 
-  if (isLoading) {
-    return <Loader />
-  }
-
   const course = data?.courseActivities
 
   return (
@@ -39,39 +35,51 @@ function QuizAnalyticsNavigation({
         </div>
       </Link>
       <div className="flex justify-center">
-        <SelectField
-          label={`${t('shared.generic.activity')}:`}
-          labelType="large"
-          value={activityId}
-          groups={[
-            ...(course?.practiceQuizzes && course.practiceQuizzes.length > 0
-              ? [
-                  {
-                    label: `${t('shared.generic.practiceQuizzes')}:`,
-                    items: course.practiceQuizzes.map((activity) => ({
-                      label: activity.name,
-                      value: activity.id,
-                    })),
-                  },
-                ]
-              : []),
-            ...(course?.microLearnings && course.microLearnings.length > 0
-              ? [
-                  {
-                    label: `${t('shared.generic.microlearnings')}:`,
-                    items: course.microLearnings.map((activity) => ({
-                      label: activity.name,
-                      value: activity.id,
-                    })),
-                  },
-                ]
-              : []),
-          ]}
-          onChange={(value) => {
-            router.push({ pathname: `/analytics/${courseId}/quizzes/${value}` })
-          }}
-          className={{ select: { trigger: 'h-8' } }}
-        />
+        {isLoading && !data ? (
+          <Loader />
+        ) : !course ? (
+          <UserNotification
+            type="error"
+            message={t('manage.analytics.analyticsLoadingFailed')}
+            className={{ root: 'text-sm' }}
+          />
+        ) : (
+          <SelectField
+            label={`${t('shared.generic.activity')}:`}
+            labelType="large"
+            value={activityId}
+            groups={[
+              ...(course.practiceQuizzes.length > 0
+                ? [
+                    {
+                      label: `${t('shared.generic.practiceQuizzes')}:`,
+                      items: course.practiceQuizzes.map((activity) => ({
+                        label: activity.name,
+                        value: activity.id,
+                      })),
+                    },
+                  ]
+                : []),
+              ...(course.microLearnings.length > 0
+                ? [
+                    {
+                      label: `${t('shared.generic.microlearnings')}:`,
+                      items: course.microLearnings.map((activity) => ({
+                        label: activity.name,
+                        value: activity.id,
+                      })),
+                    },
+                  ]
+                : []),
+            ]}
+            onChange={(value) => {
+              router.push({
+                pathname: `/analytics/${courseId}/quizzes/${value}`,
+              })
+            }}
+            className={{ select: { trigger: 'h-8' } }}
+          />
+        )}
       </div>
     </div>
   )

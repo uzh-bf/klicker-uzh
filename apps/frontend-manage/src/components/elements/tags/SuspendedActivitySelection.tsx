@@ -1,5 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { SelectField } from '@uzh-bf/design-system'
+import { SelectField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -60,7 +60,22 @@ function SuspendedActivitySelection({
     [courseActivities, t]
   )
 
-  if (loadingCourses || loadingActivities) return <Loader />
+  if (
+    (loadingCourses && !userCourses) ||
+    (loadingActivities && !courseActivities)
+  ) {
+    return <Loader />
+  }
+
+  if (!userCourses?.userCourses || !courseActivities?.courseActivityIds) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+        className={{ root: 'text-sm' }}
+      />
+    )
+  }
 
   // group the activities by type for the select field
   return (

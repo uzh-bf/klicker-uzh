@@ -1,5 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Checkbox, H3, Select } from '@uzh-bf/design-system'
+import { Checkbox, H3, Select, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -29,10 +29,22 @@ function SuspendedCourseComparison({
         value: course.id,
       })) ?? []
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <div className="w-full px-4 lg:w-1/4">
         <Loader />
+      </div>
+    )
+  }
+
+  if (!data?.userCourses) {
+    return (
+      <div className="w-full px-4 lg:w-1/4">
+        <UserNotification
+          type="error"
+          message={t('manage.analytics.analyticsLoadingFailed')}
+          className={{ root: 'text-sm' }}
+        />
       </div>
     )
   }

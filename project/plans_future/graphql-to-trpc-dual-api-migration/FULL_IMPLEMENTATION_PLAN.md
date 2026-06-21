@@ -565,6 +565,16 @@ Second-pass UX/cache cleanup prepared:
   system-error notification when the initial migrated tRPC query has no usable
   data, avoiding misleading empty dashboards, empty tables, and no-course
   states on request failure.
+- PWA home now distinguishes initial participations loading from a failed or
+  missing participations response. Failed initial data renders the existing
+  system-error notification instead of an indefinite full-page loader, while a
+  successful empty participation list still reaches the existing empty-course
+  flow.
+- Manage analytics navigation, quiz analytics navigation, course-comparison,
+  and element activity-filter controls now preserve surrounding navigation or
+  stale selector data when available, but show compact existing
+  `UserNotification` error states when their initial migrated tRPC selector
+  query has no usable data.
 
 Second-pass verification:
 
@@ -694,20 +704,39 @@ Second-pass verification:
   only permits it when the user explicitly requests delegation. A local
   self-review kept this slice to existing `UserNotification` patterns and found
   no useful abstraction or broader refactor for these four pages.
+- Context7 docs checked again for current TanStack Query `useQuery` stale-data
+  and loading/error semantics plus tRPC client cache helpers before the PWA home
+  and manage selector query-state cleanup.
+- `node_modules/.bin/prettier --check` on `apps/frontend-pwa/src/pages/index.tsx`
+  plus the four changed manage navigation/filter component files passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after syncing the PR worktree into the dependency
+  checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the PR worktree into the
+  dependency checkout.
+- `git diff --check` passed after the PWA home/manage selector query-state
+  cleanup.
+- Browser verification remains blocked for this follow-up too: `curl` to
+  `127.0.0.1:3000`, `127.0.0.1:3001`, and `127.0.0.1:3002` all failed with
+  connection refused, so no local backend, PWA, or manage dev server was
+  available for screenshots.
+- Review/simplification: local self-review kept the selector cleanup scoped to
+  no-data rendering and center-control loaders; empty successful lists and
+  surrounding navigation stay unchanged, and no shared abstraction was added.
 
-PR #5132 status after `3f31a27b5`:
+PR #5132 status after `47c39fc44`:
 
-- Passing: lint, format, check, CodeQL, SonarCloud, package API tRPC Vitest,
-  and most build/test jobs.
-- Pending at last poll: Cypress Cloud, packages/graphql Vitest, and one
-  remaining amd/arm build pair.
+- Passing: lint, format, check, CodeQL, SonarCloud, all visible amd/arm builds,
+  regular tests, package API tRPC Vitest, and packages/graphql Vitest.
+- Pending at last poll: Cypress Cloud / `cypress: default-group (merge)` run
+  `6803`.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 
 Open after the next push:
 
-- Recheck Cypress Cloud, packages/graphql Vitest, and build completion on
-  GitHub.
+- Recheck Cypress Cloud completion on GitHub.
 - Decide with the user whether to dismiss or rewrite historical GitGuardian
   findings.
 

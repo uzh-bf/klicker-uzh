@@ -138,10 +138,21 @@ function Index() {
   const { courses, oldCourses, activeLiveQuizzes, activeMicrolearning } =
     useStudentOverviewSplit({ participations: data?.participations ?? [] })
 
-  if (isLoading || !data) {
+  if (isLoading && !data) {
     return (
       <Layout key="loading-layout" displayName={t('shared.generic.title')}>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (!data?.participations) {
+    return (
+      <Layout key="error-layout" displayName={t('shared.generic.title')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }

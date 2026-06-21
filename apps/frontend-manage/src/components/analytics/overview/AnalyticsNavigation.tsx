@@ -4,7 +4,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { SelectField } from '@uzh-bf/design-system'
+import { SelectField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -29,10 +29,6 @@ function AnalyticsNavigation({
   const router = useRouter()
   const t = useTranslations()
 
-  if (isLoading) {
-    return <Loader />
-  }
-
   return (
     <div className="mb-6 grid w-full grid-cols-2 md:grid-cols-3">
       <Link
@@ -43,21 +39,29 @@ function AnalyticsNavigation({
         <div className="flex flex-row items-center gap-0.5">{labelLeft}</div>
       </Link>
       <div className="hidden justify-center md:flex">
-        <SelectField
-          label={`${t('shared.generic.course')}:`}
-          labelType="large"
-          value={router.query.courseId as string}
-          items={
-            data?.userCourses?.map((course) => ({
+        {isLoading && !data ? (
+          <Loader />
+        ) : !data?.userCourses ? (
+          <UserNotification
+            type="error"
+            message={t('manage.analytics.analyticsLoadingFailed')}
+            className={{ root: 'text-sm' }}
+          />
+        ) : (
+          <SelectField
+            label={`${t('shared.generic.course')}:`}
+            labelType="large"
+            value={router.query.courseId as string}
+            items={data.userCourses.map((course) => ({
               label: course.name,
               value: course.id,
-            })) ?? []
-          }
-          onChange={(value) => {
-            router.push({ pathname: `/analytics/${value}/${slug}` })
-          }}
-          className={{ select: { trigger: 'h-8' } }}
-        />
+            }))}
+            onChange={(value) => {
+              router.push({ pathname: `/analytics/${value}/${slug}` })
+            }}
+            className={{ select: { trigger: 'h-8' } }}
+          />
+        )}
       </div>
       <Link
         href={hrefRight}
