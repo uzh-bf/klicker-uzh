@@ -752,6 +752,9 @@ Second-pass UX/cache cleanup prepared:
   show the existing localized failure UI. The shared submit button is disabled
   during Formik submission to avoid duplicate account creation attempts, and
   redirects only run after a confirmed participant or participant-token result.
+- PWA login-page create-account/join-course PIN preflight now validates the same
+  9-digit numeric PIN shape as the other join forms and disables submit while
+  invalid or submitting, avoiding unnecessary tRPC requests for incomplete PINs.
 
 Second-pass verification:
 
@@ -961,6 +964,20 @@ Second-pass verification:
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with
   connection refused, so no local backend or PWA dev server was available for
   screenshots.
+- Context7 docs checked for Formik `validateOnMount` and `isValid` behavior
+  before the PWA login-page PIN preflight cleanup.
+- `node_modules/.bin/prettier --check` on the changed PWA login PIN preflight
+  file plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed PWA login PIN preflight
+  file.
+- `./node_modules/.bin/next lint` from the dependency checkout
+  `apps/frontend-pwa` passed with the existing hook dependency warnings in
+  unrelated files.
+- `git diff --check` passed after the PWA login-page PIN preflight cleanup.
+- Browser verification remains blocked for this PWA login PIN preflight cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with connection
+  refused, so no local backend or PWA dev server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

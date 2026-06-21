@@ -22,11 +22,17 @@ function CreateAccountJoinForm() {
         {t('pwa.login.existingParticipantAccount')}
       </UserNotification>
       <Formik
+        validateOnMount
         initialValues={{ pin: '' }}
         validationSchema={yup.object({
           pin: yup
             .number()
             .typeError(t('pwa.joinCourse.coursePinNumerical'))
+            .test(
+              'len',
+              t('pwa.joinCourse.coursePinRequired'),
+              (val) => val !== undefined && val.toString().length === 9
+            )
             .required(t('pwa.joinCourse.coursePinRequired')),
         })}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
@@ -65,7 +71,7 @@ function CreateAccountJoinForm() {
           }
         }}
       >
-        {({ isSubmitting }) => (
+        {({ isSubmitting, isValid }) => (
           <Form className="flex flex-col">
             <FormikPinField
               required
@@ -79,8 +85,7 @@ function CreateAccountJoinForm() {
             <Button
               primary
               type="submit"
-              // TODO: add validation and disable button for invalid / incomplete pints
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isValid}
               loading={isSubmitting}
               className={{ root: 'self-end' }}
               data={{ cy: 'signup-course' }}
