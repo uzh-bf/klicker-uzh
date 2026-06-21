@@ -722,6 +722,10 @@ Second-pass UX/cache cleanup prepared:
   ownership/admin/member, leave, and delete actions; destructive delete/leave
   modals also guard close/secondary actions while their tRPC mutation is in
   flight.
+- PWA header regular logout now treats `participant.self` invalidation as a
+  best-effort refresh after confirmed tRPC logout success, so a cache-refresh
+  failure cannot keep the user on the current page after the server has already
+  cleared their session.
 
 Second-pass verification:
 
@@ -852,6 +856,16 @@ Second-pass verification:
   cleanup: `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, and
   `127.0.0.1:3002` failed with connection refused, so no local backend, PWA, or
   manage dev server was available for screenshots.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-pwa/src/components/common/Header.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed after the PWA header logout
+  cache-refresh cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed header file.
+- `git diff --check` passed after the PWA header logout cache-refresh cleanup.
+- Browser verification remains blocked for this PWA header logout cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` failed with connection
+  refused, so no local backend or PWA dev server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

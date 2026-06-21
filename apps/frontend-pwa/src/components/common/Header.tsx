@@ -339,7 +339,9 @@ function Header({
 
                         if (loggedOut) {
                           sessionStorage.removeItem('participant_token')
-                          await utils.participant.self.invalidate()
+                          utils.participant.self
+                            .invalidate()
+                            .catch((error) => console.error(error))
                           await router.push('/login')
                         } else {
                           toast({
