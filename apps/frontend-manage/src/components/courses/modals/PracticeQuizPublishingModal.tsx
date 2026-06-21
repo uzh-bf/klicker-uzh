@@ -2,7 +2,13 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ActivityType } from '@klicker-uzh/types'
-import { Button, FormikDatetimePicker, H3, Modal } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikDatetimePicker,
+  H3,
+  Modal,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -29,6 +35,11 @@ function PracticeQuizPublishingModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const publishPracticeQuiz = trpc.activity.publish.useMutation()
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+    })
 
   return (
     <Modal
@@ -53,17 +64,27 @@ function PracticeQuizPublishingModal({
           <Button
             primary
             onClick={async () => {
-              const result = await publishPracticeQuiz.mutateAsync({
-                activityId,
-                activityType: ActivityType.PRACTICE_QUIZ,
-              })
-              if (result.publishActivity?.id) {
-                await utils.course.detail.invalidate({ courseId })
+              try {
+                const result = await publishPracticeQuiz.mutateAsync({
+                  activityId,
+                  activityType: ActivityType.PRACTICE_QUIZ,
+                })
+                if (result.publishActivity?.id) {
+                  void utils.course.detail
+                    .invalidate({ courseId })
+                    .catch(console.error)
+                  void refetchActivities?.().catch(console.error)
+                  onClose()
+                } else {
+                  onErrorToast()
+                }
+              } catch (error) {
+                console.error(error)
+                onErrorToast()
               }
-              await refetchActivities?.()
-              onClose()
             }}
             loading={publishPracticeQuiz.isLoading}
+            disabled={publishPracticeQuiz.isLoading}
             data={{ cy: 'publish-practice-quiz-immediately' }}
             className={{ root: 'float-right mt-3' }}
           >
@@ -86,16 +107,27 @@ function PracticeQuizPublishingModal({
             initialValues={{ availableFrom: undefined }}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
-              const result = await publishPracticeQuiz.mutateAsync({
-                activityId,
-                activityType: ActivityType.PRACTICE_QUIZ,
-                availableFrom: dayjs(values.availableFrom).utc().toDate(),
-              })
-              if (result.publishActivity?.id) {
-                await utils.course.detail.invalidate({ courseId })
+              try {
+                const result = await publishPracticeQuiz.mutateAsync({
+                  activityId,
+                  activityType: ActivityType.PRACTICE_QUIZ,
+                  availableFrom: dayjs(values.availableFrom).utc().toDate(),
+                })
+                if (result.publishActivity?.id) {
+                  void utils.course.detail
+                    .invalidate({ courseId })
+                    .catch(console.error)
+                  void refetchActivities?.().catch(console.error)
+                  onClose()
+                } else {
+                  onErrorToast()
+                }
+              } catch (error) {
+                console.error(error)
+                onErrorToast()
+              } finally {
+                setSubmitting(false)
               }
-              await refetchActivities?.()
-              onClose()
             }}
             validationSchema={yup.object().shape({
               availableFrom: yup
@@ -108,7 +140,7 @@ function PracticeQuizPublishingModal({
                 ),
             })}
           >
-            {({ isValid }) => {
+            {({ isSubmitting, isValid }) => {
               return (
                 <Form>
                   <FormikDatetimePicker
@@ -134,8 +166,8 @@ function PracticeQuizPublishingModal({
                   <Button
                     primary
                     type="submit"
-                    loading={publishPracticeQuiz.isLoading}
-                    disabled={!isValid}
+                    loading={publishPracticeQuiz.isLoading || isSubmitting}
+                    disabled={!isValid || isSubmitting}
                     data={{ cy: 'schedule-practice-quiz-publication' }}
                     className={{ root: 'float-right mt-3' }}
                   >

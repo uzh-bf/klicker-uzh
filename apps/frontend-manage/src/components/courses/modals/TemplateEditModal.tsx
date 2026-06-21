@@ -93,7 +93,7 @@ function TemplateEditModal({
               })
 
               if (result.editActivityTemplate) {
-                await refetchActivities?.()
+                void refetchActivities?.().catch(console.error)
                 onSuccess()
                 onClose()
               } else {

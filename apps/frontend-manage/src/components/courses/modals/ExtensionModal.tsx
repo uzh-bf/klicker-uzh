@@ -1,5 +1,10 @@
 import { ActivityType } from '@klicker-uzh/types'
-import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikDatetimePicker,
+  Modal,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -65,10 +70,23 @@ function ExtensionModal({
                 endDate: utcEndDate,
               })
               if (result.extendActivity?.id) {
-                await utils.course.detail.invalidate({ courseId })
+                void utils.course.detail
+                  .invalidate({ courseId })
+                  .catch(console.error)
+                void refetchActivities?.().catch(console.error)
+                onClose()
+              } else {
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                })
               }
-              await refetchActivities?.()
-              onClose()
+            } catch (error) {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
             } finally {
               setSubmitting(false)
             }

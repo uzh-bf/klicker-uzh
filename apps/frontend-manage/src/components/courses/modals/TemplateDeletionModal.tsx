@@ -51,7 +51,7 @@ function TemplateDeletionModal({
           })
 
           if (data?.deleteActivityTemplate) {
-            await refetchActivities?.()
+            void refetchActivities?.().catch(console.error)
             onSuccess()
             onClose()
           } else {

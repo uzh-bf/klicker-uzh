@@ -661,6 +661,24 @@ Second-pass UX/cache cleanup prepared:
   as best-effort work after confirmed mutation success. Failed refreshes no
   longer turn successful activity overview actions into unhandled rejections or
   false failure states.
+- Manage publish/schedule/extension/template modals now keep real tRPC mutation
+  failures on the modal with the existing generic error feedback and treat
+  `course.detail`, `activity.userActivities`, and parent `refetchActivities`
+  refreshes as best-effort after confirmed mutation success. Successful publish,
+  schedule, extension, template edit/delete, and template conversion actions no
+  longer depend on follow-up refresh callbacks for their user-facing success
+  state.
+- Review/simplification for the publish/schedule/template modal refresh
+  cleanup: correctness review returned no blocking findings and confirmed
+  GraphQL/tRPC coexistence is preserved. Simplification found only cosmetic
+  duplication and recommended no pre-commit changes.
+- Verification for the publish/schedule/template modal refresh cleanup:
+  Context7 TanStack Query v4 docs checked mutation side-effect and invalidate
+  promise behavior; `prettier --check` on the changed modal files plus docs
+  passed in the dependency checkout; `tsc --noEmit` for `apps/frontend-manage`
+  passed in the dependency checkout; `git diff --check` passed in the commit
+  worktree. Browser verification remains blocked because `127.0.0.1:3000` and
+  `3002` refuse connections.
 - Review/simplification for the activity-action refresh cleanup: correctness
   review returned no findings and confirmed GraphQL/tRPC coexistence is
   preserved. Simplification found only cosmetic duplication in the four

@@ -133,7 +133,7 @@ function TemplateConversionModal({
             })
 
             if (result.createActivityTemplate) {
-              await refetchActivities?.()
+              void refetchActivities?.().catch(console.error)
               onSuccess()
               handleModalClose()
             } else {

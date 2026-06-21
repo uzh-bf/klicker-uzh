@@ -1,6 +1,11 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikDatetimePicker,
+  Modal,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -51,12 +56,27 @@ function LiveQuizSchedulingModal({
               availableFrom: dayjs(values.availableFrom).utc().toDate(),
             })
             if (result.scheduleLiveQuiz?.id) {
-              await utils.activity.userActivities.invalidate()
+              void utils.activity.userActivities
+                .invalidate()
+                .catch(console.error)
               if (courseId) {
-                await utils.course.detail.invalidate({ courseId })
+                void utils.course.detail
+                  .invalidate({ courseId })
+                  .catch(console.error)
               }
+              onClose()
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
             }
-            onClose()
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+            })
           } finally {
             setSubmitting(false)
           }
