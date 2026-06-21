@@ -239,12 +239,18 @@ function LiveQuizActions({
                 activityType:
                   ActivityType.LiveQuiz as RouterInputs['activity']['delete']['activityType'],
               })
-              if (liveQuiz.courseId && result.deleteActivity?.id) {
-                await utils.course.detail.invalidate({
-                  courseId: liveQuiz.courseId,
-                })
+              if (!result.deleteActivity?.id) {
+                throw new Error('Failed to delete live quiz')
               }
-              await refetchActivities?.()
+
+              void Promise.all([
+                liveQuiz.courseId
+                  ? utils.course.detail.invalidate({
+                      courseId: liveQuiz.courseId,
+                    })
+                  : Promise.resolve(),
+                refetchActivities?.(),
+              ]).catch(console.error)
             }}
             deleting={deleteLiveQuiz.isLoading}
           />

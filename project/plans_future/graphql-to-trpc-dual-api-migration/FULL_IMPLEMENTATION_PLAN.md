@@ -936,9 +936,22 @@ Second-pass UX/cache cleanup prepared:
   refetch actions with the generic system-error toast, exposes button loading,
   and treats leaderboard refetch as best-effort after a confirmed weekly/custom
   recompute mutation.
+- Manage live-quiz overview deletion now treats `activity.delete` as the
+  success boundary. Course-detail and activity-list refreshes run best-effort
+  after a confirmed delete, matching the other migrated activity deletion
+  modals.
 
 Second-pass verification:
 
+- Verification for the manage live-quiz overview deletion refresh cleanup:
+  Context7 TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and
+  invalidation handling. `prettier --check` on
+  `apps/frontend-manage/src/components/activities/overview/LiveQuizActions.tsx`
+  plus the updated docs passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-manage` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3002` refuses connections, so no local manage dev server was
+  available for screenshots; `127.0.0.1:3000` responded with Express `404`.
 - Verification for the manage course leaderboard recompute cleanup: Context7
   TanStack Query v4 docs checked `mutateAsync`, `isLoading`, invalidation, and
   refetch handling. `prettier --check` on
