@@ -616,6 +616,11 @@ Second-pass UX/cache cleanup prepared:
   pages keep existing list data visible during background refetch failures and
   no longer show "no active items" or "no repetition" when the request itself
   failed.
+- Manage question-pool and activity overview list pages now distinguish true
+  initial loading, failed initial tRPC list queries, and successful empty list
+  states. Failed initial list queries render the existing system-error
+  notification instead of an indefinite loader or empty list, while cached list
+  data stays visible during background refetch failures.
 
 Second-pass verification:
 
@@ -878,14 +883,21 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
   `127.0.0.1:3003` all failed with connection refused, so no local backend,
   PWA, manage, or control dev server was available for screenshots.
+- `node_modules/.bin/prettier --check` on the changed manage question-pool and
+  activity overview pages passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage overview-list cleanup.
+- `git diff --check` passed after the manage overview-list cleanup.
+- Browser verification for the manage overview-list cleanup remains blocked:
+  `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
+  `127.0.0.1:3003` all failed with connection refused, so no local backend,
+  PWA, manage, or control dev server was available for screenshots.
 
-PR #5132 status after `c8ca1edc` before this batch:
+PR #5132 status after `bb92153b` before the manage overview-list batch:
 
-- Passing at last poll: CodeQL Python.
-- Pending at last poll: CodeQL Java/Kotlin, JavaScript, and TypeScript
-  analyses; SonarCloud; format; lint; check; Claude review; `packages/api tRPC
-  Vitest`; `packages/graphql Vitest`; Cypress Cloud; broad test jobs; and
-  visible amd/arm build jobs.
+- Pending at last poll: CodeQL analyses; SonarCloud; format; lint; check;
+  Claude review; `packages/api tRPC Vitest`; broad test jobs; and visible
+  amd/arm build jobs.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

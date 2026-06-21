@@ -1,6 +1,6 @@
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -127,6 +127,7 @@ function Activities() {
   const {
     isLoading: loadingActivities,
     data: dataActivities,
+    error: activitiesError,
     refetch: refetchActivities,
   } = trpc.activity.userActivities.useQuery(activityFiltersInput, {
     refetchOnMount: 'always',
@@ -282,8 +283,14 @@ function Activities() {
             </div>
 
             <div className="h-full overflow-y-auto">
-              {loadingActivities ? (
+              {loadingActivities && !dataActivities ? (
                 <Loader />
+              ) : activitiesError && !dataActivities ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                  className={{ root: 'm-4' }}
+                />
               ) : (
                 <>
                   <ActivityList

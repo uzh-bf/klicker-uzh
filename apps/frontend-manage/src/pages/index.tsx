@@ -1,6 +1,6 @@
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, toast } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -153,6 +153,7 @@ function Index() {
   const {
     isLoading: loadingElements,
     data: dataElements,
+    error: elementsError,
     refetch: refetchElements,
   } = trpc.element.list.useQuery(elementListInput)
   const numOfElements = dataElements?.numOfElements || 0
@@ -406,10 +407,16 @@ function Index() {
             </div>
 
             <div className="h-full overflow-y-auto">
-              {!dataElements || loadingElements ? (
+              {loadingElements && !dataElements ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader />
                 </div>
+              ) : elementsError && !dataElements ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                  className={{ root: 'm-4' }}
+                />
               ) : (
                 <>
                   <ElementList
