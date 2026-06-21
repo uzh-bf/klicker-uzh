@@ -472,6 +472,10 @@ Second-pass UX/cache cleanup prepared:
   `onAnswerCollectionCreated` callbacks and returns the
   `answerCollectionsInfo` invalidation promise in both live-quiz-template and
   element-edit flows.
+- PWA course leaderboard join/leave mutations now await targeted leaderboard
+  and course overview invalidation, show a system-error toast on failure, show
+  loading on the standalone join button, and keep the leave modal open with a
+  loading primary action until the leave mutation succeeds.
 
 Second-pass verification:
 
@@ -484,6 +488,9 @@ Second-pass verification:
 - `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
 - `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with pre-existing hook
   warnings only.
+- Re-ran `prettier --check`, `pnpm --filter @klicker-uzh/frontend-pwa check`,
+  and `pnpm --filter @klicker-uzh/frontend-pwa lint` after the leaderboard
+  cleanup; all passed, with the same pre-existing PWA hook warnings only.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`.

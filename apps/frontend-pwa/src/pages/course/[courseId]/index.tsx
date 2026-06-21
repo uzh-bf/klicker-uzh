@@ -16,6 +16,7 @@ import {
   TabContent,
   Tabs,
   UserNotification,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
@@ -83,28 +84,35 @@ function CourseOverview({
         Boolean(data?.courseOverview?.participation),
     })
 
+  const invalidateLeaderboardData = async () => {
+    await Promise.all([
+      utils.participant.courseLeaderboard.invalidate(leaderboardInput),
+      utils.participant.courseOverview.invalidate(courseInput),
+    ])
+  }
+
+  const onLeaderboardMutationError = () => {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
+
   const joinCourseLeaderboard =
     trpc.participant.joinCourseLeaderboard.useMutation({
-      onSuccess: () => {
-        void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
-        void utils.participant.courseOverview.invalidate(courseInput)
-      },
+      onSuccess: invalidateLeaderboardData,
+      onError: onLeaderboardMutationError,
     })
 
   const leaveCourseLeaderboard =
     trpc.participant.leaveCourseLeaderboard.useMutation({
-      onSuccess: () => {
-        void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
-        void utils.participant.courseOverview.invalidate(courseInput)
-      },
+      onSuccess: invalidateLeaderboardData,
+      onError: onLeaderboardMutationError,
     })
 
   const onJoinCourseLeaderboard = () => {
     joinCourseLeaderboard.mutate(courseInput)
-  }
-
-  const onLeaveCourseLeaderboard = () => {
-    leaveCourseLeaderboard.mutate(courseInput)
   }
 
   useEffect(() => {
@@ -402,6 +410,8 @@ function CourseOverview({
                                   <Button
                                     fluid
                                     primary
+                                    disabled={joinCourseLeaderboard.isLoading}
+                                    loading={joinCourseLeaderboard.isLoading}
                                     onClick={onJoinCourseLeaderboard}
                                     className={{ root: 'mt-3 h-max py-1' }}
                                     data={{
@@ -637,10 +647,15 @@ function CourseOverview({
           {isLeaveCourseLeaderboardModalOpen && (
             <LeaveLeaderboardModal
               onClose={() => setIsLeaveCourseLeaderboardModalOpen(false)}
-              onConfirm={() => {
-                onLeaveCourseLeaderboard()
-                setIsLeaveCourseLeaderboardModalOpen(false)
+              onConfirm={async () => {
+                try {
+                  await leaveCourseLeaderboard.mutateAsync(courseInput)
+                  setIsLeaveCourseLeaderboardModalOpen(false)
+                } catch {
+                  // `onError` shows the toast; keep the modal open for retry.
+                }
               }}
+              loading={leaveCourseLeaderboard.isLoading}
             />
           )}
         </>
