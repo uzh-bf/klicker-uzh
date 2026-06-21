@@ -27,12 +27,8 @@ function LeaveUserGroupModal({
       onClose()
     }
   }
-  const refreshUserGroups = async () => {
-    try {
-      await utils.sharing.userGroups.invalidate()
-    } catch (error) {
-      console.error(error)
-    }
+  const refreshUserGroups = () => {
+    void utils.sharing.userGroups.invalidate().catch(console.error)
   }
 
   const onErrorToast = () =>
@@ -59,7 +55,7 @@ function LeaveUserGroupModal({
         try {
           const success = await leaveUserGroup.mutateAsync({ groupId })
           if (success.left) {
-            await refreshUserGroups()
+            refreshUserGroups()
             onSuccess()
           } else {
             onErrorToast()

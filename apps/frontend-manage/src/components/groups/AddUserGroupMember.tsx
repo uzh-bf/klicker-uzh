@@ -17,12 +17,8 @@ function AddUserGroupMember({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const addUserToUserGroup = trpc.sharing.addUserToUserGroup.useMutation()
-  const refreshUserGroups = async () => {
-    try {
-      await utils.sharing.userGroups.invalidate()
-    } catch (error) {
-      console.error(error)
-    }
+  const refreshUserGroups = () => {
+    void utils.sharing.userGroups.invalidate().catch(console.error)
   }
 
   const onErrorToast = () =>
@@ -51,7 +47,7 @@ function AddUserGroupMember({
           })
 
           if (addedUser.user) {
-            await refreshUserGroups()
+            refreshUserGroups()
             resetForm()
             toast({
               type: 'success',

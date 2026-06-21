@@ -786,6 +786,10 @@ Second-pass UX/cache cleanup prepared:
   group lists visible during refetch failures with a compact system-error
   notification, and treats `userGroups` invalidation after create/add/leave/delete
   as best-effort work after confirmed server success.
+- Follow-up audit corrected the remaining user-group create/add-member/leave/delete
+  implementations to match the documented pattern: confirmed tRPC results now
+  close/reset/toast immediately, while `sharing.userGroups` invalidation runs as
+  a logged best-effort refresh.
 - Manage catalog browser and add-to-catalog object selectors now distinguish
   failed migrated tRPC catalog queries from successful empty catalog states. The
   catalog overview keeps loaded collection/object data visible if the other
@@ -904,6 +908,16 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
   refused, so no local backend or manage dev server was available for
   screenshots.
+- Follow-up verification for user-group refresh cleanup: Context7 TanStack Query
+  v4 docs checked mutation callback promise behavior before replacing the
+  remaining awaited create/add-member/leave/delete invalidations with
+  nonblocking best-effort refreshes. Local diff review found no GraphQL/Apollo
+  changes and no behavior change for rejected or falsy tRPC mutation results.
+  `prettier --check` on the four changed user-group files plus this plan passed
+  in the dependency checkout; `tsc --noEmit` for `apps/frontend-manage` passed
+  in the dependency checkout; `git diff --check` passed in the commit worktree.
+  Browser verification remains blocked because `127.0.0.1:3000` and `3002`
+  refuse connections.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
