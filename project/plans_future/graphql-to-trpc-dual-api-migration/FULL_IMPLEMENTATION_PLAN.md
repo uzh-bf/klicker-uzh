@@ -668,6 +668,23 @@ Second-pass UX/cache cleanup prepared:
   schedule, extension, template edit/delete, and template conversion actions no
   longer depend on follow-up refresh callbacks for their user-facing success
   state.
+- Manage group-activity grading save/finalize now treats the confirmed tRPC
+  mutation result as the success boundary and runs
+  `activity.groupActivityGrading` invalidation as best-effort. Save/finalize
+  success toasts and form reset/close behavior no longer depend on the follow-up
+  refresh callback, while rejected finalize mutations now show the existing
+  finalize-error toast instead of surfacing as an unhandled action failure.
+- Review/simplification for the group-activity grading refresh cleanup:
+  correctness review returned no findings and confirmed GraphQL/tRPC coexistence
+  is preserved. Simplification found only cosmetic duplication in finalize
+  success/error branches and recommended no pre-commit changes.
+- Verification for the group-activity grading refresh cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync` and side-effect promise behavior;
+  `prettier --check` on the changed grading files plus docs passed in the
+  dependency checkout; `tsc --noEmit` for `apps/frontend-manage` passed in the
+  dependency checkout; `git diff --check` passed in the commit worktree. Browser
+  verification remains blocked because `127.0.0.1:3000` and `3002` refuse
+  connections.
 - Review/simplification for the publish/schedule/template modal refresh
   cleanup: correctness review returned no blocking findings and confirmed
   GraphQL/tRPC coexistence is preserved. Simplification found only cosmetic

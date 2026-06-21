@@ -236,9 +236,11 @@ function GroupActivityGradingStack({
           })
 
           if (result.gradeGroupActivitySubmission?.id) {
-            await utils.activity.groupActivityGrading.invalidate({
-              id: submission.groupActivityId,
-            })
+            void utils.activity.groupActivityGrading
+              .invalidate({
+                id: submission.groupActivityId,
+              })
+              .catch(console.error)
             resetForm()
             toast({
               type: 'success',

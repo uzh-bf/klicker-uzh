@@ -22,28 +22,41 @@ function FinalizeGradingModal({
       title={t('manage.groupActivity.finalizeGrading')}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={finalizeGroupActivityGrading.isLoading}
+      primaryDisabled={finalizeGroupActivityGrading.isLoading}
       onPrimaryAction={async () => {
-        const data = await finalizeGroupActivityGrading.mutateAsync({
-          id: activityId,
-        })
-
-        if (data?.finalizeGroupActivityGrading?.id) {
-          await utils.activity.groupActivityGrading.invalidate({
+        try {
+          const data = await finalizeGroupActivityGrading.mutateAsync({
             id: activityId,
           })
-          toast({
-            type: 'success',
-            message: t('manage.groupActivity.finalizeGradingSuccess'),
-            options: { duration: 4000 },
-          })
-        } else {
+
+          if (data?.finalizeGroupActivityGrading?.id) {
+            void utils.activity.groupActivityGrading
+              .invalidate({
+                id: activityId,
+              })
+              .catch(console.error)
+            toast({
+              type: 'success',
+              message: t('manage.groupActivity.finalizeGradingSuccess'),
+              options: { duration: 4000 },
+            })
+            onClose()
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.groupActivity.finalizeGradingError'),
+              options: { duration: 6000 },
+            })
+            onClose()
+          }
+        } catch (error) {
+          console.error(error)
           toast({
             type: 'error',
             message: t('manage.groupActivity.finalizeGradingError'),
             options: { duration: 6000 },
           })
         }
-        onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-finalize-grading' }}
       secondaryLabel={t('shared.generic.cancel')}
