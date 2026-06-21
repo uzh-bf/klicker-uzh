@@ -37,7 +37,6 @@ function CatalogImportModal({
     objectType,
     objectId,
     catalogCollectionId,
-    onError: () => onErrorToast(),
   })
 
   return (
@@ -78,6 +77,7 @@ function CatalogImportModal({
         }
       }}
       primaryLoading={importing}
+      primaryDisabled={importing}
       dataPrimaryAction={{ cy: 'confirm-object-import' }}
       title={t('manage.catalog.importPublicResource')}
       dataCloseButton={{ cy: 'close-object-import-modal' }}

@@ -693,6 +693,12 @@ Second-pass UX/cache cleanup prepared:
   mutations now catch rejected tRPC calls, show the existing error toasts, keep
   pending buttons guarded, and update the request/count caches only after
   confirmed `resolved` responses.
+- Manage catalog object action modals now use a cleaner hook contract for
+  copy/import/request/cancel flows: hooks return boolean success/failure while
+  modals own user-facing toasts, preventing duplicate failure notifications.
+  Copy/import/request/cancel/remove primary actions are explicitly disabled
+  while their tRPC mutations are pending, and catalog object removal now catches
+  rejected tRPC calls instead of leaving an unhandled failed mutation.
 
 Second-pass verification:
 
@@ -751,6 +757,19 @@ Second-pass verification:
 - Browser verification remains blocked for this manage pending sharing request
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
   connection refused, so no local backend or manage dev server was available for
+  screenshots.
+- Context7 docs checked for current TanStack Query v4 query/mutation loading,
+  background fetching, stale-data, and promise-returning callback semantics
+  before the manage catalog action-modal cleanup.
+- `node_modules/.bin/prettier --check` on the nine changed manage catalog
+  action files plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed catalog action
+  files.
+- `git diff --check` passed after the manage catalog action-modal cleanup.
+- Browser verification remains blocked for this manage catalog action cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
+  refused, so no local backend or manage dev server was available for
   screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.

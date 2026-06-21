@@ -6,12 +6,10 @@ function useRequestCatalogObject({
   objectType,
   objectId,
   catalogCollectionId,
-  onError,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
-  onError: () => void
 }): { onRequest: () => Promise<boolean>; requesting: boolean } {
   const utils = trpc.useUtils()
   const requestCatalogCollection =
@@ -42,11 +40,9 @@ function useRequestCatalogObject({
           return true
         }
 
-        onError()
         return false
       } catch (error) {
         console.error(error)
-        onError()
         return false
       }
     }
@@ -86,11 +82,9 @@ function useRequestCatalogObject({
         return true
       }
 
-      onError()
       return false
     } catch (error) {
       console.error(error)
-      onError()
       return false
     }
   }

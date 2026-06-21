@@ -6,12 +6,10 @@ function useImportCatalogObject({
   objectType,
   objectId,
   catalogCollectionId,
-  onError,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
-  onError: () => void
 }) {
   const utils = trpc.useUtils()
   const importCatalogObject = trpc.sharing.importCatalogObject.useMutation()
@@ -20,7 +18,7 @@ function useImportCatalogObject({
     return {
       onImport: async () => {
         console.error('Unsupported object type', objectType)
-        onError()
+        return false
       },
       importing: false,
     }

@@ -44,33 +44,42 @@ function CatalogObjectRemovalModal({
           : t(`manage.catalog.remove${object.objectType}`)
       }
       primaryLoading={removeCatalogObjectAssignment.isLoading}
+      primaryDisabled={removeCatalogObjectAssignment.isLoading}
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
-        const res = await removeCatalogObjectAssignment.mutateAsync({
-          assignmentId: object.id,
-        })
-
-        const success = res.removed
-        if (success) {
-          utils.sharing.catalogObjects.setData(
-            { catalogCollectionId },
-            (data) => {
-              if (!data?.catalogObjects) return data
-
-              return {
-                catalogObjects: data.catalogObjects.filter(
-                  (obj) => obj.id !== object.id
-                ),
-              }
-            }
-          )
-          void utils.sharing.catalogCollections.invalidate()
-          toast({
-            type: 'success',
-            message: t('manage.catalog.objectRemovalSuccess'),
+        try {
+          const res = await removeCatalogObjectAssignment.mutateAsync({
+            assignmentId: object.id,
           })
-          onClose()
-        } else {
+
+          const success = res.removed
+          if (success) {
+            utils.sharing.catalogObjects.setData(
+              { catalogCollectionId },
+              (data) => {
+                if (!data?.catalogObjects) return data
+
+                return {
+                  catalogObjects: data.catalogObjects.filter(
+                    (obj) => obj.id !== object.id
+                  ),
+                }
+              }
+            )
+            void utils.sharing.catalogCollections.invalidate()
+            toast({
+              type: 'success',
+              message: t('manage.catalog.objectRemovalSuccess'),
+            })
+            onClose()
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.catalog.objectRemovalFailed'),
+            })
+          }
+        } catch (error) {
+          console.error(error)
           toast({
             type: 'error',
             message: t('manage.catalog.objectRemovalFailed'),

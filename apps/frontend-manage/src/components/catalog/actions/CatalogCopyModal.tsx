@@ -38,7 +38,6 @@ function CatalogCopyModal({
     objectType,
     objectId,
     catalogCollectionId,
-    onError: onErrorToast,
   })
 
   return (
@@ -70,6 +69,7 @@ function CatalogCopyModal({
         </div>
       }
       primaryLoading={copying}
+      primaryDisabled={copying}
       onPrimaryAction={async (e) => {
         e?.stopPropagation()
         const success = await onCopy()

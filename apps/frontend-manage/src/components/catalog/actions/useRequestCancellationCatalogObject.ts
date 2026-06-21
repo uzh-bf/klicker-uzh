@@ -6,12 +6,10 @@ function useRequestCancellationCatalogObject({
   objectType,
   objectId,
   catalogCollectionId,
-  onError,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
-  onError: () => void
 }) {
   const utils = trpc.useUtils()
   const cancelObjectSharingRequest =
@@ -45,11 +43,9 @@ function useRequestCancellationCatalogObject({
         return true
       }
 
-      onError()
       return false
     } catch (error) {
       console.error(error)
-      onError()
       return false
     }
   }

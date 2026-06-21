@@ -34,7 +34,6 @@ function CatalogRequestCancellationModal({
     objectType,
     objectId,
     catalogCollectionId,
-    onError: onErrorToast,
   })
 
   return (
@@ -55,6 +54,7 @@ function CatalogRequestCancellationModal({
       }
       primaryButtonStyle="destructive"
       primaryLoading={cancelling}
+      primaryDisabled={cancelling}
       onPrimaryAction={async (e) => {
         e?.stopPropagation()
         const success = await onCancellation()

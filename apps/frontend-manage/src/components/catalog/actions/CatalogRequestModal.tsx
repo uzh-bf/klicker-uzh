@@ -40,7 +40,6 @@ function CatalogRequestModal({
     objectType,
     objectId,
     catalogCollectionId,
-    onError: onErrorToast,
   })
 
   return (
@@ -71,6 +70,7 @@ function CatalogRequestModal({
         </div>
       }
       primaryLoading={requesting}
+      primaryDisabled={requesting}
       onPrimaryAction={async (e) => {
         e?.stopPropagation()
         const success = await onRequest()

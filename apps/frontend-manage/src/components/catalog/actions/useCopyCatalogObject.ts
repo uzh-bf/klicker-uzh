@@ -6,12 +6,10 @@ function useCopyCatalogObject({
   objectType,
   objectId,
   catalogCollectionId,
-  onError,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
-  onError: () => void
 }) {
   const utils = trpc.useUtils()
   const copyCatalogObjectToAccount =
@@ -21,7 +19,7 @@ function useCopyCatalogObject({
     return {
       onCopy: async () => {
         console.error('Unsupported object type', objectType)
-        onError()
+        return false
       },
       copying: false,
     }
