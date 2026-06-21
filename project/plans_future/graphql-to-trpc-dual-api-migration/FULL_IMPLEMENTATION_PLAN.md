@@ -773,6 +773,11 @@ Second-pass UX/cache cleanup prepared:
   as the authoritative success point and runs the follow-up
   `participant.participations` invalidation as best-effort refresh work, so a
   cache refresh failure cannot block navigation home after completion.
+- PWA course leaderboard now renders a standard error notification when the
+  initial `participant.courseLeaderboard` query fails without data, keeps stale
+  leaderboard data visible during background refetch errors, and treats
+  leaderboard/course-overview invalidations after join/leave mutations as
+  best-effort refresh work.
 
 Second-pass verification:
 
@@ -1061,6 +1066,21 @@ Second-pass verification:
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with
   connection refused, so no local backend or PWA dev server was available for
   screenshots.
+- Context7 docs checked for tRPC query error state, mutation success handling,
+  and `useUtils` invalidation helpers before the PWA course leaderboard
+  fallback/refresh cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed course overview page.
+- `./node_modules/.bin/next lint` from the dependency checkout
+  `apps/frontend-pwa` passed with existing hook dependency warnings in unrelated
+  files.
+- `git diff --check` passed after the PWA course leaderboard cleanup.
+- Browser verification remains blocked for this PWA course leaderboard cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with connection
+  refused, so no local backend or PWA dev server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

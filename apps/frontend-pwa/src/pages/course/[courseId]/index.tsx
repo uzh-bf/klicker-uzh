@@ -74,8 +74,11 @@ function CourseOverview({
     () => ({ courseId, mode: leaderboardType }),
     [courseId, leaderboardType]
   )
-  const { data: dataLeaderboard, isLoading: loadingLeaderboard } =
-    trpc.participant.courseLeaderboard.useQuery(leaderboardInput)
+  const {
+    data: dataLeaderboard,
+    error: leaderboardError,
+    isLoading: loadingLeaderboard,
+  } = trpc.participant.courseLeaderboard.useQuery(leaderboardInput)
 
   const { data: groupActivitiesData } =
     trpc.participant.courseGroupActivities.useQuery(courseInput, {
@@ -84,11 +87,11 @@ function CourseOverview({
         Boolean(data?.courseOverview?.participation),
     })
 
-  const invalidateLeaderboardData = async () => {
-    await Promise.all([
+  const invalidateLeaderboardData = () => {
+    void Promise.all([
       utils.participant.courseLeaderboard.invalidate(leaderboardInput),
       utils.participant.courseOverview.invalidate(courseInput),
-    ])
+    ]).catch(console.error)
   }
 
   const onLeaderboardMutationError = () => {
@@ -388,8 +391,15 @@ function CourseOverview({
                           )}
                         </div>
 
-                        {!dataLeaderboard || loadingLeaderboard ? (
-                          <Loader />
+                        {!dataLeaderboard ? (
+                          loadingLeaderboard && !leaderboardError ? (
+                            <Loader />
+                          ) : (
+                            <UserNotification
+                              type="error"
+                              message={t('shared.generic.systemError')}
+                            />
+                          )
                         ) : (
                           <>
                             {participant?.id && participation?.isActive && (
