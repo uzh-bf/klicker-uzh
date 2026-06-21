@@ -861,6 +861,10 @@ Second-pass UX/cache cleanup prepared:
   work. Failed invalidations or parent refetch callbacks no longer turn
   successful share/revoke/permission changes into failure toasts or unhandled
   promises.
+- Manage activity-log add/delete comment actions now surface failed tRPC
+  mutation results (`activityMessage: null`, `deleted: false`) and rejected
+  mutations through the existing localized generic error toast. Delete buttons
+  are guarded while a delete mutation is in flight to avoid duplicate clicks.
 - Manage user-group management now distinguishes a failed initial
   `sharing.userGroups` load from the successful no-groups state, keeps stale
   group lists visible during refetch failures with a compact system-error
@@ -1320,6 +1324,17 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
   refused, so no local backend or manage dev server was available for
   screenshots.
+- Follow-up verification for the manage activity-log mutation failure cleanup:
+  Context7 tRPC docs checked `useMutation` loading/error handling before adding
+  visible generic error toasts for failed add/delete comment mutations and
+  guarding delete buttons while the delete mutation is in flight. Local
+  self-review found the diff limited to `ActivityLog.tsx` plus notes; GraphQL /
+  Apollo coexistence is unchanged. `prettier --check` on `ActivityLog.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed. `./node_modules/.bin/tsc
+  --noEmit` from `apps/frontend-manage` passed. `git diff --check` passed in
+  the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000` and `127.0.0.1:3002` both refused connections, so no local
+  backend or manage dev server was available for screenshots.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, disabled-query, and stale-data semantics before the manage
   catalog browser cleanup.

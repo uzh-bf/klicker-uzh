@@ -1,7 +1,7 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import type { ObjectType } from '@lib/constants/sharingEnums'
-import { Button, TextareaField } from '@uzh-bf/design-system'
+import { Button, TextareaField, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
@@ -36,6 +36,7 @@ function ActivityLog({
     addActivityMessage,
     deleteActivityMessage,
     isAddingMessage: hookIsAddingMessage,
+    isDeletingMessage,
     refetch,
   } = useObjectActivity({
     objectId,
@@ -52,12 +53,48 @@ function ActivityLog({
     setIsSubmitting(true)
 
     try {
-      await addActivityMessage(message.trim())
+      const result = await addActivityMessage(message.trim())
+
+      if (!result?.activityMessage) {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+        return
+      }
+
       setMessage('')
     } catch (error) {
       console.error('[ActivityLog] Failed to submit message:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteMessage = async (id: number) => {
+    try {
+      const result = await deleteActivityMessage(id)
+
+      if (!result?.deleted) {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+      }
+    } catch (error) {
+      console.error('[ActivityLog] Failed to delete message:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
     }
   }
 
@@ -186,18 +223,21 @@ function ActivityLog({
 
                             <Button
                               basic
+                              disabled={isDeletingMessage}
                               className={{
                                 root: twMerge(
                                   'hidden px-3 py-0 text-red-600 hover:text-red-600',
                                   entry.isOwn && 'group-hover:block'
                                 ),
                               }}
-                              onClick={async () =>
-                                await deleteActivityMessage(entry.id)
-                              }
+                              onClick={() => void handleDeleteMessage(entry.id)}
                               data={{ cy: 'activity-log-delete-message' }}
                             >
-                              <Button.Icon withoutLabel icon={faTrashCan} />
+                              <Button.Icon
+                                withoutLabel
+                                icon={faTrashCan}
+                                loading={isDeletingMessage}
+                              />
                             </Button>
                           </div>
 
