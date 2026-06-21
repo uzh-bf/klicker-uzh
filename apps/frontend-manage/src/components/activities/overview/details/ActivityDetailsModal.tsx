@@ -104,7 +104,7 @@ function ActivityDetailsModal({
       loading={initialLoading}
       title={t('manage.activities.activityDetails')}
       onClose={() => {
-        refetchActivities?.()
+        void refetchActivities?.().catch(console.error)
         onClose()
       }}
       className={{

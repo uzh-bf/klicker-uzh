@@ -695,9 +695,9 @@ Second-pass UX/cache cleanup prepared:
 - Manage activity overview review-status, rename, and unpublish actions now
   catch rejected tRPC mutations, keep existing success/error toasts, and treat
   `course.detail`, `activity.details`, and parent `refetchActivities` refreshes
-  as best-effort work after confirmed mutation success. Failed refreshes no
-  longer turn successful activity overview actions into unhandled rejections or
-  false failure states.
+  as best-effort work after confirmed mutation success or activity-details
+  modal close. Failed refreshes no longer turn successful activity overview
+  actions into unhandled rejections or false failure states.
 - Manage shared destructive confirmation modals now guard close/cancel/confirm
   while a submit is in flight. Activity removal, element permission removal,
   and element hard-delete tRPC mutations now close on confirmed write success
@@ -766,6 +766,18 @@ Second-pass UX/cache cleanup prepared:
   `tsc --noEmit` for `apps/frontend-manage` passed in the dependency checkout;
   `git diff --check` passed in the commit worktree. Browser verification remains
   blocked because `127.0.0.1:3000` and `3002` refuse connections.
+- Follow-up verification for the activity-details close refresh cleanup:
+  Context7 React docs checked event-handler side-effect placement before
+  converting the close-time activity-list refresh to caught best-effort work.
+  Local diff review found the change limited to
+  `ActivityDetailsModal.onClose` plus docs, with GraphQL/Apollo coexistence
+  unchanged. `prettier --check` on the changed details modal plus
+  `project/CODEBASE_NOTES.md` and this plan passed. `tsc --noEmit` for
+  `apps/frontend-manage` passed in the dependency checkout after mirroring the
+  changed details modal. `git diff --check` passed in the commit worktree.
+  Browser verification remains blocked because `127.0.0.1:3000` returned an
+  Express 404 and `127.0.0.1:3002` failed with connection refused, so no local
+  manage dev server was available for screenshots.
 - Review/simplification for the chatbot/course-settings refresh cleanup:
   correctness review returned no findings and confirmed GraphQL/tRPC coexistence
   is preserved. Simplification suggested awaiting caught invalidations to
