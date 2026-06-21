@@ -110,14 +110,18 @@ function Login() {
         usernameOrEmail: values.usernameOrEmail.trim(),
       })
 
-      // show success message on success
       if (result) {
         toast({
           type: 'success',
           message: t('pwa.general.magicLinkSent'),
           options: { duration: 8000 },
         })
-        setSubmitting(false)
+      } else {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 6000 },
+        })
       }
     } catch (e) {
       console.error(e)
@@ -126,6 +130,7 @@ function Login() {
         message: t('shared.generic.systemError'),
         options: { duration: 6000 },
       })
+    } finally {
       setSubmitting(false)
     }
   }

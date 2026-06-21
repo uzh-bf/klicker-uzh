@@ -963,6 +963,10 @@ Second-pass UX/cache cleanup prepared:
   post-success `participant.self` cache warm-ups are best-effort so a self-query
   failure cannot strand an authenticated participant on a loader or failed login
   form.
+- PWA login-page magic-link requests now release Formik submitting state in
+  `finally` and show the existing generic system-error toast for falsy tRPC
+  mutation results. A resolved-but-unsuccessful magic-link request no longer
+  leaves the submit button stuck without feedback.
 - PWA group-activity ended subscription refresh now runs as best-effort work
   with a generic error toast on failure. Existing group-activity data stays
   visible if the background detail refetch fails, and the subscription callback
@@ -1029,6 +1033,22 @@ Second-pass verification:
   remains blocked because `127.0.0.1:3000` and `127.0.0.1:3001` refuse
   connections, so no local backend or PWA dev server was available for
   screenshots.
+- Review/simplification for the PWA magic-link request submit-state cleanup:
+  subagent review was skipped because the available multi-agent tool currently
+  requires an explicit user request for subagents. Local self-review found the
+  diff limited to `sendMagicLinkEmail` failure feedback and submit-state
+  release plus docs; GraphQL/Apollo coexistence is preserved because the change
+  only adjusts the already migrated tRPC login-page mutation branch.
+- Verification for the PWA magic-link request submit-state cleanup: Context7
+  Formik docs checked manual `setSubmitting(false)` handling in submit handlers,
+  and Context7 tRPC docs were queried for mutation behavior. `prettier --check`
+  on `apps/frontend-pwa/src/pages/login.tsx`, `project/CODEBASE_NOTES.md`, and
+  this plan passed using the dependency checkout's Prettier binary. `tsc
+  --noEmit` for `apps/frontend-pwa` passed using the dependency checkout's
+  TypeScript binary. `git diff --check` passed in the commit worktree. Browser
+  verification remains blocked because `127.0.0.1:3001` refuses connections, so
+  no local PWA dev server was available for screenshots; `127.0.0.1:3000`
+  responded with Express `404`.
 - Review/simplification for the manage element/template save-refresh cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the
