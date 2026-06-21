@@ -85,7 +85,7 @@ function Login() {
         setSubmitting(false)
         resetForm()
       } else {
-        await utils.participant.self.fetch(undefined)
+        void utils.participant.self.fetch(undefined).catch(console.error)
 
         // redirect to the specified redirect path (default: question pool)
         await router.replace(

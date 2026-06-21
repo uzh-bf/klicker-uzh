@@ -957,9 +957,35 @@ Second-pass UX/cache cleanup prepared:
   invalidations run as best-effort follow-up work, while requested instance
   update/outdated writes remain awaited because they are part of the user's save
   action.
+- PWA password login, magic-link token login, and account activation now treat
+  the tRPC auth mutation result as the success boundary. Rejected token
+  mutations show the existing failure toast and return to `/login`, while
+  post-success `participant.self` cache warm-ups are best-effort so a self-query
+  failure cannot strand an authenticated participant on a loader or failed login
+  form.
 
 Second-pass verification:
 
+- Review/simplification for the PWA auth cache-warm-up cleanup: subagent
+  review was skipped because the available multi-agent tool currently requires
+  an explicit user request for subagents. Local self-review found the diff
+  limited to three migrated auth entry points plus docs; GraphQL/Apollo
+  coexistence is preserved, failure redirects still use the existing localized
+  token/login failure toasts, and post-success navigation no longer depends on
+  `participant.self` cache warm-ups.
+- Verification for the PWA auth cache-warm-up cleanup: Context7 TanStack Query
+  v4 docs checked `mutateAsync` rejection semantics and query fetch error
+  handling. `prettier --check` on
+  `apps/frontend-pwa/src/pages/activation.tsx`,
+  `apps/frontend-pwa/src/pages/magicLogin.tsx`,
+  `apps/frontend-pwa/src/pages/login.tsx`, `project/CODEBASE_NOTES.md`, and
+  this plan passed using the dependency checkout's Prettier binary with local
+  ignored dependency links. `tsc --noEmit` for `apps/frontend-pwa` passed using
+  the dependency checkout's TypeScript binary plus ignored package dependency
+  links. `git diff --check` passed in the commit worktree. Browser verification
+  remains blocked because `127.0.0.1:3000` and `127.0.0.1:3001` refuse
+  connections, so no local backend or PWA dev server was available for
+  screenshots.
 - Review/simplification for the manage element/template save-refresh cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the
