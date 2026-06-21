@@ -5,7 +5,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Suspense } from 'react'
+import { Suspense, type MouseEvent } from 'react'
 import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useRequestCatalogObject from './useRequestCatalogObject'
 
@@ -41,14 +41,17 @@ function CatalogRequestModal({
     objectId,
     catalogCollectionId,
   })
+  const handleClose = (e?: MouseEvent) => {
+    e?.stopPropagation()
+    if (!requesting) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={(e) => {
-        e?.stopPropagation()
-        onClose()
-      }}
+      onClose={handleClose}
       title={t('manage.catalog.requestCatalogObjectAccess', {
         object: t(`shared.types.${objectType}`),
       })}
@@ -58,14 +61,11 @@ function CatalogRequestModal({
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={(e) => {
-        e?.stopPropagation()
-        onClose()
-      }}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-request-access' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          <FontAwesomeIcon icon={faPaperPlane} />
+          {!requesting && <FontAwesomeIcon icon={faPaperPlane} />}
           <span>{t('manage.catalog.requestAccess')}</span>
         </div>
       }

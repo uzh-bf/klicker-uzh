@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { MouseEvent } from 'react'
 import useRequestCancellationCatalogObject from './useRequestCancellationCatalogObject'
 
 function CatalogRequestCancellationModal({
@@ -35,20 +36,23 @@ function CatalogRequestCancellationModal({
     objectId,
     catalogCollectionId,
   })
+  const handleClose = (e?: MouseEvent) => {
+    e?.stopPropagation()
+    if (!cancelling) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={(e) => {
-        e?.stopPropagation()
-        onClose()
-      }}
+      onClose={handleClose}
       title={t('manage.catalog.cancelCatalogObjectRequest', {
         object: t(`shared.types.${objectType}`),
       })}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          <FontAwesomeIcon icon={faTrashCan} />
+          {!cancelling && <FontAwesomeIcon icon={faTrashCan} />}
           <span>{t('manage.catalog.cancelRequest')}</span>
         </div>
       }

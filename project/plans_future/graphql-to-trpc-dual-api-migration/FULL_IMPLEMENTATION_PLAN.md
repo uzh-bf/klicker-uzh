@@ -910,8 +910,10 @@ Second-pass UX/cache cleanup prepared:
   Copy/import/request/cancel/remove primary actions are explicitly disabled
   while their tRPC mutations are pending, and catalog object removal now catches
   rejected tRPC calls instead of leaving an unhandled failed mutation.
-  Post-success catalog-object, catalog-collection, and answer-collection list
-  invalidations are caught best-effort background refreshes.
+  Copy/import/request/cancel modal close and secondary handlers are guarded
+  while their tRPC mutations are in flight. Post-success catalog-object,
+  catalog-collection, and answer-collection list invalidations are caught
+  best-effort background refreshes.
 - Manage catalog collection create/rename/delete modals now use stricter pending
   guards. Create and rename cancel actions are disabled while Formik submission
   is in flight, rename confirm is disabled while submitting, and collection
@@ -1073,6 +1075,21 @@ Second-pass UX/cache cleanup prepared:
 
 Second-pass verification:
 
+- Review/simplification for the manage catalog action modal close-guard
+  cleanup: local self-review found the diff limited to
+  copy/import/request/cancel modal close and secondary handlers plus docs.
+  Optional-input audit found no change needed for `course.activityIds`,
+  `sharing.catalogObjects`, or answer-collection detail queries because their
+  inputs are intentionally nullable or passed as required props.
+- Verification for the manage catalog action modal close-guard cleanup:
+  Context7 TanStack Query v4 docs checked `useMutation`, `mutateAsync`, and
+  `isLoading` semantics before the change. `prettier --check` on the four
+  changed catalog action modal files plus `project/CODEBASE_NOTES.md` and this
+  plan passed using the dependency checkout's Prettier binary.
+  `./node_modules/.bin/tsc --noEmit` from `apps/frontend-manage` passed. `git
+  diff --check` passed in the commit worktree. Browser verification remains
+  blocked because `127.0.0.1:3000` and `127.0.0.1:3002` refuse connections, so
+  no local backend or manage dev server was available for screenshots.
 - Review/simplification for the manage course groups cleanup: subagent review
   was skipped because the available multi-agent tool currently requires an
   explicit user request for delegation. Local self-review found the diff limited
