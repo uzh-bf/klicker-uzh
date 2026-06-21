@@ -2,7 +2,7 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
-import { Button, ShadcnTableCell } from '@uzh-bf/design-system'
+import { Button, ShadcnTableCell, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useTranslations } from 'next-intl'
@@ -119,19 +119,31 @@ function SuspendedCourseLeaderboard({
                 )}
                 <Button
                   onClick={async () => {
-                    if (
-                      leaderboardType === 'weekly' ||
-                      leaderboardType === 'custom'
-                    ) {
-                      await updateWeeklyTimelineEntriesCourse.mutateAsync({
-                        courseId,
+                    try {
+                      if (
+                        leaderboardType === 'weekly' ||
+                        leaderboardType === 'custom'
+                      ) {
+                        await updateWeeklyTimelineEntriesCourse.mutateAsync({
+                          courseId,
+                        })
+                        void refetch().catch(console.error)
+                        return
+                      }
+
+                      await refetch()
+                    } catch (error) {
+                      console.error(error)
+                      toast({
+                        type: 'error',
+                        message: t('shared.generic.systemError'),
+                        options: { duration: 5000 },
                       })
                     }
-
-                    await refetch()
                   }}
                   className={{ root: 'h-6 w-max' }}
                   disabled={updateWeeklyTimelineEntriesCourse.isLoading}
+                  loading={updateWeeklyTimelineEntriesCourse.isLoading}
                 >
                   <Button.Icon
                     icon={faSync}

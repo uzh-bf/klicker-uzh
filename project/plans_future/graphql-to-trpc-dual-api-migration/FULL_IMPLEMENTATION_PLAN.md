@@ -932,9 +932,22 @@ Second-pass UX/cache cleanup prepared:
   not-found redirects. The page renders the existing system-error notification
   when no evaluation payload is available and keeps stale evaluation data
   visible during polling/refetch errors.
+- Manage course leaderboard recompute now catches rejected tRPC recompute or
+  refetch actions with the generic system-error toast, exposes button loading,
+  and treats leaderboard refetch as best-effort after a confirmed weekly/custom
+  recompute mutation.
 
 Second-pass verification:
 
+- Verification for the manage course leaderboard recompute cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync`, `isLoading`, invalidation, and
+  refetch handling. `prettier --check` on
+  `apps/frontend-manage/src/components/courses/SuspendedCourseLeaderboard.tsx`
+  passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-manage` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3002` refuses connections, so no local manage dev server was
+  available for screenshots; `127.0.0.1:3000` responded with Express `404`.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics before the manage
   user-group management cleanup.
