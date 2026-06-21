@@ -626,6 +626,10 @@ Second-pass UX/cache cleanup prepared:
   live-quiz list, and running live-quiz controller now keep cached tRPC data
   visible during refetch failures and only redirect/show error notifications
   when the initial migrated query has no usable data.
+- Control app live-quiz block activate/deactivate/end actions now require the
+  expected tRPC mutation payload before changing local controller state or
+  navigating away. Falsy activation, deactivation, or end responses show the
+  existing generic control error toast and leave the current UI state in place.
 - Manage live-quiz evaluation, assessment results, group-activity grading, and
   template pages now distinguish failed initial tRPC loads from missing data,
   wrap failures in existing notification/layout patterns, and keep cached
@@ -1384,14 +1388,13 @@ Second-pass verification:
   server was available for screenshots.
 - Context7 docs checked for current TanStack Query v4 mutation callback
   awaiting/invalidation behavior and tRPC `useUtils` invalidation helpers before
-  the frontend-control live-quiz action refresh cleanup.
+  the frontend-control live-quiz action refresh and payload-guard cleanup.
 - `node_modules/.bin/prettier --check` on the changed frontend-control live-quiz
-  action files plus `project/CODEBASE_NOTES.md` and this plan passed after
-  formatting the control session page.
+  action file plus `project/CODEBASE_NOTES.md` and this plan passed.
 - `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
-  `apps/frontend-control` passed after mirroring the changed control files.
+  `apps/frontend-control` passed after mirroring the changed control file.
 - `git diff --check` passed after the frontend-control live-quiz action refresh
-  cleanup.
+  and payload-guard cleanup.
 - Browser verification remains blocked for this frontend-control action cleanup:
   `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
   `127.0.0.1:3003` failed with connection refused, so no local control dev

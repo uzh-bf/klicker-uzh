@@ -15,6 +15,10 @@ const elementBlockStatus = {
   scheduled: 'SCHEDULED',
 } as const
 
+const liveQuizStatus = {
+  ended: 'ENDED',
+} as const
+
 function RunningLiveQuiz() {
   const t = useTranslations()
   const router = useRouter()
@@ -158,10 +162,15 @@ function RunningLiveQuiz() {
                 if (typeof blockId === 'undefined') return
 
                 try {
-                  await deactivateLiveQuizBlock.mutateAsync({
+                  const result = await deactivateLiveQuizBlock.mutateAsync({
                     quizId: id,
                     blockId,
                   })
+                  if (!result.deactivated) {
+                    showControlActionError()
+                    return
+                  }
+
                   refreshCurrentLiveQuiz()
                   setCurrentBlockOrder(undefined)
                 } catch {
@@ -206,10 +215,15 @@ function RunningLiveQuiz() {
                 if (typeof blockId === 'undefined') return
 
                 try {
-                  await activateLiveQuizBlock.mutateAsync({
+                  const result = await activateLiveQuizBlock.mutateAsync({
                     quizId: id,
                     blockId,
                   })
+                  if (!result.liveQuiz) {
+                    showControlActionError()
+                    return
+                  }
+
                   refreshCurrentLiveQuiz()
                   setCurrentBlockOrder(nextBlockOrder)
                   setNextBlockOrder(nextBlockOrder + 1)
@@ -241,7 +255,12 @@ function RunningLiveQuiz() {
               loading={endLiveQuiz.isLoading}
               onClick={async () => {
                 try {
-                  await endLiveQuiz.mutateAsync({ id })
+                  const result = await endLiveQuiz.mutateAsync({ id })
+                  if (result.liveQuiz?.status !== liveQuizStatus.ended) {
+                    showControlActionError()
+                    return
+                  }
+
                   refreshCurrentLiveQuiz()
                   if (course) {
                     void utils.course.controlCourse
