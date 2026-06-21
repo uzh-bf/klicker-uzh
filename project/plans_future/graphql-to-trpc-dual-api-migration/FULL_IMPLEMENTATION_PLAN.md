@@ -873,6 +873,11 @@ Second-pass UX/cache cleanup prepared:
   ownership/admin/member, leave, and delete actions; destructive delete/leave
   modals also guard close/secondary actions while their tRPC mutation is in
   flight.
+- PWA temporary live-quiz pseudonym login now treats the returned temporary
+  participant token as the success boundary. Page-local and layout
+  `participant.self` refreshes run best-effort after confirmed login, so a
+  refresh failure no longer appears as a pseudonym-creation failure after the
+  modal has already closed.
 - PWA header regular logout now treats `participant.self` invalidation as a
   best-effort refresh after confirmed tRPC logout success, so a cache-refresh
   failure cannot keep the user on the current page after the server has already
@@ -949,6 +954,15 @@ Second-pass UX/cache cleanup prepared:
 
 Second-pass verification:
 
+- Verification for the PWA temporary pseudonym login refresh cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and post-success
+  refresh handling. `prettier --check` on
+  `apps/frontend-pwa/src/components/liveQuiz/AccountSelector.tsx` plus the
+  updated docs passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-pwa` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3001` refuses connections, so no local PWA dev server was
+  available for screenshots; `127.0.0.1:3000` responded with Express `404`.
 - Verification for the PWA group-activity start refresh cleanup: Context7
   TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and refetch
   handling. `prettier --check` on

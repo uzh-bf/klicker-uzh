@@ -208,10 +208,17 @@ function AccountSelector({
                 options: { duration: 5000 },
               })
 
-              await Promise.all([
+              void Promise.all([
                 refetch(), // refetch the self query to update page-local data
                 utils.participant.self.invalidate({ liveQuizId: quizId }),
-              ])
+              ]).catch((error) => {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+              })
             } else {
               toast({
                 type: 'error',
