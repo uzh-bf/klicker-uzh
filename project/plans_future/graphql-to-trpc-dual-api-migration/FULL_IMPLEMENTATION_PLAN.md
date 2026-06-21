@@ -582,6 +582,10 @@ Second-pass UX/cache cleanup prepared:
   missing self response. Initial loads still show the existing loader, while a
   failed initial tRPC result renders the existing `UserNotification`
   system-error state instead of an indefinite loader.
+- PWA edit-profile participant-token session refresh now treats the
+  `participant.self` refetch callback as best-effort follow-up work. A failed
+  token-session self refresh no longer leaks an unhandled promise rejection from
+  the migrated tRPC self-query path.
 - Manage analytics overview, private-preview administration, and course
   selection now preserve cached/stale data when present but show the existing
   system-error notification when the initial migrated tRPC query has no usable
@@ -1458,6 +1462,18 @@ Second-pass verification:
   cleanup: `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
   `127.0.0.1:3001` failed with connection refused, so no local PWA dev server
   was available for screenshots.
+- Follow-up verification for the PWA edit-profile participant-token
+  self-refresh cleanup: Context7 TanStack Query docs checked stale-data /
+  refetch-error behavior and tRPC docs checked React Query hook/cache helper
+  usage. Local self-review found the diff limited to catching the existing
+  tRPC `participant.self` refetch callback used by `useParticipantToken` plus
+  docs; GraphQL / Apollo coexistence is unchanged. `prettier --check` on the
+  changed edit-profile file, `project/CODEBASE_NOTES.md`, and this plan passed
+  using the dependency checkout's Prettier binary. `./node_modules/.bin/tsc
+  --noEmit` from `apps/frontend-pwa` passed in the commit worktree. `git diff
+  --check` passed in the commit worktree. Browser verification remains blocked
+  because `127.0.0.1:3000` and `127.0.0.1:3001` both refused connections, so no
+  local backend or PWA dev server was available for screenshots.
 - Context7 docs checked for Formik async `onSubmit` submitting-state behavior
   and tRPC `mutateAsync` error handling before the PWA account creation failure
   cleanup.

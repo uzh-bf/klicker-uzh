@@ -42,7 +42,7 @@ function EditProfile({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
-    callback: () => void refetch(),
+    callback: () => void refetch().catch(console.error),
   })
 
   if (isLoading && !self) {
