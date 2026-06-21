@@ -499,6 +499,12 @@ Second-pass UX/cache cleanup prepared:
   loading, show button-mode loading states, and surface unexpected create,
   join-by-code, random-pool join, and random-pool leave failures with
   system-error toasts while preserving existing invalid/full group messages.
+- PWA group activity start now disables the start button while the tRPC mutation
+  is pending, keeps the participant on the activity page if the mutation fails,
+  and surfaces a system-error toast instead of leaving an unhandled rejection.
+- PWA microlearning completion now disables the finish button while the tRPC
+  mutation is pending, only invalidates/navigates after a successful completion,
+  and shows a system-error toast on failure.
 
 Second-pass verification:
 
@@ -534,6 +540,18 @@ Second-pass verification:
 - `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
 - `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with pre-existing hook
   warnings only.
+- Context7 docs checked for current tRPC / TanStack Query mutation lifecycle
+  and rollback/invalidation behavior before the PWA activity completion fixes.
+- `node_modules/.bin/prettier --check` on the two changed PWA activity
+  completion files passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed with the two changed files mirrored for local
+  dependency resolution.
+- Narrow `next lint --file ...` for those two files was attempted from the
+  dependency checkout but hung after printing only existing Next/next-intl
+  warnings; direct ESLint CLI is not compatible with the repo's current
+  `.eslintrc` setup under ESLint 9, so lint remains covered by prior full PWA
+  lint passes and CI.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, and no local control

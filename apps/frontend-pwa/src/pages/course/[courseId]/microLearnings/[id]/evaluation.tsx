@@ -2,7 +2,7 @@ import { faCheckCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -142,14 +142,24 @@ function MicrolearningEvaluation() {
           <div className="text-right">
             <Button
               primary
+              disabled={markMicrolearningCompleted.isLoading}
               loading={markMicrolearningCompleted.isLoading}
               onClick={async () => {
-                await markMicrolearningCompleted.mutateAsync({
-                  courseId: microlearning.course!.id,
-                  id,
-                })
-                await utils.participant.participations.invalidate()
-                router.replace('/')
+                try {
+                  await markMicrolearningCompleted.mutateAsync({
+                    courseId: microlearning.course!.id,
+                    id,
+                  })
+                  await utils.participant.participations.invalidate()
+                  router.replace('/')
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                }
               }}
               data={{ cy: 'finish-microlearning' }}
             >

@@ -4,7 +4,7 @@ import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { trpc } from '@lib/trpc'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -182,15 +182,27 @@ function GroupActivityDetails() {
                   </p>
                   <Button
                     primary
-                    disabled={groupActivity.group.participants?.length === 1}
+                    disabled={
+                      groupActivity.group.participants?.length === 1 ||
+                      startGroupActivity.isLoading
+                    }
                     loading={startGroupActivity.isLoading}
                     className={{ root: 'mt-4 self-end text-lg font-bold' }}
                     onClick={async () => {
-                      await startGroupActivity.mutateAsync({
-                        activityId,
-                        groupId,
-                      })
-                      await refetch()
+                      try {
+                        await startGroupActivity.mutateAsync({
+                          activityId,
+                          groupId,
+                        })
+                        await refetch()
+                      } catch (error) {
+                        console.error(error)
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                      }
                     }}
                     data={{ cy: 'start-group-activity' }}
                   >
