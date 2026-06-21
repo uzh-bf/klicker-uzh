@@ -578,6 +578,10 @@ Second-pass UX/cache cleanup prepared:
 - Manage course detail now preserves cached/stale course data during refetch
   failures and replaces the raw `error.message` render on failed initial
   `course.detail` loads with the existing localized system-error notification.
+- Manage lecturer live-quiz feedback view and question-pool tag filters now
+  keep stale tRPC data visible during refetch failures and replace remaining
+  raw tRPC error-message rendering with the existing localized system-error
+  notification on failed initial loads.
 
 Second-pass verification:
 
@@ -739,13 +743,34 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
   refused, so no local backend or manage dev server was available for
   screenshots.
+- Context7 docs checked again for TanStack Query v4 query state behavior and
+  tRPC `useUtils` cache helpers before the manage lecturer/tag raw-error
+  cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-manage/src/pages/quizzes/[id]/lecturer.tsx` and
+  `apps/frontend-manage/src/components/elements/tags/SuspendedTags.tsx` passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the PR worktree into the
+  dependency checkout.
+- `git diff --check` passed after the manage lecturer/tag raw-error cleanup.
+- Browser verification for the manage lecturer/tag cleanup remains blocked:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
+  refused, so no local backend or manage dev server was available for
+  screenshots.
+- Local `pnpm --filter @klicker-uzh/api test -- src/trpc/__tests__` was
+  attempted from the dependency checkout after the manage lecturer/tag cleanup,
+  but produced no output for roughly two minutes and was stopped with Ctrl-C;
+  the GitHub `packages/api tRPC Vitest` check remains the current tRPC test
+  signal for this slice.
 
-PR #5132 status after `7da465c8e`:
+PR #5132 status after `c09670e6`:
 
-- Passing: lint, format, check, CodeQL, SonarCloud, all visible amd/arm builds,
-  regular tests, package API tRPC Vitest, and packages/graphql Vitest.
-- Pending at last poll: Cypress Cloud / `cypress: default-group (merge)` run
-  `6804`.
+- Passing at last poll: format, lint, Claude review, CodeQL Java/Kotlin,
+  JavaScript/TypeScript, and Python analyses, plus one visible amd/arm build
+  pair.
+- Pending at last poll: SonarCloud, check, package API tRPC Vitest,
+  packages/graphql Vitest, regular tests, Cypress Cloud, and remaining visible
+  amd/arm builds.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

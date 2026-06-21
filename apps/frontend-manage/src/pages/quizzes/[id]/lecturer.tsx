@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -79,8 +80,19 @@ function LecturerView() {
     return 'border-green-300'
   }, [aggregateConfusion])
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <Loader />
+  }
+
+  if (error && !data) {
+    return (
+      <div className="p-4">
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </div>
+    )
   }
 
   if (!data) {
@@ -97,14 +109,6 @@ function LecturerView() {
     return (
       <div className="p-4">
         {t('manage.lecturer.audienceInteractionNotActivated')}
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-4">
-        {t('shared.generic.error')}: {error.message}
       </div>
     )
   }

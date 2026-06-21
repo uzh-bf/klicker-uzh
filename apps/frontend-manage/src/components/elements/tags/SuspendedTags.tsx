@@ -38,6 +38,7 @@ function SuspendedTags({
 
   const { data, error, isLoading } = trpc.element.tags.useQuery()
   const updateTagOrdering = trpc.element.updateTagOrdering.useMutation()
+  const hasTagData = typeof data !== 'undefined'
   const userTags = data?.tags ?? []
 
   // setup search
@@ -60,11 +61,16 @@ function SuspendedTags({
     await utils.element.tags.invalidate()
   }
 
-  if (error) {
-    return <UserNotification type="error" message={error.message} />
+  if (error && !hasTagData) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
-  if (isLoading) {
+  if (isLoading && !hasTagData) {
     return <Loader />
   }
 
