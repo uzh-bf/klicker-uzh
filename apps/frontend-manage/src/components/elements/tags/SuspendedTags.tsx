@@ -1,6 +1,6 @@
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { TextField, UserNotification } from '@uzh-bf/design-system'
+import { TextField, toast, UserNotification } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
@@ -39,7 +39,7 @@ function SuspendedTags({
   const { data, error, isLoading } = trpc.element.tags.useQuery()
   const updateTagOrdering = trpc.element.updateTagOrdering.useMutation()
   const hasTagData = typeof data !== 'undefined'
-  const userTags = data?.tags ?? []
+  const userTags = useMemo(() => data?.tags ?? [], [data?.tags])
 
   // setup search
   const [searchQuery, setSearchQuery] = useState('')
@@ -57,8 +57,22 @@ function SuspendedTags({
   }, [userTags, searchQuery])
 
   async function moveTag(originIx: number, targetIx: number) {
-    await updateTagOrdering.mutateAsync({ originIx, targetIx })
-    await utils.element.tags.invalidate()
+    if (updateTagOrdering.isLoading) {
+      return
+    }
+
+    try {
+      await utils.element.tags.cancel()
+      const result = await updateTagOrdering.mutateAsync({ originIx, targetIx })
+      utils.element.tags.setData(undefined, result)
+    } catch (error) {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
+    }
   }
 
   if (error && !hasTagData) {
@@ -122,6 +136,7 @@ function SuspendedTags({
                   ? async () => await moveTag(ix, ix - 1)
                   : undefined
               }
+              movingTags={updateTagOrdering.isLoading}
               refetchElements={refetchElements}
             />
           )

@@ -755,6 +755,11 @@ Second-pass UX/cache cleanup prepared:
 - PWA login-page create-account/join-course PIN preflight now validates the same
   9-digit numeric PIN shape as the other join forms and disables submit while
   invalid or submitting, avoiding unnecessary tRPC requests for incomplete PINs.
+- Manage question-pool tag reorder/rename/delete actions now catch rejected
+  tRPC mutations, show the existing localized system-error toast, guard move and
+  destructive delete controls while pending, update the `element.tags` cache
+  directly from returned tRPC payloads, and treat element-list refresh after
+  confirmed deletion as best-effort.
 
 Second-pass verification:
 
@@ -978,6 +983,23 @@ Second-pass verification:
 - Browser verification remains blocked for this PWA login PIN preflight cleanup:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with connection
   refused, so no local backend or PWA dev server was available for screenshots.
+- Context7 docs checked for tRPC `useUtils` cache helpers, `setData`, and
+  mutation invalidation behavior before the manage question-pool tag action
+  cleanup.
+- `node_modules/.bin/prettier --check` on the changed manage tag action files
+  plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed manage tag action
+  files.
+- `./node_modules/.bin/next lint` from the dependency checkout
+  `apps/frontend-manage` passed with existing hook dependency warnings in
+  unrelated files. An initial run surfaced a new warning in `SuspendedTags`,
+  which was fixed by memoizing the default tag list before the final lint pass.
+- `git diff --check` passed after the manage question-pool tag action cleanup.
+- Browser verification remains blocked for this manage question-pool tag action
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` both failed with
+  connection refused, so no local backend or manage dev server was available for
+  screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

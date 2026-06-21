@@ -26,30 +26,55 @@ function TagEditForm({
       <Formik
         initialValues={{ tag: tag.name }}
         validationSchema={TagModifierSchema}
-        onSubmit={async (values, { resetForm }) => {
+        onSubmit={async (values, { resetForm, setSubmitting }) => {
           if (values.tag !== tag.name) {
-            const result = await editTag.mutateAsync({
-              id: tag.id,
-              name: values.tag,
-            })
-
-            if (result.tag) {
-              await utils.element.tags.invalidate()
-              toast({
-                type: 'success',
-                message: t('manage.tags.tagNameUpdatedSuccessfully'),
+            try {
+              const result = await editTag.mutateAsync({
+                id: tag.id,
+                name: values.tag,
               })
-              closeEditMode()
-            } else {
-              toast({ type: 'error', message: t('manage.tags.uniqueTagName') })
-              resetForm()
+
+              if (result.tag) {
+                utils.element.tags.setData(undefined, (data) =>
+                  data
+                    ? {
+                        tags: data.tags.map((existingTag) =>
+                          existingTag.id === result.tag!.id
+                            ? result.tag!
+                            : existingTag
+                        ),
+                      }
+                    : data
+                )
+                toast({
+                  type: 'success',
+                  message: t('manage.tags.tagNameUpdatedSuccessfully'),
+                })
+                closeEditMode()
+              } else {
+                toast({
+                  type: 'error',
+                  message: t('manage.tags.uniqueTagName'),
+                })
+                resetForm()
+              }
+            } catch (error) {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 6000 },
+              })
+            } finally {
+              setSubmitting(false)
             }
           } else {
             closeEditMode()
+            setSubmitting(false)
           }
         }}
       >
-        {({ errors, touched, isValid }) => {
+        {({ errors, touched, isSubmitting, isValid }) => {
           return (
             <Form className="w-full">
               <div className="flex w-full flex-row justify-between gap-2">
@@ -65,7 +90,8 @@ function TagEditForm({
 
                 <Button
                   type="submit"
-                  disabled={editTag.isLoading || !isValid}
+                  disabled={isSubmitting || editTag.isLoading || !isValid}
+                  loading={isSubmitting || editTag.isLoading}
                   className={{
                     root: twMerge('mr-0 h-7 rounded border border-solid px-2'),
                   }}

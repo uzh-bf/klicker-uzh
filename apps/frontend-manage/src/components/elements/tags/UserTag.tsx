@@ -14,6 +14,7 @@ function UserTag({
   isStatic = false,
   onMoveDown,
   onMoveUp,
+  movingTags = false,
   refetchElements,
 }: {
   tag: UserTagData
@@ -22,6 +23,7 @@ function UserTag({
   isStatic?: boolean
   onMoveUp?: () => void
   onMoveDown?: () => void
+  movingTags?: boolean
   refetchElements: () => Promise<void>
 }) {
   const [editMode, setEditMode] = useState(false)
@@ -70,6 +72,7 @@ function UserTag({
               }
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
+              movingTags={movingTags}
               refetchElements={refetchElements}
             />
           </div>

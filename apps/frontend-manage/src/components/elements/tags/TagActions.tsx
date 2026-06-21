@@ -16,6 +16,7 @@ interface TagActionsProps {
   setIsDeletionModalOpen?: (isDeletionModalOpen: boolean) => void
   onMoveUp?: () => void
   onMoveDown?: () => void
+  movingTags?: boolean
   refetchElements: () => Promise<void>
 }
 
@@ -27,6 +28,7 @@ function TagActions({
   setIsDeletionModalOpen,
   onMoveUp,
   onMoveDown,
+  movingTags = false,
   refetchElements,
 }: TagActionsProps) {
   return (
@@ -34,8 +36,12 @@ function TagActions({
       {onMoveUp && (
         <Button
           basic
-          disabled={!onMoveUp}
-          onClick={() => onMoveUp?.()}
+          disabled={movingTags || !onMoveUp}
+          onClick={() => {
+            if (!movingTags) {
+              onMoveUp?.()
+            }
+          }}
           className={{
             root: 'disabled:text-uzh-grey-60 hover:text-primary-100 px-1',
           }}
@@ -51,8 +57,12 @@ function TagActions({
       {onMoveDown && (
         <Button
           basic
-          disabled={!onMoveDown}
-          onClick={() => onMoveDown?.()}
+          disabled={movingTags || !onMoveDown}
+          onClick={() => {
+            if (!movingTags) {
+              onMoveDown?.()
+            }
+          }}
           className={{
             root: 'disabled:text-uzh-grey-60 hover:text-primary-100 px-1',
           }}
