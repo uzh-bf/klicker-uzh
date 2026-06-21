@@ -45,7 +45,7 @@ function ElementBatchOperationsModal({
   const applyElementBatchOperations =
     trpc.element.applyBatchOperations.useMutation()
 
-  const refreshAffectedElementDetails = async () => {
+  const refreshAffectedElementDetails = () => {
     const affectedElementIds = affectedElements
       .filter((element) => element.actionsApplied)
       .map((element) => element.id)
@@ -81,13 +81,13 @@ function ElementBatchOperationsModal({
       })
     })
 
-    await Promise.all(
+    void Promise.all(
       affectedElementIds.map((id) =>
         utils.element.single.invalidate({
           id,
         })
       )
-    )
+    ).catch(console.error)
   }
 
   // whenever the applied filters change, update the affected elements
@@ -169,11 +169,17 @@ function ElementBatchOperationsModal({
   const numOfUpdatedElements = useMemo(() => {
     return affectedElements.filter((element) => element.actionsApplied).length
   }, [affectedElements])
+  const applyingBatchOperations = applyElementBatchOperations.isLoading
+  const handleClose = () => {
+    if (!applyingBatchOperations) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.questionPool.batchOperationsElements')}
       className={{
         content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
@@ -246,7 +252,7 @@ function ElementBatchOperationsModal({
               <Button
                 primary
                 disabled={
-                  applyElementBatchOperations.isLoading ||
+                  applyingBatchOperations ||
                   numOfUpdatedElements === 0 ||
                   isShallowEqual(
                     omit(selectedActions, [
@@ -285,9 +291,9 @@ function ElementBatchOperationsModal({
 
                     // in case of success, reset the selected elements and refetch the elements
                     if (res.updatedCount === numOfUpdatedElements) {
-                      await refreshAffectedElementDetails()
+                      refreshAffectedElementDetails()
                       resetSelectedElements()
-                      await refetchElements()
+                      void refetchElements().catch(console.error)
                       toast({
                         type: 'success',
                         message: t('manage.questionPool.batchOperationSuccess'),
@@ -295,9 +301,9 @@ function ElementBatchOperationsModal({
                       })
                       onClose()
                     } else if (res.updatedCount !== 0) {
-                      await refreshAffectedElementDetails()
+                      refreshAffectedElementDetails()
                       resetSelectedElements()
-                      await refetchElements()
+                      void refetchElements().catch(console.error)
                       toast({
                         type: 'warning',
                         message: t(
@@ -322,6 +328,7 @@ function ElementBatchOperationsModal({
                     })
                   }
                 }}
+                loading={applyingBatchOperations}
                 className={{ root: 'h-9' }}
                 data={{ cy: 'apply-batch-operations' }}
               >

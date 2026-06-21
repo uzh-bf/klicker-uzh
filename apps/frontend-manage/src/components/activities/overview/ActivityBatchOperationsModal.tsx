@@ -55,6 +55,12 @@ function ActivityBatchOperationsModal({
   const courses = dataCourses?.activeUserCourses
   const initialCoursesLoading = loadingCourses && !courses
   const coursesUnavailable = Boolean(coursesError && !courses)
+  const applyingBatchOperations = applyActivityBatchOperations.isLoading
+  const handleClose = () => {
+    if (!applyingBatchOperations) {
+      onClose()
+    }
+  }
 
   // whenever the applied filters change, update the affected activities
   useEffect(() => {
@@ -230,7 +236,7 @@ function ActivityBatchOperationsModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       loading={initialCoursesLoading}
       title={t('manage.activities.batchOperationsActivities')}
       className={{
@@ -299,7 +305,7 @@ function ActivityBatchOperationsModal({
               <Button
                 primary
                 disabled={
-                  applyActivityBatchOperations.isLoading ||
+                  applyingBatchOperations ||
                   numOfUpdatedActivities === 0 ||
                   isShallowEqual(
                     selectedActions,
@@ -329,7 +335,7 @@ function ActivityBatchOperationsModal({
 
                     if (res.appliedCount === numOfUpdatedActivities) {
                       resetSelectedActivities()
-                      await refetchActivities()
+                      void refetchActivities().catch(console.error)
                       toast({
                         type: 'success',
                         message: t('manage.activities.batchOperationSuccess'),
@@ -338,7 +344,7 @@ function ActivityBatchOperationsModal({
                       onClose()
                     } else if (res.appliedCount !== 0) {
                       resetSelectedActivities()
-                      await refetchActivities()
+                      void refetchActivities().catch(console.error)
                       toast({
                         type: 'warning',
                         message: t(
@@ -363,6 +369,7 @@ function ActivityBatchOperationsModal({
                     })
                   }
                 }}
+                loading={applyingBatchOperations}
                 className={{ root: 'h-9' }}
                 data={{ cy: 'apply-batch-operations' }}
               >

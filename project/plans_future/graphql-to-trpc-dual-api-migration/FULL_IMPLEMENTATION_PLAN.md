@@ -797,6 +797,11 @@ Second-pass UX/cache cleanup prepared:
   selector data visible during refetch failures, and disables only the course
   reassignment card with the existing system-error notification when course
   selector data is unavailable.
+- Manage activity and element batch-operation modals now treat confirmed tRPC
+  batch mutation results as the success boundary. Follow-up parent list
+  refetches and element-detail invalidations run as best-effort work, apply
+  buttons expose loading/disabled state, and modal close is guarded while the
+  batch write is in flight.
 - Manage object-sharing permission surfaces now distinguish failed tRPC
   permission/user-group/origin loads from successful empty data. The sharing
   modal keeps stale direct/derived permission rows visible during refetch
@@ -992,6 +997,15 @@ Second-pass verification:
   passed in the commit worktree. Browser verification remains blocked because
   `127.0.0.1:3000` and `3002` refuse connections, so no local backend or manage
   dev server was available for screenshots.
+- Verification for the manage batch-operation refresh cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and awaited
+  callbacks; tRPC docs checked React Query hook and `useUtils` integration.
+  `prettier --check` on the two changed batch modal files passed in the
+  dependency checkout; `tsc --noEmit` for `apps/frontend-manage` passed in the
+  dependency checkout; `git diff --check` passed in the commit worktree. Browser
+  verification remains blocked because `127.0.0.1:3000` and `3002` refuse
+  connections, so no local backend or manage dev server was available for
+  screenshots.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
