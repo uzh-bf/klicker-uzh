@@ -34,9 +34,11 @@ function usePermissionRevocation({
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
 
-  const invalidateAnswerCollectionList = async () => {
+  const invalidateAnswerCollectionList = () => {
     if (objectType === ObjectType.AnswerCollection) {
-      await utils.resources.answerCollectionsInfo.invalidate()
+      void utils.resources.answerCollectionsInfo
+        .invalidate()
+        .catch(console.error)
     }
   }
 
@@ -84,11 +86,11 @@ function usePermissionRevocation({
       const res = await revokeObjectAccess.mutateAsync(input)
 
       if (res.revokedPermissionId != null) {
-        await invalidateAnswerCollectionList()
+        invalidateAnswerCollectionList()
 
         // if own permission was revoked, refetch elements and activities depending on object type
         if (isOwn && objectType === ObjectType.Element) {
-          await refetchElements?.()
+          void refetchElements?.().catch(console.error)
         }
         if (
           isOwn &&
@@ -97,7 +99,7 @@ function usePermissionRevocation({
             objectType === ObjectType.MicroLearning ||
             objectType === ObjectType.GroupActivity)
         ) {
-          await refetchActivities?.()
+          void refetchActivities?.().catch(console.error)
         }
 
         return true

@@ -675,6 +675,11 @@ Second-pass UX/cache cleanup prepared:
   loads, keeps direct shortname/email sharing usable when only the optional
   user-group selector fails, and fixes the direct-share form so failed callbacks
   release Formik submitting state.
+- Manage object-sharing permission mutations now treat the confirmed tRPC
+  mutation result as authoritative and run answer-collection list plus
+  owning-list refreshes as best-effort follow-up work. Failed invalidations or
+  parent refetch callbacks no longer turn successful share/revoke/permission
+  changes into failure toasts.
 - Manage user-group management now distinguishes a failed initial
   `sharing.userGroups` load from the successful no-groups state, keeps stale
   group lists visible during refetch failures with a compact system-error
@@ -815,6 +820,18 @@ Second-pass verification:
 - Browser verification remains blocked for this manage sharing cleanup: `curl`
   to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection refused, so no
   local backend or manage dev server was available for screenshots.
+- Context7 docs checked for TanStack Query v4 mutation success invalidation
+  patterns before the manage sharing mutation-refresh cleanup.
+- `node_modules/.bin/prettier --check` on the three changed manage sharing hook
+  files plus `project/CODEBASE_NOTES.md` and this plan passed after one
+  Prettier write on the hook files.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed sharing hook files.
+- `git diff --check` passed after the manage sharing mutation-refresh cleanup.
+- Browser verification remains blocked for this manage sharing refresh cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
+  refused, so no local backend or manage dev server was available for
+  screenshots.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, disabled-query, and stale-data semantics before the manage
   catalog browser cleanup.

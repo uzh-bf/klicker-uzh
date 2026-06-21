@@ -35,9 +35,11 @@ function usePermissionLevelChange({
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
 
-  const invalidateAnswerCollectionList = async () => {
+  const invalidateAnswerCollectionList = () => {
     if (objectType === SharingObjectType.AnswerCollection) {
-      await utils.resources.answerCollectionsInfo.invalidate()
+      void utils.resources.answerCollectionsInfo
+        .invalidate()
+        .catch(console.error)
     }
   }
 
@@ -96,7 +98,7 @@ function usePermissionLevelChange({
       const res = await changePermissionLevel.mutateAsync(input)
 
       if (res.changed) {
-        await invalidateAnswerCollectionList()
+        invalidateAnswerCollectionList()
         return true
       } else {
         return false

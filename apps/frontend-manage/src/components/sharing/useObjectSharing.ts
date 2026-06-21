@@ -40,9 +40,11 @@ function useObjectSharing({
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
 
-  const invalidateAnswerCollectionList = async () => {
+  const invalidateAnswerCollectionList = () => {
     if (objectType === SharingObjectType.AnswerCollection) {
-      await utils.resources.answerCollectionsInfo.invalidate()
+      void utils.resources.answerCollectionsInfo
+        .invalidate()
+        .catch(console.error)
     }
   }
 
@@ -112,7 +114,7 @@ function useObjectSharing({
       const res = await shareObject.mutateAsync(input)
 
       if (typeof res?.permission?.permissionId !== 'undefined') {
-        await invalidateAnswerCollectionList()
+        invalidateAnswerCollectionList()
         onSuccess?.()
         return true
       } else {
