@@ -709,6 +709,12 @@ Second-pass UX/cache cleanup prepared:
   is loading, and add-object/access-change close or secondary actions are
   ignored while their mutations are in flight so users cannot hide pending
   writes or duplicate access changes.
+- PWA live-quiz leaderboard now distinguishes failed initial tRPC leaderboard
+  loads from true loading, keeps stale leaderboard data visible with an existing
+  system-error notification on background refetch failures, surfaces failed
+  `participant.self` loads without hiding leaderboard data, and guards regular
+  logout links so local participant tokens are cleared only after confirmed
+  tRPC logout success.
 
 Second-pass verification:
 
@@ -807,6 +813,20 @@ Second-pass verification:
 - Browser verification remains blocked for this manage catalog add/access modal
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
   connection refused, so no local backend or manage dev server was available for
+  screenshots.
+- Context7 docs checked for current TanStack Query v4 query/mutation loading
+  and tRPC `useUtils` cache helper behavior before the PWA live-quiz
+  leaderboard cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed after a Prettier write on
+  the leaderboard component.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed leaderboard component.
+- `git diff --check` passed after the PWA live-quiz leaderboard cleanup.
+- Browser verification remains blocked for this PWA live-quiz leaderboard
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` failed with
+  connection refused, so no local backend or PWA dev server was available for
   screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.

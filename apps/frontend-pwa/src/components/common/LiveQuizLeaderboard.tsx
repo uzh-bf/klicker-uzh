@@ -1,6 +1,6 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
-import { H2, UserNotification } from '@uzh-bf/design-system'
+import { H2, UserNotification, toast } from '@uzh-bf/design-system'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
@@ -39,19 +39,23 @@ function LiveQuizLeaderboard({
   const router = useRouter()
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
   const logoutParticipant = trpc.participant.logout.useMutation()
+  const logoutLoading = logoutParticipant.isLoading
 
-  const { data: selfData } = trpc.participant.self.useQuery({
+  const { data: selfData, error: selfError } = trpc.participant.self.useQuery({
     liveQuizId: quizId,
   })
   const self = selfData?.self ?? null
 
-  const { data: leaderboardData, isLoading } =
-    trpc.participant.liveQuizLeaderboard.useQuery(
-      { quizId },
-      {
-        refetchOnMount: 'always',
-      }
-    )
+  const {
+    data: leaderboardData,
+    isLoading,
+    error: leaderboardError,
+  } = trpc.participant.liveQuizLeaderboard.useQuery(
+    { quizId },
+    {
+      refetchOnMount: 'always',
+    }
+  )
 
   // use a fresh request once the component is displayed
   // TODO: replace this by a send of the leaderboard within the subscription
@@ -95,7 +99,55 @@ function LiveQuizLeaderboard({
     asyncFunc()
   }, [leaderboardData, self?.id])
 
-  if (isLoading || typeof leaderboardData === 'undefined') {
+  const handleLogout = async () => {
+    if (logoutLoading) return
+
+    try {
+      const loggedOut = await logoutParticipant.mutateAsync()
+      if (!loggedOut) {
+        throw new Error('Logout failed')
+      }
+
+      sessionStorage.removeItem('participant_token')
+      router.reload()
+    } catch (error) {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    }
+  }
+
+  const renderLogoutLink = (text: React.ReactNode) => (
+    <button
+      type="button"
+      disabled={logoutLoading}
+      onClick={handleLogout}
+      className={twMerge(
+        'inline appearance-none border-0 bg-transparent p-0 text-inherit underline',
+        logoutLoading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+      )}
+    >
+      {text}
+    </button>
+  )
+
+  if (isLoading && typeof leaderboardData === 'undefined') {
+    return <Loader />
+  }
+
+  if (leaderboardError && typeof leaderboardData === 'undefined') {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
+  }
+
+  if (typeof leaderboardData === 'undefined') {
     return <Loader />
   }
 
@@ -108,6 +160,20 @@ function LiveQuizLeaderboard({
       )}
     >
       <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
+      {selfError && !selfData ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'w-200 max-w-full md:text-base' }}
+        />
+      ) : null}
+      {leaderboardError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'w-200 max-w-full md:text-base' }}
+        />
+      ) : null}
       <div className="w-200 max-w-full">
         {leaderboard.length && leaderboard.length > 0 ? (
           <Leaderboard
@@ -144,18 +210,7 @@ function LiveQuizLeaderboard({
           {isAssessmentEnabled
             ? t('shared.leaderboard.liveQuizGamifiedAssessment')
             : t.rich('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse', {
-                logout: (text) => (
-                  <span
-                    onClick={async () => {
-                      await logoutParticipant.mutateAsync()
-                      sessionStorage.removeItem('participant_token')
-                      router.reload()
-                    }}
-                    className="cursor-pointer underline"
-                  >
-                    {text}
-                  </span>
-                ),
+                logout: renderLogoutLink,
               })}
         </UserNotification>
       ) : null}
@@ -179,18 +234,7 @@ function LiveQuizLeaderboard({
             : t.rich(
                 'shared.leaderboard.liveQuizGamifiedCourseNoParticipation',
                 {
-                  logout: (text) => (
-                    <span
-                      onClick={async () => {
-                        await logoutParticipant.mutateAsync()
-                        sessionStorage.removeItem('participant_token')
-                        router.reload()
-                      }}
-                      className="cursor-pointer underline"
-                    >
-                      {text}
-                    </span>
-                  ),
+                  logout: renderLogoutLink,
                 }
               )}
         </UserNotification>
