@@ -55,9 +55,16 @@ function GroupActivityDetails() {
         enabled: routeParamsAvailable,
       }
     )
-  const handleGroupActivityEnded = useCallback(async () => {
-    await refetch()
-  }, [refetch])
+  const handleGroupActivityEnded = useCallback(() => {
+    void refetch().catch((error) => {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    })
+  }, [refetch, t])
   const startGroupActivity = trpc.participant.startGroupActivity.useMutation()
 
   useEffect(() => {

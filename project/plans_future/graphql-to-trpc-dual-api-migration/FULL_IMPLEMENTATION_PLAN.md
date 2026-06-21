@@ -963,9 +963,31 @@ Second-pass UX/cache cleanup prepared:
   post-success `participant.self` cache warm-ups are best-effort so a self-query
   failure cannot strand an authenticated participant on a loader or failed login
   form.
+- PWA group-activity ended subscription refresh now runs as best-effort work
+  with a generic error toast on failure. Existing group-activity data stays
+  visible if the background detail refetch fails, and the subscription callback
+  no longer leaks a rejected refetch promise.
 
 Second-pass verification:
 
+- Review/simplification for the PWA group-activity ended-refetch cleanup:
+  subagent review was skipped because the available multi-agent tool currently
+  requires an explicit user request for subagents. Local self-review found the
+  diff limited to the subscription-event refetch callback plus docs; GraphQL
+  and tRPC coexistence is preserved, current detail data remains rendered, and
+  failed ended-event refetches now surface through the existing generic toast
+  pattern instead of rejected callback promises.
+- Verification for the PWA group-activity ended-refetch cleanup: Context7
+  TanStack Query v4 docs checked `useQuery` refetch and stale-data behavior.
+  `prettier --check` on
+  `apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
+  checkout's Prettier binary with local ignored dependency links. `tsc
+  --noEmit` for `apps/frontend-pwa` passed using the dependency checkout's
+  TypeScript binary plus ignored package dependency links. `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000` and `127.0.0.1:3001` refuse connections, so no local backend
+  or PWA dev server was available for screenshots.
 - Review/simplification for the PWA auth cache-warm-up cleanup: subagent
   review was skipped because the available multi-agent tool currently requires
   an explicit user request for subagents. Local self-review found the diff
