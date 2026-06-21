@@ -476,6 +476,12 @@ Second-pass UX/cache cleanup prepared:
   and course overview invalidation, show a system-error toast on failure, show
   loading on the standalone join button, and keep the leave modal open with a
   loading primary action until the leave mutation succeeds.
+- Frontend-control live quiz control mutations now catch activation,
+  deactivation, and end-quiz failures, show a system-error toast, and avoid
+  moving local block state or navigating when the server action fails.
+- Frontend-control logout now shows a loading icon, awaits navigation on
+  success, and shows a system-error toast when the tRPC logout mutation fails or
+  returns a false result.
 
 Second-pass verification:
 
@@ -491,9 +497,16 @@ Second-pass verification:
 - Re-ran `prettier --check`, `pnpm --filter @klicker-uzh/frontend-pwa check`,
   and `pnpm --filter @klicker-uzh/frontend-pwa lint` after the leaderboard
   cleanup; all passed, with the same pre-existing PWA hook warnings only.
+- Context7 docs checked for TanStack Query v4 mutation lifecycle behavior before
+  the frontend-control mutation error-handling changes.
+- `prettier --check` on the two changed frontend-control files passed.
+- `pnpm --filter @klicker-uzh/frontend-control check` passed.
+- `pnpm --filter @klicker-uzh/frontend-control lint` passed with no ESLint
+  warnings or errors.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
-  is listening on `127.0.0.1:3001` or `127.0.0.1:3002`.
+  is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, and no local control
+  dev server is listening on `127.0.0.1:3003`.
 
 PR #5132 status after `3f31a27b5`:
 

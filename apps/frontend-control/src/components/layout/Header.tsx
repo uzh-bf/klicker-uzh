@@ -1,7 +1,7 @@
 import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { trpc } from '@lib/trpc'
-import { Button, Select } from '@uzh-bf/design-system'
+import { Button, Select, toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
 interface HeaderProps {
@@ -9,6 +9,7 @@ interface HeaderProps {
 }
 
 function Header({ title }: HeaderProps) {
+  const t = useTranslations()
   const router = useRouter()
   const { pathname, asPath, query } = router
   const logoutUser = trpc.user.logout.useMutation()
@@ -37,18 +38,33 @@ function Header({ title }: HeaderProps) {
         <Button
           basic
           disabled={logoutUser.isLoading}
+          loading={logoutUser.isLoading}
           onClick={async () => {
-            const userIdLogout = await logoutUser.mutateAsync()
-            userIdLogout
-              ? router.push('https://www.klicker.uzh.ch')
-              : console.log('Logout failed')
+            try {
+              const userIdLogout = await logoutUser.mutateAsync()
+              if (userIdLogout) {
+                await router.push('https://www.klicker.uzh.ch')
+                return
+              }
+            } catch {
+              // Toast below covers failed logout requests and false responses.
+            }
+
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
           }}
           className={{
             root: 'px-auto my-auto text-white hover:bg-transparent hover:text-white',
           }}
           data={{ cy: 'logout-control-button' }}
         >
-          <FontAwesomeIcon icon={faRightFromBracket} />
+          <Button.Icon
+            icon={faRightFromBracket}
+            loading={logoutUser.isLoading}
+          />
         </Button>
       </div>
     </div>

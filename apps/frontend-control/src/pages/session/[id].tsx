@@ -2,7 +2,7 @@ import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -25,6 +25,13 @@ function RunningLiveQuiz() {
   const quizId = router.query.id
   const validQuizId = typeof quizId === 'string' ? quizId : undefined
   const utils = trpc.useUtils()
+  const showControlActionError = () => {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
   const invalidateCurrentLiveQuiz = async () => {
     if (validQuizId) {
       await utils.liveQuiz.control.invalidate({ id: validQuizId })
@@ -141,11 +148,15 @@ function RunningLiveQuiz() {
                 )?.id
                 if (typeof blockId === 'undefined') return
 
-                await deactivateLiveQuizBlock.mutateAsync({
-                  quizId: id,
-                  blockId,
-                })
-                setCurrentBlockOrder(undefined)
+                try {
+                  await deactivateLiveQuizBlock.mutateAsync({
+                    quizId: id,
+                    blockId,
+                  })
+                  setCurrentBlockOrder(undefined)
+                } catch {
+                  showControlActionError()
+                }
               }}
               className={{
                 root: 'float-right',
@@ -183,12 +194,16 @@ function RunningLiveQuiz() {
                 )?.id
                 if (typeof blockId === 'undefined') return
 
-                await activateLiveQuizBlock.mutateAsync({
-                  quizId: id,
-                  blockId,
-                })
-                setCurrentBlockOrder(nextBlockOrder)
-                setNextBlockOrder(nextBlockOrder + 1)
+                try {
+                  await activateLiveQuizBlock.mutateAsync({
+                    quizId: id,
+                    blockId,
+                  })
+                  setCurrentBlockOrder(nextBlockOrder)
+                  setNextBlockOrder(nextBlockOrder + 1)
+                } catch {
+                  showControlActionError()
+                }
               }}
               className={{
                 root: 'bg-primary-80 float-right text-white',
@@ -212,17 +227,21 @@ function RunningLiveQuiz() {
             <Button
               loading={endLiveQuiz.isLoading}
               onClick={async () => {
-                await endLiveQuiz.mutateAsync({ id })
-                if (course) {
-                  await utils.course.controlCourse.invalidate({
-                    courseId: course.id,
-                  })
-                } else {
-                  await utils.liveQuiz.unassigned.invalidate()
+                try {
+                  await endLiveQuiz.mutateAsync({ id })
+                  if (course) {
+                    await utils.course.controlCourse.invalidate({
+                      courseId: course.id,
+                    })
+                  } else {
+                    await utils.liveQuiz.unassigned.invalidate()
+                  }
+                  await router.push(
+                    course ? `/course/${course?.id}` : '/course/unassigned'
+                  )
+                } catch {
+                  showControlActionError()
                 }
-                router.push(
-                  course ? `/course/${course?.id}` : '/course/unassigned'
-                )
               }}
               className={{
                 root: 'bg-uzh-red-100 hover:bg-uzh-red-100 float-right text-white',
