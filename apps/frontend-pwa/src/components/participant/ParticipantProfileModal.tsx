@@ -1,4 +1,5 @@
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { trpc } from '../../lib/trpc'
@@ -15,17 +16,20 @@ function ParticipantProfileModal({
   participantId,
   top10Participants,
 }: ParticipantProfileModalProps) {
+  const t = useTranslations()
   const [selectedParticipant, setSelectedParticipant] =
     useState<string>(participantId)
   const [currentIndex, setCurrentIndex] = useState<number>(
     top10Participants.indexOf(participantId)
   )
-  const { data, isLoading } = trpc.participant.publicProfile.useQuery(
+  const { data, error, isLoading } = trpc.participant.publicProfile.useQuery(
     { participantId: selectedParticipant },
     { enabled: Boolean(selectedParticipant) }
   )
 
   const participant = data?.publicParticipantProfile
+  const initialLoading = isLoading && !participant
+  const profileUnavailable = Boolean((error || !isLoading) && !participant)
 
   const onNext = () => {
     const nextIndex = (currentIndex + 1) % top10Participants.length
@@ -43,7 +47,7 @@ function ParticipantProfileModal({
   return (
     <Modal
       open
-      loading={isLoading || !participant}
+      loading={initialLoading}
       onClose={onClose}
       className={{
         content: 'my-auto w-[500px]',
@@ -55,7 +59,14 @@ function ParticipantProfileModal({
       onPrev={onPrev}
       title="Top 10"
     >
-      {participant && (
+      {profileUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {participant ? (
         <div className="px-auto flex h-full w-full flex-col items-center justify-between">
           <ProfileData
             level={participant.levelData}
@@ -83,7 +94,7 @@ function ParticipantProfileModal({
             ))}
           </div>
         </div>
-      )}
+      ) : null}
     </Modal>
   )
 }

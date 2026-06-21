@@ -1,5 +1,5 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
@@ -26,7 +26,7 @@ function TemplateEditModal({
 }: TemplateEditModalProps) {
   const t = useTranslations()
   const editActivityTemplate = trpc.activity.editTemplate.useMutation()
-  const { data, isLoading } = trpc.activity.templateInformation.useQuery(
+  const { data, error, isLoading } = trpc.activity.templateInformation.useQuery(
     {
       activityId,
       activityType:
@@ -35,18 +35,27 @@ function TemplateEditModal({
     { enabled: Boolean(activityId) }
   )
   const info = data?.templateInformation
+  const initialLoading = isLoading && !info
+  const infoUnavailable = Boolean((error || !isLoading) && !info)
 
   return (
     <Modal
       open
-      loading={isLoading || !info}
+      loading={initialLoading}
       title={t('manage.template.editTemplate')}
       onClose={onClose}
       className={{ content: 'gap-2 pb-2' }}
       data={{ cy: 'edit-template-modal' }}
       dataCloseButton={{ cy: 'close-edit-template-modal' }}
     >
-      {info && (
+      {infoUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {info ? (
         <Formik
           validateOnMount
           initialValues={{
@@ -121,7 +130,7 @@ function TemplateEditModal({
             </Form>
           )}
         </Formik>
-      )}
+      ) : null}
     </Modal>
   )
 }

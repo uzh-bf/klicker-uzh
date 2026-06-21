@@ -1,4 +1,4 @@
-import { Modal, toast } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -39,7 +39,11 @@ function CourseDeletionModal({
   const utils = trpc.useUtils()
 
   // fetch course information
-  const { data, isLoading: queryLoading } = trpc.course.summary.useQuery(
+  const {
+    data,
+    error: summaryError,
+    isLoading: queryLoading,
+  } = trpc.course.summary.useQuery(
     { courseId: courseId ?? '' },
     { enabled: Boolean(courseId) }
   )
@@ -65,6 +69,10 @@ function CourseDeletionModal({
   }, [courseId, data?.courseSummary])
 
   const summary = data?.courseSummary
+  const initialSummaryLoading = queryLoading && !summary
+  const summaryUnavailable = Boolean(
+    (summaryError || !queryLoading) && !summary
+  )
   if (!courseId) {
     return null
   }
@@ -72,7 +80,7 @@ function CourseDeletionModal({
   return (
     <Modal
       open
-      loading={queryLoading || !summary}
+      loading={initialSummaryLoading}
       onClose={() => {
         onClose()
         setConfirmations({ ...initialConfirmations })
@@ -83,7 +91,8 @@ function CourseDeletionModal({
       primaryButtonStyle="destructive"
       primaryLoading={deleteCourse.isLoading}
       primaryDisabled={
-        queryLoading ||
+        initialSummaryLoading ||
+        summaryUnavailable ||
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
@@ -121,13 +130,20 @@ function CourseDeletionModal({
       }}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
-      {summary && (
+      {summaryUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {summary ? (
         <CourseDeletionConfirmations
           summary={summary}
           confirmations={confirmations}
           setConfirmations={setConfirmations}
         />
-      )}
+      ) : null}
     </Modal>
   )
 }

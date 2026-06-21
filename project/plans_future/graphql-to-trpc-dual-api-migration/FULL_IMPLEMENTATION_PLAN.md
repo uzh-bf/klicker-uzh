@@ -642,6 +642,12 @@ Second-pass UX/cache cleanup prepared:
   cancellation also keeps the modal open with a system-error toast on rejected
   or falsy tRPC cancel results, while cache invalidation after success remains
   best-effort.
+- Manage template-edit and course-deletion modals plus the PWA public
+  participant profile modal now distinguish failed initial tRPC detail loads
+  from successful data. Failed no-data loads render the existing system-error
+  notification instead of an endless modal loader, course deletion stays
+  disabled until the course summary exists, and stale detail/profile data stays
+  visible during background refetch failures.
 
 Second-pass verification:
 
@@ -949,6 +955,21 @@ Second-pass verification:
 - `git diff --check` passed after the manage/control modal detail-query
   cleanup.
 - Browser verification for the manage/control modal detail-query cleanup remains
+  blocked: `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`,
+  `127.0.0.1:3002`, and `127.0.0.1:3003` all failed with connection refused,
+  so no local backend, PWA, manage, or control dev server was available for
+  screenshots.
+- Context7 docs checked again for TanStack Query v4 query-state semantics plus
+  tRPC React Query integration before the manage/PWA modal no-data cleanup.
+- `node_modules/.bin/prettier --check` on the three changed manage/PWA modal
+  files passed from the dependency checkout after formatting
+  `TemplateEditModal.tsx` and copying it back to the source checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage modal no-data cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after the PWA participant profile modal cleanup.
+- `git diff --check` passed after the manage/PWA modal no-data cleanup.
+- Browser verification for the manage/PWA modal no-data cleanup remains
   blocked: `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`,
   `127.0.0.1:3002`, and `127.0.0.1:3003` all failed with connection refused,
   so no local backend, PWA, manage, or control dev server was available for
