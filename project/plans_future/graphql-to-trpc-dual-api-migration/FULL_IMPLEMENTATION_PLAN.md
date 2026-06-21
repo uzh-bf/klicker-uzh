@@ -575,6 +575,9 @@ Second-pass UX/cache cleanup prepared:
   stale selector data when available, but show compact existing
   `UserNotification` error states when their initial migrated tRPC selector
   query has no usable data.
+- Manage course detail now preserves cached/stale course data during refetch
+  failures and replaces the raw `error.message` render on failed initial
+  `course.detail` loads with the existing localized system-error notification.
 
 Second-pass verification:
 
@@ -724,13 +727,25 @@ Second-pass verification:
 - Review/simplification: local self-review kept the selector cleanup scoped to
   no-data rendering and center-control loaders; empty successful lists and
   surrounding navigation stay unchanged, and no shared abstraction was added.
+- Context7 docs checked again for current TanStack Query stale-data/error
+  behavior before the manage course-detail raw-error cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-manage/src/pages/courses/[id]/index.tsx` passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the PR worktree into the
+  dependency checkout.
+- `git diff --check` passed after the manage course-detail raw-error cleanup.
+- Browser verification for the manage course-detail cleanup remains blocked:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
+  refused, so no local backend or manage dev server was available for
+  screenshots.
 
-PR #5132 status after `47c39fc44`:
+PR #5132 status after `7da465c8e`:
 
 - Passing: lint, format, check, CodeQL, SonarCloud, all visible amd/arm builds,
   regular tests, package API tRPC Vitest, and packages/graphql Vitest.
 - Pending at last poll: Cypress Cloud / `cypress: default-group (merge)` run
-  `6803`.
+  `6804`.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

@@ -13,6 +13,7 @@ import {
   Prose,
   TabContent,
   Tabs,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -118,11 +119,18 @@ function CourseOverviewPage() {
     }
   }, [data?.course])
 
-  if (error) {
-    return <div>{error.message}</div>
+  if (error && !data?.course) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
   }
 
-  if (isLoading || !data?.course)
+  if (!data?.course)
     return (
       <Layout>
         <Loader />
