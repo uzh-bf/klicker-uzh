@@ -71,7 +71,9 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
             })
 
             if (res.answerCollection?.id) {
-              void utils.resources.answerCollectionsInfo.invalidate()
+              void utils.resources.answerCollectionsInfo
+                .invalidate()
+                .catch(console.error)
               toast({
                 type: 'success',
                 message: t('manage.resources.collectionCreationSuccess'),
@@ -131,6 +133,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
                       />
                       <Button
                         onClick={() => remove(index)}
+                        disabled={isSubmitting}
                         data={{ cy: `remove-response-entry-${index}` }}
                         className={{
                           root: 'h-9 w-9 self-end border-red-600 text-red-600 hover:text-red-600',
@@ -142,6 +145,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
                   ))}
                   <Button
                     onClick={() => push({ value: undefined })}
+                    disabled={isSubmitting}
                     className={{ root: 'w-full' }}
                     data={{ cy: 'add-response-entry' }}
                   >
@@ -164,6 +168,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
               <Button
                 className={{ root: 'h-8 border-red-400' }}
                 onClick={onClose}
+                disabled={isSubmitting}
                 data={{ cy: 'cancel-create-answer-collection' }}
               >
                 <Button.Icon icon={faBan} />
@@ -171,7 +176,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
               </Button>
               <Button
                 type="submit"
-                disabled={!isValid}
+                disabled={!isValid || isSubmitting}
                 loading={isSubmitting}
                 className={{ root: 'h-8 border-green-700' }}
                 data={{ cy: 'submit-create-answer-collection' }}

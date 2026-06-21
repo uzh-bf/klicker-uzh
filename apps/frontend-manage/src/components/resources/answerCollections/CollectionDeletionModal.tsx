@@ -21,24 +21,29 @@ function CollectionDeletionModal({
   const utils = trpc.useUtils()
   const deleteAnswerCollection =
     trpc.resources.deleteAnswerCollection.useMutation()
+  const loading = deleteAnswerCollection.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      setDeletionModal(false)
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.resources.deleteAnswerCollection')}
-      onClose={() => setDeletionModal(false)}
+      onClose={handleClose}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!deleteAnswerCollection.isLoading && (
-            <FontAwesomeIcon icon={faTrashCan} />
-          )}
+          {!loading && <FontAwesomeIcon icon={faTrashCan} />}
           <span>
             {t('manage.resources.confirmDeletion', { name: collection.name })}
           </span>
         </div>
       }
       primaryButtonStyle="destructive"
-      primaryLoading={deleteAnswerCollection.isLoading}
+      primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
         try {
           const res = await deleteAnswerCollection.mutateAsync({
@@ -46,7 +51,9 @@ function CollectionDeletionModal({
           })
 
           if (res.deletedAnswerCollectionId) {
-            void utils.resources.answerCollectionsInfo.invalidate()
+            void utils.resources.answerCollectionsInfo
+              .invalidate()
+              .catch(console.error)
             toast({
               type: 'success',
               message: t('manage.resources.deletionSuccessful'),

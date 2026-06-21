@@ -18,6 +18,12 @@ function AnswerCollectionDuplicationModal({
   const utils = trpc.useUtils()
   const duplicateAnswerCollection =
     trpc.resources.duplicateAnswerCollection.useMutation()
+  const loading = duplicateAnswerCollection.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   const onErrorToast = () =>
     toast({
@@ -29,7 +35,7 @@ function AnswerCollectionDuplicationModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.resources.duplicateCollection')}
       secondaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -37,17 +43,16 @@ function AnswerCollectionDuplicationModal({
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-duplication' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!duplicateAnswerCollection.isLoading && (
-            <FontAwesomeIcon icon={faCopy} />
-          )}
+          {!loading && <FontAwesomeIcon icon={faCopy} />}
           <span>{t('manage.resources.duplicateCollection')}</span>
         </div>
       }
-      primaryLoading={duplicateAnswerCollection.isLoading}
+      primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
         try {
           const result = await duplicateAnswerCollection.mutateAsync({
@@ -55,7 +60,9 @@ function AnswerCollectionDuplicationModal({
           })
 
           if (result.answerCollection) {
-            void utils.resources.answerCollectionsInfo.invalidate()
+            void utils.resources.answerCollectionsInfo
+              .invalidate()
+              .catch(console.error)
             onClose()
             onSuccess()
           } else {

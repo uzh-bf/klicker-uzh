@@ -657,6 +657,11 @@ Second-pass UX/cache cleanup prepared:
   selector refetches plus answer-collection list/detail invalidations as
   best-effort work after confirmed success. Failed refreshes no longer block
   option form reset, edit-mode close, or the existing success toast.
+- Manage answer-collection create, duplicate, delete, and permission-removal
+  modals now guard cancel/close/primary controls while their tRPC mutation is
+  loading and catch `resources.answerCollectionsInfo` invalidation failures
+  after confirmed success. Failed list refreshes no longer leak unhandled
+  promise rejections after completed answer-collection writes.
 - Manage media-library uploads now show a system-error toast when the tRPC SAS
   mutation or Azure upload fails, render a system-error notification when the
   initial `element.mediaFiles` query has no data, and treat media-list
@@ -943,6 +948,15 @@ Second-pass verification:
   `apps/frontend-manage` passed in the dependency checkout; `git diff --check`
   passed in the commit worktree. Browser verification remains blocked because
   `127.0.0.1:3000` and `3002` refuse connections.
+- Verification for the manage answer-collection write-guard cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync` and invalidation behavior before
+  adding pending guards and caught best-effort list invalidations to
+  create/duplicate/delete/removal modals. `prettier --check` on the changed
+  answer-collection CRUD/removal files plus docs passed in the dependency
+  checkout; `tsc --noEmit` for `apps/frontend-manage` passed in the dependency
+  checkout; `git diff --check` passed in the commit worktree. Browser
+  verification remains blocked because `127.0.0.1:3000` and `3002` refuse
+  connections.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.

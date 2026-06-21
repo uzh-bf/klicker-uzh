@@ -19,6 +19,12 @@ function AnswerCollectionRemovalModal({
   const utils = trpc.useUtils()
   const removeAnswerCollection =
     trpc.resources.removeAnswerCollection.useMutation()
+  const loading = removeAnswerCollection.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   const onRemovalError = () =>
     toast({
@@ -31,15 +37,16 @@ function AnswerCollectionRemovalModal({
     <Modal
       open
       title={t(`manage.sharing.remove${answerCollectionObjectType}`)}
-      onClose={onClose}
+      onClose={handleClose}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!removeAnswerCollection.isLoading && <FontAwesomeIcon icon={faX} />}
+          {!loading && <FontAwesomeIcon icon={faX} />}
           <span>{t('manage.sharing.confirmRemoval')}</span>
         </div>
       }
       primaryButtonStyle="destructive"
-      primaryLoading={removeAnswerCollection.isLoading}
+      primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
         try {
           const res = await removeAnswerCollection.mutateAsync({
@@ -47,7 +54,9 @@ function AnswerCollectionRemovalModal({
           })
 
           if (res.removedAnswerCollectionId !== null) {
-            void utils.resources.answerCollectionsInfo.invalidate()
+            void utils.resources.answerCollectionsInfo
+              .invalidate()
+              .catch(console.error)
             toast({
               type: 'success',
               message: t('manage.sharing.removalSuccessful'),
