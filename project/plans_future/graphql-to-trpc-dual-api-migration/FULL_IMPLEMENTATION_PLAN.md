@@ -843,10 +843,11 @@ Second-pass UX/cache cleanup prepared:
   user-group selector fails, and fixes the direct-share form so failed callbacks
   release Formik submitting state.
 - Manage object-sharing permission mutations now treat the confirmed tRPC
-  mutation result as authoritative and run answer-collection list plus
-  owning-list refreshes as best-effort follow-up work. Failed invalidations or
-  parent refetch callbacks no longer turn successful share/revoke/permission
-  changes into failure toasts.
+  mutation result as authoritative and run derived-permission,
+  answer-collection list, and owning-list refreshes as best-effort follow-up
+  work. Failed invalidations or parent refetch callbacks no longer turn
+  successful share/revoke/permission changes into failure toasts or unhandled
+  promises.
 - Manage user-group management now distinguishes a failed initial
   `sharing.userGroups` load from the successful no-groups state, keeps stale
   group lists visible during refetch failures with a compact system-error
@@ -875,6 +876,8 @@ Second-pass UX/cache cleanup prepared:
   Copy/import/request/cancel/remove primary actions are explicitly disabled
   while their tRPC mutations are pending, and catalog object removal now catches
   rejected tRPC calls instead of leaving an unhandled failed mutation.
+  Post-success catalog-object, catalog-collection, and answer-collection list
+  invalidations are caught best-effort background refreshes.
 - Manage catalog collection create/rename/delete modals now use stricter pending
   guards. Create and rename cancel actions are disabled while Formik submission
   is in flight, rename confirm is disabled while submitting, and collection
@@ -1371,6 +1374,19 @@ Second-pass verification:
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
   connection refused, so no local backend or manage dev server was available for
   screenshots.
+- Follow-up verification for the manage sharing/catalog background
+  invalidation cleanup: Context7 TanStack Query docs checked stale-data /
+  refetch-error behavior and tRPC docs checked React Query hook/cache helper
+  usage. Local self-review found the diff limited to adding catches to
+  fire-and-forget derived-permission, catalog-object, catalog-collection, and
+  answer-collection list invalidations after confirmed tRPC mutation success;
+  GraphQL / Apollo coexistence is unchanged. `prettier --check` on the seven
+  changed manage files, `project/CODEBASE_NOTES.md`, and this plan passed.
+  `./node_modules/.bin/tsc --noEmit` from `apps/frontend-manage` passed in the
+  commit worktree. `git diff --check` passed in the commit worktree. Browser
+  verification remains blocked because `127.0.0.1:3000` and
+  `127.0.0.1:3002` both refused connections, so no local backend or manage dev
+  server was available for screenshots.
 - Context7 docs checked for current TanStack Query v4 query/mutation loading
   and tRPC `useUtils` cache helper behavior before the PWA live-quiz
   leaderboard cleanup.

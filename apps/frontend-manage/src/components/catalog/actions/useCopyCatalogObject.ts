@@ -36,11 +36,15 @@ function useCopyCatalogObject({
       const res = await copyCatalogObjectToAccount.mutateAsync(input)
 
       if (res.copied) {
-        void utils.sharing.catalogObjects.invalidate({
-          catalogCollectionId,
-        })
+        void utils.sharing.catalogObjects
+          .invalidate({
+            catalogCollectionId,
+          })
+          .catch(console.error)
         if (objectType === ObjectType.AnswerCollection) {
-          void utils.resources.answerCollectionsInfo.invalidate()
+          void utils.resources.answerCollectionsInfo
+            .invalidate()
+            .catch(console.error)
         }
         return true
       }

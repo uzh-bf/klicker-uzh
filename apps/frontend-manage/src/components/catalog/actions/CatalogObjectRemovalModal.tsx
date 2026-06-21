@@ -66,7 +66,9 @@ function CatalogObjectRemovalModal({
                 }
               }
             )
-            void utils.sharing.catalogCollections.invalidate()
+            void utils.sharing.catalogCollections
+              .invalidate()
+              .catch(console.error)
             toast({
               type: 'success',
               message: t('manage.catalog.objectRemovalSuccess'),

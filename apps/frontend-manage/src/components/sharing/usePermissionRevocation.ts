@@ -63,9 +63,9 @@ function usePermissionRevocation({
         }
       )
 
-      void utils.sharing.derivedObjectPermissions.invalidate(
-        objectPermissionsInput
-      )
+      void utils.sharing.derivedObjectPermissions
+        .invalidate(objectPermissionsInput)
+        .catch(console.error)
     },
   })
 

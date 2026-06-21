@@ -111,7 +111,9 @@ function AddObjectToCatalogModal({
                   }
                 }
               )
-              void utils.sharing.catalogCollections.invalidate()
+              void utils.sharing.catalogCollections
+                .invalidate()
+                .catch(console.error)
               resetForm()
               setSubmitting(false)
               onSuccess()

@@ -70,9 +70,9 @@ function usePermissionLevelChange({
         }
       )
 
-      void utils.sharing.derivedObjectPermissions.invalidate(
-        objectPermissionsInput
-      )
+      void utils.sharing.derivedObjectPermissions
+        .invalidate(objectPermissionsInput)
+        .catch(console.error)
     },
   })
 

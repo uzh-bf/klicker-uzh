@@ -35,10 +35,14 @@ function useImportCatalogObject({
       const res = await importCatalogObject.mutateAsync(input)
 
       if (res.imported) {
-        void utils.sharing.catalogObjects.invalidate({
-          catalogCollectionId,
-        })
-        void utils.resources.answerCollectionsInfo.invalidate()
+        void utils.sharing.catalogObjects
+          .invalidate({
+            catalogCollectionId,
+          })
+          .catch(console.error)
+        void utils.resources.answerCollectionsInfo
+          .invalidate()
+          .catch(console.error)
         return true
       }
       return false
