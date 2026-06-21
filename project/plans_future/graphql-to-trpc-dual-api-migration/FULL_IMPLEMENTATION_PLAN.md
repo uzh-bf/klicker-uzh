@@ -516,7 +516,9 @@ Second-pass UX/cache cleanup prepared:
   system-error toasts while preserving existing invalid/full group messages.
 - PWA group activity start now disables the start button while the tRPC mutation
   is pending, keeps the participant on the activity page if the mutation fails,
-  and surfaces a system-error toast instead of leaving an unhandled rejection.
+  surfaces a system-error toast instead of leaving an unhandled rejection, and
+  treats the detail refetch as best-effort after a confirmed started activity
+  instance while guarding duplicate start clicks.
 - PWA microlearning completion now disables the finish button while the tRPC
   mutation is pending, only invalidates/navigates after a successful completion,
   and shows a system-error toast on failure.
@@ -947,6 +949,15 @@ Second-pass UX/cache cleanup prepared:
 
 Second-pass verification:
 
+- Verification for the PWA group-activity start refresh cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and refetch
+  handling. `prettier --check` on
+  `apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx` plus
+  the updated docs passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-pwa` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3001` refuses connections, so no local PWA dev server was
+  available for screenshots; `127.0.0.1:3000` responded with Express `404`.
 - Verification for the manage object-sharing modal close refresh cleanup:
   Context7 TanStack Query v4 docs checked mutation and invalidation semantics
   for this audit pass. `prettier --check` on

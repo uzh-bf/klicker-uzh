@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
@@ -37,6 +37,8 @@ function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
+  const [activityStartConfirmed, setActivityStartConfirmed] = useState(false)
+  const [activityStartRefreshing, setActivityStartRefreshing] = useState(false)
   const groupId =
     typeof router.query.groupId === 'string' ? router.query.groupId : ''
   const activityId =
@@ -57,6 +59,11 @@ function GroupActivityDetails() {
     await refetch()
   }, [refetch])
   const startGroupActivity = trpc.participant.startGroupActivity.useMutation()
+
+  useEffect(() => {
+    setActivityStartConfirmed(false)
+    setActivityStartRefreshing(false)
+  }, [activityId, groupId])
 
   if (!routeParamsAvailable || (isLoading && !data)) {
     return (
@@ -191,17 +198,37 @@ function GroupActivityDetails() {
                     primary
                     disabled={
                       groupActivity.group.participants?.length === 1 ||
-                      startGroupActivity.isLoading
+                      startGroupActivity.isLoading ||
+                      activityStartRefreshing ||
+                      activityStartConfirmed
                     }
-                    loading={startGroupActivity.isLoading}
+                    loading={
+                      startGroupActivity.isLoading || activityStartRefreshing
+                    }
                     className={{ root: 'mt-4 self-end text-lg font-bold' }}
                     onClick={async () => {
                       try {
-                        await startGroupActivity.mutateAsync({
+                        const result = await startGroupActivity.mutateAsync({
                           activityId,
                           groupId,
                         })
-                        await refetch()
+
+                        if (!result.groupActivity?.activityInstance?.id) {
+                          throw new Error('Failed to start group activity')
+                        }
+
+                        setActivityStartConfirmed(true)
+                        setActivityStartRefreshing(true)
+                        void refetch()
+                          .catch((error) => {
+                            console.error(error)
+                            toast({
+                              type: 'error',
+                              message: t('shared.generic.systemError'),
+                              options: { duration: 5000 },
+                            })
+                          })
+                          .finally(() => setActivityStartRefreshing(false))
                       } catch (error) {
                         console.error(error)
                         toast({
