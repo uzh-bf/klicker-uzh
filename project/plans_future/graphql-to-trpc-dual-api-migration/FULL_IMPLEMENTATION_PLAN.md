@@ -542,6 +542,11 @@ Second-pass UX/cache cleanup prepared:
   failed submissions that keep the modal open with the existing system-error
   toast, while post-success cache invalidation/refetch callbacks run as
   best-effort refreshes and no longer make successful mutations look failed.
+- Manage user settings now catch rejected/falsy tRPC mutations for language,
+  email preference, shortname, delegated-login create/delete, and delegated
+  password changes. Controls are disabled while their mutations are pending,
+  forms always release their submitting state, and cache refreshes run as
+  best-effort work after confirmed server success.
 
 Second-pass verification:
 
@@ -626,6 +631,15 @@ Second-pass verification:
   dependency checkout; `rsync` only warned about stale Rollup cache directories.
 - `git diff --check` passed after the manage confirmation-modal payload/refresh
   cleanup.
+- Context7 docs checked for TanStack Query v4 mutation error handling,
+  `mutateAsync`, loading guards, and invalidations before the manage settings
+  failure-handling cleanup.
+- `node_modules/.bin/prettier --check` on the five changed manage user-settings
+  files passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage settings cleanup; `rsync` only
+  warned about stale Rollup cache directories.
+- `git diff --check` passed after the manage settings cleanup.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is
   listening on `127.0.0.1:3000`, and no local control dev server is listening

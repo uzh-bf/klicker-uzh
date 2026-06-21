@@ -7,6 +7,7 @@ import {
   H4,
   Label,
   Prose,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -38,6 +39,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
     open: boolean
     loginId?: string
   }>({ open: false, loginId: undefined })
+  const [deletingLoginId, setDeletingLoginId] = useState<string | null>(null)
   const { data } = trpc.user.delegatedAccess.useQuery()
 
   const createUserLogin = trpc.user.createUserLogin.useMutation()
@@ -110,10 +112,34 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                 </Button>
                 <Button
                   destructive
+                  disabled={deleteUserLogin.isLoading}
+                  loading={deletingLoginId === login.id}
                   className={{ root: 'h-7 w-7' }}
                   onClick={async () => {
-                    await deleteUserLogin.mutateAsync({ id: login.id })
-                    await utils.user.delegatedAccess.invalidate()
+                    setDeletingLoginId(login.id)
+
+                    try {
+                      const result = await deleteUserLogin.mutateAsync({
+                        id: login.id,
+                      })
+
+                      if (!result?.id) {
+                        throw new Error('Failed to delete delegated login')
+                      }
+
+                      void utils.user.delegatedAccess
+                        .invalidate()
+                        .catch(console.error)
+                    } catch (error) {
+                      console.error(error)
+                      toast({
+                        type: 'error',
+                        message: t('shared.generic.systemError'),
+                        options: { duration: 5000 },
+                      })
+                    } finally {
+                      setDeletingLoginId(null)
+                    }
                   }}
                   data={{ cy: `delete-delegated-login-${login.name}` }}
                 >
@@ -144,22 +170,36 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
               { resetForm, setFieldValue, setSubmitting, validateForm }
             ) => {
               setSubmitting(true)
-              const result = await createUserLogin.mutateAsync({
-                name: values.name,
-                password: values.password,
-                scope: values.scope,
-              })
-              await utils.user.delegatedAccess.invalidate()
-              setSubmitting(false)
-              setConfirmationModal(false)
+              try {
+                const result = await createUserLogin.mutateAsync({
+                  name: values.name,
+                  password: values.password,
+                  scope: values.scope,
+                })
 
-              if (result) {
+                if (!result?.id) {
+                  throw new Error('Failed to create delegated login')
+                }
+
+                void utils.user.delegatedAccess
+                  .invalidate()
+                  .catch(console.error)
+                setConfirmationModal(false)
                 resetForm()
                 await setFieldValue(
                   'password',
                   generatePassword.generate(PW_SETTINGS)
                 )
                 await validateForm()
+              } catch (error) {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+              } finally {
+                setSubmitting(false)
               }
             }}
           >

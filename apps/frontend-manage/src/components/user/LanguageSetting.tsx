@@ -1,5 +1,5 @@
 import { routing } from '@klicker-uzh/i18n'
-import { Select } from '@uzh-bf/design-system'
+import { Select, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import SimpleSetting from '../../components/user/SimpleSetting'
@@ -27,15 +27,25 @@ function LanguageSetting({ user }: LanguageSettingProps) {
       <Select
         disabled={changeUserLocale.isLoading}
         value={user?.locale || 'en'}
-        onChange={(newLocale: string) => {
-          void changeUserLocale
-            .mutateAsync({ locale: newLocale as UserLocale })
-            .then(async () => {
-              await utils.user.profile.invalidate()
-              await router.push({ pathname, query }, asPath, {
-                locale: newLocale,
-              })
+        onChange={async (newLocale: string) => {
+          if (newLocale === user.locale) return
+
+          try {
+            await changeUserLocale.mutateAsync({
+              locale: newLocale as UserLocale,
             })
+            void utils.user.profile.invalidate().catch(console.error)
+            await router.push({ pathname, query }, asPath, {
+              locale: newLocale,
+            })
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          }
         }}
         items={routing.locales.map((loc) => ({
           label: t(`shared.generic.${loc}`),

@@ -1,5 +1,5 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import generatePassword from 'generate-password'
 import { useTranslations } from 'next-intl'
@@ -42,12 +42,27 @@ function DelegatedPasswordChangeModal({
         })}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          await updateUserLogin.mutateAsync({
-            id: loginId!,
-            password: values.password,
-          })
-          setSubmitting(false)
-          onClose()
+          try {
+            const result = await updateUserLogin.mutateAsync({
+              id: loginId,
+              password: values.password,
+            })
+
+            if (!result?.id) {
+              throw new Error('Failed to change delegated login password')
+            }
+
+            onClose()
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          } finally {
+            setSubmitting(false)
+          }
         }}
       >
         {({ values, setFieldValue, isValid, isSubmitting }) => (
@@ -61,7 +76,7 @@ function DelegatedPasswordChangeModal({
             <Button
               primary
               type="submit"
-              disabled={!isValid}
+              disabled={!isValid || isSubmitting}
               loading={isSubmitting}
               className={{ root: 'float-right my-2' }}
               data={{ cy: 'change-delegated-login-password' }}

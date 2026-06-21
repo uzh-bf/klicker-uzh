@@ -1,4 +1,4 @@
-import { Switch } from '@uzh-bf/design-system'
+import { Switch, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc, type RouterOutputs } from '../../lib/trpc'
 import SimpleSetting from './SimpleSetting'
@@ -16,12 +16,20 @@ function EmailSetting({ user }: { user: UserProfile }) {
       tooltip={t('manage.settings.emailUpdatesTooltip')}
     >
       <Switch
+        disabled={changeEmailSettings.isLoading}
         checked={user?.sendProjectUpdates ?? false}
-        onCheckedChange={async () => {
-          await changeEmailSettings.mutateAsync({
-            projectUpdates: !user?.sendProjectUpdates,
-          })
-          await utils.user.profile.invalidate()
+        onCheckedChange={async (projectUpdates) => {
+          try {
+            await changeEmailSettings.mutateAsync({ projectUpdates })
+            void utils.user.profile.invalidate().catch(console.error)
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          }
         }}
       />
     </SimpleSetting>

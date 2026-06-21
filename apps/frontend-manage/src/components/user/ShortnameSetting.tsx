@@ -44,26 +44,32 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
           initialValues={{ shortname: user?.shortname || '' }}
           onSubmit={async (values, { setErrors, setSubmitting }) => {
             setSubmitting(true)
-            const trimmedShortname = values.shortname.trim()
+            try {
+              const trimmedShortname = values.shortname.trim()
 
-            const result = await changeShortname.mutateAsync({
-              shortname: trimmedShortname,
-            })
+              const result = await changeShortname.mutateAsync({
+                shortname: trimmedShortname,
+              })
 
-            if (!result) {
+              if (!result) {
+                setErrors({
+                  shortname: t('shared.generic.systemError'),
+                })
+              } else if (result.shortname !== trimmedShortname) {
+                setErrors({
+                  shortname: t('manage.settings.shortnameTaken'),
+                })
+              } else {
+                void utils.user.profile.invalidate().catch(console.error)
+                setEditShortname(false)
+              }
+            } catch (error) {
+              console.error(error)
               setErrors({
                 shortname: t('shared.generic.systemError'),
               })
+            } finally {
               setSubmitting(false)
-            } else if (result.shortname !== trimmedShortname) {
-              setErrors({
-                shortname: t('manage.settings.shortnameTaken'),
-              })
-              setSubmitting(false)
-            } else {
-              await utils.user.profile.invalidate()
-              setSubmitting(false)
-              setEditShortname(false)
             }
           }}
           validationSchema={Yup.object().shape({
