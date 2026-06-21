@@ -1,4 +1,4 @@
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -87,10 +87,31 @@ function CourseDeletionModal({
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        await deleteCourse.mutateAsync({ id: courseId })
-        await utils.course.userCourses.invalidate()
-        onClose()
-        setConfirmations({ ...initialConfirmations })
+        try {
+          const result = await deleteCourse.mutateAsync({ id: courseId })
+
+          if (!result.course?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
+          utils.course.userCourses
+            .invalidate()
+            .catch((error) => console.error(error))
+          onClose()
+          setConfirmations({ ...initialConfirmations })
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
       }}
       dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}
       secondaryLabel={t('shared.generic.close')}

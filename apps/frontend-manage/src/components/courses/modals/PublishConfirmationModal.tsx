@@ -5,7 +5,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ActivityType } from '@klicker-uzh/types'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
@@ -45,17 +45,36 @@ function PublishConfirmationModal({
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={publishActivity.isLoading}
       onPrimaryAction={async () => {
-        const result = await publishActivity.mutateAsync({
-          activityId,
-          activityType: isMicroLearning
-            ? ActivityType.MICRO_LEARNING
-            : ActivityType.GROUP_ACTIVITY,
-        })
-        if (result.publishActivity?.id) {
-          await utils.course.detail.invalidate({ courseId })
+        try {
+          const result = await publishActivity.mutateAsync({
+            activityId,
+            activityType: isMicroLearning
+              ? ActivityType.MICRO_LEARNING
+              : ActivityType.GROUP_ACTIVITY,
+          })
+
+          if (!result.publishActivity?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
+          utils.course.detail
+            .invalidate({ courseId })
+            .catch((error) => console.error(error))
+          refetchActivities?.().catch((error) => console.error(error))
+          onClose()
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
         }
-        await refetchActivities?.()
-        onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-publish-action' }}
       secondaryLabel={t('shared.generic.cancel')}

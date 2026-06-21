@@ -1,4 +1,4 @@
-import { Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
@@ -50,8 +50,17 @@ function ActivityConfirmationModal({
             : undefined
       }
       onPrimaryAction={async () => {
-        await onSubmit()
-        onClose()
+        try {
+          await onSubmit()
+          onClose()
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
       }}
       dataPrimaryAction={{ cy: 'confirmation-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}

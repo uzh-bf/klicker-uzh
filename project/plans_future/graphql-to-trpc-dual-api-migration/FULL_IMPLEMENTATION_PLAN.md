@@ -526,6 +526,17 @@ Second-pass UX/cache cleanup prepared:
   failed/rejected deletion keeps the modal open with a system-error toast, while
   successful deletion still clears the local participant token and reloads even
   if the best-effort logout mutation fails.
+- Manage shared activity confirmation modals now catch rejected submit
+  callbacks, keep the modal open, and show a system-error toast instead of
+  relying on an unhandled promise rejection.
+- Manage course archive/delete modals now treat the tRPC `{ course }` result as
+  authoritative: failed/rejected mutations keep the modal open with a
+  system-error toast, while successful mutations close the modal and treat
+  `userCourses` invalidation as a best-effort refresh.
+- Manage scheduled-activity publish confirmation now catches rejected/falsy
+  tRPC publish results, keeps the modal open with a system-error toast on
+  failure, and treats course-detail invalidation plus activity refetch as
+  best-effort after a successful publish.
 
 Second-pass verification:
 
@@ -589,6 +600,16 @@ Second-pass verification:
   `AccountDeletionForm.tsx` passed.
 - `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
   `apps/frontend-pwa` passed after the header/account deletion fixes.
+- Context7 docs checked for TanStack Query v4 mutation lifecycle behavior
+  before the manage course modal failure-handling fixes.
+- `node_modules/.bin/prettier --check` on `ActivityConfirmationModal.tsx`,
+  `CourseArchiveModal.tsx`, `CourseDeletionModal.tsx`, and
+  `PublishConfirmationModal.tsx` passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the manage modal fixes.
+- Narrow `next lint --file ...` for the four changed manage modal files was
+  attempted from the dependency checkout but hung after printing only existing
+  Next/next-intl warnings.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is

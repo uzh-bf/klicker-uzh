@@ -1,4 +1,4 @@
-import { Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { trpc } from '../../../lib/trpc'
 
@@ -31,12 +31,33 @@ function CourseArchiveModal({
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={toggleArchiveCourse.isLoading}
       onPrimaryAction={async () => {
-        await toggleArchiveCourse.mutateAsync({
-          id: courseId,
-          isArchived: !isArchived,
-        })
-        await utils.course.userCourses.invalidate()
-        onClose()
+        try {
+          const result = await toggleArchiveCourse.mutateAsync({
+            id: courseId,
+            isArchived: !isArchived,
+          })
+
+          if (!result.course?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
+          utils.course.userCourses
+            .invalidate()
+            .catch((error) => console.error(error))
+          onClose()
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
       }}
       dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}
