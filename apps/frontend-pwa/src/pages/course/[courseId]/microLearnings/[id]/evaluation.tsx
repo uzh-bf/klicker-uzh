@@ -172,7 +172,9 @@ function MicrolearningEvaluation() {
                     courseId: microlearning.course!.id,
                     id,
                   })
-                  await utils.participant.participations.invalidate()
+                  void utils.participant.participations
+                    .invalidate()
+                    .catch(console.error)
                   router.replace('/')
                 } catch (error) {
                   console.error(error)

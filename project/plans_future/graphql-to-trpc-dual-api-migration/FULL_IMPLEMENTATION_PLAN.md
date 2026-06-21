@@ -769,6 +769,10 @@ Second-pass UX/cache cleanup prepared:
   mutations, show the existing inline generic error, release Formik submitting
   state in `finally`, disable duplicate save clicks while submitting, and treat
   the follow-up element/profile refresh as best-effort after confirmed success.
+- PWA microlearning completion now treats `participant.markMicroLearningCompleted`
+  as the authoritative success point and runs the follow-up
+  `participant.participations` invalidation as best-effort refresh work, so a
+  cache refresh failure cannot block navigation home after completion.
 
 Second-pass verification:
 
@@ -1039,6 +1043,23 @@ Second-pass verification:
 - Browser verification remains blocked for this manage first-login settings
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` both failed with
   connection refused, so no local backend or manage dev server was available for
+  screenshots.
+- Context7 docs checked for tRPC mutation success handling and `useUtils`
+  invalidation helpers before the PWA microlearning completion refresh cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/evaluation.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed microlearning
+  evaluation page.
+- `./node_modules/.bin/next lint` from the dependency checkout
+  `apps/frontend-pwa` passed with existing hook dependency warnings in unrelated
+  files.
+- `git diff --check` passed after the PWA microlearning completion refresh
+  cleanup.
+- Browser verification remains blocked for this PWA microlearning completion
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` both failed with
+  connection refused, so no local backend or PWA dev server was available for
   screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
