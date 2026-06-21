@@ -1,4 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import CourseDashboardList from '../../components/analytics/overview/CourseDashboardList'
@@ -9,10 +10,21 @@ function Analytics() {
   const t = useTranslations()
   const { data, isLoading } = trpc.course.userCourses.useQuery()
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <Layout displayName={t('shared.generic.learningAnalytics')}>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (!data?.userCourses) {
+    return (
+      <Layout displayName={t('shared.generic.learningAnalytics')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }

@@ -44,10 +44,21 @@ function CourseSelectionPage() {
   const { isLoading: loadingCourses, data: dataCourses } =
     trpc.course.userCourses.useQuery()
 
-  if (loadingCourses) {
+  if (loadingCourses && !dataCourses) {
     return (
       <Layout>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (!dataCourses?.userCourses) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }

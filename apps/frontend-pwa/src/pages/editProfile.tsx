@@ -2,7 +2,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import getParticipantToken from '@lib/getParticipantToken'
 import { trpc } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
-import { toast } from '@uzh-bf/design-system'
+import { UserNotification, toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
@@ -44,13 +44,27 @@ function EditProfile({
     callback: () => void refetch(),
   })
 
-  if (isLoading || !data?.self) {
+  if (isLoading && !data) {
     return (
       <Layout
         course={{ displayName: t('shared.generic.title') }}
         displayName={t('pwa.profile.editProfile')}
       >
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (!data?.self) {
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }

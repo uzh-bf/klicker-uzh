@@ -9,6 +9,7 @@ import {
   AccordionTrigger,
   Button,
   FormikTextField,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -138,8 +139,13 @@ function AdminPanel() {
                   )}
                 </Formik>
               </div>
-              {isLoading ? (
+              {isLoading && !data ? (
                 <Loader />
+              ) : !data ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                />
               ) : (
                 <DataTable
                   isPaginated
@@ -173,7 +179,7 @@ function AdminPanel() {
                       className: 'w-20',
                     },
                   ]}
-                  data={data ?? []}
+                  data={data}
                   className={{
                     tableHeader: 'h-7 p-2',
                     tableCell: 'h-7 p-2',

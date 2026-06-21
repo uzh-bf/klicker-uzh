@@ -556,6 +556,15 @@ Second-pass UX/cache cleanup prepared:
   tRPC queries. Failed/missing initial data renders the existing
   `UserNotification` system-error state instead of empty content or an
   indefinite loader, while existing empty-state messages remain unchanged.
+- PWA edit-profile now distinguishes initial self-query loading from a failed or
+  missing self response. Initial loads still show the existing loader, while a
+  failed initial tRPC result renders the existing `UserNotification`
+  system-error state instead of an indefinite loader.
+- Manage analytics overview, private-preview administration, and course
+  selection now preserve cached/stale data when present but show the existing
+  system-error notification when the initial migrated tRPC query has no usable
+  data, avoiding misleading empty dashboards, empty tables, and no-course
+  states on request failure.
 
 Second-pass verification:
 
@@ -663,10 +672,28 @@ Second-pass verification:
   `apps/frontend-pwa` passed after the PWA query error-state cleanup; `rsync`
   only warned about stale Rollup cache directories.
 - `git diff --check` passed after the PWA query error-state cleanup.
-- Browser verification is still blocked because no local PWA/manage dev server
-  is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is
-  listening on `127.0.0.1:3000`, and no local control dev server is listening
-  on `127.0.0.1:3003`.
+- Context7 docs checked for current TanStack Query stale-data/error-state
+  behavior and tRPC `useUtils` client cache helpers before the follow-up
+  PWA/manage query-state cleanup.
+- `node_modules/.bin/prettier --check` on `editProfile.tsx`,
+  `analytics/index.tsx`, `admin.tsx`, and `courses/index.tsx` passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after syncing the PR worktree into the dependency
+  checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the PR worktree into the
+  dependency checkout.
+- `git diff --check` passed after the PWA/manage query-state cleanup.
+- Browser verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `127.0.0.1:3001`, and `127.0.0.1:3002` all failed with connection refused,
+  so no local backend, PWA, or manage dev server was available for screenshots.
+- Earlier control-page browser verification had the same local-dev-server gap
+  on `127.0.0.1:3003`; this follow-up touched only PWA and manage pages, so
+  control was not re-probed.
+- Review/simplification: subagent spawning is currently exposed but tool policy
+  only permits it when the user explicitly requests delegation. A local
+  self-review kept this slice to existing `UserNotification` patterns and found
+  no useful abstraction or broader refactor for these four pages.
 
 PR #5132 status after `3f31a27b5`:
 
