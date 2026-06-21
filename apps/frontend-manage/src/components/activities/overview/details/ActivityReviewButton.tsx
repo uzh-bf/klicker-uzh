@@ -30,24 +30,36 @@ function ActivityReviewButton({
       className={{ root: 'h-7 text-sm' }}
       data={{ cy: 'activity-review-button' }}
       onClick={async () => {
-        const res = await setActivityReviewStatus.mutateAsync({
-          activityId,
-          activityType:
-            activityType as RouterInputs['activity']['setReviewStatus']['activityType'],
-          isReviewed: !isReviewed,
-        })
-
-        if (res.reviewStatus) {
-          if (courseId) {
-            await utils.course.detail.invalidate({ courseId })
-          }
-
-          await utils.activity.details.invalidate(detailsInput)
-          toast({
-            type: 'success',
-            message: t('manage.activities.reviewStatusUpdated'),
+        try {
+          const res = await setActivityReviewStatus.mutateAsync({
+            activityId,
+            activityType:
+              activityType as RouterInputs['activity']['setReviewStatus']['activityType'],
+            isReviewed: !isReviewed,
           })
-        } else {
+
+          if (res.reviewStatus) {
+            if (courseId) {
+              void utils.course.detail
+                .invalidate({ courseId })
+                .catch(console.error)
+            }
+
+            void utils.activity.details
+              .invalidate(detailsInput)
+              .catch(console.error)
+            toast({
+              type: 'success',
+              message: t('manage.activities.reviewStatusUpdated'),
+            })
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.activities.reviewStatusUpdateFailed'),
+            })
+          }
+        } catch (error) {
+          console.error(error)
           toast({
             type: 'error',
             message: t('manage.activities.reviewStatusUpdateFailed'),

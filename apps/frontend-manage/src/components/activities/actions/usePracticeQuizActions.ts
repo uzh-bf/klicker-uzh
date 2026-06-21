@@ -158,17 +158,34 @@ function usePracticeQuizActions({
         label: t('manage.course.unpublishPracticeQuiz'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishPracticeQuiz.mutateAsync({
-            activityId: practiceQuiz.id,
-            activityType:
-              ActivityType.PracticeQuiz as RouterInputs['activity']['unpublish']['activityType'],
-          })
-          if (practiceQuiz.courseId && result.unpublishActivity?.id) {
-            await utils.course.detail.invalidate({
-              courseId: practiceQuiz.courseId,
+          try {
+            const result = await unpublishPracticeQuiz.mutateAsync({
+              activityId: practiceQuiz.id,
+              activityType:
+                ActivityType.PracticeQuiz as RouterInputs['activity']['unpublish']['activityType'],
+            })
+            if (result.unpublishActivity?.id) {
+              if (practiceQuiz.courseId) {
+                void utils.course.detail
+                  .invalidate({
+                    courseId: practiceQuiz.courseId,
+                  })
+                  .catch(console.error)
+              }
+              void refetchActivities?.().catch(console.error)
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
             })
           }
-          await refetchActivities?.()
         },
         disabled: unpublishPracticeQuiz.isLoading,
         data: { cy: `unpublish-practice-quiz-${practiceQuiz.name}` },

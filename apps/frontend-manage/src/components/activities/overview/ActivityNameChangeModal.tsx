@@ -54,32 +54,43 @@ function ActivityNameChangeModal({
         }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          const result = await changeActivityName.mutateAsync({
-            activityId: id,
-            activityType:
-              type as RouterInputs['activity']['changeName']['activityType'],
-            name: values.name,
-            displayName: values.displayName,
-          })
-
-          if (result.changeActivityName) {
-            if (courseId) {
-              await utils.course.detail.invalidate({ courseId })
-            }
-            await refetchActivities?.()
-            toast({
-              type: 'success',
-              message: t('manage.activities.activityNameChangeSuccess'),
-              options: { duration: 4000 },
+          try {
+            const result = await changeActivityName.mutateAsync({
+              activityId: id,
+              activityType:
+                type as RouterInputs['activity']['changeName']['activityType'],
+              name: values.name,
+              displayName: values.displayName,
             })
-            setSubmitting(false)
-            onClose()
-          } else {
+
+            if (result.changeActivityName) {
+              if (courseId) {
+                void utils.course.detail
+                  .invalidate({ courseId })
+                  .catch(console.error)
+              }
+              void refetchActivities?.().catch(console.error)
+              toast({
+                type: 'success',
+                message: t('manage.activities.activityNameChangeSuccess'),
+                options: { duration: 4000 },
+              })
+              onClose()
+            } else {
+              toast({
+                type: 'error',
+                message: t('manage.activities.activityNameChangeError'),
+                options: { duration: 4000 },
+              })
+            }
+          } catch (error) {
+            console.error(error)
             toast({
               type: 'error',
               message: t('manage.activities.activityNameChangeError'),
               options: { duration: 4000 },
             })
+          } finally {
             setSubmitting(false)
           }
         }}

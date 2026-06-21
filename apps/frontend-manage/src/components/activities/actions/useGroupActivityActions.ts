@@ -10,6 +10,7 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -76,17 +77,34 @@ function useGroupActivityActions({
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishGroupActivity.mutateAsync({
-            activityId: groupActivity.id,
-            activityType:
-              ActivityType.GroupActivity as RouterInputs['activity']['unpublish']['activityType'],
-          })
-          if (groupActivity.courseId && result.unpublishActivity?.id) {
-            await utils.course.detail.invalidate({
-              courseId: groupActivity.courseId,
+          try {
+            const result = await unpublishGroupActivity.mutateAsync({
+              activityId: groupActivity.id,
+              activityType:
+                ActivityType.GroupActivity as RouterInputs['activity']['unpublish']['activityType'],
+            })
+            if (result.unpublishActivity?.id) {
+              if (groupActivity.courseId) {
+                void utils.course.detail
+                  .invalidate({
+                    courseId: groupActivity.courseId,
+                  })
+                  .catch(console.error)
+              }
+              void refetchActivities?.().catch(console.error)
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
             })
           }
-          await refetchActivities?.()
         },
         disabled: unpublishGroupActivity.isLoading,
         data: { cy: `unpublish-group-activity-${groupActivity.name}` },

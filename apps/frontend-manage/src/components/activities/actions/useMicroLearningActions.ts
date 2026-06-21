@@ -194,17 +194,34 @@ function useMicroLearningActions({
         label: t('manage.course.unpublishMicrolearning'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishMicroLearning.mutateAsync({
-            activityId: microLearning.id,
-            activityType:
-              ActivityType.MicroLearning as RouterInputs['activity']['unpublish']['activityType'],
-          })
-          if (microLearning.courseId && result.unpublishActivity?.id) {
-            await utils.course.detail.invalidate({
-              courseId: microLearning.courseId,
+          try {
+            const result = await unpublishMicroLearning.mutateAsync({
+              activityId: microLearning.id,
+              activityType:
+                ActivityType.MicroLearning as RouterInputs['activity']['unpublish']['activityType'],
+            })
+            if (result.unpublishActivity?.id) {
+              if (microLearning.courseId) {
+                void utils.course.detail
+                  .invalidate({
+                    courseId: microLearning.courseId,
+                  })
+                  .catch(console.error)
+              }
+              void refetchActivities?.().catch(console.error)
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
             })
           }
-          await refetchActivities?.()
         },
         disabled: unpublishMicroLearning.isLoading,
         data: { cy: `unpublish-microlearning-${microLearning.name}` },

@@ -655,6 +655,21 @@ Second-pass UX/cache cleanup prepared:
   payload as the success boundary and run `course.detail` invalidation as
   best-effort follow-up work so a refresh failure does not keep the settings
   modal open or surface the generic form error.
+- Manage activity overview review-status, rename, and unpublish actions now
+  catch rejected tRPC mutations, keep existing success/error toasts, and treat
+  `course.detail`, `activity.details`, and parent `refetchActivities` refreshes
+  as best-effort work after confirmed mutation success. Failed refreshes no
+  longer turn successful activity overview actions into unhandled rejections or
+  false failure states.
+- Review/simplification for the activity-action refresh cleanup: correctness
+  review returned no findings and confirmed GraphQL/tRPC coexistence is
+  preserved. Simplification found only cosmetic duplication in the four
+  unpublish handlers and recommended no pre-commit changes.
+- Verification for the activity-action refresh cleanup: `prettier --check` on
+  the changed activity files plus docs passed in the dependency checkout;
+  `tsc --noEmit` for `apps/frontend-manage` passed in the dependency checkout;
+  `git diff --check` passed in the commit worktree. Browser verification remains
+  blocked because `127.0.0.1:3000` and `3002` refuse connections.
 - Review/simplification for the chatbot/course-settings refresh cleanup:
   correctness review returned no findings and confirmed GraphQL/tRPC coexistence
   is preserved. Simplification suggested awaiting caught invalidations to

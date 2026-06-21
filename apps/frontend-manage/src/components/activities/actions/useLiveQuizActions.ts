@@ -19,6 +19,7 @@ import {
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -204,15 +205,32 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.unpublishLiveQuiz'),
         icon: faLock,
         onClick: async () => {
-          const result = await unpublishLiveQuiz.mutateAsync({
-            activityId: quiz.id,
-            activityType:
-              ActivityType.LiveQuiz as RouterInputs['activity']['unpublish']['activityType'],
-          })
-          if (quiz.courseId && result.unpublishActivity?.id) {
-            await utils.course.detail.invalidate({ courseId: quiz.courseId })
+          try {
+            const result = await unpublishLiveQuiz.mutateAsync({
+              activityId: quiz.id,
+              activityType:
+                ActivityType.LiveQuiz as RouterInputs['activity']['unpublish']['activityType'],
+            })
+            if (result.unpublishActivity?.id) {
+              if (quiz.courseId) {
+                void utils.course.detail
+                  .invalidate({ courseId: quiz.courseId })
+                  .catch(console.error)
+              }
+              void refetchActivities?.().catch(console.error)
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+            })
           }
-          await refetchActivities?.()
         },
         disabled: unpublishLiveQuiz.isLoading,
         data: { cy: `unpublish-live-quiz-${quiz.name}` },
