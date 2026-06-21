@@ -49,10 +49,14 @@ function GroupActivityStartingModal({
       message={t('manage.course.startGroupActivityNowMessage')}
       onSubmit={async () => {
         const result = await openGroupActivity.mutateAsync({ activityId })
-        if (result.openGroupActivity?.id) {
-          await utils.course.detail.invalidate({ courseId })
+        if (!result.openGroupActivity?.id) {
+          throw new Error('Failed to start group activity')
         }
-        await refetchActivities?.()
+
+        void Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ]).catch(console.error)
       }}
       submitting={openGroupActivity.isLoading}
       confirmations={confirmations}

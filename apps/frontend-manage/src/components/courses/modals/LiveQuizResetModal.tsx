@@ -53,10 +53,16 @@ function LiveQuizResetModal({
       message={t('manage.liveQuizzes.resetLiveQuizMessage')}
       onSubmit={async () => {
         const result = await resetLiveQuiz.mutateAsync({ activityId: quizId })
-        if (courseId && result.resetAssessmentLiveQuiz?.id) {
-          await utils.course.detail.invalidate({ courseId })
+        if (!result.resetAssessmentLiveQuiz?.id) {
+          throw new Error('Failed to reset live quiz')
         }
-        await onSuccess?.()
+
+        void Promise.all([
+          courseId
+            ? utils.course.detail.invalidate({ courseId })
+            : Promise.resolve(),
+          onSuccess?.(),
+        ]).catch(console.error)
       }}
       submitting={resetLiveQuiz.isLoading}
       confirmations={confirmations}

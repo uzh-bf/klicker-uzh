@@ -50,10 +50,14 @@ function GroupActivityEndingModal({
           activityId,
           activityType: ActivityType.GROUP_ACTIVITY,
         })
-        if (result.endActivity?.id) {
-          await utils.course.detail.invalidate({ courseId })
+        if (!result.endActivity?.id) {
+          throw new Error('Failed to end group activity')
         }
-        await refetchActivities?.()
+
+        void Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ]).catch(console.error)
       }}
       submitting={endActivity.isLoading}
       confirmations={confirmations}

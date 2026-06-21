@@ -51,10 +51,14 @@ function PracticeQuizDeletionModal({
           activityId,
           activityType: ActivityType.PRACTICE_QUIZ,
         })
-        if (result.deleteActivity?.id) {
-          await utils.course.detail.invalidate({ courseId })
+        if (!result.deleteActivity?.id) {
+          throw new Error('Failed to delete practice quiz')
         }
-        await refetchActivities?.()
+
+        void Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ]).catch(console.error)
       }}
       submitting={deleteActivity.isLoading}
       confirmations={confirmations}

@@ -34,10 +34,14 @@ function MicroLearningEndingModal({
           activityId,
           activityType: ActivityType.MICRO_LEARNING,
         })
-        if (result.endActivity?.id) {
-          await utils.course.detail.invalidate({ courseId })
+        if (!result.endActivity?.id) {
+          throw new Error('Failed to end microlearning')
         }
-        await refetchActivities?.()
+
+        void Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ]).catch(console.error)
       }}
       submitting={endActivity.isLoading}
       confirmations={{}}

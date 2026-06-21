@@ -42,12 +42,15 @@ function CourseRemovalModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await removeObject.mutateAsync({
+        const result = await removeObject.mutateAsync({
           objectId: courseId,
           objectType: 'COURSE',
         })
-        await utils.course.userCourses.invalidate()
-        setModalOpen(false)
+        if (!result.removedObjectId) {
+          throw new Error('Failed to remove course')
+        }
+
+        void utils.course.userCourses.invalidate().catch(console.error)
       }}
       submitting={removeObject.isLoading}
       confirmations={confirmations}

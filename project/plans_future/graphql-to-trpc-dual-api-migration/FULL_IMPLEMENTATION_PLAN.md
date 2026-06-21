@@ -537,6 +537,11 @@ Second-pass UX/cache cleanup prepared:
   tRPC publish results, keeps the modal open with a system-error toast on
   failure, and treats course-detail invalidation plus activity refetch as
   best-effort after a successful publish.
+- Manage group-activity, microlearning, practice-quiz, live-quiz-reset, and
+  course-removal confirmation modals now treat null tRPC mutation payloads as
+  failed submissions that keep the modal open with the existing system-error
+  toast, while post-success cache invalidation/refetch callbacks run as
+  best-effort refreshes and no longer make successful mutations look failed.
 
 Second-pass verification:
 
@@ -611,6 +616,16 @@ Second-pass verification:
   attempted from the dependency checkout but hung after printing only existing
   Next/next-intl warnings.
 - `git diff --check` passed.
+- Context7 docs checked for TanStack Query v4 invalidation-from-mutation and
+  tRPC `useUtils` query helper behavior before the manage confirmation-modal
+  payload/refresh cleanup.
+- `node_modules/.bin/prettier --check` on the eight changed manage confirmation
+  modal files passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the PR worktree into the
+  dependency checkout; `rsync` only warned about stale Rollup cache directories.
+- `git diff --check` passed after the manage confirmation-modal payload/refresh
+  cleanup.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is
   listening on `127.0.0.1:3000`, and no local control dev server is listening
