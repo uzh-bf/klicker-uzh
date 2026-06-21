@@ -59,6 +59,7 @@ function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
           data={{
             cy: `approve-sharing-request-${request.objectName}-${request.userShortname}`,
           }}
+          disabled={declineObjectSharingRequest.isLoading}
           onClick={() => setApprovalModal(true)}
         >
           <Button.Icon icon={faCheck} />
@@ -74,19 +75,28 @@ function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
           disabled={declineObjectSharingRequest.isLoading}
           onClick={async (e) => {
             e?.stopPropagation()
-            const result = await declineObjectSharingRequest.mutateAsync({
-              requestId: request.requestId,
-              userId: request.userId,
-            })
-
-            if (result.resolved) {
-              removeRequestFromCaches()
-              toast({
-                type: 'success',
-                message: t('manage.catalog.declineSuccessful'),
-                options: { duration: 3000 },
+            try {
+              const result = await declineObjectSharingRequest.mutateAsync({
+                requestId: request.requestId,
+                userId: request.userId,
               })
-            } else {
+
+              if (result.resolved) {
+                removeRequestFromCaches()
+                toast({
+                  type: 'success',
+                  message: t('manage.catalog.declineSuccessful'),
+                  options: { duration: 3000 },
+                })
+              } else {
+                toast({
+                  type: 'error',
+                  message: t('manage.catalog.declineFailed'),
+                  options: { duration: 5000 },
+                })
+              }
+            } catch (error) {
+              console.error(error)
               toast({
                 type: 'error',
                 message: t('manage.catalog.declineFailed'),
@@ -95,7 +105,10 @@ function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
             }
           }}
         >
-          <Button.Icon icon={faBan} />
+          <Button.Icon
+            icon={faBan}
+            loading={declineObjectSharingRequest.isLoading}
+          />
           <Button.Label>{t('shared.generic.decline')}</Button.Label>
         </Button>
       </div>

@@ -686,6 +686,13 @@ Second-pass UX/cache cleanup prepared:
   query fails or a background refetch fails, and the add-to-catalog selector
   renders the existing localized system-error notification instead of treating a
   failed selector load as "no objects available."
+- Manage pending catalog sharing requests now distinguish failed
+  `catalogSharingRequests` loads from no pending requests and render the
+  existing localized system-error notification for failed no-data loads or
+  compact refetch failures with stale requests. Approve/decline request
+  mutations now catch rejected tRPC calls, show the existing error toasts, keep
+  pending buttons guarded, and update the request/count caches only after
+  confirmed `resolved` responses.
 
 Second-pass verification:
 
@@ -732,6 +739,19 @@ Second-pass verification:
 - Browser verification remains blocked for this manage catalog cleanup: `curl`
   to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection refused, so no
   local backend or manage dev server was available for screenshots.
+- Context7 docs checked for current TanStack Query v4 `useQuery` loading,
+  fetching, error, disabled-query, and stale-data semantics before the manage
+  pending sharing request cleanup.
+- `node_modules/.bin/prettier --check` on the three changed manage pending
+  sharing request files plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed pending sharing
+  request files.
+- `git diff --check` passed after the manage pending sharing request cleanup.
+- Browser verification remains blocked for this manage pending sharing request
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
+  connection refused, so no local backend or manage dev server was available for
+  screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.

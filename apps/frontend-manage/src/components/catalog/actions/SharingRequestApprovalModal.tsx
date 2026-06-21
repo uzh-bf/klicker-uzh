@@ -93,6 +93,7 @@ function SharingRequestApprovalModal({
             e?.stopPropagation()
             onClose()
           }}
+          disabled={approveObjectSharingRequest.isLoading}
           className={{ root: 'h-8 border-red-600 py-0 text-base' }}
           data={{ cy: 'cancel-approval' }}
         >
@@ -102,6 +103,7 @@ function SharingRequestApprovalModal({
         <Button
           primary
           loading={approveObjectSharingRequest.isLoading}
+          disabled={approveObjectSharingRequest.isLoading}
           className={{ root: 'h-8 py-0' }}
           data={{ cy: 'confirm-approval' }}
           onClick={async (e) => {
@@ -113,13 +115,23 @@ function SharingRequestApprovalModal({
                 permissionLevel as unknown as ApproveObjectSharingRequestInput['permissionLevel'],
               propagation: false, // TODO: update this value once the propagation parameter can be toggled in the UI (only relevant for courses at the moment - which cannot be requested)
             }
-            const result = await approveObjectSharingRequest.mutateAsync(input)
+            try {
+              const result =
+                await approveObjectSharingRequest.mutateAsync(input)
 
-            if (result.resolved) {
-              removeRequestFromCaches()
-              onSuccess()
-              onClose()
-            } else {
+              if (result.resolved) {
+                removeRequestFromCaches()
+                onSuccess()
+                onClose()
+              } else {
+                toast({
+                  type: 'error',
+                  message: t('manage.catalog.approvalFailed'),
+                  options: { duration: 5000 },
+                })
+              }
+            } catch (error) {
+              console.error(error)
               toast({
                 type: 'error',
                 message: t('manage.catalog.approvalFailed'),
