@@ -28,6 +28,11 @@ function LiveQuizSchedulingModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const scheduleLiveQuiz = trpc.activity.scheduleLiveQuiz.useMutation()
+  const handleClose = () => {
+    if (!scheduleLiveQuiz.isLoading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
@@ -38,7 +43,7 @@ function LiveQuizSchedulingModal({
           {t('manage.liveQuizzes.scheduleLiveQuiz')}: {title}
         </div>
       }
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'max-w-xl pb-2 text-base' }}
       dataCloseButton={{ cy: 'cancel-live-quiz-scheduling' }}
     >
@@ -116,11 +121,16 @@ function LiveQuizSchedulingModal({
               <Button
                 primary
                 type="submit"
-                loading={isSubmitting}
-                disabled={!isValid}
+                loading={isSubmitting || scheduleLiveQuiz.isLoading}
+                disabled={
+                  !isValid || isSubmitting || scheduleLiveQuiz.isLoading
+                }
                 data={{ cy: 'schedule-live-quiz-publication' }}
               >
-                <Button.Icon icon={faClock} loading={isSubmitting} />
+                <Button.Icon
+                  icon={faClock}
+                  loading={isSubmitting || scheduleLiveQuiz.isLoading}
+                />
                 <Button.Label>
                   {t('manage.course.confirmScheduling')}
                 </Button.Label>

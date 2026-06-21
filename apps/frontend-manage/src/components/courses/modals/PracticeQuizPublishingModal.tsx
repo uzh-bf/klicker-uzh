@@ -35,6 +35,11 @@ function PracticeQuizPublishingModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const publishPracticeQuiz = trpc.activity.publish.useMutation()
+  const handleClose = () => {
+    if (!publishPracticeQuiz.isLoading) {
+      onClose()
+    }
+  }
   const onErrorToast = () =>
     toast({
       type: 'error',
@@ -45,7 +50,7 @@ function PracticeQuizPublishingModal({
     <Modal
       open
       title={`${t('shared.generic.practiceQuiz')}: ${title}`}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'pb-2 text-base' }}
       dataCloseButton={{ cy: 'cancel-practice-quiz-publication' }}
     >
@@ -167,7 +172,9 @@ function PracticeQuizPublishingModal({
                     primary
                     type="submit"
                     loading={publishPracticeQuiz.isLoading || isSubmitting}
-                    disabled={!isValid || isSubmitting}
+                    disabled={
+                      !isValid || isSubmitting || publishPracticeQuiz.isLoading
+                    }
                     data={{ cy: 'schedule-practice-quiz-publication' }}
                     className={{ root: 'float-right mt-3' }}
                   >

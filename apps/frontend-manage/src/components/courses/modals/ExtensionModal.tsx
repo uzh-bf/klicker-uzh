@@ -35,11 +35,16 @@ function ExtensionModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const extendActivity = trpc.activity.extend.useMutation()
+  const handleClose = () => {
+    if (!extendActivity.isLoading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       hideCloseButton={true}
       title={title}
       className={{
@@ -112,7 +117,8 @@ function ExtensionModal({
               />
               <div className="mt-3 flex flex-row justify-between">
                 <Button
-                  onClick={onClose}
+                  onClick={handleClose}
+                  disabled={isSubmitting || extendActivity.isLoading}
                   data={{ cy: 'extend-activity-cancel' }}
                 >
                   <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -120,8 +126,10 @@ function ExtensionModal({
                 <Button
                   primary
                   type="submit"
-                  loading={isSubmitting}
-                  disabled={!isValid}
+                  loading={isSubmitting || extendActivity.isLoading}
+                  disabled={
+                    !isValid || isSubmitting || extendActivity.isLoading
+                  }
                   data={{ cy: 'extend-activity-confirm' }}
                 >
                   <Button.Label>{t('shared.generic.confirm')}</Button.Label>

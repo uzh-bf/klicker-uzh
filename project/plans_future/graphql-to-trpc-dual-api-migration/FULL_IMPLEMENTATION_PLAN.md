@@ -717,6 +717,12 @@ Second-pass UX/cache cleanup prepared:
   schedule, extension, template edit/delete, and template conversion actions no
   longer depend on follow-up refresh callbacks for their user-facing success
   state.
+- Manage publish/schedule/extension modals now also guard close, cancel, and
+  duplicate-submit paths while their tRPC mutation is in flight. Live-quiz
+  scheduling, practice-quiz publishing/scheduling, scheduled activity publish
+  confirmation, and activity extension controls now expose disabled/loading
+  states consistently through React Query v4 `isLoading` plus Formik
+  `isSubmitting` where relevant.
 - Manage live-quiz, practice-quiz, microlearning, and group-activity creation
   wizard submit helpers now treat confirmed tRPC create/edit payloads as the
   success boundary and run course-detail plus activity invalidations as
@@ -774,6 +780,17 @@ Second-pass UX/cache cleanup prepared:
   passed in the dependency checkout; `git diff --check` passed in the commit
   worktree. Browser verification remains blocked because `127.0.0.1:3000` and
   `3002` refuse connections.
+- Follow-up verification for the publish/schedule/extension pending-guard
+  cleanup: Context7 Formik docs checked async submit `isSubmitting` behavior
+  and Context7 TanStack Query v4 docs checked mutation in-flight state before
+  the change. `prettier --check` on the four changed manage modal files plus
+  this plan and `project/CODEBASE_NOTES.md` passed using the dependency
+  checkout's Prettier binary. `./node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-manage` passed. `git diff --check` passed in the commit
+  worktree. Browser verification remains blocked because `curl` to
+  `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
+  `127.0.0.1:3003` all failed with connection refused, so no local backend,
+  PWA, manage, or control dev server was available for screenshots.
 - Review/simplification for the activity-action refresh cleanup: correctness
   review returned no findings and confirmed GraphQL/tRPC coexistence is
   preserved. Simplification found only cosmetic duplication in the four

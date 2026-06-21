@@ -37,6 +37,11 @@ function PublishConfirmationModal({
   const utils = trpc.useUtils()
   const publishActivity = trpc.activity.publish.useMutation()
   const isMicroLearning = activityType === 'MICROLEARNING'
+  const handleClose = () => {
+    if (!publishActivity.isLoading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
@@ -44,6 +49,7 @@ function PublishConfirmationModal({
       title={t(`manage.course.publishItem${activityType}`)}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={publishActivity.isLoading}
+      primaryDisabled={publishActivity.isLoading}
       onPrimaryAction={async () => {
         try {
           const result = await publishActivity.mutateAsync({
@@ -79,10 +85,10 @@ function PublishConfirmationModal({
       dataPrimaryAction={{ cy: 'confirm-publish-action' }}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={() => {
-        onClose()
+        handleClose()
       }}
       dataSecondaryAction={{ cy: 'cancel-publish-action' }}
-      onClose={onClose}
+      onClose={handleClose}
       hideCloseButton={true}
       className={{ content: 'max-w-2xl', title: 'text-xl' }}
     >
