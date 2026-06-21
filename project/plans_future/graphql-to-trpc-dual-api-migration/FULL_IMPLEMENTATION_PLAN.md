@@ -731,6 +731,12 @@ Second-pass UX/cache cleanup prepared:
   invalidation as best-effort after confirmed success. This covers group rename,
   owner transfer, member removal, admin promotion, and admin demotion from the
   edit modal.
+- Frontend-control live-quiz start, block activation/deactivation, and end
+  actions now treat confirmed tRPC mutation results as authoritative and run
+  follow-up cache invalidations as best-effort refreshes. A failed control-list,
+  unassigned-list, or current-quiz invalidation no longer turns a successful
+  server action into an error toast or blocks navigation; the start modal also
+  guards close/cancel/primary actions while the start mutation is pending.
 
 Second-pass verification:
 
@@ -884,6 +890,20 @@ Second-pass verification:
 - Browser verification remains blocked for this manage user-group edit action
   cleanup: `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
   `127.0.0.1:3002` failed with connection refused, so no local manage dev
+  server was available for screenshots.
+- Context7 docs checked for current TanStack Query v4 mutation callback
+  awaiting/invalidation behavior and tRPC `useUtils` invalidation helpers before
+  the frontend-control live-quiz action refresh cleanup.
+- `node_modules/.bin/prettier --check` on the changed frontend-control live-quiz
+  action files plus `project/CODEBASE_NOTES.md` and this plan passed after
+  formatting the control session page.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-control` passed after mirroring the changed control files.
+- `git diff --check` passed after the frontend-control live-quiz action refresh
+  cleanup.
+- Browser verification remains blocked for this frontend-control action cleanup:
+  `curl` to `127.0.0.1:3000` returned an Express 404 while `curl` to
+  `127.0.0.1:3003` failed with connection refused, so no local control dev
   server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.

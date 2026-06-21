@@ -32,20 +32,16 @@ function RunningLiveQuiz() {
       options: { duration: 5000 },
     })
   }
-  const invalidateCurrentLiveQuiz = async () => {
+  const refreshCurrentLiveQuiz = () => {
     if (validQuizId) {
-      await utils.liveQuiz.control.invalidate({ id: validQuizId })
+      void utils.liveQuiz.control
+        .invalidate({ id: validQuizId })
+        .catch(console.error)
     }
   }
-  const activateLiveQuizBlock = trpc.liveQuiz.activateBlock.useMutation({
-    onSuccess: invalidateCurrentLiveQuiz,
-  })
-  const deactivateLiveQuizBlock = trpc.liveQuiz.deactivateBlock.useMutation({
-    onSuccess: invalidateCurrentLiveQuiz,
-  })
-  const endLiveQuiz = trpc.liveQuiz.end.useMutation({
-    onSuccess: invalidateCurrentLiveQuiz,
-  })
+  const activateLiveQuizBlock = trpc.liveQuiz.activateBlock.useMutation()
+  const deactivateLiveQuizBlock = trpc.liveQuiz.deactivateBlock.useMutation()
+  const endLiveQuiz = trpc.liveQuiz.end.useMutation()
 
   const {
     isLoading: quizLoading,
@@ -166,11 +162,13 @@ function RunningLiveQuiz() {
                     quizId: id,
                     blockId,
                   })
+                  refreshCurrentLiveQuiz()
                   setCurrentBlockOrder(undefined)
                 } catch {
                   showControlActionError()
                 }
               }}
+              disabled={deactivateLiveQuizBlock.isLoading}
               className={{
                 root: 'float-right',
               }}
@@ -212,12 +210,14 @@ function RunningLiveQuiz() {
                     quizId: id,
                     blockId,
                   })
+                  refreshCurrentLiveQuiz()
                   setCurrentBlockOrder(nextBlockOrder)
                   setNextBlockOrder(nextBlockOrder + 1)
                 } catch {
                   showControlActionError()
                 }
               }}
+              disabled={activateLiveQuizBlock.isLoading}
               className={{
                 root: 'bg-primary-80 float-right text-white',
               }}
@@ -242,20 +242,31 @@ function RunningLiveQuiz() {
               onClick={async () => {
                 try {
                   await endLiveQuiz.mutateAsync({ id })
+                  refreshCurrentLiveQuiz()
                   if (course) {
-                    await utils.course.controlCourse.invalidate({
-                      courseId: course.id,
-                    })
+                    void utils.course.controlCourse
+                      .invalidate({
+                        courseId: course.id,
+                      })
+                      .catch(console.error)
                   } else {
-                    await utils.liveQuiz.unassigned.invalidate()
+                    void utils.liveQuiz.unassigned
+                      .invalidate()
+                      .catch(console.error)
                   }
-                  await router.push(
-                    course ? `/course/${course?.id}` : '/course/unassigned'
-                  )
+                  void router
+                    .push(
+                      course ? `/course/${course.id}` : '/course/unassigned'
+                    )
+                    .catch((error) => {
+                      console.error(error)
+                      showControlActionError()
+                    })
                 } catch {
                   showControlActionError()
                 }
               }}
+              disabled={endLiveQuiz.isLoading}
               className={{
                 root: 'bg-uzh-red-100 hover:bg-uzh-red-100 float-right text-white',
               }}

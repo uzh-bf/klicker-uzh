@@ -15,23 +15,28 @@ function StartModal({
   const t = useTranslations()
   const router = useRouter()
   const utils = trpc.useUtils()
-  const startLiveQuiz = trpc.liveQuiz.start.useMutation({
-    onSuccess: async () => {
-      await utils.liveQuiz.unassigned.invalidate()
-      await utils.course.controlCourses.invalidate()
-    },
-  })
+  const startLiveQuiz = trpc.liveQuiz.start.useMutation()
+  const loading = startLiveQuiz.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       primaryLabel={t('shared.generic.start')}
       onPrimaryAction={async () => {
         try {
           const response = await startLiveQuiz.mutateAsync({ id: quizId })
           if (!response.liveQuiz?.id) throw new Error('Live quiz not started')
-          router.push(`/session/${quizId}`)
+          void Promise.all([
+            utils.liveQuiz.unassigned.invalidate(),
+            utils.course.controlCourses.invalidate(),
+          ]).catch(console.error)
+          void router.push(`/session/${quizId}`)
         } catch (error) {
           onClose()
           toast({
@@ -41,10 +46,11 @@ function StartModal({
           })
         }
       }}
-      primaryLoading={startLiveQuiz.isLoading}
+      primaryLoading={loading}
+      primaryDisabled={loading}
       dataPrimaryAction={{ cy: 'confirm-start-live-quiz' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-start-live-quiz-modal' }}
       className={{ content: 'md:min-w-120 mx-auto my-auto h-max w-max' }}
       hideCloseButton
