@@ -940,9 +940,22 @@ Second-pass UX/cache cleanup prepared:
   success boundary. Course-detail and activity-list refreshes run best-effort
   after a confirmed delete, matching the other migrated activity deletion
   modals.
+- Manage object-sharing modal close now dismisses immediately and runs parent
+  element/activity list refreshes as best-effort background work, while sharing
+  mutation hooks continue to own permission-cache updates and success/failure
+  feedback.
 
 Second-pass verification:
 
+- Verification for the manage object-sharing modal close refresh cleanup:
+  Context7 TanStack Query v4 docs checked mutation and invalidation semantics
+  for this audit pass. `prettier --check` on
+  `apps/frontend-manage/src/components/sharing/ObjectSharingModalWrapper.tsx`
+  plus the updated docs passed in the dependency checkout; `tsc --noEmit` for
+  `apps/frontend-manage` passed in the dependency checkout; `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3002` refuses connections, so no local manage dev server was
+  available for screenshots; `127.0.0.1:3000` responded with Express `404`.
 - Verification for the manage live-quiz overview deletion refresh cleanup:
   Context7 TanStack Query v4 docs checked `mutateAsync`, `isLoading`, and
   invalidation handling. `prettier --check` on
