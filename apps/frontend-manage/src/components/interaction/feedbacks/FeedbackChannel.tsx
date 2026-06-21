@@ -11,12 +11,21 @@ import FeedbackSearchBar from './FeedbackSearchBar'
 interface Props {
   liveQuizName: string
   feedbacks?: AudienceFeedback[]
-  handleDeleteFeedback: (feedbackId: number) => void
-  handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
-  handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void
-  handleResolveFeedback: (feedbackId: number, resolvedState: boolean) => void
-  handleRespondToFeedback: (feedbackId: number, response: string) => void
-  handleDeleteFeedbackResponse: (responseId: number) => void
+  handleDeleteFeedback: (feedbackId: number) => Promise<boolean>
+  handlePinFeedback: (feedbackId: number, isPinned: boolean) => Promise<boolean>
+  handlePublishFeedback: (
+    feedbackId: number,
+    isPublished: boolean
+  ) => Promise<boolean>
+  handleResolveFeedback: (
+    feedbackId: number,
+    resolvedState: boolean
+  ) => Promise<boolean>
+  handleRespondToFeedback: (
+    feedbackId: number,
+    response: string
+  ) => Promise<boolean>
+  handleDeleteFeedbackResponse: (responseId: number) => Promise<boolean>
   isActive?: boolean
   isPublic?: boolean
 }

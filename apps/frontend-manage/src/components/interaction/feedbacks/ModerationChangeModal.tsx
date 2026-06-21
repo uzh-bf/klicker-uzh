@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 interface ModerationChangeModalProps {
   open: boolean
   onClose: () => void
-  onConfirm: () => Promise<void>
+  onConfirm: () => Promise<boolean>
   unpublishedCount: number
   loading?: boolean
 }
@@ -19,11 +19,16 @@ function ModerationChangeModal({
   loading = false,
 }: ModerationChangeModalProps) {
   const t = useTranslations()
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.cockpit.disableModerationTitle')}
       secondaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -31,7 +36,7 @@ function ModerationChangeModal({
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-moderation-change' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -40,9 +45,12 @@ function ModerationChangeModal({
         </div>
       }
       primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
-        await onConfirm()
-        onClose()
+        const success = await onConfirm()
+        if (success) {
+          onClose()
+        }
       }}
       dataPrimaryAction={{ cy: 'confirm-moderation-change' }}
       data={{ cy: 'moderation-change-modal' }}

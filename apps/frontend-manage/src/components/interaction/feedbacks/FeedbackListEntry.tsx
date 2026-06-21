@@ -6,12 +6,12 @@ import Feedback from './Feedback'
 interface FeedbackListEntryProps {
   feedback: AudienceFeedback
   isPublic?: boolean
-  onDeleteFeedback: () => void
-  onDeleteResponse: (responseId: number) => void
-  onPinFeedback: (pinState: boolean) => void
-  onResolveFeedback: (resolvedState: boolean) => void
-  onRespondToFeedback: (response: string) => void
-  onPublishFeedback?: (publishState: boolean) => void
+  onDeleteFeedback: () => Promise<boolean>
+  onDeleteResponse: (responseId: number) => Promise<boolean>
+  onPinFeedback: (pinState: boolean) => Promise<boolean>
+  onResolveFeedback: (resolvedState: boolean) => Promise<boolean>
+  onRespondToFeedback: (response: string) => Promise<boolean>
+  onPublishFeedback?: (publishState: boolean) => Promise<boolean>
 }
 
 function FeedbackListEntry({
@@ -33,7 +33,7 @@ function FeedbackListEntry({
               root: 'h-9 w-9',
             }}
             onClick={() => {
-              onPublishFeedback(!feedback.isPublished)
+              void onPublishFeedback(!feedback.isPublished)
             }}
             data={{ cy: `publish-feedback-${feedback.content}` }}
           >

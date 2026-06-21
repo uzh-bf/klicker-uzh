@@ -32,11 +32,14 @@ interface IFeedback {
 }
 
 interface Props extends IFeedback {
-  onDeleteFeedback: () => void
-  onPinFeedback: (pinState: boolean) => void
-  onResolveFeedback: (resolvedState: boolean) => void
-  onRespondToFeedback: (feebdackId: number, response: string) => void
-  onDeleteResponse: (responseId: number) => void
+  onDeleteFeedback: () => Promise<boolean>
+  onPinFeedback: (pinState: boolean) => Promise<boolean>
+  onResolveFeedback: (resolvedState: boolean) => Promise<boolean>
+  onRespondToFeedback: (
+    feebdackId: number,
+    response: string
+  ) => Promise<boolean>
+  onDeleteResponse: (responseId: number) => Promise<boolean>
 }
 
 function Feedback({
@@ -199,7 +202,9 @@ function Feedback({
                       className={{
                         root: 'h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600',
                       }}
-                      onClick={() => onDeleteResponse(response.id)}
+                      onClick={() => {
+                        void onDeleteResponse(response.id)
+                      }}
                       data={{ cy: `delete-response-${response.content}` }}
                     >
                       <Button.Icon withoutLabel icon={faTrashCan} />
@@ -217,7 +222,9 @@ function Feedback({
                   root: 'text-primary-100 hover:text-primary-100 mb-0.5 py-1',
                 }}
                 disabled={resolved}
-                onClick={() => onPinFeedback(!pinned)}
+                onClick={() => {
+                  void onPinFeedback(!pinned)
+                }}
                 data={{ cy: `pin-feedback-${content}` }}
               >
                 <Button.Icon icon={faThumbTack} />
@@ -233,10 +240,12 @@ function Feedback({
                   root: 'text-primary-100 hover:text-primary-100 mb-0.5 px-3 py-1',
                 }}
                 onClick={() => {
-                  onResolveFeedback(!resolved)
-                  if (!resolved) {
-                    setIsEditingActive(false)
-                  }
+                  void (async () => {
+                    const success = await onResolveFeedback(!resolved)
+                    if (success && !resolved) {
+                      setIsEditingActive(false)
+                    }
+                  })()
                 }}
                 data={{ cy: `resolve-feedback-${content}` }}
               >
@@ -250,14 +259,16 @@ function Feedback({
             </div>
             <Formik
               initialValues={{ respondToFeedbackInput: '' }}
-              onSubmit={(values, { setSubmitting }) => {
+              onSubmit={async (values, { resetForm, setSubmitting }) => {
                 if (values.respondToFeedbackInput !== '') {
-                  onRespondToFeedback(id, values.respondToFeedbackInput)
-                  values.respondToFeedbackInput = ''
-
-                  setTimeout(() => {
-                    setSubmitting(false)
-                  }, 700)
+                  const success = await onRespondToFeedback(
+                    id,
+                    values.respondToFeedbackInput
+                  )
+                  if (success) {
+                    resetForm()
+                  }
+                  setSubmitting(false)
                 } else {
                   setSubmitting(false)
                 }
@@ -315,11 +326,7 @@ function Feedback({
           onConfirm={async () => {
             setIsBeingDeleted(true)
             try {
-              await new Promise<void>((resolve) => {
-                onDeleteFeedback()
-                resolve()
-              })
-              setShowDeletionModal(false)
+              return await onDeleteFeedback()
             } finally {
               setIsBeingDeleted(false)
             }

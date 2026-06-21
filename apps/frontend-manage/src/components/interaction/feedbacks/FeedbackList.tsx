@@ -7,12 +7,21 @@ interface FeedbackListProps {
   feedbacks: AudienceFeedback[]
   noFeedbacks: boolean
   isPublic?: boolean
-  handleDeleteFeedback: (feedbackId: number) => void
-  handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
-  handlePublishFeedback?: (feedbackId: number, isPublished: boolean) => void
-  handleResolveFeedback: (feedbackId: number, resolvedState: boolean) => void
-  handleRespondToFeedback: (feedbackId: number, response: string) => void
-  handleDeleteFeedbackResponse: (responseId: number) => void
+  handleDeleteFeedback: (feedbackId: number) => Promise<boolean>
+  handlePinFeedback: (feedbackId: number, isPinned: boolean) => Promise<boolean>
+  handlePublishFeedback?: (
+    feedbackId: number,
+    isPublished: boolean
+  ) => Promise<boolean>
+  handleResolveFeedback: (
+    feedbackId: number,
+    resolvedState: boolean
+  ) => Promise<boolean>
+  handleRespondToFeedback: (
+    feedbackId: number,
+    response: string
+  ) => Promise<boolean>
+  handleDeleteFeedbackResponse: (responseId: number) => Promise<boolean>
 }
 
 function FeedbackList({

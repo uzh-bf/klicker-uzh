@@ -491,6 +491,12 @@ Second-pass UX/cache cleanup prepared:
   `liveQuiz.running` and `liveQuiz.cockpit` invalidations as best-effort
   refreshes after confirmed tRPC mutation success. Failed refreshes no longer
   turn successful starts/block changes/end actions into visible action failures.
+- Frontend-manage live quiz audience interaction settings and feedback actions
+  now catch rejected tRPC writes with a system-error toast, treat cockpit /
+  lecturer invalidations and parent refetch as best-effort work after confirmed
+  success, disable settings switches while the shared settings mutation is in
+  flight, and keep deletion/moderation/response UI from closing or clearing on
+  failed actions.
 - PWA live-quiz feedback submission now always releases the submit state,
   surfaces failed tRPC submission with a system-error toast, and refetches the
   feedback list after successful submission without turning a failed refetch into
@@ -957,6 +963,19 @@ Second-pass verification:
   checkout; `git diff --check` passed in the commit worktree. Browser
   verification remains blocked because `127.0.0.1:3000` and `3002` refuse
   connections.
+- Verification for the manage live-quiz audience interaction cleanup: Context7
+  TanStack Query v4 docs checked `mutateAsync`, `isLoading`, promise-returning
+  callbacks, and invalidation/refetch behavior; tRPC docs checked React Query
+  hook and `useUtils` integration. `prettier --check` on the seven changed
+  interaction files passed in the dependency checkout after formatting
+  `Feedback.tsx`; `tsc --noEmit` for `apps/frontend-manage` passed in the
+  dependency checkout; `git diff --check` passed in the commit worktree.
+  `./node_modules/.bin/next lint` from `apps/frontend-manage` printed only the
+  existing Next lint deprecation, next-intl config, and module-type warnings,
+  then produced no output until it was interrupted after roughly 90 seconds;
+  this lint attempt is inconclusive, not passing evidence. Browser verification
+  remains blocked because `127.0.0.1:3000` and `3002` refuse connections, so no
+  local backend or manage dev server was available for screenshots.
 - Context7 docs checked for current TanStack Query v4 `useQuery` loading,
   fetching, error, refetch-error, and stale-data semantics plus tRPC client
   cache helpers before the manage sharing permission-state cleanup.
