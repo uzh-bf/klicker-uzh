@@ -12,6 +12,7 @@ interface SelectionOptionsProps {
   values: ElementFormTypesSelection
   collections: Omit<AnswerCollection, 'description'>[]
   collectionsLoading: boolean
+  collectionsRefetching: boolean
   refetchCollections: () => Promise<any>
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
@@ -25,6 +26,7 @@ function SelectionOptions({
   values,
   collections,
   collectionsLoading,
+  collectionsRefetching,
   refetchCollections,
   setAnswerCollectionEntries,
   openAnswerCollectionEditModal,
@@ -61,7 +63,7 @@ function SelectionOptions({
       inputsDisabled={inputsDisabled}
       collections={collections}
       refetchCollections={refetchCollections}
-      loading={collectionsLoading}
+      loading={collectionsRefetching}
       values={values}
       setAnswerCollectionEntries={setAnswerCollectionEntries}
       setItemSelectionMode={(newValue) =>

@@ -15,6 +15,7 @@ interface CaseStudyOptionsProps extends CaseStudySetterProps {
   hasSampleSolution: boolean
   collections: Omit<AnswerCollection, 'description'>[]
   collectionsLoading: boolean
+  collectionsRefetching: boolean
   refetchCollections: () => Promise<any>
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
@@ -30,6 +31,7 @@ function CaseStudyOptions({
   hasSampleSolution,
   collections,
   collectionsLoading,
+  collectionsRefetching,
   refetchCollections,
   setAnswerCollectionEntries,
   openAnswerCollectionEditModal,
@@ -51,7 +53,6 @@ function CaseStudyOptions({
       {(selectionMode.value === 'existing' ||
         typeof selectionMode.value === 'undefined') && (
         <CaseStudyCollectionSelection
-          loading={collectionsLoading}
           disabled={inputsDisabled}
           creationMode={creationMode}
           collections={collections}
@@ -61,7 +62,8 @@ function CaseStudyOptions({
           setItemSelectionMode={(newValue) =>
             selectionModeHelpers.setValue(newValue)
           }
-          refetchCollections={async () => await refetchCollections()}
+          refetchCollections={refetchCollections}
+          loading={collectionsRefetching}
           openAnswerCollectionEditModal={openAnswerCollectionEditModal}
         />
       )}

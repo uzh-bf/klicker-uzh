@@ -11,7 +11,7 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   ElementData,
@@ -104,12 +104,25 @@ function ElementEditForm({
   const {
     data,
     isLoading: collectionsLoading,
+    isFetching: collectionsFetching,
     refetch,
   } = trpc.resources.answerCollectionsForElements.useQuery(
     { templateId },
     { refetchOnMount: 'always' }
   )
   const collections = data?.answerCollections ?? []
+  const refetchAnswerCollections = useCallback(async () => {
+    try {
+      await refetch({ throwOnError: true })
+    } catch (error) {
+      console.error('Error refreshing answer collections:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
+    }
+  }, [refetch, t])
 
   return (
     <Modal
@@ -253,9 +266,8 @@ function ElementEditForm({
                         values={values}
                         collections={collections}
                         collectionsLoading={collectionsLoading}
-                        refetchCollections={async () => {
-                          await refetch()
-                        }}
+                        collectionsRefetching={collectionsFetching}
+                        refetchCollections={refetchAnswerCollections}
                         setAnswerCollectionEntries={setAnswerCollectionEntries}
                         openAnswerCollectionEditModal={(
                           collectionId: number
@@ -277,9 +289,8 @@ function ElementEditForm({
                         hasSampleSolution={values.options.hasSampleSolution}
                         collections={collections}
                         collectionsLoading={collectionsLoading}
-                        refetchCollections={async () => {
-                          await refetch()
-                        }}
+                        collectionsRefetching={collectionsFetching}
+                        refetchCollections={refetchAnswerCollections}
                         setAnswerCollectionEntries={setAnswerCollectionEntries}
                         openAnswerCollectionEditModal={(
                           collectionId: number
@@ -410,9 +421,7 @@ function ElementEditForm({
           inlineEditing
           collectionId={collectionModal.id}
           onClose={() => setCollectionModal({ open: false, id: undefined })}
-          refetchAnswerCollections={async () => {
-            await refetch()
-          }}
+          refetchAnswerCollections={refetchAnswerCollections}
           className={{ overlay: 'z-30', content: 'z-30' }}
         />
       ) : null}

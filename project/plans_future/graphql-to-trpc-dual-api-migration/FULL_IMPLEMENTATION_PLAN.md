@@ -674,6 +674,11 @@ Second-pass UX/cache cleanup prepared:
   loading and catch `resources.answerCollectionsInfo` invalidation failures
   after confirmed success. Failed list refreshes no longer leak unhandled
   promise rejections after completed answer-collection writes.
+- Manage element manipulation answer-collection selectors now catch manual
+  refresh failures through a shared parent helper, show the existing generic
+  system-error toast, and use background refetch state only for the refresh
+  button spinner/disable state instead of blanking already mounted
+  selection/case-study forms.
 - Manage media-library uploads now show a system-error toast when the tRPC SAS
   mutation or Azure upload fails, render a system-error notification when the
   initial `element.mediaFiles` query has no data, and treat media-list
@@ -1195,6 +1200,25 @@ Second-pass verification:
   checkout; `git diff --check` passed in the commit worktree. Browser
   verification remains blocked because `127.0.0.1:3000` and `3002` refuse
   connections.
+- Review/simplification for the manage element answer-collection selector
+  refresh cleanup: subagent review was skipped because the available
+  multi-agent tool requires an explicit user request for delegation. Local
+  self-review found the diff limited to manual selector refetch failure
+  handling, refresh-button loading state, and docs; GraphQL/Apollo coexistence
+  is unchanged.
+- Verification for the manage element answer-collection selector refresh
+  cleanup: Context7 TanStack Query v4 docs checked `useQuery` `refetch`
+  `throwOnError`, refetch-error, and `isFetching` semantics. `rg -n
+  "onClick=\{async \(\) => await refetchCollections|refetchCollections=\{async
+  \(\) => \{\s*await refetch\(\)" apps/frontend-manage/src/components/elements/manipulation
+  -g '*.tsx'` returned no matches after the cleanup. `prettier --check` on the
+  five changed element manipulation files plus `project/CODEBASE_NOTES.md` and
+  this plan passed. `../../node_modules/.bin/tsc --noEmit` from the dependency
+  checkout `apps/frontend-manage` passed after mirroring the changed files.
+  `git diff --check` passed in the commit worktree. Browser verification
+  remains blocked because `127.0.0.1:3000` returned an Express 404 and
+  `127.0.0.1:3002` failed with connection refused, so no local manage dev
+  server was available for screenshots.
 - Verification for the manage live-quiz audience interaction cleanup: Context7
   TanStack Query v4 docs checked `mutateAsync`, `isLoading`, promise-returning
   callbacks, and invalidation/refetch behavior; tRPC docs checked React Query

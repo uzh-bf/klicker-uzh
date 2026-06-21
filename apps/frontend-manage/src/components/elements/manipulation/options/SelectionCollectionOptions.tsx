@@ -177,7 +177,9 @@ function SelectionCollectionOptions({
           />
           <Button
             disabled={loading || inputsDisabled}
-            onClick={async () => await refetchCollections()}
+            onClick={() => {
+              void refetchCollections().catch(console.error)
+            }}
             className={{ root: 'h-9 w-9' }}
             data={{ cy: 'refresh-answer-collections' }}
           >
