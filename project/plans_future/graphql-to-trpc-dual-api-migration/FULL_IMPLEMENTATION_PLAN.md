@@ -642,6 +642,11 @@ Second-pass UX/cache cleanup prepared:
   loads, keep stale data visible when present, and answer-collection view/edit
   modals render a closable error state instead of an endless loading modal when
   `singleAnswerCollection` fails or returns no collection.
+- Manage media-library uploads now show a system-error toast when the tRPC SAS
+  mutation or Azure upload fails, render a system-error notification when the
+  initial `element.mediaFiles` query has no data, and treat media-list
+  invalidation as best-effort after a confirmed upload so insertion of the
+  uploaded image is not blocked by a refresh failure.
 - Manage/control embedding and destructive-summary modals now distinguish
   failed initial tRPC detail loads from successful data. Element delete/remove
   and live-quiz cancellation modals keep destructive primary actions disabled
@@ -1450,6 +1455,19 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
   `127.0.0.1:3003` all failed with connection refused, so no local backend,
   PWA, manage, or control dev server was available for screenshots.
+- Context7 docs checked for TanStack Query v4 mutation success invalidation
+  patterns before the manage media-library upload failure cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-manage/src/components/common/MediaLibrary.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed media-library file.
+- `git diff --check` passed after the manage media-library upload failure
+  cleanup.
+- Browser verification remains blocked for this manage media-library cleanup:
+  `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with connection
+  refused, so no local backend or manage dev server was available for
+  screenshots.
 - Context7 docs checked again for TanStack Query v4 query-state semantics
   before the manage/control modal detail-query cleanup.
 - `node_modules/.bin/prettier --check` on the five changed manage/control modal

@@ -1,7 +1,7 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useCallback, useState } from 'react'
@@ -14,9 +14,9 @@ interface Props {
 
 function SuspendedMediaFiles({ onImageClick }: Props) {
   const t = useTranslations()
-  const { data, isLoading } = trpc.element.mediaFiles.useQuery()
+  const { data, error, isLoading } = trpc.element.mediaFiles.useQuery()
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <Loader />
   }
 
@@ -24,19 +24,27 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
     <div className="w-4/5 flex-none border-r p-2">
       <div className="font-bold">{t('manage.elements.mediaLibrary')}</div>
       <div className="grid max-h-64 grid-cols-5 gap-2 overflow-y-auto">
-        {data?.mediaFiles.map((file) => (
-          <Button
-            className={{ root: 'flex flex-col overflow-hidden text-xs' }}
-            key={file.id}
-            onClick={() => onImageClick(file.href, file.name)}
-            data={{ cy: `media-file-${file.name}` }}
-          >
-            <Image src={file.href} width={50} height={50} alt={file.name} />
-            <Ellipsis maxLines={1} className={{ root: 'text-xs' }}>
-              {file.name}
-            </Ellipsis>
-          </Button>
-        ))}
+        {error && !data ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'col-span-5 text-sm' }}
+          />
+        ) : (
+          data?.mediaFiles.map((file) => (
+            <Button
+              className={{ root: 'flex flex-col overflow-hidden text-xs' }}
+              key={file.id}
+              onClick={() => onImageClick(file.href, file.name)}
+              data={{ cy: `media-file-${file.name}` }}
+            >
+              <Image src={file.href} width={50} height={50} alt={file.name} />
+              <Ellipsis maxLines={1} className={{ root: 'text-xs' }}>
+                {file.name}
+              </Ellipsis>
+            </Button>
+          ))
+        )}
       </div>
     </div>
   )
@@ -60,7 +68,14 @@ function MediaLibrary({ onImageClick }: Props) {
           fileName: file.name,
           contentType: file.type,
         })
-        if (!data.fileUploadSas) return
+        if (!data.fileUploadSas) {
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+          return
+        }
 
         const blobServiceClient = new BlobServiceClient(
           data.fileUploadSas.uploadSasURL
@@ -76,14 +91,21 @@ function MediaLibrary({ onImageClick }: Props) {
           blockSize: 4 * 1024 * 1024, // 4MB block size
         })
 
-        await utils.element.mediaFiles.invalidate()
+        void utils.element.mediaFiles.invalidate().catch(console.error)
 
         onImageClick(data.fileUploadSas.uploadHref, file.name)
+      } catch (error) {
+        console.error(error)
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
       } finally {
         setIsUploading(false)
       }
     },
-    [getFileUploadSAS, onImageClick, utils.element.mediaFiles]
+    [getFileUploadSAS, onImageClick, t, utils.element.mediaFiles]
   )
 
   return (
