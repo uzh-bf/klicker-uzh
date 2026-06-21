@@ -31,7 +31,7 @@ function JoinCourse({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const [showError, setError] = useState(false)
+  const [showError, setError] = useState<string | false>(false)
   const [initialPin, setInitialPin] = useState<string>('')
 
   const joinCourseWithPinSchema = Yup.object({
@@ -90,18 +90,27 @@ function JoinCourse({
               validationSchema={joinCourseWithPinSchema}
               onSubmit={async (values, { setSubmitting }) => {
                 setSubmitting(true)
-                const participant = await joinCourseWithPin.mutateAsync({
-                  pin: Number(values.pin.replace(/\s/g, '')),
-                })
+                setError(false)
 
-                if (participant) {
-                  await Promise.all([
-                    utils.participant.self.invalidate(),
-                    utils.participant.participations.invalidate(),
-                  ])
-                  router.push('/')
-                } else {
-                  setError(true)
+                try {
+                  const participant = await joinCourseWithPin.mutateAsync({
+                    pin: Number(values.pin.replace(/\s/g, '')),
+                  })
+
+                  if (participant) {
+                    await Promise.all([
+                      utils.participant.self.invalidate(),
+                      utils.participant.participations.invalidate(),
+                    ])
+                    await router.push('/')
+                    return
+                  }
+
+                  setError(t('pwa.joinCourse.invalidPin'))
+                } catch (error) {
+                  console.error(error)
+                  setError(t('pwa.joinCourse.genericError'))
+                } finally {
                   setSubmitting(false)
                 }
               }}
@@ -120,6 +129,7 @@ function JoinCourse({
                       primary
                       type="submit"
                       disabled={isSubmitting || !isValid}
+                      loading={isSubmitting}
                       className={{
                         root: 'float-right mt-2',
                       }}
@@ -165,7 +175,7 @@ function JoinCourse({
         )}
         {showError && (
           <UserNotification
-            message="Es gab einen Fehler bei Ihrer Eingabe, bitte überprüfen Sie diese erneut."
+            message={showError}
             type="error"
             className={{ root: 'mt-14' }}
           />

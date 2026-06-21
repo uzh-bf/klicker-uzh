@@ -252,9 +252,8 @@ function ElementEditModal({
                           )
                         return res.answerCollection
                       },
-                      onAnswerCollectionCreated: () => {
-                        void utils.resources.answerCollectionsInfo.invalidate()
-                      },
+                      onAnswerCollectionCreated: () =>
+                        utils.resources.answerCollectionsInfo.invalidate(),
                     })
                   : undefined
 
@@ -299,9 +298,8 @@ function ElementEditModal({
                           )
                         return res.answerCollection
                       },
-                      onAnswerCollectionCreated: () => {
-                        void utils.resources.answerCollectionsInfo.invalidate()
-                      },
+                      onAnswerCollectionCreated: () =>
+                        utils.resources.answerCollectionsInfo.invalidate(),
                     })
                   : undefined
 

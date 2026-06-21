@@ -441,7 +441,7 @@ Current branch-state review:
   head no longer contains the credential-like literals. Passing that check will
   require either dashboard dismissal or an approved history rewrite.
 
-Changes prepared:
+Changes pushed in `3f31a27b5`:
 
 - Renamed auth helpers so React hook lint no longer treats them as hooks.
 - Hardened PWA login redirects to same-origin paths and switched the client
@@ -460,10 +460,47 @@ Verification so far:
   exit fix. It still prints the existing `@uzh-bf/design-system` type-resolution
   warning during Rollup type declaration generation.
 
+Second-pass UX/cache cleanup prepared:
+
+- PWA course-specific join form now matches the standalone join form behavior:
+  it clears stale errors on submit, distinguishes invalid PIN from generic
+  failures, shows submit loading, awaits navigation, and always releases Formik
+  submitting state in `finally`.
+- Manage ownership-transfer mutation now awaits both object-permission cache
+  invalidations through React Query's mutation lifecycle.
+- Inline answer-collection creation now supports async
+  `onAnswerCollectionCreated` callbacks and returns the
+  `answerCollectionsInfo` invalidation promise in both live-quiz-template and
+  element-edit flows.
+
+Second-pass verification:
+
+- Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
+  behavior; React Query awaits promise-returning mutation callbacks.
+- `prettier --check` on the five changed PWA/manage files passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage lint` passed with pre-existing
+  hook warnings only.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with pre-existing hook
+  warnings only.
+- `git diff --check` passed.
+- Browser verification is still blocked because no local PWA/manage dev server
+  is listening on `127.0.0.1:3001` or `127.0.0.1:3002`.
+
+PR #5132 status after `3f31a27b5`:
+
+- Passing: lint, format, check, CodeQL, SonarCloud, package API tRPC Vitest,
+  and most build/test jobs.
+- Pending at last poll: Cypress Cloud, packages/graphql Vitest, and one
+  remaining amd/arm build pair.
+- Still failing: GitGuardian historical branch findings on older commits, which
+  need dashboard dismissal or an approved history rewrite.
+
 Open after the next push:
 
-- Recheck CodeQL and Cypress Cloud on GitHub.
-- Triage remaining SonarCloud failure annotations separately.
+- Recheck Cypress Cloud, packages/graphql Vitest, and build completion on
+  GitHub.
 - Decide with the user whether to dismiss or rewrite historical GitGuardian
   findings.
 

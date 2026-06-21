@@ -230,7 +230,7 @@ type CreateAnswerCollectionType = (input: {
 interface CreateInlineSelectionCollectionProps {
   values: ElementFormTypesSelection
   createAnswerCollection: CreateAnswerCollectionType
-  onAnswerCollectionCreated?: () => void
+  onAnswerCollectionCreated?: () => void | Promise<void>
 }
 
 export async function createInlineSelectionCollection({
@@ -258,7 +258,7 @@ export async function createInlineSelectionCollection({
     return null
   }
 
-  onAnswerCollectionCreated?.()
+  await onAnswerCollectionCreated?.()
 
   // set the answer collection id to the newly created answer collection
   innerValues.options.answerCollection = String(answerCollection.id)
@@ -326,7 +326,7 @@ export function prepareSelectionArgs({
 interface CreateInlineCaseStudyCollectionProps {
   values: ElementFormTypesCaseStudy
   createAnswerCollection: CreateAnswerCollectionType
-  onAnswerCollectionCreated?: () => void
+  onAnswerCollectionCreated?: () => void | Promise<void>
 }
 
 export async function createInlineCaseStudyCollection({
@@ -354,7 +354,7 @@ export async function createInlineCaseStudyCollection({
     return null
   }
 
-  onAnswerCollectionCreated?.()
+  await onAnswerCollectionCreated?.()
 
   // set the answer collection id to the newly created answer collection
   innerValues.options.answerCollection = String(answerCollection.id)

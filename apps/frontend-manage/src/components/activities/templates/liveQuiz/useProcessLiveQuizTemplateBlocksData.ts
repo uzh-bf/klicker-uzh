@@ -149,9 +149,8 @@ function useProcessLiveQuizTemplateBlocksData() {
                             )
                           return res.answerCollection
                         },
-                        onAnswerCollectionCreated: () => {
-                          void utils.resources.answerCollectionsInfo.invalidate()
-                        },
+                        onAnswerCollectionCreated: () =>
+                          utils.resources.answerCollectionsInfo.invalidate(),
                       })
                     : undefined
 
@@ -196,9 +195,8 @@ function useProcessLiveQuizTemplateBlocksData() {
                             )
                           return res.answerCollection
                         },
-                        onAnswerCollectionCreated: () => {
-                          void utils.resources.answerCollectionsInfo.invalidate()
-                        },
+                        onAnswerCollectionCreated: () =>
+                          utils.resources.answerCollectionsInfo.invalidate(),
                       })
                     : undefined
 

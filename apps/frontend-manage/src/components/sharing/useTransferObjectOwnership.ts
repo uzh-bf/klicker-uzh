@@ -25,13 +25,15 @@ function useTransferObjectOwnership({
   }
   const transferObjectOwnership =
     trpc.sharing.transferObjectOwnership.useMutation({
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         if (!data.permission) return
 
-        void utils.sharing.objectPermissions.invalidate(objectPermissionsInput)
-        void utils.sharing.derivedObjectPermissions.invalidate(
-          objectPermissionsInput
-        )
+        await Promise.all([
+          utils.sharing.objectPermissions.invalidate(objectPermissionsInput),
+          utils.sharing.derivedObjectPermissions.invalidate(
+            objectPermissionsInput
+          ),
+        ])
       },
     })
 
