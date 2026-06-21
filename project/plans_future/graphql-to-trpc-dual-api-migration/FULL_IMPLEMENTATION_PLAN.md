@@ -1036,6 +1036,11 @@ Second-pass UX/cache cleanup prepared:
   of a hard blocker whenever selected tags are already available. A failed tag
   suggestions load renders a compact localized system-error notification while
   preserving the editable selected tags/creatable input.
+- Manage activity creation entry buttons now surface failed migrated
+  `user.profile` capability loads with a compact localized error instead of
+  silently presenting Catalyst-required activity buttons as unavailable because
+  the profile request failed. Stale profile data remains usable during
+  background refetch failures.
 
 Second-pass verification:
 
@@ -1068,6 +1073,20 @@ Second-pass verification:
   diff --check` passed in the commit worktree. Browser verification remains
   blocked because `127.0.0.1:3000` and `127.0.0.1:3002` refuse connections, so
   no local backend or manage dev server was available for screenshots.
+- Review/simplification for the manage creation-buttons cleanup: subagent
+  review was skipped because the available multi-agent tool currently requires
+  an explicit user request for delegation. Local self-review found the diff
+  limited to the `user.profile` capability-query fallback in the activity
+  creation entry buttons plus docs; existing Catalyst gating is preserved.
+- Verification for the manage creation-buttons cleanup: Context7 TanStack Query
+  v4 docs checked stale-data/error handling earlier in this audit pass.
+  `prettier --check` on `SuspendedCreationButtons.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
+  checkout's Prettier binary. `./node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-manage` passed. `git diff --check` passed in the commit
+  worktree. Browser verification remains blocked because `127.0.0.1:3000` and
+  `127.0.0.1:3002` refuse connections, so no local backend or manage dev server
+  was available for screenshots.
 - Review/simplification for the PWA bookmark failure-feedback cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the
