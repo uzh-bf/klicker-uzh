@@ -516,6 +516,16 @@ Second-pass UX/cache cleanup prepared:
 - PWA practice element rating now catches rejected tRPC rating mutations,
   preserves the current visible vote on failure, and shows the existing
   rating-error toast.
+- PWA header participant locale changes now catch rejected tRPC locale updates,
+  await the locale route change, and keep failed cache invalidation from
+  blocking a successful locale switch.
+- PWA header participant logout now catches rejected/false tRPC logout results,
+  keeps the participant token in place on failure, and shows a system-error
+  toast instead of navigating to login after a failed logout.
+- PWA account deletion now treats the tRPC delete result as authoritative:
+  failed/rejected deletion keeps the modal open with a system-error toast, while
+  successful deletion still clears the local participant token and reloads even
+  if the best-effort logout mutation fails.
 
 Second-pass verification:
 
@@ -575,6 +585,10 @@ Second-pass verification:
 - Narrow `next lint --file ...` for the three changed PWA components was
   attempted from the dependency checkout but hung after printing only existing
   Next/next-intl warnings.
+- `node_modules/.bin/prettier --check` on `Header.tsx` and
+  `AccountDeletionForm.tsx` passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after the header/account deletion fixes.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is

@@ -1,5 +1,5 @@
 import { trpc } from '@lib/trpc'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -43,12 +43,31 @@ function AccountDeletionForm() {
                 logoutParticipant.isPending
               }
               onPrimaryAction={async () => {
-                await deleteParticipantAccount.mutateAsync()
                 try {
-                  await logoutParticipant.mutateAsync()
+                  const deleted = await deleteParticipantAccount.mutateAsync()
+
+                  if (!deleted) {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
+                    return
+                  }
+
+                  await logoutParticipant
+                    .mutateAsync()
+                    .catch((error) => console.error(error))
                   sessionStorage.removeItem('participant_token')
-                } catch (e) {}
-                window?.location.reload()
+                  window?.location.reload()
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                }
               }}
               dataPrimaryAction={{ cy: 'delete-account-command' }}
               secondaryLabel={t('shared.generic.cancel')}

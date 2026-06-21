@@ -293,16 +293,27 @@ function Header({
                 ),
                 type: 'checkbox',
                 onClick: async () => {
-                  if (participant && participant.role === PARTICIPANT_ROLE) {
-                    await changeParticipantLocale.mutateAsync({
+                  try {
+                    if (participant && participant.role === PARTICIPANT_ROLE) {
+                      await changeParticipantLocale.mutateAsync({
+                        locale: language.value,
+                      })
+                      utils.participant.self
+                        .invalidate()
+                        .catch((error) => console.error(error))
+                    }
+
+                    await router.push({ pathname, query }, asPath, {
                       locale: language.value,
                     })
-                    await utils.participant.self.invalidate()
+                  } catch (error) {
+                    console.error(error)
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
                   }
-
-                  router.push({ pathname, query }, asPath, {
-                    locale: language.value,
-                  })
                 },
                 selected: router.locale === language.value,
               })),
@@ -323,10 +334,28 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
-                      await logoutParticipant.mutateAsync()
-                      sessionStorage.removeItem('participant_token')
-                      await utils.participant.self.invalidate()
-                      router.push('/login')
+                      try {
+                        const loggedOut = await logoutParticipant.mutateAsync()
+
+                        if (loggedOut) {
+                          sessionStorage.removeItem('participant_token')
+                          await utils.participant.self.invalidate()
+                          await router.push('/login')
+                        } else {
+                          toast({
+                            type: 'error',
+                            message: t('shared.generic.systemError'),
+                            options: { duration: 5000 },
+                          })
+                        }
+                      } catch (error) {
+                        console.error(error)
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                      }
                     },
                     data: { cy: 'logout' },
                   },
