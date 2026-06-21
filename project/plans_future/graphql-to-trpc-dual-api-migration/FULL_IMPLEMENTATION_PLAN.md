@@ -537,7 +537,8 @@ Second-pass UX/cache cleanup prepared:
   mutation result as the UX success boundary and run
   `participant.stackElementFeedbacks` invalidation as best-effort. A feedback
   refresh failure no longer turns a confirmed vote or flag submission into the
-  visible rating/feedback error path.
+  visible rating/feedback error path, and rejected flag submissions show the
+  localized generic error instead of raw tRPC messages.
 - PWA header participant locale changes now catch rejected tRPC locale updates,
   await the locale route change, and keep failed cache invalidation from
   blocking a successful locale switch.
@@ -691,7 +692,8 @@ Second-pass UX/cache cleanup prepared:
 - Manage chatbot model-settings saves now treat the confirmed
   `resources.updateChatbotModelSettings` mutation as the success boundary and
   run `resources.chatbotsInfo` invalidation as best-effort follow-up work so a
-  refresh failure does not show a failed save.
+  refresh failure does not show a failed save. Rejected saves now show the
+  localized chatbot-settings error instead of raw tRPC messages.
 - Manage course settings saves now treat the confirmed `course.updateSettings`
   payload as the success boundary and run `course.detail` invalidation as
   best-effort follow-up work so a refresh failure does not keep the settings
@@ -739,6 +741,17 @@ Second-pass UX/cache cleanup prepared:
   `tsc --noEmit` for `apps/frontend-pwa` passed in the dependency checkout;
   `git diff --check` passed in the commit worktree. Browser verification remains
   blocked because `127.0.0.1:3000` and `3001` refuse connections.
+- Follow-up verification for the PWA/manage raw-error cleanup: Context7 tRPC
+  docs checked mutation error handling before replacing raw rejected mutation
+  messages with existing localized feedback. `prettier --check` on
+  `FlagElementModal.tsx`, `ChatbotDetails.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed. `./node_modules/.bin/tsc
+  --noEmit` from `apps/frontend-pwa` passed. `./node_modules/.bin/tsc
+  --noEmit` from `apps/frontend-manage` passed. `git diff --check` passed in
+  the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000`, `127.0.0.1:3001`, and `127.0.0.1:3002` all refused
+  connections, so no local backend, PWA, or manage dev server was available for
+  screenshots.
 - Review/simplification for the group-activity grading refresh cleanup:
   correctness review returned no findings and confirmed GraphQL/tRPC coexistence
   is preserved. Simplification found only cosmetic duplication in finalize

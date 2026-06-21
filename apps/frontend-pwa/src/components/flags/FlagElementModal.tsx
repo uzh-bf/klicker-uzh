@@ -83,12 +83,10 @@ function FlagElementModal({
         }
       }
     } catch (error) {
+      console.error(error)
       toast({
         type: 'error',
-        message:
-          error instanceof Error
-            ? error.message
-            : t('shared.generic.systemError'),
+        message: t('shared.generic.systemError'),
         options: { duration: 5000 },
       })
     } finally {

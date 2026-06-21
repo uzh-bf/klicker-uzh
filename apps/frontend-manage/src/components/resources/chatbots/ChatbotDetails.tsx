@@ -250,11 +250,8 @@ function ChatbotDetails({
 
       setSaveSuccess(true)
     } catch (error) {
-      setSaveError(
-        error instanceof Error
-          ? error.message
-          : t('manage.resources.chatbotModelSettingsSaveError')
-      )
+      console.error(error)
+      setSaveError(t('manage.resources.chatbotModelSettingsSaveError'))
     }
   }
 
