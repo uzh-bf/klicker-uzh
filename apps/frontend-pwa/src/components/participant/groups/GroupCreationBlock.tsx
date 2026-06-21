@@ -38,8 +38,16 @@ function GroupCreationBlock({
           })
 
           if (result?.id) {
-            await onCourseOverviewChanged?.()
-            setSelectedTab(result.id)
+            void Promise.resolve(onCourseOverviewChanged?.())
+              .then(() => setSelectedTab(result.id))
+              .catch((error) => {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+              })
             return
           }
         } catch (error) {

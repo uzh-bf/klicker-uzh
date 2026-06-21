@@ -1,8 +1,8 @@
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, H3, TextField } from '@uzh-bf/design-system'
+import { Button, H3, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { trpc } from '../../lib/trpc'
 
 interface EditableGroupNameProps {
@@ -22,10 +22,14 @@ function EditableGroupName({
   const renameParticipantGroup =
     trpc.participant.renameParticipantGroup.useMutation()
 
+  useEffect(() => {
+    setGroupNameValue(groupName)
+  }, [groupName])
+
   if (!editMode) {
     return (
       <H3 className={{ root: 'flex flex-row items-center gap-2' }}>
-        {t('shared.generic.group')}: {groupName}
+        {t('shared.generic.group')}: {groupNameValue}
         <FontAwesomeIcon
           icon={faPencil}
           className="h-4"
@@ -43,21 +47,41 @@ function EditableGroupName({
         className={{ input: 'h-7' }}
       />
       <Button
-        disabled={groupNameValue.trim() === ''}
+        disabled={
+          groupNameValue.trim() === '' || renameParticipantGroup.isLoading
+        }
         onClick={async () => {
           if (groupNameValue.trim() === '') {
             setEditMode(false)
             return
           }
 
-          const result = await renameParticipantGroup.mutateAsync({
-            groupId,
-            name: groupNameValue.trim(),
-          })
-          if (result) {
-            await onChanged?.()
+          try {
+            const result = await renameParticipantGroup.mutateAsync({
+              groupId,
+              name: groupNameValue.trim(),
+            })
+
+            if (!result) {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 6000 },
+              })
+              return
+            }
+
+            setGroupNameValue(result.name)
+            setEditMode(false)
+            void Promise.resolve(onChanged?.()).catch(console.error)
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 6000 },
+            })
           }
-          setEditMode(false)
         }}
         loading={renameParticipantGroup.isLoading}
         className={{ root: 'h-7 py-0' }}
@@ -67,6 +91,7 @@ function EditableGroupName({
       <Button
         basic
         onClick={() => setEditMode(false)}
+        disabled={renameParticipantGroup.isLoading}
         className={{ root: 'h-7 py-0' }}
       >
         <Button.Label>{t('shared.generic.cancel')}</Button.Label>

@@ -26,7 +26,14 @@ function RandomGroupBlock({
             courseId,
           })
           if (result) {
-            await onCourseOverviewChanged?.()
+            void Promise.resolve(onCourseOverviewChanged?.()).catch((error) => {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 5000 },
+              })
+            })
             return
           }
         } catch (error) {

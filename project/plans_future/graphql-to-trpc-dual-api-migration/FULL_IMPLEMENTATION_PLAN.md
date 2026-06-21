@@ -898,11 +898,12 @@ Second-pass UX/cache cleanup prepared:
   `self`/`participations` invalidations as best-effort refreshes. A failed
   post-join cache refresh no longer strands an already-enrolled participant on
   the join form with a generic error instead of navigating home.
-- PWA participant group leave and message-send actions now catch rejected/falsy
-  tRPC mutation results, show the existing generic system-error toast, and guard
-  duplicate in-flight actions. Confirmed message sends reset the form and
-  confirmed group leaves switch back to the global tab, while course-overview
-  refresh remains best-effort follow-up work.
+- PWA participant group create, join, rename, leave, message-send, and random
+  pool actions now catch rejected/falsy tRPC mutation results, show the
+  existing generic system-error toast, and guard duplicate in-flight actions.
+  Confirmed message sends reset the form, confirmed renames update the visible
+  local label, confirmed group leaves switch back to the global tab, and
+  course-overview refresh remains best-effort follow-up work.
 - PWA profile and avatar update forms now rely on the edit-profile page for a
   single best-effort `participant.self` refetch after confirmed mutation
   success. This removes duplicate child invalidation plus parent refetch work
@@ -1058,15 +1059,22 @@ Second-pass verification:
   review was skipped because the available multi-agent tool currently requires
   an explicit user request for subagents. Local self-review confirmed the
   service contract from `packages/api/src/services/participantGroups.ts` and
-  focused tRPC tests: `addMessageToGroup` returns a message or `null`, and
-  `leaveParticipantGroup` can return falsy. The diff is limited to failure
-  feedback, pending guards, and best-effort course-overview refresh handling in
-  `SuspendedGroupView`; GraphQL/Apollo coexistence is unchanged.
+  focused tRPC tests: group create/rename/message/leave/random-pool mutations
+  can return falsy values for invalid state, and join-by-code returns
+  `FAILURE`, `FULL`, or a group id. The diff is limited to PWA group-control
+  failure feedback, pending guards, local rename display, and best-effort
+  course-overview refresh handling; GraphQL/Apollo coexistence is unchanged.
 - Verification for the PWA participant group action cleanup: Context7 Formik
-  docs checked manual `setSubmitting(false)` handling in submit handlers. Local
-  API service/tests were inspected for falsy mutation-result behavior.
-  `prettier --check` on
+  docs checked async submit handling, Context7 React Query v4 docs checked
+  post-mutation invalidation patterns, and Context7 tRPC docs were queried for
+  client mutation behavior. Local API service/tests were inspected for falsy
+  mutation-result behavior. `prettier --check` on
+  `apps/frontend-pwa/src/components/course/EditableGroupName.tsx`,
   `apps/frontend-pwa/src/components/course/SuspendedGroupView.tsx`,
+  `apps/frontend-pwa/src/components/participant/groups/GroupCreationBlock.tsx`,
+  `apps/frontend-pwa/src/components/participant/groups/GroupJoinBlock.tsx`,
+  `apps/frontend-pwa/src/components/participant/groups/RandomGroupBlock.tsx`,
+  `apps/frontend-pwa/src/components/participant/groups/PoolNotification.tsx`,
   `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
   checkout's Prettier binary. `tsc --noEmit` for `apps/frontend-pwa` passed
   using the dependency checkout's TypeScript binary. `git diff --check` passed
