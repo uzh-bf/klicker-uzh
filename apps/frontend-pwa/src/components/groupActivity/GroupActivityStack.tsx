@@ -11,7 +11,7 @@ import type {
   GroupActivityDecision,
   GroupActivityResults,
 } from '@klicker-uzh/types'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -281,10 +281,13 @@ function GroupActivityStack({
           disabled={
             Object.values(studentResponse).some(
               (response) => !response.valid
-            ) || activityEnded
+            ) ||
+            activityEnded ||
+            submitGroupActivityDecisions.isLoading
           }
           onClick={async () => {
-            const result = await submitGroupActivityDecisions.mutateAsync({
+            const submitDecisions = submitGroupActivityDecisions.mutateAsync
+            const result = await submitDecisions({
               activityId: activityId,
               responses: Object.entries(
                 studentResponse
@@ -389,14 +392,38 @@ function GroupActivityStack({
                   }
                 }
               }),
+            }).catch((error) => {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 5000 },
+              })
+              return undefined
             })
 
-            if (!result.groupActivityInstanceId) {
-              console.error('Error submitting response')
+            if (typeof result === 'undefined') {
               return
             }
 
-            await onSubmitted()
+            if (!result?.groupActivityInstanceId) {
+              console.error('Error submitting response')
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 5000 },
+              })
+              return
+            }
+
+            await onSubmitted().catch((error) => {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 5000 },
+              })
+            })
 
             // set status and score according to returned correctness
             setStudentResponse({})

@@ -88,11 +88,25 @@ function InstanceHeader({
   }, [previousElementFeedback])
 
   const handleVote = async (upvote: boolean) => {
-    const res = await rateElement.mutateAsync({
-      elementInstanceId: instanceId,
-      elementId,
-      rating: upvote ? 1 : -1,
-    })
+    const res = await rateElement
+      .mutateAsync({
+        elementInstanceId: instanceId,
+        elementId,
+        rating: upvote ? 1 : -1,
+      })
+      .catch((error) => {
+        console.error(error)
+        toast({
+          type: 'error',
+          message: t('pwa.practiceQuiz.errorRatingElement'),
+          options: { duration: 5000 },
+        })
+        return undefined
+      })
+
+    if (typeof res === 'undefined') {
+      return
+    }
 
     if (res?.upvote) {
       setVote(1)

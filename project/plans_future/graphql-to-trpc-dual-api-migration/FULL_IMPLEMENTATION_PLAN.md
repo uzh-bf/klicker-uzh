@@ -505,6 +505,17 @@ Second-pass UX/cache cleanup prepared:
 - PWA microlearning completion now disables the finish button while the tRPC
   mutation is pending, only invalidates/navigates after a successful completion,
   and shows a system-error toast on failure.
+- PWA practice stack submission now disables duplicate submits while the tRPC
+  mutation is pending, surfaces rejected/falsy submissions with a system-error
+  toast, keeps entered responses intact on failure, and no longer turns a failed
+  previous-evaluation invalidation into a failed local result render.
+- PWA group activity answer submission now disables duplicate submits while the
+  tRPC mutation is pending, surfaces rejected/falsy submissions with a
+  system-error toast, and catches failed post-submit refreshes instead of
+  leaving unhandled promise rejections.
+- PWA practice element rating now catches rejected tRPC rating mutations,
+  preserves the current visible vote on failure, and shows the existing
+  rating-error toast.
 
 Second-pass verification:
 
@@ -552,10 +563,23 @@ Second-pass verification:
   warnings; direct ESLint CLI is not compatible with the repo's current
   `.eslintrc` setup under ESLint 9, so lint remains covered by prior full PWA
   lint passes and CI.
+- Context7 docs checked for TanStack Query v4 mutation lifecycle behavior
+  before the PWA practice/group activity submit and rating fixes.
+- Synced the clean PR worktree into the dependency checkout while preserving
+  `node_modules` and `.git` before validation; `rsync` only warned about stale
+  Rollup cache directories it could not delete.
+- `node_modules/.bin/prettier --check` on
+  `ElementStack.tsx`, `GroupActivityStack.tsx`, and `InstanceHeader.tsx` passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed.
+- Narrow `next lint --file ...` for the three changed PWA components was
+  attempted from the dependency checkout but hung after printing only existing
+  Next/next-intl warnings.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
-  is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, and no local control
-  dev server is listening on `127.0.0.1:3003`.
+  is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is
+  listening on `127.0.0.1:3000`, and no local control dev server is listening
+  on `127.0.0.1:3003`.
 
 PR #5132 status after `3f31a27b5`:
 

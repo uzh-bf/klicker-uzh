@@ -6,7 +6,7 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import type { CaseStudyCaseResponse, ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H2, UserNotification } from '@uzh-bf/design-system'
+import { Button, H2, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { trpc, type RouterInputs } from '../../lib/trpc'
@@ -489,6 +489,7 @@ function ElementStack({
             primary
             loading={respondToElementStack.isLoading}
             disabled={
+              respondToElementStack.isLoading ||
               (!previewOnly && activityExpired) ||
               Object.values(studentResponse).some((response) => !response.valid)
             }
@@ -496,7 +497,8 @@ function ElementStack({
               root: embeddedButtonClass,
             }}
             onClick={async () => {
-              const result = await respondToElementStack.mutateAsync({
+              const submitStackResponse = respondToElementStack.mutateAsync
+              const result = await submitStackResponse({
                 isOwner: previewOnly,
                 stackId: stack.id,
                 courseId: courseId,
@@ -609,16 +611,35 @@ function ElementStack({
                     }
                   }
                 }),
+              }).catch((error) => {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+                return undefined
               })
 
-              if (!result) {
-                console.error('Error submitting response')
+              if (typeof result === 'undefined') {
                 return
               }
 
-              await utils.participant.previousStackEvaluation.invalidate({
-                stackId: stack.id,
-              })
+              if (!result) {
+                console.error('Error submitting response')
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+                return
+              }
+
+              utils.participant.previousStackEvaluation
+                .invalidate({
+                  stackId: stack.id,
+                })
+                .catch((error) => console.error(error))
 
               setStackStorage(
                 Object.entries(
