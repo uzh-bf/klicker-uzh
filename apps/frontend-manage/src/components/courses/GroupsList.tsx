@@ -1,4 +1,5 @@
 import { faShuffle } from '@fortawesome/free-solid-svg-icons'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, TabContent, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -25,10 +26,14 @@ function GroupsList({
     setIsGroupCreationFinalized(groupCreationFinalized)
   }, [groupCreationFinalized])
 
-  const { data } = trpc.course.groups.useQuery({ courseId })
+  const { data, error, isLoading } = trpc.course.groups.useQuery({ courseId })
 
-  const pool = data?.courseGroups?.groupAssignmentPoolEntries ?? []
-  const groups = data?.courseGroups?.participantGroups ?? []
+  const courseGroups = data?.courseGroups
+  const pool = courseGroups?.groupAssignmentPoolEntries ?? []
+  const groups = courseGroups?.participantGroups ?? []
+  const initialGroupsLoading = isLoading && !courseGroups
+  const groupsUnavailable = Boolean((error || !isLoading) && !courseGroups)
+  const backgroundGroupsError = Boolean(error && courseGroups)
 
   // count the number of groups with only one participant
   const groupsOfOne = groups.filter(
@@ -49,7 +54,24 @@ function GroupsList({
           {t('manage.course.poolForRandomAssignment')}
         </div>
 
-        {pool.length > 0 && (
+        {initialGroupsLoading ? <Loader /> : null}
+
+        {groupsUnavailable ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
+        {backgroundGroupsError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'py-1' }}
+          />
+        ) : null}
+
+        {pool.length > 0 ? (
           <div
             className="@xl:grid-cols-2 grid"
             data-cy="random-group-assignment-pool"
@@ -63,14 +85,16 @@ function GroupsList({
               ) : null
             )}
           </div>
-        )}
+        ) : null}
 
-        {!isGroupCreationFinalized && randomAssignmentNotPossible && (
-          <UserNotification
-            type="warning"
-            message={t('manage.course.randomGroupsNotPossible')}
-          />
-        )}
+        {courseGroups &&
+          !isGroupCreationFinalized &&
+          randomAssignmentNotPossible && (
+            <UserNotification
+              type="warning"
+              message={t('manage.course.randomGroupsNotPossible')}
+            />
+          )}
         {isGroupCreationFinalized && (
           <UserNotification
             type="warning"
@@ -78,7 +102,7 @@ function GroupsList({
           />
         )}
 
-        {!isGroupCreationFinalized && !actionsDisabled && (
+        {courseGroups && !isGroupCreationFinalized && !actionsDisabled && (
           <Button
             primary
             className={{ root: 'my-1 h-8 w-max self-end' }}

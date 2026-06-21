@@ -28,11 +28,19 @@ function AssignmentConfirmationModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={() => {
+        if (!assignmentMutation.isLoading) {
+          onClose()
+        }
+      }}
       title={t('manage.course.finalizeRandomGroupAssignment')}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={assignmentMutation.isLoading}
       onPrimaryAction={async () => {
+        if (assignmentMutation.isLoading) {
+          return
+        }
+
         try {
           const res = await assignmentMutation.mutateAsync({ courseId })
 
@@ -41,10 +49,10 @@ function AssignmentConfirmationModal({
             return
           }
 
-          await Promise.all([
+          void Promise.all([
             utils.course.groups.invalidate({ courseId }),
             utils.course.summary.invalidate({ courseId }),
-          ])
+          ]).catch(console.error)
           onAssigned()
           toast({
             type: 'success',
@@ -58,7 +66,11 @@ function AssignmentConfirmationModal({
       }}
       dataPrimaryAction={{ cy: 'confirm-random-group-assignment' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={() => {
+        if (!assignmentMutation.isLoading) {
+          onClose()
+        }
+      }}
       dataSecondaryAction={{ cy: 'cancel-random-group-assignment' }}
     >
       <div className="mb-2 font-bold">{t('shared.generic.pleaseReview')}</div>

@@ -1026,9 +1026,30 @@ Second-pass UX/cache cleanup prepared:
   toast when an optimistic bookmark/unbookmark write fails and rolls back. The
   existing React Query `onMutate` rollback and success cache reconciliation stay
   unchanged.
+- Manage course groups now distinguish failed initial `course.groups` tRPC
+  loads from empty assignment pools or empty participant groups, keep stale
+  groups visible during background refetch failures, and treat manual random
+  group assignment's returned `participantGroups` payload as the success
+  boundary. Course-group and course-summary invalidations now run as
+  best-effort refreshes after confirmed assignment success.
 
 Second-pass verification:
 
+- Review/simplification for the manage course groups cleanup: subagent review
+  was skipped because the available multi-agent tool currently requires an
+  explicit user request for delegation. Local self-review found the diff limited
+  to `course.groups` fallback rendering, assignment-modal pending guards, and
+  best-effort post-success invalidations; GraphQL/Apollo coexistence is
+  unchanged.
+- Verification for the manage course groups cleanup: Context7 TanStack Query
+  v4 docs checked `mutateAsync`, invalidation, and stale-data/error handling
+  before the change. `prettier --check` on the two changed course-group files
+  plus `project/CODEBASE_NOTES.md` and this plan passed using the dependency
+  checkout's Prettier binary. `./node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-manage` passed. `git diff --check` passed in the commit
+  worktree. Browser verification remains blocked because `127.0.0.1:3000` and
+  `127.0.0.1:3002` refuse connections, so no local backend or manage dev server
+  was available for screenshots.
 - Review/simplification for the PWA bookmark failure-feedback cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the
