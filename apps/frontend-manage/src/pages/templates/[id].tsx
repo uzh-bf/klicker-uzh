@@ -14,12 +14,14 @@ import { trpc } from '../../lib/trpc'
 function Template({ templateId }: { templateId: string }) {
   const t = useTranslations()
 
-  const { data, isLoading } = trpc.activity.template.useQuery(
+  const { data, error, isLoading } = trpc.activity.template.useQuery(
     { templateId },
     { enabled: Boolean(templateId) }
   )
 
-  if (isLoading) {
+  const template = data?.activityTemplate
+
+  if (isLoading && !template) {
     return (
       <Layout displayName={t('manage.template.activityFromTemplate')}>
         <H2>{t('manage.template.activityFromTemplate')}</H2>
@@ -28,7 +30,19 @@ function Template({ templateId }: { templateId: string }) {
     )
   }
 
-  if (!data?.activityTemplate) {
+  if (error && !template) {
+    return (
+      <Layout displayName={t('manage.template.activityFromTemplate')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'text-base' }}
+        />
+      </Layout>
+    )
+  }
+
+  if (!template) {
     return (
       <Layout displayName={t('manage.template.activityFromTemplate')}>
         <UserNotification
@@ -40,7 +54,6 @@ function Template({ templateId }: { templateId: string }) {
     )
   }
 
-  const template = data.activityTemplate
   return (
     <Layout displayName={t('manage.template.activityFromTemplate')}>
       <H2>{t('manage.template.activityFromTemplate')}</H2>

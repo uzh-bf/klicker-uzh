@@ -36,7 +36,7 @@ function MicrolearningEvaluation() {
     microlearning: microlearning,
   })
 
-  if (isLoading) {
+  if (isLoading && !microlearning) {
     return (
       <Layout>
         <Loader />
@@ -44,12 +44,23 @@ function MicrolearningEvaluation() {
     )
   }
 
-  if (error || !microlearning) {
+  if (error && !microlearning) {
     return (
       <Layout>
         <UserNotification
           type="error"
           message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!microlearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="warning"
+          message={t('pwa.microLearning.notFound')}
         />
       </Layout>
     )

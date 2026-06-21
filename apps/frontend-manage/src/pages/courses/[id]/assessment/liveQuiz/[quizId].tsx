@@ -58,7 +58,9 @@ function AssessmentLiveQuiz() {
     }
   }, [router.isReady, router.query.participantId, data])
 
-  if (isLoading || !liveQuizId) {
+  const quiz = data?.assessmentResultsLiveQuiz
+
+  if ((isLoading && !quiz) || !liveQuizId) {
     return (
       <Layout>
         <Loader />
@@ -66,13 +68,25 @@ function AssessmentLiveQuiz() {
     )
   }
 
-  const quiz = data?.assessmentResultsLiveQuiz
-  if (error || !quiz) {
+  if (error && !quiz) {
     return (
-      <UserNotification
-        type="error"
-        message={t('manage.assessment.errorLoadingLiveQuizResults')}
-      />
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingLiveQuizResults')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!quiz) {
+    return (
+      <Layout>
+        <UserNotification
+          type="warning"
+          message={t('manage.assessment.errorLoadingLiveQuizResults')}
+        />
+      </Layout>
     )
   }
 

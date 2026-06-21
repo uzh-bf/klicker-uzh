@@ -599,6 +599,17 @@ Second-pass UX/cache cleanup prepared:
   live-quiz list, and running live-quiz controller now keep cached tRPC data
   visible during refetch failures and only redirect/show error notifications
   when the initial migrated query has no usable data.
+- Manage live-quiz evaluation, assessment results, group-activity grading, and
+  template pages now distinguish failed initial tRPC loads from missing data,
+  wrap failures in existing notification/layout patterns, and keep cached
+  evaluation/results data visible during refetch failures.
+- Manage student assessment detail panels and student activity performance now
+  preserve cached tRPC result data during background refetch failures and show
+  existing error/empty notifications only when no usable initial data is
+  available.
+- PWA microlearning evaluation and assessment-results panels now preserve
+  cached tRPC data during background refetch failures and use existing
+  error/not-found notifications for failed or missing initial data.
 
 Second-pass verification:
 
@@ -826,14 +837,38 @@ Second-pass verification:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3003` failed with connection
   refused, so no local backend or control dev server was available for
   screenshots.
+- Context7 docs checked again for tRPC React Query hook semantics plus TanStack
+  Query v4 background-fetching and stale-data behavior before the assessment /
+  template query-state cleanup.
+- `node_modules/.bin/prettier --check` on the 10 changed PWA/manage
+  assessment, evaluation, template, and result-panel files passed after
+  formatting two files in the dependency checkout and copying the formatted
+  output back to the source checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the assessment / template cleanup.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after the assessment / microlearning cleanup.
+- `pnpm --filter @klicker-uzh/frontend-manage lint` and
+  `pnpm --filter @klicker-uzh/frontend-pwa lint` were attempted from the
+  dependency checkout but failed before linting because the local pnpm shim
+  tried to resolve `pnpm@11.5.0` and could not verify/download it in the
+  restricted environment. Retrying through `volta run --node 20.19.4 --pnpm
+  10.15.0` still resolved to the cached pnpm 11 binary and failed on
+  `node:sqlite` under Node 20. CI lint remains the current lint signal for this
+  batch.
+- `git diff --check` passed after the assessment / template cleanup.
+- Browser verification for the assessment / template cleanup remains blocked:
+  `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, `127.0.0.1:3002`, and
+  `127.0.0.1:3003` all failed with connection refused, so no local backend,
+  PWA, manage, or control dev server was available for screenshots.
 
-PR #5132 status after `f3d779712`:
+PR #5132 status after `a9a9d0a6` before this batch:
 
-- Passing at last poll: Claude review plus CodeQL Java/Kotlin and Python
-  analyses.
-- Pending at last poll: format, lint, check, SonarCloud, package API tRPC
-  Vitest, packages/graphql Vitest, regular tests, Cypress Cloud, CodeQL
-  JavaScript/TypeScript and JavaScript analyses, and visible amd/arm builds.
+- Passing at last poll: CodeQL analyses, SonarCloud, format, lint, check,
+  Claude review, visible build jobs that had completed, `packages/api tRPC
+  Vitest`, and one regular `test` job.
+- Pending at last poll: `packages/graphql Vitest`, Cypress Cloud, some broad
+  `test`/amd/arm build jobs.
 - Still failing: GitGuardian historical branch findings on older commits, which
   need dashboard dismissal or an approved history rewrite.
 

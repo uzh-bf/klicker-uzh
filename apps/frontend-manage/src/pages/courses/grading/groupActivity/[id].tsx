@@ -30,10 +30,11 @@ function GroupActivityGrading() {
   const [nextSubmission, setNextSubmission] = useState<number>(-1)
   const activityId = typeof router.query.id === 'string' ? router.query.id : ''
 
-  const { data, isLoading } = trpc.activity.groupActivityGrading.useQuery(
-    { id: activityId },
-    { enabled: Boolean(activityId) }
-  )
+  const { data, error, isLoading } =
+    trpc.activity.groupActivityGrading.useQuery(
+      { id: activityId },
+      { enabled: Boolean(activityId) }
+    )
 
   const groupActivity = data?.groupActivityGrading
   const maxPoints =
@@ -67,16 +68,32 @@ function GroupActivityGrading() {
     [groupActivity?.activityInstances]
   )
 
-  if (isLoading || !activityId)
+  if ((isLoading && !groupActivity) || !activityId)
     return (
       <Layout>
         <Loader />
       </Layout>
     )
 
+  if (error && !groupActivity) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
   if (!groupActivity) {
     return (
-      <Layout>{t('manage.groupActivity.activityMissingOrNotCompleted')}</Layout>
+      <Layout>
+        <UserNotification
+          type="warning"
+          message={t('manage.groupActivity.activityMissingOrNotCompleted')}
+        />
+      </Layout>
     )
   }
 

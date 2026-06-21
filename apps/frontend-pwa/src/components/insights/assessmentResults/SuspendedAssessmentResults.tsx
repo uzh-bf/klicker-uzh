@@ -13,9 +13,11 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
       { retry: false }
     )
 
-  if (isLoading) return <Loader />
+  const assessmentResults = data?.studentAssessmentResults
 
-  if (error || !data?.studentAssessmentResults) {
+  if (isLoading && !assessmentResults) return <Loader />
+
+  if (error && !assessmentResults) {
     return (
       <UserNotification
         type="error"
@@ -24,10 +26,19 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     )
   }
 
-  const liveQuizzes = data.studentAssessmentResults.liveQuizzes
-  const practiceQuizzes = data.studentAssessmentResults.practiceQuizzes
-  const microLearnings = data.studentAssessmentResults.microLearnings
-  const groupActivities = data.studentAssessmentResults.groupActivities
+  if (!assessmentResults) {
+    return (
+      <UserNotification
+        type="warning"
+        message={t('pwa.assessment.failedToLoadActivityResults')}
+      />
+    )
+  }
+
+  const liveQuizzes = assessmentResults.liveQuizzes
+  const practiceQuizzes = assessmentResults.practiceQuizzes
+  const microLearnings = assessmentResults.microLearnings
+  const groupActivities = assessmentResults.groupActivities
 
   return (
     <div>

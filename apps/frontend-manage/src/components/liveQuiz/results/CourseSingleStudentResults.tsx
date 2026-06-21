@@ -24,16 +24,25 @@ function CourseSingleStudentResults({
       { courseId, participantId },
       { enabled: Boolean(courseId && participantId) }
     )
-  const studentCourseResults = data?.studentCourseResults ?? []
+  const studentCourseResults = data?.studentCourseResults
 
-  if (isLoading) {
+  if (isLoading && !studentCourseResults) {
     return <Loader />
   }
 
-  if (error || !data?.studentCourseResults) {
+  if (error && !studentCourseResults) {
     return (
       <UserNotification
         type="error"
+        message={t('manage.assessment.errorLoadingCourseResults')}
+      />
+    )
+  }
+
+  if (!studentCourseResults) {
+    return (
+      <UserNotification
+        type="warning"
         message={t('manage.assessment.errorLoadingCourseResults')}
       />
     )

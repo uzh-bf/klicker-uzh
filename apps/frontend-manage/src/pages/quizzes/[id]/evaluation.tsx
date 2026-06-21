@@ -1,5 +1,6 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 import { trpc } from '../../../lib/trpc'
@@ -10,33 +11,36 @@ function LiveQuizEvaluation() {
   // fetch evaluation data
   const id = router.query.id as string | undefined
   const hmac = router.query.hmac as string | undefined
-  const { data, isLoading } = trpc.analytics.liveQuizEvaluation.useQuery(
+  const { data, error, isLoading } = trpc.analytics.liveQuizEvaluation.useQuery(
     { id: id ?? '', hmac },
     {
       enabled: !!id,
       refetchInterval: 5000,
-      onError: () => {
-        router.push('/404')
-      },
     }
   )
 
-  if (isLoading || !id) {
+  const evaluation = data?.liveQuizEvaluation
+  const leaderboard = data?.liveQuizLeaderboard
+
+  useEffect(() => {
+    if (error && !evaluation) {
+      void router.push('/404')
+    }
+  }, [error, evaluation, router])
+
+  if ((isLoading && !evaluation) || !id || (error && !evaluation)) {
     return <Loader />
   }
 
   if (
-    !data?.liveQuizEvaluation ||
-    (data.liveQuizEvaluation.results.length === 0 &&
-      data.liveQuizLeaderboard?.length === 0 &&
-      data.liveQuizEvaluation.feedbacks?.length === 0 &&
-      data.liveQuizEvaluation.confusionFeedbacks?.length === 0)
+    !evaluation ||
+    (evaluation.results.length === 0 &&
+      leaderboard?.length === 0 &&
+      evaluation.feedbacks?.length === 0 &&
+      evaluation.confusionFeedbacks?.length === 0)
   ) {
     return <EvaluationUnavailableNotification />
   }
-
-  const evaluation = data.liveQuizEvaluation
-  const leaderboard = data.liveQuizLeaderboard
 
   return (
     <ActivityEvaluation

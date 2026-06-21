@@ -26,7 +26,7 @@ function StudentActivityPerformance({
   const t = useTranslations()
   const [selectedActivities, setSelectedActivities] = useState<string[]>([])
 
-  const { data, isLoading } = trpc.course.activities.useQuery(
+  const { data, error, isLoading } = trpc.course.activities.useQuery(
     { courseId },
     { enabled: !!courseId }
   )
@@ -47,13 +47,31 @@ function StudentActivityPerformance({
   })
 
   const tableData = useStudentActivityPerformanceTableData({
-    dataAvailable: !isLoading && !!course,
+    dataAvailable: !!course,
     performances,
     selectedActivities,
   })
 
-  if (isLoading || !tableData) {
+  if ((isLoading && !course) || (!error && course && !tableData)) {
     return <Loader />
+  }
+
+  if (error && !course) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
+  }
+
+  if (!course || !tableData) {
+    return (
+      <UserNotification
+        type="warning"
+        message={t('manage.analytics.noStudentActivityPerformanceData')}
+      />
+    )
   }
 
   return (

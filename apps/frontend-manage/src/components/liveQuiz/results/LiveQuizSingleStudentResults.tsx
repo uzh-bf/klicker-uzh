@@ -89,9 +89,9 @@ function LiveQuizSingleStudentResults({
     response: InstanceStackStudentResponseType
   } | null>(null)
 
-  const blocks = data?.liveQuizStudentAssessmentResponses ?? []
+  const blocks = data?.liveQuizStudentAssessmentResponses
   const computedBlocks = useMemo(() => {
-    return blocks.map((block, blockIx) => {
+    return (blocks ?? []).map((block, blockIx) => {
       const instances = block.instances.map((instanceObj) => {
         const instance = instanceObj.instance
         const elementData = instance.elementData
@@ -168,14 +168,23 @@ function LiveQuizSingleStudentResults({
     })
   }, [blocks, quizBasePoints, quizBonusPoints, quizCorrectnessPoints])
 
-  if (isLoading) {
+  if (isLoading && !blocks) {
     return <Loader />
   }
 
-  if (error) {
+  if (error && !blocks) {
     return (
       <UserNotification
         type="error"
+        message={t('manage.assessment.errorLoadingStudentLiveQuizResponses')}
+      />
+    )
+  }
+
+  if (!blocks) {
+    return (
+      <UserNotification
+        type="warning"
         message={t('manage.assessment.errorLoadingStudentLiveQuizResponses')}
       />
     )

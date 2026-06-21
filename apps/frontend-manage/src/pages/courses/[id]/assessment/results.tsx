@@ -35,7 +35,9 @@ function CourseAssessmentResults() {
       { enabled: Boolean(courseId) }
     )
 
-  if (isLoading || !courseId) {
+  const course = data?.assessmentResultsCourse
+
+  if ((isLoading && !course) || !courseId) {
     return (
       <Layout>
         <Loader />
@@ -43,12 +45,22 @@ function CourseAssessmentResults() {
     )
   }
 
-  const course = data?.assessmentResultsCourse
-  if (error || !course) {
+  if (error && !course) {
     return (
       <Layout>
         <UserNotification
           type="error"
+          message={t('manage.assessment.errorLoadingCourseResults')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!course) {
+    return (
+      <Layout>
+        <UserNotification
+          type="warning"
           message={t('manage.assessment.errorLoadingCourseResults')}
         />
       </Layout>
