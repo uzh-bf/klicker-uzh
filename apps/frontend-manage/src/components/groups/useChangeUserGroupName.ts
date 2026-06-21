@@ -28,7 +28,7 @@ function useChangeUserGroupName() {
     }
   }
 
-  return { onNameChange, nameChanging: changeUserGroupName.isPending }
+  return { onNameChange, nameChanging: changeUserGroupName.isLoading }
 }
 
 export default useChangeUserGroupName

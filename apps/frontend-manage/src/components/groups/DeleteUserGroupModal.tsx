@@ -20,7 +20,12 @@ function DeleteUserGroupModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const deleteUserGroup = trpc.sharing.deleteUserGroup.useMutation()
-  const loading = deleteUserGroup.isPending
+  const loading = deleteUserGroup.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
   const refreshUserGroups = async () => {
     try {
       await utils.sharing.userGroups.invalidate()
@@ -54,7 +59,7 @@ function DeleteUserGroupModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.userGroups.deleteGroup')}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -64,7 +69,9 @@ function DeleteUserGroupModal({
       }
       primaryButtonStyle="destructive"
       primaryLoading={loading}
-      primaryDisabled={Object.values(confirmations).some((value) => !value)}
+      primaryDisabled={
+        loading || Object.values(confirmations).some((value) => !value)
+      }
       onPrimaryAction={async () => {
         try {
           const success = await deleteUserGroup.mutateAsync({ groupId })
@@ -86,7 +93,7 @@ function DeleteUserGroupModal({
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-delete-group' }}
       className={{ content: 'max-w-2xl' }}
     >

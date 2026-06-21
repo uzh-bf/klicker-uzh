@@ -26,7 +26,7 @@ function useTransferGroupOwnership() {
 
   return {
     onOwnershipTransfer,
-    transferringOwnership: transferGroupOwnership.isPending,
+    transferringOwnership: transferGroupOwnership.isLoading,
   }
 }
 

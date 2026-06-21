@@ -9,6 +9,13 @@ function AccountDeletionForm() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const deleteParticipantAccount = trpc.participant.deleteAccount.useMutation()
   const logoutParticipant = trpc.participant.logout.useMutation()
+  const deleting =
+    deleteParticipantAccount.isLoading || logoutParticipant.isLoading
+  const closeDeletionModal = (): void => {
+    if (!deleting) {
+      setDeleteModalOpen(false)
+    }
+  }
 
   return (
     <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
@@ -35,13 +42,11 @@ function AccountDeletionForm() {
               hideCloseButton
               title={t('pwa.profile.deleteProfile')}
               open={deleteModalOpen}
-              onClose={(): void => setDeleteModalOpen(false)}
+              onClose={closeDeletionModal}
               primaryLabel={t('shared.generic.confirm')}
               primaryButtonStyle="destructive"
-              primaryLoading={
-                deleteParticipantAccount.isPending ||
-                logoutParticipant.isPending
-              }
+              primaryLoading={deleting}
+              primaryDisabled={deleting}
               onPrimaryAction={async () => {
                 try {
                   const deleted = await deleteParticipantAccount.mutateAsync()
@@ -71,7 +76,7 @@ function AccountDeletionForm() {
               }}
               dataPrimaryAction={{ cy: 'delete-account-command' }}
               secondaryLabel={t('shared.generic.cancel')}
-              onSecondaryAction={() => setDeleteModalOpen(false)}
+              onSecondaryAction={closeDeletionModal}
               dataSecondaryAction={{ cy: 'cancel-delete-account' }}
               className={{ content: 'max-w-md' }}
             >

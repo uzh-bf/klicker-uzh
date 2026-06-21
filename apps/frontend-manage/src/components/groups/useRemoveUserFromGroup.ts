@@ -18,7 +18,7 @@ function useRemoveUserFromGroup() {
     if (result.removed) await utils.sharing.userGroups.invalidate()
   }
 
-  return { onRemove, removing: removeUserFromGroup.isPending }
+  return { onRemove, removing: removeUserFromGroup.isLoading }
 }
 
 export default useRemoveUserFromGroup

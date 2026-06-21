@@ -229,7 +229,7 @@ function AccountSelector({
           }
         }}
       >
-        {({ values, setFieldValue }) => (
+        {({ values, isSubmitting, setFieldValue }) => (
           <Form className="flex flex-col">
             {step === 'pseudonym' ? (
               <>
@@ -359,7 +359,8 @@ function AccountSelector({
                 <Button
                   primary
                   type="submit"
-                  loading={loginTemporaryParticipant.isPending}
+                  disabled={isSubmitting || loginTemporaryParticipant.isLoading}
+                  loading={isSubmitting || loginTemporaryParticipant.isLoading}
                   className={{ root: 'mt-2 self-end' }}
                   data={{ cy: 'submit-pseudonym-and-avatar' }}
                 >

@@ -23,7 +23,7 @@ function useDemoteGroupAdminToMember() {
     }
   }
 
-  return { onDemotion, demoting: demoteGroupAdminToMember.isPending }
+  return { onDemotion, demoting: demoteGroupAdminToMember.isLoading }
 }
 
 export default useDemoteGroupAdminToMember

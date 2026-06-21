@@ -21,7 +21,12 @@ function LeaveUserGroupModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const leaveUserGroup = trpc.sharing.leaveUserGroup.useMutation()
-  const loading = leaveUserGroup.isPending
+  const loading = leaveUserGroup.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
   const refreshUserGroups = async () => {
     try {
       await utils.sharing.userGroups.invalidate()
@@ -40,7 +45,7 @@ function LeaveUserGroupModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.userGroups.leaveGroup')}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -49,6 +54,7 @@ function LeaveUserGroupModal({
         </div>
       }
       primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
         try {
           const success = await leaveUserGroup.mutateAsync({ groupId })
@@ -70,7 +76,7 @@ function LeaveUserGroupModal({
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-leave-group' }}
       className={{ content: 'max-w-xl' }}
     >

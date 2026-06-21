@@ -284,7 +284,7 @@ function Header({
                 },
               ].map((language) => ({
                 id: language.id,
-                disabled: changeParticipantLocale.isPending,
+                disabled: changeParticipantLocale.isLoading,
                 label: (
                   <>
                     <span className="mr-1 md:mr-2">{language.flag}</span>
@@ -323,7 +323,7 @@ function Header({
                   {
                     id: 'logout',
                     type: 'standard' as 'standard',
-                    disabled: logoutParticipant.isPending,
+                    disabled: logoutParticipant.isLoading,
                     label: (
                       <div className="text-red-600">
                         <FontAwesomeIcon
@@ -366,7 +366,7 @@ function Header({
                   {
                     id: 'logout',
                     type: 'standard' as 'standard',
-                    disabled: logoutTemporaryParticipant.isPending,
+                    disabled: logoutTemporaryParticipant.isLoading,
                     label: (
                       <div className="text-red-600">
                         <FontAwesomeIcon

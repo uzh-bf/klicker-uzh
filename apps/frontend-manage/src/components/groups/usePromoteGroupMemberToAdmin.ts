@@ -23,7 +23,7 @@ function usePromoteGroupMemberToAdmin() {
     }
   }
 
-  return { onPromotion, promoting: promoteGroupMemberToAdmin.isPending }
+  return { onPromotion, promoting: promoteGroupMemberToAdmin.isLoading }
 }
 
 export default usePromoteGroupMemberToAdmin

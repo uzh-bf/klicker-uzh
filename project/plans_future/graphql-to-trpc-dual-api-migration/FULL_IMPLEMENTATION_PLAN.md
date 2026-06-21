@@ -715,6 +715,13 @@ Second-pass UX/cache cleanup prepared:
   `participant.self` loads without hiding leaderboard data, and guards regular
   logout links so local participant tokens are cleared only after confirmed
   tRPC logout success.
+- PWA/manage migrated mutation controls now use the correct React Query v4
+  `isLoading` mutation state instead of v5-style `isPending`. This restores
+  pending guards/loading states for PWA header locale/logout, account deletion,
+  live-quiz temporary pseudonym login, and manage user-group rename,
+  ownership/admin/member, leave, and delete actions; destructive delete/leave
+  modals also guard close/secondary actions while their tRPC mutation is in
+  flight.
 
 Second-pass verification:
 
@@ -828,6 +835,23 @@ Second-pass verification:
   cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3001` failed with
   connection refused, so no local backend or PWA dev server was available for
   screenshots.
+- Context7 docs checked for current TanStack Query v4 `useMutation`,
+  `mutateAsync`, and `isLoading` semantics before the React Query mutation-state
+  compatibility cleanup.
+- `rg -n "\.isPending\b|isPending\b" apps/frontend-pwa/src apps/frontend-manage/src apps/frontend-control/src`
+  returned no matches after the compatibility cleanup.
+- `node_modules/.bin/prettier --check` on the changed PWA/manage React Query
+  mutation-state files plus `project/CODEBASE_NOTES.md` and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after mirroring the changed PWA files.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed manage files.
+- `git diff --check` passed after the React Query mutation-state compatibility
+  cleanup.
+- Browser verification remains blocked for this PWA/manage mutation-state
+  cleanup: `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`, and
+  `127.0.0.1:3002` failed with connection refused, so no local backend, PWA, or
+  manage dev server was available for screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
 - `prettier --check` on the five changed PWA/manage files passed.
