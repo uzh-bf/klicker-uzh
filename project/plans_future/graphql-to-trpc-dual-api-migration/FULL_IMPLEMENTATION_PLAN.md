@@ -1032,6 +1032,10 @@ Second-pass UX/cache cleanup prepared:
   group assignment's returned `participantGroups` payload as the success
   boundary. Course-group and course-summary invalidations now run as
   best-effort refreshes after confirmed assignment success.
+- Manage element tag input now treats `element.tags` as suggestion data instead
+  of a hard blocker whenever selected tags are already available. A failed tag
+  suggestions load renders a compact localized system-error notification while
+  preserving the editable selected tags/creatable input.
 
 Second-pass verification:
 
@@ -1050,6 +1054,20 @@ Second-pass verification:
   worktree. Browser verification remains blocked because `127.0.0.1:3000` and
   `127.0.0.1:3002` refuse connections, so no local backend or manage dev server
   was available for screenshots.
+- Review/simplification for the manage tag-input cleanup: subagent review was
+  skipped because the available multi-agent tool currently requires an explicit
+  user request for delegation. Local self-review found the diff limited to
+  `element.tags` suggestion-load fallback rendering plus docs; selected tag
+  editing stays available when field values exist, and GraphQL/Apollo
+  coexistence is unchanged.
+- Verification for the manage tag-input cleanup: Context7 TanStack Query v4
+  docs checked stale-data/error handling earlier in this audit pass. `prettier
+  --check` on `SuspendedTagInput.tsx`, `project/CODEBASE_NOTES.md`, and this
+  plan passed using the dependency checkout's Prettier binary.
+  `./node_modules/.bin/tsc --noEmit` from `apps/frontend-manage` passed. `git
+  diff --check` passed in the commit worktree. Browser verification remains
+  blocked because `127.0.0.1:3000` and `127.0.0.1:3002` refuse connections, so
+  no local backend or manage dev server was available for screenshots.
 - Review/simplification for the PWA bookmark failure-feedback cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the
