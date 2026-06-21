@@ -1,6 +1,6 @@
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import { faBookmark as faBookmarkFilled } from '@fortawesome/free-solid-svg-icons'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
@@ -41,12 +41,18 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
         return { bookmarkQueryInput, previousBookmarks }
       },
       onError: (_error, _variables, context) => {
-        if (!context) return
+        if (context) {
+          utils.participant.practiceQuizBookmarks.setData(
+            context.bookmarkQueryInput,
+            context.previousBookmarks
+          )
+        }
 
-        utils.participant.practiceQuizBookmarks.setData(
-          context.bookmarkQueryInput,
-          context.previousBookmarks
-        )
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
       },
       onSuccess: (result, variables) => {
         utils.participant.practiceQuizBookmarks.setData(

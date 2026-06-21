@@ -967,9 +967,30 @@ Second-pass UX/cache cleanup prepared:
   with a generic error toast on failure. Existing group-activity data stays
   visible if the background detail refetch fails, and the subscription callback
   no longer leaks a rejected refetch promise.
+- PWA practice-quiz bookmark mutations now show the existing generic error
+  toast when an optimistic bookmark/unbookmark write fails and rolls back. The
+  existing React Query `onMutate` rollback and success cache reconciliation stay
+  unchanged.
 
 Second-pass verification:
 
+- Review/simplification for the PWA bookmark failure-feedback cleanup:
+  subagent review was skipped because the available multi-agent tool currently
+  requires an explicit user request for subagents. Local self-review found the
+  diff limited to the bookmark mutation's `onError` feedback plus docs; the
+  existing optimistic rollback and success cache reconciliation are unchanged,
+  and GraphQL/Apollo coexistence is preserved.
+- Verification for the PWA bookmark failure-feedback cleanup: Context7
+  TanStack Query v4 docs checked optimistic-update rollback via `onMutate`
+  context and `onError`. `prettier --check` on
+  `apps/frontend-pwa/src/components/practiceQuiz/Bookmark.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed using the dependency
+  checkout's Prettier binary with local ignored dependency links. `tsc
+  --noEmit` for `apps/frontend-pwa` passed using the dependency checkout's
+  TypeScript binary plus ignored package dependency links. `git diff --check`
+  passed in the commit worktree. Browser verification remains blocked because
+  `127.0.0.1:3000` and `127.0.0.1:3001` refuse connections, so no local backend
+  or PWA dev server was available for screenshots.
 - Review/simplification for the PWA group-activity ended-refetch cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the
