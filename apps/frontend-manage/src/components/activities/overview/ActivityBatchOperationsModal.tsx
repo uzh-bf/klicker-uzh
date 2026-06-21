@@ -47,8 +47,14 @@ function ActivityBatchOperationsModal({
   const applyActivityBatchOperations =
     trpc.activity.applyBatchOperations.useMutation()
 
-  const { isLoading: loadingCourses, data: dataCourses } =
-    trpc.course.activeUserCourses.useQuery()
+  const {
+    isLoading: loadingCourses,
+    data: dataCourses,
+    error: coursesError,
+  } = trpc.course.activeUserCourses.useQuery()
+  const courses = dataCourses?.activeUserCourses
+  const initialCoursesLoading = loadingCourses && !courses
+  const coursesUnavailable = Boolean(coursesError && !courses)
 
   // whenever the applied filters change, update the affected activities
   useEffect(() => {
@@ -225,7 +231,7 @@ function ActivityBatchOperationsModal({
     <Modal
       open
       onClose={onClose}
-      loading={loadingCourses}
+      loading={initialCoursesLoading}
       title={t('manage.activities.batchOperationsActivities')}
       className={{
         content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
@@ -261,7 +267,8 @@ function ActivityBatchOperationsModal({
               <ActivityCourseCard
                 selectedActions={selectedActions}
                 setSelectedActions={setSelectedActions}
-                courses={dataCourses?.activeUserCourses ?? []}
+                courses={courses ?? []}
+                coursesUnavailable={coursesUnavailable}
               />
               <ActivityLiveQuizPointsCard
                 selectedActions={selectedActions}

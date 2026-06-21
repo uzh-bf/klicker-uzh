@@ -662,6 +662,12 @@ Second-pass UX/cache cleanup prepared:
   existing-element selector no longer reports a failed matching-elements query
   as "no matching questions found" and disables confirm while selector data is
   unavailable.
+- Manage activity batch operations now distinguish failed initial
+  `activeUserCourses` loads from a successful empty course list. The modal only
+  uses its blocking loader while no course data exists, keeps any stale course
+  selector data visible during refetch failures, and disables only the course
+  reassignment card with the existing system-error notification when course
+  selector data is unavailable.
 
 Second-pass verification:
 
@@ -1015,6 +1021,21 @@ Second-pass verification:
 - `git diff --check` passed after the activity detail/template selector
   cleanup.
 - Browser verification for the activity detail/template selector cleanup remains
+  blocked: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
+  connection refused, so no local backend or manage dev server was available
+  for screenshots.
+- Context7 docs checked again for TanStack Query v4 background-fetching /
+  stale-data behavior plus tRPC React Query hook semantics before the activity
+  batch-operations course-selector cleanup.
+- `node_modules/.bin/prettier --check` on the two changed manage
+  batch-operation files plus `project/CODEBASE_NOTES.md` and this plan file
+  passed from the dependency checkout after formatting
+  `ActivityBatchOperationsModal.tsx` and copying it back to the source
+  checkout.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after the activity batch-operations cleanup.
+- `git diff --check` passed after the activity batch-operations cleanup.
+- Browser verification for the activity batch-operations cleanup remains
   blocked: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
   connection refused, so no local backend or manage dev server was available
   for screenshots.
