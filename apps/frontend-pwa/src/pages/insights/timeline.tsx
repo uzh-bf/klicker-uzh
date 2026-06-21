@@ -8,7 +8,8 @@ import Layout from '../../components/Layout'
 
 function StudentTimelines() {
   const t = useTranslations()
-  const { data, isLoading } = trpc.participant.courseStudentTimelines.useQuery()
+  const { data, error, isLoading } =
+    trpc.participant.courseStudentTimelines.useQuery()
 
   if (isLoading) {
     return (
@@ -17,6 +18,20 @@ function StudentTimelines() {
         displayName={`${t('pwa.general.insights')} - ${t('pwa.general.timeline')}`}
       >
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={`${t('pwa.general.insights')} - ${t('pwa.general.timeline')}`}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }

@@ -22,11 +22,14 @@ function Bookmarks() {
     setCurrentIx((ix) => ix + 1)
   }
 
-  const { data: bookmarksPageData, isLoading } =
-    trpc.participant.bookmarksPageData.useQuery(
-      { courseId },
-      { enabled: courseId !== '' }
-    )
+  const {
+    data: bookmarksPageData,
+    error,
+    isLoading,
+  } = trpc.participant.bookmarksPageData.useQuery(
+    { courseId },
+    { enabled: courseId !== '' }
+  )
 
   const name = t('pwa.courses.bookmarkedQuestionsTitle', {
     courseName: bookmarksPageData?.course?.displayName ?? '',
@@ -53,6 +56,17 @@ function Bookmarks() {
     return (
       <Layout displayName={t('shared.generic.bookmarks')}>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error) {
+    return (
+      <Layout displayName={t('shared.generic.bookmarks')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }

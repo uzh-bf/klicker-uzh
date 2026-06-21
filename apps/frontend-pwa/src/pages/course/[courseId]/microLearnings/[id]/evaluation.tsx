@@ -18,7 +18,7 @@ function MicrolearningEvaluation() {
   const id = router.query.id as string
 
   const utils = trpc.useUtils()
-  const { isLoading, data } = trpc.participant.microLearning.useQuery(
+  const { isLoading, error, data } = trpc.participant.microLearning.useQuery(
     { id },
     { enabled: !!id }
   )
@@ -36,10 +36,21 @@ function MicrolearningEvaluation() {
     microlearning: microlearning,
   })
 
-  if (isLoading || !microlearning) {
+  if (isLoading) {
     return (
       <Layout>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error || !microlearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }

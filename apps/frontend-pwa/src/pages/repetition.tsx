@@ -8,7 +8,8 @@ import { trpc } from '../lib/trpc'
 
 function Repetition() {
   const t = useTranslations()
-  const { data, isLoading } = trpc.participant.practiceQuizList.useQuery()
+  const { data, error, isLoading } =
+    trpc.participant.practiceQuizList.useQuery()
 
   if (isLoading) {
     return (
@@ -21,8 +22,22 @@ function Repetition() {
     )
   }
 
+  if (error || !data) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.practiceQuiz.repetitionTitle')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
   // reduce the data to a map of course names to a list of elements together with their corresponding type
-  const courses = data?.practiceQuizList?.map((course) => {
+  const courses = data.practiceQuizList.map((course) => {
     return {
       id: course.id,
       displayName: course.displayName,

@@ -1,6 +1,6 @@
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -12,9 +12,10 @@ import { trpc } from '../lib/trpc'
 const Profile = () => {
   const t = useTranslations()
   const router = useRouter()
-  const { data, isLoading } = trpc.participant.selfWithAchievements.useQuery()
+  const { data, error, isLoading } =
+    trpc.participant.selfWithAchievements.useQuery()
 
-  if (isLoading || !data?.selfWithAchievements)
+  if (isLoading)
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -23,6 +24,20 @@ const Profile = () => {
         <Loader />
       </Layout>
     )
+
+  if (error || !data?.selfWithAchievements) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.profile.myProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
 
   const { participant, achievements } = data.selfWithAchievements
 

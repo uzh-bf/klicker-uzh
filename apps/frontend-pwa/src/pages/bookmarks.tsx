@@ -9,7 +9,7 @@ import { trpc } from '../lib/trpc'
 
 function Bookmarks() {
   const t = useTranslations()
-  const { data, isLoading } = trpc.participant.courses.useQuery()
+  const { data, error, isLoading } = trpc.participant.courses.useQuery()
 
   if (isLoading && !data) {
     return (
@@ -22,6 +22,20 @@ function Bookmarks() {
     )
   }
 
+  if (error || !data) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.general.myBookmarks')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}
@@ -29,14 +43,14 @@ function Bookmarks() {
     >
       <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H1 className={{ root: 'text-xl' }}>{t('pwa.general.selectCourse')}</H1>
-        {data?.participantCourses?.length === 0 && (
+        {data.participantCourses.length === 0 && (
           <div className="flex flex-col gap-2">
             <UserNotification type="info">
               {t('pwa.courses.noBookmarksSet')}
             </UserNotification>
           </div>
         )}
-        {data?.participantCourses?.map((course) => (
+        {data.participantCourses.map((course) => (
           <LinkButton
             key={course.id}
             href={`/course/${course.id}/bookmarks`}

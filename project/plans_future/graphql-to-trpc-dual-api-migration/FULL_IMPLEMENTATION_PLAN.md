@@ -551,6 +551,11 @@ Second-pass UX/cache cleanup prepared:
   state on rejected tRPC mutations, preserve existing user-facing toasts/errors,
   and treat post-success list invalidation/navigation as best-effort work so a
   successful server mutation is not reported as a failed submit.
+- PWA bookmark, profile, repetition, timeline, course-bookmark, and
+  microlearning-evaluation pages now distinguish initial loading from failed
+  tRPC queries. Failed/missing initial data renders the existing
+  `UserNotification` system-error state instead of empty content or an
+  indefinite loader, while existing empty-state messages remain unchanged.
 
 Second-pass verification:
 
@@ -650,6 +655,14 @@ Second-pass verification:
   `apps/frontend-manage` passed after the manage page-level mutation cleanup;
   `rsync` only warned about stale Rollup cache directories.
 - `git diff --check` passed after the manage page-level mutation cleanup.
+- Context7 docs checked for TanStack Query v4 `useQuery` loading/error/data
+  states before the PWA query error-state cleanup.
+- `node_modules/.bin/prettier --check` on the six changed PWA query page files
+  passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-pwa` passed after the PWA query error-state cleanup; `rsync`
+  only warned about stale Rollup cache directories.
+- `git diff --check` passed after the PWA query error-state cleanup.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, no local backend is
   listening on `127.0.0.1:3000`, and no local control dev server is listening
