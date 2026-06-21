@@ -43,9 +43,15 @@ function PracticeQuizOverview({
 }: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
-  const { data } = trpc.participant.self.useQuery(undefined, {
+  const { data, error, isLoading } = trpc.participant.self.useQuery(undefined, {
     enabled: !previewOnly,
   })
+  const hasIdentityError = Boolean(error && !data?.self)
+  const participantMissing =
+    !previewOnly &&
+    !isLoading &&
+    !hasIdentityError &&
+    (!data?.self || data.self.role === TEMPORARY_PARTICIPANT_ROLE)
 
   const pageInFrame =
     global?.window &&
@@ -53,36 +59,41 @@ function PracticeQuizOverview({
 
   return (
     <div className="flex flex-col space-y-4">
-      {!previewOnly &&
-        (!data?.self || data.self.role === TEMPORARY_PARTICIPANT_ROLE) && (
-          <UserNotification type="warning">
-            {pageInFrame
-              ? t('pwa.general.userNotLoggedInFrame')
-              : t.rich('pwa.general.userNotLoggedIn', {
-                  login: (text) => (
-                    <Button
-                      basic
-                      className={{
-                        root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
-                      }}
-                      onClick={() =>
-                        router.push(
-                          `/login?expired=true&redirect_to=${
-                            encodeURIComponent(
-                              window?.location?.pathname +
-                                (window?.location?.search ?? '')
-                            ) ?? '/'
-                          }`
-                        )
-                      }
-                      data={{ cy: 'login-to-student-login-collect-points' }}
-                    >
-                      {text}
-                    </Button>
-                  ),
-                })}
-          </UserNotification>
-        )}
+      {hasIdentityError ? (
+        <UserNotification type="error">
+          {t('shared.generic.systemError')}
+        </UserNotification>
+      ) : null}
+
+      {participantMissing ? (
+        <UserNotification type="warning">
+          {pageInFrame
+            ? t('pwa.general.userNotLoggedInFrame')
+            : t.rich('pwa.general.userNotLoggedIn', {
+                login: (text) => (
+                  <Button
+                    basic
+                    className={{
+                      root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
+                    }}
+                    onClick={() =>
+                      router.push(
+                        `/login?expired=true&redirect_to=${
+                          encodeURIComponent(
+                            window?.location?.pathname +
+                              (window?.location?.search ?? '')
+                          ) ?? '/'
+                        }`
+                      )
+                    }
+                    data={{ cy: 'login-to-student-login-collect-points' }}
+                  >
+                    {text}
+                  </Button>
+                ),
+              })}
+        </UserNotification>
+      ) : null}
 
       <div className="border-b">
         <H3 className={{ root: 'mb-0' }}>{displayName}</H3>
@@ -166,6 +177,8 @@ function PracticeQuizOverview({
 
       <Button
         primary
+        disabled={!previewOnly && isLoading}
+        loading={!previewOnly && isLoading}
         className={{ root: 'h-9 self-end text-lg' }}
         onClick={() => setCurrentIx(0)}
         data={{ cy: 'start-practice-quiz' }}

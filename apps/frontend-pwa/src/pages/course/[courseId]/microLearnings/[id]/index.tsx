@@ -48,7 +48,11 @@ function MicrolearningIntroduction({
     { id },
     { enabled: !!id }
   )
-  const { data: selfData } = trpc.participant.self.useQuery(undefined, {
+  const {
+    data: selfData,
+    error: selfError,
+    isLoading: selfLoading,
+  } = trpc.participant.self.useQuery(undefined, {
     enabled: !(data?.microLearning?.isOwner ?? false),
   })
 
@@ -86,6 +90,12 @@ function MicrolearningIntroduction({
   const microLearningPast = dayjs(microLearning.scheduledEndAt).isBefore(
     dayjs()
   )
+  const selfUnavailable = Boolean(selfError && !selfData?.self)
+  const participantMissing =
+    !microLearning.isOwner &&
+    !selfLoading &&
+    !selfUnavailable &&
+    (!selfData?.self || selfData.self.role !== PARTICIPANT_ROLE)
 
   return (
     <Layout
@@ -109,43 +119,50 @@ function MicrolearningIntroduction({
         }
       />
       <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
-        {(!selfData?.self || selfData.self.role !== PARTICIPANT_ROLE) &&
-          (microLearning.isOwner ? (
-            <PreviewMessage
-              activityType={t('shared.generic.microlearning')}
-              name={microLearning.name}
-              displayName={microLearning.displayName}
-              className="mb-4"
-            />
-          ) : (
-            <UserNotification type="warning" className={{ root: 'mb-4' }}>
-              {pageInFrame
-                ? t('pwa.general.userNotLoggedInFrame')
-                : t.rich('pwa.general.userNotLoggedIn', {
-                    login: (text) => (
-                      <Button
-                        basic
-                        className={{
-                          root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
-                        }}
-                        onClick={() =>
-                          router.push(
-                            `/login?expired=true&redirect_to=${
-                              encodeURIComponent(
-                                window?.location?.pathname +
-                                  (window?.location?.search ?? '')
-                              ) ?? '/'
-                            }`
-                          )
-                        }
-                        data={{ cy: 'login-to-start-microlearning' }}
-                      >
-                        <Button.Label>{text}</Button.Label>
-                      </Button>
-                    ),
-                  })}
-            </UserNotification>
-          ))}
+        {microLearning.isOwner ? (
+          <PreviewMessage
+            activityType={t('shared.generic.microlearning')}
+            name={microLearning.name}
+            displayName={microLearning.displayName}
+            className="mb-4"
+          />
+        ) : null}
+        {selfUnavailable ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-4' }}
+          />
+        ) : null}
+        {participantMissing ? (
+          <UserNotification type="warning" className={{ root: 'mb-4' }}>
+            {pageInFrame
+              ? t('pwa.general.userNotLoggedInFrame')
+              : t.rich('pwa.general.userNotLoggedIn', {
+                  login: (text) => (
+                    <Button
+                      basic
+                      className={{
+                        root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
+                      }}
+                      onClick={() =>
+                        router.push(
+                          `/login?expired=true&redirect_to=${
+                            encodeURIComponent(
+                              window?.location?.pathname +
+                                (window?.location?.search ?? '')
+                            ) ?? '/'
+                          }`
+                        )
+                      }
+                      data={{ cy: 'login-to-start-microlearning' }}
+                    >
+                      <Button.Label>{text}</Button.Label>
+                    </Button>
+                  ),
+                })}
+          </UserNotification>
+        ) : null}
         {microLearningPast ? (
           <UserNotification
             type="warning"
@@ -207,7 +224,11 @@ function MicrolearningIntroduction({
         >
           <Button
             primary
-            disabled={!microLearning.isOwner && microLearningPast}
+            disabled={
+              (!microLearning.isOwner && microLearningPast) ||
+              (!microLearning.isOwner && selfLoading)
+            }
+            loading={!microLearning.isOwner && selfLoading}
             className={{
               root: 'w-full text-lg md:w-auto md:self-end',
             }}

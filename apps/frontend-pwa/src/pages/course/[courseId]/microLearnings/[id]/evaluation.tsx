@@ -22,16 +22,20 @@ function MicrolearningEvaluation() {
     { id },
     { enabled: !!id }
   )
-  const { data: participant } = trpc.participant.self.useQuery()
-  const { data: participationData } = trpc.participant.participation.useQuery(
-    { courseId: data?.microLearning?.course?.id ?? '' },
-    { enabled: !!data?.microLearning?.course?.id }
-  )
+  const { data: participant, error: participantError } =
+    trpc.participant.self.useQuery()
+  const { data: participationData, error: participationError } =
+    trpc.participant.participation.useQuery(
+      { courseId: data?.microLearning?.course?.id ?? '' },
+      { enabled: !!data?.microLearning?.course?.id }
+    )
   const markMicrolearningCompleted =
     trpc.participant.markMicroLearningCompleted.useMutation()
 
   const microlearning = data?.microLearning
   const participation = participationData?.participation
+  const participantUnavailable = Boolean(participantError && !participant?.self)
+  const participationUnavailable = Boolean(participationError && !participation)
   const aggregatedResults = useStackEvaluationAggregation({
     microlearning: microlearning,
   })
@@ -150,9 +154,17 @@ function MicrolearningEvaluation() {
               })}
             </UserNotification>
           )}
+        {participantUnavailable || participationUnavailable ? (
+          <UserNotification
+            className={{ root: 'mt-5' }}
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         {participant?.self &&
           participant.self.role === PARTICIPANT_ROLE &&
-          !participation && (
+          !participation &&
+          !participationUnavailable && (
             <UserNotification className={{ root: 'mt-5' }} type="info">
               {t.rich('pwa.microLearning.missingParticipation', {
                 it: (text) => <span className="italic">{text}</span>,

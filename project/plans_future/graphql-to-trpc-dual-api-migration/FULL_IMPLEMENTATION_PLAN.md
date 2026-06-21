@@ -1045,6 +1045,14 @@ Second-pass UX/cache cleanup prepared:
   data during background refetch failures, replace raw layout error-message
   rendering with the localized generic system error, and distinguish failed
   initial profile/delegated-access loads from successful no-access states.
+- PWA shell, practice-quiz overview, and microlearning flows now use the normal
+  no-input `participant.self` query key outside live quizzes, only pass
+  `{ liveQuizId }` for live-quiz identity, and distinguish self-query loading or
+  transport failure from a confirmed unauthenticated/temporary participant.
+  Practice/microlearning start and stack submission no longer enter anonymous
+  UX solely because the migrated self query is still loading, and microlearning
+  evaluation no longer reports a failed `participant.participation` query as a
+  successful missing-participation state.
 
 Second-pass verification:
 
@@ -1106,6 +1114,22 @@ Second-pass verification:
   worktree. Browser verification remains blocked because `127.0.0.1:3000` and
   `127.0.0.1:3002` refuse connections, so no local backend or manage dev server
   was available for screenshots.
+- Review/simplification for the PWA identity-gated practice/microlearning
+  cleanup: local self-review found the diff limited to `participant.self`
+  query-key selection plus identity/participation loading and failure fallbacks
+  in already migrated PWA practice and microlearning flows. GraphQL/Apollo
+  coexistence is unchanged.
+- Verification for the PWA identity-gated practice/microlearning cleanup:
+  Context7 tRPC docs checked React Query hook input patterns and Context7
+  TanStack Query v4 docs checked deterministic query-key hashing before the
+  change. `prettier --check` on the five changed PWA files plus this plan and
+  `project/CODEBASE_NOTES.md` passed using the dependency checkout's Prettier
+  binary. `./node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+  `git diff --check` passed in the commit worktree. Browser verification
+  remains blocked because `curl` to `127.0.0.1:3000`, `127.0.0.1:3001`,
+  `127.0.0.1:3002`, and `127.0.0.1:3003` all failed with connection refused,
+  so no local backend, PWA, manage, or control dev server was available for
+  screenshots.
 - Review/simplification for the PWA bookmark failure-feedback cleanup:
   subagent review was skipped because the available multi-agent tool currently
   requires an explicit user request for subagents. Local self-review found the

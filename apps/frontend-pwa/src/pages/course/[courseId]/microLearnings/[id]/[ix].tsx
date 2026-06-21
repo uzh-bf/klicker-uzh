@@ -25,7 +25,11 @@ function MicrolearningInstance() {
     { id },
     { enabled: !!id }
   )
-  const { data: selfData } = trpc.participant.self.useQuery(undefined, {
+  const {
+    data: selfData,
+    error: selfError,
+    isLoading: selfLoading,
+  } = trpc.participant.self.useQuery(undefined, {
     enabled: !(data?.microLearning?.isOwner ?? false),
   })
 
@@ -65,6 +69,9 @@ function MicrolearningInstance() {
   const currentStack = microLearning.stacks[ix]
   const previewMode = microLearning.isOwner ?? undefined
   const courseId = microLearning.course?.id
+  const selfUnavailable = Boolean(selfError && !selfData?.self)
+  const waitingForSelf =
+    !previewMode && selfLoading && typeof selfData === 'undefined'
 
   if (!currentStack) {
     throw new Error('Stack not found')
@@ -110,30 +117,46 @@ function MicrolearningInstance() {
               displayName={microLearning.displayName}
             />
           ) : null}
-          <ElementStack
-            hideBookmark
-            singleSubmission
-            key={currentStack.id}
-            parentId={microLearning.id}
-            courseId={microLearning.course!.id}
-            stack={currentStack as ElementStackProp}
-            currentStep={ix + 1}
-            totalSteps={microLearning.stacks?.length ?? 0}
-            handleNextElement={() => {
-              router.push(`/course/${courseId}/microLearnings/${id}/${ix + 1}`)
-            }}
-            onAllStacksCompletion={() => {
-              // TODO: also mark the microlearning as completed with this action already?
-              router.push(`/course/${courseId}/microLearnings/${id}/evaluation`)
-            }}
-            withParticipant={
-              !!selfData?.self &&
-              selfData.self.role !== TEMPORARY_PARTICIPANT_ROLE
-            }
-            activityExpired={microLearning.status === PUBLICATION_STATUS_ENDED}
-            activityExpiredMessage={t('pwa.microLearning.activityExpired')}
-            previewOnly={previewMode}
-          />
+          {selfUnavailable ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+          ) : null}
+          {waitingForSelf ? (
+            <Loader />
+          ) : (
+            <ElementStack
+              hideBookmark
+              singleSubmission
+              key={currentStack.id}
+              parentId={microLearning.id}
+              courseId={microLearning.course!.id}
+              stack={currentStack as ElementStackProp}
+              currentStep={ix + 1}
+              totalSteps={microLearning.stacks?.length ?? 0}
+              handleNextElement={() => {
+                router.push(
+                  `/course/${courseId}/microLearnings/${id}/${ix + 1}`
+                )
+              }}
+              onAllStacksCompletion={() => {
+                // TODO: also mark the microlearning as completed with this action already?
+                router.push(
+                  `/course/${courseId}/microLearnings/${id}/evaluation`
+                )
+              }}
+              withParticipant={
+                !!selfData?.self &&
+                selfData.self.role !== TEMPORARY_PARTICIPANT_ROLE
+              }
+              activityExpired={
+                microLearning.status === PUBLICATION_STATUS_ENDED
+              }
+              activityExpiredMessage={t('pwa.microLearning.activityExpired')}
+              previewOnly={previewMode}
+            />
+          )}
         </div>
       </div>
     </Layout>

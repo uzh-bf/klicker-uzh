@@ -45,8 +45,9 @@ function Layout({
   liveQuizId,
   className,
 }: LayoutProps) {
+  const participantSelfInput = liveQuizId ? { liveQuizId } : undefined
   const { data: dataParticipant } = trpc.participant.self.useQuery(
-    { liveQuizId },
+    participantSelfInput,
     { enabled: !embedded }
   )
 
