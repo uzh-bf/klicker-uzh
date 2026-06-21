@@ -1,5 +1,7 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
@@ -7,9 +9,17 @@ import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimel
 import { api } from '../../../lib/trpc'
 
 function Cockpit() {
+  const t = useTranslations()
   const router = useRouter()
   const quizId = typeof router.query.id === 'string' ? router.query.id : ''
   const utils = api.useUtils()
+  const showCockpitActionError = () => {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
 
   const activateLiveQuizBlock = api.liveQuiz.activateBlock.useMutation()
   const deactivateLiveQuizBlock = api.liveQuiz.deactivateBlock.useMutation()
@@ -19,6 +29,7 @@ function Cockpit() {
     data: cockpitData,
     refetch: refetchCockpitQuiz,
     isLoading: cockpitLoading,
+    error: cockpitError,
   } = api.liveQuiz.cockpit.useQuery(
     { id: quizId },
     {
@@ -26,6 +37,17 @@ function Cockpit() {
       refetchInterval: 2000,
     }
   )
+
+  if (cockpitError) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
 
   // data has not been received yet
   if (cockpitLoading || !cockpitData?.cockpitQuiz)
@@ -65,25 +87,40 @@ function Cockpit() {
           language={course?.language ?? null}
           isGamificationEnabled={isGamificationEnabled}
           handleEndLiveQuiz={async () => {
-            const result = await endLiveQuiz.mutateAsync({ id })
-            if (result.liveQuiz?.id) {
+            try {
+              const result = await endLiveQuiz.mutateAsync({ id })
+              if (!result.liveQuiz?.id) {
+                showCockpitActionError()
+                return
+              }
+
               await utils.liveQuiz.running.invalidate()
+              await router.push('/activities')
+            } catch {
+              showCockpitActionError()
             }
-            router.push('/activities')
           }}
           handleOpenBlock={async (blockId: number) => {
-            await activateLiveQuizBlock.mutateAsync({
-              quizId: id,
-              blockId,
-            })
-            await utils.liveQuiz.cockpit.invalidate({ id })
+            try {
+              await activateLiveQuizBlock.mutateAsync({
+                quizId: id,
+                blockId,
+              })
+              await utils.liveQuiz.cockpit.invalidate({ id })
+            } catch {
+              showCockpitActionError()
+            }
           }}
           handleCloseBlock={async (blockId: number) => {
-            await deactivateLiveQuizBlock.mutateAsync({
-              quizId: id,
-              blockId,
-            })
-            await utils.liveQuiz.cockpit.invalidate({ id })
+            try {
+              await deactivateLiveQuizBlock.mutateAsync({
+                quizId: id,
+                blockId,
+              })
+              await utils.liveQuiz.cockpit.invalidate({ id })
+            } catch {
+              showCockpitActionError()
+            }
           }}
           startedAt={startedAt}
           loading={

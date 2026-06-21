@@ -482,6 +482,11 @@ Second-pass UX/cache cleanup prepared:
 - Frontend-control logout now shows a loading icon, awaits navigation on
   success, and shows a system-error toast when the tRPC logout mutation fails or
   returns a false result.
+- Frontend-manage live quiz cockpit now renders a system-error notification
+  instead of an indefinite loader when the migrated cockpit query fails.
+- Frontend-manage live quiz cockpit activation, deactivation, and end-quiz
+  actions now catch tRPC mutation failures, show a system-error toast, and avoid
+  invalidating/navigating on failed or false end-quiz responses.
 
 Second-pass verification:
 
@@ -503,6 +508,10 @@ Second-pass verification:
 - `pnpm --filter @klicker-uzh/frontend-control check` passed.
 - `pnpm --filter @klicker-uzh/frontend-control lint` passed with no ESLint
   warnings or errors.
+- `prettier --check` on the changed manage cockpit page passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage lint` passed with pre-existing
+  hook warnings only.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, and no local control
