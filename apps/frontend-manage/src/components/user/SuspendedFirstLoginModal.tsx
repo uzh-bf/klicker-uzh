@@ -95,28 +95,35 @@ function SuspendedFirstLoginModal({
             setShowGenericError(false)
             setSubmitting(true)
 
-            const trimmedUsername = values.shortname.trim()
+            try {
+              const trimmedUsername = values.shortname.trim()
 
-            const result = await changeInitialSettings.mutateAsync({
-              shortname: trimmedUsername,
-              locale: values.locale,
-              sendUpdates: values.sendProjectUpdates,
-              seedDemoElements: values.seedDemoElements ?? false,
-            })
-            await refetchElements()
-            await utils.user.profile.invalidate()
-
-            if (!result) {
-              setShowGenericError(true)
-            } else if (result.shortname !== trimmedUsername) {
-              setErrors({
-                shortname: t('manage.settings.shortnameTaken'),
+              const result = await changeInitialSettings.mutateAsync({
+                shortname: trimmedUsername,
+                locale: values.locale,
+                sendUpdates: values.sendProjectUpdates,
+                seedDemoElements: values.seedDemoElements ?? false,
               })
-            } else {
-              setFirstLogin(false)
-            }
 
-            setSubmitting(false)
+              if (!result) {
+                setShowGenericError(true)
+              } else if (result.shortname !== trimmedUsername) {
+                setErrors({
+                  shortname: t('manage.settings.shortnameTaken'),
+                })
+              } else {
+                setFirstLogin(false)
+                void Promise.all([
+                  refetchElements(),
+                  utils.user.profile.invalidate(),
+                ]).catch(console.error)
+              }
+            } catch (error) {
+              console.error(error)
+              setShowGenericError(true)
+            } finally {
+              setSubmitting(false)
+            }
           }}
         >
           {({ isValid, isSubmitting, validateField }) => (
@@ -235,7 +242,7 @@ function SuspendedFirstLoginModal({
                 primary
                 type="submit"
                 loading={isSubmitting}
-                disabled={!isValid}
+                disabled={!isValid || isSubmitting}
                 className={{ root: 'mt-4 w-32 self-end' }}
                 data={{ cy: 'first-login-save-settings' }}
               >

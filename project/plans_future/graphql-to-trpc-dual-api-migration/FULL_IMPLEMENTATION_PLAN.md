@@ -765,6 +765,10 @@ Second-pass UX/cache cleanup prepared:
   `finally`, show the existing localized system-error toast on rejected/falsy
   tRPC results, and treat the follow-up `element.single` invalidation as
   best-effort refresh work.
+- Manage first-login settings now catch rejected `user.changeInitialSettings`
+  mutations, show the existing inline generic error, release Formik submitting
+  state in `finally`, disable duplicate save clicks while submitting, and treat
+  the follow-up element/profile refresh as best-effort after confirmed success.
 
 Second-pass verification:
 
@@ -1020,6 +1024,21 @@ Second-pass verification:
 - Browser verification remains blocked for this manage element status cleanup:
   `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` both failed with connection
   refused, so no local backend or manage dev server was available for
+  screenshots.
+- Context7 docs checked for tRPC mutation error handling / invalidation helpers
+  and Formik async submit state before the manage first-login settings cleanup.
+- `node_modules/.bin/prettier --check` on
+  `apps/frontend-manage/src/components/user/SuspendedFirstLoginModal.tsx`,
+  `project/CODEBASE_NOTES.md`, and this plan passed.
+- `../../node_modules/.bin/tsc --noEmit` from the dependency checkout
+  `apps/frontend-manage` passed after mirroring the changed first-login modal.
+- `./node_modules/.bin/next lint` from the dependency checkout
+  `apps/frontend-manage` passed with existing hook dependency warnings in
+  unrelated files.
+- `git diff --check` passed after the manage first-login settings cleanup.
+- Browser verification remains blocked for this manage first-login settings
+  cleanup: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` both failed with
+  connection refused, so no local backend or manage dev server was available for
   screenshots.
 - Context7 docs checked for tRPC plus TanStack Query v4 mutation invalidation
   behavior; React Query awaits promise-returning mutation callbacks.
