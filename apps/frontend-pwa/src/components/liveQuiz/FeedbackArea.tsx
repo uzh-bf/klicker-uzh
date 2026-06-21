@@ -77,6 +77,7 @@ function FeedbackArea({
       quizId,
       content: input,
     })
+    await refetchFeedbacks().catch(console.error)
     toast({ type: 'success', message: t('pwa.feedbacks.feedbackSubmitted') })
   }
 
@@ -229,15 +230,23 @@ function FeedbackArea({
             initialValues={{ feedbackInput: '' }}
             onSubmit={async (values, { setSubmitting, resetForm }) => {
               if (values.feedbackInput !== '') {
-                await onAddFeedback(values.feedbackInput)
-                resetForm()
-
-                setTimeout(() => {
+                try {
+                  await onAddFeedback(values.feedbackInput)
+                  resetForm()
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                } finally {
                   setSubmitting(false)
-                }, 700)
-              } else {
-                setSubmitting(false)
+                }
+                return
               }
+
+              setSubmitting(false)
             }}
           >
             {({ isSubmitting }) => (

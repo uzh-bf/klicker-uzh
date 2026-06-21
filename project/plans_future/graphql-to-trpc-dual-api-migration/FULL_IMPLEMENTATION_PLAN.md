@@ -487,6 +487,14 @@ Second-pass UX/cache cleanup prepared:
 - Frontend-manage live quiz cockpit activation, deactivation, and end-quiz
   actions now catch tRPC mutation failures, show a system-error toast, and avoid
   invalidating/navigating on failed or false end-quiz responses.
+- PWA live-quiz feedback submission now always releases the submit state,
+  surfaces failed tRPC submission with a system-error toast, and refetches the
+  feedback list after successful submission without turning a failed refetch into
+  a failed submission.
+- PWA public feedback voting now treats the local upvote/reaction state as an
+  optimistic update with rollback: failed tRPC vote mutations restore local UI
+  state plus `localForage`, show a system-error toast, and disable duplicate
+  clicks while a vote is pending.
 
 Second-pass verification:
 
@@ -512,6 +520,12 @@ Second-pass verification:
 - `pnpm --filter @klicker-uzh/frontend-manage check` passed.
 - `pnpm --filter @klicker-uzh/frontend-manage lint` passed with pre-existing
   hook warnings only.
+- Context7 docs checked for TanStack Query v4 optimistic update and rollback
+  behavior before the PWA feedback vote rollback changes.
+- `prettier --check` on the two changed PWA live-quiz feedback files passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa lint` passed with pre-existing hook
+  warnings only.
 - `git diff --check` passed.
 - Browser verification is still blocked because no local PWA/manage dev server
   is listening on `127.0.0.1:3001` or `127.0.0.1:3002`, and no local control

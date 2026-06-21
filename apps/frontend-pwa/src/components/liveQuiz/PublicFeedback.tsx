@@ -1,6 +1,6 @@
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
@@ -52,6 +52,30 @@ function PublicFeedback({
         return { ...accumulator, [String(value)]: 0 }
       }, {}),
   })
+  const [pendingVoteKey, setPendingVoteKey] = useState<string | null>(null)
+
+  const persistUpvotes = async (
+    value: typeof upvotes | { upvote: boolean; [key: number]: -1 | 0 | 1 }
+  ) => {
+    await localForage.setItem(`${feedbackId}-upvotes`, JSON.stringify(value))
+  }
+
+  const rollbackUpvotes = async (previousUpvotes: typeof upvotes) => {
+    setUpvotes(previousUpvotes)
+    try {
+      await persistUpvotes(previousUpvotes)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const showVoteError = () => {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
 
   useEffect((): void => {
     const exec = async () => {
@@ -86,13 +110,23 @@ function PublicFeedback({
   }, [feedback, feedbackId])
 
   const onUpvote = async (previousValue: boolean) => {
+    if (pendingVoteKey) return
+
+    const previousUpvotes = upvotes
     const newUpvotes = { ...upvotes, upvote: !previousValue }
-    setUpvotes(newUpvotes)
-    await localForage.setItem(
-      `${feedbackId}-upvotes`,
-      JSON.stringify(newUpvotes)
-    )
-    await onUpvoteFeedback(feedbackId, previousValue ? -1 : 1)
+    setPendingVoteKey('feedback')
+
+    try {
+      setUpvotes(newUpvotes)
+      await persistUpvotes(newUpvotes)
+      await onUpvoteFeedback(feedbackId, previousValue ? -1 : 1)
+    } catch (error) {
+      console.error(error)
+      await rollbackUpvotes(previousUpvotes)
+      showVoteError()
+    } finally {
+      setPendingVoteKey(null)
+    }
   }
 
   const onResponseUpvote = async ({
@@ -102,23 +136,33 @@ function PublicFeedback({
     previousValue?: number
     responseId: number
   }) => {
+    if (pendingVoteKey) return
+
+    const previousUpvotes = upvotes
     const newUpvotes = {
       ...upvotes,
       [String(responseId)]: previousValue === 1 ? 0 : 1,
     }
-    setUpvotes(newUpvotes)
-    await localForage.setItem(
-      `${feedbackId}-upvotes`,
-      JSON.stringify(newUpvotes)
-    )
+    setPendingVoteKey(`response-${responseId}-up`)
 
-    // send upvote change to parent component
-    if (previousValue === 1) {
-      await onReactToFeedbackResponse(responseId, -1, 0)
-    } else if (previousValue === 0 || typeof previousValue === 'undefined') {
-      await onReactToFeedbackResponse(responseId, 1, 0)
-    } else if (previousValue === -1) {
-      await onReactToFeedbackResponse(responseId, 1, -1)
+    try {
+      setUpvotes(newUpvotes)
+      await persistUpvotes(newUpvotes)
+
+      // send upvote change to parent component
+      if (previousValue === 1) {
+        await onReactToFeedbackResponse(responseId, -1, 0)
+      } else if (previousValue === 0 || typeof previousValue === 'undefined') {
+        await onReactToFeedbackResponse(responseId, 1, 0)
+      } else if (previousValue === -1) {
+        await onReactToFeedbackResponse(responseId, 1, -1)
+      }
+    } catch (error) {
+      console.error(error)
+      await rollbackUpvotes(previousUpvotes)
+      showVoteError()
+    } finally {
+      setPendingVoteKey(null)
     }
   }
 
@@ -129,25 +173,35 @@ function PublicFeedback({
     previousValue?: number
     responseId: number
   }) => {
+    if (pendingVoteKey) return
+
+    const previousUpvotes = upvotes
     const newUpvotes = {
       ...upvotes,
       [String(responseId)]: previousValue === -1 ? 0 : -1,
     }
-    setUpvotes(newUpvotes)
-    await localForage.setItem(
-      `${feedbackId}-upvotes`,
-      JSON.stringify(newUpvotes)
-    )
+    setPendingVoteKey(`response-${responseId}-down`)
 
-    // send upvote change to parent component
-    if (previousValue === -1) {
-      await onReactToFeedbackResponse(responseId, 0, -1)
-    } else if (previousValue === 0 || typeof previousValue === 'undefined') {
-      await onReactToFeedbackResponse(responseId, 0, 1)
-    } else if (previousValue === 1) {
-      await onReactToFeedbackResponse(responseId, -1, 1)
-    } else {
-      console.log('Error: previousValue is not -1, 0 or 1:', previousValue)
+    try {
+      setUpvotes(newUpvotes)
+      await persistUpvotes(newUpvotes)
+
+      // send downvote change to parent component
+      if (previousValue === -1) {
+        await onReactToFeedbackResponse(responseId, 0, -1)
+      } else if (previousValue === 0 || typeof previousValue === 'undefined') {
+        await onReactToFeedbackResponse(responseId, 0, 1)
+      } else if (previousValue === 1) {
+        await onReactToFeedbackResponse(responseId, -1, 1)
+      } else {
+        console.log('Error: previousValue is not -1, 0 or 1:', previousValue)
+      }
+    } catch (error) {
+      console.error(error)
+      await rollbackUpvotes(previousUpvotes)
+      showVoteError()
+    } finally {
+      setPendingVoteKey(null)
     }
   }
 
@@ -168,7 +222,8 @@ function PublicFeedback({
         </div>
         <Button
           active={upvotes.upvote}
-          disabled={!!feedback.resolvedAt}
+          disabled={!!feedback.resolvedAt || pendingVoteKey !== null}
+          loading={pendingVoteKey === 'feedback'}
           onClick={() => onUpvote(upvotes.upvote)}
           className={{
             root: 'h-10 w-10 transform transition hover:scale-105',
@@ -202,6 +257,8 @@ function PublicFeedback({
                       })
                     }
                     active={upvotes[response.id] === 1}
+                    disabled={pendingVoteKey !== null}
+                    loading={pendingVoteKey === `response-${response.id}-up`}
                     className={{
                       root: 'mr-1 h-9 w-9 transform transition hover:scale-105',
                       active: 'border-unset',
@@ -224,6 +281,8 @@ function PublicFeedback({
                       })
                     }
                     active={upvotes[response.id] === -1}
+                    disabled={pendingVoteKey !== null}
+                    loading={pendingVoteKey === `response-${response.id}-down`}
                     className={{
                       root: 'h-9 w-9 transform transition hover:scale-105',
                       active: 'border-unset',
