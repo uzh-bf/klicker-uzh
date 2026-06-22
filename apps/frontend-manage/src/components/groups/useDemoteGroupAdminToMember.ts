@@ -1,5 +1,6 @@
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../lib/trpc'
 
 function useDemoteGroupAdminToMember() {
@@ -7,6 +8,7 @@ function useDemoteGroupAdminToMember() {
   const utils = trpc.useUtils()
   const demoteGroupAdminToMember =
     trpc.sharing.demoteGroupAdminToMember.useMutation()
+  const [demotionPending, setDemotionPending] = useState(false)
   const onErrorToast = () =>
     toast({
       type: 'error',
@@ -21,6 +23,10 @@ function useDemoteGroupAdminToMember() {
     groupId: number
     adminId: string
   }) => {
+    if (demotionPending) return
+
+    setDemotionPending(true)
+
     try {
       const result = await demoteGroupAdminToMember.mutateAsync({
         groupId,
@@ -34,10 +40,15 @@ function useDemoteGroupAdminToMember() {
     } catch (e) {
       console.error(e)
       onErrorToast()
+    } finally {
+      setDemotionPending(false)
     }
   }
 
-  return { onDemotion, demoting: demoteGroupAdminToMember.isLoading }
+  return {
+    onDemotion,
+    demoting: demoteGroupAdminToMember.isLoading || demotionPending,
+  }
 }
 
 export default useDemoteGroupAdminToMember

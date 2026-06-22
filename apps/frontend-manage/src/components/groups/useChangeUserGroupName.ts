@@ -1,12 +1,13 @@
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { trpc } from '../../lib/trpc'
 
 function useChangeUserGroupName() {
   const t = useTranslations()
   const utils = trpc.useUtils()
   const changeUserGroupName = trpc.sharing.changeUserGroupName.useMutation()
+  const [nameChangePending, setNameChangePending] = useState(false)
   const onErrorToast = () =>
     toast({
       type: 'error',
@@ -23,6 +24,10 @@ function useChangeUserGroupName() {
     newName: string
     setTitleEditMode: Dispatch<SetStateAction<boolean>>
   }) => {
+    if (nameChangePending) return
+
+    setNameChangePending(true)
+
     try {
       const result = await changeUserGroupName.mutateAsync({
         id: groupId,
@@ -37,10 +42,15 @@ function useChangeUserGroupName() {
     } catch (error) {
       console.error(error)
       onErrorToast()
+    } finally {
+      setNameChangePending(false)
     }
   }
 
-  return { onNameChange, nameChanging: changeUserGroupName.isLoading }
+  return {
+    onNameChange,
+    nameChanging: changeUserGroupName.isLoading || nameChangePending,
+  }
 }
 
 export default useChangeUserGroupName

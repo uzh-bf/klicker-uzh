@@ -1,5 +1,6 @@
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../lib/trpc'
 
 function usePromoteGroupMemberToAdmin() {
@@ -7,6 +8,7 @@ function usePromoteGroupMemberToAdmin() {
   const utils = trpc.useUtils()
   const promoteGroupMemberToAdmin =
     trpc.sharing.promoteGroupMemberToAdmin.useMutation()
+  const [promotionPending, setPromotionPending] = useState(false)
   const onErrorToast = () =>
     toast({
       type: 'error',
@@ -21,6 +23,10 @@ function usePromoteGroupMemberToAdmin() {
     groupId: number
     memberId: string
   }) => {
+    if (promotionPending) return
+
+    setPromotionPending(true)
+
     try {
       const result = await promoteGroupMemberToAdmin.mutateAsync({
         groupId,
@@ -34,10 +40,15 @@ function usePromoteGroupMemberToAdmin() {
     } catch (e) {
       console.error(e)
       onErrorToast()
+    } finally {
+      setPromotionPending(false)
     }
   }
 
-  return { onPromotion, promoting: promoteGroupMemberToAdmin.isLoading }
+  return {
+    onPromotion,
+    promoting: promoteGroupMemberToAdmin.isLoading || promotionPending,
+  }
 }
 
 export default usePromoteGroupMemberToAdmin

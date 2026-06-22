@@ -1,5 +1,6 @@
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../lib/trpc'
 import type { UserGroup } from './types'
 
@@ -8,6 +9,8 @@ function useTransferGroupOwnership() {
   const utils = trpc.useUtils()
   const transferGroupOwnership =
     trpc.sharing.transferGroupOwnership.useMutation()
+  const [ownershipTransferPending, setOwnershipTransferPending] =
+    useState(false)
   const onErrorToast = () =>
     toast({
       type: 'error',
@@ -22,6 +25,10 @@ function useTransferGroupOwnership() {
     group: UserGroup
     newOwnerId: string
   }) => {
+    if (ownershipTransferPending) return
+
+    setOwnershipTransferPending(true)
+
     try {
       const result = await transferGroupOwnership.mutateAsync({
         id: group.id,
@@ -35,12 +42,15 @@ function useTransferGroupOwnership() {
     } catch (error) {
       console.error(error)
       onErrorToast()
+    } finally {
+      setOwnershipTransferPending(false)
     }
   }
 
   return {
     onOwnershipTransfer,
-    transferringOwnership: transferGroupOwnership.isLoading,
+    transferringOwnership:
+      transferGroupOwnership.isLoading || ownershipTransferPending,
   }
 }
 

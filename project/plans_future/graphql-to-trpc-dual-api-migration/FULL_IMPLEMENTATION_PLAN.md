@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage User Group Action Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage user
+group management actions. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `cd330b4bff838dce77ebc3517088c3eb3f7f8643`.
+- Fresh PR checks on that head showed no red jobs. GitGuardian, CodeQL
+  Java/Kotlin, CodeQL Python, lint, format, one check job, one test job, one
+  Docker build pair, Claude review, and `packages/api tRPC Vitest` were green;
+  `packages/graphql Vitest`, Cypress Cloud, SonarCloud, JavaScript analyzers,
+  and remaining build/check/test jobs were still pending.
+- `UserGroupEditModal` already disables group-management controls from the
+  combined hook loading flags.
+- The migrated group hooks only exposed tRPC mutation loading, while each
+  successful action still awaited `sharing.userGroups` invalidation before the
+  UI list was fresh.
+- That left a duplicate-click window after the mutation completed and before
+  the cache refresh boundary finished.
+- Context7 tRPC v11 docs were refreshed before editing and confirm tRPC React
+  mutation hooks use React Query mutation status while invalidation is an
+  explicit awaited cache operation.
+
+Changes:
+
+- Added local pending guards to the migrated user group action hooks:
+  name change, admin demotion, member promotion, user removal, and ownership
+  transfer.
+- The hooks now keep their returned loading flags active through the tRPC
+  mutation and awaited `sharing.userGroups` invalidation.
+- Existing generic error toasts, successful cache refresh behavior, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/groups/useChangeUserGroupName.ts apps/frontend-manage/src/components/groups/useDemoteGroupAdminToMember.ts apps/frontend-manage/src/components/groups/usePromoteGroupMemberToAdmin.ts apps/frontend-manage/src/components/groups/useRemoveUserFromGroup.ts apps/frontend-manage/src/components/groups/useTransferGroupOwnership.ts`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage user-group pending-boundary cleanup.
+- Recheck PR #5132 checks after push, especially `packages/graphql Vitest`,
+  Cypress Cloud, SonarCloud, and the remaining build/check/test matrix.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Locale Route Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
