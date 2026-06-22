@@ -1,5 +1,6 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { Button } from '@uzh-bf/design-system'
+import { useState } from 'react'
 import type { AudienceFeedback } from '../types'
 import Feedback from './Feedback'
 
@@ -24,6 +25,19 @@ function FeedbackListEntry({
   onRespondToFeedback,
   onPublishFeedback,
 }: FeedbackListEntryProps) {
+  const [publishing, setPublishing] = useState(false)
+
+  async function handlePublishClick() {
+    if (publishing || !onPublishFeedback) return
+
+    setPublishing(true)
+    try {
+      await onPublishFeedback(!feedback.isPublished)
+    } finally {
+      setPublishing(false)
+    }
+  }
+
   return (
     <div className="flex flex-row gap-2 print:mt-2">
       {!isPublic && onPublishFeedback && (
@@ -32,9 +46,9 @@ function FeedbackListEntry({
             className={{
               root: 'h-9 w-9',
             }}
-            onClick={() => {
-              void onPublishFeedback(!feedback.isPublished)
-            }}
+            disabled={publishing}
+            loading={publishing}
+            onClick={() => void handlePublishClick()}
             data={{ cy: `publish-feedback-${feedback.content}` }}
           >
             <Button.Icon

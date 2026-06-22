@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Feedback Publish Pending Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+live-quiz feedback visibility workflow. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- The audience-interaction cleanup added pending guards for settings and for
+  the feedback item actions rendered inside `Feedback.tsx`.
+- The publish/unpublish visibility button is rendered one level above in
+  `FeedbackListEntry`, so it could still be clicked repeatedly while the
+  migrated tRPC publish handler and refresh path were settling.
+- Context7 TanStack Query v4 docs were refreshed before this change. They
+  confirm `mutateAsync` supports promise-based side-effect composition, and
+  local component state is appropriate when the visible action spans more than
+  the mutation hook's own loading window.
+
+Changes:
+
+- Add local pending state around the publish/unpublish visibility button.
+- Disable and show loading on that button while the existing async
+  `onPublishFeedback` handler is in flight.
+- Preserve the parent handler's existing tRPC mutation, refresh, Matomo, and
+  failure-toast behavior.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/interaction/feedbacks/FeedbackListEntry.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+
+Next:
+
+- Commit and push this focused feedback-publish pending guard.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Audience Interaction Pending Guards
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
