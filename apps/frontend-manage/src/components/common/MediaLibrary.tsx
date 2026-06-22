@@ -55,9 +55,12 @@ function MediaLibrary({ onImageClick }: Props) {
   const utils = trpc.useUtils()
   const [isUploading, setIsUploading] = useState(false)
   const getFileUploadSAS = trpc.element.fileUploadSas.useMutation()
+  const uploading = isUploading || getFileUploadSAS.isLoading
 
   const handleFileFieldChange = useCallback(
     async (files: File[]) => {
+      if (uploading) return
+
       const file = files?.[0]
       if (!file) return
 
@@ -105,13 +108,14 @@ function MediaLibrary({ onImageClick }: Props) {
         setIsUploading(false)
       }
     },
-    [getFileUploadSAS, onImageClick, t, utils.element.mediaFiles]
+    [getFileUploadSAS, onImageClick, t, uploading, utils.element.mediaFiles]
   )
 
   return (
     <Dropzone
       onDrop={handleFileFieldChange}
       multiple={false}
+      disabled={uploading}
       accept={{
         'application/image': ['.png', '.jpg', '.jpeg', '.gif'],
       }}
