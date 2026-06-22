@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: PWA Course Group Activity Query-State Cleanup
+
+Status: complete. Scope stayed within the already migrated PWA course landing
+group tab and its `participant.courseGroupActivities` /
+`participant.groupActivityInstances` tRPC queries. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or subscription cleanup is being
+started.
+
+Finding:
+
+- The course group tab defaults failed or not-yet-loaded group-activity data to
+  `[]` / `{}`. An initial `courseGroupActivities` failure can therefore look
+  like no group activities exist, and an initial `groupActivityInstances`
+  failure can make existing activities appear available/not-started instead of
+  showing a load failure.
+
+Change:
+
+- Surface initial group-activity data failures with the existing localized
+  `UserNotification` system-error pattern.
+- Keep stale successful group-activity data visible during later refetch
+  failures.
+- Keep the successful empty-activity state unchanged.
+
+Evidence:
+
+- PR #5132 current head is `ba9a44ad54af062b4a807d649c151330127d9ef4`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for React Query query/mutation error,
+  invalidation, cache-update, and optimistic-update patterns before this audit
+  pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed PWA course page, group tab component, and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from `apps/frontend-pwa`
+  passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept this patch to no-data query
+  states in the existing group tab. No shared abstraction was added; successful
+  empty group-activity state remains unchanged.
+
+Next:
+
+- Commit and push the PWA course group activity query-state cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: PWA Account Selector Self-Query Error Cleanup
 
 Status: complete. Scope stayed within the already migrated PWA live-quiz

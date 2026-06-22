@@ -80,12 +80,15 @@ function CourseOverview({
     isLoading: loadingLeaderboard,
   } = trpc.participant.courseLeaderboard.useQuery(leaderboardInput)
 
-  const { data: groupActivitiesData } =
-    trpc.participant.courseGroupActivities.useQuery(courseInput, {
-      enabled:
-        Boolean(data?.courseOverview?.participant) &&
-        Boolean(data?.courseOverview?.participation),
-    })
+  const {
+    data: groupActivitiesData,
+    error: groupActivitiesError,
+    isLoading: loadingGroupActivities,
+  } = trpc.participant.courseGroupActivities.useQuery(courseInput, {
+    enabled:
+      Boolean(data?.courseOverview?.participant) &&
+      Boolean(data?.courseOverview?.participation),
+  })
 
   const invalidateLeaderboardData = () => {
     void Promise.all([
@@ -633,6 +636,8 @@ function CourseOverview({
                       groupActivities={
                         groupActivitiesData?.groupActivities ?? []
                       }
+                      groupActivitiesLoading={loadingGroupActivities}
+                      groupActivitiesError={Boolean(groupActivitiesError)}
                       setSelectedTab={setSelectedTab}
                       onCourseOverviewChanged={() =>
                         utils.participant.courseOverview.invalidate(courseInput)

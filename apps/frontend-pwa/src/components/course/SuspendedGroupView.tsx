@@ -1,5 +1,6 @@
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormikTextareaField,
@@ -42,6 +43,8 @@ interface SuspendedGroupViewProps {
   groupDeadlineDate: Date | string
   isGroupDeadlinePassed: boolean
   groupActivities: CourseGroupActivity[]
+  groupActivitiesLoading?: boolean
+  groupActivitiesError?: boolean
   setSelectedTab: (value: string) => void
   onCourseOverviewChanged?: () => void | Promise<void>
   onGroupActivitiesChanged?: () => void | Promise<void>
@@ -56,6 +59,8 @@ function SuspendedGroupView({
   groupDeadlineDate,
   isGroupDeadlinePassed,
   groupActivities,
+  groupActivitiesLoading,
+  groupActivitiesError,
   setSelectedTab,
   onCourseOverviewChanged,
   onGroupActivitiesChanged,
@@ -66,11 +71,14 @@ function SuspendedGroupView({
   const addMessageToGroup = trpc.participant.addMessageToGroup.useMutation()
   const [leaveGroupLoading, setLeaveGroupLoading] = useState(false)
 
-  const { data: rawActivityInstances } =
-    trpc.participant.groupActivityInstances.useQuery({
-      courseId,
-      groupId: group.id,
-    })
+  const {
+    data: rawActivityInstances,
+    error: groupActivityInstancesError,
+    isLoading: groupActivityInstancesLoading,
+  } = trpc.participant.groupActivityInstances.useQuery({
+    courseId,
+    groupId: group.id,
+  })
   const groupActivityInstances =
     rawActivityInstances?.groupActivityInstances?.reduce<
       Record<
@@ -83,6 +91,18 @@ function SuspendedGroupView({
         [groupActivityInstance.groupActivityId]: groupActivityInstance,
       }
     }, {}) ?? {}
+  const showGroupActivitiesLoading =
+    groupActivitiesLoading && groupActivities.length === 0
+  const showGroupActivitiesError =
+    groupActivitiesError && groupActivities.length === 0
+  const showGroupActivityInstancesLoading =
+    groupActivities.length > 0 &&
+    groupActivityInstancesLoading &&
+    !rawActivityInstances
+  const showGroupActivityInstancesError =
+    groupActivities.length > 0 &&
+    Boolean(groupActivityInstancesError) &&
+    !rawActivityInstances
 
   return (
     <TabContent key={group.id} value={group.id} className={{ root: 'md:px-4' }}>
@@ -219,13 +239,30 @@ function SuspendedGroupView({
           </div>
         </div>
 
-        {(groupActivities.length ?? -1) > 0 && (
+        {showGroupActivitiesLoading || showGroupActivityInstancesLoading ? (
+          <div className="mt-4">
+            <H3>{t('shared.generic.groupActivities')}</H3>
+            <div className="border-t pt-2">
+              <Loader />
+            </div>
+          </div>
+        ) : showGroupActivitiesError || showGroupActivityInstancesError ? (
+          <div className="mt-4">
+            <H3>{t('shared.generic.groupActivities')}</H3>
+            <div className="border-t pt-2">
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+              />
+            </div>
+          </div>
+        ) : groupActivities.length > 0 ? (
           <GroupActivityList
             groupId={group.id}
             groupActivities={groupActivities}
             groupActivityInstances={groupActivityInstances}
           />
-        )}
+        ) : null}
 
         <div className="mt-4">
           <H3 className={{ root: 'border-b' }}>
