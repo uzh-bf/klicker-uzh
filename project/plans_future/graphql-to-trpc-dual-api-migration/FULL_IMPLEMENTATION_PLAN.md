@@ -423,6 +423,68 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: PWA Course Leaderboard Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated PWA course leaderboard join/leave workflow. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `72d933f323319ff46f3028ad5a58fa656613a45e`.
+- Fresh PR checks on that head show format, lint, TypeScript check,
+  `packages/api tRPC Vitest`, GitGuardian, CodeQL Java/Python/TypeScript, and
+  one test job green. `packages/graphql Vitest`, Cypress Cloud, SonarCloud,
+  CodeQL JavaScript, and Docker builds are still pending. A separate generic
+  `test` job failed before project tests during Docker Buildx setup with Docker
+  Hub returning `unknown` for `moby/buildkit:buildx-stable-1`.
+- PWA course leaderboard join/leave mutations use tRPC and then invalidate the
+  course leaderboard plus course overview in a background `onSuccess` callback.
+  This can leave the join button or leave modal success boundary ahead of the
+  refreshed leaderboard/course membership state.
+- The shared leaderboard row owns the join/leave buttons and has no local
+  loading prop, so the safe minimal patch is to keep the refresh boundary and
+  duplicate-click guard in the PWA course page without changing shared
+  component contracts.
+
+Changes:
+
+- Course leaderboard join now uses `mutateAsync`, awaits the existing targeted
+  `participant.courseLeaderboard` and `participant.courseOverview`
+  invalidations, and ignores duplicate clicks while the mutation or refresh is
+  in flight.
+- Course leaderboard leave now awaits the same targeted invalidations before
+  closing the confirmation modal and keeps the modal loading through the
+  mutation plus refresh boundary.
+- The broad `onSuccess` background invalidation callback was removed from the
+  join/leave mutations so each user action owns its visible success boundary.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  awaitable mutation success/invalidation behavior before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/pages/course/[courseId]/index.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/local runtime verification remains blocked in this temp worktree:
+  `curl` to `127.0.0.1:3001`, `127.0.0.1:3000/api/trpc`, and
+  `127.0.0.1:3002` all returned connection refused / `000`.
+- Review/simplification subagents were not spawned because this environment
+  exposes no explicit user-requested subagent delegation tool in the active
+  tool list; self-review simplified away an initially considered shared
+  leaderboard loading prop because this temp setup typechecks the app against
+  package resolution that did not see the shared source prop addition.
+
+Next:
+
+- Commit and push this focused PWA course leaderboard refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially `packages/graphql Vitest`,
+  Cypress Cloud, SonarCloud, CodeQL JavaScript, and Docker builds.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: PWA Course Group Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

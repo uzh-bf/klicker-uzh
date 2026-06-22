@@ -59,6 +59,8 @@ function CourseOverview({
   const [leaderboardType, setLeaderboardType] = useState<'course' | 'biweekly'>(
     'course'
   )
+  const [leaderboardMutationRefreshing, setLeaderboardMutationRefreshing] =
+    useState(false)
   const utils = trpc.useUtils()
   const courseInput = useMemo(() => ({ courseId }), [courseId])
 
@@ -90,8 +92,8 @@ function CourseOverview({
       Boolean(data?.courseOverview?.participation),
   })
 
-  const invalidateLeaderboardData = () => {
-    void Promise.all([
+  const invalidateLeaderboardData = async () => {
+    await Promise.all([
       utils.participant.courseLeaderboard.invalidate(leaderboardInput),
       utils.participant.courseOverview.invalidate(courseInput),
     ]).catch(console.error)
@@ -107,18 +109,30 @@ function CourseOverview({
 
   const joinCourseLeaderboard =
     trpc.participant.joinCourseLeaderboard.useMutation({
-      onSuccess: invalidateLeaderboardData,
       onError: onLeaderboardMutationError,
     })
 
   const leaveCourseLeaderboard =
     trpc.participant.leaveCourseLeaderboard.useMutation({
-      onSuccess: invalidateLeaderboardData,
       onError: onLeaderboardMutationError,
     })
 
   const onJoinCourseLeaderboard = () => {
-    joinCourseLeaderboard.mutate(courseInput)
+    if (joinCourseLeaderboard.isLoading || leaderboardMutationRefreshing) {
+      return
+    }
+
+    void (async () => {
+      try {
+        setLeaderboardMutationRefreshing(true)
+        await joinCourseLeaderboard.mutateAsync(courseInput)
+        await invalidateLeaderboardData()
+      } catch {
+        // `onError` shows the toast.
+      } finally {
+        setLeaderboardMutationRefreshing(false)
+      }
+    })()
   }
 
   useEffect(() => {
@@ -681,13 +695,20 @@ function CourseOverview({
               onClose={() => setIsLeaveCourseLeaderboardModalOpen(false)}
               onConfirm={async () => {
                 try {
+                  setLeaderboardMutationRefreshing(true)
                   await leaveCourseLeaderboard.mutateAsync(courseInput)
+                  await invalidateLeaderboardData()
                   setIsLeaveCourseLeaderboardModalOpen(false)
                 } catch {
                   // `onError` shows the toast; keep the modal open for retry.
+                } finally {
+                  setLeaderboardMutationRefreshing(false)
                 }
               }}
-              loading={leaveCourseLeaderboard.isLoading}
+              loading={
+                leaveCourseLeaderboard.isLoading ||
+                leaderboardMutationRefreshing
+              }
             />
           )}
         </>
