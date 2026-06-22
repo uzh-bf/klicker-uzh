@@ -16,6 +16,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -170,6 +171,7 @@ function Index({ id }: { id: string }) {
   const {
     data,
     isLoading: loading,
+    isFetching,
     error,
     refetch,
   } = trpc.participant.runningLiveQuiz.useQuery(
@@ -368,6 +370,27 @@ function Index({ id }: { id: string }) {
     return (
       <Layout>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error && !data?.studentLiveQuiz) {
+    return (
+      <Layout>
+        <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+          <Button
+            onClick={() => void refetch().catch(console.error)}
+            className={{ root: 'h-8' }}
+            disabled={isFetching}
+          >
+            <Button.Icon icon={faArrowsRotate} loading={isFetching} />
+            <Button.Label>{t('pwa.liveQuiz.refreshPage')}</Button.Label>
+          </Button>
+        </div>
       </Layout>
     )
   }

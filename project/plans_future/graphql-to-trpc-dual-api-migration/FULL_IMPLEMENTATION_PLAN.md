@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: PWA Live-Quiz Query Error State Cleanup
+
+Status: complete locally. Scope stayed within migrated PWA live-quiz session tRPC
+query UX. No new migration slice, S06 cleanup, GraphQL removal, Apollo removal,
+or subscription cleanup is being started.
+
+Finding:
+
+- `apps/frontend-pwa/src/pages/session/[id].tsx` handles PIN-specific tRPC
+  errors separately, but any other `participant.runningLiveQuiz` query failure
+  falls through to the generic "no quiz" state because the final branch only
+  checks missing `data.studentLiveQuiz`.
+- That hides real transport/server failures behind a not-found message and a
+  full-page reload action.
+
+Change:
+
+- Split non-PIN query errors into an explicit system-error state.
+- Keep the page shell, show the existing generic error notification, and retry
+  the tRPC query through `refetch()` instead of forcing a browser reload.
+
+Evidence:
+
+- Context7 tRPC docs were refreshed for React Query query state and refetch
+  patterns before editing this pass.
+- Current Web Interface Guidelines were fetched before the UX audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-pwa/src/pages/session/[id].tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed from the
+  active worktree.
+- `git diff --check` passed.
+- Browser/runtime verification is blocked in the current environment: `curl`
+  to `127.0.0.1:3000`, `3001`, `3002`, and `7078` all failed with
+  connection refused, so no local app screenshots are available for this
+  UI-facing cleanup.
+- Cypress Cloud run `6855` on the previous pushed head is still running with
+  `101` passed and `0` failed; `MA-elements-operations-workflow.cy.ts` remains
+  running and later specs remain unclaimed at the latest poll.
+
+Next:
+
+- Commit and push this PWA live-quiz query error-state cleanup.
+- Stop further UI-slice work until a browser/runtime verification path is
+  available or the user explicitly asks to continue with static-only audit
+  slices.
+
 ### 2026-06-22 Completed: Free-Text Cypress Editor Stabilization
 
 Status: complete locally. Scope stays within Cypress stabilization for an already
