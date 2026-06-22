@@ -3,6 +3,7 @@ import { trpc } from '@lib/trpc'
 import { Button, Select, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 
 interface HeaderProps {
   title: string
@@ -13,6 +14,8 @@ function Header({ title }: HeaderProps) {
   const router = useRouter()
   const { pathname, asPath, query } = router
   const logoutUser = trpc.user.logout.useMutation()
+  const [logoutPending, setLogoutPending] = useState(false)
+  const logoutLoading = logoutUser.isLoading || logoutPending
 
   return (
     <div className="fixed top-0 flex h-11 w-full flex-row items-center justify-between bg-slate-800 px-2 text-white md:px-4">
@@ -37,14 +40,20 @@ function Header({ title }: HeaderProps) {
         />
         <Button
           basic
-          disabled={logoutUser.isLoading}
-          loading={logoutUser.isLoading}
+          disabled={logoutLoading}
+          loading={logoutLoading}
           onClick={async () => {
+            if (logoutLoading) return
+
+            setLogoutPending(true)
+
             try {
               const userIdLogout = await logoutUser.mutateAsync()
               if (userIdLogout) {
-                await router.push('https://www.klicker.uzh.ch')
-                return
+                const navigated = await router.push(
+                  'https://www.klicker.uzh.ch'
+                )
+                if (navigated) return
               }
             } catch {
               // Toast below covers failed logout requests and false responses.
@@ -55,16 +64,14 @@ function Header({ title }: HeaderProps) {
               message: t('shared.generic.systemError'),
               options: { duration: 5000 },
             })
+            setLogoutPending(false)
           }}
           className={{
             root: 'px-auto my-auto text-white hover:bg-transparent hover:text-white',
           }}
           data={{ cy: 'logout-control-button' }}
         >
-          <Button.Icon
-            icon={faRightFromBracket}
-            loading={logoutUser.isLoading}
-          />
+          <Button.Icon icon={faRightFromBracket} loading={logoutLoading} />
         </Button>
       </div>
     </div>

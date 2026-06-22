@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Control Logout Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-control
+logout action. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `77b294438fbaaf6aa1c9cac7074083ff0fc88282`.
+- Fresh PR checks on that head were green for GitGuardian and CodeQL
+  Java/Kotlin, JavaScript/TypeScript, and Python.
+- `Header` uses the migrated `trpc.user.logout` mutation and then navigates to
+  the public KlickerUZH site.
+- The visible logout button loading/disabled state only tracked the tRPC
+  mutation loading flag, so the button could re-enable while post-logout
+  navigation was still pending.
+- Context7 tRPC v11 docs were refreshed before editing and confirmed the
+  React Query mutation loading/invalidation pattern remains the correct base.
+
+Changes:
+
+- Added a local logout pending guard around the full logout action boundary.
+- The control logout button and icon now stay disabled/loading through the
+  tRPC mutation and successful navigation attempt.
+- Failed mutation or failed navigation still shows the existing generic system
+  error toast and releases the local pending guard.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-control/src/components/layout/Header.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3003` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused control logout pending-boundary cleanup.
+- Recheck PR #5132 checks after push.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Activity Review Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
