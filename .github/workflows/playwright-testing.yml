@@ -1,5 +1,7 @@
 name: Klicker automated testing with playwright
 on:
+  push:
+    branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
@@ -9,6 +11,9 @@ on:
       - playwright/**
       - .github/workflows/playwright-testing.yml
       - .github/scripts/wait-for-services.sh
+      - package.json
+      - pnpm-lock.yaml
+      - playwright/package.json
       - util/_create_hatchet_token_cypress.sh
 
 concurrency:
@@ -19,10 +24,14 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  playwright-run-draft:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+  playwright-run:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     services:
       postgres:
         image: postgres:15
@@ -99,7 +108,7 @@ jobs:
           SERVER_LOGGER_FORMAT: console
 
     steps:
-      - run: echo "Running Playwright PoC tests for draft PR"
+      - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
 
       - name: Define node version
         uses: actions/setup-node@v4
@@ -107,7 +116,7 @@ jobs:
           node-version: 24
 
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
@@ -162,7 +171,7 @@ jobs:
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
 
       - name: Install Playwright browsers
-        run: pnpm --filter @klicker-uzh/playwright exec playwright install --with-deps chromium firefox webkit
+        run: pnpm --filter @klicker-uzh/playwright exec playwright install --with-deps chromium
 
       - name: Start services and wait for readiness
         run: |
@@ -191,17 +200,37 @@ jobs:
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Run Playwright tests
-        run: pnpm --filter @klicker-uzh/playwright test:run
+        timeout-minutes: 120
+        run: pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
+          NODE_ENV: test
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
-          PW_STUDENT_USERNAME: testuser1
-          PW_STUDENT_PASSWORD: abcdabcd
+          URL_AUTH: http://127.0.0.1:3010
+          URL_CONTROL: http://127.0.0.1:3003
+          URL_MANAGE: http://127.0.0.1:3002
+          URL_STUDENT: http://127.0.0.1:3001
+          URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
+          REDIS_HOST: localhost
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
+          REDIS_CACHE_HOST: localhost
+          REDIS_CACHE_PORT: 6380
+          REDIS_ASSESSMENT_HOST: localhost
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_PORT: 6381
+          HATCHET_API_URL: http://127.0.0.1:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_CLIENT_HOST_PORT: localhost:7077
+          HATCHET_HOST_PORT: localhost:7077
+          HATCHET_CLIENT_TLS_STRATEGY: none
 
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-draft
+          name: playwright-artifacts-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
           path: |
             playwright/playwright-report
             playwright/test-results
