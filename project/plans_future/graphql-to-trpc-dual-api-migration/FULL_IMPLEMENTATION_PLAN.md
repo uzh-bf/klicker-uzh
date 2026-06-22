@@ -423,6 +423,71 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Cypress UX/Cache Failure Cleanup
+
+Status: complete. Scope stayed within already migrated frontend-manage tRPC
+workflows and Cypress-backed UX/cache failures. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or subscription cleanup is being
+started.
+
+Finding:
+
+- PR #5132 is ready for review but still blocked: current head
+  `bd668d222c1db1fc7a4d8be8462911b206aab300`, Cypress Cloud run `6852` reports
+  `10 tests failed`, and the GitHub `cypress-run-cloud` wrapper job is still
+  pending.
+- Earlier Cypress Cloud artifacts for run `6852` showed
+  `MA-elements-operations-workflow` blocked in `ElementRemovalModal` because the
+  advisory `element.summary` query returned no usable data and the migrated
+  modal hid the required confirmation rows.
+- Earlier Cypress Cloud artifacts for run `6852` showed
+  `N-course-workflow` drifting after course settings save/reopen because the
+  migrated `course.updateSettings` success path closed the modal after only
+  background-invalidating `course.detail`; list/detail cache could still expose
+  stale course data to the next immediate interaction.
+
+Change:
+
+- `ElementRemovalModal` now treats `element.summary` as advisory again: it keeps
+  the initial loading state while the summary query is in flight, but renders
+  the destructive-action confirmations even if the summary is missing. It also
+  closes the modal immediately after successful removal and refreshes the
+  element list in the background.
+- `CourseOverviewHeader` now updates the `course.detail` and
+  `course.userCourses` tRPC caches with the returned settings mutation payload
+  before closing the settings modal, then invalidates both queries in the
+  background for freshness.
+
+Evidence:
+
+- Context7 tRPC docs were refreshed for `useUtils()`, `setData`, and targeted
+  `invalidate` cache-update patterns before editing.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/elements/manipulation/ElementRemovalModal.tsx
+  apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Local package Vitest commands could not run from `/private/tmp/klicker-trpc-commit`
+  because the checkout dependency layout cannot resolve workspace test
+  dependencies: `packages/api` failed to resolve `@klicker-uzh/prisma/client`
+  and `packages/graphql` failed to resolve `vitest` from the generated temp
+  config. Current PR checks still show `packages/api tRPC Vitest` and
+  `packages/graphql Vitest` passing at head `bd668d222...`.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept the patch to two Cypress-backed
+  UX/cache regressions. A review subagent was not spawned because the available
+  multi-agent tool requires explicit user authorization for delegation.
+
+Next:
+
+- Commit and push the manage Cypress UX/cache failure cleanup.
+- Recheck Cypress Cloud and PR checks after the push.
+
 ### 2026-06-22 Completed: Manage Catalog Collection Metadata Error Cleanup
 
 Status: complete. Scope stayed within the already migrated

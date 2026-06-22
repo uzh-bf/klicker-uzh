@@ -24,6 +24,7 @@ import PointCorrectionsModal from './PointCorrectionsModal'
 import QRCodePopover from './QRCodePopover'
 
 type CourseDetail = NonNullable<RouterOutputs['course']['detail']['course']>
+type UserCourse = RouterOutputs['course']['userCourses']['userCourses'][number]
 
 interface CourseOverviewHeaderProps {
   course: CourseDetail
@@ -246,9 +247,34 @@ function CourseOverviewHeader({
               const updatedCourseResult = result.course
 
               if (updatedCourseResult) {
+                utils.course.detail.setData({ courseId: course.id }, (data) =>
+                  data?.course
+                    ? {
+                        course: {
+                          ...data.course,
+                          ...updatedCourseResult,
+                        },
+                      }
+                    : data
+                )
+                utils.course.userCourses.setData(undefined, (data) =>
+                  data?.userCourses
+                    ? {
+                        userCourses: data.userCourses.map((cachedCourse) =>
+                          cachedCourse.id === updatedCourseResult.id
+                            ? ({
+                                ...cachedCourse,
+                                ...updatedCourseResult,
+                              } satisfies UserCourse)
+                            : cachedCourse
+                        ),
+                      }
+                    : data
+                )
                 void utils.course.detail
                   .invalidate({ courseId: course.id })
                   .catch(console.error)
+                void utils.course.userCourses.invalidate().catch(console.error)
                 setCourseSettingsModal(false)
               } else {
                 onError()

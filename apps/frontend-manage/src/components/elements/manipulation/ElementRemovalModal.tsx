@@ -1,4 +1,3 @@
-import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
@@ -27,16 +26,12 @@ function ElementRemovalModal({
   })
 
   // fetch element information
-  const {
-    data,
-    error: summaryError,
-    isLoading: queryLoading,
-  } = trpc.element.summary.useQuery({ id: elementId }, { enabled: !!elementId })
+  const { data, isLoading: queryLoading } = trpc.element.summary.useQuery(
+    { id: elementId },
+    { enabled: !!elementId }
+  )
   const summary = data?.elementSummary
   const initialSummaryLoading = queryLoading && !summary
-  const summaryUnavailable = Boolean(
-    (summaryError || !queryLoading) && !summary
-  )
 
   const notApplicableDerived = !!summary && !summary.retainsDerivedAccess
   const notApplicableResources = !!summary && !summary.derivedAccessToResources
@@ -66,75 +61,67 @@ function ElementRemovalModal({
           objectId: String(elementId),
           objectType: 'ELEMENT',
         })
+        setModalOpen(false)
         void refetchElements().catch(console.error)
       }}
       submitting={removeObject.isLoading}
-      confirmations={summary ? confirmations : { summaryLoaded: false }}
+      confirmations={confirmations}
       confirmationsInitializing={initialSummaryLoading}
       confirmationType="delete"
     >
-      {summaryUnavailable ? (
-        <UserNotification
-          type="error"
-          message={t('shared.generic.systemError')}
+      <div className="flex flex-col gap-2">
+        <ConfirmationItem
+          confirmationType="delete"
+          label={t('manage.questionPool.elementRemovalFinal')}
+          onClick={() => {
+            setConfirmations((prev) => ({
+              ...prev,
+              actionFinal: true,
+            }))
+          }}
+          confirmed={confirmations.actionFinal}
+          notApplicable={false}
+          data={{ cy: 'confirm-deletion-final' }}
         />
-      ) : null}
-
-      {summary ? (
-        <div className="flex flex-col gap-2">
-          <ConfirmationItem
-            confirmationType="delete"
-            label={t('manage.questionPool.elementRemovalFinal')}
-            onClick={() => {
-              setConfirmations((prev) => ({
-                ...prev,
-                actionFinal: true,
-              }))
-            }}
-            confirmed={confirmations.actionFinal}
-            notApplicable={false}
-            data={{ cy: 'confirm-deletion-final' }}
-          />
-          <ConfirmationItem
-            confirmationType="delete"
-            label={
-              notApplicableDerived
-                ? t(
-                    'manage.questionPool.elementRemovalDerivedAccessHintNotApplicable'
-                  )
-                : t('manage.questionPool.elementRemovalDerivedAccessHint')
-            }
-            onClick={() => {
-              setConfirmations((prev) => ({
-                ...prev,
-                derivedAccessHint: true,
-              }))
-            }}
-            confirmed={confirmations.derivedAccessHint}
-            notApplicable={notApplicableDerived}
-            data={{ cy: 'confirm-derived-access' }}
-          />
-          <ConfirmationItem
-            confirmationType="delete"
-            label={
-              notApplicableResources
-                ? t(
-                    'manage.questionPool.elementDeletionDerivedAccessNotApplicable'
-                  )
-                : t('manage.questionPool.elementDeletionDerivedAccessHint')
-            }
-            onClick={() => {
-              setConfirmations((prev) => ({
-                ...prev,
-                dependencyAccess: true,
-              }))
-            }}
-            confirmed={confirmations.dependencyAccess}
-            notApplicable={notApplicableResources}
-            data={{ cy: 'confirm-dependency-access' }}
-          />
-        </div>
-      ) : null}
+        <ConfirmationItem
+          confirmationType="delete"
+          label={
+            notApplicableDerived
+              ? t(
+                  'manage.questionPool.elementRemovalDerivedAccessHintNotApplicable'
+                )
+              : t('manage.questionPool.elementRemovalDerivedAccessHint')
+          }
+          onClick={() => {
+            setConfirmations((prev) => ({
+              ...prev,
+              derivedAccessHint: true,
+            }))
+          }}
+          confirmed={confirmations.derivedAccessHint}
+          notApplicable={notApplicableDerived}
+          data={{ cy: 'confirm-derived-access' }}
+        />
+        <ConfirmationItem
+          confirmationType="delete"
+          label={
+            notApplicableResources
+              ? t(
+                  'manage.questionPool.elementDeletionDerivedAccessNotApplicable'
+                )
+              : t('manage.questionPool.elementDeletionDerivedAccessHint')
+          }
+          onClick={() => {
+            setConfirmations((prev) => ({
+              ...prev,
+              dependencyAccess: true,
+            }))
+          }}
+          confirmed={confirmations.dependencyAccess}
+          notApplicable={notApplicableResources}
+          data={{ cy: 'confirm-dependency-access' }}
+        />
+      </div>
     </ActivityConfirmationModal>
   )
 }
