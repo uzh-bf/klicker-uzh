@@ -1,6 +1,7 @@
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { ActivityType } from '../../../../lib/constants/activityEnums'
 import { trpc, type RouterInputs } from '../../../../lib/trpc'
 
@@ -22,14 +23,21 @@ function ActivityReviewButton({
     activityType:
       activityType as RouterInputs['activity']['details']['activityType'],
   }
+  const [refreshingReviewStatus, setRefreshingReviewStatus] = useState(false)
   const setActivityReviewStatus = trpc.activity.setReviewStatus.useMutation()
+  const updatingReviewStatus =
+    setActivityReviewStatus.isLoading || refreshingReviewStatus
 
   return (
     <Button
-      disabled={setActivityReviewStatus.isLoading}
+      disabled={updatingReviewStatus}
+      loading={updatingReviewStatus}
       className={{ root: 'h-7 text-sm' }}
       data={{ cy: 'activity-review-button' }}
       onClick={async () => {
+        if (updatingReviewStatus) return
+        setRefreshingReviewStatus(true)
+
         try {
           const res = await setActivityReviewStatus.mutateAsync({
             activityId,
@@ -39,15 +47,12 @@ function ActivityReviewButton({
           })
 
           if (res.reviewStatus) {
-            if (courseId) {
-              void utils.course.detail
-                .invalidate({ courseId })
-                .catch(console.error)
-            }
-
-            void utils.activity.details
-              .invalidate(detailsInput)
-              .catch(console.error)
+            await Promise.all([
+              courseId
+                ? utils.course.detail.invalidate({ courseId })
+                : undefined,
+              utils.activity.details.invalidate(detailsInput),
+            ]).catch(console.error)
             toast({
               type: 'success',
               message: t('manage.activities.reviewStatusUpdated'),
@@ -64,10 +69,15 @@ function ActivityReviewButton({
             type: 'error',
             message: t('manage.activities.reviewStatusUpdateFailed'),
           })
+        } finally {
+          setRefreshingReviewStatus(false)
         }
       }}
     >
-      <Button.Icon icon={isReviewed ? faX : faCheckDouble} />
+      <Button.Icon
+        icon={isReviewed ? faX : faCheckDouble}
+        loading={updatingReviewStatus}
+      />
       <Button.Label>
         {isReviewed
           ? t('manage.activities.resetReview')

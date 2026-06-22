@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Activity Review Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+activity review-status button. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `0396b4349484ffb0798842aafcb870db32ac5a4c`.
+- Fresh PR checks on that head showed no red jobs after the first wait.
+  GitGuardian, Claude review, and Python CodeQL were green; package
+  GraphQL/tRPC tests, Cypress Cloud, and most broader app checks were still
+  pending.
+- `ActivityReviewButton` uses a migrated tRPC mutation and then invalidates
+  `course.detail` and `activity.details`.
+- Those invalidations were fire-and-forget, while the button disabled state
+  only tracked the mutation loading flag.
+
+Changes:
+
+- Added a local review-status refresh pending guard.
+- The review button now stays disabled/loading through the tRPC mutation and
+  awaited course/detail invalidations.
+- Existing success/error toast behavior and GraphQL/tRPC coexistence remain
+  unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/overview/details/ActivityReviewButton.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage activity review pending-boundary cleanup.
+- Recheck PR #5132 checks, especially package GraphQL/tRPC tests and Cypress
+  Cloud/default-group pending gates.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Course Archive Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
