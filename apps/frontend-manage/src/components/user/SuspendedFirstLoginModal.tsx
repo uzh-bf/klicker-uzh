@@ -112,11 +112,11 @@ function SuspendedFirstLoginModal({
                   shortname: t('manage.settings.shortnameTaken'),
                 })
               } else {
-                setFirstLogin(false)
-                void Promise.all([
+                await Promise.all([
                   refetchElements(),
                   utils.user.profile.invalidate(),
                 ]).catch(console.error)
+                setFirstLogin(false)
               }
             } catch (error) {
               console.error(error)
