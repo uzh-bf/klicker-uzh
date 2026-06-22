@@ -215,6 +215,7 @@ function GroupActivityDetails() {
                     className={{ root: 'mt-4 self-end text-lg font-bold' }}
                     onClick={async () => {
                       try {
+                        setActivityStartRefreshing(true)
                         const result = await startGroupActivity.mutateAsync({
                           activityId,
                           groupId,
@@ -225,17 +226,14 @@ function GroupActivityDetails() {
                         }
 
                         setActivityStartConfirmed(true)
-                        setActivityStartRefreshing(true)
-                        void refetch()
-                          .catch((error) => {
-                            console.error(error)
-                            toast({
-                              type: 'error',
-                              message: t('shared.generic.systemError'),
-                              options: { duration: 5000 },
-                            })
+                        await refetch().catch((error) => {
+                          console.error(error)
+                          toast({
+                            type: 'error',
+                            message: t('shared.generic.systemError'),
+                            options: { duration: 5000 },
                           })
-                          .finally(() => setActivityStartRefreshing(false))
+                        })
                       } catch (error) {
                         console.error(error)
                         toast({
@@ -243,6 +241,8 @@ function GroupActivityDetails() {
                           message: t('shared.generic.systemError'),
                           options: { duration: 5000 },
                         })
+                      } finally {
+                        setActivityStartRefreshing(false)
                       }
                     }}
                     data={{ cy: 'start-group-activity' }}

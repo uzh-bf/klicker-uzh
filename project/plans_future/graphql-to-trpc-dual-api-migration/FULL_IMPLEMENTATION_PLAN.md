@@ -423,6 +423,50 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: PWA Group Activity Refresh Boundary Cleanup
+
+Status: complete locally. Scope stayed inside the tRPC UX/client-quality audit
+and the already migrated PWA group-activity detail workflow. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `5f87bfbf83fad6e618312b8f7a47b56f6e72ec45`.
+- Fresh PR checks on that head show `packages/api tRPC Vitest`, lint,
+  GitGuardian, Claude review, CodeQL Java/Python/TypeScript, and some Docker
+  jobs green. `packages/graphql Vitest`, Cypress Cloud, SonarCloud, CodeQL
+  JavaScript, and many Docker builds are still pending. One `build-amd` job
+  failed early, but GitHub logs are not available yet because the workflow is
+  still in progress.
+- Starting a group activity already has `activityStartRefreshing` for the
+  post-success refresh, but the actual `refetch()` is launched in the
+  background.
+- Submitting group-activity decisions awaits the parent `onSubmitted()` refetch,
+  but the submit button loading/disabled state only follows the tRPC mutation,
+  so the UI can re-enable before the refreshed submitted state arrives.
+- Context7 tRPC v11 docs were refreshed before the patch and confirm the
+  mutation/refetch loading boundary should await the relevant async work.
+
+Changes:
+
+- Awaited the existing start refetch directly while keeping the current toast
+  behavior and refresh loading flag.
+- Kept group-activity decision submission loading/disabled through the awaited
+  `onSubmitted()` refresh boundary.
+- Extracted the unchanged group-activity response mapping into a local helper so
+  the submit handler only owns submit/refresh/error behavior.
+
+Checks:
+
+- `prettier --check` passed for the touched PWA files and plan file.
+- `tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked by the local stack being down:
+  PWA `127.0.0.1:3001`, API `127.0.0.1:3000/api/trpc`, and Manage
+  `127.0.0.1:3002` all returned connection refused / `000`.
+
 ### 2026-06-22 Completed Locally: PWA Course Leaderboard Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
