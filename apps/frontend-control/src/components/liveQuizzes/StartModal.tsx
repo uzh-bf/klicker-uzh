@@ -2,6 +2,7 @@ import { trpc } from '@lib/trpc'
 import { H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 
 function StartModal({
   quizId,
@@ -15,8 +16,9 @@ function StartModal({
   const t = useTranslations()
   const router = useRouter()
   const utils = trpc.useUtils()
+  const [startPending, setStartPending] = useState(false)
   const startLiveQuiz = trpc.liveQuiz.start.useMutation()
-  const loading = startLiveQuiz.isLoading
+  const loading = startLiveQuiz.isLoading || startPending
   const handleClose = () => {
     if (!loading) {
       onClose()
@@ -29,6 +31,9 @@ function StartModal({
       onClose={handleClose}
       primaryLabel={t('shared.generic.start')}
       onPrimaryAction={async () => {
+        if (loading) return
+        setStartPending(true)
+
         try {
           const response = await startLiveQuiz.mutateAsync({ id: quizId })
           if (!response.liveQuiz?.id) throw new Error('Live quiz not started')
@@ -46,11 +51,14 @@ function StartModal({
             message: t('control.course.liveQuizStartFailed'),
             options: { duration: 5000 },
           })
+          setStartPending(false)
           return
         }
 
         try {
-          await router.push(`/session/${quizId}`)
+          const routed = await router.push(`/session/${quizId}`)
+          if (!routed) throw new Error('Navigation to live quiz failed')
+          onClose()
         } catch (error) {
           console.error(error)
           toast({
@@ -58,6 +66,7 @@ function StartModal({
             message: t('shared.generic.systemError'),
             options: { duration: 5000 },
           })
+          setStartPending(false)
         }
       }}
       primaryLoading={loading}

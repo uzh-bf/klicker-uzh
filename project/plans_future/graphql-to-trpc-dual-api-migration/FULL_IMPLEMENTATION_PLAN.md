@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Control Start Modal Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-control
+live-quiz start modal. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `1883f8fa689f358995d5b2518312aec89759d873`.
+- Fresh PR checks on that head show package parity still green:
+  `packages/graphql Vitest` and `packages/api tRPC Vitest` passed. Security,
+  SonarCloud, build, check, format, lint, and generic test jobs are green.
+  Cypress Cloud/default-group is still pending.
+- The control live-quiz start modal awaited the tRPC `liveQuiz.start` mutation
+  and cache invalidation before navigating, but the visible pending/close guard
+  only tracked the mutation loading flag. The modal action could become active
+  again while invalidation or the route transition was still in flight.
+- Context7 tRPC v11 docs were refreshed before editing and document mutation
+  pending state plus awaitable invalidation/React Query utilities in mutation
+  success flows.
+
+Changes:
+
+- Added a local pending guard to `StartModal` so the primary action and close
+  guard stay active through mutation, cache invalidation, and the
+  `router.push` transition.
+- The modal now closes only after navigation to the control session page
+  succeeds. Route failures keep the modal open and show the existing generic
+  error toast.
+- Existing mutation behavior, invalidation targets, and GraphQL/tRPC
+  coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-control/src/components/liveQuizzes/StartModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false` with a temporary `apps/frontend-control/node_modules` symlink to the adjacent installed checkout; the symlink was removed immediately after the check.
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3003` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused control start-modal pending-boundary cleanup.
+- Recheck PR #5132 checks, especially the current Cypress Cloud/default-group
+  pending gate.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Live-Quiz Start Failure Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
