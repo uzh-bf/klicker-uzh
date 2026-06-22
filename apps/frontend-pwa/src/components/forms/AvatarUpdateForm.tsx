@@ -180,7 +180,7 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
                     fluid
                     type="submit"
                     loading={isSubmitting}
-                    disabled={!isValid}
+                    disabled={isSubmitting || !isValid}
                     className={{ root: 'border-primary-100 mt-3 h-8' }}
                     data={{ cy: 'save-avatar-update' }}
                   >

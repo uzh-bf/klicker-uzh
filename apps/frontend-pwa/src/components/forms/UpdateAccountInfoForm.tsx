@@ -216,7 +216,7 @@ function UpdateAccountInfoForm({
                 <Button
                   fluid
                   type="submit"
-                  disabled={!isValid || !isUsernameAvailable}
+                  disabled={isSubmitting || !isValid || !isUsernameAvailable}
                   loading={isSubmitting}
                   className={{ root: 'border-primary-100 h-8' }}
                   data={{ cy: 'save-account-update' }}

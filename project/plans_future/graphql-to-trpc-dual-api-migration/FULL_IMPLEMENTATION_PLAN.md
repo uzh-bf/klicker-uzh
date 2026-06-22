@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: PWA Edit Profile Submit Guards
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa
+profile/avatar update mutations. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `5026b863d9a469852c3b8a62e2b8386895e6f224`.
+- Fresh PR checks have no red jobs. CodeQL, GitGuardian, SonarCloud, build,
+  check, lint, format, tests, `packages/api tRPC Vitest`, and
+  `packages/graphql Vitest` are green. Cypress Cloud is still pending.
+- Context7 tRPC docs were refreshed before editing. They confirm tRPC
+  `useMutation` returns TanStack Query mutation state and client buttons should
+  guard duplicate actions with the pending/loading state.
+- `CreateAccountForm` and `CreateAccountJoinForm` already disable their submit
+  buttons while Formik is submitting.
+- `UpdateAccountInfoForm` and `AvatarUpdateForm` show loading while Formik is
+  submitting, but their submit buttons do not explicitly include `isSubmitting`
+  in the disabled condition. Since both handlers keep Formik submitting through
+  the tRPC mutation and the awaited profile refetch callback, the visible action
+  can remain clickable while the update is still finishing.
+
+Changes:
+
+- Add explicit `isSubmitting` duplicate-submit guards to the profile and avatar
+  save buttons while keeping the existing loading indicators and validation
+  conditions.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/components/forms/UpdateAccountInfoForm.tsx apps/frontend-pwa/src/components/forms/AvatarUpdateForm.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Passed: local review and simplification of the focused diff. No subagent was
+  spawned because the current multi-agent tool contract only allows delegated
+  agents when explicitly requested by the user.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3001` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` also returns connection refused from this checkout.
+
+Next:
+
+- Commit and push this focused PWA edit-profile submit-guard cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Control Course Missing Redirect Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
