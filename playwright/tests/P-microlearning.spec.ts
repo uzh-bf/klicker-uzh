@@ -1455,7 +1455,10 @@ test.describe.serial('Different microlearning workflows', () => {
     })
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await expectByAssertion(page.getByTestId('answer-collection-list'), 'exist')
+    await expectByAssertion(
+      page.getByTestId('create-answer-collection'),
+      'exist'
+    )
     await createAnswerCollection(page, {
       name: data.collection.name,
       description: data.collection.description,

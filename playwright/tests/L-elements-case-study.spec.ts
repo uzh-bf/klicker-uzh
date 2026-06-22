@@ -722,10 +722,14 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('insert-question-title').fill(CS.title)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
+    const questionText = page.getByTestId('insert-question-text')
+    await questionText.click()
+    await page.keyboard.press(
+      process.platform === 'darwin' ? 'Meta+A' : 'Control+A'
+    )
+    await page.keyboard.press('Backspace')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
-    await page.getByTestId('insert-question-text').pressSequentially(CS.content)
+    await questionText.pressSequentially(CS.content)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     await page.getByTestId('insert-question-explanation').click()

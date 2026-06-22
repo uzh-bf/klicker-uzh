@@ -249,7 +249,7 @@ async function loginWithToken(
   await disableAnimations(page)
 }
 
-async function gotoCommit(page: Page, url: string) {
+export async function gotoCommit(page: Page, url: string) {
   try {
     await page.goto(url, { waitUntil: 'commit', timeout: 300_000 })
   } catch (error) {
@@ -373,6 +373,48 @@ export async function loginStudentPassword(
   await page.getByTestId('password-field').fill(env('STUDENT_PASSWORD'))
   await page.getByTestId('submit-login').click()
   await expect(page.getByTestId('homepage')).toBeVisible()
+}
+
+export async function acceptGamifiedLiveQuizAccountPrompt(
+  page: Page,
+  _activityDisplayName?: string
+) {
+  const dialog = page.getByRole('dialog', {
+    name: /this live quiz is gamified/i,
+  })
+  const submitAnswer = page.getByTestId('student-submit-answer')
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const promptAppeared = await dialog
+      .waitFor({ state: 'visible', timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false)
+
+    if (!promptAppeared) return
+
+    await page.getByTestId('participate-anonymously').click()
+    await expect(dialog).toBeHidden()
+    await page.waitForTimeout(500)
+  }
+
+  await expect(dialog).toBeHidden()
+  await expect(submitAnswer).toBeVisible({ timeout: 30000 })
+}
+
+export async function openStudentLiveQuiz(
+  page: Page,
+  activityDisplayName: string
+) {
+  const escapedName = activityDisplayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const liveQuizLink = page
+    .getByRole('link', { name: new RegExp(escapedName) })
+    .first()
+
+  await expect(liveQuizLink).toBeVisible({ timeout: 30000 })
+  await Promise.all([
+    page.waitForURL(/\/session\/[^/]+/, { timeout: 30000 }),
+    liveQuizLink.click(),
+  ])
 }
 
 export type LocalForageSnapshot = {
@@ -539,10 +581,13 @@ export async function deleteAllElements(page: Page) {
 
 export async function createAnswerCollection(page: Page, args: any) {
   await createAnswerCollectionBase(args)
-  await page.reload({ waitUntil: 'commit' })
+  await gotoCommit(page, `${env('URL_MANAGE')}/resources/answerCollections`)
+  await expect(page.getByTestId('create-answer-collection')).toBeVisible({
+    timeout: 30000,
+  })
   await expect(
-    page.getByTestId(`answer-collection-${args.name}`)
-  ).toBeAttached()
+    page.getByTestId(`answer-collection-${args.name}`).first()
+  ).toBeVisible({ timeout: 30000 })
 }
 
 export async function deleteAnswerCollection(
@@ -792,6 +837,34 @@ export async function setDate(page: Page, args: any) {
 
 export async function createLiveQuiz(page: Page, args: any) {
   await createLiveQuizBase(page, args)
+}
+
+export async function getLiveQuizTemplateId(name: string) {
+  const prisma = await getPrisma()
+  const activity = await prisma.userActivities.findFirst({
+    where: { name, type: 'LIVE_QUIZ' },
+    select: { templateId: true },
+  })
+
+  if (!activity?.templateId) {
+    throw new Error(`No template id found for live quiz template "${name}"`)
+  }
+
+  return activity.templateId
+}
+
+export async function getCatalogCollectionId(name: string) {
+  const prisma = await getPrisma()
+  const collection = await prisma.catalogCollection.findFirst({
+    where: { name },
+    select: { id: true },
+  })
+
+  if (!collection?.id) {
+    throw new Error(`Could not find catalog collection with name "${name}"`)
+  }
+
+  return collection.id
 }
 
 export async function createPracticeQuiz(page: Page, args: any) {

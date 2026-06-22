@@ -628,13 +628,17 @@ async function verifyCourseAccessLost(page: Page) {
 
 async function loginStudentPassword(page: Page, username: string) {
   await page.context().clearCookies()
-  await page.goto(URL_STUDENT_LOGIN)
+  await page.goto('about:blank').catch(() => undefined)
+  await page.goto(URL_STUDENT_LOGIN, { waitUntil: 'commit', timeout: 300_000 })
   await page.evaluate(() => {
-    localStorage.clear()
-    sessionStorage.clear()
+    try {
+      localStorage.clear()
+      sessionStorage.clear()
+    } catch {}
   })
   await page.getByTestId('username-field').fill(username)
   await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  await expect(page.getByTestId('submit-login')).toBeEnabled()
   await page.getByTestId('submit-login').click()
   await expect(page.getByTestId('homepage')).toBeVisible()
 }
@@ -644,6 +648,28 @@ async function joinCourse(page: Page, coursePin: number) {
   await page.locator('input[data-input-otp="true"]').fill(String(coursePin))
   await expect(page.getByTestId('join-course-submit-form')).toBeEnabled()
   await page.getByTestId('join-course-submit-form').click()
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+async function openStudentCourse(page: Page, displayName: string) {
+  const courseByTestId = page.getByTestId(`course-button-${displayName}`)
+
+  if (await courseByTestId.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await courseByTestId.click()
+    return
+  }
+
+  await page
+    .getByRole('link', { name: new RegExp(escapeRegExp(displayName)) })
+    .click()
+}
+
+async function openStudentGroupTab(page: Page) {
+  await page.getByRole('tab', { name: 'Create/Join Group' }).click()
+  await expect(page.getByTestId('student-course-create-group')).toBeVisible()
 }
 
 async function confirmCourseDeletion(page: Page) {
@@ -803,7 +829,8 @@ test.describe('Part 1: Course creation', () => {
 test.describe('Part 2: Randomized group creation', () => {
   test('Have 10 students join the course and the random assignment pool', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    testInfo.setTimeout(180_000)
     const coursePin = await getCoursePin(COURSE2.name)
     const students = [
       STUDENT_USERNAME,
@@ -821,7 +848,8 @@ test.describe('Part 2: Randomized group creation', () => {
     for (const studentUsername of students) {
       await loginStudentPassword(page, studentUsername)
       await joinCourse(page, coursePin)
-      await page.getByTestId(`course-button-${COURSE2.displayName}`).click()
+      await openStudentCourse(page, COURSE2.displayName)
+      await openStudentGroupTab(page)
       await page.getByTestId('student-course-create-group').click()
       await page.getByTestId('enter-random-group-pool').click()
       await expect(page.getByTestId('leave-random-group-pool')).toBeVisible()
@@ -836,7 +864,7 @@ test.describe('Part 2: Randomized group creation', () => {
     // Student 11: creates group
     await loginStudentPassword(page, STUDENT_USERNAME11)
     await joinCourse(page, coursePin)
-    await page.getByTestId(`course-button-${COURSE2.displayName}`).click()
+    await openStudentCourse(page, COURSE2.displayName)
     await page.getByTestId('student-course-create-group').click()
     await page.getByTestId('group-creation-name-input').fill(COURSE2.group1)
     await page.getByTestId('create-new-participant-group').click()
@@ -845,7 +873,7 @@ test.describe('Part 2: Randomized group creation', () => {
     // Student 12: creates group
     await loginStudentPassword(page, STUDENT_USERNAME12)
     await joinCourse(page, coursePin)
-    await page.getByTestId(`course-button-${COURSE2.displayName}`).click()
+    await openStudentCourse(page, COURSE2.displayName)
     await page.getByTestId('student-course-create-group').click()
     await page.getByTestId('group-creation-name-input').fill(COURSE2.group2)
     await page.getByTestId('create-new-participant-group').click()
@@ -880,7 +908,7 @@ test.describe('Part 2: Randomized group creation', () => {
       STUDENT_USERNAME12,
     ]) {
       await loginStudentPassword(page, studentUsername)
-      await page.getByTestId(`course-button-${COURSE2.displayName}`).click()
+      await openStudentCourse(page, COURSE2.displayName)
       await expect(
         page.getByTestId('student-course-create-group')
       ).not.toBeAttached()
@@ -1007,7 +1035,7 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     page,
   }) => {
     await loginStudent()
-    await page.getByTestId(`course-button-${RUNNING_COURSE.name}`).click()
+    await openStudentCourse(page, RUNNING_COURSE.name)
     await expect(
       page.getByTestId('student-course-leaderboard-tab')
     ).toBeVisible()

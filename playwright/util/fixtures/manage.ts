@@ -3,6 +3,7 @@
 // Mirrors the validateFeatureAvailability() function in the Cypress spec.
 // Not.toBeAttached() mirrors cy.should('not.exist') — elements absent from DOM.
 
+import type { ElementType } from '@klicker-uzh/prisma/client'
 import { expect, Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
 import { LECTURER_SHORTNAME, SEED, SEEDED_COURSE } from '../constants.js'
@@ -191,7 +192,16 @@ export async function createLiveQuiz({
 
   try {
     // Resolve element IDs by name
-    const elements = await prisma.element.findMany({
+    const elements: Array<{
+      id: number
+      name: string
+      type: ElementType
+      content: unknown
+      explanation: unknown
+      options: unknown
+      basePoints: boolean
+      pointsMultiplier: number
+    }> = await prisma.element.findMany({
       where: { name: { in: elementNames }, ownerId },
       select: {
         id: true,

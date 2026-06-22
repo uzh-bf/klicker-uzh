@@ -9,6 +9,7 @@ import {
   LECTURER_INST3_SHORTNAME,
   LECTURER_INST_SHORTNAME,
   LECTURER_SHORTNAME,
+  URL_MANAGE,
 } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -35,6 +36,7 @@ type ActivityType =
   | 'GROUP_ACTIVITY'
 
 const data = { ...questionsData, ...activityLogData } as WData
+const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 
 test('CLEANUP', cleanupTest)
 
@@ -152,6 +154,54 @@ async function grantPermission(
   )
 }
 
+async function openActivitiesPage(page: Page) {
+  await page.goto(`${manageUrl}/activities`, { waitUntil: 'commit' })
+  await expect(page.getByTestId('activities-search-input')).toBeVisible()
+}
+
+async function openLibraryPage(page: Page) {
+  await page.goto(manageUrl, { waitUntil: 'commit' })
+  await expect(page.getByTestId('create-live-quiz')).toBeVisible()
+}
+
+async function filterActivities(page: Page, activityName: string) {
+  await page.getByTestId('activities-search-input').clear()
+  await page.getByTestId('activities-search-input').fill(activityName)
+  await page.keyboard.press('Enter')
+}
+
+async function expectActivityVisible(
+  page: Page,
+  type: ActivityType,
+  activityName: string
+) {
+  await openActivitiesPage(page)
+  await filterActivities(page, activityName)
+  await expect(
+    page.getByTestId(`activity-${type}-${activityName}`)
+  ).toBeVisible()
+}
+
+async function openCoursesPage(page: Page) {
+  await page.goto(`${manageUrl}/courses`, { waitUntil: 'commit' })
+  await expect(page.getByText('Please select a course:')).toBeVisible()
+}
+
+async function openCourseOverview(page: Page, courseName: string) {
+  await openCoursesPage(page)
+  await page.getByTestId(`course-list-button-${courseName}`).click()
+  await expect(page.getByTestId('course-name-with-pin')).toContainText(
+    courseName
+  )
+}
+
+async function openAnswerCollectionsPage(page: Page) {
+  await page.goto(`${manageUrl}/resources/answerCollections`, {
+    waitUntil: 'commit',
+  })
+  await expect(page.getByTestId('create-answer-collection')).toBeVisible()
+}
+
 async function setUserPermissionsElementCollection(page: Page) {
   await grantPermission(
     page,
@@ -206,6 +256,12 @@ async function openActivityLog(
   type: ActivityType,
   activityName: string
 ) {
+  await openActivitiesPage(page)
+  await filterActivities(page, activityName)
+  await expect(
+    page.getByTestId(`actions-${type}-${activityName}`)
+  ).toBeVisible()
+
   if (type === 'GROUP_ACTIVITY') {
     const rowCommentsButton = page.getByRole('button', {
       name: 'View Comments',
@@ -238,6 +294,11 @@ async function shareActivity(
   type: ActivityType,
   activityName: string
 ) {
+  await openActivitiesPage(page)
+  await filterActivities(page, activityName)
+  await expect(
+    page.getByTestId(`actions-${type}-${activityName}`)
+  ).toBeVisible()
   await page.getByTestId(`actions-${type}-${activityName}`).click()
   await page.getByTestId(shareActivityTestId(type, activityName)).click()
   await setUserPermissions(page)
@@ -433,7 +494,8 @@ test.describe('Feature test for activity logs', () => {
   test('Create different activities and share them with other users', async ({
     page,
     loginLecturer,
-  }) => {
+  }, testInfo) => {
+    testInfo.setTimeout(180_000)
     await loginLecturer()
 
     await createQuestionSC({
@@ -451,7 +513,8 @@ test.describe('Feature test for activity logs', () => {
       courseName: data.seededCourse,
       blocks: [{ elements: [data.SCML.title] }],
     })
-    await page.getByTestId('create-new-activity').click()
+    await expectActivityVisible(page, 'LIVE_QUIZ', data.liveQuiz.name)
+    await openLibraryPage(page)
 
     await createPracticeQuiz(page, {
       name: data.practiceQuiz.name,
@@ -459,7 +522,8 @@ test.describe('Feature test for activity logs', () => {
       courseName: data.seededCourse,
       stacks: [{ elements: [data.SCML.title] }],
     })
-    await page.getByTestId('create-new-activity').click()
+    await expectActivityVisible(page, 'PRACTICE_QUIZ', data.practiceQuiz.name)
+    await openLibraryPage(page)
 
     await createMicroLearning(page, {
       name: data.microLearning.name,
@@ -481,7 +545,8 @@ test.describe('Feature test for activity logs', () => {
       courseName: data.seededCourse,
       stacks: [{ elements: [data.SCML.title] }],
     })
-    await page.getByTestId('create-new-activity').click()
+    await expectActivityVisible(page, 'MICRO_LEARNING', data.microLearning.name)
+    await openLibraryPage(page)
 
     await createGroupActivity(page, {
       name: data.groupActivity.name,
@@ -507,9 +572,7 @@ test.describe('Feature test for activity logs', () => {
         elements: [data.SCML.title],
       },
     })
-    await page.getByTestId('create-new-activity').click()
-
-    await page.getByTestId('activities').click()
+    await expectActivityVisible(page, 'GROUP_ACTIVITY', data.groupActivity.name)
 
     await shareActivity(page, 'LIVE_QUIZ', data.liveQuiz.name)
     await openActivityLog(page, 'LIVE_QUIZ', data.liveQuiz.name)
@@ -537,7 +600,6 @@ test.describe('Feature test for activity logs', () => {
     loginIndividualCatalyst,
   }) => {
     await loginIndividualCatalyst()
-    await page.getByTestId('activities').click()
 
     await openActivityLog(page, 'LIVE_QUIZ', data.liveQuiz.name)
     await verifyActivityComments(page, {
@@ -569,7 +631,6 @@ test.describe('Feature test for activity logs', () => {
     loginInstitutionalCatalyst,
   }) => {
     await loginInstitutionalCatalyst()
-    await page.getByTestId('activities').click()
 
     await openActivityLog(page, 'LIVE_QUIZ', data.liveQuiz.name)
     await verifyActivityComments(page, {
@@ -605,7 +666,6 @@ test.describe('Feature test for activity logs', () => {
     loginInstitutionalCatalyst2,
   }) => {
     await loginInstitutionalCatalyst2()
-    await page.getByTestId('activities').click()
 
     await openActivityLog(page, 'LIVE_QUIZ', data.liveQuiz.name)
     await verifyActivityComments(page, {
@@ -645,7 +705,6 @@ test.describe('Feature test for activity logs', () => {
     loginInstitutionalCatalyst3,
   }) => {
     await loginInstitutionalCatalyst3()
-    await page.getByTestId('activities').click()
 
     await openActivityLog(page, 'LIVE_QUIZ', data.liveQuiz.name)
     await verifyActivityComments(page, {
@@ -690,13 +749,13 @@ test.describe('Feature test for activity logs', () => {
       loginLecturer,
     }) => {
       await loginLecturer()
-      await page.getByTestId('courses').click()
+      await openCoursesPage(page)
 
       await page.getByTestId(`activity-log-course-${data.seededCourse}`).click()
       await addAndVerifyActivityLogMessage(page, data.course.message)
       await page.getByTestId('close-activity-log').click()
 
-      await page.getByTestId(`course-list-button-${data.seededCourse}`).click()
+      await openCourseOverview(page, data.seededCourse)
       await page.getByTestId('course-share-button').click()
       await setUserPermissions(page)
     })
@@ -706,7 +765,7 @@ test.describe('Feature test for activity logs', () => {
       loginInstitutionalCatalyst,
     }) => {
       await loginInstitutionalCatalyst()
-      await page.getByTestId('courses').click()
+      await openCoursesPage(page)
 
       await page.getByTestId(`activity-log-course-${data.seededCourse}`).click()
       await verifyActivityComments(page, {
@@ -720,7 +779,7 @@ test.describe('Feature test for activity logs', () => {
       loginInstitutionalCatalyst,
     }) => {
       await loginInstitutionalCatalyst()
-      await page.getByTestId('courses').click()
+      await openCoursesPage(page)
 
       await page.getByTestId(`activity-log-course-${data.seededCourse}`).click()
       await verifyActivityComments(page, {
@@ -735,9 +794,8 @@ test.describe('Feature test for activity logs', () => {
       loginInstitutionalCatalyst2,
     }) => {
       await loginInstitutionalCatalyst2()
-      await page.getByTestId('courses').click()
 
-      await page.getByTestId(`course-list-button-${data.seededCourse}`).click()
+      await openCourseOverview(page, data.seededCourse)
       await page.getByTestId('course-activity-log-button').click()
       await verifyActivityComments(page, {
         message: data.course.message,
@@ -752,9 +810,8 @@ test.describe('Feature test for activity logs', () => {
       loginInstitutionalCatalyst3,
     }) => {
       await loginInstitutionalCatalyst3()
-      await page.getByTestId('courses').click()
 
-      await page.getByTestId(`course-list-button-${data.seededCourse}`).click()
+      await openCourseOverview(page, data.seededCourse)
       await page.getByTestId('course-activity-log-button').click()
       await verifyActivityComments(page, {
         message: data.course.message,
@@ -773,9 +830,7 @@ test.describe('Feature test for activity logs', () => {
     }) => {
       await loginLecturer()
 
-      await page.getByTestId('resources').click()
-      await page.getByTestId('answer-collections').click()
-      await expect(page.getByTestId('answer-collection-list')).toBeVisible()
+      await openAnswerCollectionsPage(page)
       await createAnswerCollection({
         name: data.collection.name,
         description: data.collection.description,
@@ -808,9 +863,10 @@ test.describe('Feature test for activity logs', () => {
       loginIndividualCatalyst,
     }) => {
       await loginIndividualCatalyst()
-      await page.getByTestId('resources').click()
-      await page.getByTestId('answer-collections').click()
-      await expect(page.getByTestId('answer-collection-list')).toBeVisible()
+      await openAnswerCollectionsPage(page)
+      await expect(
+        page.getByTestId(`answer-collection-actions-${data.collection.name}`)
+      ).toBeVisible()
 
       await page
         .getByTestId(`answer-collection-actions-${data.collection.name}`)
@@ -829,9 +885,10 @@ test.describe('Feature test for activity logs', () => {
       loginInstitutionalCatalyst,
     }) => {
       await loginInstitutionalCatalyst()
-      await page.getByTestId('resources').click()
-      await page.getByTestId('answer-collections').click()
-      await expect(page.getByTestId('answer-collection-list')).toBeVisible()
+      await openAnswerCollectionsPage(page)
+      await expect(
+        page.getByTestId(`answer-collection-actions-${data.collection.name}`)
+      ).toBeVisible()
 
       await page
         .getByTestId(`answer-collection-actions-${data.collection.name}`)
@@ -850,9 +907,10 @@ test.describe('Feature test for activity logs', () => {
       loginInstitutionalCatalyst2,
     }) => {
       await loginInstitutionalCatalyst2()
-      await page.getByTestId('resources').click()
-      await page.getByTestId('answer-collections').click()
-      await expect(page.getByTestId('answer-collection-list')).toBeVisible()
+      await openAnswerCollectionsPage(page)
+      await expect(
+        page.getByTestId(`answer-collection-actions-${data.collection.name}`)
+      ).toBeVisible()
 
       await page
         .getByTestId(`answer-collection-actions-${data.collection.name}`)

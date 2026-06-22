@@ -8,6 +8,7 @@ import fs from 'node:fs'
 import { test } from '../util/fixtures.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
+  acceptGamifiedLiveQuizAccountPrompt,
   answerCaseStudy,
   createAnswerCollection,
   createLiveQuiz,
@@ -21,10 +22,13 @@ import {
   editElement,
   env,
   expectByAssertion,
+  getLiveQuizTemplateId,
+  gotoCommit,
   loginIndividualCatalyst,
   loginInstitutionalCatalyst,
   loginLecturer,
   loginStudent,
+  openStudentLiveQuiz,
   runTask,
   selectOption,
   typeInto,
@@ -51,13 +55,10 @@ const data = Object.assign(
 test.describe
   .serial('Test all functionalities related to the creation, management, sharing and use of templates', () => {
   async function openLiveQuizTemplate(templateName: string) {
-    await page.getByTestId(`actions-LIVE_QUIZ-${templateName}`).click()
-    const useTemplate = page.getByTestId(`use-template-${templateName}`)
-    await expect(useTemplate).toBeVisible()
-    await Promise.all([
-      page.waitForURL(/\/templates\//, { timeout: 15000 }),
-      useTemplate.click(),
-    ])
+    const templateId = await getLiveQuizTemplateId(templateName)
+    await page.goto(`${env('URL_MANAGE')}/templates/${templateId}`, {
+      waitUntil: 'commit',
+    })
     await expect(page.getByTestId('template-instructions')).toBeVisible()
   }
 
@@ -68,6 +69,16 @@ test.describe
       page.waitForURL(/\/quizzes\/[^/]+\/cockpit/, { timeout: 15000 }),
       cockpitLink.click(),
     ])
+  }
+
+  async function startLiveQuiz(activityName: string) {
+    const startButton = page.getByTestId(`start-live-quiz-${activityName}`)
+    await expect(startButton).toBeVisible()
+    await Promise.all([
+      page.waitForURL(/\/quizzes\/[^/]+\/cockpit/, { timeout: 30000 }),
+      startButton.click(),
+    ])
+    await expect(page.getByTestId('next-block-timeline')).toBeVisible()
   }
 
   function currentCockpitQuizId() {
@@ -951,9 +962,10 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await page.goto(`${env('URL_MANAGE')}/resources/catalog`, {
+      waitUntil: 'commit',
+    })
+    await expect(page.getByTestId('add-object-to-catalog-button')).toBeVisible()
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-LIVE_QUIZ_TEMPLATE`).click()
@@ -987,9 +999,12 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await page.goto(`${env('URL_MANAGE')}/resources/catalog`, {
+      waitUntil: 'commit',
+    })
+    await expect(
+      page.getByTestId('create-catalog-collection-button')
+    ).toBeVisible()
     await page.getByTestId('create-catalog-collection-button').click()
     await page.getByTestId('catalog-collection-name-input').click()
     await typeInto(
@@ -1002,7 +1017,7 @@ test.describe
       messages.manage.catalog.accessRESTRICTED
     )
     await page.getByTestId('create-catalog-collection-submit').click()
-    await page.getByTestId(`catalog-object-${data.catalog.name}`).click()
+    await page.getByText(data.catalog.name, { exact: true }).click()
     await expect(page.getByTestId('catalog-browser-title')).toContainText(
       data.catalog.name
     )
@@ -1615,7 +1630,7 @@ test.describe
       page.getByTestId(`activity-LIVE_QUIZ-${data.activity1.name}`),
       'exist'
     )
-    await page.getByTestId(`start-live-quiz-${data.activity1.name}`).click()
+    await startLiveQuiz(data.activity1.name)
     await page.getByTestId('next-block-timeline').click()
   })
 
@@ -1627,7 +1642,8 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByText(data.activity1.displayName).first().click()
+    await openStudentLiveQuiz(page, data.activity1.displayName)
+    await acceptGamifiedLiveQuizAccountPrompt(page, data.activity1.displayName)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1728,7 +1744,8 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByText(data.activity1.displayName).first().click()
+    await openStudentLiveQuiz(page, data.activity1.displayName)
+    await acceptGamifiedLiveQuizAccountPrompt(page, data.activity1.displayName)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1829,7 +1846,8 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByText(data.activity1.displayName).first().click()
+    await openStudentLiveQuiz(page, data.activity1.displayName)
+    await acceptGamifiedLiveQuizAccountPrompt(page, data.activity1.displayName)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1960,7 +1978,7 @@ test.describe
     await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('catalog').click()
-    await page.getByTestId(`catalog-object-${data.catalog.name}`).click()
+    await page.getByText(data.catalog.name, { exact: true }).click()
     await page
       .getByTestId(`actions-dropdown-${data.liveQuiz.template2.name}`)
       .click()
@@ -2437,8 +2455,8 @@ test.describe
     ]).entries()) {
       await validateElement(page, { element })
     }
-    await page.getByTestId('resources').click()
-    await page.getByTestId('answer-collections').click()
+    await gotoCommit(page, `${env('URL_MANAGE')}/resources/answerCollections`)
+    await expect(page.getByTestId('create-answer-collection')).toBeVisible()
     await expect(
       page.getByTestId(`answer-collection-${data.collection.name}`)
     ).toContainText(messages.manage.sharing.permissionsREAD)
@@ -2461,7 +2479,7 @@ test.describe
       page.getByTestId(`activity-LIVE_QUIZ-${data.activity2.name}`),
       'exist'
     )
-    await page.getByTestId(`start-live-quiz-${data.activity2.name}`).click()
+    await startLiveQuiz(data.activity2.name)
     await page.getByTestId('next-block-timeline').click()
   })
 
@@ -2502,6 +2520,10 @@ test.describe
         await page.goto(`${env('URL_STUDENT')}/session/${quizId}`, {
           waitUntil: 'commit',
         })
+        await acceptGamifiedLiveQuizAccountPrompt(
+          page,
+          data.activity2.displayName
+        )
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2633,6 +2655,10 @@ test.describe
         await page.goto(`${env('URL_STUDENT')}/session/${quizId}`, {
           waitUntil: 'commit',
         })
+        await acceptGamifiedLiveQuizAccountPrompt(
+          page,
+          data.activity2.displayName
+        )
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2770,6 +2796,10 @@ test.describe
         await page.goto(`${env('URL_STUDENT')}/session/${quizId}`, {
           waitUntil: 'commit',
         })
+        await acceptGamifiedLiveQuizAccountPrompt(
+          page,
+          data.activity2.displayName
+        )
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'

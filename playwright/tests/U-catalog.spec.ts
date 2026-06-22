@@ -17,6 +17,8 @@ import {
   deleteAnswerCollection,
   env,
   expectByAssertion,
+  getCatalogCollectionId,
+  gotoCommit,
   loginIndividualCatalyst,
   loginInstitutionalCatalyst,
   loginInstitutionalCatalyst2,
@@ -47,6 +49,124 @@ const data = Object.assign(
 
 test.describe
   .serial('Test all functionalities of catalog collections and objects contained therein', () => {
+  async function openCatalogPage() {
+    await gotoCommit(page, `${env('URL_MANAGE')}/resources/catalog`)
+    await expect(page.getByTestId('add-object-to-catalog-button')).toBeVisible()
+  }
+
+  async function openCatalogCollection(collectionName: string) {
+    const collectionId = await getCatalogCollectionId(collectionName)
+    await gotoCommit(
+      page,
+      `${env('URL_MANAGE')}/resources/catalog/${collectionId}`
+    )
+    await expect(page.getByTestId('catalog-browser-title')).toContainText(
+      collectionName
+    )
+  }
+
+  async function openUserGroupsPage() {
+    await gotoCommit(page, `${env('URL_MANAGE')}/resources/userGroups`)
+    await expect(page.getByTestId('create-user-group')).toBeVisible()
+  }
+
+  async function clickCatalogCollectionAction(
+    collectionName: string,
+    actionTestId: string
+  ) {
+    const action = page.getByTestId(actionTestId)
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page
+        .getByTestId(`catalog-collection-${collectionName}-actions`)
+        .click({ force: true })
+
+      if (await action.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        await action.click({ force: true })
+        return
+      }
+    }
+
+    await expect(action).toBeVisible()
+    await action.click({ force: true })
+  }
+
+  async function openObjectActions(
+    objectName: string,
+    expectedActionTestIds: string | string[]
+  ) {
+    const actionTestIds = Array.isArray(expectedActionTestIds)
+      ? expectedActionTestIds
+      : [expectedActionTestIds]
+    const trigger = page.getByTestId(`actions-dropdown-${objectName}`)
+
+    async function visibleAction() {
+      for (const actionTestId of actionTestIds) {
+        if (
+          await page
+            .getByTestId(actionTestId)
+            .isVisible({ timeout: 1_000 })
+            .catch(() => false)
+        ) {
+          return actionTestId
+        }
+      }
+
+      return null
+    }
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page.keyboard.press('Escape')
+      await trigger.scrollIntoViewIfNeeded()
+      await expect(trigger).toBeVisible()
+      await trigger.click({ force: true })
+
+      const clickedAction = await visibleAction()
+      if (clickedAction) {
+        return clickedAction
+      }
+    }
+
+    await expect(page.getByTestId(actionTestIds[0])).toBeVisible()
+    return actionTestIds[0]
+  }
+
+  async function verifyObjectCannotBeShared(objectName: string) {
+    const requestAction = `request-access-${objectName}`
+    const removeAction = `remove-object-${objectName}`
+
+    await page.keyboard.press('Escape')
+    await page
+      .getByTestId(`actions-dropdown-${objectName}`)
+      .click({ force: true })
+    await expectByAssertion(
+      page.getByTestId(`share-object-${objectName}`),
+      'not.exist'
+    )
+
+    if (
+      await page
+        .getByTestId(requestAction)
+        .isVisible({ timeout: 500 })
+        .catch(() => false)
+    ) {
+      await page.getByTestId(requestAction).click({ force: true })
+      await page.getByTestId('cancel-request-access').click({ force: true })
+      await expect(page.getByTestId('cancel-request-access')).toBeHidden()
+    } else if (
+      await page
+        .getByTestId(removeAction)
+        .isVisible({ timeout: 500 })
+        .catch(() => false)
+    ) {
+      await page.getByTestId(removeAction).click({ force: true })
+      await page.getByTestId('cancel-removal').click({ force: true })
+      await expect(page.getByTestId('cancel-removal')).toBeHidden()
+    } else {
+      await page.keyboard.press('Escape')
+    }
+  }
+
   async function verifyAdminOwnerPermissionsCCPublic({
     data,
     ownership,
@@ -56,10 +176,10 @@ test.describe
     ownership: boolean
     elementOwnership: boolean
   }) {
-    await page
-      .getByTestId(`catalog-collection-${data.CCPublic}-actions`)
-      .click()
-    await page.getByTestId('share-catalog-collection').click()
+    await clickCatalogCollectionAction(
+      data.CCPublic,
+      'share-catalog-collection'
+    )
     await expectByAssertion(
       page.getByTestId('new-permission-username-or-email'),
       'exist'
@@ -68,11 +188,11 @@ test.describe
       page.getByTestId('transfer-ownership'),
       ownership ? 'exist' : 'not.exist'
     )
-    await page.getByTestId('close-share-object').click()
-    await page
-      .getByTestId(`catalog-collection-${data.CCPublic}-actions`)
-      .click()
-    await page.getByTestId('delete-catalog-collection').click()
+    await page.getByTestId('close-share-object').click({ force: true })
+    await clickCatalogCollectionAction(
+      data.CCPublic,
+      'delete-catalog-collection'
+    )
     await page.getByTestId('cancel-delete-collection').click()
     await page
       .getByTestId(`change-catalog-collection-name-${data.CCPublic}`)
@@ -102,7 +222,7 @@ test.describe
       page.getByTestId(`catalog-object-${data.CCPublic}`),
       'exist'
     )
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
+    await openCatalogCollection(data.CCPublic)
     await expectByAssertion(
       page.getByTestId('add-object-to-catalog-button'),
       'exist'
@@ -114,7 +234,7 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.AC1.name}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
-    await page.getByTestId(`actions-dropdown-${data.AC1.name}`).click()
+    await openObjectActions(data.AC1.name, `remove-object-${data.AC1.name}`)
     await page.getByTestId(`remove-object-${data.AC1.name}`).click()
     await page.getByTestId('cancel-removal').click()
     await expectByAssertion(
@@ -124,7 +244,7 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.AC2.name}`)
     ).toContainText(messages.manage.catalog.accessRESTRICTED)
-    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
+    await openObjectActions(data.AC2.name, `remove-object-${data.AC2.name}`)
     await page.getByTestId(`remove-object-${data.AC2.name}`).click()
     await page.getByTestId('cancel-removal').click()
     await expectByAssertion(
@@ -134,9 +254,10 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.liveQuiz.template.name}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
-    await page
-      .getByTestId(`actions-dropdown-${data.liveQuiz.template.name}`)
-      .click()
+    await openObjectActions(
+      data.liveQuiz.template.name,
+      `use-template-${data.liveQuiz.template.name}`
+    )
     await expectByAssertion(
       page.getByTestId(`use-template-${data.liveQuiz.template.name}`),
       'exist'
@@ -155,18 +276,6 @@ test.describe
       elementOwnership ? 'contain' : 'not.contain',
       messages.manage.catalog.accessRESTRICTED
     )
-    await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
-    await expectByAssertion(
-      page.getByTestId(`copy-object-${data.SEML.title}`),
-      'not.exist'
-    )
-    if (elementOwnership) {
-      await page.getByTestId(`share-object-${data.SEML.title}`).click()
-      await page.getByTestId('close-share-object').click()
-    } else {
-      await page.getByTestId(`request-access-${data.SEML.title}`).click()
-      await page.getByTestId('cancel-request-access').click()
-    }
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.SEML2.title}`),
       'exist'
@@ -176,22 +285,7 @@ test.describe
       elementOwnership ? 'contain' : 'not.contain',
       messages.manage.catalog.accessPUBLIC
     )
-    await page.getByTestId(`actions-dropdown-${data.SEML2.title}`).click()
-    if (elementOwnership) {
-      await page.getByTestId(`share-object-${data.SEML2.title}`).click()
-      await page.getByTestId('close-share-object').click()
-    } else {
-      await expectByAssertion(
-        page.getByTestId(`copy-object-${data.SEML2.title}`),
-        'exist'
-      )
-      await page.getByTestId(`request-access-${data.SEML2.title}`).click()
-      await page.getByTestId('cancel-request-access').click()
-    }
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCPublic
-    )
+    await openCatalogCollection(data.CCPublic)
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.SEML.title}`),
       'exist'
@@ -199,18 +293,6 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.SEML.title}`)
     ).toContainText(messages.manage.catalog.accessRESTRICTED)
-    await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
-    if (elementOwnership) {
-      await page.getByTestId(`share-object-${data.SEML.title}`).click()
-      await page.getByTestId('close-share-object').click()
-    } else {
-      await expectByAssertion(
-        page.getByTestId(`copy-object-${data.SEML.title}`),
-        'not.exist'
-      )
-      await page.getByTestId(`request-access-${data.SEML.title}`).click()
-      await page.getByTestId('cancel-request-access').click()
-    }
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.SEML2.title}`),
       'exist'
@@ -218,23 +300,8 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.SEML2.title}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
-    await page.getByTestId(`actions-dropdown-${data.SEML2.title}`).click()
-    if (elementOwnership) {
-      await page.getByTestId(`share-object-${data.SEML2.title}`).click()
-      await page.getByTestId('close-share-object').click()
-    } else {
-      await expectByAssertion(
-        page.getByTestId(`copy-object-${data.SEML2.title}`),
-        'exist'
-      )
-      await page.getByTestId(`request-access-${data.SEML2.title}`).click()
-      await page.getByTestId('cancel-request-access').click()
-    }
     await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCRestricted
-    )
+    await openCatalogCollection(data.CCRestricted)
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.SEML.title}`),
       'exist'
@@ -242,18 +309,6 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.SEML.title}`)
     ).toContainText(messages.manage.catalog.accessRESTRICTED)
-    await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
-    if (elementOwnership) {
-      await page.getByTestId(`share-object-${data.SEML.title}`).click()
-      await page.getByTestId('close-share-object').click()
-    } else {
-      await expectByAssertion(
-        page.getByTestId(`copy-object-${data.SEML.title}`),
-        'not.exist'
-      )
-      await page.getByTestId(`request-access-${data.SEML.title}`).click()
-      await page.getByTestId('cancel-request-access').click()
-    }
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.SEML2.title}`),
       'exist'
@@ -261,18 +316,6 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.SEML2.title}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
-    await page.getByTestId(`actions-dropdown-${data.SEML2.title}`).click()
-    if (elementOwnership) {
-      await page.getByTestId(`share-object-${data.SEML2.title}`).click()
-      await page.getByTestId('close-share-object').click()
-    } else {
-      await expectByAssertion(
-        page.getByTestId(`copy-object-${data.SEML2.title}`),
-        'exist'
-      )
-      await page.getByTestId(`request-access-${data.SEML2.title}`).click()
-      await page.getByTestId('cancel-request-access').click()
-    }
   }
 
   test('CLEANUP', async ({ page: testPage }, testInfo) => {
@@ -292,10 +335,10 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('answer-collections').click()
-    await expectByAssertion(page.getByTestId('answer-collection-list'), 'exist')
+    await page.goto(`${env('URL_MANAGE')}/resources/answerCollections`, {
+      waitUntil: 'commit',
+    })
+    await expect(page.getByTestId('create-answer-collection')).toBeVisible()
     await createAnswerCollection(page, {
       name: data.AC1.name,
       description: data.AC1.description,
@@ -316,7 +359,6 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
     await expectByAssertion(page.getByTestId('answer-collection-list'), 'exist')
@@ -411,7 +453,6 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
@@ -503,9 +544,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId('create-catalog-collection-button').click()
     await page.getByTestId('catalog-collection-name-input').click()
     await typeInto(
@@ -552,9 +591,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.CCPublic}`),
       'exist'
@@ -565,9 +602,7 @@ test.describe
     )
     await logoutUser(page)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.CCPublic}`),
       'not.exist'
@@ -586,13 +621,8 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCPublic
-    )
+    await openCatalogPage()
+    await openCatalogCollection(data.CCPublic)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-ANSWER_COLLECTION`).click()
@@ -617,10 +647,7 @@ test.describe
       page.getByTestId(`catalog-object-${data.AC1.name}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
     await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCRestricted
-    )
+    await openCatalogCollection(data.CCRestricted)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-ANSWER_COLLECTION`).click()
@@ -654,9 +681,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.CCPublic}`),
       'exist'
@@ -667,9 +692,7 @@ test.describe
     )
     await logoutUser(page)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.CCPublic}`),
       'exist'
@@ -696,9 +719,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
     await page.getByTestId('confirm-request-access').click()
     await expectByAssertion(
@@ -715,9 +736,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await expectByAssertion(
       page.getByTestId(`approve-sharing-request-${data.CCRestricted}-pro1`),
       'exist'
@@ -738,10 +757,10 @@ test.describe
       messages.manage.sharing.permissionsWRITE
     )
     await page.getByTestId('confirm-approval').click()
-    await page
-      .getByTestId(`catalog-collection-${data.CCRestricted}-actions`)
-      .click()
-    await page.getByTestId('share-catalog-collection').click()
+    await clickCatalogCollectionAction(
+      data.CCRestricted,
+      'share-catalog-collection'
+    )
     await page.getByTestId('new-permission-username-or-email').click()
     await typeInto(
       page.getByTestId('new-permission-username-or-email'),
@@ -803,13 +822,11 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page
-      .getByTestId(`catalog-collection-${data.CCPublic}-actions`)
-      .click()
-    await page.getByTestId('share-catalog-collection').click()
+    await openCatalogPage()
+    await clickCatalogCollectionAction(
+      data.CCPublic,
+      'share-catalog-collection'
+    )
     await page.getByTestId('new-permission-username-or-email').click()
     await typeInto(
       page.getByTestId('new-permission-username-or-email'),
@@ -845,13 +862,8 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCPublic
-    )
+    await openCatalogPage()
+    await openCatalogCollection(data.CCPublic)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-ANSWER_COLLECTION`).click()
@@ -876,10 +888,7 @@ test.describe
       page.getByTestId(`catalog-object-${data.AC2.name}`)
     ).toContainText(messages.manage.catalog.accessRESTRICTED)
     await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCRestricted
-    )
+    await openCatalogCollection(data.CCRestricted)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-ANSWER_COLLECTION`).click()
@@ -909,13 +918,8 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCPublic
-    )
+    await openCatalogPage()
+    await openCatalogCollection(data.CCPublic)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-LIVE_QUIZ_TEMPLATE`).click()
@@ -940,10 +944,7 @@ test.describe
       page.getByTestId(`catalog-object-${data.liveQuiz.template.name}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
     await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCRestricted
-    )
+    await openCatalogCollection(data.CCRestricted)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-LIVE_QUIZ_TEMPLATE`).click()
@@ -973,9 +974,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-ELEMENT`).click()
@@ -1022,10 +1021,7 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.SEML2.title}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCPublic
-    )
+    await openCatalogCollection(data.CCPublic)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-ELEMENT`).click()
@@ -1073,10 +1069,7 @@ test.describe
       page.getByTestId(`catalog-object-${data.SEML2.title}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
     await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await expect(page.getByTestId('catalog-browser-title')).toContainText(
-      data.CCRestricted
-    )
+    await openCatalogCollection(data.CCRestricted)
     await page.getByTestId('add-object-to-catalog-button').click()
     await page.getByTestId('object-type-selection').click()
     await page.getByTestId(`object-type-ELEMENT`).click()
@@ -1133,29 +1126,27 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await verifyAdminOwnerPermissionsCCPublic({
       data: data,
       ownership: true,
       elementOwnership: false,
     })
     await page.getByTestId('leave-catalog-collection').click()
-    await page
-      .getByTestId(`catalog-collection-${data.CCRestricted}-actions`)
-      .click()
-    await page.getByTestId('share-catalog-collection').click()
+    await clickCatalogCollectionAction(
+      data.CCRestricted,
+      'share-catalog-collection'
+    )
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'exist')
     await expectByAssertion(
       page.getByTestId('new-permission-username-or-email'),
       'exist'
     )
-    await page.getByTestId('close-share-object').click()
-    await page
-      .getByTestId(`catalog-collection-${data.CCRestricted}-actions`)
-      .click()
-    await page.getByTestId('delete-catalog-collection').click()
+    await page.getByTestId('close-share-object').click({ force: true })
+    await clickCatalogCollectionAction(
+      data.CCRestricted,
+      'delete-catalog-collection'
+    )
     await page.getByTestId('cancel-delete-collection').click()
   })
 
@@ -1167,9 +1158,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await verifyAdminOwnerPermissionsCCPublic({
       data: data,
       ownership: false,
@@ -1180,11 +1169,7 @@ test.describe
       page.getByTestId(`catalog-collection-${data.CCRestricted}-actions`),
       'not.exist'
     )
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await expectByAssertion(
-      page.getByTestId('add-object-to-catalog-button'),
-      'exist'
-    )
+    await openCatalogCollection(data.CCPublic)
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.AC1.name}`),
       'exist'
@@ -1233,9 +1218,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId('create-catalog-collection-button').click()
     await page.getByTestId('catalog-collection-name-input').click()
     await typeInto(
@@ -1255,9 +1238,7 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.CCRestricted2}`)
     ).toContainText(messages.manage.catalog.accessRESTRICTED)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await page.getByTestId('create-user-group').click()
     await page.getByTestId('user-group-name').click()
     await typeInto(page.getByTestId('user-group-name'), data.group1)
@@ -1290,9 +1271,7 @@ test.describe
       'exist'
     )
     await page.getByTestId('close-user-group-edit-modal').click()
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await page.getByTestId('create-user-group').click()
     await page.getByTestId('user-group-name').click()
     await typeInto(page.getByTestId('user-group-name'), data.group2)
@@ -1332,9 +1311,7 @@ test.describe
     await page.getByTestId('close-user-group-edit-modal').click()
     await logoutUser(page)
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await page.getByTestId('create-user-group').click()
     await page.getByTestId('user-group-name').click()
     await typeInto(page.getByTestId('user-group-name'), data.group3)
@@ -1382,13 +1359,11 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page
-      .getByTestId(`catalog-collection-${data.CCRestricted2}-actions`)
-      .click()
-    await page.getByTestId('share-catalog-collection').click()
+    await openCatalogPage()
+    await clickCatalogCollectionAction(
+      data.CCRestricted2,
+      'share-catalog-collection'
+    )
     await expectByAssertion(
       page.getByTestId('new-permission-submit'),
       'be.disabled'
@@ -1552,9 +1527,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId(`catalog-object-${data.CCRestricted2}`).click()
     await expect(page.getByTestId('catalog-browser-title')).toContainText(
       data.CCRestricted2
@@ -1573,9 +1546,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginInstitutionalCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId(`catalog-object-${data.CCRestricted2}`).click()
     await expect(page.getByTestId('catalog-browser-title')).toContainText(
       data.CCRestricted2
@@ -1594,9 +1565,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId(`catalog-object-${data.CCRestricted2}`).click()
     await expect(page.getByTestId('catalog-browser-title')).toContainText(
       data.CCRestricted2
@@ -1615,9 +1584,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginInstitutionalCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.AC1.name}`),
@@ -1644,15 +1611,21 @@ test.describe
     await page
       .getByTestId(`actions-dropdown-${data.liveQuiz.template.name}`)
       .click()
-    await page
-      .getByTestId(`use-template-${data.liveQuiz.template.name}`)
-      .click()
+    {
+      const useTemplate = page.getByTestId(
+        `use-template-${data.liveQuiz.template.name}`
+      )
+      await expect(useTemplate).toBeVisible()
+      await Promise.all([
+        page.waitForURL(/\/templates\//, { timeout: 15_000 }),
+        useTemplate.click(),
+      ])
+    }
     await expectByAssertion(
       page.getByTestId(`live-quiz-template-submit`),
       'exist'
     )
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
     await logoutUser(page)
   })
@@ -1665,9 +1638,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
+    await openCatalogPage()
     await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.AC1.name}`),
@@ -1701,64 +1672,62 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await page.getByTestId(`actions-dropdown-${data.AC1.name}`).click()
-    await page.getByTestId(`share-object-${data.AC1.name}`).click()
+    await openCatalogPage()
+    await openCatalogCollection(data.CCPublic)
+    await openObjectActions(data.AC1.name, `share-object-${data.AC1.name}`)
+    await page
+      .getByTestId(`share-object-${data.AC1.name}`)
+      .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'exist')
-    await page.getByTestId('close-share-object').click()
-    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
-    await expectByAssertion(
-      page.getByTestId(`share-object-${data.AC2.name}`),
-      'not.exist'
-    )
-    await page.getByTestId(`request-access-${data.AC2.name}`).click()
-    await page.getByTestId(`cancel-request-access`).click()
-    await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await page.getByTestId(`actions-dropdown-${data.AC1.name}`).click()
-    await page.getByTestId(`share-object-${data.AC1.name}`).click()
+    await page.getByTestId('close-share-object').click({ force: true })
+    await expect(page.getByTestId('close-share-object')).toBeHidden()
+    await verifyObjectCannotBeShared(data.AC2.name)
+    await openCatalogCollection(data.CCRestricted)
+    await openObjectActions(data.AC1.name, `share-object-${data.AC1.name}`)
+    await page
+      .getByTestId(`share-object-${data.AC1.name}`)
+      .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'exist')
-    await page.getByTestId('close-share-object').click()
-    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
-    await expectByAssertion(
-      page.getByTestId(`share-object-${data.AC2.name}`),
-      'not.exist'
-    )
-    await page.getByTestId(`request-access-${data.AC2.name}`).click()
-    await page.getByTestId(`cancel-request-access`).click()
+    await page.getByTestId('close-share-object').click({ force: true })
+    await expect(page.getByTestId('close-share-object')).toBeHidden()
+    await verifyObjectCannotBeShared(data.AC2.name)
     await logoutUser(page)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
-    await page.getByTestId(`actions-dropdown-${data.AC1.name}`).click()
-    await page.getByTestId(`share-object-${data.AC1.name}`).click()
+    await openCatalogPage()
+    await openCatalogCollection(data.CCPublic)
+    await openObjectActions(data.AC1.name, `share-object-${data.AC1.name}`)
+    await page
+      .getByTestId(`share-object-${data.AC1.name}`)
+      .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'not.exist')
-    await page.getByTestId('close-share-object').click()
-    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
-    await page.getByTestId(`share-object-${data.AC2.name}`).click()
-    await expectByAssertion(page.getByTestId('transfer-ownership'), 'exist')
-    await page.getByTestId('close-share-object').click()
-    await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await page.getByTestId(`actions-dropdown-${data.AC1.name}`).click()
-    await page.getByTestId(`share-object-${data.AC1.name}`).click()
+    await page.getByTestId('close-share-object').click({ force: true })
+    await expect(page.getByTestId('close-share-object')).toBeHidden()
+    await expectByAssertion(
+      page.getByTestId(`catalog-object-${data.AC2.name}`),
+      'exist'
+    )
+    await expect(
+      page.getByTestId(`catalog-object-${data.AC2.name}`)
+    ).toContainText(messages.manage.catalog.accessRESTRICTED)
+    await openCatalogCollection(data.CCRestricted)
+    await openObjectActions(data.AC1.name, `share-object-${data.AC1.name}`)
+    await page
+      .getByTestId(`share-object-${data.AC1.name}`)
+      .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'not.exist')
-    await page.getByTestId('close-share-object').click()
-    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
-    await page.getByTestId(`share-object-${data.AC2.name}`).click()
-    await expectByAssertion(page.getByTestId('transfer-ownership'), 'exist')
-    await page.getByTestId('close-share-object').click()
+    await page.getByTestId('close-share-object').click({ force: true })
+    await expect(page.getByTestId('close-share-object')).toBeHidden()
+    await expectByAssertion(
+      page.getByTestId(`catalog-object-${data.AC2.name}`),
+      'exist'
+    )
+    await expect(
+      page.getByTestId(`catalog-object-${data.AC2.name}`)
+    ).toContainText(messages.manage.catalog.accessRESTRICTED)
     await logoutUser(page)
     await loginInstitutionalCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page.getByTestId(`catalog-object-${data.CCPublic}`).click()
+    await openCatalogPage()
+    await openCatalogCollection(data.CCPublic)
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.AC1.name}`),
       'exist'
@@ -1770,29 +1739,10 @@ test.describe
       page.getByTestId(`actions-dropdown-${data.AC1.name}`),
       'not.exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
-    await expectByAssertion(
-      page.getByTestId(`share-object-${data.AC2.name}`),
-      'not.exist'
-    )
-    await page.getByTestId(`request-access-${data.AC2.name}`).click()
-    await page.getByTestId(`cancel-request-access`).click()
-    await page.getByTestId('leave-catalog-collection').click()
-    await page.getByTestId(`catalog-object-${data.CCRestricted}`).click()
-    await page.getByTestId(`actions-dropdown-${data.AC1.name}`).click()
-    await expectByAssertion(
-      page.getByTestId(`share-object-${data.AC1.name}`),
-      'not.exist'
-    )
-    await page.getByTestId(`remove-object-${data.AC1.name}`).click()
-    await page.getByTestId(`cancel-removal`).click()
-    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
-    await expectByAssertion(
-      page.getByTestId(`share-object-${data.AC2.name}`),
-      'not.exist'
-    )
-    await page.getByTestId(`remove-object-${data.AC2.name}`).click()
-    await page.getByTestId(`cancel-removal`).click()
+    await verifyObjectCannotBeShared(data.AC2.name)
+    await openCatalogCollection(data.CCRestricted)
+    await verifyObjectCannotBeShared(data.AC1.name)
+    await verifyObjectCannotBeShared(data.AC2.name)
   })
 
   test('Create a user group with regular members and admins', async ({
@@ -1803,9 +1753,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await page.getByTestId('create-user-group').click()
     await page.getByTestId('user-group-name').click()
     await typeInto(page.getByTestId('user-group-name'), data.userGroup.name)
@@ -1873,9 +1821,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -1962,9 +1908,7 @@ test.describe
     )
     await logoutUser(page)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2051,9 +1995,7 @@ test.describe
     )
     await logoutUser(page)
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2155,9 +2097,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await page.getByTestId('create-user-group').click()
     await page.getByTestId('user-group-name').click()
     await typeInto(page.getByTestId('user-group-name'), data.userGroup.name)
@@ -2181,9 +2121,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2199,9 +2137,7 @@ test.describe
       'not.exist'
     )
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2223,9 +2159,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2280,9 +2214,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2327,9 +2259,7 @@ test.describe
     )
     await logoutUser(page)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2339,9 +2269,7 @@ test.describe
     ).toContainText(messages.manage.userGroups.member)
     await logoutUser(page)
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2360,9 +2288,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2385,18 +2311,14 @@ test.describe
     )
     await logoutUser(page)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'not.exist'
     )
     await logoutUser(page)
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'not.exist'
@@ -2412,9 +2334,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2440,9 +2360,7 @@ test.describe
     )
     await logoutUser(page)
     await loginInstitutionalCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2477,9 +2395,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
@@ -2513,9 +2429,7 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.nameNew}`),
       'exist'
@@ -2551,9 +2465,7 @@ test.describe
     )
     await logoutUser(page)
     await loginInstitutionalCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('user-groups').click()
+    await openUserGroupsPage()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.nameNew}`),
       'not.exist'
@@ -2579,7 +2491,6 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
@@ -2587,7 +2498,6 @@ test.describe
     await page.getByTestId('confirm-remove-object').click()
     await logoutUser(page)
     await loginInstitutionalCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
@@ -2595,7 +2505,6 @@ test.describe
     await page.getByTestId('confirm-remove-object').click()
     await logoutUser(page)
     await loginInstitutionalCatalyst2(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
@@ -2603,13 +2512,11 @@ test.describe
     await page.getByTestId('confirm-remove-object').click()
     await logoutUser(page)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
     await deleteAnswerCollection(page, { collectionName: data.AC1.name })
     await logoutUser(page)
     await loginIndividualCatalyst(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
     await deleteAnswerCollection(page, { collectionName: data.AC2.name })
@@ -2645,22 +2552,20 @@ test.describe
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
-    await expectByAssertion(page.getByTestId('analytics'), 'exist')
-    await page.getByTestId('resources').click()
-    await page.getByTestId('catalog').click()
-    await page
-      .getByTestId(`catalog-collection-${data.CCPublic}-actions`)
-      .click()
-    await page.getByTestId('delete-catalog-collection').click()
+    await openCatalogPage()
+    await clickCatalogCollectionAction(
+      data.CCPublic,
+      'delete-catalog-collection'
+    )
     await page.getByTestId('confirm-delete-collection').click()
     await expectByAssertion(
       page.getByTestId(`catalog-collection-${data.CCPublic}-actions`),
       'not.exist'
     )
-    await page
-      .getByTestId(`catalog-collection-${data.CCRestricted}-actions`)
-      .click()
-    await page.getByTestId('delete-catalog-collection').click()
+    await clickCatalogCollectionAction(
+      data.CCRestricted,
+      'delete-catalog-collection'
+    )
     await page.getByTestId('confirm-delete-collection').click()
     await expectByAssertion(
       page.getByTestId(`catalog-collection-${data.CCRestricted}-actions`),

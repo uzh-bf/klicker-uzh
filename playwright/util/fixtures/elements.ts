@@ -670,7 +670,7 @@ export async function createQuestionSE({
   }
 
   const hasSampleSolution = Boolean(correctAnswers?.length)
-  const dbAnswerCollectionItems = hasSampleSolution
+  const dbAnswerCollectionItems: Array<{ id: number }> = hasSampleSolution
     ? await prisma.answerCollectionEntry.findMany({
         where: {
           collectionId: dbAnswerCollection.id,

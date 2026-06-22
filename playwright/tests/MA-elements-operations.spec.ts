@@ -28,6 +28,7 @@ import {
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
+import { acceptGamifiedLiveQuizAccountPrompt } from '../util/workflow.js'
 
 type Choice = {
   value: string
@@ -370,6 +371,22 @@ async function verifySingleChoiceQuestionContent(
       )
     }
   }
+}
+
+async function openStudentLiveQuiz(page: Page, displayName: string) {
+  const tile = page.getByTestId(`live-quiz-${displayName}`)
+  await expect(tile).toBeVisible()
+  await Promise.all([
+    page.waitForURL(/\/session\//, { waitUntil: 'commit' }),
+    tile.click(),
+  ])
+  await acceptGamifiedLiveQuizAccountPrompt(page, displayName)
+  await expect(page.getByTestId('instance-question-content')).toBeVisible()
+}
+
+async function returnToStudentHome(page: Page) {
+  await page.goto('/', { waitUntil: 'commit' })
+  await expect(page.getByTestId('homepage')).toBeVisible()
 }
 
 test.describe('Create different types of elements (with and without sample solution) and edit them', () => {
@@ -961,23 +978,23 @@ test.describe('Create different types of elements (with and without sample solut
       await loginStudent()
       await expect(page.getByTestId('homepage')).toBeVisible()
 
-      await page.getByText(data.update.liveQuiz1, { exact: true }).click()
+      await openStudentLiveQuiz(page, data.update.liveQuiz1)
       await verifySingleChoiceQuestionContent(page, {
         submission: false,
         content: data.update.content1,
         choices: data.update.choices1,
       })
 
-      await page.getByTestId('header-home').click()
-      await page.getByText(data.update.liveQuiz2, { exact: true }).click()
+      await returnToStudentHome(page)
+      await openStudentLiveQuiz(page, data.update.liveQuiz2)
       await verifySingleChoiceQuestionContent(page, {
         submission: false,
         content: data.update.content2,
         choices: data.update.choices2,
       })
 
-      await page.getByTestId('header-home').click()
-      await page.getByText(data.update.liveQuiz3, { exact: true }).click()
+      await returnToStudentHome(page)
+      await openStudentLiveQuiz(page, data.update.liveQuiz3)
       await verifySingleChoiceQuestionContent(page, {
         submission: false,
         content: data.update.content3,
@@ -1107,6 +1124,10 @@ test.describe('Create different types of elements (with and without sample solut
         await page.getByTestId('next-block-timeline').click()
         await page.waitForTimeout(500)
         await page.reload()
+        await page.getByTestId('activities').click()
+        await expect(page.getByTestId('activities-search-input')).toBeVisible()
+        await page.getByTestId('activities-search-input').fill(quiz)
+        await page.keyboard.press('Enter')
         await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
         await page.getByTestId(`delete-live-quiz-${quiz}`).click()
         await page.getByTestId('confirmation-modal-confirm').click()

@@ -307,10 +307,13 @@ test.describe
       permissionLevel: messages.manage.sharing.permissionsADMIN,
     })
     await page.getByTestId(`close-share-object`).click()
-    await page.getByTestId('courses').click()
+    await page.goto(`${env('URL_MANAGE')}/courses`, { waitUntil: 'commit' })
     await page
       .getByTestId(`course-list-button-${data.review.course.name}`)
       .click()
+    await expect(page.getByTestId('course-name-with-pin')).toContainText(
+      data.review.course.name
+    )
     await page.getByTestId('course-share-button').click()
     await shareObject(page, {
       usernameOrEmail: env('LECTURER_IND_SHORTNAME'),

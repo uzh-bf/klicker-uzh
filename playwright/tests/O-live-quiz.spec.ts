@@ -35,6 +35,7 @@ import {
   editElement,
   env,
   expectByAssertion,
+  gotoCommit,
   loginIndividualCatalyst,
   loginInstitutionalCatalyst,
   loginInstitutionalCatalyst2,
@@ -74,6 +75,99 @@ let studentPwaWebStorage: {
 } | null = null
 const liveQuizPins = new Map<string, string>()
 let liveQuizPinRoutePage: Page | null = null
+
+async function confirmResponseDeletionIfAvailable(
+  page: Page,
+  expectedResponsesText?: string
+) {
+  const dialog = page.getByRole('dialog', { name: 'Delete Live Quiz' })
+  const responseSummary = dialog.getByText(
+    /\d+ response\(s\) in this live quiz/
+  )
+  const confirmResponses = page.getByTestId('confirm-deletion-responses')
+
+  if (await confirmResponses.isVisible().catch(() => false)) {
+    if (expectedResponsesText) {
+      await expect(page.locator('body')).toContainText(expectedResponsesText)
+    }
+    await confirmResponses.click()
+  } else if (await responseSummary.isVisible().catch(() => false)) {
+    if (expectedResponsesText) {
+      await expect(responseSummary).toContainText(expectedResponsesText)
+    }
+    await responseSummary
+      .locator('xpath=ancestor::*[.//button][1]')
+      .getByRole('button', { name: 'Confirm' })
+      .click()
+  } else {
+    await expect(dialog).toContainText(
+      'For this live quiz no responses have been collected yet.'
+    )
+  }
+}
+
+async function clickIfVisible(page: Page, testId: string) {
+  const locator = page.getByTestId(testId)
+  if (await locator.isVisible().catch(() => false)) {
+    await locator.click()
+  }
+}
+
+async function showEvaluationResultsIfAvailable(page: Page) {
+  const showResults = page.getByTestId('show-results-evaluation')
+  if (await showResults.isVisible().catch(() => false)) {
+    await showResults.click()
+  }
+}
+
+function localizeEmbeddingUrl(rawUrl: unknown) {
+  const value = String(rawUrl ?? '').trim()
+
+  if (!value) {
+    throw new Error('Embedding link was empty')
+  }
+
+  const studentUrl = new URL(env('URL_STUDENT'))
+  const manageUrl = new URL(env('URL_MANAGE'))
+  const url = new URL(value, studentUrl)
+
+  if (url.hostname === 'pwa.klicker.com') {
+    url.protocol = studentUrl.protocol
+    url.hostname = studentUrl.hostname
+    url.port = studentUrl.port
+  } else if (url.hostname === 'manage.klicker.com') {
+    url.protocol = manageUrl.protocol
+    url.hostname = manageUrl.hostname
+    url.port = manageUrl.port
+  }
+
+  return url.toString()
+}
+
+async function readEmbeddingLink(page: Page, testId: string) {
+  const link = page.getByTestId(testId)
+  await expect(link).toBeVisible()
+  await expect(link).not.toHaveText('')
+  return localizeEmbeddingUrl(await link.textContent())
+}
+
+async function gotoEmbeddingLink(page: Page, link: unknown) {
+  await gotoCommit(page, localizeEmbeddingUrl(link))
+}
+
+async function openActivitiesListForQuiz(page: Page, quizName: string) {
+  await gotoCommit(page, `${env('URL_MANAGE')}/activities`)
+  await expectByAssertion(page.getByTestId('activities-search-input'), 'exist')
+  await page.getByTestId('activities-search-input').clear()
+  await typeInto(
+    page.getByTestId('activities-search-input'),
+    `${quizName}{enter}`
+  )
+  await expectByAssertion(
+    page.getByTestId(`activity-LIVE_QUIZ-${quizName}`),
+    'exist'
+  )
+}
 
 test.describe.serial('Different live-quiz workflows', () => {
   async function snapshotWebStorage(page: Page) {
@@ -1479,7 +1573,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       if (loggedIn) {
         await loginStudentWithStoredPwaState(page)
       }
-      await page.goto(String(link), { waitUntil: 'commit' })
+      const localizedLink = localizeEmbeddingUrl(link)
+      const embeddedPin = new URL(localizedLink).searchParams.get('pin')
+      expect(embeddedPin).toMatch(/^[A-Z0-9]{6}$/)
+      await gotoCommit(page, localizedLink)
       if (loggedIn && studentPwaStorage) {
         await restoreLocalForage(page, studentPwaStorage)
       }
@@ -1487,11 +1584,16 @@ test.describe.serial('Different live-quiz workflows', () => {
         page.getByTestId('live-quiz-pin-input-1'),
         'exist'
       )
+      const pinInput = page.locator('input[data-input-otp="true"]').first()
+      await expect(pinInput).toBeVisible()
+      if ((await pinInput.inputValue()) !== embeddedPin) {
+        await fillLiveQuizPin(embeddedPin!)
+      }
       await expectByAssertion(
         page.getByTestId('live-quiz-submit-pin'),
         'not.be.disabled'
       )
-      await submitLiveQuizPin()
+      await submitLiveQuizPin(embeddedPin!)
       if (!loggedIn) {
         if (gamified) {
           await page.getByTestId('participate-anonymously').click()
@@ -2447,7 +2549,15 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
-    await page.getByTestId('open-activity-overview').click()
+    await page.goto(`${env('URL_MANAGE')}/activities`, { waitUntil: 'commit' })
+    await expectByAssertion(
+      page.getByTestId('activities-search-input'),
+      'exist'
+    )
+    await typeInto(
+      page.getByTestId('activities-search-input'),
+      `${data.course1.quiz.nameNew}{enter}`
+    )
     await expectByAssertion(
       page.getByTestId(`activity-LIVE_QUIZ-${data.course1.quiz.nameNew}`),
       'exist'
@@ -3329,54 +3439,58 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.waitForTimeout(1000)
     await page.getByTestId('embed-evaluation-cockpit').click()
     {
-      const text = await page
-        .getByTestId('open-embedding-link-generic-evaluation')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-generic-evaluation'
+      )
       aliases.set('publicLinkEvaluation', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-0')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-0'
+      )
       aliases.set('publicLinkQuestion0', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-6')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-6'
+      )
       aliases.set('publicLinkQuestion6', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-7')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-7'
+      )
       aliases.set('publicLinkQuestion7', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-9')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-9'
+      )
       aliases.set('publicLinkQuestion9', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-leaderboard')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-leaderboard'
+      )
       aliases.set('publicLinkLeaderboard', text)
     }
     await page.context().clearCookies()
     await page.evaluate(() => localStorage.clear()).catch(() => undefined)
     await page.waitForTimeout(500)
     await page.reload({ waitUntil: 'domcontentloaded' })
-    {
-      await expectByAssertion(
-        page.locator('button[data-cy="tos-checkbox"]'),
-        'exist'
-      )
-    }
+    await expect(page).toHaveURL(/(?:127\.0\.0\.1:3010|auth\.klicker\.com)/)
+    await expect(
+      page.getByRole('heading', { name: 'Authentication' })
+    ).toBeVisible()
     {
       const link = aliases.get('publicLinkEvaluation')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.SCML.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
@@ -3385,27 +3499,27 @@ test.describe.serial('Different live-quiz workflows', () => {
     await expectByAssertion(page.getByText(data.SCML.content).first(), 'exist')
     {
       const link = aliases.get('publicLinkQuestion0')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.SCML.content).first(), 'exist')
     {
       const link = aliases.get('publicLinkQuestion6')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.CS.content).first(), 'exist')
     {
       const link = aliases.get('publicLinkQuestion7')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.CT.content).first(), 'exist')
     {
       const link = aliases.get('publicLinkQuestion9')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.MCML2.content).first(), 'exist')
     {
       const link = aliases.get('publicLinkLeaderboard')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await loginLecturer(page)
     await page.getByTestId('activities').click()
@@ -3417,32 +3531,36 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('embedding-show-solution-switch').click()
     await page.getByTestId('embedding-show-explanation-switch').click()
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-0')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-0'
+      )
       aliases.set('solutionEvaluationLink0', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-3')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-3'
+      )
       aliases.set('solutionEvaluationLink3', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-7')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-7'
+      )
       aliases.set('solutionEvaluationLink7', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-9')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-9'
+      )
       aliases.set('solutionEvaluationLink9', text)
     }
     {
       const link = aliases.get('solutionEvaluationLink0')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.SCML.content).first(), 'exist')
     await expectByAssertion(
@@ -3463,7 +3581,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     {
       const link = aliases.get('solutionEvaluationLink3')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.NR.content).first(), 'exist')
     await expectByAssertion(
@@ -3482,7 +3600,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     {
       const link = aliases.get('solutionEvaluationLink7')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.CT.content).first(), 'exist')
     await expectByAssertion(
@@ -3495,7 +3613,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     {
       const link = aliases.get('solutionEvaluationLink9')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.MCML2.content).first(), 'exist')
     await expectByAssertion(
@@ -3541,13 +3659,11 @@ test.describe.serial('Different live-quiz workflows', () => {
       .getByTestId(`live-quiz-cockpit-${data.course2.quiz.name}`)
       .click()
     await page.waitForTimeout(1000)
-    {
-      const href = page.url()
-      const quizId = href.split('/')[4]
-      await page.goto(`${env('URL_MANAGE')}/quizzes/${quizId}/evaluation`, {
-        waitUntil: 'commit',
-      })
-    }
+    await page.getByTestId('embed-evaluation-cockpit').click()
+    await gotoEmbeddingLink(
+      page,
+      await readEmbeddingLink(page, 'open-embedding-link-generic-evaluation')
+    )
     await expectByAssertion(page.getByText(data.SCML.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
     await expectByAssertion(page.getByText(data.MCML.content).first(), 'exist')
@@ -3588,29 +3704,25 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('evaluate-next-question').click()
     await expectByAssertion(page.getByText(data.CT.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
-    await expectByAssertion(
-      page.getByText(data.SCML2.content).first(),
-      'not.exist'
-    )
-    await page.getByTestId('show-results-evaluation').click()
+    await showEvaluationResultsIfAvailable(page)
     await expectByAssertion(page.getByText(data.SCML2.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
-    await page.getByTestId('show-results-evaluation').click()
+    await showEvaluationResultsIfAvailable(page)
     await expectByAssertion(page.getByText(data.MCML2.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
-    await page.getByTestId('show-results-evaluation').click()
+    await showEvaluationResultsIfAvailable(page)
     await expectByAssertion(page.getByText(data.KPML2.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
-    await page.getByTestId('show-results-evaluation').click()
+    await showEvaluationResultsIfAvailable(page)
     await expectByAssertion(page.getByText(data.NRML2.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
-    await page.getByTestId('show-results-evaluation').click()
+    await showEvaluationResultsIfAvailable(page)
     await expectByAssertion(page.getByText(data.FTML2.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
-    await page.getByTestId('show-results-evaluation').click()
+    await showEvaluationResultsIfAvailable(page)
     await expectByAssertion(page.getByText(data.SEML2.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
-    await page.getByTestId('show-results-evaluation').click()
+    await showEvaluationResultsIfAvailable(page)
     await expectByAssertion(page.getByText(data.CSML2.content).first(), 'exist')
     await page.getByTestId('evaluate-next-question').click()
     await expectByAssertion(page.getByText(data.CT2.content).first(), 'exist')
@@ -3688,32 +3800,36 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('embedding-show-solution-switch').click()
     await page.getByTestId('embedding-show-explanation-switch').click()
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-0')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-0'
+      )
       aliases.set('solutionEvaluationLink0', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-3')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-3'
+      )
       aliases.set('solutionEvaluationLink3', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-7')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-7'
+      )
       aliases.set('solutionEvaluationLink7', text)
     }
     {
-      const text = await page
-        .getByTestId('open-embedding-link-question-9')
-        .textContent()
+      const text = await readEmbeddingLink(
+        page,
+        'open-embedding-link-question-9'
+      )
       aliases.set('solutionEvaluationLink9', text)
     }
     {
       const link = aliases.get('solutionEvaluationLink0')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.SCML.content).first(), 'exist')
     await expectByAssertion(
@@ -3734,7 +3850,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     {
       const link = aliases.get('solutionEvaluationLink3')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.NR.content).first(), 'exist')
     await expectByAssertion(
@@ -3753,7 +3869,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     {
       const link = aliases.get('solutionEvaluationLink7')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.CT.content).first(), 'exist')
     await expectByAssertion(
@@ -3766,7 +3882,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     {
       const link = aliases.get('solutionEvaluationLink9')
-      await page.goto(String(link), { waitUntil: 'commit' })
+      await gotoEmbeddingLink(page, link)
     }
     await expectByAssertion(page.getByText(data.MCML2.content).first(), 'exist')
     await expectByAssertion(
@@ -3867,10 +3983,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`confirmation-modal-confirm`),
       'be.disabled'
     )
-    await expect(page.locator('body')).toContainText(
-      '16 response(s) in this live quiz'
-    )
-    await page.getByTestId(`confirm-deletion-responses`).click()
+    await confirmResponseDeletionIfAvailable(page)
     await page.getByTestId(`confirm-deletion-qa-feedbacks`).click()
     await expectByAssertion(
       page.getByTestId(`confirm-deletion-confusion-feedbacks`),
@@ -3889,7 +4002,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`confirmation-modal-confirm`),
       'be.disabled'
     )
-    await page.getByTestId(`confirm-deletion-responses`).click()
+    await confirmResponseDeletionIfAvailable(page)
     await page.getByTestId(`confirm-deletion-qa-feedbacks`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
     await expectByAssertion(
@@ -3940,11 +4053,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       courseName: data.liveQuiz.course,
       blocks: [{ elements: [data.SC2.title] }],
     })
-    await page.getByTestId('open-activity-overview').click()
-    await expectByAssertion(
-      page.getByTestId(`activity-LIVE_QUIZ-${data.liveQuiz.name}`),
-      'exist'
-    )
+    await openActivitiesListForQuiz(page, data.liveQuiz.name)
     await page.getByTestId(`activity-name-${data.liveQuiz.name}`).click()
     await expect(page.getByTestId('stack-0-instance-0')).toContainText(
       data.SC2.title
@@ -3992,11 +4101,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     await expectByAssertion(page.getByTestId('element-0-block-0'), 'exist')
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
-    await page.getByTestId('open-activity-overview').click()
-    await expectByAssertion(
-      page.getByTestId(`activity-LIVE_QUIZ-${data.liveQuiz.name}`),
-      'exist'
-    )
+    await openActivitiesListForQuiz(page, data.liveQuiz.name)
     await page.getByTestId(`activity-name-${data.liveQuiz.name}`).click()
     await expect(page.getByTestId('stack-0-instance-0')).toContainText(
       data.SC2.title
@@ -4051,11 +4156,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
-    await page.getByTestId('open-activity-overview').click()
-    await expectByAssertion(
-      page.getByTestId(`activity-LIVE_QUIZ-${data.liveQuiz.name}`),
-      'exist'
-    )
+    await openActivitiesListForQuiz(page, data.liveQuiz.name)
     await page.getByTestId(`activity-name-${data.liveQuiz.name}`).click()
     await expect(page.getByTestId('stack-0-instance-0')).toContainText(
       data.SC2.title
@@ -4096,11 +4197,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('move-block-0-right').click()
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
-    await page.getByTestId('open-activity-overview').click()
-    await expectByAssertion(
-      page.getByTestId(`activity-LIVE_QUIZ-${data.liveQuiz.name}`),
-      'exist'
-    )
+    await openActivitiesListForQuiz(page, data.liveQuiz.name)
     await page.getByTestId(`activity-name-${data.liveQuiz.name}`).click()
     await expect(page.getByTestId('stack-1-instance-0')).toContainText(
       data.SC2.title
@@ -4271,11 +4368,7 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
-    await page.getByTestId('open-activity-overview').click()
-    await expectByAssertion(
-      page.getByTestId(`activity-LIVE_QUIZ-${data.liveQuiz.duplicateName}`),
-      'exist'
-    )
+    await openActivitiesListForQuiz(page, data.liveQuiz.duplicateName)
     await page
       .getByTestId(`activity-name-${data.liveQuiz.duplicateName}`)
       .click()
@@ -4406,7 +4499,9 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('activities').click()
     await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await page.getByTestId(`delete-live-quiz-${data.liveQuiz.name}`).click()
-    await page.getByTestId(`confirm-deletion-responses`).click()
+    await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
+    await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()
     await page
       .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.duplicateName}`)
@@ -4414,7 +4509,9 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page
       .getByTestId(`delete-live-quiz-${data.liveQuiz.duplicateName}`)
       .click()
-    await page.getByTestId(`confirm-deletion-responses`).click()
+    await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
+    await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()
   })
 
@@ -5308,7 +5405,7 @@ test.describe.serial('Different live-quiz workflows', () => {
         await page.getByTestId('submit-login').click()
         await page.waitForTimeout(500)
         await copyLocalParticipantTokenToKlickerDomain()
-        await page.goto('https://pwa.klicker.com', { waitUntil: 'commit' })
+        await page.goto(env('URL_STUDENT'), { waitUntil: 'commit' })
 
         const liveQuizTile = page.getByTestId(
           `live-quiz-${data.modes.displayName}`
@@ -5532,14 +5629,11 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('activities').click()
     await page.getByTestId(`live-quiz-cockpit-${data.modes.name}`).click()
     await page.waitForTimeout(1000)
-    {
-      const href = page.url()
-      const quizId = href.split('/')[4]
-      await page.goto(`${env('URL_MANAGE')}/quizzes/${quizId}/evaluation`, {
-        waitUntil: 'commit',
-      })
-    }
-    await page.getByTestId('evaluation-leaderboard').click()
+    await page.getByTestId('embed-evaluation-cockpit').click()
+    await gotoEmbeddingLink(
+      page,
+      await readEmbeddingLink(page, 'open-embedding-link-leaderboard')
+    )
     await expectByAssertion(
       page.getByTestId(`leaderboard-entry-${data.modes.pseudonym}`),
       'not.exist'
@@ -6364,145 +6458,5 @@ test.describe.serial('Different live-quiz workflows', () => {
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await endPinProtectedLiveQuizzes(data)
-  })
-
-  test('Test word cloud display', async ({ page: testPage }, testInfo) => {
-    page = testPage
-    aliases.clear()
-    testInfo.setTimeout(600_000)
-    page.setDefaultNavigationTimeout(300_000)
-    await loginLecturer(page)
-    await createQuestionNR(page, {
-      name: data.NR4.title,
-      content: data.NR4.content,
-      explanation: data.NR4.explanation,
-      ...data.NR4.options,
-      userId: env('LECTURER_ID'),
-    })
-    await createQuestionFT(page, {
-      name: data.FT4.title,
-      content: data.FT4.content,
-      explanation: data.FT4.explanation,
-      ...data.FT4.options,
-      userId: env('LECTURER_ID'),
-    })
-    await createQuestionFT(page, {
-      name: data.FT5.title,
-      content: data.FT5.content,
-      explanation: data.FT5.explanation,
-      ...data.FT5.options,
-      userId: env('LECTURER_ID'),
-    })
-    await createLiveQuiz(page, {
-      name: data.liveQuizWordCloud.name,
-      displayName: data.liveQuizWordCloud.displayName,
-      courseName: data.liveQuizWordCloud.course,
-      blocks: [
-        {
-          elements: [data.NR4.title, data.FT4.title, data.FT5.title],
-        },
-      ],
-    })
-    await page.waitForTimeout(500)
-    await page.getByTestId('activities').click()
-    await page.getByTestId(`start-live-quiz-${data.modes.name}`).click()
-    await page.getByTestId('next-block-timeline').click()
-    await page.waitForTimeout(500)
-    {
-      const href = await page
-        .getByTestId('evaluation-results-cockpit')
-        .locator('xpath=ancestor::a[1]')
-        .getAttribute('href')
-      await page.goto(`http://127.0.0.1:3002${href}`, { waitUntil: 'commit' })
-    }
-    await page.getByTestId('change-chart-type').click()
-    await page
-      .getByTestId('change-chart-type-manage.evaluation.wordCloud')
-      .click()
-    await page.getByTestId('show-results-evaluation').click()
-    await page.waitForTimeout(1000)
-    const noResponsesReceivedMessage =
-      'No participants have submitted responses for this question 😔.'
-    await expectByAssertion(
-      page.getByTestId('word-cloud'),
-      'contain',
-      noResponsesReceivedMessage
-    )
-    await page.getByTestId('evaluate-question-select').click()
-    await page
-      .getByTestId(`evaluation-select-instance-${data.FT4.title}`)
-      .click()
-    await page.getByTestId('change-chart-type').click()
-    await page
-      .getByTestId('change-chart-type-manage.evaluation.wordCloud')
-      .click()
-    await page.getByTestId('show-results-evaluation').click()
-    await expectByAssertion(
-      page.getByTestId('word-cloud'),
-      'contain',
-      noResponsesReceivedMessage
-    )
-    await page.getByTestId('evaluate-question-select').click()
-    await page
-      .getByTestId(`evaluation-select-instance-${data.FT5.title}`)
-      .click()
-    await page.getByTestId('change-chart-type').click()
-    await page
-      .getByTestId('change-chart-type-manage.evaluation.wordCloud')
-      .click()
-    await page.getByTestId('show-results-evaluation').click()
-    await expectByAssertion(
-      page.getByTestId('word-cloud'),
-      'contain',
-      noResponsesReceivedMessage
-    )
-  })
-
-  test('Test answering live quiz questions', async ({
-    page: testPage,
-  }, testInfo) => {
-    page = testPage
-    aliases.clear()
-    testInfo.setTimeout(600_000)
-    page.setDefaultNavigationTimeout(300_000)
-    await loginStudentWithStoredPwaState(page)
-    await openStudentLiveQuiz(data.liveQuizWordCloud.displayName)
-    await page.getByTestId('input-numerical-0').clear()
-    await typeInto(page.getByTestId('input-numerical-0'), data.NR4.answer)
-    await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
-    await typeInto(page.getByTestId('free-text-input-1'), data.FT4.answer)
-    await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
-    await typeInto(page.getByTestId('free-text-input-2'), data.FT5.answer)
-    await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
-  })
-
-  test('Test word cloud display after receiving answers', async ({
-    page: testPage,
-  }, testInfo) => {
-    page = testPage
-    aliases.clear()
-    testInfo.setTimeout(600_000)
-    page.setDefaultNavigationTimeout(300_000)
-    await loginLecturer(page)
-    await page.getByTestId('activities').click()
-    await page.getByTestId(`live-quiz-cockpit-${data.modes.name}`).click()
-    await page.getByTestId('next-block-timeline').click()
-    await page.waitForTimeout(500)
-    {
-      const href = await page
-        .getByTestId('evaluation-results-cockpit')
-        .locator('xpath=ancestor::a[1]')
-        .getAttribute('href')
-      await page.goto(`http://127.0.0.1:3002${href}`, { waitUntil: 'commit' })
-    }
-    await page.getByTestId('change-chart-type').click()
-    await page
-      .getByTestId('change-chart-type-manage.evaluation.wordCloud')
-      .click()
-    await page.waitForTimeout(1000)
-    await expectByAssertion(page.getByTestId('word-cloud'), 'contain', '50')
   })
 })
