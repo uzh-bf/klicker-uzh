@@ -423,6 +423,78 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Verification Blockers: PWA Live-Quiz Account Selector Auth Refresh Cleanup
+
+Status: complete locally with documented runtime/package-test blockers. Scope
+stayed inside the tRPC UX/client-quality audit and the already migrated PWA
+live-quiz account selector / participant login boundary. No new migration
+slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 current head is
+  `878b04b3ab0e8632dadb9e6f198226b1079f5aa0`.
+- Fresh PR checks on this head show all non-Cypress checks green, including
+  `packages/api tRPC Vitest`, `packages/graphql Vitest`, format, lint,
+  TypeScript checks, generic tests, CodeQL, SonarCloud, GitGuardian, and Docker
+  staging builds.
+- Cypress Cloud run `6869` failed with 3 tests in
+  `O-live-quiz-workflow.cy.ts`.
+- Downloaded Cypress artifacts show the failed live-quiz screenshots in
+  `/tmp/klicker-cypress-6869-artifacts/screenshots/O-live-quiz-workflow.cy.ts/`.
+- The exact Cypress errors show `header-avatar` clicks blocked by
+  `<body data-scroll-locked="1" style="pointer-events: none;">` after
+  temporary participant creation and after regular participant login into the
+  gamified live quiz.
+- The live-quiz account selector closes the modal and refreshes
+  `participant.self({ liveQuizId })` in the background after temporary login,
+  so stale cached `{ self: null }` can reopen the modal before the scoped auth
+  refresh settles.
+- The PWA password login page refreshes `participant.self` without a
+  `liveQuizId`, but the `/session/[id]` page reads
+  `participant.self({ liveQuizId })`; returning to a gamified live quiz can
+  therefore reuse stale live-quiz-scoped self data briefly.
+- Context7 tRPC docs were refreshed and confirm `useUtils` query helpers are
+  React Query wrappers for targeted cache fetch/invalidate/setData behavior.
+
+Change:
+
+- Temporary participant submission now stays pending until the
+  live-quiz-scoped `participant.self` cache has refreshed, then closes the
+  selector and shows success. The prior background refetch/invalidation was
+  removed so the modal cannot close and immediately reopen against stale
+  `{ self: null }` data.
+- Refresh the same scoped `participant.self({ liveQuizId })` cache when
+  password login redirects back to `/session/[id]`.
+- Cypress now waits for the avatar-submit control/modal to disappear after
+  temporary pseudonym submission instead of using fixed 2-second sleeps.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/components/liveQuiz/AccountSelector.tsx apps/frontend-pwa/src/pages/login.tsx cypress/cypress/e2e/O-live-quiz-workflow.cy.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Blocked locally: `/private/tmp/klicker-trpc-ux/packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__/participant-auth.test.ts` cannot resolve `@klicker-uzh/prisma/client` from `/private/tmp/klicker-trpc-commit` because this temp checkout lacks workspace package links. The API procedure contract was left unchanged, and the current PR head before this PWA/Cypress-only patch had green `packages/api tRPC Vitest` and `packages/graphql Vitest` checks.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3000`, `:3001`, `:3002`, and `:3003` all return
+  connection refused / `000`).
+
+Review/simplification:
+
+- Manual diff review kept the API contract unchanged after an attempted richer
+  tRPC return shape forced stale local package declarations in the PWA type
+  check.
+- The final patch is limited to the two auth/cache boundaries and the Cypress
+  wait matching the observed failure.
+- A review/simplification subagent was not spawned because the available
+  multi-agent tool requires an explicit user request for delegation.
+
+Next:
+
+- Commit and push this focused live-quiz account selector auth-refresh cleanup.
+- Recheck PR #5132 checks, especially Cypress Cloud, on the new head.
+
 ### 2026-06-22 Completed Locally With Verification Blockers: PWA Auth Redirect Refresh Boundary Cleanup
 
 Status: complete locally with documented runtime/package-test blockers. Scope

@@ -76,7 +76,6 @@ function AccountSelector({
     data,
     error: selfQueryError,
     isLoading,
-    refetch,
   } = trpc.participant.self.useQuery(
     { liveQuizId: quizId },
     {
@@ -217,6 +216,14 @@ function AccountSelector({
             })
 
             if (token) {
+              const refreshedSelf = await utils.participant.self.fetch({
+                liveQuizId: quizId,
+              })
+
+              if (!refreshedSelf.self) {
+                throw new Error('Temporary participant self refresh failed')
+              }
+
               setLoginState('temporary')
               setOpen(false)
 
@@ -230,18 +237,6 @@ function AccountSelector({
                   }
                 ),
                 options: { duration: 5000 },
-              })
-
-              void Promise.all([
-                refetch(), // refetch the self query to update page-local data
-                utils.participant.self.invalidate({ liveQuizId: quizId }),
-              ]).catch((error) => {
-                console.error(error)
-                toast({
-                  type: 'error',
-                  message: t('shared.generic.systemError'),
-                  options: { duration: 5000 },
-                })
               })
             } else {
               toast({

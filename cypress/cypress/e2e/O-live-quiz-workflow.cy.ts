@@ -3622,7 +3622,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="avatar-carousel-next"]').click().click()
           cy.get('[data-cy="avatar-carousel-prev"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
-          cy.wait(2000) // wait for toast to disappear
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3651,7 +3651,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym2)
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
-          cy.wait(2000) // wait for toast to disappear
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()

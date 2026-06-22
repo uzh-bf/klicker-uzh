@@ -22,6 +22,11 @@ function getSafeRedirectPath(redirectPath: string, baseOrigin: string) {
   }
 }
 
+function getRedirectLiveQuizId(redirectPath: string) {
+  const match = /^\/session\/([^/?#]+)/.exec(redirectPath)
+  return match?.[1] ? decodeURIComponent(match[1]) : undefined
+}
+
 function Login() {
   const t = useTranslations()
   const router = useRouter()
@@ -85,12 +90,25 @@ function Login() {
         setSubmitting(false)
         resetForm()
       } else {
-        await utils.participant.self.fetch(undefined).catch(console.error)
+        const safeRedirectPath = getSafeRedirectPath(
+          decodedRedirectPath,
+          window.location.origin
+        )
+        const redirectLiveQuizId = getRedirectLiveQuizId(safeRedirectPath)
+
+        await Promise.all([
+          utils.participant.self.fetch(undefined),
+          ...(redirectLiveQuizId
+            ? [
+                utils.participant.self.fetch({
+                  liveQuizId: redirectLiveQuizId,
+                }),
+              ]
+            : []),
+        ]).catch(console.error)
 
         // redirect to the specified redirect path (default: question pool)
-        await router.replace(
-          getSafeRedirectPath(decodedRedirectPath, window.location.origin)
-        )
+        await router.replace(safeRedirectPath)
       }
     } catch (e) {
       console.error(e)
