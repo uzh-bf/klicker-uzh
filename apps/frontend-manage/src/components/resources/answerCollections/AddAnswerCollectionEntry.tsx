@@ -35,16 +35,16 @@ function AddAnswerCollectionEntry({
   const [fieldOpen, setFieldOpen] = useState(false)
   const addAnswerCollectionOption =
     trpc.resources.addAnswerCollectionOption.useMutation()
-  const refreshInlineAnswerCollections = () => {
+  const refreshInlineAnswerCollections = async () => {
     if (inlineEditing && refetchAnswerCollections) {
-      void refetchAnswerCollections().catch(console.error)
+      await refetchAnswerCollections().catch(console.error)
     }
   }
-  const invalidateAnswerCollection = () => {
-    void utils.resources.answerCollectionsInfo.invalidate().catch(console.error)
-    void utils.resources.singleAnswerCollection
-      .invalidate({ id: collectionId })
-      .catch(console.error)
+  const invalidateAnswerCollection = async () => {
+    await Promise.all([
+      utils.resources.answerCollectionsInfo.invalidate(),
+      utils.resources.singleAnswerCollection.invalidate({ id: collectionId }),
+    ]).catch(console.error)
   }
   const showErrorToast = () =>
     toast({
@@ -95,8 +95,10 @@ function AddAnswerCollectionEntry({
             value: values.newValue!,
           })
 
-          refreshInlineAnswerCollections()
-          invalidateAnswerCollection()
+          await Promise.all([
+            refreshInlineAnswerCollections(),
+            invalidateAnswerCollection(),
+          ])
           setFieldOpen(false)
           setOptionsEditingDisabled(false)
           onSuccess()

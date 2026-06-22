@@ -53,10 +53,10 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
-  const refreshAfterElementManipulation = (
+  const refreshAfterElementManipulation = async (
     updatedElementId?: number | null
   ) => {
-    void (async () => {
+    try {
       await Promise.all([
         updatedElementId
           ? utils.element.single.invalidate({ id: updatedElementId })
@@ -64,12 +64,12 @@ function ElementEditModal({
         utils.element.tags.invalidate(),
         refetchElements(),
       ])
-    })().catch((error) => {
+    } catch (error) {
       console.error('Error refreshing element after manipulation:', error)
-    })
+    }
   }
-  const refreshAnswerCollectionsInfo = () => {
-    void utils.resources.answerCollectionsInfo.invalidate().catch((error) => {
+  const refreshAnswerCollectionsInfo = async () => {
+    await utils.resources.answerCollectionsInfo.invalidate().catch((error) => {
       console.error('Error refreshing answer collections:', error)
     })
   }
@@ -371,7 +371,7 @@ function ElementEditModal({
           return false
         } finally {
           if (updatedElementId !== null) {
-            refreshAfterElementManipulation(updatedElementId)
+            await refreshAfterElementManipulation(updatedElementId)
           }
         }
       }}

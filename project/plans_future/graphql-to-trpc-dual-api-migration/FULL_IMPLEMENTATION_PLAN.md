@@ -423,6 +423,64 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Resource and Sharing Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and
+already migrated manage resource/sharing workflows. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup is started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `62e04c74191def04d296117e97d015d36e4db796`.
+- Fresh PR checks on that head show `packages/api tRPC Vitest`, format, lint,
+  SonarCloud, GitGuardian, and several build/test jobs green; `packages/graphql
+  Vitest`, Cypress Cloud, CodeQL JavaScript, and several image builds are still
+  pending.
+- Remaining manage resource/sharing workflows have a few fire-and-forget
+  refreshes after confirmed tRPC mutation success: answer-collection entry
+  creation, permission revocation, chatbot model settings save, media upload,
+  and element manipulation follow-up refreshes.
+- Comparable answer-collection metadata/edit/delete paths already await their
+  inline list and tRPC cache refreshes before success callbacks, so the add-entry
+  path should match that boundary.
+
+Changes:
+
+- Answer-collection entry creation now awaits the same inline list and
+  single/list tRPC invalidations that metadata/edit/delete paths already await
+  before closing the inline form and calling success.
+- Permission revocation now awaits derived-permission invalidation and the
+  relevant answer-collection, element, or activity parent-list refresh attempt
+  before returning success to the sharing modal.
+- Chatbot model-settings save now waits for the chatbot resource-list
+  invalidation before showing the save-success state.
+- Media upload now waits for the media-list invalidation attempt before
+  selecting the uploaded image and clearing upload state.
+- Element manipulation submit now waits for the existing single-element, tags,
+  and parent-list refresh attempt before the submit promise settles and the modal
+  success path closes.
+- Refresh failures remain caught and logged so confirmed server success is not
+  converted into a failed mutation.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/common/MediaLibrary.tsx apps/frontend-manage/src/components/elements/manipulation/ElementEditModal.tsx apps/frontend-manage/src/components/resources/answerCollections/AddAnswerCollectionEntry.tsx apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx apps/frontend-manage/src/components/sharing/usePermissionRevocation.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3002` failed with connection refused / `000`, and `curl` to
+  `127.0.0.1:3000` also failed with connection refused / `000`, so no local
+  manage/backend dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused resource/sharing refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Activity Action Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

@@ -34,16 +34,16 @@ function usePermissionRevocation({
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
 
-  const invalidateAnswerCollectionList = () => {
+  const invalidateAnswerCollectionList = async () => {
     if (objectType === ObjectType.AnswerCollection) {
-      void utils.resources.answerCollectionsInfo
+      await utils.resources.answerCollectionsInfo
         .invalidate()
         .catch(console.error)
     }
   }
 
   const revokeObjectAccess = trpc.sharing.revokeObjectAccess.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data.revokedPermissionId == null) return
 
       utils.sharing.objectPermissions.setData(
@@ -63,7 +63,7 @@ function usePermissionRevocation({
         }
       )
 
-      void utils.sharing.derivedObjectPermissions
+      await utils.sharing.derivedObjectPermissions
         .invalidate(objectPermissionsInput)
         .catch(console.error)
     },
@@ -86,21 +86,28 @@ function usePermissionRevocation({
       const res = await revokeObjectAccess.mutateAsync(input)
 
       if (res.revokedPermissionId != null) {
-        invalidateAnswerCollectionList()
+        const refreshOwnPermissionLists = async () => {
+          // If the current user's own permission was removed, parent lists need
+          // to drop the object before the success toast is shown.
+          if (!isOwn) return
 
-        // if own permission was revoked, refetch elements and activities depending on object type
-        if (isOwn && objectType === ObjectType.Element) {
-          void refetchElements?.().catch(console.error)
-        }
-        if (
-          isOwn &&
-          (objectType === ObjectType.LiveQuiz ||
+          if (objectType === ObjectType.Element) {
+            await refetchElements?.().catch(console.error)
+          }
+          if (
+            objectType === ObjectType.LiveQuiz ||
             objectType === ObjectType.PracticeQuiz ||
             objectType === ObjectType.MicroLearning ||
-            objectType === ObjectType.GroupActivity)
-        ) {
-          void refetchActivities?.().catch(console.error)
+            objectType === ObjectType.GroupActivity
+          ) {
+            await refetchActivities?.().catch(console.error)
+          }
         }
+
+        await Promise.all([
+          invalidateAnswerCollectionList(),
+          refreshOwnPermissionLists(),
+        ])
 
         return true
       } else {

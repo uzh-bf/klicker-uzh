@@ -91,7 +91,7 @@ function MediaLibrary({ onImageClick }: Props) {
           blockSize: 4 * 1024 * 1024, // 4MB block size
         })
 
-        void utils.element.mediaFiles.invalidate().catch(console.error)
+        await utils.element.mediaFiles.invalidate().catch(console.error)
 
         onImageClick(data.fileUploadSas.uploadHref, file.name)
       } catch (error) {
