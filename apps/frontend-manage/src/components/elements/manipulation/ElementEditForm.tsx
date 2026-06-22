@@ -147,18 +147,34 @@ function ElementEditForm({
           validationSchema={questionManipulationSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
-            const success = await onSubmitElement(values)
+            let releaseSubmitting = true
 
-            // close modal, set success toast
-            setSubmitting(false)
-            if (!success) {
+            try {
+              const success = await onSubmitElement(values)
+
+              // close modal, set success toast
+              if (!success) {
+                toast({
+                  type: 'error',
+                  message: t('manage.elements.questionSavedFailed'),
+                  options: { duration: 6000 },
+                })
+              } else {
+                releaseSubmitting = false
+                setSubmitting(false)
+                onSuccess()
+              }
+            } catch (error) {
+              console.error('Error submitting element form:', error)
               toast({
                 type: 'error',
                 message: t('manage.elements.questionSavedFailed'),
                 options: { duration: 6000 },
               })
-            } else {
-              onSuccess()
+            } finally {
+              if (releaseSubmitting) {
+                setSubmitting(false)
+              }
             }
           }}
         >
@@ -393,7 +409,12 @@ function ElementEditForm({
               >
                 {!isTemplate && !inputsDisabled && (
                   <Button
-                    onClick={() => onClose()}
+                    onClick={() => {
+                      if (!isSubmitting) {
+                        onClose()
+                      }
+                    }}
+                    disabled={isSubmitting}
                     data={{ cy: 'close-element-modal-button' }}
                   >
                     {t('shared.generic.close')}
@@ -403,7 +424,7 @@ function ElementEditForm({
                   <Button
                     primary
                     onClick={() => submitForm()}
-                    disabled={!isValid}
+                    disabled={!isValid || isSubmitting}
                     loading={isSubmitting}
                     data={{ cy: 'save-new-question' }}
                   >

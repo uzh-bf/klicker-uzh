@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Element Edit Form Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage element
+manipulation mutations. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `ElementEditForm` uses the migrated element manipulation submit callback from
+  `ElementEditModal`, which calls tRPC element create/edit/update-instance
+  mutations and reports success as a boolean.
+- The save button shows `isSubmitting` loading but only disables on invalid
+  form state, leaving a duplicate submit path while the tRPC mutation chain is
+  in flight.
+- The close action remains active while the form is submitting, so the modal
+  can be dismissed while a save is still pending.
+- The submit handler manually clears Formik submitting after
+  `onSubmitElement`. Even though the current parent catches expected tRPC
+  failures, the form handler should still release submit state in `finally` and
+  show the existing error toast if the callback rejects unexpectedly.
+
+Changes:
+
+- `ElementEditForm` now wraps `onSubmitElement` in `try/catch/finally` so the
+  form always releases submit state on failure and shows the existing element
+  save error toast on unexpected rejected callbacks.
+- The successful submit path still releases Formik submitting before
+  `onSuccess()` closes/navigates, preserving the previous unmount-safe ordering.
+- The element modal close button now ignores/disables close while submitting,
+  and the save button disables while `isSubmitting` is true.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/elements/manipulation/ElementEditForm.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused element edit form pending-boundary cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Group Activity Grading Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
