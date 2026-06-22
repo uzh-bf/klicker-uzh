@@ -423,6 +423,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Manage Course Refresh Boundary Follow-Up
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and already migrated manage course / template workflows. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `43b970a1422c4d2e5397c11cbc3147d1affb6718`.
+- Fresh PR checks on that head show `packages/api tRPC Vitest`, lint, format,
+  TypeScript check, GitGuardian, Claude review, and several CodeQL / Docker
+  jobs green. `packages/graphql Vitest`, Cypress Cloud, SonarCloud, and several
+  Docker builds are still pending. One `build-arm` job is reported failed, but
+  GitHub logs are not yet downloadable because the workflow is still in
+  progress.
+- Course removal optimistically updates `course.userCourses` and then launches
+  the confirming invalidation in the background, so the confirmation modal can
+  close before the authoritative course list refresh finishes.
+- Course leaderboard recomputation launches `refetch()` in the background after
+  `updateWeeklyTimelineEntries` succeeds, so the recompute spinner can stop
+  before the refreshed leaderboard is available.
+- Live-quiz template inline answer-collection creation passes an awaited helper
+  callback, but the callback itself currently fires
+  `resources.answerCollectionsInfo.invalidate()` in the background.
+
+Changes:
+
+- Course removal now awaits the existing targeted `course.userCourses`
+  invalidation after the optimistic cache update and before the confirmation
+  modal closes.
+- Course leaderboard recomputation now awaits the existing `refetch()` after a
+  successful weekly/custom timeline recomputation, keeping the recompute loading
+  state aligned with the refreshed data.
+- Live-quiz template inline answer-collection creation now awaits the existing
+  `resources.answerCollectionsInfo` invalidation through the helper callback.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  awaitable mutation success/invalidation behavior before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/courses/modals/CourseRemovalModal.tsx apps/frontend-manage/src/components/courses/SuspendedCourseLeaderboard.tsx apps/frontend-manage/src/components/activities/templates/liveQuiz/useProcessLiveQuizTemplateBlocksData.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/local runtime verification remains blocked in this temp worktree:
+  `curl` to `127.0.0.1:3002`, `127.0.0.1:3001`, and
+  `127.0.0.1:3000/api/trpc` all returned connection refused / `000`.
+- Review/simplification subagents were not spawned because this environment
+  exposes no explicit user-requested subagent delegation tool in the active
+  tool list; self-review kept the patch to existing awaited refresh boundaries.
+
+Next:
+
+- Commit and push this focused manage course refresh-boundary follow-up.
+- Recheck PR #5132 checks on the new head, especially `packages/graphql Vitest`,
+  Cypress Cloud, SonarCloud, and the failed/pending Docker build jobs.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Manage User Settings Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

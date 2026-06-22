@@ -135,7 +135,7 @@ function SuspendedCourseLeaderboard({
                           )
                         }
 
-                        void refetch().catch(console.error)
+                        await refetch()
                         return
                       }
 

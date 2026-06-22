@@ -30,8 +30,8 @@ function useProcessLiveQuizTemplateBlocksData() {
     trpc.resources.createAnswerCollection.useMutation()
   const utils = trpc.useUtils()
   const readyStatus = ElementStatus.Ready as ElementFormTypes['status']
-  const refreshAnswerCollectionsInfo = () => {
-    void utils.resources.answerCollectionsInfo.invalidate().catch((error) => {
+  const refreshAnswerCollectionsInfo = async () => {
+    await utils.resources.answerCollectionsInfo.invalidate().catch((error) => {
       console.error('Error refreshing answer collections:', error)
     })
   }
