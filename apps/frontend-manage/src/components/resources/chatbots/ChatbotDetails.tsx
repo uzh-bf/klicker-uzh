@@ -76,7 +76,8 @@ function ChatbotDetails({
   const utils = trpc.useUtils()
   const updateChatbotModelSettings =
     trpc.resources.updateChatbotModelSettings.useMutation()
-  const isSaving = updateChatbotModelSettings.isLoading
+  const [savePending, setSavePending] = useState(false)
+  const isSaving = updateChatbotModelSettings.isLoading || savePending
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
@@ -221,8 +222,11 @@ function ChatbotDetails({
   }
 
   const handleSaveModelSettings = async () => {
+    if (isSaving) return
+
     setSaveError(null)
     setSaveSuccess(false)
+    setSavePending(true)
 
     const normalizedAllowedModelIds = useAllModels
       ? []
@@ -252,6 +256,8 @@ function ChatbotDetails({
     } catch (error) {
       console.error(error)
       setSaveError(t('manage.resources.chatbotModelSettingsSaveError'))
+    } finally {
+      setSavePending(false)
     }
   }
 
@@ -548,6 +554,7 @@ function ChatbotDetails({
                 </span>
                 <Switch
                   checked={modelSelectionEnabled}
+                  disabled={isSaving}
                   onCheckedChange={setModelSelectionEnabled}
                 />
               </div>
@@ -564,6 +571,7 @@ function ChatbotDetails({
                   type="checkbox"
                   className="h-4 w-4"
                   checked={useAllModels}
+                  disabled={isSaving}
                   onChange={(event) =>
                     handleAllModelsToggle(event.target.checked)
                   }
@@ -591,7 +599,7 @@ function ChatbotDetails({
                         type="checkbox"
                         className="mt-1 h-4 w-4"
                         checked={checked}
-                        disabled={useAllModels}
+                        disabled={isSaving || useAllModels}
                         onChange={(event) =>
                           handleAllowedModelToggle(
                             model.id,
@@ -663,6 +671,7 @@ function ChatbotDetails({
                                     type="checkbox"
                                     className="h-3.5 w-3.5"
                                     checked={checked}
+                                    disabled={isSaving}
                                     onChange={(event) =>
                                       handleReasoningEffortToggle(
                                         model.id,
@@ -688,6 +697,7 @@ function ChatbotDetails({
               <Button
                 onClick={handleSaveModelSettings}
                 disabled={isSaving}
+                loading={isSaving}
                 data={{ cy: 'chatbot-model-settings-save' }}
               >
                 <Button.Label>
