@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Catalog Invalid-Collection Redirect
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+catalog collection metadata query. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `9bcdd84a7eeda46a353f9a86ae8295f1491155e2`.
+- Fresh post-push PR checks on that head were newly enqueued: GitGuardian was
+  green; CodeQL, SonarCloud, build, check, lint, format, Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest` were pending.
+- The catalog browser already used `sharing.catalogCollectionInfo` through tRPC
+  with an `enabled` guard for collection routes and existing loader/error
+  states for the metadata query.
+- After the query confirmed a collection was unavailable or inaccessible, the
+  component started `router.push('/resources/catalog')` during render and did
+  not handle a cancelled/falsy route transition.
+- Context7 Next.js Pages Router docs were refreshed before editing and confirm
+  client redirects belong in an effect after state is known, and route changes
+  can be cancelled.
+
+Changes:
+
+- Moved the invalid-collection redirect into a `useEffect` that runs only after
+  the tRPC metadata query proves the collection is missing.
+- Kept a loader visible while redirecting instead of rendering the catalog
+  import surface for an invalid collection.
+- Added a same-origin full-page fallback when the Pages Router transition
+  returns a falsy result, and kept the existing system-error notification path
+  for rejected route promises.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/catalog/CatalogBrowser.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused manage catalog invalid-collection redirect
+  cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Sharing Request Approval Close Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

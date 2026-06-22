@@ -1,7 +1,8 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { UserNotification } from '@uzh-bf/design-system'
+import { toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { trpc } from '../../lib/trpc'
 import ObjectImport from './actions/ObjectImport'
 import PendingSharingRequests from './actions/PendingSharingRequests'
@@ -14,6 +15,7 @@ function CatalogBrowser({
   const t = useTranslations()
   const router = useRouter()
   const isCollectionView = typeof catalogCollectionId === 'string'
+  const [redirectError, setRedirectError] = useState(false)
 
   // get current collection metadata (only if inside a collection)
   const {
@@ -27,6 +29,40 @@ function CatalogBrowser({
     }
   )
   const collectionInfo = metaData?.catalogCollectionInfo
+  const collectionMissing =
+    isCollectionView && !collectionInfo && !metaDataLoading && !metaDataError
+
+  useEffect(() => {
+    if (!collectionMissing) return
+
+    let active = true
+    setRedirectError(false)
+
+    async function redirectToCatalog() {
+      try {
+        const routed = await router.push('/resources/catalog')
+        if (!routed && active) {
+          window.location.assign('/resources/catalog')
+        }
+      } catch (error) {
+        console.error(error)
+        if (active) {
+          setRedirectError(true)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
+      }
+    }
+
+    void redirectToCatalog()
+
+    return () => {
+      active = false
+    }
+  }, [collectionMissing, router, t])
 
   if (isCollectionView && metaDataLoading && !collectionInfo) {
     return <Loader />
@@ -41,14 +77,17 @@ function CatalogBrowser({
     )
   }
 
-  // redirect user to home of catalog if access is not valid
-  if (
-    typeof catalogCollectionId !== 'undefined' &&
-    !collectionInfo &&
-    !metaDataLoading &&
-    !metaDataError
-  ) {
-    void router.push('/resources/catalog')
+  if (collectionMissing) {
+    if (!redirectError) {
+      return <Loader />
+    }
+
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
   return (
