@@ -1,5 +1,6 @@
 import { Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 
 function AssignmentConfirmationModal({
@@ -15,6 +16,8 @@ function AssignmentConfirmationModal({
   const utils = trpc.useUtils()
   const assignmentMutation =
     trpc.course.manualRandomGroupAssignments.useMutation()
+  const [assignmentPending, setAssignmentPending] = useState(false)
+  const assigning = assignmentMutation.isLoading || assignmentPending
 
   function showErrorToast() {
     console.error('Error while creating random groups')
@@ -29,17 +32,21 @@ function AssignmentConfirmationModal({
     <Modal
       open
       onClose={() => {
-        if (!assignmentMutation.isLoading) {
+        if (!assigning) {
           onClose()
         }
       }}
       title={t('manage.course.finalizeRandomGroupAssignment')}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={assignmentMutation.isLoading}
+      primaryLoading={assigning}
+      primaryDisabled={assigning}
       onPrimaryAction={async () => {
-        if (assignmentMutation.isLoading) {
+        if (assigning) {
           return
         }
+
+        let releasePending = true
+        setAssignmentPending(true)
 
         try {
           const res = await assignmentMutation.mutateAsync({ courseId })
@@ -49,7 +56,7 @@ function AssignmentConfirmationModal({
             return
           }
 
-          void Promise.all([
+          await Promise.all([
             utils.course.groups.invalidate({ courseId }),
             utils.course.summary.invalidate({ courseId }),
           ]).catch(console.error)
@@ -59,15 +66,20 @@ function AssignmentConfirmationModal({
             message: t('manage.course.groupAssignmentSuccessful'),
             options: { duration: 5000 },
           })
+          releasePending = false
           onClose()
         } catch {
           showErrorToast()
+        } finally {
+          if (releasePending) {
+            setAssignmentPending(false)
+          }
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-random-group-assignment' }}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={() => {
-        if (!assignmentMutation.isLoading) {
+        if (!assigning) {
           onClose()
         }
       }}

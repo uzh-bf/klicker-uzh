@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Random Group Assignment Cache Refresh Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+random group assignment mutation workflow. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `AssignmentConfirmationModal` creates manual random group assignments through
+  the migrated `course.manualRandomGroupAssignments` tRPC mutation.
+- After a successful mutation it kicked off `course.groups` and
+  `course.summary` invalidations with a fire-and-forget `void Promise.all(...)`,
+  then immediately set the local finalized state, showed success, and closed.
+- That allowed the course groups tab and course summary to show success before
+  the refresh requests had completed.
+- Context7 tRPC docs were refreshed before this change. They show awaiting
+  invalidation after mutation success when UI pending state should cover cache
+  refresh.
+
+Changes:
+
+- Add local assignment pending state so duplicate submits and close/cancel
+  actions stay blocked until the tRPC mutation and targeted invalidations have
+  both settled.
+- Await the targeted `course.groups` and `course.summary` invalidations before
+  calling the success callback, showing success, and closing the modal.
+- Keep invalidation failures logged instead of turning a successful server
+  mutation into a user-visible failure.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/courses/groups/AssignmentConfirmationModal.tsx`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused random group assignment cache-refresh pending
+  boundary cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Course Settings Submit Close Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
