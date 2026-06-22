@@ -12,39 +12,43 @@ function Activation() {
   const t = useTranslations()
   const loginTimeout = useRef<any>(null)
   const redirectionTimeout = useRef<any>(null)
-  const { token } = router.query
+  const token =
+    typeof router.query.token === 'string' && router.query.token.trim() !== ''
+      ? router.query.token
+      : undefined
   const utils = trpc.useUtils()
 
   const activateAccount = trpc.participant.activateAccount.useMutation()
 
   // set timeout of 2 seconds to show the loader and then login in timeout callback
   useEffect(() => {
-    if (token) {
-      clearTimeout(loginTimeout.current)
-      clearTimeout(redirectionTimeout.current)
-      loginTimeout.current = setTimeout(async () => {
-        try {
-          const result = await activateAccount.mutateAsync({
-            token: token as string,
-          })
+    if (!router.isReady) return
 
-          if (result) {
-            clearTimeout(loginTimeout.current)
-            clearTimeout(redirectionTimeout.current)
-            void utils.participant.self.fetch(undefined).catch(console.error)
-            void router.push('/')
-          } else {
-            toast({
-              type: 'error',
-              message: t('pwa.general.accountActivationFailed'),
-              options: { duration: 8000 },
-            })
-            redirectionTimeout.current = setTimeout(() => {
-              void router.push('/login')
-            }, 5000)
-          }
-        } catch (error) {
-          console.error(error)
+    clearTimeout(loginTimeout.current)
+    clearTimeout(redirectionTimeout.current)
+
+    if (!token) {
+      toast({
+        type: 'error',
+        message: t('pwa.general.accountActivationFailed'),
+        options: { duration: 8000 },
+      })
+      redirectionTimeout.current = setTimeout(() => {
+        void router.push('/login')
+      }, 5000)
+      return
+    }
+
+    loginTimeout.current = setTimeout(async () => {
+      try {
+        const result = await activateAccount.mutateAsync({ token })
+
+        if (result) {
+          clearTimeout(loginTimeout.current)
+          clearTimeout(redirectionTimeout.current)
+          void utils.participant.self.fetch(undefined).catch(console.error)
+          void router.push('/')
+        } else {
           toast({
             type: 'error',
             message: t('pwa.general.accountActivationFailed'),
@@ -54,14 +58,24 @@ function Activation() {
             void router.push('/login')
           }, 5000)
         }
-      }, 1500)
-    }
+      } catch (error) {
+        console.error(error)
+        toast({
+          type: 'error',
+          message: t('pwa.general.accountActivationFailed'),
+          options: { duration: 8000 },
+        })
+        redirectionTimeout.current = setTimeout(() => {
+          void router.push('/login')
+        }, 5000)
+      }
+    }, 1500)
 
     return () => {
       clearTimeout(loginTimeout.current)
       clearTimeout(redirectionTimeout.current)
     }
-  }, [router.query.token])
+  }, [router.isReady, token])
 
   return (
     <div className="m-auto">

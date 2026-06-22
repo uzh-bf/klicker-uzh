@@ -423,6 +423,47 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: PWA Token Mutation Route-Param Cleanup
+
+Status: complete. Scope stayed within already migrated PWA tRPC auth-token
+mutation pages. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup was started.
+
+Finding:
+
+- PWA `magicLogin` and `activation` pages cast `router.query.token` directly
+  into tRPC mutation input.
+- Missing, empty, or repeated token query params could leave the page on an
+  indefinite loader or send a non-string value into the migrated tRPC mutation.
+
+Change:
+
+- Normalize token query params to a single non-empty string only after the
+  Next router is ready.
+- Reuse the existing localized error toasts and login redirect path when the
+  token is missing or invalid.
+- Keep the successful tRPC mutation, best-effort `participant.self` warm-up,
+  and home redirect behavior unchanged.
+
+Evidence so far:
+
+- Context7 docs rechecked for tRPC client usage and TanStack Query v4 mutation
+  lifecycle before editing.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched PWA token pages and plan passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-pwa` passed.
+- `git diff --check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` did not reach TypeScript in
+  this local shell because the package-manager wrapper tried to switch to
+  `pnpm@11.5.0` and failed registry signature/network verification. The direct
+  `tsc --noEmit` command above is the package check script's underlying command.
+
+Next:
+
+- Commit and push the PWA token route-param cleanup.
+- Recheck Cypress Cloud completion after the push.
+
 ### 2026-06-22 Completed: Manage Assessment Results Route-Param Cleanup
 
 Status: complete. Scope stayed within already migrated manage assessment
