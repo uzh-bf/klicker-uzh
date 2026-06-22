@@ -16,16 +16,15 @@ import { trpc } from '../../../lib/trpc'
 function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
   const { data, isLoading, error } = trpc.analytics.courseActivity.useQuery(
-    { courseId: courseId as string },
-    { enabled: !!courseId }
+    { courseId },
+    { enabled: courseId !== '' }
   )
   const course = data?.courseActivityAnalytics
-  const navigation = (
-    <ActivityAnalyticsNavigation courseId={courseId as string} />
-  )
+  const navigation = <ActivityAnalyticsNavigation courseId={courseId} />
 
   // loading state
   if (!courseId || (isLoading && !course)) {

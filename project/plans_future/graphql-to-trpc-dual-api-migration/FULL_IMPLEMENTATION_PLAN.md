@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Analytics Route-Param Guard Cleanup
+
+Status: complete. Scope remained PR #5132 tRPC UX/client-quality
+stabilization for already migrated manage analytics/evaluation pages. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or subscription
+cleanup was started.
+
+Finding:
+
+- Several migrated manage analytics/evaluation pages cast dynamic Next route
+  params directly from `router.query` into tRPC inputs. The queries were mostly
+  disabled until params existed, but array/undefined query values could still
+  enter the query key/input shape and make first-render or malformed-route
+  behavior noisier than needed.
+
+Change:
+
+- Normalized route params with `typeof router.query.<param> === 'string'`
+  before passing them into migrated tRPC analytics/evaluation queries.
+- Kept existing loading and generic error UI unchanged.
+- Kept query `enabled` guards tied to non-empty normalized params.
+- Kept GraphQL/Apollo coexistence unchanged.
+
+Evidence so far:
+
+- TanStack Query v4 docs rechecked through Context7 for mutation lifecycle,
+  invalidation, and optimistic rollback patterns.
+- tRPC docs rechecked through Context7 for `useUtils` cache helpers and
+  type-only `AppRouter` imports.
+- Live PR state after `d938880f8`: CodeQL, SonarCloud, GitGuardian,
+  `packages/graphql Vitest`, and `packages/api tRPC Vitest` are green.
+- Current Cypress Cloud status context still reports 4 failed tests for run
+  `6842`; the GitHub wrapper job is still in progress in the Cypress Cloud
+  recording step and job logs are not available yet (`BlobNotFound`).
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched manage pages and plan passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-manage` passed.
+- `git diff --check` passed.
+
+Next:
+
+- Commit and push the route-param guard cleanup.
+- Recheck Cypress wrapper/log availability after the push.
+
 ### 2026-06-21 In Progress: CI and Review Blocker Follow-up
 
 Status: in progress. Scope remains PR #5132 tRPC dual-API stabilization and

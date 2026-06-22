@@ -44,13 +44,14 @@ const ActivityLink = ({
 function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId as string
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
   const [practiceSearch, setPracticeSearch] = useState('')
   const [microSearch, setMicroSearch] = useState('')
 
   const { data, isLoading, error } = trpc.course.activities.useQuery(
     { courseId },
-    { enabled: !!courseId }
+    { enabled: courseId !== '' }
   )
 
   const navigation = <QuizSelectionNavigation courseId={courseId} />

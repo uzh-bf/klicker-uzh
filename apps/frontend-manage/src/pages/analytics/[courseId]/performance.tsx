@@ -18,7 +18,8 @@ import { trpc } from '../../../lib/trpc'
 function PerformanceDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId as string
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
   const [tabValue, setTabValue] = useState<
     | 'performanceRates'
@@ -29,7 +30,7 @@ function PerformanceDashboard() {
 
   const { data, isLoading, error } = trpc.analytics.coursePerformance.useQuery(
     { courseId },
-    { enabled: !!courseId }
+    { enabled: courseId !== '' }
   )
 
   const navigation = <PerformanceAnalyticsNavigation courseId={courseId} />

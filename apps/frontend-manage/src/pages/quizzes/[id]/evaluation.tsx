@@ -11,12 +11,13 @@ function LiveQuizEvaluation() {
   const t = useTranslations()
 
   // fetch evaluation data
-  const id = router.query.id as string | undefined
-  const hmac = router.query.hmac as string | undefined
+  const id = typeof router.query.id === 'string' ? router.query.id : ''
+  const hmac =
+    typeof router.query.hmac === 'string' ? router.query.hmac : undefined
   const { data, error, isLoading } = trpc.analytics.liveQuizEvaluation.useQuery(
-    { id: id ?? '', hmac },
+    { id, hmac },
     {
-      enabled: !!id,
+      enabled: id !== '',
       refetchInterval: 5000,
     }
   )
@@ -55,7 +56,7 @@ function LiveQuizEvaluation() {
   return (
     <ActivityEvaluation
       type="LiveQuiz"
-      hideActiveBlockResults={!router.query.hmac} // hide the results for active blocks when not inside PPT
+      hideActiveBlockResults={!hmac} // hide the results for active blocks when not inside PPT
       activityId={id}
       activityName={evaluation?.displayName ?? ''}
       courseLanguage={evaluation?.courseLanguage}

@@ -12,11 +12,11 @@ function MicroLearningEvaluation() {
   const router = useRouter()
 
   // fetch evaluation data
-  const id = router.query.id as string | undefined
+  const id = typeof router.query.id === 'string' ? router.query.id : ''
   const { data, isLoading, error } =
     trpc.analytics.microLearningEvaluation.useQuery(
-      { id: id ?? '' },
-      { enabled: !!id }
+      { id },
+      { enabled: id !== '' }
     )
 
   if (!id || (isLoading && !data)) {

@@ -16,12 +16,13 @@ import { trpc } from '../../../../lib/trpc'
 function QuizAnalytics() {
   const router = useRouter()
   const t = useTranslations()
-  const activityId = router.query.id as string
-  const courseId = router.query.courseId as string
+  const activityId = typeof router.query.id === 'string' ? router.query.id : ''
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
   const { data, isLoading, error } = trpc.analytics.activity.useQuery(
     { activityId },
-    { enabled: !!activityId }
+    { enabled: activityId !== '' }
   )
 
   const navigation = (
