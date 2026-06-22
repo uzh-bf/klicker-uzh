@@ -82,7 +82,7 @@ function LiveQuizResetModal({
           throw new Error('Failed to reset live quiz')
         }
 
-        void Promise.all([
+        await Promise.all([
           courseId
             ? utils.course.detail.invalidate({ courseId })
             : Promise.resolve(),

@@ -80,7 +80,7 @@ function GroupActivityDeletionModal({
           throw new Error('Failed to delete group activity')
         }
 
-        void Promise.all([
+        await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
         ]).catch(console.error)

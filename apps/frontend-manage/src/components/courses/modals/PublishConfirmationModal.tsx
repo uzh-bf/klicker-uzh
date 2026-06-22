@@ -8,6 +8,7 @@ import { ActivityType } from '@klicker-uzh/types'
 import { Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 
 type PublishableScheduledActivityType = 'MICROLEARNING' | 'GROUP_ACTIVITY'
@@ -36,9 +37,11 @@ function PublishConfirmationModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const publishActivity = trpc.activity.publish.useMutation()
+  const [publishSubmitting, setPublishSubmitting] = useState(false)
   const isMicroLearning = activityType === 'MICROLEARNING'
+  const publishing = publishActivity.isLoading || publishSubmitting
   const handleClose = () => {
-    if (!publishActivity.isLoading) {
+    if (!publishing) {
       onClose()
     }
   }
@@ -48,9 +51,10 @@ function PublishConfirmationModal({
       open
       title={t(`manage.course.publishItem${activityType}`)}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={publishActivity.isLoading}
-      primaryDisabled={publishActivity.isLoading}
+      primaryLoading={publishing}
+      primaryDisabled={publishing}
       onPrimaryAction={async () => {
+        setPublishSubmitting(true)
         try {
           const result = await publishActivity.mutateAsync({
             activityId,
@@ -68,10 +72,10 @@ function PublishConfirmationModal({
             return
           }
 
-          utils.course.detail
-            .invalidate({ courseId })
-            .catch((error) => console.error(error))
-          refetchActivities?.().catch((error) => console.error(error))
+          await Promise.all([
+            utils.course.detail.invalidate({ courseId }),
+            refetchActivities?.(),
+          ]).catch(console.error)
           onClose()
         } catch (error) {
           console.error(error)
@@ -80,6 +84,8 @@ function PublishConfirmationModal({
             message: t('shared.generic.systemError'),
             options: { duration: 5000 },
           })
+        } finally {
+          setPublishSubmitting(false)
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-publish-action' }}

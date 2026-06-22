@@ -79,7 +79,7 @@ function PracticeQuizDeletionModal({
           throw new Error('Failed to delete practice quiz')
         }
 
-        void Promise.all([
+        await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
         ]).catch(console.error)

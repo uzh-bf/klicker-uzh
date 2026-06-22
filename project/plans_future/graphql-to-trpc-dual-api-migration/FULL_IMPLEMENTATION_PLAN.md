@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Activity Modal Refresh Boundaries
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage
+course/activity modal workflows. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `bff622431341e2edc1c7da7303a4533b2ffd59a0`.
+- Fresh PR checks on that head show all non-Cypress checks green, including
+  `packages/api tRPC Vitest`, `packages/graphql Vitest`, format, lint,
+  TypeScript checks, generic tests, CodeQL, SonarCloud, GitGuardian, and Docker
+  staging builds. Cypress Cloud run `6872` is still pending.
+- Several already migrated manage course/activity confirmation flows mutate via
+  tRPC and then refresh the authoritative course/activity queries in the
+  background before closing the modal. This can make deletion, publish,
+  scheduling, start/end, and reset modals close before the course detail or
+  activity list has caught up.
+- Context7 tRPC v11 docs were refreshed before editing and document awaitable
+  cache invalidation plus mutation pending-state patterns.
+
+Changes:
+
+- `ActivityConfirmationModal` now keeps its confirm button and close guard
+  pending until the awaited submit callback finishes, covering delete/start/end
+  group activity, practice quiz deletion, microlearning deletion, and live-quiz
+  reset refresh boundaries.
+- Course deletion now keeps the destructive action pending through the existing
+  `course.userCourses` invalidation before closing the modal.
+- Live-quiz scheduling and scheduled-activity publishing now await the existing
+  `activity.userActivities`, `course.detail`, and optional activity-list
+  refreshes before closing, while preserving current generic failure toasts.
+- Refresh failures remain caught and logged so confirmed server success is not
+  converted into a failed mutation.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/courses/modals/ActivityConfirmationModal.tsx apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/GroupActivityDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/PracticeQuizDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/MicroLearningDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/GroupActivityStartingModal.tsx apps/frontend-manage/src/components/courses/modals/GroupActivityEndingModal.tsx apps/frontend-manage/src/components/courses/modals/LiveQuizResetModal.tsx apps/frontend-manage/src/components/courses/modals/LiveQuizSchedulingModal.tsx apps/frontend-manage/src/components/courses/modals/PublishConfirmationModal.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage activity modal refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially Cypress Cloud run `6872`
+  replacement status.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Control Shell Profile Error State
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

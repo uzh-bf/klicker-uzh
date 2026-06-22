@@ -49,6 +49,8 @@ function CourseDeletionModal({
   )
 
   const deleteCourse = trpc.course.delete.useMutation()
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const deleting = deleteCourse.isLoading || deleteSubmitting
 
   // skip confirmation for the elements where none are present
   useEffect(() => {
@@ -78,7 +80,7 @@ function CourseDeletionModal({
     setConfirmations({ ...initialConfirmations })
   }
   const handleClose = () => {
-    if (!deleteCourse.isLoading) {
+    if (!deleting) {
       closeModal()
     }
   }
@@ -95,13 +97,15 @@ function CourseDeletionModal({
       title={t('manage.courseList.deleteCourse')}
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
-      primaryLoading={deleteCourse.isLoading}
+      primaryLoading={deleting}
       primaryDisabled={
+        deleting ||
         initialSummaryLoading ||
         summaryUnavailable ||
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
+        setDeleteSubmitting(true)
         try {
           const result = await deleteCourse.mutateAsync({ id: courseId })
 
@@ -123,9 +127,7 @@ function CourseDeletionModal({
                 }
               : data
           )
-          utils.course.userCourses
-            .invalidate()
-            .catch((error) => console.error(error))
+          await utils.course.userCourses.invalidate().catch(console.error)
           closeModal()
         } catch (error) {
           console.error(error)
@@ -134,6 +136,8 @@ function CourseDeletionModal({
             message: t('shared.generic.systemError'),
             options: { duration: 5000 },
           })
+        } finally {
+          setDeleteSubmitting(false)
         }
       }}
       dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}

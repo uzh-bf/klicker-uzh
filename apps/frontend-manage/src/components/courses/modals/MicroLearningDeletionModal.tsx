@@ -79,7 +79,7 @@ function MicroLearningDeletionModal({
           throw new Error('Failed to delete microlearning')
         }
 
-        void Promise.all([
+        await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
         ]).catch(console.error)

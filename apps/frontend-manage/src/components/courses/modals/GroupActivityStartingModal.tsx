@@ -53,7 +53,7 @@ function GroupActivityStartingModal({
           throw new Error('Failed to start group activity')
         }
 
-        void Promise.all([
+        await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
         ]).catch(console.error)

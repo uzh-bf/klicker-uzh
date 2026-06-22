@@ -9,6 +9,7 @@ import {
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as yup from 'yup'
 import { trpc } from '../../../lib/trpc'
 
@@ -28,8 +29,10 @@ function LiveQuizSchedulingModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const scheduleLiveQuiz = trpc.activity.scheduleLiveQuiz.useMutation()
+  const [scheduleSubmitting, setScheduleSubmitting] = useState(false)
+  const scheduling = scheduleLiveQuiz.isLoading || scheduleSubmitting
   const handleClose = () => {
-    if (!scheduleLiveQuiz.isLoading) {
+    if (!scheduling) {
       onClose()
     }
   }
@@ -55,20 +58,19 @@ function LiveQuizSchedulingModal({
         initialValues={{ availableFrom: undefined }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
+          setScheduleSubmitting(true)
           try {
             const result = await scheduleLiveQuiz.mutateAsync({
               activityId,
               availableFrom: dayjs(values.availableFrom).utc().toDate(),
             })
             if (result.scheduleLiveQuiz?.id) {
-              void utils.activity.userActivities
-                .invalidate()
-                .catch(console.error)
-              if (courseId) {
-                void utils.course.detail
-                  .invalidate({ courseId })
-                  .catch(console.error)
-              }
+              await Promise.all([
+                utils.activity.userActivities.invalidate(),
+                courseId
+                  ? utils.course.detail.invalidate({ courseId })
+                  : Promise.resolve(),
+              ]).catch(console.error)
               onClose()
             } else {
               toast({
@@ -84,6 +86,7 @@ function LiveQuizSchedulingModal({
             })
           } finally {
             setSubmitting(false)
+            setScheduleSubmitting(false)
           }
         }}
         validationSchema={yup.object().shape({
@@ -121,15 +124,13 @@ function LiveQuizSchedulingModal({
               <Button
                 primary
                 type="submit"
-                loading={isSubmitting || scheduleLiveQuiz.isLoading}
-                disabled={
-                  !isValid || isSubmitting || scheduleLiveQuiz.isLoading
-                }
+                loading={isSubmitting || scheduling}
+                disabled={!isValid || isSubmitting || scheduling}
                 data={{ cy: 'schedule-live-quiz-publication' }}
               >
                 <Button.Icon
                   icon={faClock}
-                  loading={isSubmitting || scheduleLiveQuiz.isLoading}
+                  loading={isSubmitting || scheduling}
                 />
                 <Button.Label>
                   {t('manage.course.confirmScheduling')}

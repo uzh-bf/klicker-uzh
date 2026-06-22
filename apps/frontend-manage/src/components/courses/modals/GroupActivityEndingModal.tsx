@@ -79,7 +79,7 @@ function GroupActivityEndingModal({
           throw new Error('Failed to end group activity')
         }
 
-        void Promise.all([
+        await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
         ]).catch(console.error)
