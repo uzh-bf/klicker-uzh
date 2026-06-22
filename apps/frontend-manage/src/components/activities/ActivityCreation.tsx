@@ -1,4 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import {
@@ -74,26 +75,38 @@ function ActivityCreation({
         duplicationMode === ActivityType.GroupActivity)
   )
 
-  const { data: dataLiveQuiz, isLoading: liveLoading } =
-    trpc.activity.authoringLiveQuiz.useQuery(
-      { activityId: activityId ?? '' },
-      { enabled: loadLiveQuiz }
-    )
-  const { data: dataMicroLearning, isLoading: microLoading } =
-    trpc.activity.authoringMicroLearning.useQuery(
-      { activityId: activityId ?? '' },
-      { enabled: loadMicroLearning }
-    )
-  const { data: dataPracticeQuiz, isLoading: learningLoading } =
-    trpc.activity.authoringPracticeQuiz.useQuery(
-      { activityId: activityId ?? '' },
-      { enabled: loadPracticeQuiz }
-    )
-  const { data: dataGroupActivity, isLoading: groupActivityLoading } =
-    trpc.activity.authoringGroupActivity.useQuery(
-      { activityId: activityId ?? '' },
-      { enabled: loadGroupActivity }
-    )
+  const {
+    data: dataLiveQuiz,
+    error: liveError,
+    isLoading: liveLoading,
+  } = trpc.activity.authoringLiveQuiz.useQuery(
+    { activityId: activityId ?? '' },
+    { enabled: loadLiveQuiz }
+  )
+  const {
+    data: dataMicroLearning,
+    error: microError,
+    isLoading: microLoading,
+  } = trpc.activity.authoringMicroLearning.useQuery(
+    { activityId: activityId ?? '' },
+    { enabled: loadMicroLearning }
+  )
+  const {
+    data: dataPracticeQuiz,
+    error: practiceError,
+    isLoading: learningLoading,
+  } = trpc.activity.authoringPracticeQuiz.useQuery(
+    { activityId: activityId ?? '' },
+    { enabled: loadPracticeQuiz }
+  )
+  const {
+    data: dataGroupActivity,
+    error: groupActivityError,
+    isLoading: groupActivityLoading,
+  } = trpc.activity.authoringGroupActivity.useQuery(
+    { activityId: activityId ?? '' },
+    { enabled: loadGroupActivity }
+  )
 
   // fetch all courses available to the user and the one linked to this activity (if not included in the former)
   const {
@@ -128,6 +141,12 @@ function ActivityCreation({
         .map(([key, value]) => [key, { ...value! }])
     )
   }, [selection])
+  const hasLoadError =
+    Boolean(errorCourses) ||
+    (loadLiveQuiz && Boolean(liveError)) ||
+    (loadMicroLearning && Boolean(microError)) ||
+    (loadPracticeQuiz && Boolean(practiceError)) ||
+    (loadGroupActivity && Boolean(groupActivityError))
 
   if (
     (!errorCourses && loadingCourses) ||
@@ -152,6 +171,16 @@ function ActivityCreation({
       microLoading)
   ) {
     return <Loader />
+  }
+
+  if (hasLoadError) {
+    return (
+      <UserNotification
+        className={{ root: 'm-auto w-max' }}
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
   // initialize practice quiz data from microlearning

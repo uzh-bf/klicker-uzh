@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Activity Creation Query Failure Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-manage
+activity-creation shell and its `activity.authoring*` / `course.activeUserCourses`
+tRPC queries. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup is being started.
+
+Finding:
+
+- `ActivityCreation` uses migrated tRPC queries to load editable/duplicated
+  activity data and active course choices, but it only gates on loading. If one
+  of those queries fails, the wizard can render with missing initial values or
+  no course choices instead of a clean failure state.
+
+Change:
+
+- Keep the existing loader while required authoring/course data is loading.
+- Show the existing generic system-error notification when a required tRPC
+  authoring/course query fails.
+- Leave creation mode without preloaded activity data unchanged.
+
+Evidence:
+
+- PR #5132 current head is `17e50ea053010136944fd231484a7ea3cbc75a1f`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for current React Query mutation/cache
+  helper patterns before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed activity-creation component and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed component.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept the existing creation wizard
+  loading boundaries and creation-mode behavior unchanged. Only failed required
+  authoring/course queries now render the existing generic error notification
+  instead of opening a wizard with missing preload data.
+
+Next:
+
+- Commit and push the manage activity-creation query failure cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: Manage Template Element Preview Failure Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-manage
