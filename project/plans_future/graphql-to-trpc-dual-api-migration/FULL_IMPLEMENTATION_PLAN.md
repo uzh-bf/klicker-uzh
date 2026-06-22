@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Course Archive Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+course archive/unarchive modal. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `663e315530f32c064e32daf05d9dadb051413c2b`.
+- Fresh PR checks on that head showed no red jobs after the first wait.
+  GitGuardian and Java/Python CodeQL were green; JavaScript/TypeScript analysis
+  and the broader app/package checks were still pending or not yet reported.
+- `CourseArchiveModal` already performs a targeted React Query cache update for
+  `course.userCourses` and then invalidates the same query.
+- The visible modal pending/close guard only tracked the tRPC mutation loading
+  flag, so the confirm action could re-enable or the modal could close while
+  invalidation was still running.
+
+Changes:
+
+- Added a local archive pending guard for the archive/unarchive modal.
+- The modal confirm button and close guard now stay pending through the tRPC
+  mutation, targeted cache update, and awaited `course.userCourses`
+  invalidation.
+- Existing optimistic cache update, error toast behavior, and GraphQL/tRPC
+  coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/courses/modals/CourseArchiveModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage course archive pending-boundary cleanup.
+- Recheck PR #5132 checks, especially package GraphQL/tRPC tests and Cypress
+  Cloud/default-group pending gates.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: PWA Header Action Pending Boundaries
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

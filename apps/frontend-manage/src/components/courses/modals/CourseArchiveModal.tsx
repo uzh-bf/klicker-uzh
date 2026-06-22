@@ -1,5 +1,6 @@
 import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 
 function CourseArchiveModal({
@@ -13,9 +14,11 @@ function CourseArchiveModal({
 }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
+  const [archivePending, setArchivePending] = useState(false)
   const toggleArchiveCourse = trpc.course.toggleArchive.useMutation()
+  const archiving = toggleArchiveCourse.isLoading || archivePending
   const handleClose = () => {
-    if (!toggleArchiveCourse.isLoading) {
+    if (!archiving) {
       onClose()
     }
   }
@@ -34,9 +37,12 @@ function CourseArchiveModal({
           : t('manage.courseList.archiveCourse')
       }
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={toggleArchiveCourse.isLoading}
-      primaryDisabled={toggleArchiveCourse.isLoading}
+      primaryLoading={archiving}
+      primaryDisabled={archiving}
       onPrimaryAction={async () => {
+        if (archiving) return
+        setArchivePending(true)
+
         try {
           const result = await toggleArchiveCourse.mutateAsync({
             id: courseId,
@@ -49,6 +55,7 @@ function CourseArchiveModal({
               message: t('shared.generic.systemError'),
               options: { duration: 5000 },
             })
+            setArchivePending(false)
             return
           }
 
@@ -67,9 +74,7 @@ function CourseArchiveModal({
                 }
               : data
           )
-          utils.course.userCourses
-            .invalidate()
-            .catch((error) => console.error(error))
+          await utils.course.userCourses.invalidate().catch(console.error)
           onClose()
         } catch (error) {
           console.error(error)
@@ -78,6 +83,7 @@ function CourseArchiveModal({
             message: t('shared.generic.systemError'),
             options: { duration: 5000 },
           })
+          setArchivePending(false)
         }
       }}
       dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}
