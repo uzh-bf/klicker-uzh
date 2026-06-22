@@ -244,7 +244,7 @@ function PublicFeedback({
           (response) =>
             response && (
               <div
-                key={response.content}
+                key={response.id}
                 className="bg-uzh-grey-20 mb-1 ml-8 flex flex-1 transform flex-row rounded-md border border-solid p-1.5 text-sm shadow-sm transition-shadow duration-300 hover:shadow-md"
               >
                 <div className="flex flex-1 flex-col">{response.content}</div>

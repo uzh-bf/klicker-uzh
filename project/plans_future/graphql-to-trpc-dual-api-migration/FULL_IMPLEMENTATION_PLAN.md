@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: PWA Feedback Query Error Cleanup
+
+Status: complete. Scope stayed within the already migrated PWA live-quiz
+feedback tRPC query and rendered feedback list. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or subscription cleanup was started.
+
+Finding:
+
+- `FeedbackArea` does not read the `participant.liveQuizFeedbacks` query error
+  state. If the initial feedback query fails, the component renders the full
+  loader indefinitely because `feedbacksData` is missing. If a later refetch
+  fails while stale data exists, the user gets no visible failure signal.
+- Rendered feedback items use feedback content as React keys, which is unstable
+  if two questions or answers have the same text.
+
+Change:
+
+- Show the standard error notification when the initial feedback query fails
+  without cached data.
+- Keep stale feedback data visible and show a non-blocking error notification
+  if a refetch fails.
+- Key feedback and response rows by ids.
+- Keep existing mutation behavior, optimistic vote rollback, realtime
+  invalidation subscriptions, and GraphQL/tRPC coexistence unchanged.
+
+Evidence:
+
+- PR #5132 current head is `9540aceb6410ad8ab40cb493b281f1c98a35f330`.
+- Current-head CI restarted after the layout cleanup push; GitGuardian is
+  already green and the rest is pending.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched feedback components and this plan passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Current pushed-head CI has CodeQL, GitGuardian, format, one check job,
+  `packages/api tRPC Vitest`, one test job, and several builds passing;
+  Cypress Cloud, `packages/graphql Vitest`, and remaining build/lint/check
+  jobs are still pending.
+
+Next:
+
+- Commit and push the PWA feedback query error cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, and remaining pending checks
+  after the push.
+
 ### 2026-06-22 Completed: Layout Profile Redirect Cleanup
 
 Status: complete. Scope stayed within already migrated tRPC `user.profile`

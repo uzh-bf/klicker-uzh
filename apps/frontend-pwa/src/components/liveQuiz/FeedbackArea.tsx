@@ -7,6 +7,7 @@ import {
   H2,
   H3,
   Slider,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -65,11 +66,13 @@ function FeedbackArea({
   const {
     isLoading: feedbacksLoading,
     data: feedbacksData,
+    error: feedbacksError,
     refetch: refetchFeedbacks,
   } = trpc.participant.liveQuizFeedbacks.useQuery(
     { quizId },
     { enabled: !!quizId }
   )
+  const feedbacks = feedbacksData?.feedbacks
 
   const onAddFeedback = async (input: string) => {
     if (!quizId) return
@@ -199,23 +202,35 @@ function FeedbackArea({
   }
 
   const openFeedbacks = useMemo(
-    () =>
-      feedbacksData?.feedbacks?.filter(
-        (feedback) => feedback?.isResolved === false
-      ),
-    [feedbacksData]
+    () => feedbacks?.filter((feedback) => feedback?.isResolved === false),
+    [feedbacks]
   )
 
   const resolvedFeedbacks = useMemo(
-    () =>
-      feedbacksData?.feedbacks?.filter(
-        (feedback) => feedback?.isResolved === true
-      ),
-    [feedbacksData]
+    () => feedbacks?.filter((feedback) => feedback?.isResolved === true),
+    [feedbacks]
   )
 
-  if (feedbacksLoading || !feedbacksData?.feedbacks) {
+  if (feedbacksLoading && typeof feedbacks === 'undefined') {
     return <Loader />
+  }
+
+  if (feedbacksError && typeof feedbacks === 'undefined') {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
+  }
+
+  if (typeof feedbacks === 'undefined') {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
   return (
@@ -223,6 +238,14 @@ function FeedbackArea({
       <H2>{t('pwa.feedbacks.title')}</H2>
 
       <FeedbackAreaSubscriber quizId={quizId} onChanged={refetchFeedbacks} />
+
+      {feedbacksError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4 text-base' }}
+        />
+      ) : null}
 
       {isLiveQAEnabled && (
         <div className="mb-8">
@@ -330,7 +353,7 @@ function FeedbackArea({
         </div>
       )}
 
-      {isLiveQAEnabled && feedbacksData?.feedbacks.length > 0 && (
+      {isLiveQAEnabled && feedbacks.length > 0 && (
         <div>
           {openFeedbacks && openFeedbacks.length > 0 && (
             <div className="mb-8">
@@ -338,7 +361,7 @@ function FeedbackArea({
               {openFeedbacks.map((feedback) =>
                 feedback ? (
                   <PublicFeedback
-                    key={feedback.content}
+                    key={feedback.id}
                     feedback={feedback}
                     onUpvoteFeedback={onUpvoteFeedback}
                     onReactToFeedbackResponse={onReactToFeedbackResponse}
@@ -362,7 +385,7 @@ function FeedbackArea({
                 .map((feedback) =>
                   feedback ? (
                     <PublicFeedback
-                      key={feedback.content}
+                      key={feedback.id}
                       feedback={feedback}
                       onUpvoteFeedback={onUpvoteFeedback}
                       onReactToFeedbackResponse={onReactToFeedbackResponse}
