@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: User-Group Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage user-group workflow. No new migration slice,
+S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `46b7e230f75d0e902298a3636f7530c3dfc6b4b3`.
+- Fresh PR checks on that head had just restarted after the previous push;
+  GitGuardian was green and the remaining checks were pending.
+- User-group create, add member/admin, rename, promote, demote, remove member,
+  ownership transfer, leave, and delete all confirmed tRPC mutation success but
+  refreshed `sharing.userGroups` in the background. That allowed forms, edit
+  mode, confirmation modals, or success toasts to transition before the user
+  group list/detail cache reflected the committed change.
+- The member promotion button also called the async action without awaiting it,
+  unlike the adjacent demotion/removal actions.
+
+Changes:
+
+- Successful user-group mutations now await the existing `sharing.userGroups`
+  invalidation attempt before resetting forms, leaving edit mode, closing
+  modals, or showing success.
+- User-group refresh failures remain caught and logged, so confirmed server
+  success is not reported as a failed mutation.
+- The member-promotion click handler now awaits the async promotion action.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/groups/AddUserGroupMember.tsx apps/frontend-manage/src/components/groups/DeleteUserGroupModal.tsx apps/frontend-manage/src/components/groups/LeaveUserGroupModal.tsx apps/frontend-manage/src/components/groups/UserGroupCreationForm.tsx apps/frontend-manage/src/components/groups/UserGroupEditModal.tsx apps/frontend-manage/src/components/groups/useChangeUserGroupName.ts apps/frontend-manage/src/components/groups/useDemoteGroupAdminToMember.ts apps/frontend-manage/src/components/groups/usePromoteGroupMemberToAdmin.ts apps/frontend-manage/src/components/groups/useRemoveUserFromGroup.ts apps/frontend-manage/src/components/groups/useTransferGroupOwnership.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` returned `404`, but `curl` to `127.0.0.1:3002` failed with
+  connection refused, so no local manage dev server was available for
+  screenshots.
+
+Next:
+
+- Commit and push this focused user-group refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Answer-Collection Removal Completion Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

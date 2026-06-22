@@ -261,7 +261,7 @@ function UserGroupEditModal({
                       disabled={loading}
                       className={{ root: 'px-1.5 py-1' }}
                       onClick={async () => {
-                        onPromotion({
+                        await onPromotion({
                           groupId: group.id,
                           memberId: member.id!,
                         })

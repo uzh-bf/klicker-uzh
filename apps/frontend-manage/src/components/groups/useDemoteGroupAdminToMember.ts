@@ -27,7 +27,7 @@ function useDemoteGroupAdminToMember() {
         adminId,
       })
       if (result.demoted) {
-        void utils.sharing.userGroups.invalidate().catch(console.error)
+        await utils.sharing.userGroups.invalidate().catch(console.error)
       } else {
         onErrorToast()
       }

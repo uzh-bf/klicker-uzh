@@ -27,7 +27,7 @@ function usePromoteGroupMemberToAdmin() {
         memberId,
       })
       if (result.promoted) {
-        void utils.sharing.userGroups.invalidate().catch(console.error)
+        await utils.sharing.userGroups.invalidate().catch(console.error)
       } else {
         onErrorToast()
       }

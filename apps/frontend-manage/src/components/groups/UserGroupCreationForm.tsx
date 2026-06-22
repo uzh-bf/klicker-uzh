@@ -33,7 +33,7 @@ function UserGroupCreationForm({
   const utils = trpc.useUtils()
   const createUserGroup = trpc.sharing.createUserGroup.useMutation()
   const refreshUserGroups = () => {
-    void utils.sharing.userGroups.invalidate().catch(console.error)
+    return utils.sharing.userGroups.invalidate().catch(console.error)
   }
 
   const validationSchema = Yup.object({
@@ -75,7 +75,7 @@ function UserGroupCreationForm({
             })
 
             if (result.userGroup?.id) {
-              refreshUserGroups()
+              await refreshUserGroups()
               onClose()
               onSuccess()
             } else {

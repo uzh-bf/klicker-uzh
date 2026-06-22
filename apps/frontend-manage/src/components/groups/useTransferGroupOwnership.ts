@@ -28,7 +28,7 @@ function useTransferGroupOwnership() {
         newOwnerId,
       })
       if (result.transferred) {
-        void utils.sharing.userGroups.invalidate().catch(console.error)
+        await utils.sharing.userGroups.invalidate().catch(console.error)
       } else {
         onErrorToast()
       }

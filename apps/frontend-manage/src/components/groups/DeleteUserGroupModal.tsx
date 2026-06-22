@@ -27,7 +27,7 @@ function DeleteUserGroupModal({
     }
   }
   const refreshUserGroups = () => {
-    void utils.sharing.userGroups.invalidate().catch(console.error)
+    return utils.sharing.userGroups.invalidate().catch(console.error)
   }
 
   const [confirmations, setConfirmations] = useState({
@@ -72,7 +72,7 @@ function DeleteUserGroupModal({
         try {
           const success = await deleteUserGroup.mutateAsync({ groupId })
           if (success.deleted) {
-            refreshUserGroups()
+            await refreshUserGroups()
             onSuccess()
           } else {
             onErrorToast()

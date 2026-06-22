@@ -29,7 +29,7 @@ function useChangeUserGroupName() {
         name: newName,
       })
       if (result.changed) {
-        void utils.sharing.userGroups.invalidate().catch(console.error)
+        await utils.sharing.userGroups.invalidate().catch(console.error)
         setTitleEditMode(false)
       } else {
         onErrorToast()
