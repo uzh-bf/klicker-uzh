@@ -62,7 +62,7 @@ function AdminPanel() {
                         })
 
                       if (success === 0) {
-                        void utils.user.privatePreviewUsers
+                        await utils.user.privatePreviewUsers
                           .invalidate()
                           .catch(console.error)
                         toast({
@@ -79,7 +79,7 @@ function AdminPanel() {
                         })
                         return
                       } else if (success === 2) {
-                        void utils.user.privatePreviewUsers
+                        await utils.user.privatePreviewUsers
                           .invalidate()
                           .catch(console.error)
                         toast({

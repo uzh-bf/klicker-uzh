@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Manage Admin Private Preview Refresh Boundary Cleanup
+
+Status: complete locally. Scope stayed inside the tRPC UX/client-quality audit
+and the already migrated manage admin private-preview access flow. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `54a14ce6fc2ccefe68fd3a35be3526baf3b50e2b`.
+- Fresh PR checks on this head show format, lint, `check`, `packages/api tRPC
+  Vitest`, GitGuardian, Claude review, and several CodeQL/Docker/test jobs
+  green. `packages/graphql Vitest`, Cypress Cloud, SonarCloud, one generic test
+  job, and several Docker builds are still pending.
+- The failed `frontend-manage (stg)` `build-arm` job failed before app code ran:
+  `docker/setup-qemu-action@v2` could not pull `tonistiigi/binfmt:latest` from
+  Docker Hub and returned `unknown`.
+- Current PR review threads are resolved and outdated; no current inline review
+  thread is actionable.
+- The admin private-preview grant form already keeps `isSubmitting` active, but
+  successful and already-granted paths launch `user.privatePreviewUsers`
+  invalidation in the background, so the success toast/reset can happen before
+  the refreshed access list arrives.
+
+Changes:
+
+- Awaited the existing private-preview user-list invalidation on successful grant
+  outcomes while preserving the current toast/error behavior.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query mutation/cache utility
+  behavior before editing this pass.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/pages/admin.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/runtime verification remains blocked in the current local environment:
+  API `127.0.0.1:3000/api/trpc`, Manage `127.0.0.1:3002`, and PWA
+  `127.0.0.1:3001` all returned connection refused / `000`.
+- Dedicated review/simplification subagents were not spawned because the
+  available multi-agent tool contract only permits spawning when the user
+  explicitly asks for delegation; self-review kept the patch to the two existing
+  invalidation calls.
+
 ### 2026-06-22 Completed Locally: PWA Group Activity Refresh Boundary Cleanup
 
 Status: complete locally. Scope stayed inside the tRPC UX/client-quality audit
