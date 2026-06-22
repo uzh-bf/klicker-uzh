@@ -37,6 +37,7 @@ function AudienceInteraction({
   const t = useTranslations()
   const [showModerationModal, setShowModerationModal] = useState(false)
   const [moderationChangeLoading, setModerationChangeLoading] = useState(false)
+  const [settingsActionPending, setSettingsActionPending] = useState(false)
   const onFeedbackCreatedRef = useRef(onFeedbackCreated)
   const utils = api.useUtils()
 
@@ -86,7 +87,7 @@ function AudienceInteraction({
   ) {
     try {
       await action()
-      void refetchAudienceInteraction().catch(console.error)
+      await refetchAudienceInteraction().catch(console.error)
       return true
     } catch (error) {
       console.error(error)
@@ -94,6 +95,22 @@ function AudienceInteraction({
       return false
     }
   }
+
+  async function runAudienceSettingsMutation(action: () => Promise<unknown>) {
+    if (settingsActionPending) return false
+
+    setSettingsActionPending(true)
+    try {
+      return await runAudienceInteractionMutation(action)
+    } finally {
+      setSettingsActionPending(false)
+    }
+  }
+
+  const settingsLoading =
+    changeQuizSettings.isLoading ||
+    settingsActionPending ||
+    moderationChangeLoading
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
@@ -121,7 +138,7 @@ function AudienceInteraction({
               data={{ cy: 'toggle-qa' }}
               checked={isLiveQAEnabled}
               onCheckedChange={async () => {
-                const success = await runAudienceInteractionMutation(() =>
+                const success = await runAudienceSettingsMutation(() =>
                   changeQuizSettings.mutateAsync({
                     id: quizId,
                     isLiveQAEnabled: !isLiveQAEnabled,
@@ -138,12 +155,12 @@ function AudienceInteraction({
                 }
               }}
               label={t('manage.cockpit.activateQA')}
-              disabled={changeQuizSettings.isLoading}
+              disabled={settingsLoading}
             />
             <Switch
               data={{ cy: 'toggle-moderation' }}
               checked={isModerationEnabled}
-              disabled={!isLiveQAEnabled || changeQuizSettings.isLoading}
+              disabled={!isLiveQAEnabled || settingsLoading}
               onCheckedChange={async () => {
                 if (isModerationEnabled === true) {
                   // count unpublished feedbacks when disabling moderation and show confirmation modal if necessary
@@ -156,7 +173,7 @@ function AudienceInteraction({
                 }
 
                 // if no unpublished feedbacks, directly toggle moderation
-                const success = await runAudienceInteractionMutation(() =>
+                const success = await runAudienceSettingsMutation(() =>
                   changeQuizSettings.mutateAsync({
                     id: quizId,
                     isModerationEnabled: !isModerationEnabled,
@@ -319,7 +336,7 @@ function AudienceInteraction({
             data={{ cy: 'toggle-gamification' }}
             checked={isConfusionFeedbackEnabled}
             onCheckedChange={async () => {
-              const success = await runAudienceInteractionMutation(() =>
+              const success = await runAudienceSettingsMutation(() =>
                 changeQuizSettings.mutateAsync({
                   id: quizId,
                   isConfusionFeedbackEnabled: !isConfusionFeedbackEnabled,
@@ -335,7 +352,7 @@ function AudienceInteraction({
               }
             }}
             label={t('manage.cockpit.activateFeedback')}
-            disabled={changeQuizSettings.isLoading}
+            disabled={settingsLoading}
           />
         </div>
         <div className="h-max rounded border p-4">
@@ -356,7 +373,7 @@ function AudienceInteraction({
           onConfirm={async () => {
             setModerationChangeLoading(true)
             try {
-              const success = await runAudienceInteractionMutation(() =>
+              const success = await runAudienceSettingsMutation(() =>
                 changeQuizSettings.mutateAsync({
                   id: quizId,
                   isModerationEnabled: false,
@@ -377,7 +394,7 @@ function AudienceInteraction({
           unpublishedCount={
             feedbacks?.filter((f) => !f.isPublished).length || 0
           }
-          loading={moderationChangeLoading}
+          loading={settingsLoading}
         />
       )}
     </div>

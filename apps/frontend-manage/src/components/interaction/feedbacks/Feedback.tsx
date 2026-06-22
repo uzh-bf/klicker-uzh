@@ -60,6 +60,21 @@ function Feedback({
   const [isEditingActive, setIsEditingActive] = useState(false)
   const [isBeingDeleted, setIsBeingDeleted] = useState(false)
   const [showDeletionModal, setShowDeletionModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
+
+  async function runFeedbackAction(
+    actionKey: string,
+    action: () => Promise<boolean>
+  ) {
+    if (pendingAction) return false
+
+    setPendingAction(actionKey)
+    try {
+      return await action()
+    } finally {
+      setPendingAction(null)
+    }
+  }
 
   return (
     <div className="rounded-md border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -130,9 +145,12 @@ function Feedback({
               <div className="flex items-center gap-1">
                 <Button
                   basic
+                  disabled={pendingAction !== null}
                   onClick={(e) => {
                     e?.stopPropagation()
-                    setShowDeletionModal(true)
+                    if (!pendingAction) {
+                      setShowDeletionModal(true)
+                    }
                   }}
                   className={{
                     root: 'h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600',
@@ -199,11 +217,15 @@ function Feedback({
                     </div>
                     <Button
                       basic
+                      disabled={pendingAction !== null}
+                      loading={pendingAction === `response-${response.id}`}
                       className={{
                         root: 'h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600',
                       }}
                       onClick={() => {
-                        void onDeleteResponse(response.id)
+                        void runFeedbackAction(`response-${response.id}`, () =>
+                          onDeleteResponse(response.id)
+                        )
                       }}
                       data={{ cy: `delete-response-${response.content}` }}
                     >
@@ -221,9 +243,10 @@ function Feedback({
                 className={{
                   root: 'text-primary-100 hover:text-primary-100 mb-0.5 py-1',
                 }}
-                disabled={resolved}
+                disabled={resolved || pendingAction !== null}
+                loading={pendingAction === 'pin'}
                 onClick={() => {
-                  void onPinFeedback(!pinned)
+                  void runFeedbackAction('pin', () => onPinFeedback(!pinned))
                 }}
                 data={{ cy: `pin-feedback-${content}` }}
               >
@@ -239,9 +262,13 @@ function Feedback({
                 className={{
                   root: 'text-primary-100 hover:text-primary-100 mb-0.5 px-3 py-1',
                 }}
+                disabled={pendingAction !== null}
+                loading={pendingAction === 'resolve'}
                 onClick={() => {
                   void (async () => {
-                    const success = await onResolveFeedback(!resolved)
+                    const success = await runFeedbackAction('resolve', () =>
+                      onResolveFeedback(!resolved)
+                    )
                     if (success && !resolved) {
                       setIsEditingActive(false)
                     }
@@ -302,13 +329,14 @@ function Feedback({
                       type="submit"
                       disabled={
                         isSubmitting ||
+                        pendingAction !== null ||
                         resolved ||
                         values.respondToFeedbackInput === ''
                       }
                       className={{ root: 'mt-1 h-8' }}
                       data={{ cy: `submit-feedback-response-${content}` }}
                     >
-                      <Button.Icon icon={faPaperPlane} />
+                      <Button.Icon icon={faPaperPlane} loading={isSubmitting} />
                       <Button.Label>{t('shared.generic.respond')}</Button.Label>
                     </Button>
                   </div>

@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Audience Interaction Pending Guards
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+live-quiz audience interaction workflow. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `AudienceInteraction` migrated lecturer feedback/settings actions to tRPC and
+  already surfaced failed writes through a system-error toast.
+- The shared mutation helper launched the post-success cockpit and lecturer-view
+  refresh in the background, so settings switches could look idle before the
+  confirmed server state had been reloaded.
+- Individual feedback item controls for pin, resolve, and response deletion
+  awaited tRPC-backed handlers but did not show per-action loading or block
+  duplicate clicks while those handlers were in flight.
+- Context7 TanStack Query v4 docs were refreshed before this change. They
+  confirm `mutateAsync` is the right primitive for composing promise-based
+  mutation side effects.
+
+Changes:
+
+- Keep settings actions pending through the tRPC write plus the best-effort
+  cockpit / lecturer-view refresh attempt.
+- Disable the live-QA, moderation, and confusion-feedback settings switches
+  while a settings action is settling.
+- Add per-feedback pending guards and loading states for pin, resolve,
+  response-delete, and response-submit controls while preserving existing
+  success/failure callbacks and toasts.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/interaction/AudienceInteraction.tsx
+  apps/frontend-manage/src/components/interaction/feedbacks/Feedback.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed after formatting `Feedback.tsx`.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Attempted `pnpm --filter @klicker-uzh/api exec vitest run
+  src/trpc/__tests__/live-quiz-feedback-management.test.ts`; it produced no
+  output for roughly 90 seconds and was interrupted locally with exit code 130.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+
+Next:
+
+- Commit and push this focused audience-interaction pending-guard cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Batch Operation Pending Guard Follow-Up
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
