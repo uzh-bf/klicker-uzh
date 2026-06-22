@@ -24,7 +24,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import CarouselMonitor from './CarouselMonitor'
@@ -65,13 +65,19 @@ function AccountSelector({
     'anonymous' | 'temporary' | 'loggedIn' | undefined
   >(`login-state-${quizId}`, undefined)
   const [api, setApi] = useState<CarouselApi>()
+  const selfQueryErrorToastShown = useRef(false)
 
   const loginTemporaryParticipant =
     trpc.participant.loginTemporary.useMutation()
   const utils = trpc.useUtils()
 
   // check if the user is already logged in as a participant or temporary participant of this quiz
-  const { data, isLoading, refetch } = trpc.participant.self.useQuery(
+  const {
+    data,
+    error: selfQueryError,
+    isLoading,
+    refetch,
+  } = trpc.participant.self.useQuery(
     { liveQuizId: quizId },
     {
       enabled: loginState !== 'anonymous', // if the user has already opted to participate anonymously, skip the query
@@ -83,6 +89,23 @@ function AccountSelector({
     if (isLoading || loginState === 'anonymous') {
       return
     }
+
+    if (selfQueryError && !data?.self) {
+      setOpen(false)
+
+      if (!selfQueryErrorToastShown.current) {
+        selfQueryErrorToastShown.current = true
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+      }
+
+      return
+    }
+
+    selfQueryErrorToastShown.current = false
 
     // once the query has finished loading, check if the user is logged in and show the modal otherwise
     if (
@@ -104,8 +127,7 @@ function AccountSelector({
     if (data.self.role === 'TEMPORARY_PARTICIPANT') {
       setLoginState('temporary')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, isLoading])
+  }, [data, isLoading, loginState, quizId, selfQueryError, setLoginState, t])
 
   return (
     <Modal
@@ -139,9 +161,11 @@ function AccountSelector({
               primary
               className={{ root: 'justify-start' }}
               onClick={() => {
-                router.push(
-                  `/login?redirect_to=${encodeURIComponent(`/session/${quizId}`)}`
-                )
+                void router
+                  .push(
+                    `/login?redirect_to=${encodeURIComponent(`/session/${quizId}`)}`
+                  )
+                  .catch(console.error)
               }}
               data={{ cy: 'login-with-account' }}
             >

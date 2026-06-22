@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: PWA Account Selector Self-Query Error Cleanup
+
+Status: complete. Scope stayed within the already migrated PWA live-quiz
+account selector and its `participant.self` tRPC query. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or subscription cleanup
+was started.
+
+Finding:
+
+- `AccountSelector` treats a failed `participant.self` query with no data the
+  same as "not logged in" and opens the gamified login-mode modal. That can
+  reset local login state and ask the participant to choose a login mode when
+  the real problem is a temporary API/network failure.
+
+Change:
+
+- Detect the initial self-query error separately.
+- Keep stale/known self data behavior unchanged, but do not force-open the
+  login-mode modal when there is no self data because the query failed.
+- Show the existing generic error toast once per failure and keep existing
+  temporary-login mutation behavior unchanged.
+- Catch login-button navigation failures with `console.error` instead of
+  leaving a floating router promise.
+
+Evidence:
+
+- PR #5132 current head is `ad216765501d22a7ad4f6750d5ffb0a1e97c7062`.
+- Current-head CI is mostly pending after the realtime callback cleanup push;
+  GitGuardian, Claude review, and CodeQL Python already pass.
+- Context7 tRPC docs were refreshed for route guards, query state, mutation
+  state, invalidation, and subscription callback handling before this audit
+  pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched account selector and this plan passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Current pushed-head CI has CodeQL, SonarCloud, GitGuardian, lint, format,
+  both check jobs, `packages/api tRPC Vitest`, one test job, and several builds
+  passing; Cypress Cloud, `packages/graphql Vitest`, remaining builds, and one
+  test job are still pending.
+
+Next:
+
+- Commit and push the PWA account selector self-query error cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, and remaining pending checks
+  after the push.
+
 ### 2026-06-22 Completed: Realtime Refetch Error Handling Cleanup
 
 Status: complete. Scope stayed within already migrated PWA/manage tRPC
