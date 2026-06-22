@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
 
@@ -65,6 +65,12 @@ function Header({
   const logoutParticipant = trpc.participant.logout.useMutation()
   const logoutTemporaryParticipant =
     trpc.participant.logoutTemporary.useMutation()
+  const [headerActionPending, setHeaderActionPending] = useState(false)
+  const changingLocale =
+    changeParticipantLocale.isLoading || headerActionPending
+  const loggingOut = logoutParticipant.isLoading || headerActionPending
+  const loggingOutTemporary =
+    logoutTemporaryParticipant.isLoading || headerActionPending
 
   const pageInFrame =
     global?.window &&
@@ -284,7 +290,7 @@ function Header({
                 },
               ].map((language) => ({
                 id: language.id,
-                disabled: changeParticipantLocale.isLoading,
+                disabled: changingLocale,
                 label: (
                   <>
                     <span className="mr-1 md:mr-2">{language.flag}</span>
@@ -293,19 +299,27 @@ function Header({
                 ),
                 type: 'checkbox',
                 onClick: async () => {
+                  if (changingLocale) return
+                  setHeaderActionPending(true)
+
                   try {
                     if (participant && participant.role === PARTICIPANT_ROLE) {
                       await changeParticipantLocale.mutateAsync({
                         locale: language.value,
                       })
-                      utils.participant.self
+                      await utils.participant.self
                         .invalidate()
-                        .catch((error) => console.error(error))
+                        .catch(console.error)
                     }
 
-                    await router.push({ pathname, query }, asPath, {
-                      locale: language.value,
-                    })
+                    const routed = await router.push(
+                      { pathname, query },
+                      asPath,
+                      {
+                        locale: language.value,
+                      }
+                    )
+                    if (!routed) throw new Error('Locale navigation failed')
                   } catch (error) {
                     console.error(error)
                     toast({
@@ -313,6 +327,8 @@ function Header({
                       message: t('shared.generic.systemError'),
                       options: { duration: 5000 },
                     })
+                  } finally {
+                    setHeaderActionPending(false)
                   }
                 },
                 selected: router.locale === language.value,
@@ -323,7 +339,7 @@ function Header({
                   {
                     id: 'logout',
                     type: 'standard' as 'standard',
-                    disabled: logoutParticipant.isLoading,
+                    disabled: loggingOut,
                     label: (
                       <div className="text-red-600">
                         <FontAwesomeIcon
@@ -334,15 +350,20 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
+                      if (loggingOut) return
+                      setHeaderActionPending(true)
+
                       try {
                         const loggedOut = await logoutParticipant.mutateAsync()
 
                         if (loggedOut) {
                           sessionStorage.removeItem('participant_token')
-                          utils.participant.self
+                          await utils.participant.self
                             .invalidate()
-                            .catch((error) => console.error(error))
-                          await router.push('/login')
+                            .catch(console.error)
+                          const routed = await router.push('/login')
+                          if (!routed)
+                            throw new Error('Logout navigation failed')
                         } else {
                           toast({
                             type: 'error',
@@ -357,6 +378,8 @@ function Header({
                           message: t('shared.generic.systemError'),
                           options: { duration: 5000 },
                         })
+                      } finally {
+                        setHeaderActionPending(false)
                       }
                     },
                     data: { cy: 'logout' },
@@ -368,7 +391,7 @@ function Header({
                   {
                     id: 'logout',
                     type: 'standard' as 'standard',
-                    disabled: logoutTemporaryParticipant.isLoading,
+                    disabled: loggingOutTemporary,
                     label: (
                       <div className="text-red-600">
                         <FontAwesomeIcon
@@ -379,6 +402,9 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
+                      if (loggingOutTemporary) return
+                      setHeaderActionPending(true)
+
                       try {
                         // log out temporary participant for this live quiz
                         const loggedOut =
@@ -391,6 +417,7 @@ function Header({
                           localStorage.removeItem(`login-state-${liveQuizId}`)
 
                           router.reload()
+                          return
                         } else {
                           toast({
                             type: 'error',
@@ -411,6 +438,7 @@ function Header({
                           ),
                         })
                       }
+                      setHeaderActionPending(false)
                     },
                     data: { cy: 'logout' },
                   },

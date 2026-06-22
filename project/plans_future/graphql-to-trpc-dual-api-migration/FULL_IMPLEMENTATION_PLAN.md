@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: PWA Header Action Pending Boundaries
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-pwa header
+language/logout actions. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `263bb35f24fb3747080bc2a83ce053d85c254ca9`.
+- Fresh PR checks on that head showed no red jobs. GitGuardian, Claude review,
+  format, lint, one check job, one test job, Python/Java CodeQL, and one Docker
+  build pair were green. Package GraphQL/tRPC tests, Cypress Cloud, SonarCloud,
+  remaining builds/checks/tests, and JavaScript analyzers were still pending.
+- The PWA header language switch, participant logout, and temporary logout
+  actions use migrated tRPC mutations and then invalidate/refetch or navigate.
+- Their dropdown disabled state only tracked the mutation loading flag, leaving
+  a duplicate-click window while invalidation or route transitions were still
+  in flight.
+- Context7 tRPC v11 docs were refreshed before editing and show awaitable
+  mutation success/invalidation patterns for React Query cache freshness.
+
+Changes:
+
+- Added one local header-action pending guard shared by language and logout
+  dropdown actions.
+- Language switching now stays disabled through tRPC locale mutation,
+  `participant.self` invalidation, and locale route transition.
+- Participant logout now stays disabled through tRPC logout,
+  `participant.self` invalidation, and navigation to `/login`.
+- Temporary participant logout now uses the same local duplicate-click guard
+  until the page reload starts or an error is shown.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/components/common/Header.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3001` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused PWA header action pending-boundary cleanup.
+- Recheck PR #5132 checks, especially package GraphQL/tRPC tests and Cypress
+  Cloud/default-group pending gates.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: PWA Leaderboard Join Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
