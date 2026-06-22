@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Catalog Removal Close Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+catalog object removal modal. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `6e0f3aa18de26f862d133bc350e915f0f70647e3`.
+- Fresh PR checks on that head had no red jobs. GitGuardian, format, lint, one
+  check job, one test job, Claude review, `packages/api tRPC Vitest`, and
+  several CodeQL/build jobs were green or pending; Cypress Cloud,
+  `packages/graphql Vitest`, SonarCloud, and remaining matrix jobs were still
+  pending.
+- `CatalogObjectRemovalModal` already disables and shows loading on the
+  destructive action while `sharing.removeCatalogObjectAssignment` is running.
+- The modal could still be closed via overlay/secondary action while that tRPC
+  mutation was in flight, creating a premature close path inconsistent with
+  the other migrated catalog copy/import modals.
+- Context7 tRPC v11 docs were refreshed before editing and confirm mutation
+  status plus explicit cache operations remain the relevant client pattern.
+
+Changes:
+
+- Added a shared `removing` guard and close handler to ignore modal close and
+  secondary cancel actions while the removal mutation is pending.
+- Kept the existing optimistic `catalogObjects.setData`, best-effort
+  `catalogCollections` invalidation, success/error toasts, and GraphQL/tRPC
+  coexistence unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/catalog/actions/CatalogObjectRemovalModal.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused manage catalog removal close-guard cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Creation Navigation Fallbacks
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

@@ -17,6 +17,12 @@ function CatalogObjectRemovalModal({
   const utils = trpc.useUtils()
   const removeCatalogObjectAssignment =
     trpc.sharing.removeCatalogObjectAssignment.useMutation()
+  const removing = removeCatalogObjectAssignment.isLoading
+  const handleClose = () => {
+    if (!removing) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
@@ -30,9 +36,9 @@ function CatalogObjectRemovalModal({
           ? t(`manage.catalog.remove${object.objectType}_TEMPLATEtitle`)
           : t(`manage.catalog.remove${object.objectType}title`)
       }
-      onClose={onClose}
+      onClose={handleClose}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-removal' }}
       primaryLabel={
         (object.objectType === ObjectType.LiveQuiz ||
@@ -43,8 +49,8 @@ function CatalogObjectRemovalModal({
           ? t(`manage.catalog.remove${object.objectType}_TEMPLATE`)
           : t(`manage.catalog.remove${object.objectType}`)
       }
-      primaryLoading={removeCatalogObjectAssignment.isLoading}
-      primaryDisabled={removeCatalogObjectAssignment.isLoading}
+      primaryLoading={removing}
+      primaryDisabled={removing}
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
         try {
