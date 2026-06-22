@@ -219,7 +219,12 @@ function CourseSelectionPage() {
                     .catch(console.error)
                   showCreateCourseModal(false)
                   try {
-                    await router.push(`/courses/${createdCourse.id}`)
+                    const routed = await router.push(
+                      `/courses/${createdCourse.id}`
+                    )
+                    if (!routed) {
+                      window.location.assign(`/courses/${createdCourse.id}`)
+                    }
                   } catch (navigationError) {
                     console.error(navigationError)
                     toast({

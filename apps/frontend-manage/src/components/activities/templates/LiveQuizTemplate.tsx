@@ -520,10 +520,15 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
 
                     // redirect to live quiz overview and highlight newly created element
                     try {
-                      await router.push({
+                      const routed = await router.push({
                         pathname: '/activities',
                         query: { highlight: quizId },
                       })
+                      if (!routed) {
+                        window.location.assign(
+                          `/activities?highlight=${encodeURIComponent(quizId)}`
+                        )
+                      }
                     } catch (navigationError) {
                       console.error(navigationError)
                       toast({

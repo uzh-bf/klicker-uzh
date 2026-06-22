@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Creation Navigation Fallbacks
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage course
+creation and live-quiz-template creation flows. No new migration slice,
+S05/S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `b30c1c287ca7d3dd24f3f7d07fb44f14f6621889`.
+- Fresh PR checks on that head had GitGuardian, Claude review, and Python
+  analysis green after the first wait; the remaining matrix was still pending
+  and no red jobs were observed before this local patch.
+- Course creation and live-quiz-template creation already use migrated tRPC
+  mutations and catch rejected route transitions after confirmed server
+  success.
+- Both flows still ignored a falsy result from the awaited Pages Router
+  transition. A cancelled client-side transition could therefore leave the user
+  on the creation surface after the server-side object was already created.
+- Context7 tRPC v11 docs were refreshed before editing and confirm explicit
+  awaited cache utilities remain the correct client pattern. Context7 Next.js
+  Pages Router docs were refreshed and document route-change cancellation/error
+  behavior.
+
+Changes:
+
+- Added same-origin full-page navigation fallbacks after successful course
+  creation when cockpit navigation to the new course detail page reports a
+  falsy result.
+- Added the same fallback after successful live-quiz-template creation when
+  navigation to the highlighted activities overview reports a falsy result.
+- Existing tRPC mutation behavior, cache updates/invalidation, toasts/errors,
+  and GraphQL/tRPC coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/templates/LiveQuizTemplate.tsx apps/frontend-manage/src/pages/courses/index.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused manage creation navigation fallback cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: PWA Join and Account Navigation Fallbacks
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
