@@ -2,6 +2,7 @@ import { faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../lib/trpc'
 
 const answerCollectionObjectType = 'ANSWER_COLLECTION'
@@ -19,7 +20,8 @@ function AnswerCollectionRemovalModal({
   const utils = trpc.useUtils()
   const removeAnswerCollection =
     trpc.resources.removeAnswerCollection.useMutation()
-  const loading = removeAnswerCollection.isLoading
+  const [removalPending, setRemovalPending] = useState(false)
+  const loading = removeAnswerCollection.isLoading || removalPending
   const handleClose = () => {
     if (!loading) {
       onClose()
@@ -48,6 +50,7 @@ function AnswerCollectionRemovalModal({
       primaryLoading={loading}
       primaryDisabled={loading}
       onPrimaryAction={async () => {
+        setRemovalPending(true)
         try {
           const res = await removeAnswerCollection.mutateAsync({
             id,
@@ -63,6 +66,7 @@ function AnswerCollectionRemovalModal({
               options: { duration: 3000 },
             })
             onClose()
+            return
           } else {
             onRemovalError()
           }
@@ -70,6 +74,7 @@ function AnswerCollectionRemovalModal({
           onRemovalError()
           console.error(error)
         }
+        setRemovalPending(false)
       }}
       dataPrimaryAction={{ cy: 'confirm-remove-object' }}
       dataCloseButton={{ cy: 'close-remove-object' }}

@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Answer Collection Modal Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+answer-collection duplicate/delete/remove modals. No new migration slice,
+S05/S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `b4ab95092cf2da3bee642990e48c7243f84a098a`.
+- Fresh PR checks on that head had no red jobs. GitGuardian and lint were
+  green; CodeQL, SonarCloud, build, check, format, test, Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest` were pending.
+- GitHub review threads queried through the first 80 threads were all
+  resolved; no unresolved inline review threads were observed.
+- Context7 tRPC v11 docs were refreshed before editing and confirm
+  `useUtils().invalidate()` is an explicit cache operation separate from the
+  mutation call.
+- `AnswerCollectionCreationForm` already stays guarded by Formik
+  `isSubmitting` through mutation and awaited `answerCollectionsInfo`
+  invalidation.
+- `AnswerCollectionDuplicationModal`, `CollectionDeletionModal`, and
+  `AnswerCollectionRemovalModal` only used tRPC mutation loading for their
+  modal close/action guards while still awaiting `answerCollectionsInfo`
+  invalidation after successful mutations.
+
+Changes:
+
+- Added local pending guards so duplicate/delete/remove modals keep primary and
+  close actions guarded through the mutation and awaited cache invalidation.
+- Kept existing success/error toasts, invalidation target, close-on-success
+  behavior, and GraphQL/tRPC coexistence unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/resources/answerCollections/AnswerCollectionDuplicationModal.tsx apps/frontend-manage/src/components/resources/answerCollections/CollectionDeletionModal.tsx apps/frontend-manage/src/components/sharing/AnswerCollectionRemovalModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused manage answer-collection modal pending-boundary
+  cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Catalog Invalid-Collection Redirect
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

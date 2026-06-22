@@ -3,6 +3,7 @@ import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 
 function AnswerCollectionDuplicationModal({
@@ -18,7 +19,8 @@ function AnswerCollectionDuplicationModal({
   const utils = trpc.useUtils()
   const duplicateAnswerCollection =
     trpc.resources.duplicateAnswerCollection.useMutation()
-  const loading = duplicateAnswerCollection.isLoading
+  const [duplicationPending, setDuplicationPending] = useState(false)
+  const loading = duplicateAnswerCollection.isLoading || duplicationPending
   const handleClose = () => {
     if (!loading) {
       onClose()
@@ -54,6 +56,7 @@ function AnswerCollectionDuplicationModal({
       primaryLoading={loading}
       primaryDisabled={loading}
       onPrimaryAction={async () => {
+        setDuplicationPending(true)
         try {
           const result = await duplicateAnswerCollection.mutateAsync({
             id: collectionId,
@@ -63,6 +66,7 @@ function AnswerCollectionDuplicationModal({
             await utils.resources.answerCollectionsInfo.invalidate()
             onClose()
             onSuccess()
+            return
           } else {
             onErrorToast()
           }
@@ -70,6 +74,7 @@ function AnswerCollectionDuplicationModal({
           console.error('Error duplicating collection:', error)
           onErrorToast()
         }
+        setDuplicationPending(false)
       }}
       dataPrimaryAction={{ cy: 'confirm-duplication' }}
       className={{ content: 'max-w-2xl' }}

@@ -2,7 +2,7 @@ import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 
 type DeletableAnswerCollection = {
@@ -21,7 +21,8 @@ function CollectionDeletionModal({
   const utils = trpc.useUtils()
   const deleteAnswerCollection =
     trpc.resources.deleteAnswerCollection.useMutation()
-  const loading = deleteAnswerCollection.isLoading
+  const [deletionPending, setDeletionPending] = useState(false)
+  const loading = deleteAnswerCollection.isLoading || deletionPending
   const handleClose = () => {
     if (!loading) {
       setDeletionModal(false)
@@ -45,6 +46,7 @@ function CollectionDeletionModal({
       primaryLoading={loading}
       primaryDisabled={loading}
       onPrimaryAction={async () => {
+        setDeletionPending(true)
         try {
           const res = await deleteAnswerCollection.mutateAsync({
             collectionId: collection.id,
@@ -58,6 +60,7 @@ function CollectionDeletionModal({
               options: { duration: 3000 },
             })
             setDeletionModal(false)
+            return
           } else {
             toast({
               type: 'error',
@@ -73,6 +76,7 @@ function CollectionDeletionModal({
             options: { duration: 3000 },
           })
         }
+        setDeletionPending(false)
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-answer-collection' }}
       dataCloseButton={{ cy: 'close-delete-answer-collection' }}
