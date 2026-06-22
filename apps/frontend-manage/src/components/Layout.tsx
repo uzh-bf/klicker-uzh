@@ -4,7 +4,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { trpc } from '../lib/trpc'
 import Header from './common/Header'
@@ -30,12 +30,23 @@ function Layout({
 
   const { isLoading: loadingUser, data: dataUser } =
     trpc.user.profile.useQuery()
+  const shouldRedirectToLogin = !dataUser && !loadingUser
 
-  if (!dataUser && !loadingUser) {
-    router.push('/login')
-  }
+  useEffect(() => {
+    if (!shouldRedirectToLogin) return
+
+    void router.push('/login')
+  }, [router, shouldRedirectToLogin])
 
   if (loadingUser && !dataUser) {
+    return (
+      <div className="mx-auto my-auto">
+        <Loader />
+      </div>
+    )
+  }
+
+  if (shouldRedirectToLogin) {
     return (
       <div className="mx-auto my-auto">
         <Loader />

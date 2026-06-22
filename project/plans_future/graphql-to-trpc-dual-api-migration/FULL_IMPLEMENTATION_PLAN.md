@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Layout Profile Redirect Cleanup
+
+Status: complete. Scope stayed within already migrated tRPC `user.profile`
+layout guards in the manage and control apps. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or subscription cleanup was started.
+
+Finding:
+
+- The manage and control app layouts call `router.push('/login')` during render
+  when the migrated tRPC `user.profile` query has no data. That duplicates the
+  tRPC client's global unauthorized redirect handler, mutates router state
+  during render, and can flash the wrong fallback while navigation is pending.
+
+Change:
+
+- Move layout-level login redirects into `useEffect`.
+- Keep the existing `/login` fallback behavior and show the existing loader
+  while the redirect is pending.
+- Keep tRPC client error handling, GraphQL/Apollo coexistence, and app routing
+  semantics unchanged.
+
+Evidence:
+
+- PR #5132 current head is `7eff6b6ee75c8ee1a749ee4bbf24c42f61097856`.
+- Current-head CI has restarted after the last push; GitGuardian, Claude
+  review, and CodeQL Java/Python already pass while most build/test checks are
+  pending.
+- Context7 tRPC docs were refreshed for tRPC/TanStack Query client-cache
+  guidance before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on both
+  touched layouts and this plan passed.
+- `/private/tmp/klicker-trpc-commit/apps/frontend-manage/node_modules/.bin/tsc --noEmit`
+  from `apps/frontend-manage` passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-control` passed after temporarily overlaying the touched
+  control layout into the installed dependency checkout and restoring it
+  afterward.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Current pushed-head CI now has CodeQL, SonarCloud, GitGuardian, lint,
+  format, package checks, and `packages/api tRPC Vitest` passing; Cypress Cloud
+  and a few builds/tests are still pending.
+
+Next:
+
+- Commit and push the layout profile redirect cleanup.
+- Continue monitoring Cypress and the remaining pending checks after the push.
+
 ### 2026-06-22 Completed: Control Course-List Error Copy Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-control

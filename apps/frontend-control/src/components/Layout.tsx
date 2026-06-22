@@ -2,6 +2,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './layout/Header'
 import MobileMenuBar from './layout/MobileMenuBar'
@@ -20,10 +21,15 @@ function Layout({ title, children, quizId, className }: LayoutProps) {
     error: errorUser,
     data: dataUser,
   } = trpc.user.profile.useQuery()
+  const shouldRedirectToLogin =
+    !dataUser && (!loadingUser || Boolean(errorUser))
 
-  if (!dataUser && (!loadingUser || errorUser)) {
-    router.push('/login')
-  }
+  useEffect(() => {
+    if (!shouldRedirectToLogin) return
+
+    void router.push('/login')
+  }, [router, shouldRedirectToLogin])
+
   if (!dataUser) {
     return <Loader />
   }
