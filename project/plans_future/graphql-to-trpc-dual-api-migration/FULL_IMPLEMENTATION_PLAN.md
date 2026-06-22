@@ -423,6 +423,48 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Assessment Results Route-Param Cleanup
+
+Status: complete. Scope stayed within already migrated manage assessment
+live-quiz results and point-correction modal entry points. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or subscription cleanup
+was started.
+
+Finding:
+
+- The assessment live-quiz page normalized `courseId` and `liveQuizId` before
+  calling migrated tRPC results queries, but the single-student results child
+  still re-read raw `router.query` values when opening the point-correction
+  modal.
+- The optional `participantId` URL selection also cast `router.query` directly,
+  which could treat repeated query params as a participant id.
+
+Change:
+
+- Normalized optional `participantId` on the assessment live-quiz results page.
+- Passed normalized `courseId` and `liveQuizId` into
+  `LiveQuizSingleStudentResults`.
+- Removed duplicate raw `router.query` reads from the single-student results
+  component and used props for the migrated point-correction modal inputs.
+- Kept GraphQL/Apollo coexistence unchanged.
+
+Evidence so far:
+
+- Context7 docs rechecked for tRPC `useUtils`/type-only client usage and
+  TanStack Query v4 enabled guards/cache lifecycle before editing.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched manage files and plan passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-manage` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+
+Next:
+
+- Commit and push the manage assessment-results route-param cleanup.
+- Recheck Cypress Cloud completion after the push.
+
 ### 2026-06-22 Completed: Manage Query-Param Modal Guard Cleanup
 
 Status: complete. Scope stayed within already migrated manage tRPC entry

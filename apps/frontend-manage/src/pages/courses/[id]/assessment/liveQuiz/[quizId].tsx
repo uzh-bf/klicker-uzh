@@ -31,6 +31,10 @@ function AssessmentLiveQuiz() {
   const courseId = typeof router.query.id === 'string' ? router.query.id : ''
   const liveQuizId =
     typeof router.query.quizId === 'string' ? router.query.quizId : ''
+  const participantIdParam =
+    typeof router.query.participantId === 'string'
+      ? router.query.participantId
+      : undefined
 
   // load the quiz results
   const { data, isLoading, error } =
@@ -43,10 +47,9 @@ function AssessmentLiveQuiz() {
   useEffect(() => {
     if (!router.isReady) return
 
-    const participantId = router.query.participantId as string | undefined
-    if (participantId && data?.assessmentResultsLiveQuiz) {
+    if (participantIdParam && data?.assessmentResultsLiveQuiz) {
       const participant = data.assessmentResultsLiveQuiz.studentResults.find(
-        (result) => result.participantId === participantId
+        (result) => result.participantId === participantIdParam
       )
       if (participant) {
         setPageSizeOption('all') // show all students if a specific one is selected
@@ -56,7 +59,7 @@ function AssessmentLiveQuiz() {
         })
       }
     }
-  }, [router.isReady, router.query.participantId, data])
+  }, [router.isReady, participantIdParam, data])
 
   const quiz = data?.assessmentResultsLiveQuiz
 
@@ -138,6 +141,7 @@ function AssessmentLiveQuiz() {
           {!!selectedParticipant ? (
             <Suspense>
               <LiveQuizSingleStudentResults
+                courseId={courseId}
                 liveQuizId={liveQuizId}
                 participantId={selectedParticipant.id}
                 participantEmail={selectedParticipant.email}

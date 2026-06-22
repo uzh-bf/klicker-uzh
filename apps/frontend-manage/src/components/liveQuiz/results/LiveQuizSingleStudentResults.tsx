@@ -22,7 +22,6 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { Fragment, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ResponseCorrectness } from '../../../lib/assessmentResultsTypes'
@@ -56,6 +55,7 @@ const CorrectnessIconMap: Record<
 }
 
 function LiveQuizSingleStudentResults({
+  courseId,
   liveQuizId,
   participantId,
   participantEmail,
@@ -63,6 +63,7 @@ function LiveQuizSingleStudentResults({
   quizCorrectnessPoints,
   quizBonusPoints,
 }: {
+  courseId: string
   liveQuizId: string
   participantId: string
   participantEmail: string
@@ -71,7 +72,6 @@ function LiveQuizSingleStudentResults({
   quizBonusPoints: number
 }) {
   const t = useTranslations()
-  const router = useRouter()
   const formatter = useFormatter()
   const toStudentElementResponse = useStudentInstanceResponseMapper()
 
@@ -585,11 +585,11 @@ function LiveQuizSingleStudentResults({
         />
       )}
 
-      {typeof instancePointCorrection !== 'undefined' && router.query.id ? (
+      {typeof instancePointCorrection !== 'undefined' && courseId ? (
         <PointCorrectionsModal
-          courseId={router.query.id as string}
+          courseId={courseId}
           onClose={() => setInstancePointCorrection(undefined)}
-          preselectedLiveQuizId={router.query.quizId as string}
+          preselectedLiveQuizId={liveQuizId}
           preselectedInstanceId={instancePointCorrection?.instanceId}
           preselectedParticipantId={instancePointCorrection?.participantId}
         />
