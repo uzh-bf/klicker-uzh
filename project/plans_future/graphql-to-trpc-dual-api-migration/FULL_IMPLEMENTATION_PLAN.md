@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Catalog Copy/Import Cache Refresh Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+catalog copy/import mutations. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `CatalogCopyModal` and `CatalogImportModal` already block close/cancel while
+  their hooks report pending state.
+- `useCopyCatalogObject` and `useImportCatalogObject` returned success
+  immediately after the tRPC mutation and started relevant cache invalidations
+  with fire-and-forget `void` calls.
+- That means the modal can close and show success before
+  `sharing.catalogObjects` and `resources.answerCollectionsInfo` have completed
+  their refresh request.
+- Context7 tRPC docs were refreshed before this change. They show awaiting
+  invalidation after mutation success so UI pending state can cover cache
+  refresh and avoid stale-content flashes.
+
+Changes:
+
+- Add local pending state to both hooks so duplicate copy/import attempts return
+  early while a mutation or cache refresh is active.
+- Await the targeted invalidations before returning success, while still
+  logging invalidation failures instead of converting a successful server
+  mutation into a user-visible failure.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/catalog/actions/useCopyCatalogObject.ts
+  apps/frontend-manage/src/components/catalog/actions/useImportCatalogObject.ts
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed after applying Prettier to the two hook files.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused catalog copy/import cache-refresh pending
+  boundary cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Media Library Upload Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
