@@ -36,6 +36,7 @@ function FlagElementModal({
 }: FlagElementModalProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
+  const [flagElementPending, setFlagElementPending] = useState(false)
   const utils = trpc.useUtils()
   const stackFeedbacksInput = { instanceIds: stackInstanceIds }
   const flagElement = trpc.participant.flagElement.useMutation({
@@ -58,6 +59,7 @@ function FlagElementModal({
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
     setSubmitting(true)
+    setFlagElementPending(true)
     try {
       if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
         const result = await flagElement.mutateAsync({
@@ -90,7 +92,14 @@ function FlagElementModal({
         options: { duration: 5000 },
       })
     } finally {
+      setFlagElementPending(false)
       setSubmitting(false)
+    }
+  }
+
+  const closeModal = () => {
+    if (!flagElementPending) {
+      setOpen(false)
     }
   }
 
@@ -115,7 +124,7 @@ function FlagElementModal({
           />
         </ForwardRefButton>
       }
-      onClose={() => setOpen(false)}
+      onClose={closeModal}
       hideCloseButton
       escapeDisabled
     >
@@ -143,7 +152,8 @@ function FlagElementModal({
               />
               <div className="mt-4 flex flex-col justify-between gap-2 md:flex-row md:gap-0">
                 <Button
-                  onClick={() => setOpen(false)}
+                  onClick={closeModal}
+                  disabled={isSubmitting || flagElementPending}
                   className={{ root: 'order-2 text-base md:order-1' }}
                   data={{ cy: 'cancel-flag-element' }}
                 >
@@ -153,11 +163,14 @@ function FlagElementModal({
                   primary
                   className={{ root: 'order-1 float-right' }}
                   type="submit"
-                  disabled={!isValid}
-                  loading={isSubmitting}
+                  disabled={isSubmitting || flagElementPending || !isValid}
+                  loading={isSubmitting || flagElementPending}
                   data={{ cy: 'submit-flag-element' }}
                 >
-                  <Button.Icon icon={faEnvelope} loading={isSubmitting} />
+                  <Button.Icon
+                    icon={faEnvelope}
+                    loading={isSubmitting || flagElementPending}
+                  />
                   <Button.Label>
                     {!!feedbackValue
                       ? t('pwa.practiceQuiz.updateFeedback')
