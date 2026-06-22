@@ -423,6 +423,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Free-Text Cypress Editor Stabilization
+
+Status: complete locally. Scope stays within Cypress stabilization for an already
+migrated frontend-manage element authoring path. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or subscription cleanup is being
+started.
+
+Finding:
+
+- PR #5132 current head `c49fe349a301b40bb4a72f0527ccbe92543541df` has all
+  non-Cypress checks green, including `packages/graphql Vitest` and
+  `packages/api tRPC Vitest`.
+- Cypress Cloud run `6853` reports `4 tests failed`, all in
+  `cypress/e2e/J-elements-free-text-workflow.cy.ts`.
+- Cypress test result `cb5c8711-cfd9-4016-8f0b-36c229c8e1f7` failed at line 40
+  because `[data-cy="insert-question-text"]` contained
+  `ree Text Question Text` instead of `Free Text Question Text`.
+- The downloaded Cypress screenshot
+  `/tmp/cypress-j-ft-create-attempt4.png` confirmed that the Slate
+  contenteditable editor and preview both dropped the leading `F`.
+- The same create failure caused the remaining three failed checks to miss
+  `[data-cy="edit-element-Free Text Question Title"]` or
+  `[data-cy="edit-element-Free Text Question Title Edited"]`.
+
+Change:
+
+- Restore `realType(...)` for the Slate contenteditable question text input in
+  the free-text Cypress workflow while keeping the explicit content assertion.
+  This reverts the branch-local `.type(...)` change from
+  `77744e716 fix(trpc): stabilize dual api workflows` only for this editor
+  interaction.
+
+Evidence:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  cypress/cypress/e2e/J-elements-free-text-workflow.cy.ts
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `git diff --check` passed.
+- `pnpm exec prettier --check ...` and `pnpm exec tsc -p cypress/tsconfig.json`
+  could not run through pnpm in this checkout because pnpm attempted to switch
+  to `pnpm@11.5.0` and could not verify/fetch the registry signature offline.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  cypress/tsconfig.json --noEmit --pretty false` reached TypeScript but could
+  not resolve Cypress type packages because `/private/tmp/klicker-trpc-commit`
+  has no full `node_modules` dependency layout.
+- Local browser/Cypress runtime verification remains blocked: `curl` to
+  `127.0.0.1:3000`, `3001`, `3002`, and `7078` all failed with connection
+  refused.
+
+Next:
+
+- Commit and push the free-text Cypress stabilization.
+- Recheck PR #5132 Cypress Cloud on the new head.
+
 ### 2026-06-22 Completed: Manage Cypress UX/Cache Failure Cleanup
 
 Status: complete. Scope stayed within already migrated frontend-manage tRPC
