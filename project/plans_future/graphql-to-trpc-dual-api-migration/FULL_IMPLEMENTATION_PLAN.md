@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Activity Creation Missing Preload Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-manage
+activity-creation shell and its nullable `activity.authoring*` tRPC query
+payloads. No new migration slice, S06 cleanup, GraphQL removal, Apollo removal,
+or subscription cleanup is being started.
+
+Finding:
+
+- The tRPC authoring read procedures intentionally return nullable payloads
+  when the activity is missing or inaccessible. `ActivityCreation` now handles
+  transport errors, but a successful `{ liveQuiz|practiceQuiz|microLearning|
+  groupActivity: null }` response for edit, duplicate, or conversion preload
+  can still mount a fresh wizard with missing initial data.
+
+Change:
+
+- Treat missing required authoring payloads as load failures for edit,
+  duplicate, and microlearning-to-practice-quiz conversion modes.
+- Keep pure creation mode unchanged, where no preloaded activity payload is
+  required.
+- Reuse the existing generic system-error notification.
+
+Evidence:
+
+- PR #5132 current head is `6a2262f29ed6f5ba01287c3c9c1a2bf4b4d6be66`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for current React Query query/mutation
+  patterns before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed activity-creation component and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed component.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept pure creation mode unchanged
+  and reused the existing activity-creation error branch. Only edit,
+  duplication, and conversion modes with successful-but-null required authoring
+  payloads now render a clean load failure instead of a fresh wizard.
+
+Next:
+
+- Commit and push the manage activity-creation missing preload cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: Manage Activity Creation Query Failure Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-manage

@@ -147,6 +147,13 @@ function ActivityCreation({
     (loadMicroLearning && Boolean(microError)) ||
     (loadPracticeQuiz && Boolean(practiceError)) ||
     (loadGroupActivity && Boolean(groupActivityError))
+  const hasMissingPreload =
+    (loadLiveQuiz && !liveLoading && !dataLiveQuiz?.liveQuiz) ||
+    (loadMicroLearning && !microLoading && !dataMicroLearning?.microLearning) ||
+    (loadPracticeQuiz && !learningLoading && !dataPracticeQuiz?.practiceQuiz) ||
+    (loadGroupActivity &&
+      !groupActivityLoading &&
+      !dataGroupActivity?.groupActivity)
 
   if (
     (!errorCourses && loadingCourses) ||
@@ -173,7 +180,7 @@ function ActivityCreation({
     return <Loader />
   }
 
-  if (hasLoadError) {
+  if (hasLoadError || hasMissingPreload) {
     return (
       <UserNotification
         className={{ root: 'm-auto w-max' }}
