@@ -37,7 +37,10 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .realType(this.data.FT.content)
-      .should('contain', this.data.FT.content)
+    cy.get('[data-cy="insert-question-text"]').should(
+      'contain',
+      this.data.FT.content
+    )
     cy.get('[data-cy="set-free-text-length"]')
       .click()
       .type(String(this.data.FT.maxLength))
@@ -86,7 +89,10 @@ describe('Test creation and editing functionalities, validation, etc. for free t
       .realClick()
       .clear()
       .realType(this.data.FT.contentEdited)
-      .should('contain', this.data.FT.contentEdited)
+    cy.get('[data-cy="insert-question-text"]').should(
+      'contain',
+      this.data.FT.contentEdited
+    )
     cy.get('[data-cy="set-free-text-length"]')
       .click()
       .clear()

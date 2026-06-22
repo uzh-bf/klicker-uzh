@@ -450,10 +450,14 @@ Finding:
 Change:
 
 - Restore `realType(...)` for the Slate contenteditable question text input in
-  the free-text Cypress workflow while keeping the explicit content assertion.
+  the free-text Cypress workflow while keeping the explicit content assertion as
+  a separate fresh `cy.get(...)`.
   This reverts the branch-local `.type(...)` change from
   `77744e716 fix(trpc): stabilize dual api workflows` only for this editor
   interaction.
+- Cypress Cloud run `6854` confirmed that chaining `.should(...)` directly after
+  `realType(...)` asserts against an undefined subject; the assertion is now
+  split from the real keyboard input command.
 
 Evidence:
 
@@ -472,6 +476,9 @@ Evidence:
 - Local browser/Cypress runtime verification remains blocked: `curl` to
   `127.0.0.1:3000`, `3001`, `3002`, and `7078` all failed with connection
   refused.
+- PR run `6854` still failed before this adjustment because the chained
+  `realType(...).should(...)` assertion had an undefined subject. The next push
+  must recheck Cypress Cloud.
 
 Next:
 
