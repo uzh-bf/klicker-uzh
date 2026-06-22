@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Control Shell Profile Error State
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated `frontend-control`
+shell/profile query. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `frontend-control` is fully on tRPC for the active control app surfaces, and
+  the shell profile query (`trpc.user.profile`) gates every migrated control
+  page.
+- The control shell previously treated every missing profile result or profile
+  query error as a login redirect and rendered only `<Loader />` while the
+  redirect was pending.
+- That is appropriate for unauthenticated / expired sessions, but non-auth
+  tRPC failures such as server/network/internal errors produced a blank loading
+  state and attempted login redirect instead of a clean failure state.
+- Context7 tRPC docs confirm client-visible tRPC errors include a `data.code`
+  field such as `UNAUTHORIZED`, which is a stable signal for separating auth
+  redirect handling from other profile-query failures.
+
+Change:
+
+- Added a small `isUnauthorizedError` guard in
+  `apps/frontend-control/src/components/Layout.tsx`.
+- Unauthorized or empty profile states still redirect to `/login`.
+- Non-auth profile-query errors now render an existing design-system
+  `UserNotification` with the generic system-error message, avoiding a blank
+  panel / loader loop.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-control/src/components/Layout.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false` with a temporary `apps/frontend-control/node_modules` symlink to the adjacent installed checkout; the symlink was removed immediately after the check.
+- Passed: `git diff --check`
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3000` and `:3003` return connection refused /
+  `000`).
+
+Next:
+
+- Commit and push this focused control shell profile-error UX cleanup.
+- Continue monitoring Cypress Cloud run `6871`; it is still pending on
+  `719b8367bdb490a34d473f72b7b249f5a89a44fb` while this local patch is being
+  prepared.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Cypress Live-Quiz Modal Interaction Guard
 
 Status: complete locally with documented runtime/artifact blockers. Scope

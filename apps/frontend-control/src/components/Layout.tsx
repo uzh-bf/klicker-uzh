@@ -1,5 +1,7 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
+import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -14,21 +16,48 @@ interface LayoutProps {
   className?: string
 }
 
+function isUnauthorizedError(error: unknown) {
+  if (!(error instanceof Error)) return false
+
+  return (
+    error.message === 'Unauthorized' ||
+    (error as { data?: { code?: string } }).data?.code === 'UNAUTHORIZED'
+  )
+}
+
 function Layout({ title, children, quizId, className }: LayoutProps) {
+  const t = useTranslations()
   const router = useRouter()
   const {
     isLoading: loadingUser,
     error: errorUser,
     data: dataUser,
   } = trpc.user.profile.useQuery()
+  const hasProfileError = Boolean(errorUser)
+  const unauthorizedProfileError = isUnauthorizedError(errorUser)
+  const shouldShowProfileError =
+    !dataUser && hasProfileError && !unauthorizedProfileError
   const shouldRedirectToLogin =
-    !dataUser && (!loadingUser || Boolean(errorUser))
+    !dataUser &&
+    !shouldShowProfileError &&
+    (!loadingUser || unauthorizedProfileError)
 
   useEffect(() => {
     if (!shouldRedirectToLogin) return
 
     void router.push('/login')
   }, [router, shouldRedirectToLogin])
+
+  if (shouldShowProfileError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center p-4">
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </div>
+    )
+  }
 
   if (!dataUser) {
     return <Loader />
