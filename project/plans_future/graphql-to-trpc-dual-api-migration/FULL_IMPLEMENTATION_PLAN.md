@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Live-Quiz Start Failure Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+live-quiz activity action surface. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `aba3c8168c17f9830092994fcaad4352fc0dd8cf`.
+- Fresh PR checks on that head show no current red jobs. `packages/api tRPC
+  Vitest`, lint, GitGuardian, Java/Kotlin and Python CodeQL analyzers, and one
+  generic test job are green. `packages/graphql Vitest`, Cypress Cloud,
+  format/check, SonarCloud, remaining CodeQL analyzers, builds, and tests are
+  still pending.
+- The live-quiz activity-list start action awaited the tRPC `liveQuiz.start`
+  mutation and then always routed to the cockpit.
+- The live-quiz completion wizard already treats a nullable `liveQuiz.start`
+  result as a failure and shows the generic error toast before routing. The
+  activity-list action lacked that guard and also had no catch/toast around the
+  start mutation or route transition.
+- Context7 tRPC v11 docs were refreshed before editing and show the standard
+  mutation pattern with pending-button state and explicit error handling.
+
+Changes:
+
+- Typed the `onStart` callback with the local tRPC router output instead of
+  `any`.
+- The activity-list live-quiz start action now checks the nullable tRPC result
+  before navigating, shows the existing generic error toast on null/failure,
+  and catches mutation/routing failures.
+- The start action remains disabled through both the mutation and the cockpit
+  route transition.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/actions/useLiveQuizActions.ts`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage live-quiz start failure-guard cleanup.
+- Recheck PR #5132 checks on the new head, especially `packages/graphql
+  Vitest`, Cypress Cloud, and the remaining builds.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Unpublish Action Pending Guards
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

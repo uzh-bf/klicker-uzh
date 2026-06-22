@@ -27,8 +27,10 @@ import {
   ActivityType,
   type ActivityInfo,
 } from '../../../lib/constants/activityEnums'
-import { trpc, type RouterInputs } from '../../../lib/trpc'
+import { trpc, type RouterInputs, type RouterOutputs } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
+
+type StartLiveQuizResult = RouterOutputs['liveQuiz']['start']
 
 function useLiveQuizActions({
   quiz,
@@ -48,7 +50,7 @@ function useLiveQuizActions({
   refetchActivities,
 }: {
   quiz: ActivityInfo
-  onStart: any
+  onStart: () => Promise<StartLiveQuizResult>
   starting: boolean
   setSchedulingModal: Dispatch<SetStateAction<boolean>>
   setEmbeddingModal: Dispatch<SetStateAction<boolean>>
@@ -67,7 +69,9 @@ function useLiveQuizActions({
   const router = useRouter()
   const utils = trpc.useUtils()
   const unpublishLiveQuiz = trpc.activity.unpublish.useMutation()
+  const [startRouting, setStartRouting] = useState(false)
   const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const startPending = starting || startRouting
   const unpublishing = unpublishLiveQuiz.isLoading || unpublishRefreshing
 
   const actions = useMemo(
@@ -77,10 +81,31 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.startLiveQuiz'),
         icon: faPlay,
         onClick: async () => {
-          await onStart()
-          router.push(`/quizzes/${quiz.id}/cockpit`)
+          setStartRouting(true)
+          try {
+            const result = await onStart()
+            if (!result.liveQuiz) {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 5000 },
+              })
+              return
+            }
+
+            await router.push(`/quizzes/${quiz.id}/cockpit`)
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          } finally {
+            setStartRouting(false)
+          }
         },
-        disabled: starting,
+        disabled: startPending,
         data: { cy: `start-live-quiz-${quiz.name}` },
       },
       {
@@ -280,7 +305,7 @@ function useLiveQuizActions({
       quiz.name,
       quiz.templateId,
       onStart,
-      starting,
+      startPending,
       unpublishLiveQuiz,
       unpublishing,
       utils,
