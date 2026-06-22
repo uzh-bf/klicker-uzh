@@ -21,6 +21,7 @@ function LiveQuizEvaluationQRCode({
   const router = useRouter()
   const t = useTranslations()
   const [showQrCodes, setShowQrCodes] = useState(false)
+  const quizId = typeof router.query.id === 'string' ? router.query.id : null
 
   return (
     <div
@@ -31,14 +32,15 @@ function LiveQuizEvaluationQRCode({
     >
       <Button
         onClick={() => setShowQrCodes(true)}
+        disabled={!quizId}
         className={{ root: 'w-full' }}
       >
         <Button.Icon icon={faQrcode} />
         <Button.Label>{t('manage.evaluation.showQRCodes')}</Button.Label>
       </Button>
-      {showQrCodes && (
+      {showQrCodes && quizId && (
         <LiveQuizQRModal
-          quizId={router.query.id as string}
+          quizId={quizId}
           quizPin={pinCode}
           isAssessmentEnabled={isAssessmentEnabled}
           language={language as never}

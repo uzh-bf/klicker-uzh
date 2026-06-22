@@ -423,6 +423,47 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Evaluation QR Route-Param Cleanup
+
+Status: complete. Scope stayed within an already migrated manage live-quiz
+evaluation helper that opens the QR modal from URL route state. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or subscription
+cleanup was started.
+
+Finding:
+
+- `LiveQuizEvaluationQRCode` still casts `router.query.id` directly into the
+  QR modal's `quizId`. Repeated or not-yet-ready route params can therefore
+  leak a non-string value into a migrated live-quiz QR workflow.
+
+Change:
+
+- Normalize the route id to a single string before opening the QR modal.
+- Disable the QR trigger until a valid string route id exists.
+- Keep existing modal behavior, tRPC/GraphQL coexistence, and sidebar
+  rendering unchanged.
+
+Evidence:
+
+- PR #5132 current head is `9ba43f85a92def5b13c6e445a8b8933fadb41a9b`.
+- All current-head checks are green except Cypress Cloud, which is still
+  running in the Cloud recording step.
+- Context7 docs were refreshed for Next.js Pages Router query readiness and
+  tRPC client type-only/runtime-boundary guidance before editing.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched QR component and this plan passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-manage` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+
+Next:
+
+- Commit and push the evaluation QR route-param cleanup.
+- Recheck Cypress wrapper/log availability after the push.
+
 ### 2026-06-22 Completed: Query-Param Display-State Cleanup
 
 Status: complete. Scope stayed within already migrated PWA/manage tRPC
