@@ -1,5 +1,5 @@
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
-import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
+import { H3, Switch, UserNotification, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -205,9 +205,16 @@ function CourseSelectionPage() {
                     .invalidate()
                     .catch(console.error)
                   showCreateCourseModal(false)
-                  void router
-                    .push(`/courses/${result.course.id}`)
-                    .catch(console.error)
+                  try {
+                    await router.push(`/courses/${result.course.id}`)
+                  } catch (navigationError) {
+                    console.error(navigationError)
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
+                  }
                 } catch (error) {
                   onError()
                   setSubmitting(false)

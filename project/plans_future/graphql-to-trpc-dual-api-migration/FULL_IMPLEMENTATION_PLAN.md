@@ -423,6 +423,50 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Course Creation Navigation Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-manage
+course creation flow and its `course.create` tRPC mutation. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or subscription cleanup is
+being started.
+
+Finding:
+
+- Course creation correctly treats the confirmed `course.create` payload as the
+  success boundary, closes the modal, and invalidates `userCourses`
+  best-effort. Its post-success navigation to the new course only logs route
+  failures, leaving the lecturer without feedback if the transition fails.
+
+Change:
+
+- Keep creation mutation failure handling unchanged.
+- Keep `userCourses` invalidation best-effort after confirmed course creation.
+- Await the post-success course navigation and show the existing generic
+  system-error toast if route transition fails.
+
+Evidence:
+
+- PR #5132 current head is `abe5d39a495d6b759cf5425b54c1b2b155dd7c86`
+  before this local cleanup commit.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed manage course list page and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed page and the current
+  branch `CourseManipulationModal` companion file.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept create mutation failures on the
+  existing form error path, left `userCourses` invalidation best-effort, and
+  added user-visible feedback only for post-success route transition failure.
+
+Next:
+
+- Commit and push the manage course creation navigation cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: Control Live Quiz Start Navigation Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-control
