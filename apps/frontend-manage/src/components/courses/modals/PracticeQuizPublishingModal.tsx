@@ -35,6 +35,12 @@ function PracticeQuizPublishingModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const publishPracticeQuiz = trpc.activity.publish.useMutation()
+  const refreshCourseActivityData = () => {
+    return Promise.all([
+      utils.course.detail.invalidate({ courseId }),
+      refetchActivities?.(),
+    ]).catch(console.error)
+  }
   const handleClose = () => {
     if (!publishPracticeQuiz.isLoading) {
       onClose()
@@ -75,10 +81,7 @@ function PracticeQuizPublishingModal({
                   activityType: ActivityType.PRACTICE_QUIZ,
                 })
                 if (result.publishActivity?.id) {
-                  void utils.course.detail
-                    .invalidate({ courseId })
-                    .catch(console.error)
-                  void refetchActivities?.().catch(console.error)
+                  await refreshCourseActivityData()
                   onClose()
                 } else {
                   onErrorToast()
@@ -119,10 +122,7 @@ function PracticeQuizPublishingModal({
                   availableFrom: dayjs(values.availableFrom).utc().toDate(),
                 })
                 if (result.publishActivity?.id) {
-                  void utils.course.detail
-                    .invalidate({ courseId })
-                    .catch(console.error)
-                  void refetchActivities?.().catch(console.error)
+                  await refreshCourseActivityData()
                   onClose()
                 } else {
                   onErrorToast()

@@ -423,6 +423,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Activity Modal Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage activity modal workflows. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `bd1ef9b947f7d612f1cc443873fc47277a268d86`.
+- Fresh PR checks on that head had just restarted after the previous push;
+  GitGuardian was green and the remaining checks were pending.
+- Practice-quiz publication/scheduling, activity extension, template
+  conversion, and activity name changes confirmed tRPC mutation success but
+  launched course/activity refreshes in the background before closing modals or
+  showing success feedback. That could leave the parent course activity list or
+  course detail stale immediately after the modal closed.
+- Activity name changes and template conversion also had cancel/close paths
+  that were not guarded by the mutation pending state.
+
+Changes:
+
+- Practice-quiz publication and scheduling now await the existing course-detail
+  invalidation and parent activity-list refetch attempt before closing.
+- Activity extension now awaits the same course-detail and activity-list
+  refresh attempts before closing.
+- Template conversion now awaits the parent activity-list refetch attempt
+  before success and close, and ignores modal close while template creation is
+  pending.
+- Activity name changes now await course-detail/activity-list refresh attempts
+  before the success toast and close, and disable cancel/confirm while the name
+  change is pending.
+- Refresh failures remain caught and logged so confirmed server success is not
+  reported as a failed mutation.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed after formatting
+  `TemplateConversionModal.tsx`: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/overview/ActivityNameChangeModal.tsx apps/frontend-manage/src/components/courses/modals/ExtensionModal.tsx apps/frontend-manage/src/components/courses/modals/PracticeQuizPublishingModal.tsx apps/frontend-manage/src/components/courses/modals/TemplateConversionModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` returned `404`, but `curl` to `127.0.0.1:3002` failed with
+  connection refused, so no local manage dev server was available for
+  screenshots.
+
+Next:
+
+- Commit and push this focused activity modal refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Template and Tag Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

@@ -28,6 +28,18 @@ function ActivityNameChangeModal({
   const utils = trpc.useUtils()
 
   const changeActivityName = trpc.activity.changeName.useMutation()
+  const changingName = changeActivityName.isLoading
+  const handleClose = () => {
+    if (!changingName) {
+      onClose()
+    }
+  }
+  const refreshActivityData = () => {
+    return Promise.all([
+      courseId ? utils.course.detail.invalidate({ courseId }) : undefined,
+      refetchActivities?.(),
+    ]).catch(console.error)
+  }
   const schema = Yup.object().shape({
     name: Yup.string().required(t('manage.activityWizard.activityName')),
     displayName: Yup.string().required(
@@ -40,7 +52,7 @@ function ActivityNameChangeModal({
       open
       hideCloseButton
       escapeDisabled
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.activities.changeActivityName')}
       className={{
         content: 'max-w-lg pb-1',
@@ -64,12 +76,7 @@ function ActivityNameChangeModal({
             })
 
             if (result.changeActivityName) {
-              if (courseId) {
-                void utils.course.detail
-                  .invalidate({ courseId })
-                  .catch(console.error)
-              }
-              void refetchActivities?.().catch(console.error)
+              await refreshActivityData()
               toast({
                 type: 'success',
                 message: t('manage.activities.activityNameChangeSuccess'),
@@ -129,7 +136,8 @@ function ActivityNameChangeModal({
             <div className="mt-3 flex flex-row justify-between">
               <Button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
+                disabled={isSubmitting || changingName}
                 data={{ cy: 'activity-name-change-cancel' }}
               >
                 <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -137,8 +145,8 @@ function ActivityNameChangeModal({
               <Button
                 primary
                 type="submit"
-                disabled={!isValid}
-                loading={isSubmitting}
+                disabled={!isValid || isSubmitting || changingName}
+                loading={isSubmitting || changingName}
                 onClick={submitForm}
                 data={{ cy: 'activity-name-change-confirm' }}
               >

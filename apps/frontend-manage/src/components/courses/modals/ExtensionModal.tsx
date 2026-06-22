@@ -35,6 +35,12 @@ function ExtensionModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const extendActivity = trpc.activity.extend.useMutation()
+  const refreshCourseActivityData = () => {
+    return Promise.all([
+      utils.course.detail.invalidate({ courseId }),
+      refetchActivities?.(),
+    ]).catch(console.error)
+  }
   const handleClose = () => {
     if (!extendActivity.isLoading) {
       onClose()
@@ -75,10 +81,7 @@ function ExtensionModal({
                 endDate: utcEndDate,
               })
               if (result.extendActivity?.id) {
-                void utils.course.detail
-                  .invalidate({ courseId })
-                  .catch(console.error)
-                void refetchActivities?.().catch(console.error)
+                await refreshCourseActivityData()
                 onClose()
               } else {
                 toast({

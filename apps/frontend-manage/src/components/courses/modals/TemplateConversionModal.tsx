@@ -59,6 +59,7 @@ function TemplateConversionModal({
   // mutation for template creation
   const createActivityTemplate =
     trpc.activity.createActivityTemplate.useMutation()
+  const creatingTemplate = createActivityTemplate.isLoading
 
   // set corresponding confirmation to true if no resources are required
   useEffect(() => {
@@ -72,6 +73,10 @@ function TemplateConversionModal({
   }, [templateInfo])
 
   const handleModalClose = () => {
+    if (creatingTemplate) {
+      return
+    }
+
     onClose()
     setCurrentStep(0)
     setConfirmations({
@@ -133,7 +138,7 @@ function TemplateConversionModal({
             })
 
             if (result.createActivityTemplate) {
-              void refetchActivities?.().catch(console.error)
+              await refetchActivities?.().catch(console.error)
               onSuccess()
               handleModalClose()
             } else {
@@ -318,8 +323,8 @@ function TemplateConversionModal({
                     <Button
                       primary
                       type="submit"
-                      disabled={!isValid}
-                      loading={isSubmitting}
+                      disabled={!isValid || isSubmitting || creatingTemplate}
+                      loading={isSubmitting || creatingTemplate}
                       data={{ cy: 'submit-template-creation' }}
                     >
                       <Button.Icon icon={faSave} loading={isSubmitting} />
