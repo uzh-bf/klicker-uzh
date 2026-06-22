@@ -519,10 +519,19 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     )
 
                     // redirect to live quiz overview and highlight newly created element
-                    router.push({
-                      pathname: '/activities',
-                      query: { highlight: quizId },
-                    })
+                    try {
+                      await router.push({
+                        pathname: '/activities',
+                        query: { highlight: quizId },
+                      })
+                    } catch (navigationError) {
+                      console.error(navigationError)
+                      toast({
+                        type: 'error',
+                        message: t('shared.generic.systemError'),
+                        options: { duration: 5000 },
+                      })
+                    }
                   } else {
                     console.log(
                       'An error occurred while creating the live quiz from the template'

@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Template Live Quiz Navigation Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-manage
+live-quiz template creation flow and its `activity.createLiveQuizFromTemplate`
+tRPC mutation. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup is being started.
+
+Finding:
+
+- The live-quiz template flow already disables duplicate submissions while the
+  tRPC mutation is loading and shows the existing template creation error toast
+  for processing or mutation failures. After confirmed mutation success,
+  however, it removes the saved template draft and calls `router.push` without
+  awaiting or catching route failures, so a failed redirect is silent.
+
+Change:
+
+- Keep template processing and mutation failure handling unchanged.
+- Keep local-storage cleanup after confirmed `createLiveQuizFromTemplate`
+  success.
+- Await the post-success activity redirect and show the existing generic
+  system-error toast if route transition fails.
+
+Evidence:
+
+- PR #5132 current head is `ebbe8eaba5e206b0558c0e3be47def0a1e252df2`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for mutation success callbacks,
+  invalidation, and error handling before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed manage live-quiz template component and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed files.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept submission validation,
+  mutation error toasts, local-storage cleanup timing, and GraphQL/tRPC
+  coexistence unchanged. Only post-success route transition failures became
+  user-visible.
+
+Next:
+
+- Commit and push the manage template live-quiz navigation cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: Manage Course Creation Navigation Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-manage
