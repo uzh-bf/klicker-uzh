@@ -38,9 +38,10 @@ function GroupCreationBlock({
           })
 
           if (result?.id) {
-            void Promise.resolve(onCourseOverviewChanged?.())
-              .catch(console.error)
-              .finally(() => setSelectedTab(result.id))
+            await Promise.resolve(onCourseOverviewChanged?.()).catch(
+              console.error
+            )
+            setSelectedTab(result.id)
             return
           }
         } catch (error) {

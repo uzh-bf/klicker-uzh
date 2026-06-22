@@ -1,6 +1,7 @@
 import { faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 import GroupAction from './GroupAction'
 
@@ -12,6 +13,7 @@ function RandomGroupBlock({
   onCourseOverviewChanged?: () => void | Promise<void>
 }) {
   const t = useTranslations()
+  const [overviewRefreshing, setOverviewRefreshing] = useState(false)
   const joinRandomCourseGroupPool =
     trpc.participant.joinRandomCourseGroupPool.useMutation()
 
@@ -22,17 +24,20 @@ function RandomGroupBlock({
       icon={faShuffle}
       onClick={async () => {
         try {
+          setOverviewRefreshing(true)
           const result = await joinRandomCourseGroupPool.mutateAsync({
             courseId,
           })
           if (result) {
-            void Promise.resolve(onCourseOverviewChanged?.()).catch(
+            await Promise.resolve(onCourseOverviewChanged?.()).catch(
               console.error
             )
             return
           }
         } catch (error) {
           console.error(error)
+        } finally {
+          setOverviewRefreshing(false)
         }
 
         toast({
@@ -43,7 +48,7 @@ function RandomGroupBlock({
       }}
       explanation={t('pwa.courses.createJoinRandomGroup')}
       data={{ cy: 'enter-random-group-pool' }}
-      loading={joinRandomCourseGroupPool.isLoading}
+      loading={joinRandomCourseGroupPool.isLoading || overviewRefreshing}
     />
   )
 }

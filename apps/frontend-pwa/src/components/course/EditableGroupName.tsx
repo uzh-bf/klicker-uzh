@@ -19,8 +19,11 @@ function EditableGroupName({
   const t = useTranslations()
   const [editMode, setEditMode] = useState(false)
   const [groupNameValue, setGroupNameValue] = useState(groupName)
+  const [groupNameSaving, setGroupNameSaving] = useState(false)
   const renameParticipantGroup =
     trpc.participant.renameParticipantGroup.useMutation()
+  const groupNameSubmitting =
+    renameParticipantGroup.isLoading || groupNameSaving
 
   useEffect(() => {
     setGroupNameValue(groupName)
@@ -47,9 +50,7 @@ function EditableGroupName({
         className={{ input: 'h-7' }}
       />
       <Button
-        disabled={
-          groupNameValue.trim() === '' || renameParticipantGroup.isLoading
-        }
+        disabled={groupNameValue.trim() === '' || groupNameSubmitting}
         onClick={async () => {
           if (groupNameValue.trim() === '') {
             setEditMode(false)
@@ -57,6 +58,7 @@ function EditableGroupName({
           }
 
           try {
+            setGroupNameSaving(true)
             const result = await renameParticipantGroup.mutateAsync({
               groupId,
               name: groupNameValue.trim(),
@@ -72,8 +74,8 @@ function EditableGroupName({
             }
 
             setGroupNameValue(result.name)
+            await Promise.resolve(onChanged?.()).catch(console.error)
             setEditMode(false)
-            void Promise.resolve(onChanged?.()).catch(console.error)
           } catch (error) {
             console.error(error)
             toast({
@@ -81,9 +83,11 @@ function EditableGroupName({
               message: t('shared.generic.systemError'),
               options: { duration: 6000 },
             })
+          } finally {
+            setGroupNameSaving(false)
           }
         }}
-        loading={renameParticipantGroup.isLoading}
+        loading={groupNameSubmitting}
         className={{ root: 'h-7 py-0' }}
       >
         <Button.Label>{t('shared.generic.save')}</Button.Label>
@@ -91,7 +95,7 @@ function EditableGroupName({
       <Button
         basic
         onClick={() => setEditMode(false)}
-        disabled={renameParticipantGroup.isLoading}
+        disabled={groupNameSubmitting}
         className={{ root: 'h-7 py-0' }}
       >
         <Button.Label>{t('shared.generic.cancel')}</Button.Label>

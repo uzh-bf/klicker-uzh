@@ -51,9 +51,10 @@ function GroupJoinBlock({
                 options: { duration: 6000 },
               })
             } else {
-              void Promise.resolve(onCourseOverviewChanged?.())
-                .catch(console.error)
-                .finally(() => setSelectedTab(result))
+              await Promise.resolve(onCourseOverviewChanged?.()).catch(
+                console.error
+              )
+              setSelectedTab(result)
             }
           } catch (error) {
             console.error(error)

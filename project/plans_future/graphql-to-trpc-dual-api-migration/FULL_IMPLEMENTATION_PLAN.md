@@ -423,6 +423,68 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: PWA Course Group Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated PWA course group workflows. No new migration slice,
+S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `6ed3134f6432f6edc2de057f68e73fedcc2d7454`.
+- Fresh PR checks on that head show format, lint, TypeScript check,
+  GitGuardian, Claude review, CodeQL Java/Python, and one test job green.
+  `packages/api tRPC Vitest`, `packages/graphql Vitest`, Cypress Cloud,
+  SonarCloud, CodeQL JavaScript/TypeScript, and Docker builds are still
+  pending.
+- PWA group join/create/random-pool/leave/message actions mutate via tRPC and
+  then refresh the course overview through `onCourseOverviewChanged`, but
+  several callbacks are still launched in the background.
+- Group creation/join form submissions await their `onSubmit` promise through
+  Formik, but the shared `GroupAction` submit button only follows the tRPC
+  mutation loading flag, not Formik's full submitting window.
+
+Changes:
+
+- Group join and creation now await the existing course-overview refresh before
+  switching to the resulting group tab.
+- Random group-pool enter/leave now await the course-overview refresh and keep
+  the button loading/disabled through both the mutation and refresh boundary.
+- Group rename now awaits the parent refresh before leaving edit mode and keeps
+  save/cancel disabled through the full save boundary.
+- Group leave now keeps the existing `leaveGroupLoading` state active until the
+  course overview refresh has completed.
+- Group message submission now keeps Formik submitting until the course overview
+  refresh has completed before clearing the textarea.
+- `GroupAction` form buttons now use Formik `isSubmitting` in addition to the
+  tRPC mutation loading flag, preventing duplicate submits during awaited
+  post-success refresh callbacks.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  awaitable mutation success/invalidation behavior before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/components/participant/groups/GroupAction.tsx apps/frontend-pwa/src/components/participant/groups/GroupJoinBlock.tsx apps/frontend-pwa/src/components/participant/groups/GroupCreationBlock.tsx apps/frontend-pwa/src/components/participant/groups/RandomGroupBlock.tsx apps/frontend-pwa/src/components/participant/groups/PoolNotification.tsx apps/frontend-pwa/src/components/course/EditableGroupName.tsx apps/frontend-pwa/src/components/course/SuspendedGroupView.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/local runtime verification remains blocked in this temp worktree:
+  `curl` to `127.0.0.1:3001`, `127.0.0.1:3000/api/trpc`, and
+  `127.0.0.1:3002` all returned connection refused / `000`.
+- Review/simplification subagents were not spawned because this environment
+  exposes no explicit user-requested subagent delegation tool in the active
+  tool list; self-review kept the patch to existing awaited refresh boundaries
+  and local pending-state guards.
+
+Next:
+
+- Commit and push this focused PWA course group refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially `packages/api tRPC
+  Vitest`, `packages/graphql Vitest`, Cypress Cloud, SonarCloud, CodeQL
+  JavaScript/TypeScript, and Docker builds.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Manage Course Refresh Boundary Follow-Up
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

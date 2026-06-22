@@ -192,7 +192,7 @@ function SuspendedGroupView({
                           }
 
                           setSelectedTab('global')
-                          void Promise.resolve(
+                          await Promise.resolve(
                             onCourseOverviewChanged?.()
                           ).catch(console.error)
                         } catch (error) {
@@ -357,10 +357,10 @@ function SuspendedGroupView({
                     content: values.content,
                   })
                   if (result) {
-                    resetForm()
-                    void Promise.resolve(onCourseOverviewChanged?.()).catch(
+                    await Promise.resolve(onCourseOverviewChanged?.()).catch(
                       console.error
                     )
+                    resetForm()
                   } else {
                     toast({
                       type: 'error',
