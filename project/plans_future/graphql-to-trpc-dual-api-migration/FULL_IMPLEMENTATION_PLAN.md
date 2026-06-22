@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Delegated Login Confirmation Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+delegated-login creation mutation. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `d85755f50a22ac3d8e4c00bb05beeacf0b676aa3`.
+- Fresh PR checks after the previous push are pending; GitGuardian passed and
+  no red job was observed before this local slice started.
+- `DelegatedAccessSettings` uses the migrated `trpc.user.createUserLogin`
+  mutation through Formik. The primary "create login" button that opens the
+  confirmation modal already disables while the form is submitting.
+- `DelegatedAccessCreationModal` receives the same `isSubmitting` state and
+  shows loading on the confirmation button, but the confirm button only
+  disables on invalid form state and the modal close path remains active while
+  the delegated-login creation mutation is in flight.
+- Context7 Formik docs were refreshed in this turn. They confirm
+  `isSubmitting` is true while async submission is in progress and submit
+  buttons should use it to prevent duplicate submits.
+
+Changes:
+
+- Guard the delegated-login confirmation modal close path and confirmation
+  button with `isSubmitting`, while keeping the existing generated-password copy
+  action available.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/user/DelegatedAccessCreationModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Passed: local review and simplification of the focused diff. No subagent was
+  spawned because the current multi-agent tool contract only allows delegated
+  agents when explicitly requested by the user.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` also returns connection refused from this checkout.
+
+Next:
+
+- Commit and push this focused manage delegated-login confirmation-guard
+  cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: PWA Flag Feedback Submit Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

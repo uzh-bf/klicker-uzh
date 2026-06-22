@@ -18,12 +18,17 @@ function DelegatedAccessCreationModal({
   submitForm: () => void
 }) {
   const t = useTranslations()
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.settings.confirmDelegatedAccess')}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'min-h-40! max-w-140 pb-1! h-max' }}
     >
       <div>{t('manage.settings.confirmDelegatedAccessTooltip')}</div>
@@ -57,7 +62,7 @@ function DelegatedAccessCreationModal({
       <Button
         primary
         loading={isSubmitting}
-        disabled={!isValid}
+        disabled={isSubmitting || !isValid}
         onClick={() => submitForm()}
         className={{ root: 'float-right my-2' }}
         data={{ cy: 'confirm-delegated-login-creation' }}
