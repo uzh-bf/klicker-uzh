@@ -13,7 +13,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityType,
   type ActivityInfo,
@@ -48,6 +48,8 @@ function useGroupActivityActions({
   const router = useRouter()
   const utils = trpc.useUtils()
   const unpublishGroupActivity = trpc.activity.unpublish.useMutation()
+  const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const unpublishing = unpublishGroupActivity.isLoading || unpublishRefreshing
 
   const actions = useMemo(
     () => [
@@ -77,6 +79,7 @@ function useGroupActivityActions({
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
         onClick: async () => {
+          setUnpublishRefreshing(true)
           try {
             const result = await unpublishGroupActivity.mutateAsync({
               activityId: groupActivity.id,
@@ -104,9 +107,11 @@ function useGroupActivityActions({
               type: 'error',
               message: t('shared.generic.systemError'),
             })
+          } finally {
+            setUnpublishRefreshing(false)
           }
         },
-        disabled: unpublishGroupActivity.isLoading,
+        disabled: unpublishing,
         data: { cy: `unpublish-group-activity-${groupActivity.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -179,6 +184,7 @@ function useGroupActivityActions({
       groupActivity.name,
       groupActivity.courseId,
       unpublishGroupActivity,
+      unpublishing,
       utils,
       refetchActivities,
       setRemovalModal,

@@ -22,7 +22,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityType,
   type ActivityInfo,
@@ -67,6 +67,8 @@ function useLiveQuizActions({
   const router = useRouter()
   const utils = trpc.useUtils()
   const unpublishLiveQuiz = trpc.activity.unpublish.useMutation()
+  const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const unpublishing = unpublishLiveQuiz.isLoading || unpublishRefreshing
 
   const actions = useMemo(
     () => [
@@ -205,6 +207,7 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.unpublishLiveQuiz'),
         icon: faLock,
         onClick: async () => {
+          setUnpublishRefreshing(true)
           try {
             const result = await unpublishLiveQuiz.mutateAsync({
               activityId: quiz.id,
@@ -230,9 +233,11 @@ function useLiveQuizActions({
               type: 'error',
               message: t('shared.generic.systemError'),
             })
+          } finally {
+            setUnpublishRefreshing(false)
           }
         },
-        disabled: unpublishLiveQuiz.isLoading,
+        disabled: unpublishing,
         data: { cy: `unpublish-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -277,6 +282,7 @@ function useLiveQuizActions({
       onStart,
       starting,
       unpublishLiveQuiz,
+      unpublishing,
       utils,
       refetchActivities,
       setEmbeddingModal,

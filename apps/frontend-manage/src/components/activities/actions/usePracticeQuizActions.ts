@@ -18,7 +18,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityType,
   type ActivityInfo,
@@ -47,6 +47,8 @@ function usePracticeQuizActions({
   const router = useRouter()
   const utils = trpc.useUtils()
   const unpublishPracticeQuiz = trpc.activity.unpublish.useMutation()
+  const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const unpublishing = unpublishPracticeQuiz.isLoading || unpublishRefreshing
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}${practiceQuiz.courseLanguage ? `/${practiceQuiz.courseLanguage}` : ''}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
 
   const onSuccessToast = () =>
@@ -158,6 +160,7 @@ function usePracticeQuizActions({
         label: t('manage.course.unpublishPracticeQuiz'),
         icon: faLock,
         onClick: async () => {
+          setUnpublishRefreshing(true)
           try {
             const result = await unpublishPracticeQuiz.mutateAsync({
               activityId: practiceQuiz.id,
@@ -185,9 +188,11 @@ function usePracticeQuizActions({
               type: 'error',
               message: t('shared.generic.systemError'),
             })
+          } finally {
+            setUnpublishRefreshing(false)
           }
         },
-        disabled: unpublishPracticeQuiz.isLoading,
+        disabled: unpublishing,
         data: { cy: `unpublish-practice-quiz-${practiceQuiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -226,6 +231,7 @@ function usePracticeQuizActions({
       setSharingModal,
       setRemovalModal,
       unpublishPracticeQuiz,
+      unpublishing,
       utils,
       refetchActivities,
       setDeletionModal,

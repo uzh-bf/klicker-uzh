@@ -21,7 +21,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityType,
   type ActivityInfo,
@@ -54,6 +54,8 @@ function useMicroLearningActions({
   const router = useRouter()
   const utils = trpc.useUtils()
   const unpublishMicroLearning = trpc.activity.unpublish.useMutation()
+  const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const unpublishing = unpublishMicroLearning.isLoading || unpublishRefreshing
   const onSuccessToast = () =>
     toast({
       type: 'success',
@@ -194,6 +196,7 @@ function useMicroLearningActions({
         label: t('manage.course.unpublishMicrolearning'),
         icon: faLock,
         onClick: async () => {
+          setUnpublishRefreshing(true)
           try {
             const result = await unpublishMicroLearning.mutateAsync({
               activityId: microLearning.id,
@@ -221,9 +224,11 @@ function useMicroLearningActions({
               type: 'error',
               message: t('shared.generic.systemError'),
             })
+          } finally {
+            setUnpublishRefreshing(false)
           }
         },
-        disabled: unpublishMicroLearning.isLoading,
+        disabled: unpublishing,
         data: { cy: `unpublish-microlearning-${microLearning.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -263,6 +268,7 @@ function useMicroLearningActions({
       setEndingModal,
       setSharingModal,
       unpublishMicroLearning,
+      unpublishing,
       utils,
       refetchActivities,
       setDeletionModal,

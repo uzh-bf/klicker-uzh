@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Unpublish Action Pending Guards
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage activity
+action hooks. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `3119914aee4504512a730706f065facfb3ebef72`.
+- Fresh PR checks on that head show no current red jobs. `packages/api tRPC
+  Vitest`, format, lint, TypeScript checks, CodeQL aggregate, SonarCloud,
+  GitGuardian, Claude review, generic tests, and several Docker builds are
+  green. `packages/graphql Vitest`, Cypress Cloud, remaining CodeQL analyzers,
+  tests, and Docker builds are still pending.
+- Practice-quiz, microlearning, group-activity, and live-quiz unpublish actions
+  already await their existing `course.detail` and optional activity-list
+  refreshes after the tRPC mutation succeeds.
+- The visible action disabled state only followed the tRPC mutation loading
+  flag, so the destructive action could become clickable again while the
+  awaited cache refresh boundary was still running.
+- Context7 tRPC v11 docs were refreshed before editing and show mutation
+  buttons should use mutation pending state, and awaited invalidation utilities
+  are valid in mutation success flows.
+
+Changes:
+
+- Added a local refresh-pending guard to the four manage unpublish action hooks:
+  practice quiz, microlearning, group activity, and live quiz.
+- The action now stays disabled through both the tRPC mutation and the awaited
+  post-success cache refresh.
+- Existing tRPC mutation calls, invalidation targets, success behavior, and
+  generic failure toasts are unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/actions/usePracticeQuizActions.ts apps/frontend-manage/src/components/activities/actions/useMicroLearningActions.ts apps/frontend-manage/src/components/activities/actions/useGroupActivityActions.ts apps/frontend-manage/src/components/activities/actions/useLiveQuizActions.ts`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage unpublish pending-guard cleanup.
+- Recheck PR #5132 checks on the new head, especially `packages/graphql
+  Vitest`, Cypress Cloud, and the remaining builds.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Activity Modal Refresh Boundaries
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
