@@ -423,6 +423,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Verification Blockers: PWA Auth Redirect Refresh Boundary Cleanup
+
+Status: complete locally with documented runtime/package-test blockers. Scope
+stayed inside the tRPC UX/client-quality audit and already migrated PWA
+password-login, magic-link login, and account activation flows. No new
+migration slice, S05 realtime work, S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `f92fb63906e281c3e7768dd7f407a43d88b8edf2`.
+- Fresh PR checks on this head show CodeQL, SonarCloud, GitGuardian, format,
+  lint, TypeScript checks, generic tests, `packages/api tRPC Vitest`,
+  `packages/graphql Vitest`, and Docker staging builds green. Cypress Cloud run
+  `6868` is still pending in the recorded run step.
+- The completed S04G2/S04G3/S04G4 plan notes specify a post-login/activation
+  `participant.self` refresh before redirect, preserving the old network-only
+  GraphQL self fetch semantics.
+- Current PWA password-login, magic-link-login, and account-activation code
+  starts `participant.self.fetch(undefined)` in the background and immediately
+  redirects. That can render the destination before the participant identity
+  cache refresh has settled.
+- Context7 tRPC v11 docs were refreshed before editing and document awaitable
+  cache utilities plus route-change ordering considerations. Context7 Next.js
+  docs were also refreshed and confirm awaiting `router.push`/`replace` is the
+  supported way to sequence Pages Router navigation promises.
+
+Change:
+
+- Keep the existing login/activation submit or processing boundary active until
+  the existing `participant.self` fetch attempt settles, then redirect.
+  Refresh failures remain caught and logged so confirmed server success is not
+  converted into a user-visible failure.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/pages/login.tsx apps/frontend-pwa/src/pages/magicLogin.tsx apps/frontend-pwa/src/pages/activation.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Blocked locally: `packages/api` tRPC Vitest could not be run from this
+  checkout because neither `packages/api/node_modules/.bin/vitest` nor the
+  prepared shared dependency tree's Vitest binary exists. The current PR head
+  before this frontend-only patch had a green `packages/api tRPC Vitest` check.
+- Blocked locally: `packages/graphql` Vitest could not be run because
+  `packages/graphql/node_modules/.bin/vitest` is absent and the local
+  `packages/graphql/.env` file does not provide the CI-created
+  `HATCHET_CLIENT_TOKEN` needed by the workflow. The current PR head before
+  this frontend-only patch had a green `packages/graphql Vitest` check.
+- Browser/runtime verification remains blocked in the current local environment:
+  API `127.0.0.1:3000/api/trpc`, PWA `127.0.0.1:3001`, Manage
+  `127.0.0.1:3002`, and Control `127.0.0.1:3003` all returned connection
+  refused / `000`.
+
+Next:
+
+- Commit and push this focused auth refresh-boundary cleanup if verification
+  remains scoped to the touched PWA auth files and this plan entry.
+- Continue monitoring Cypress Cloud run `6868`; do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally: PWA Course Join Refresh Boundary Cleanup
 
 Status: complete locally. Scope stayed inside the tRPC UX/client-quality audit

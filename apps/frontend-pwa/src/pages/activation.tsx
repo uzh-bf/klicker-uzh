@@ -46,8 +46,8 @@ function Activation() {
         if (result) {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
-          void utils.participant.self.fetch(undefined).catch(console.error)
-          void router.push('/')
+          await utils.participant.self.fetch(undefined).catch(console.error)
+          await router.push('/')
         } else {
           toast({
             type: 'error',
