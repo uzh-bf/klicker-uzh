@@ -423,6 +423,42 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Instance Update Loading/Error Cleanup
+
+Status: complete. Scope stayed within an already migrated manage tRPC element
+editing helper. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup was started.
+
+Finding:
+
+- `InstanceUpdateSwitch` queried migrated `element.instanceUpdateActivities`
+  data, but returned `null` before data arrived, making its existing loader
+  unreachable during the initial tRPC request.
+- A failed initial tRPC lookup also silently hid the instance-update warning
+  controls instead of surfacing a clean failure state.
+
+Change:
+
+- Render the existing `Loader` while the initial instance-update activity query
+  is loading.
+- Render the existing generic `UserNotification` error state when the initial
+  query fails without usable cached data.
+
+Evidence so far:
+
+- Static audit checked disabled-query and loading-state patterns while Cypress
+  Cloud run `6846` was still in progress.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched manage file and plan passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-manage` passed.
+- `git diff --check` passed.
+
+Next:
+
+- Commit and push the manage instance-update loading/error cleanup.
+- Recheck Cypress Cloud completion after the push.
+
 ### 2026-06-22 Completed: PWA Token Mutation Route-Param Cleanup
 
 Status: complete. Scope stayed within already migrated PWA tRPC auth-token

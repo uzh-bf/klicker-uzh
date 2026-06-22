@@ -2,7 +2,7 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H4, Prose, Switch } from '@uzh-bf/design-system'
+import { H4, Prose, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,14 +33,15 @@ function InstanceUpdateSwitch({
   const t = useTranslations()
   const { data: user } = trpc.user.profile.useQuery()
 
-  const { data, isLoading } = trpc.element.instanceUpdateActivities.useQuery(
-    {
-      elementId,
-      hasSampleSolution,
-      includeTemplateInstances: true,
-    },
-    { refetchOnMount: 'always' }
-  )
+  const { data, error, isLoading } =
+    trpc.element.instanceUpdateActivities.useQuery(
+      {
+        elementId,
+        hasSampleSolution,
+        includeTemplateInstances: true,
+      },
+      { refetchOnMount: 'always' }
+    )
   const instanceUpdateActivities = data?.instanceUpdateActivities
 
   const usedInTemplates = useMemo(() => {
@@ -50,6 +51,20 @@ function InstanceUpdateSwitch({
       ) ?? false
     )
   }, [instanceUpdateActivities])
+
+  if (isLoading && !instanceUpdateActivities) {
+    return <Loader data={{ cy: 'instance-update-activities-loading' }} />
+  }
+
+  if (error && !instanceUpdateActivities) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+        className={{ root: 'mt-3' }}
+      />
+    )
+  }
 
   if (!instanceUpdateActivities || instanceUpdateActivities.length === 0) {
     return null
