@@ -26,6 +26,12 @@ function TemplateEditModal({
 }: TemplateEditModalProps) {
   const t = useTranslations()
   const editActivityTemplate = trpc.activity.editTemplate.useMutation()
+  const editing = editActivityTemplate.isLoading
+  const handleClose = () => {
+    if (!editing) {
+      onClose()
+    }
+  }
   const { data, error, isLoading } = trpc.activity.templateInformation.useQuery(
     {
       activityId,
@@ -43,7 +49,7 @@ function TemplateEditModal({
       open
       loading={initialLoading}
       title={t('manage.template.editTemplate')}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'gap-2 pb-2' }}
       data={{ cy: 'edit-template-modal' }}
       dataCloseButton={{ cy: 'close-edit-template-modal' }}
@@ -93,7 +99,7 @@ function TemplateEditModal({
               })
 
               if (result.editActivityTemplate) {
-                void refetchActivities?.().catch(console.error)
+                await refetchActivities?.().catch(console.error)
                 onSuccess()
                 onClose()
               } else {

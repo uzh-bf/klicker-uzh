@@ -51,7 +51,7 @@ function TagDeletionModal({
                 }
               : data
           )
-          void refetchElements().catch(console.error)
+          await refetchElements().catch(console.error)
           onClose()
         } catch (error) {
           console.error(error)

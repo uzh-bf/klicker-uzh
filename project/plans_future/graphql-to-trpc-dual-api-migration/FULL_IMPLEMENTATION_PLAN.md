@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Template and Tag Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage template/tag workflows. No new migration slice,
+S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `20768ecf175b95f18b9e5871930a25909d2aa9b6`.
+- Fresh PR checks on that head showed `packages/api tRPC Vitest`, lint,
+  multiple CodeQL jobs, and several Docker builds passing. One `build-arm`
+  failed before app build while pulling `tonistiigi/binfmt:latest` in
+  `docker/setup-qemu-action@v2`; other ARM builds passed, so this is currently
+  treated as CI infrastructure and not an app-code failure.
+- Template delete/edit and tag delete confirmed tRPC mutation success but
+  launched the parent activity/element refresh in the background before closing
+  modals or showing parent success feedback. That could leave the parent list
+  stale immediately after the modal closed.
+- Template deletion also allowed close/cancel while its mutation was pending.
+
+Changes:
+
+- Template deletion and edit now await the parent activity-list refetch attempt
+  before success callbacks and modal close.
+- Template deletion now disables the primary action and ignores close/cancel
+  while the delete mutation is pending.
+- Template edit now ignores modal close while the edit mutation is pending.
+- Tag deletion now waits for the parent element-list refetch attempt before
+  closing after a confirmed delete.
+- Refresh failures remain caught and logged so confirmed server success is not
+  reported as a failed mutation.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/courses/modals/TagDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/TemplateDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` returned `404`, but `curl` to `127.0.0.1:3002` failed with
+  connection refused, so no local manage dev server was available for
+  screenshots.
+
+Next:
+
+- Commit and push this focused template/tag refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Batch Operation Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

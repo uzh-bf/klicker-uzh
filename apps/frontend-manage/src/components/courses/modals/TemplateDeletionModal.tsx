@@ -25,23 +25,28 @@ function TemplateDeletionModal({
 }: TemplateDeletionModalProps) {
   const t = useTranslations()
   const deleteActivityTemplate = trpc.activity.deleteTemplate.useMutation()
+  const deleting = deleteActivityTemplate.isLoading
+  const handleClose = () => {
+    if (!deleting) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.template.deleteTemplate')}
-      onClose={onClose}
+      onClose={handleClose}
       data={{ cy: 'delete-template-modal' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!deleteActivityTemplate.isLoading && (
-            <FontAwesomeIcon icon={faTrashCan} />
-          )}
+          {!deleting && <FontAwesomeIcon icon={faTrashCan} />}
           <span>{t('manage.template.deleteTemplate')}</span>
         </div>
       }
       primaryButtonStyle="destructive"
-      primaryLoading={deleteActivityTemplate.isLoading}
+      primaryLoading={deleting}
+      primaryDisabled={deleting}
       onPrimaryAction={async () => {
         try {
           const data = await deleteActivityTemplate.mutateAsync({
@@ -51,7 +56,7 @@ function TemplateDeletionModal({
           })
 
           if (data?.deleteActivityTemplate) {
-            void refetchActivities?.().catch(console.error)
+            await refetchActivities?.().catch(console.error)
             onSuccess()
             onClose()
           } else {
@@ -64,7 +69,7 @@ function TemplateDeletionModal({
       }}
       dataPrimaryAction={{ cy: 'confirm-template-deletion' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-deletion' }}
       className={{ content: 'max-w-xl' }}
     >
