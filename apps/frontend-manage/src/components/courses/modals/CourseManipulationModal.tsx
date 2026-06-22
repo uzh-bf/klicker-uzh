@@ -241,7 +241,7 @@ function CourseManipulationModal({
           : t('manage.courseList.createNewCourse')
       }
       onClose={() => {
-        if (submitting) {
+        if (submitting || formRef.current?.isSubmitting) {
           return
         }
 

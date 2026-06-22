@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Course Settings Submit Close Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+course settings mutation workflow. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `CourseOverviewHeader` updates course settings through the migrated
+  `course.updateSettings` tRPC mutation, writes targeted cache data, then
+  awaits `course.detail` and `course.userCourses` invalidation before closing
+  the settings modal.
+- `CourseManipulationModal` already disabled and loaded the submit button while
+  Formik or the passed mutation state was submitting.
+- The modal close handler only checked the passed mutation `submitting` prop.
+  Once the mutation resolved but the caller's awaited cache invalidations were
+  still in flight, Formik could still be submitting while the modal close button
+  was accepted.
+- Context7 tRPC docs were refreshed before this change. They show awaiting
+  invalidation after mutation success when UI pending state should cover cache
+  refresh.
+
+Changes:
+
+- Reuse the existing Formik `formRef` in `CourseManipulationModal` so modal
+  close is blocked while either the mutation prop or Formik submission is
+  pending.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/courses/modals/CourseManipulationModal.tsx`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both fail with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Run final diff checks, commit, and push this focused course settings
+  close-guard cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Point Corrections Submit Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
