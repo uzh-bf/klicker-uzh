@@ -40,16 +40,16 @@ function useObjectSharing({
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
 
-  const invalidateAnswerCollectionList = () => {
+  const invalidateAnswerCollectionList = async () => {
     if (objectType === SharingObjectType.AnswerCollection) {
-      void utils.resources.answerCollectionsInfo
+      await utils.resources.answerCollectionsInfo
         .invalidate()
         .catch(console.error)
     }
   }
 
   const shareObject = trpc.sharing.shareObject.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (!data.permission) return
 
       utils.sharing.objectPermissions.setData(
@@ -80,9 +80,12 @@ function useObjectSharing({
         }
       )
 
-      void utils.sharing.derivedObjectPermissions
-        .invalidate(objectPermissionsInput)
-        .catch(console.error)
+      await Promise.all([
+        utils.sharing.derivedObjectPermissions
+          .invalidate(objectPermissionsInput)
+          .catch(console.error),
+        invalidateAnswerCollectionList(),
+      ])
     },
   })
 
@@ -114,7 +117,6 @@ function useObjectSharing({
       const res = await shareObject.mutateAsync(input)
 
       if (typeof res?.permission?.permissionId !== 'undefined') {
-        invalidateAnswerCollectionList()
         onSuccess?.()
         return true
       } else {

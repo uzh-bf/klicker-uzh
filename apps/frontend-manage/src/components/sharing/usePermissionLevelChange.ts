@@ -35,16 +35,16 @@ function usePermissionLevelChange({
     objectType: objectType as unknown as ObjectPermissionsInput['objectType'],
   }
 
-  const invalidateAnswerCollectionList = () => {
+  const invalidateAnswerCollectionList = async () => {
     if (objectType === SharingObjectType.AnswerCollection) {
-      void utils.resources.answerCollectionsInfo
+      await utils.resources.answerCollectionsInfo
         .invalidate()
         .catch(console.error)
     }
   }
 
   const changePermissionLevel = trpc.sharing.changePermissionLevel.useMutation({
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       if (!data.changed) return
 
       utils.sharing.objectPermissions.setData(
@@ -70,9 +70,12 @@ function usePermissionLevelChange({
         }
       )
 
-      void utils.sharing.derivedObjectPermissions
-        .invalidate(objectPermissionsInput)
-        .catch(console.error)
+      await Promise.all([
+        utils.sharing.derivedObjectPermissions
+          .invalidate(objectPermissionsInput)
+          .catch(console.error),
+        invalidateAnswerCollectionList(),
+      ])
     },
   })
 
@@ -98,7 +101,6 @@ function usePermissionLevelChange({
       const res = await changePermissionLevel.mutateAsync(input)
 
       if (res.changed) {
-        invalidateAnswerCollectionList()
         return true
       } else {
         return false

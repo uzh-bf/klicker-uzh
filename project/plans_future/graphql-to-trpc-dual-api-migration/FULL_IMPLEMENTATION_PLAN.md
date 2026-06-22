@@ -423,6 +423,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Sharing Permission Refresh Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage object
+sharing permission workflows. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `useObjectSharing` and `usePermissionLevelChange` already used targeted tRPC
+  cache updates for the visible object-permissions table.
+- Both hooks still had fire-and-forget refresh work for related tRPC data:
+  derived object permissions and, for answer collections, the answer-collection
+  list.
+- Direct sharing kept Formik controls disabled while the submitted callback was
+  pending, and permission-level rows used the mutation loading state for their
+  disabled controls.
+- Context7 tRPC and TanStack Query v4 docs were refreshed before this change.
+  They confirm async mutation success callbacks can await invalidation work, so
+  the existing pending UI can cover the refresh boundary.
+- `useTransferObjectOwnership` was checked as a neighboring sharing hook and
+  already awaited object-permission plus derived-permission invalidations.
+
+Changes:
+
+- Await derived-permission invalidation after successful direct sharing before
+  returning from the mutation success path.
+- Await the answer-collection list invalidation before direct sharing reports
+  success and shows the success toast.
+- Await both derived-permission and answer-collection list invalidation after
+  successful permission-level changes so row controls remain guarded through
+  the refresh boundary.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/sharing/useObjectSharing.ts
+  apps/frontend-manage/src/components/sharing/usePermissionLevelChange.ts`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused sharing permission refresh pending-boundary
+  cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage First Login Refresh Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
