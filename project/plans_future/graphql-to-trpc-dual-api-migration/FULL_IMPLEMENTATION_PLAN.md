@@ -423,6 +423,64 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: PWA Auth Navigation Fallbacks
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa
+password-login, magic-link login, and account-activation flows. No new
+migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `87a5624638ec8d24fd8752fe12cb6bb4a94cd48c`.
+- Fresh PR checks on that head showed no red jobs. CodeQL, SonarCloud,
+  GitGuardian, format, lint, app/package checks, Docker builds,
+  `packages/api tRPC Vitest`, and generic tests were green; Cypress Cloud and
+  `packages/graphql Vitest` were still pending.
+- Prior PWA auth cleanup already keeps the auth-processing boundary active
+  through the tRPC mutation and post-success `participant.self` cache warm-up.
+- The remaining route transition still awaited `router.push`/`replace` without
+  checking the boolean result. A falsy Pages Router transition could therefore
+  strand a successful password login on the submitting form or a successful
+  token login/account activation on the processing loader.
+- Invalid-token and failed-mutation redirects to `/login` also started a
+  client-side route transition without a fallback if the transition was
+  cancelled.
+- Context7 tRPC v11 docs were refreshed before editing and confirm explicit
+  awaited cache utilities remain the correct client pattern. Context7 Next.js
+  Pages Router docs were refreshed and document route-change error/cancellation
+  behavior.
+
+Changes:
+
+- Added same-origin full-page navigation fallbacks when successful PWA
+  password login, magic-link token login, or account activation receives a
+  falsy result from the awaited Next.js route transition.
+- Added the same fallback for delayed invalid-token and failed-token redirects
+  back to `/login`, while keeping the existing user-facing failure toasts.
+- Existing auth mutation behavior, `participant.self` warm-up semantics,
+  redirect targets, and GraphQL/tRPC coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/pages/activation.tsx apps/frontend-pwa/src/pages/magicLogin.tsx apps/frontend-pwa/src/pages/login.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3001` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused PWA auth navigation fallback cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud and
+  `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Cockpit Action Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

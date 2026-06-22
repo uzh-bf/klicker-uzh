@@ -108,7 +108,8 @@ function Login() {
         ]).catch(console.error)
 
         // redirect to the specified redirect path (default: question pool)
-        await router.replace(safeRedirectPath)
+        const routed = await router.replace(safeRedirectPath)
+        if (!routed) window.location.assign(safeRedirectPath)
       }
     } catch (e) {
       console.error(e)

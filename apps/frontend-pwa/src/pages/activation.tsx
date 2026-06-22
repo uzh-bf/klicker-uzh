@@ -27,15 +27,24 @@ function Activation() {
     clearTimeout(loginTimeout.current)
     clearTimeout(redirectionTimeout.current)
 
+    const redirectToLogin = () => {
+      redirectionTimeout.current = setTimeout(() => {
+        void router
+          .push('/login')
+          .then((routed) => {
+            if (!routed) window.location.assign('/login')
+          })
+          .catch(console.error)
+      }, 5000)
+    }
+
     if (!token) {
       toast({
         type: 'error',
         message: t('pwa.general.accountActivationFailed'),
         options: { duration: 8000 },
       })
-      redirectionTimeout.current = setTimeout(() => {
-        void router.push('/login')
-      }, 5000)
+      redirectToLogin()
       return
     }
 
@@ -47,16 +56,15 @@ function Activation() {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
           await utils.participant.self.fetch(undefined).catch(console.error)
-          await router.push('/')
+          const routed = await router.push('/')
+          if (!routed) window.location.assign('/')
         } else {
           toast({
             type: 'error',
             message: t('pwa.general.accountActivationFailed'),
             options: { duration: 8000 },
           })
-          redirectionTimeout.current = setTimeout(() => {
-            void router.push('/login')
-          }, 5000)
+          redirectToLogin()
         }
       } catch (error) {
         console.error(error)
@@ -65,9 +73,7 @@ function Activation() {
           message: t('pwa.general.accountActivationFailed'),
           options: { duration: 8000 },
         })
-        redirectionTimeout.current = setTimeout(() => {
-          void router.push('/login')
-        }, 5000)
+        redirectToLogin()
       }
     }, 1500)
 
