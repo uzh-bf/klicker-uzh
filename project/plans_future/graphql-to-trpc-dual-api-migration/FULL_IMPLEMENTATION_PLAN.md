@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: PWA Profile and Practice Feedback Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and already migrated frontend-pwa profile/practice-feedback workflows. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup is started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `2416b3beeca9b601dc11e61d17bb27028266b338`.
+- Fresh PR checks on that head have restarted and are pending.
+- PWA edit-profile form mutations await their parent `onSuccess`, but the parent
+  profile refetch is fire-and-forget before the success toast.
+- Practice-quiz element rating and flagging mutations invalidate
+  `stackElementFeedbacks` from mutation success callbacks, but the invalidations
+  are fire-and-forget before local vote/feedback state settles or the flag modal
+  closes.
+- PWA live-quiz public feedback voting already has local optimistic state,
+  duplicate-click protection, rollback, and generic failure toasts, so it is not
+  changed in this slice.
+
+Changes:
+
+- Profile/avatar update success now awaits the existing PWA self-query refetch
+  attempt before showing the success toast.
+- Practice-quiz element rating now awaits the existing targeted
+  `stackElementFeedbacks` invalidation from its async mutation success callback
+  before local vote state settles.
+- Practice-quiz element flagging now awaits the existing targeted
+  `stackElementFeedbacks` invalidation from its async mutation success callback
+  before setting local feedback state, showing success, and closing the modal.
+- Keep refresh failures caught and logged so confirmed server success is not
+  converted into a failed mutation.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/pages/editProfile.tsx apps/frontend-pwa/src/components/practiceQuiz/InstanceHeader.tsx apps/frontend-pwa/src/components/flags/FlagElementModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3001` failed with connection refused / `000`, and `curl` to
+  `127.0.0.1:3000` also failed with connection refused / `000`, so no local
+  PWA/backend dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused PWA refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Verification Blockers: Control Live-Quiz Refresh Boundary Cleanup
 
 Status: complete locally, with control typecheck and browser verification

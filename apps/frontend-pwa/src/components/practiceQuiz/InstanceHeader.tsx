@@ -58,8 +58,8 @@ function InstanceHeader({
   const utils = trpc.useUtils()
   const stackFeedbacksInput = { instanceIds: stackInstanceIds }
   const rateElement = trpc.participant.rateElement.useMutation({
-    onSuccess: () => {
-      void utils.participant.stackElementFeedbacks
+    onSuccess: async () => {
+      await utils.participant.stackElementFeedbacks
         .invalidate(stackFeedbacksInput)
         .catch(console.error)
     },
