@@ -267,8 +267,12 @@ function DirectSharingForm({
             <Button
               basic
               type="button"
-              onClick={() => submitForm()}
-              disabled={!isValid}
+              onClick={() => {
+                if (!isSubmitting) {
+                  void submitForm()
+                }
+              }}
+              disabled={isSubmitting || !isValid}
               className={{
                 root: twMerge(
                   'mr-2 p-1.5',
@@ -279,7 +283,7 @@ function DirectSharingForm({
               }}
               data={{ cy: 'new-permission-submit' }}
             >
-              <Button.Icon withoutLabel icon={faSave} />
+              <Button.Icon withoutLabel icon={faSave} loading={isSubmitting} />
             </Button>
           </td>
         </tr>

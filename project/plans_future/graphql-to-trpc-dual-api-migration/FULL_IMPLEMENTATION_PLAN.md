@@ -423,6 +423,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Sharing Form Pending Boundaries
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage object
+sharing form actions. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `eb803d61995a98c7d90edc4eb94facbdf8d7a180`.
+- Fresh PR checks after the previous push have no red jobs yet. GitGuardian,
+  Claude review, CodeQL Java/Kotlin, and CodeQL Python are green; the rest of
+  the matrix, including Cypress Cloud, `packages/api tRPC Vitest`, and
+  `packages/graphql Vitest`, is still pending.
+- Context7 tRPC v11 and TanStack Query v5 docs were already refreshed for this
+  sharing audit slice. The relevant client pattern remains mutation pending
+  guards plus explicit cache invalidation/update.
+- `TransferOwnershipModal` submits a tRPC-backed ownership transfer through
+  Formik and shows primary loading, but the cancel button and modal close path
+  still call `onClose()` while the transfer and awaited permission invalidation
+  can be active.
+- `useTransferObjectOwnership` owns failure toasts while
+  `TransferOwnershipModal` also toasts on handled `false` / caught failures,
+  mirroring the duplicate-toast risk fixed for permission revocation.
+- `DirectSharingForm` disables its fields while Formik is submitting, but the
+  submit icon button remains enabled and callable during the same async
+  tRPC-backed share operation.
+- Slice review and simplification agents found no correctness blocker. Both
+  called out that the ownership-transfer cancel button should be visually
+  disabled while pending if supported; this was accepted. The simplification
+  pass also found the ownership-transfer hook accepted an unused
+  `catalogCollectionId` parameter; this was removed from the hook while keeping
+  the component prop shape intact.
+
+Changes:
+
+- Add a local transfer pending boundary in `TransferOwnershipModal` that guards
+  modal close/cancel, duplicate submit, button disabled/loading state, and
+  close-on-success behavior through the tRPC mutation plus cache invalidation.
+- Centralize ownership-transfer failure toasts in the modal so handled failures
+  surface once and keep the form open.
+- Disable the direct-sharing submit button while Formik is submitting and show
+  the existing icon loading state during submission.
+- Disable the ownership-transfer cancel button visually while transfer submit is
+  pending.
+- Remove the unused ownership-transfer hook `catalogCollectionId` option.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/sharing/TransferOwnershipModal.tsx apps/frontend-manage/src/components/sharing/useTransferObjectOwnership.ts apps/frontend-manage/src/components/sharing/DirectSharingForm.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Passed: slice review agent with no correctness blocker; accepted visual
+  cancel-disabled improvement.
+- Passed: slice simplification agent; accepted unused hook option removal.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` also returns connection refused from this checkout.
+
+Next:
+
+- Commit and push this focused manage sharing form pending-boundary cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Sharing Permission Confirmation Pending Boundaries
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

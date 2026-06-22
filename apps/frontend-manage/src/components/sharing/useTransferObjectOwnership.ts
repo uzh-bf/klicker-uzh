@@ -8,12 +8,9 @@ type TransferObjectOwnershipInput =
 function useTransferObjectOwnership({
   objectType,
   objectId,
-  onError,
 }: {
   objectType: ObjectType
   objectId: string | number
-  catalogCollectionId?: string
-  onError: () => void
 }): {
   onTransfer: (shortnameOrEmail: string) => Promise<boolean>
   transferring: boolean
@@ -50,12 +47,10 @@ function useTransferObjectOwnership({
       if (res.permission) {
         return true
       } else {
-        onError()
         return false
       }
     } catch (error) {
       console.error(error)
-      onError()
       return false
     }
   }
