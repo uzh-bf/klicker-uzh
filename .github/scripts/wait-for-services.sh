@@ -3,6 +3,17 @@
 # Exit on error
 set -e
 
+RUN_COMMAND_AFTER_READY=false
+if [ "${1:-}" = "--" ]; then
+  shift
+  RUN_COMMAND_AFTER_READY=true
+
+  if [ "$#" -eq 0 ]; then
+    echo "No command provided after --"
+    exit 1
+  fi
+fi
+
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
@@ -118,8 +129,10 @@ cleanup() {
     kill $TAIL_PID 2>/dev/null || true
   fi
 
-  # If we have a service PID and either we're exiting with an error or received a signal
-  if [ ! -z "${SERVICE_PID:-}" ] && { [ $exit_code -ne 0 ] || [ "${1:-}" = "TERM" ]; }; then
+  # If the script owns a follow-up command, always stop the service after it.
+  # Otherwise preserve the historical behavior and keep the service alive on a
+  # successful readiness-only invocation.
+  if [ ! -z "${SERVICE_PID:-}" ] && { [ "$RUN_COMMAND_AFTER_READY" = "true" ] || [ $exit_code -ne 0 ] || [ "${1:-}" = "TERM" ]; }; then
     echo "🛑 Cleaning up service process (PID: $SERVICE_PID)..."
     kill $SERVICE_PID 2>/dev/null || true
     wait $SERVICE_PID 2>/dev/null || true
@@ -250,6 +263,12 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
     if [ ! -z "${TAIL_PID:-}" ]; then
       kill $TAIL_PID 2>/dev/null || true
       echo "📋 Service logs are available in service.log"
+    fi
+
+    if [ "$RUN_COMMAND_AFTER_READY" = "true" ]; then
+      echo "▶️ Running command: $*"
+      "$@"
+      exit $?
     fi
 
     # Keep the background process running but exit the script successfully

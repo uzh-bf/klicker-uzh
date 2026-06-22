@@ -174,14 +174,25 @@ jobs:
         env:
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
 
-      - name: Start services and wait for readiness
+      - name: Start services, wait for readiness, and run Playwright tests
+        timeout-minutes: 120
         run: |
           chmod +x .github/scripts/wait-for-services.sh
-          .github/scripts/wait-for-services.sh
+          .github/scripts/wait-for-services.sh -- \
+            env NODE_ENV=test \
+            pnpm --filter @klicker-uzh/playwright exec playwright test \
+              --project=chromium \
+              --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
           NODE_ENV: production
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
+          URL_AUTH: http://127.0.0.1:3010
+          URL_CONTROL: http://127.0.0.1:3003
+          URL_MANAGE: http://127.0.0.1:3002
+          URL_STUDENT: http://127.0.0.1:3001
+          URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
@@ -211,33 +222,6 @@ jobs:
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
-
-      - name: Run Playwright tests
-        timeout-minutes: 120
-        run: pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-        env:
-          APP_SECRET: abcd
-          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
-          NODE_ENV: test
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
-          URL_AUTH: http://127.0.0.1:3010
-          URL_CONTROL: http://127.0.0.1:3003
-          URL_MANAGE: http://127.0.0.1:3002
-          URL_STUDENT: http://127.0.0.1:3001
-          URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
-          REDIS_HOST: redis_exec
-          REDIS_PASS: ''
-          REDIS_PORT: 6379
-          REDIS_CACHE_HOST: redis_cache
-          REDIS_CACHE_PORT: 6379
-          REDIS_ASSESSMENT_HOST: redis_assessment_exec
-          REDIS_ASSESSMENT_PASS: ''
-          REDIS_ASSESSMENT_PORT: 6379
-          HATCHET_API_URL: http://hatchet:8888
-          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
-          HATCHET_CLIENT_HOST_PORT: hatchet:7077
-          HATCHET_HOST_PORT: hatchet:7077
-          HATCHET_CLIENT_TLS_STRATEGY: none
 
       - name: Upload Playwright artifacts
         if: always()
