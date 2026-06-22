@@ -423,6 +423,43 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: PWA Microlearning Route-Param Guard Cleanup
+
+Status: complete. Scope was limited to already migrated PWA microlearning
+tRPC pages. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup was started.
+
+Finding:
+
+- PWA microlearning instance/evaluation pages still cast dynamic Next route
+  params directly from `router.query` into migrated tRPC inputs.
+- The microlearning stack page could also throw `Stack not found` for malformed
+  or out-of-range stack indexes, which is a poor user-visible failure mode
+  compared with the existing localized not-found UI used elsewhere on the page.
+
+Change:
+
+- Normalized the microlearning `id` and stack-index route params before passing
+  them into tRPC queries or rendering stack content.
+- Kept the existing loader, generic error, and not-found notification patterns.
+- Replaced invalid stack-index throws with the existing microlearning not-found
+  notification.
+- Kept GraphQL/Apollo coexistence unchanged.
+
+Evidence so far:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched PWA pages and plan passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+
+Next:
+
+- Commit and push the PWA route-param guard cleanup.
+
 ### 2026-06-22 Completed: Manage Analytics Route-Param Guard Cleanup
 
 Status: complete. Scope remained PR #5132 tRPC UX/client-quality

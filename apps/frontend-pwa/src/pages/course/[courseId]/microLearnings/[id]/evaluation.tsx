@@ -15,12 +15,12 @@ const PARTICIPANT_ROLE = 'PARTICIPANT'
 function MicrolearningEvaluation() {
   const t = useTranslations()
   const router = useRouter()
-  const id = router.query.id as string
+  const id = typeof router.query.id === 'string' ? router.query.id : ''
 
   const utils = trpc.useUtils()
   const { isLoading, error, data } = trpc.participant.microLearning.useQuery(
     { id },
-    { enabled: !!id }
+    { enabled: id !== '' }
   )
   const { data: participant, error: participantError } =
     trpc.participant.self.useQuery()

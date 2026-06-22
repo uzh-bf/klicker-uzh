@@ -17,13 +17,14 @@ type ElementStackProp = Parameters<typeof ElementStack>[0]['stack']
 function MicrolearningInstance() {
   const t = useTranslations()
   const router = useRouter()
-  const ix = parseInt(router.query.ix as string)
-  const id = router.query.id as string
+  const id = typeof router.query.id === 'string' ? router.query.id : ''
+  const ixParam = typeof router.query.ix === 'string' ? router.query.ix : ''
+  const ix = Number.parseInt(ixParam, 10)
 
   const utils = trpc.useUtils()
   const { isLoading, data, error } = trpc.participant.microLearning.useQuery(
     { id },
-    { enabled: !!id }
+    { enabled: id !== '' }
   )
   const {
     data: selfData,
@@ -60,10 +61,17 @@ function MicrolearningInstance() {
   }
 
   const microLearning = data.microLearning
+  const stackCount = microLearning.stacks?.length ?? 0
 
-  // throw error if length of stacks is smaller than number
-  if (!microLearning.stacks || !(ix <= (microLearning.stacks.length || -1))) {
-    throw new Error('Stack not found')
+  if (!Number.isInteger(ix) || ix < 0 || ix >= stackCount) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('pwa.microLearning.notFound')}
+        />
+      </Layout>
+    )
   }
 
   const currentStack = microLearning.stacks[ix]
@@ -74,7 +82,14 @@ function MicrolearningInstance() {
     !previewMode && selfLoading && typeof selfData === 'undefined'
 
   if (!currentStack) {
-    throw new Error('Stack not found')
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('pwa.microLearning.notFound')}
+        />
+      </Layout>
+    )
   }
 
   return (
@@ -108,7 +123,7 @@ function MicrolearningInstance() {
             isMaxVisible
             formatter={(v) => v}
             value={ix + 1}
-            max={(microLearning?.stacks?.length ?? -1) + 1}
+            max={stackCount}
           />
           {previewMode ? (
             <PreviewMessage
