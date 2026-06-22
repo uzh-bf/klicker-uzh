@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test'
 import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
 import activityLogData from '../../cypress/cypress/fixtures/W-activity-log.json' with { type: 'json' }
+import { chooseActivityAction } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -261,32 +262,13 @@ async function openActivityLog(
   await expect(
     page.getByTestId(`actions-${type}-${activityName}`)
   ).toBeVisible()
-
-  if (type === 'GROUP_ACTIVITY') {
-    const rowCommentsButton = page.getByRole('button', {
-      name: 'View Comments',
-    })
-    if (
-      (await rowCommentsButton.count()) > 0 &&
-      (await rowCommentsButton
-        .first()
-        .isVisible()
-        .catch(() => false))
-    ) {
-      await rowCommentsButton.first().click()
-      return
-    }
-  }
-
-  await page.getByTestId(`actions-${type}-${activityName}`).click()
-  const activityLogButton = page
-    .getByTestId(`view-activity-log-${activityName}`)
-    .first()
-  if (await activityLogButton.isVisible().catch(() => false)) {
-    await activityLogButton.click()
-  } else {
-    await activityLogButton.click({ force: true })
-  }
+  await chooseActivityAction(
+    page,
+    type,
+    activityName,
+    `view-activity-log-${activityName}`
+  )
+  await expect(page.getByTestId('activity-log-input')).toBeVisible()
 }
 
 async function shareActivity(
@@ -299,8 +281,12 @@ async function shareActivity(
   await expect(
     page.getByTestId(`actions-${type}-${activityName}`)
   ).toBeVisible()
-  await page.getByTestId(`actions-${type}-${activityName}`).click()
-  await page.getByTestId(shareActivityTestId(type, activityName)).click()
+  await chooseActivityAction(
+    page,
+    type,
+    activityName,
+    shareActivityTestId(type, activityName)
+  )
   await setUserPermissions(page)
 }
 

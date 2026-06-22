@@ -5,6 +5,10 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import {
+  chooseActivityAction,
+  type ActivityActionType,
+} from '../util/actions.js'
 import { test } from '../util/fixtures.js'
 import { getDatetimeValidationString, getFutureDate } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -57,6 +61,31 @@ const data = Object.assign(
 
 test.describe
   .serial('Feature test for review functionalities and batch operations', () => {
+  async function chooseReviewActivityAction(
+    activity: { name: string; type: ActivityActionType },
+    actionTestId: string
+  ) {
+    await chooseActivityAction(page, activity.type, activity.name, actionTestId)
+  }
+
+  async function openActivityInformation(activity: {
+    name: string
+    type: ActivityActionType
+  }) {
+    await chooseReviewActivityAction(
+      activity,
+      `activity-information-${activity.name}`
+    )
+  }
+
+  async function editActivity(
+    type: ActivityActionType,
+    name: string,
+    actionTestId: string
+  ) {
+    await chooseActivityAction(page, type, name, actionTestId)
+  }
+
   async function verifyActivityReviewButtonVisibility(
     data: any,
     expectedVisibility: boolean
@@ -69,10 +98,7 @@ test.describe
       { name: data.review.microLearning, type: 'MICRO_LEARNING' },
       { name: data.review.groupActivity, type: 'GROUP_ACTIVITY' },
     ]) {
-      await page
-        .getByTestId(`actions-${activity.type}-${activity.name}`)
-        .click()
-      await page.getByTestId(`activity-information-${activity.name}`).click()
+      await openActivityInformation(activity)
       await expectByAssertion(
         page.getByTestId('activity-review-button'),
         expectedVisibility ? 'exist' : 'not.exist'
@@ -89,10 +115,7 @@ test.describe
       { name: data.review.microLearning, type: 'MICRO_LEARNING' },
       { name: data.review.groupActivity, type: 'GROUP_ACTIVITY' },
     ]) {
-      await page
-        .getByTestId(`actions-${activity.type}-${activity.name}`)
-        .click()
-      await page.getByTestId(`activity-information-${activity.name}`).click()
+      await openActivityInformation(activity)
       await expectByAssertion(
         page.getByTestId('activity-review-button'),
         'contain',
@@ -284,12 +307,12 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.review.liveQuizNoCourse}`)
-      .click()
-    await page
-      .getByTestId(`share-live-quiz-${data.review.liveQuizNoCourse}`)
-      .click()
+    await chooseActivityAction(
+      page,
+      'LIVE_QUIZ',
+      data.review.liveQuizNoCourse,
+      `share-live-quiz-${data.review.liveQuizNoCourse}`
+    )
     await shareObject(page, {
       usernameOrEmail: env('LECTURER_IND_SHORTNAME'),
       permissionLevel: messages.manage.sharing.permissionsREAD,
@@ -381,10 +404,7 @@ test.describe
         'contain',
         messages.shared.generic.reviewStatusREVIEWED
       )
-      await page
-        .getByTestId(`actions-${activity.type}-${activity.name}`)
-        .click()
-      await page.getByTestId(`activity-information-${activity.name}`).click()
+      await openActivityInformation(activity)
       await expectByAssertion(
         page.getByTestId('activity-review-button'),
         'contain',
@@ -409,12 +429,10 @@ test.describe
       page.getByTestId('activities-search-input'),
       `${data.review.liveQuizNoCourse}{enter}`
     )
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.review.liveQuizNoCourse}`)
-      .click()
-    await page
-      .getByTestId(`activity-information-${data.review.liveQuizNoCourse}`)
-      .click()
+    await openActivityInformation({
+      name: data.review.liveQuizNoCourse,
+      type: 'LIVE_QUIZ',
+    })
     await expectByAssertion(
       page.getByTestId('activity-review-button'),
       'contain',
@@ -465,10 +483,7 @@ test.describe
         'not.contain',
         messages.shared.generic.reviewStatusREVIEWED
       )
-      await page
-        .getByTestId(`actions-${activity.type}-${activity.name}`)
-        .click()
-      await page.getByTestId(`activity-information-${activity.name}`).click()
+      await openActivityInformation(activity)
       await expectByAssertion(
         page.getByTestId('activity-review-button'),
         'contain',
@@ -498,12 +513,11 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.review.liveQuizNoCourse}`)
-      .click()
-    await page
-      .getByTestId(`edit-live-quiz-${data.review.liveQuizNoCourse}`)
-      .click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.review.liveQuizNoCourse,
+      `edit-live-quiz-${data.review.liveQuizNoCourse}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -519,8 +533,11 @@ test.describe
       messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
     )
     await page.getByTestId('activities').click()
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.review.liveQuiz}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.review.liveQuiz}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.review.liveQuiz,
+      `edit-live-quiz-${data.review.liveQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -536,12 +553,11 @@ test.describe
       messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
     )
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.review.practiceQuiz}`)
-      .click()
-    await page
-      .getByTestId(`edit-practice-quiz-${data.review.practiceQuiz}`)
-      .click()
+    await editActivity(
+      'PRACTICE_QUIZ',
+      data.review.practiceQuiz,
+      `edit-practice-quiz-${data.review.practiceQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -557,12 +573,11 @@ test.describe
       messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
     )
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-MICRO_LEARNING-${data.review.microLearning}`)
-      .click()
-    await page
-      .getByTestId(`edit-microlearning-${data.review.microLearning}`)
-      .click()
+    await editActivity(
+      'MICRO_LEARNING',
+      data.review.microLearning,
+      `edit-microlearning-${data.review.microLearning}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -578,12 +593,11 @@ test.describe
       messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
     )
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.review.groupActivity}`)
-      .click()
-    await page
-      .getByTestId(`edit-group-activity-${data.review.groupActivity}`)
-      .click()
+    await editActivity(
+      'GROUP_ACTIVITY',
+      data.review.groupActivity,
+      `edit-group-activity-${data.review.groupActivity}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -611,12 +625,11 @@ test.describe
     await page.getByTestId('activities').click()
     await markAllActivitiesAsReviewed(data)
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.review.liveQuizNoCourse}`)
-      .click()
-    await page
-      .getByTestId(`edit-live-quiz-${data.review.liveQuizNoCourse}`)
-      .click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.review.liveQuizNoCourse,
+      `edit-live-quiz-${data.review.liveQuizNoCourse}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -645,8 +658,11 @@ test.describe
       messages.shared.generic.reviewStatusREVIEWED
     )
     await page.getByTestId('activities').click()
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.review.liveQuiz}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.review.liveQuiz}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.review.liveQuiz,
+      `edit-live-quiz-${data.review.liveQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -675,12 +691,11 @@ test.describe
       messages.shared.generic.reviewStatusREVIEWED
     )
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.review.practiceQuiz}`)
-      .click()
-    await page
-      .getByTestId(`edit-practice-quiz-${data.review.practiceQuiz}`)
-      .click()
+    await editActivity(
+      'PRACTICE_QUIZ',
+      data.review.practiceQuiz,
+      `edit-practice-quiz-${data.review.practiceQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -709,12 +724,11 @@ test.describe
       messages.shared.generic.reviewStatusREVIEWED
     )
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-MICRO_LEARNING-${data.review.microLearning}`)
-      .click()
-    await page
-      .getByTestId(`edit-microlearning-${data.review.microLearning}`)
-      .click()
+    await editActivity(
+      'MICRO_LEARNING',
+      data.review.microLearning,
+      `edit-microlearning-${data.review.microLearning}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -743,12 +757,11 @@ test.describe
       messages.shared.generic.reviewStatusREVIEWED
     )
     await page.getByTestId('activities').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.review.groupActivity}`)
-      .click()
-    await page
-      .getByTestId(`edit-group-activity-${data.review.groupActivity}`)
-      .click()
+    await editActivity(
+      'GROUP_ACTIVITY',
+      data.review.groupActivity,
+      `edit-group-activity-${data.review.groupActivity}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -1947,8 +1960,11 @@ test.describe
       messages.manage.activityWizard.multiplier3
     )
     await page.getByTestId('apply-batch-operations').click()
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz,
+      `edit-live-quiz-${data.batch.liveQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -1958,8 +1974,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz2}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz2}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz2,
+      `edit-live-quiz-${data.batch.liveQuiz2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -1967,12 +1986,11 @@ test.describe
     await expectByAssertion(page.getByTestId('select-multiplier'), 'not.exist')
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.batch.practiceQuiz}`)
-      .click()
-    await page
-      .getByTestId(`edit-practice-quiz-${data.batch.practiceQuiz}`)
-      .click()
+    await editActivity(
+      'PRACTICE_QUIZ',
+      data.batch.practiceQuiz,
+      `edit-practice-quiz-${data.batch.practiceQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -1982,12 +2000,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.batch.practiceQuiz2}`)
-      .click()
-    await page
-      .getByTestId(`edit-practice-quiz-${data.batch.practiceQuiz2}`)
-      .click()
+    await editActivity(
+      'PRACTICE_QUIZ',
+      data.batch.practiceQuiz2,
+      `edit-practice-quiz-${data.batch.practiceQuiz2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -1995,12 +2012,11 @@ test.describe
     await expectByAssertion(page.getByTestId('select-multiplier'), 'not.exist')
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-MICRO_LEARNING-${data.batch.microLearning}`)
-      .click()
-    await page
-      .getByTestId(`edit-microlearning-${data.batch.microLearning}`)
-      .click()
+    await editActivity(
+      'MICRO_LEARNING',
+      data.batch.microLearning,
+      `edit-microlearning-${data.batch.microLearning}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2010,12 +2026,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-MICRO_LEARNING-${data.batch.microLearning2}`)
-      .click()
-    await page
-      .getByTestId(`edit-microlearning-${data.batch.microLearning2}`)
-      .click()
+    await editActivity(
+      'MICRO_LEARNING',
+      data.batch.microLearning2,
+      `edit-microlearning-${data.batch.microLearning2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2023,12 +2038,11 @@ test.describe
     await expectByAssertion(page.getByTestId('select-multiplier'), 'not.exist')
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.batch.groupActivity}`)
-      .click()
-    await page
-      .getByTestId(`edit-group-activity-${data.batch.groupActivity}`)
-      .click()
+    await editActivity(
+      'GROUP_ACTIVITY',
+      data.batch.groupActivity,
+      `edit-group-activity-${data.batch.groupActivity}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2083,8 +2097,11 @@ test.describe
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz,
+      `edit-live-quiz-${data.batch.liveQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2094,12 +2111,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.batch.practiceQuiz}`)
-      .click()
-    await page
-      .getByTestId(`edit-practice-quiz-${data.batch.practiceQuiz}`)
-      .click()
+    await editActivity(
+      'PRACTICE_QUIZ',
+      data.batch.practiceQuiz,
+      `edit-practice-quiz-${data.batch.practiceQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2109,12 +2125,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-MICRO_LEARNING-${data.batch.microLearning}`)
-      .click()
-    await page
-      .getByTestId(`edit-microlearning-${data.batch.microLearning}`)
-      .click()
+    await editActivity(
+      'MICRO_LEARNING',
+      data.batch.microLearning,
+      `edit-microlearning-${data.batch.microLearning}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2124,12 +2139,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.batch.groupActivity}`)
-      .click()
-    await page
-      .getByTestId(`edit-group-activity-${data.batch.groupActivity}`)
-      .click()
+    await editActivity(
+      'GROUP_ACTIVITY',
+      data.batch.groupActivity,
+      `edit-group-activity-${data.batch.groupActivity}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2188,8 +2202,11 @@ test.describe
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz,
+      `edit-live-quiz-${data.batch.liveQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2218,8 +2235,11 @@ test.describe
     await page.getByTestId('live-quiz-advanced-settings-close').click()
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz2}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz2}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz2,
+      `edit-live-quiz-${data.batch.liveQuiz2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2311,8 +2331,11 @@ test.describe
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz2}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz2}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz2,
+      `edit-live-quiz-${data.batch.liveQuiz2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2325,12 +2348,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.batch.practiceQuiz2}`)
-      .click()
-    await page
-      .getByTestId(`edit-practice-quiz-${data.batch.practiceQuiz2}`)
-      .click()
+    await editActivity(
+      'PRACTICE_QUIZ',
+      data.batch.practiceQuiz2,
+      `edit-practice-quiz-${data.batch.practiceQuiz2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2343,12 +2365,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-MICRO_LEARNING-${data.batch.microLearning2}`)
-      .click()
-    await page
-      .getByTestId(`edit-microlearning-${data.batch.microLearning2}`)
-      .click()
+    await editActivity(
+      'MICRO_LEARNING',
+      data.batch.microLearning2,
+      `edit-microlearning-${data.batch.microLearning2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2361,12 +2382,11 @@ test.describe
     )
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.batch.groupActivity}`)
-      .click()
-    await page
-      .getByTestId(`edit-group-activity-${data.batch.groupActivity}`)
-      .click()
+    await editActivity(
+      'GROUP_ACTIVITY',
+      data.batch.groupActivity,
+      `edit-group-activity-${data.batch.groupActivity}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2429,8 +2449,11 @@ test.describe
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz,
+      `edit-live-quiz-${data.batch.liveQuiz}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()
@@ -2465,8 +2488,11 @@ test.describe
     await page.getByTestId('live-quiz-advanced-settings-close').click()
     await page.getByTestId(`activities`).click()
     await page.waitForTimeout(500)
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.batch.liveQuiz2}`).click()
-    await page.getByTestId(`edit-live-quiz-${data.batch.liveQuiz2}`).click()
+    await editActivity(
+      'LIVE_QUIZ',
+      data.batch.liveQuiz2,
+      `edit-live-quiz-${data.batch.liveQuiz2}`
+    )
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await page.getByTestId('next-or-submit').click()

@@ -17,41 +17,72 @@ if [ -z "${CHECK_INTERVAL:-}" ]; then
   CHECK_INTERVAL=5
 fi
 
+POSTGRES_CHECK_HOST="${POSTGRES_CHECK_HOST:-localhost}"
+POSTGRES_CHECK_PORT="${POSTGRES_CHECK_PORT:-5432}"
+REDIS_CHECK_HOST="${REDIS_CHECK_HOST:-${REDIS_HOST:-localhost}}"
+REDIS_CHECK_PORT="${REDIS_CHECK_PORT:-${REDIS_PORT:-6379}}"
+REDIS_CACHE_CHECK_HOST="${REDIS_CACHE_CHECK_HOST:-${REDIS_CACHE_HOST:-}}"
+REDIS_CACHE_CHECK_PORT="${REDIS_CACHE_CHECK_PORT:-${REDIS_CACHE_PORT:-6379}}"
+REDIS_ASSESSMENT_CHECK_HOST="${REDIS_ASSESSMENT_CHECK_HOST:-${REDIS_ASSESSMENT_HOST:-}}"
+REDIS_ASSESSMENT_CHECK_PORT="${REDIS_ASSESSMENT_CHECK_PORT:-${REDIS_ASSESSMENT_PORT:-6379}}"
+HATCHET_CHECK_HOST="${HATCHET_CHECK_HOST:-localhost}"
+HATCHET_HTTP_PORT="${HATCHET_HTTP_PORT:-8888}"
+HATCHET_GRPC_PORT="${HATCHET_GRPC_PORT:-7077}"
+
 # Check Redis
-check_redis() {
-  if ! nc -z localhost 6379 2>/dev/null; then
-    echo "Redis is not running on port 6379"
+check_redis_endpoint() {
+  local label="$1"
+  local host="$2"
+  local port="$3"
+
+  if ! nc -z "$host" "$port" 2>/dev/null; then
+    echo "$label Redis is not running on ${host}:${port}"
     return 1
   fi
-  echo "Redis is running on port 6379"
+
+  echo "$label Redis is running on ${host}:${port}"
+  return 0
+}
+
+check_redis() {
+  check_redis_endpoint "Primary" "$REDIS_CHECK_HOST" "$REDIS_CHECK_PORT" || return 1
+
+  if [ -n "$REDIS_CACHE_CHECK_HOST" ]; then
+    check_redis_endpoint "Cache" "$REDIS_CACHE_CHECK_HOST" "$REDIS_CACHE_CHECK_PORT" || return 1
+  fi
+
+  if [ -n "$REDIS_ASSESSMENT_CHECK_HOST" ]; then
+    check_redis_endpoint "Assessment" "$REDIS_ASSESSMENT_CHECK_HOST" "$REDIS_ASSESSMENT_CHECK_PORT" || return 1
+  fi
+
   return 0
 }
 
 # Check PostgreSQL
 check_postgres() {
-  if ! nc -z localhost 5432 2>/dev/null; then
-    echo "PostgreSQL is not running on port 5432"
+  if ! nc -z "$POSTGRES_CHECK_HOST" "$POSTGRES_CHECK_PORT" 2>/dev/null; then
+    echo "PostgreSQL is not running on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT}"
     return 1
   fi
-  echo "PostgreSQL is running on port 5432"
+  echo "PostgreSQL is running on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT}"
   return 0
 }
 
 # Check Hatchet
 check_hatchet() {
   # Check HTTP endpoint
-  if ! curl -s -f http://localhost:8888/healthz >/dev/null 2>&1; then
-    echo "Hatchet HTTP is not ready on port 8888"
+  if ! curl -s -f "http://${HATCHET_CHECK_HOST}:${HATCHET_HTTP_PORT}/healthz" >/dev/null 2>&1; then
+    echo "Hatchet HTTP is not ready on ${HATCHET_CHECK_HOST}:${HATCHET_HTTP_PORT}"
     return 1
   fi
 
   # Check gRPC port
-  if ! nc -z localhost 7077 2>/dev/null; then
-    echo "Hatchet gRPC is not ready on port 7077"
+  if ! nc -z "$HATCHET_CHECK_HOST" "$HATCHET_GRPC_PORT" 2>/dev/null; then
+    echo "Hatchet gRPC is not ready on ${HATCHET_CHECK_HOST}:${HATCHET_GRPC_PORT}"
     return 1
   fi
 
-  echo "Hatchet is ready (HTTP: 8888, gRPC: 7077)"
+  echo "Hatchet is ready (HTTP: ${HATCHET_HTTP_PORT}, gRPC: ${HATCHET_GRPC_PORT})"
   return 0
 }
 

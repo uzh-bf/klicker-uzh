@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test'
 import dmQuestionsData from '../../cypress/cypress/fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
+import { chooseActivityAction } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -387,6 +388,30 @@ async function openStudentLiveQuiz(page: Page, displayName: string) {
 async function returnToStudentHome(page: Page) {
   await page.goto('/', { waitUntil: 'commit' })
   await expect(page.getByTestId('homepage')).toBeVisible()
+}
+
+async function confirmDeletionModal(page: Page, confirmationTestIds: string[]) {
+  const confirmButton = page.getByTestId('confirmation-modal-confirm')
+  const startedAt = Date.now()
+
+  while (Date.now() - startedAt < 15_000) {
+    for (const testId of confirmationTestIds) {
+      const confirmation = page.getByTestId(testId).first()
+      if (await confirmation.isVisible().catch(() => false)) {
+        await confirmation.click()
+      }
+    }
+
+    if (await confirmButton.isEnabled().catch(() => false)) {
+      await confirmButton.click()
+      return
+    }
+
+    await page.waitForTimeout(100)
+  }
+
+  await expect(confirmButton).toBeEnabled()
+  await confirmButton.click()
 }
 
 test.describe('Create different types of elements (with and without sample solution) and edit them', () => {
@@ -1014,15 +1039,17 @@ test.describe('Create different types of elements (with and without sample solut
         [data.update.practiceQuiz2, data.update.content2, data.update.choices2],
         [data.update.practiceQuiz3, data.update.content2, data.update.choices2],
       ] as const) {
+        await returnToStudentHome(page)
         await page.getByTestId('quizzes').click()
+        await expect(page.getByTestId(`practice-quiz-${quiz}`)).toBeVisible()
         await page.getByTestId(`practice-quiz-${quiz}`).click()
+        await expect(page.getByTestId('start-practice-quiz')).toBeVisible()
         await page.getByTestId('start-practice-quiz').click()
         await verifySingleChoiceQuestionContent(page, {
           submission: true,
           content,
           choices,
         })
-        await page.getByTestId('header-home').click()
       }
     })
 
@@ -1050,14 +1077,18 @@ test.describe('Create different types of elements (with and without sample solut
           data.update.choices2,
         ],
       ] as const) {
+        await returnToStudentHome(page)
+        await expect(
+          page.getByTestId(`microlearning-${microlearning}`)
+        ).toBeVisible()
         await page.getByTestId(`microlearning-${microlearning}`).click()
+        await expect(page.getByTestId('start-microlearning')).toBeVisible()
         await page.getByTestId('start-microlearning').click()
         await verifySingleChoiceQuestionContent(page, {
           submission: true,
           content,
           choices,
         })
-        await page.getByTestId('header-home').click()
       }
     })
 
@@ -1085,16 +1116,23 @@ test.describe('Create different types of elements (with and without sample solut
           data.update.choices3,
         ],
       ] as const) {
+        await returnToStudentHome(page)
         await page.getByTestId(`course-button-${data.update.course}`).click()
+        await expect(
+          page.getByTestId('student-course-existing-group-0')
+        ).toBeVisible()
         await page.getByTestId('student-course-existing-group-0').click()
+        await expect(
+          page.getByTestId(`open-group-activity-${groupActivity}`)
+        ).toBeVisible()
         await page.getByTestId(`open-group-activity-${groupActivity}`).click()
+        await expect(page.getByTestId('start-group-activity')).toBeVisible()
         await page.getByTestId('start-group-activity').click()
         await verifySingleChoiceQuestionContent(page, {
           submission: false,
           content,
           choices,
         })
-        await page.getByTestId('header-home').click()
       }
     })
 
@@ -1128,9 +1166,17 @@ test.describe('Create different types of elements (with and without sample solut
         await expect(page.getByTestId('activities-search-input')).toBeVisible()
         await page.getByTestId('activities-search-input').fill(quiz)
         await page.keyboard.press('Enter')
-        await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
-        await page.getByTestId(`delete-live-quiz-${quiz}`).click()
-        await page.getByTestId('confirmation-modal-confirm').click()
+        await chooseActivityAction(
+          page,
+          'LIVE_QUIZ',
+          quiz,
+          `delete-live-quiz-${quiz}`
+        )
+        await confirmDeletionModal(page, [
+          'confirm-deletion-responses',
+          'confirm-deletion-qa-feedbacks',
+          'confirm-deletion-confusion-feedbacks',
+        ])
         await page.getByTestId('activities-search-input').clear()
       }
 
@@ -1142,10 +1188,16 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.practiceQuiz2,
         data.update.practiceQuiz3,
       ]) {
-        await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
-        await page.getByTestId(`delete-practice-quiz-${quiz}`).click()
-        await page.getByTestId('confirm-deletion-responses').click()
-        await page.getByTestId('confirmation-modal-confirm').click()
+        await chooseActivityAction(
+          page,
+          'PRACTICE_QUIZ',
+          quiz,
+          `delete-practice-quiz-${quiz}`
+        )
+        await confirmDeletionModal(page, [
+          'confirm-deletion-responses',
+          'confirm-deletion-anonymous-responses',
+        ])
         await expectNotAttached(
           page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`)
         )
@@ -1157,12 +1209,16 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.microlearning2,
         data.update.microlearning3,
       ]) {
-        await page
-          .getByTestId(`actions-MICRO_LEARNING-${microlearning}`)
-          .click()
-        await page.getByTestId(`delete-microlearning-${microlearning}`).click()
-        await page.getByTestId('confirm-deletion-responses').click()
-        await page.getByTestId('confirmation-modal-confirm').click()
+        await chooseActivityAction(
+          page,
+          'MICRO_LEARNING',
+          microlearning,
+          `delete-microlearning-${microlearning}`
+        )
+        await confirmDeletionModal(page, [
+          'confirm-deletion-responses',
+          'confirm-deletion-anonymous-responses',
+        ])
         await expectNotAttached(
           page.getByTestId(`activity-MICRO_LEARNING-${microlearning}`)
         )
@@ -1174,12 +1230,16 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.groupActivity2,
         data.update.groupActivity3,
       ]) {
-        await page
-          .getByTestId(`actions-GROUP_ACTIVITY-${groupActivity}`)
-          .click()
-        await page.getByTestId(`delete-group-activity-${groupActivity}`).click()
-        await page.getByTestId('confirm-deletion-started-instances').click()
-        await page.getByTestId('confirmation-modal-confirm').click()
+        await chooseActivityAction(
+          page,
+          'GROUP_ACTIVITY',
+          groupActivity,
+          `delete-group-activity-${groupActivity}`
+        )
+        await confirmDeletionModal(page, [
+          'confirm-deletion-started-instances',
+          'confirm-deletion-submissions',
+        ])
         await expectNotAttached(
           page.getByTestId(`activity-GROUP_ACTIVITY-${groupActivity}`)
         )
