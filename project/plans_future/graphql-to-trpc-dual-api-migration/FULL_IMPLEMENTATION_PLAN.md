@@ -423,6 +423,50 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Locale Route Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+language setting. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `dcbac78c358245b04aafa34502b1ebf6ea710632`.
+- Fresh PR checks on that head had GitGuardian, lint, Claude review, CodeQL
+  Java/Kotlin, CodeQL Python, and one Docker build job green; broader package,
+  Cypress, SonarCloud, and build matrix jobs were still pending.
+- The prior manage user-settings cleanup awaited `user.profile` invalidation
+  before changing the locale route, but the visible select disabled state still
+  only tracked the tRPC mutation loading flag.
+- That left the language select able to re-enable while locale navigation was
+  pending.
+
+Changes:
+
+- Added a local locale pending guard around the full language-change action.
+- The select now stays disabled through the tRPC mutation, awaited
+  `user.profile` invalidation, and locale route transition.
+- Failed mutation or failed navigation still shows the existing generic system
+  error toast and releases the local pending guard.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/user/LanguageSetting.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage locale pending-boundary cleanup.
+- Recheck PR #5132 checks after push.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Control Logout Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

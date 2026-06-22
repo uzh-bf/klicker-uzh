@@ -2,6 +2,7 @@ import { routing } from '@klicker-uzh/i18n'
 import { Select, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import SimpleSetting from '../../components/user/SimpleSetting'
 import { trpc, type RouterInputs, type RouterOutputs } from '../../lib/trpc'
 
@@ -17,11 +18,13 @@ function LanguageSetting({ user }: LanguageSettingProps) {
   const router = useRouter()
   const { pathname, query, asPath } = router
   const utils = trpc.useUtils()
+  const [localePending, setLocalePending] = useState(false)
   const changeUserLocale = trpc.user.changeUserLocale.useMutation({
     onSuccess: async () => {
       await utils.user.profile.invalidate().catch(console.error)
     },
   })
+  const changingLocale = changeUserLocale.isLoading || localePending
 
   return (
     <SimpleSetting
@@ -29,18 +32,22 @@ function LanguageSetting({ user }: LanguageSettingProps) {
       tooltip={t('manage.settings.languageTooltip')}
     >
       <Select
-        disabled={changeUserLocale.isLoading}
+        disabled={changingLocale}
         value={user?.locale || 'en'}
         onChange={async (newLocale: string) => {
+          if (changingLocale) return
           if (newLocale === user.locale) return
+
+          setLocalePending(true)
 
           try {
             await changeUserLocale.mutateAsync({
               locale: newLocale as UserLocale,
             })
-            await router.push({ pathname, query }, asPath, {
+            const routed = await router.push({ pathname, query }, asPath, {
               locale: newLocale,
             })
+            if (!routed) throw new Error('Locale navigation failed')
           } catch (error) {
             console.error(error)
             toast({
@@ -48,6 +55,8 @@ function LanguageSetting({ user }: LanguageSettingProps) {
               message: t('shared.generic.systemError'),
               options: { duration: 5000 },
             })
+          } finally {
+            setLocalePending(false)
           }
         }}
         items={routing.locales.map((loc) => ({
