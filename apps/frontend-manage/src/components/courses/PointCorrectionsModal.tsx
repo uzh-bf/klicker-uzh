@@ -361,6 +361,7 @@ function PointCorrectionsModal({
         )
 
         const handleClose = () => {
+          if (isSubmitting) return
           resetForm()
           setActiveStep(0)
           onClose()
@@ -442,6 +443,7 @@ function PointCorrectionsModal({
         ]
         const isLastStep = activeStep === stepComponents.length - 1
         const primaryDisabled =
+          isSubmitting ||
           currentStepLoading ||
           currentStepUnavailable ||
           (isLastStep ? !allValid : !stepStatus[activeStep])
@@ -461,6 +463,8 @@ function PointCorrectionsModal({
               }
               onSecondaryAction={(event) => {
                 event?.stopPropagation()
+                if (isSubmitting) return
+
                 activeStep === 0
                   ? handleClose()
                   : setActiveStep((prev) => Math.max(prev - 1, 0))
@@ -474,6 +478,8 @@ function PointCorrectionsModal({
               primaryLoading={isSubmitting}
               onPrimaryAction={async (event) => {
                 event?.stopPropagation()
+                if (isSubmitting) return
+
                 isLastStep ? await submitForm() : await goToNextStep()
               }}
               className={{
