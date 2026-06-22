@@ -50,6 +50,15 @@ function CourseRemovalModal({
           throw new Error('Failed to remove course')
         }
 
+        utils.course.userCourses.setData(undefined, (data) =>
+          data?.userCourses
+            ? {
+                userCourses: data.userCourses.filter(
+                  (course) => course.id !== result.removedObjectId
+                ),
+              }
+            : data
+        )
         void utils.course.userCourses.invalidate().catch(console.error)
       }}
       submitting={removeObject.isLoading}

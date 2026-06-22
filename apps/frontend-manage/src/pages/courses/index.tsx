@@ -201,12 +201,25 @@ function CourseSelectionPage() {
                     return
                   }
 
+                  const createdCourse = result.course
+                  utils.course.userCourses.setData(undefined, (data) =>
+                    data?.userCourses
+                      ? {
+                          userCourses: [
+                            createdCourse,
+                            ...data.userCourses.filter(
+                              (course) => course.id !== createdCourse.id
+                            ),
+                          ],
+                        }
+                      : data
+                  )
                   void utils.course.userCourses
                     .invalidate()
                     .catch(console.error)
                   showCreateCourseModal(false)
                   try {
-                    await router.push(`/courses/${result.course.id}`)
+                    await router.push(`/courses/${createdCourse.id}`)
                   } catch (navigationError) {
                     console.error(navigationError)
                     toast({

@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Course List Cache Update Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage course-list workflow. No new migration slice,
+S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `025fb97cf3cc0e9dedb1cd557a15d749f343f7ca`.
+- Fresh PR checks on that head had restarted after the last push. GitGuardian
+  and CodeQL Python were green; the remaining CodeQL, SonarCloud, Docker,
+  TypeScript, lint, format, `packages/graphql Vitest`, `packages/api tRPC
+  Vitest`, and Cypress jobs were still pending.
+- Course create, archive/unarchive, delete, and removal actions all confirmed
+  the tRPC server mutation before closing/navigating, but `course.userCourses`
+  only refreshed through background invalidation. That could leave stale
+  course rows or missing newly created rows visible until the refetch completed.
+- Course archive/delete modals also allowed close/cancel while their mutation
+  was still pending.
+
+Changes:
+
+- Course create now inserts the confirmed returned course into the
+  `course.userCourses` cache before closing the modal and navigating to the new
+  course.
+- Course archive/unarchive now updates the cached course row and keeps archived
+  courses sorted after active courses before the modal closes.
+- Course delete and course removal now remove the confirmed course id from the
+  cached course list before the modal closes.
+- Existing `course.userCourses` invalidations remain as best-effort background
+  refreshes after confirmed success.
+- Course archive/delete close and secondary actions are guarded while their
+  mutation is pending.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/pages/courses/index.tsx apps/frontend-manage/src/components/courses/modals/CourseArchiveModal.tsx apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/CourseRemovalModal.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` and `127.0.0.1:3002` both failed with connection refused, so
+  no local backend or manage dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused course-list cache update cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Course Settings Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

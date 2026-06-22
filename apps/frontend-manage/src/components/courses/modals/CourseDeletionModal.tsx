@@ -73,6 +73,15 @@ function CourseDeletionModal({
   const summaryUnavailable = Boolean(
     (summaryError || !queryLoading) && !summary
   )
+  const closeModal = () => {
+    onClose()
+    setConfirmations({ ...initialConfirmations })
+  }
+  const handleClose = () => {
+    if (!deleteCourse.isLoading) {
+      closeModal()
+    }
+  }
   if (!courseId) {
     return null
   }
@@ -81,10 +90,7 @@ function CourseDeletionModal({
     <Modal
       open
       loading={initialSummaryLoading}
-      onClose={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      onClose={handleClose}
       className={{ content: 'w-full! max-w-240' }}
       title={t('manage.courseList.deleteCourse')}
       primaryLabel={t('shared.generic.confirm')}
@@ -108,11 +114,19 @@ function CourseDeletionModal({
             return
           }
 
+          utils.course.userCourses.setData(undefined, (data) =>
+            data?.userCourses
+              ? {
+                  userCourses: data.userCourses.filter(
+                    (course) => course.id !== result.course?.id
+                  ),
+                }
+              : data
+          )
           utils.course.userCourses
             .invalidate()
             .catch((error) => console.error(error))
-          onClose()
-          setConfirmations({ ...initialConfirmations })
+          closeModal()
         } catch (error) {
           console.error(error)
           toast({
@@ -124,10 +138,7 @@ function CourseDeletionModal({
       }}
       dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}
       secondaryLabel={t('shared.generic.close')}
-      onSecondaryAction={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
       {summaryUnavailable ? (

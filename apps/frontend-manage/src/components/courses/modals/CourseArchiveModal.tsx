@@ -14,6 +14,11 @@ function CourseArchiveModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const toggleArchiveCourse = trpc.course.toggleArchive.useMutation()
+  const handleClose = () => {
+    if (!toggleArchiveCourse.isLoading) {
+      onClose()
+    }
+  }
 
   if (!courseId) {
     return null
@@ -22,7 +27,7 @@ function CourseArchiveModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={
         isArchived
           ? t('manage.courseList.unarchiveCourse')
@@ -30,6 +35,7 @@ function CourseArchiveModal({
       }
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={toggleArchiveCourse.isLoading}
+      primaryDisabled={toggleArchiveCourse.isLoading}
       onPrimaryAction={async () => {
         try {
           const result = await toggleArchiveCourse.mutateAsync({
@@ -46,6 +52,21 @@ function CourseArchiveModal({
             return
           }
 
+          utils.course.userCourses.setData(undefined, (data) =>
+            data?.userCourses
+              ? {
+                  userCourses: data.userCourses
+                    .map((course) =>
+                      course.id === result.course?.id
+                        ? { ...course, isArchived: result.course.isArchived }
+                        : course
+                    )
+                    .sort((a, b) =>
+                      a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
+                    ),
+                }
+              : data
+          )
           utils.course.userCourses
             .invalidate()
             .catch((error) => console.error(error))
@@ -61,7 +82,7 @@ function CourseArchiveModal({
       }}
       dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'course-archive-modal-cancel' }}
       className={{ content: 'max-w-120' }}
     >
