@@ -90,7 +90,7 @@ export function useObjectActivity({
   return {
     entries,
     loading: isLoading || (isFetching && !data),
-    error,
+    error: Boolean(error && !data),
     addActivityMessage,
     resolveActivityLogEntry,
     deleteActivityMessage,

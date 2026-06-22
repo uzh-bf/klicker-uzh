@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Activity Log Stale Data Error Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+object-activity tRPC query. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `useObjectActivity` feeds `ActivityLog` and wraps the migrated
+  `trpc.sharing.objectActivity` query.
+- The hook already keeps stale entries visible while background refetching by
+  only marking `loading` when fetching without cached data.
+- It still returns the raw query `error`, so `ActivityLog` can replace cached
+  activity entries with an error panel after a background refetch failure.
+- Context7 TanStack Query v4 docs were refreshed before this audit pass and
+  support rendering cached data separately from initial loading/error states.
+
+Changes:
+
+- `useObjectActivity` now returns `error: Boolean(error && !data)`, matching
+  the hook's existing loading boundary and keeping cached activity entries
+  visible on background refetch failures.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/lib/hooks/useObjectActivity.ts
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused activity-log stale-data error-boundary cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Cockpit Stale Data Error Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
