@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Batch Operation Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage activity/element batch-operation workflows. No
+new migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `29a8712ef6f9a8ad242dc7ff08e653233c4e7aaa`.
+- Fresh PR checks on that head had just restarted after the previous push;
+  GitGuardian was green and the remaining checks were pending.
+- Activity and element batch operations confirmed full or partial tRPC mutation
+  success, then reset selection, showed success or warning, and closed the
+  modal while the parent list refresh still ran in the background. That could
+  leave bulk-updated activities/elements visibly stale immediately after the
+  modal closed.
+- Element batch operations also invalidated affected element detail caches in
+  the background before closing.
+
+Changes:
+
+- Activity batch operations now await the parent activity-list refetch attempt
+  before resetting selection, showing completion feedback, and closing the
+  modal.
+- Element batch operations now await affected element detail invalidation and
+  the parent element-list refetch attempt before resetting selection, showing
+  completion feedback, and closing the modal.
+- Refresh failures remain caught and logged so confirmed full or partial server
+  success is not reported as a failed mutation.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx apps/frontend-manage/src/components/elements/manipulation/ElementBatchOperationsModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` returned `404`, but `curl` to `127.0.0.1:3002` failed with
+  connection refused, so no local manage dev server was available for
+  screenshots.
+
+Next:
+
+- Commit and push this focused batch-operation refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: User-Group Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

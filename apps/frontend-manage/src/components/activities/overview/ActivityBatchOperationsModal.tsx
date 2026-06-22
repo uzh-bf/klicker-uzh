@@ -334,8 +334,8 @@ function ActivityBatchOperationsModal({
                     })
 
                     if (res.appliedCount === numOfUpdatedActivities) {
+                      await refetchActivities().catch(console.error)
                       resetSelectedActivities()
-                      void refetchActivities().catch(console.error)
                       toast({
                         type: 'success',
                         message: t('manage.activities.batchOperationSuccess'),
@@ -343,8 +343,8 @@ function ActivityBatchOperationsModal({
                       })
                       onClose()
                     } else if (res.appliedCount !== 0) {
+                      await refetchActivities().catch(console.error)
                       resetSelectedActivities()
-                      void refetchActivities().catch(console.error)
                       toast({
                         type: 'warning',
                         message: t(

@@ -45,7 +45,7 @@ function ElementBatchOperationsModal({
   const applyElementBatchOperations =
     trpc.element.applyBatchOperations.useMutation()
 
-  const refreshAffectedElementDetails = () => {
+  const refreshAffectedElementDetails = async () => {
     const affectedElementIds = affectedElements
       .filter((element) => element.actionsApplied)
       .map((element) => element.id)
@@ -81,7 +81,7 @@ function ElementBatchOperationsModal({
       })
     })
 
-    void Promise.all(
+    await Promise.all(
       affectedElementIds.map((id) =>
         utils.element.single.invalidate({
           id,
@@ -291,9 +291,11 @@ function ElementBatchOperationsModal({
 
                     // in case of success, reset the selected elements and refetch the elements
                     if (res.updatedCount === numOfUpdatedElements) {
-                      refreshAffectedElementDetails()
+                      await Promise.all([
+                        refreshAffectedElementDetails(),
+                        refetchElements().catch(console.error),
+                      ])
                       resetSelectedElements()
-                      void refetchElements().catch(console.error)
                       toast({
                         type: 'success',
                         message: t('manage.questionPool.batchOperationSuccess'),
@@ -301,9 +303,11 @@ function ElementBatchOperationsModal({
                       })
                       onClose()
                     } else if (res.updatedCount !== 0) {
-                      refreshAffectedElementDetails()
+                      await Promise.all([
+                        refreshAffectedElementDetails(),
+                        refetchElements().catch(console.error),
+                      ])
                       resetSelectedElements()
-                      void refetchElements().catch(console.error)
                       toast({
                         type: 'warning',
                         message: t(
