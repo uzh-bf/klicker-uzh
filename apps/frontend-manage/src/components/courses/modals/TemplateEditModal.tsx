@@ -122,11 +122,14 @@ function TemplateEditModal({
                   <Button
                     primary
                     type="submit"
-                    disabled={!isValid}
-                    loading={isSubmitting}
+                    disabled={!isValid || isSubmitting || editing}
+                    loading={isSubmitting || editing}
                     data={{ cy: 'submit-template-edit' }}
                   >
-                    <Button.Icon icon={faSave} loading={isSubmitting} />
+                    <Button.Icon
+                      icon={faSave}
+                      loading={isSubmitting || editing}
+                    />
                     <Button.Label>
                       {t('manage.template.saveChanges')}
                     </Button.Label>
