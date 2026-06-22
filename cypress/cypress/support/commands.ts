@@ -80,6 +80,12 @@ Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
   })
 })
 
+Cypress.Commands.add('waitForPageInteraction', () => {
+  cy.get('body')
+    .should('not.have.attr', 'data-scroll-locked')
+    .should('not.have.css', 'pointer-events', 'none')
+})
+
 function clearPersistedClientState() {
   cy.clearAllCookies()
   cy.clearAllLocalStorage()
@@ -1940,6 +1946,7 @@ declare global {
       loginInstitutionalCatalyst2(): Chainable<void>
       loginInstitutionalCatalyst3(): Chainable<void>
       loginInstitutionalCatalyst4(): Chainable<void>
+      waitForPageInteraction(): Chainable<void>
       logoutUser(): Chainable<void>
       loginStudent(options?: StudentLoginOptions): Chainable<void>
       loginAssessmentStudent(): Chainable<void>

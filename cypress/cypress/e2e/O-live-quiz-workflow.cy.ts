@@ -3541,6 +3541,7 @@ describe('Different live-quiz workflows', function () {
         ({ username, password, messages, data }) => {
           cy.get('[data-cy="participate-anonymously"]').click()
           cy.get('[data-cy="participate-anonymously"]').should('not.exist') // wait for temporary account creation to finish
+          cy.waitForPageInteraction()
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3565,7 +3566,10 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="submit-login"]').click()
           cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
           cy.get(`[data-cy="live-quiz-${data.modes.displayName}"]`).click()
-          cy.wait(1000)
+          cy.get('[data-cy="header-page-title"]').contains(
+            data.modes.displayName
+          )
+          cy.waitForPageInteraction()
 
           cy.get('[data-cy="header-avatar"]').click()
           cy.get('[data-cy="header-logged-in-as"]')
@@ -3623,6 +3627,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="avatar-carousel-prev"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
+          cy.waitForPageInteraction()
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3652,6 +3657,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
+          cy.waitForPageInteraction()
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3696,10 +3702,10 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="password-field"]').type(password)
           cy.get('[data-cy="submit-login"]').click()
           cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
-          cy.wait(1000) // wait for the live quiz to load
 
           // verify that the participant has been automatically redirected to the live quiz
           cy.get('[data-cy="header-page-title"]').contains(quizName)
+          cy.waitForPageInteraction()
 
           // verify that the correct account actions are available
           cy.get('[data-cy="header-avatar"]').click()

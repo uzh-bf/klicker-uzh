@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Cypress Live-Quiz Modal Interaction Guard
+
+Status: complete locally with documented runtime/artifact blockers. Scope
+stayed inside the tRPC UX/client-quality audit and the already migrated PWA
+live-quiz account selector / login test boundary. No new migration slice,
+S05/S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 current head is
+  `e75d039d580d1345e3b892845bcc6eddc19f922d`.
+- Fresh PR checks on this head show all non-Cypress checks green, including
+  `packages/api tRPC Vitest`, `packages/graphql Vitest`, format, lint,
+  TypeScript checks, generic tests, CodeQL, SonarCloud, GitGuardian, and Docker
+  staging builds.
+- Cypress Cloud run `6870` reports `2 tests failed` on the external
+  `cypress: default-group (merge)` status.
+- The GitHub `cypress-run-cloud` wrapper job is still marked `in_progress`, so
+  job logs are unavailable and no `cypress-artifacts-cloud` bundle has been
+  published yet. The only artifact currently available is `service-logs`.
+- The downloaded service log shows backend, response-api, PWA, manage, control,
+  auth, and Hatchet workers started; it does not include browser assertion
+  details.
+- The previous run `6869` artifact evidence showed the live-quiz account-mode
+  checks clicking `header-avatar` while the body still had
+  `data-scroll-locked` and `pointer-events: none`.
+- The failure count dropped from 3 in run `6869` to 2 in run `6870` after the
+  prior scoped-auth refresh fix, which is consistent with the leaderboard
+  assertion recovering while the two modal/login header-click races remain.
+
+Change:
+
+- Added a Cypress `waitForPageInteraction` helper that waits for the body to no
+  longer be scroll-locked and pointer-disabled.
+- Replaced fixed waits / immediate header clicks in the live-quiz account-mode
+  flow with deterministic waits for page title or modal disappearance plus the
+  new interaction guard.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check cypress/cypress/support/commands.ts cypress/cypress/e2e/O-live-quiz-workflow.cy.ts`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p cypress/tsconfig.json --noEmit --pretty false` with a temporary `cypress/node_modules` symlink to the adjacent installed checkout; the symlink was removed immediately after the check.
+- Passed: `git diff --check`
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3000`, `:3001`, `:3002`, and `:3003` all return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused Cypress interaction guard.
+- Recheck PR #5132 checks, especially Cypress Cloud run `6870` replacement on
+  the new head.
+
 ### 2026-06-22 Completed Locally With Verification Blockers: PWA Live-Quiz Account Selector Auth Refresh Cleanup
 
 Status: complete locally with documented runtime/package-test blockers. Scope
