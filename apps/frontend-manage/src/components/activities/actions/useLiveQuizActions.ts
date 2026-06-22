@@ -93,7 +93,8 @@ function useLiveQuizActions({
               return
             }
 
-            await router.push(`/quizzes/${quiz.id}/cockpit`)
+            const routed = await router.push(`/quizzes/${quiz.id}/cockpit`)
+            if (!routed) throw new Error('Live quiz start navigation failed')
           } catch (error) {
             console.error(error)
             toast({

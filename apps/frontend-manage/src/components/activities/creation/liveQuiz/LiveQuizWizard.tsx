@@ -103,6 +103,7 @@ function LiveQuizWizard({
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
+  const [quickStartRouting, setQuickStartRouting] = useState(false)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
@@ -282,6 +283,7 @@ function LiveQuizWizard({
       await utils.liveQuiz.running.invalidate().catch(console.error)
     },
   })
+  const quickStarting = startLiveQuiz.isLoading || quickStartRouting
   const invalidateCourseDetail = useCallback(
     async (courseId: string) => {
       await utils.course.detail.invalidate({ courseId })
@@ -394,6 +396,10 @@ function LiveQuizWizard({
             <Button
               data={{ cy: 'quick-start' }}
               onClick={async () => {
+                if (quickStarting) return
+
+                setQuickStartRouting(true)
+
                 try {
                   const result = await startLiveQuiz.mutateAsync({
                     id: liveQuizId,
@@ -407,7 +413,11 @@ function LiveQuizWizard({
                     return
                   }
 
-                  await router.push(`/quizzes/${liveQuizId}/cockpit`)
+                  const routed = await router.push(
+                    `/quizzes/${liveQuizId}/cockpit`
+                  )
+                  if (!routed)
+                    throw new Error('Live quiz quick-start navigation failed')
                 } catch (error) {
                   console.error(error)
                   toast({
@@ -415,12 +425,14 @@ function LiveQuizWizard({
                     message: t('shared.generic.systemError'),
                     options: { duration: 5000 },
                   })
+                } finally {
+                  setQuickStartRouting(false)
                 }
               }}
-              disabled={startLiveQuiz.isLoading}
-              loading={startLiveQuiz.isLoading}
+              disabled={quickStarting}
+              loading={quickStarting}
             >
-              <Button.Icon icon={faPlay} loading={startLiveQuiz.isLoading} />
+              <Button.Icon icon={faPlay} loading={quickStarting} />
               <Button.Label>
                 {t('manage.activityWizard.liveQuizStartNow')}
               </Button.Label>

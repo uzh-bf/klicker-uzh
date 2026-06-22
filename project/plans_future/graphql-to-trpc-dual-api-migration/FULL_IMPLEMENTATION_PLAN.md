@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Live-Quiz Start Navigation Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage
+live-quiz start actions. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `fff7f6af7062498e955f21a2a5bb2471641d03a3`.
+- Fresh PR checks on that head had GitGuardian, Claude review, one check job,
+  and Java/Kotlin plus Python CodeQL green after the first wait; most of the
+  matrix was still pending and no red jobs were observed before this local
+  patch.
+- The migrated live-quiz overview start action already keeps local
+  `startRouting` state active through mutation and route navigation, but did
+  not check the boolean route result.
+- The migrated authoring wizard quick-start button only used the tRPC mutation
+  loading flag, while the success path still awaited `liveQuiz.running`
+  invalidation through the mutation callback and then navigated to the cockpit.
+- A falsy cockpit route transition could therefore release the overview action
+  or wizard button without showing the existing system-error feedback.
+
+Changes:
+
+- Overview live-quiz start now checks the awaited cockpit route transition and
+  uses the existing system-error toast path on a falsy result.
+- Authoring wizard quick-start now keeps a local pending guard through the
+  mutation, running-live-quiz invalidation callback, and cockpit navigation.
+- The quick-start button/icon loading and disabled states now cover the full
+  start-navigation boundary.
+- Existing start mutation behavior, cache invalidation semantics, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/actions/useLiveQuizActions.ts apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizWizard.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused manage live-quiz start navigation-boundary
+  cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Live-Quiz Cancellation Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
