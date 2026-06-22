@@ -15,15 +15,23 @@ function FinalizeGradingModal({
   const utils = trpc.useUtils()
   const finalizeGroupActivityGrading =
     trpc.activity.finalizeGroupActivityGrading.useMutation()
+  const finalizing = finalizeGroupActivityGrading.isLoading
+  const closeIfIdle = () => {
+    if (!finalizing) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.groupActivity.finalizeGrading')}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={finalizeGroupActivityGrading.isLoading}
-      primaryDisabled={finalizeGroupActivityGrading.isLoading}
+      primaryLoading={finalizing}
+      primaryDisabled={finalizing}
       onPrimaryAction={async () => {
+        if (finalizing) return
+
         try {
           const data = await finalizeGroupActivityGrading.mutateAsync({
             id: activityId,
@@ -47,7 +55,6 @@ function FinalizeGradingModal({
               message: t('manage.groupActivity.finalizeGradingError'),
               options: { duration: 6000 },
             })
-            onClose()
           }
         } catch (error) {
           console.error(error)
@@ -60,9 +67,9 @@ function FinalizeGradingModal({
       }}
       dataPrimaryAction={{ cy: 'confirm-finalize-grading' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={closeIfIdle}
       dataSecondaryAction={{ cy: 'cancel-finalize-grading' }}
-      onClose={onClose}
+      onClose={closeIfIdle}
       hideCloseButton={true}
       className={{ content: 'max-w-xl' }}
     >

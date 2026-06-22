@@ -423,6 +423,68 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Group Activity Grading Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage
+group-activity grading mutations. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `9c90ce6d47891695fbfc9ac4b99ca11fd1389b98`.
+- Fresh PR checks have no red jobs. GitGuardian, lint, format, Claude review,
+  `packages/api tRPC Vitest`, one check job, one test job, some CodeQL jobs,
+  and some Docker builds are green; Cypress Cloud, `packages/graphql Vitest`,
+  SonarCloud, JavaScript analyzers, and remaining builds/tests are still
+  pending.
+- `FinalizeGradingModal` disables its primary action while
+  `trpc.activity.finalizeGroupActivityGrading` is pending, but cancel/close
+  paths can still dismiss the modal during the in-flight mutation.
+- The finalize modal closes after a falsy mutation result, which hides the
+  failure state instead of letting the user retry from the same confirmation.
+- `GroupActivityGradingStack` shows a loading spinner during Formik submit, but
+  the save button remains enabled while `isSubmitting` is true, leaving a
+  duplicate submit path for the migrated
+  `trpc.activity.gradeGroupActivitySubmission` mutation.
+- Context7 tRPC and TanStack Query v4 docs were refreshed before this audit
+  pass. They support targeted invalidation after confirmed mutation success and
+  guarding mutation UI with loading/submitting state.
+
+Changes:
+
+- `FinalizeGradingModal` now reuses a `finalizing` pending state for primary
+  loading/disable behavior and ignores close/cancel while the tRPC finalization
+  mutation is in flight.
+- The finalize modal stays open after a falsy mutation result so the error
+  toast is actionable and the lecturer can retry.
+- `GroupActivityGradingStack` now disables its save button while Formik submit
+  is in progress, matching the existing loading indicator and preventing
+  duplicate `gradeGroupActivitySubmission` requests.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/courses/groupActivity/FinalizeGradingModal.tsx
+  apps/frontend-manage/src/components/courses/groupActivity/GroupActivityGradingStack.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused group-activity grading pending-boundary cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Delegated Password Change Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

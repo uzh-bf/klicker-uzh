@@ -432,7 +432,7 @@ function GroupActivityGradingStack({
             </div>
             <Button
               primary
-              disabled={!isValid || gradingCompleted}
+              disabled={!isValid || gradingCompleted || isSubmitting}
               type="submit"
               loading={isSubmitting}
               onClick={() => submitForm()}
