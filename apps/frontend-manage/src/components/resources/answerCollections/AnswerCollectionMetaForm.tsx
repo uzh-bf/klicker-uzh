@@ -31,16 +31,16 @@ function AnswerCollectionMetaForm({
   const utils = trpc.useUtils()
   const modifyAnswerCollection =
     trpc.resources.modifyAnswerCollection.useMutation()
-  const refreshInlineAnswerCollections = () => {
+  const refreshInlineAnswerCollections = async () => {
     if (inlineEditing && refetchAnswerCollections) {
-      void refetchAnswerCollections().catch(console.error)
+      await refetchAnswerCollections()
     }
   }
-  const invalidateAnswerCollection = () => {
-    void utils.resources.answerCollectionsInfo.invalidate().catch(console.error)
-    void utils.resources.singleAnswerCollection
-      .invalidate({ id: collection.id })
-      .catch(console.error)
+  const invalidateAnswerCollection = async () => {
+    await Promise.all([
+      utils.resources.answerCollectionsInfo.invalidate(),
+      utils.resources.singleAnswerCollection.invalidate({ id: collection.id }),
+    ])
   }
   const showErrorToast = () =>
     toast({
@@ -72,8 +72,10 @@ function AnswerCollectionMetaForm({
             return
           }
 
-          refreshInlineAnswerCollections()
-          invalidateAnswerCollection()
+          await Promise.all([
+            refreshInlineAnswerCollections(),
+            invalidateAnswerCollection(),
+          ])
           onSuccess()
           resetForm()
         } catch (error) {

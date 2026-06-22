@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Answer-Collection Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage answer-collection workflows. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `645fb469c909d04879fd864a42729f551caac0b0`.
+- Fresh PR checks on that head were mostly green: SonarCloud, GitGuardian,
+  CodeQL, lint, format, TypeScript, `packages/api tRPC Vitest`, and several
+  Docker builds had passed. `packages/graphql Vitest`, Cypress Cloud, and a
+  few AMD Docker builds were still running.
+- The manage answer-collection create, duplicate, delete, metadata-edit, and
+  option-edit/delete flows had successful tRPC mutation results but refreshed
+  the answer-collection list/detail queries in the background. That let the UI
+  close modals, leave edit mode, or show success before the list/detail cache
+  reflected the committed change.
+
+Changes:
+
+- Answer-collection create, duplicate, and delete now await
+  `resources.answerCollectionsInfo` invalidation before success toasts and
+  modal/form close transitions.
+- Answer-collection metadata and option edits now await the inline parent
+  refresh, list invalidation, and single-collection invalidation before
+  reporting success or leaving edit mode.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  awaitable invalidation before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/resources/answerCollections/AnswerCollectionCreationForm.tsx apps/frontend-manage/src/components/resources/answerCollections/AnswerCollectionDuplicationModal.tsx apps/frontend-manage/src/components/resources/answerCollections/CollectionDeletionModal.tsx apps/frontend-manage/src/components/resources/answerCollections/AnswerCollectionMetaForm.tsx apps/frontend-manage/src/components/resources/answerCollections/AnswerCollectionOption.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/local Cypress remains blocked in this temp worktree because the full
+  local dev stack is not running here; remote Cypress on the current PR head is
+  still the next runtime signal.
+
+Next:
+
+- Commit and push this focused answer-collection refresh-boundary cleanup.
+- Recheck `packages/graphql Vitest`, Cypress Cloud, and remaining Docker builds
+  on the new head.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Activity Wizard Completion Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and

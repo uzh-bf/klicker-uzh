@@ -60,9 +60,7 @@ function AnswerCollectionDuplicationModal({
           })
 
           if (result.answerCollection) {
-            void utils.resources.answerCollectionsInfo
-              .invalidate()
-              .catch(console.error)
+            await utils.resources.answerCollectionsInfo.invalidate()
             onClose()
             onSuccess()
           } else {

@@ -71,9 +71,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
             })
 
             if (res.answerCollection?.id) {
-              void utils.resources.answerCollectionsInfo
-                .invalidate()
-                .catch(console.error)
+              await utils.resources.answerCollectionsInfo.invalidate()
               toast({
                 type: 'success',
                 message: t('manage.resources.collectionCreationSuccess'),

@@ -48,16 +48,16 @@ function AnswerCollectionOption({
   const deletionNotAllowed =
     deletionDisabled || (entry.numSolutionUsages ?? 0) > 0
   const deleting = deleteAnswerCollectionEntry.isLoading
-  const refreshInlineAnswerCollections = () => {
+  const refreshInlineAnswerCollections = async () => {
     if (inlineEditing && refetchAnswerCollections) {
-      void refetchAnswerCollections().catch(console.error)
+      await refetchAnswerCollections()
     }
   }
-  const invalidateAnswerCollection = () => {
-    void utils.resources.answerCollectionsInfo.invalidate().catch(console.error)
-    void utils.resources.singleAnswerCollection
-      .invalidate({ id: collectionId })
-      .catch(console.error)
+  const invalidateAnswerCollection = async () => {
+    await Promise.all([
+      utils.resources.answerCollectionsInfo.invalidate(),
+      utils.resources.singleAnswerCollection.invalidate({ id: collectionId }),
+    ])
   }
   const showErrorToast = () =>
     toast({
@@ -88,8 +88,10 @@ function AnswerCollectionOption({
               collectionId,
             })
 
-            refreshInlineAnswerCollections()
-            invalidateAnswerCollection()
+            await Promise.all([
+              refreshInlineAnswerCollections(),
+              invalidateAnswerCollection(),
+            ])
             onSuccess()
           } catch (error) {
             console.error('Error deleting answer collection option:', error)
@@ -144,8 +146,10 @@ function AnswerCollectionOption({
                   })
                 }
 
-                refreshInlineAnswerCollections()
-                invalidateAnswerCollection()
+                await Promise.all([
+                  refreshInlineAnswerCollections(),
+                  invalidateAnswerCollection(),
+                ])
                 setEditMode(false)
                 setEditDisabled(false)
                 onSuccess()

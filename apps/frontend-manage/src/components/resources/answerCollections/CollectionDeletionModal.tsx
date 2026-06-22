@@ -51,9 +51,7 @@ function CollectionDeletionModal({
           })
 
           if (res.deletedAnswerCollectionId) {
-            void utils.resources.answerCollectionsInfo
-              .invalidate()
-              .catch(console.error)
+            await utils.resources.answerCollectionsInfo.invalidate()
             toast({
               type: 'success',
               message: t('manage.resources.deletionSuccessful'),
