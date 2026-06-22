@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: PWA Microlearning Finish Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa
+microlearning evaluation finish action. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `a03b56ce898dcef54245bdae3009414c6468f20f`.
+- Fresh PR checks on that head showed no red jobs. CodeQL, SonarCloud,
+  GitGuardian, format, lint, check, Claude review, several build/test jobs,
+  and `packages/api tRPC Vitest` were green; `packages/graphql Vitest`,
+  Cypress Cloud, and the remaining build/test matrix were still pending.
+- The PWA microlearning evaluation finish button uses the migrated
+  `participant.markMicroLearningCompleted` tRPC mutation.
+- The button loading/disabled state only tracked mutation loading, while the
+  success path launched `participant.participations` invalidation and
+  `router.replace('/')` outside the visible pending boundary.
+- That left a duplicate-click window and no failure handling for failed route
+  navigation after a successful completion mutation.
+- Context7 tRPC v11 docs were refreshed before editing and confirm tRPC React
+  mutation hooks expose mutation status while cache invalidation remains an
+  explicit awaited operation.
+
+Changes:
+
+- Added a local finish pending guard around the full finish action.
+- The finish button now stays disabled/loading through the tRPC mutation,
+  awaited participations invalidation, and home-route transition.
+- Failed mutation or failed navigation still shows the existing generic system
+  error toast and releases the local pending guard.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/evaluation.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3001` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused PWA microlearning finish pending-boundary
+  cleanup.
+- Recheck PR #5132 checks after push, especially `packages/graphql Vitest`,
+  Cypress Cloud, and the remaining build/test matrix.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage User Group Modal Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

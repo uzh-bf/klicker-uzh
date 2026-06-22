@@ -6,6 +6,7 @@ import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import useStackEvaluationAggregation from '../../../../../components/hooks/useStackEvaluationAggregation'
 import Layout from '../../../../../components/Layout'
@@ -39,6 +40,9 @@ function MicrolearningEvaluation() {
   const aggregatedResults = useStackEvaluationAggregation({
     microlearning: microlearning,
   })
+  const [finishPending, setFinishPending] = useState(false)
+  const finishingMicrolearning =
+    markMicrolearningCompleted.isLoading || finishPending
 
   if (isLoading && !microlearning) {
     return (
@@ -176,18 +180,23 @@ function MicrolearningEvaluation() {
           <div className="text-right">
             <Button
               primary
-              disabled={markMicrolearningCompleted.isLoading}
-              loading={markMicrolearningCompleted.isLoading}
+              disabled={finishingMicrolearning}
+              loading={finishingMicrolearning}
               onClick={async () => {
+                if (finishingMicrolearning) return
+
+                setFinishPending(true)
+
                 try {
                   await markMicrolearningCompleted.mutateAsync({
                     courseId: microlearning.course!.id,
                     id,
                   })
-                  void utils.participant.participations
+                  await utils.participant.participations
                     .invalidate()
                     .catch(console.error)
-                  router.replace('/')
+                  const routed = await router.replace('/')
+                  if (!routed) throw new Error('Finish navigation failed')
                 } catch (error) {
                   console.error(error)
                   toast({
@@ -195,6 +204,7 @@ function MicrolearningEvaluation() {
                     message: t('shared.generic.systemError'),
                     options: { duration: 5000 },
                   })
+                  setFinishPending(false)
                 }
               }}
               data={{ cy: 'finish-microlearning' }}
