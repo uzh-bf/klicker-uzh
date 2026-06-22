@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Control Live Quiz Start Navigation Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-control
+live-quiz start modal and its `liveQuiz.start` tRPC mutation. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or subscription cleanup is
+being started.
+
+Finding:
+
+- The control start modal fires `router.push('/session/...')` as an unhandled
+  promise after confirmed `liveQuiz.start` success. If navigation rejects, the
+  controller gets no visible failure feedback. The modal also closes on start
+  mutation failures, forcing the user to reopen it to retry.
+
+Change:
+
+- Keep mutation failures visible with the existing start-failed toast and leave
+  the modal open for retry.
+- Close the modal only after confirmed server start success.
+- Await navigation separately and show the generic system-error toast if route
+  transition fails.
+
+Evidence:
+
+- PR #5132 current head is `e3918828f87f7a0a532ac0d15129b134da1e413f`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for React Query query/mutation error,
+  invalidation, cache-update, and optimistic-update patterns before this audit
+  pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed control start modal and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-control` passed after syncing the changed files.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept cache invalidations
+  best-effort, left existing labels/toasts intact, and changed only the
+  confirmed-start, modal-close, and navigation failure boundaries.
+
+Next:
+
+- Commit and push the control live-quiz start navigation cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: PWA Participant Group Post-Success Refresh Cleanup
 
 Status: complete. Scope stayed within the already migrated PWA participant

@@ -32,16 +32,30 @@ function StartModal({
         try {
           const response = await startLiveQuiz.mutateAsync({ id: quizId })
           if (!response.liveQuiz?.id) throw new Error('Live quiz not started')
+
           void Promise.all([
             utils.liveQuiz.unassigned.invalidate(),
             utils.course.controlCourses.invalidate(),
           ]).catch(console.error)
-          void router.push(`/session/${quizId}`)
-        } catch (error) {
+
           onClose()
+        } catch (error) {
+          console.error(error)
           toast({
             type: 'error',
             message: t('control.course.liveQuizStartFailed'),
+            options: { duration: 5000 },
+          })
+          return
+        }
+
+        try {
+          await router.push(`/session/${quizId}`)
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
             options: { duration: 5000 },
           })
         }
