@@ -46,6 +46,12 @@ function RunningLiveQuiz() {
   const activateLiveQuizBlock = trpc.liveQuiz.activateBlock.useMutation()
   const deactivateLiveQuizBlock = trpc.liveQuiz.deactivateBlock.useMutation()
   const endLiveQuiz = trpc.liveQuiz.end.useMutation()
+  const [activatePending, setActivatePending] = useState(false)
+  const [deactivatePending, setDeactivatePending] = useState(false)
+  const [endPending, setEndPending] = useState(false)
+  const activating = activateLiveQuizBlock.isLoading || activatePending
+  const deactivating = deactivateLiveQuizBlock.isLoading || deactivatePending
+  const ending = endLiveQuiz.isLoading || endPending
 
   const {
     isLoading: quizLoading,
@@ -166,13 +172,15 @@ function RunningLiveQuiz() {
                 </div>
               )}
             <Button
-              loading={deactivateLiveQuizBlock.isLoading}
+              loading={deactivating}
               onClick={async () => {
+                if (deactivating) return
                 const blockId = blocks.find(
                   (block) => block.order === currentBlockOrder
                 )?.id
                 if (typeof blockId === 'undefined') return
 
+                setDeactivatePending(true)
                 try {
                   const result = await deactivateLiveQuizBlock.mutateAsync({
                     quizId: id,
@@ -187,9 +195,11 @@ function RunningLiveQuiz() {
                   setCurrentBlockOrder(undefined)
                 } catch {
                   showControlActionError()
+                } finally {
+                  setDeactivatePending(false)
                 }
               }}
-              disabled={deactivateLiveQuizBlock.isLoading}
+              disabled={deactivating}
               className={{
                 root: 'float-right',
               }}
@@ -219,13 +229,15 @@ function RunningLiveQuiz() {
               />
             )}
             <Button
-              loading={activateLiveQuizBlock.isLoading}
+              loading={activating}
               onClick={async () => {
+                if (activating) return
                 const blockId = blocks.find(
                   (block) => block.order === nextBlockOrder
                 )?.id
                 if (typeof blockId === 'undefined') return
 
+                setActivatePending(true)
                 try {
                   const result = await activateLiveQuizBlock.mutateAsync({
                     quizId: id,
@@ -241,9 +253,11 @@ function RunningLiveQuiz() {
                   setNextBlockOrder(nextBlockOrder + 1)
                 } catch {
                   showControlActionError()
+                } finally {
+                  setActivatePending(false)
                 }
               }}
-              disabled={activateLiveQuizBlock.isLoading}
+              disabled={activating}
               className={{
                 root: 'bg-primary-80 float-right text-white',
               }}
@@ -264,12 +278,16 @@ function RunningLiveQuiz() {
               className={{ root: 'mb-2' }}
             />
             <Button
-              loading={endLiveQuiz.isLoading}
+              loading={ending}
               onClick={async () => {
+                if (ending) return
+                setEndPending(true)
+
                 try {
                   const result = await endLiveQuiz.mutateAsync({ id })
                   if (result.liveQuiz?.status !== liveQuizStatus.ended) {
                     showControlActionError()
+                    setEndPending(false)
                     return
                   }
 
@@ -277,14 +295,16 @@ function RunningLiveQuiz() {
                     refreshCurrentLiveQuiz(),
                     refreshControlOverview(),
                   ])
-                  await router.push(
+                  const routed = await router.push(
                     course ? `/course/${course.id}` : '/course/unassigned'
                   )
+                  if (!routed) throw new Error('Navigation after ending failed')
                 } catch {
                   showControlActionError()
+                  setEndPending(false)
                 }
               }}
-              disabled={endLiveQuiz.isLoading}
+              disabled={ending}
               className={{
                 root: 'bg-uzh-red-100 hover:bg-uzh-red-100 float-right text-white',
               }}

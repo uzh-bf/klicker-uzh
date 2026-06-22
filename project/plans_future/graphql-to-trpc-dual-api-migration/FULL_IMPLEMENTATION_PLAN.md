@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Control Session Action Pending Boundaries
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-control
+live-quiz control session page. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `9f3cfc8196b4c2b8c83bc5bd1d0b5c4e90a53385`.
+- Fresh PR checks on that head had started after the previous push. Early
+  results showed GitGuardian and Claude review green; package GraphQL/tRPC
+  tests, Cypress, lint, format, check, builds, and some analyzers were still
+  pending.
+- The control session page's activate, deactivate, and end buttons awaited the
+  migrated tRPC mutations plus refresh/navigation work, but their visible
+  loading/disabled states only tracked the mutation loading flags.
+- That left a duplicate-click window while cache refresh or route transition
+  work was still in flight.
+
+Changes:
+
+- Added local pending guards for block activation, block deactivation, and
+  live-quiz ending.
+- The visible buttons now stay disabled/loading through mutation, cache refresh,
+  and the post-end navigation boundary.
+- The end flow now treats a cancelled route transition as a failure and keeps
+  the page actionable with the existing generic error toast.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check 'apps/frontend-control/src/pages/session/[id].tsx' project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false` with a temporary `apps/frontend-control/node_modules` symlink to the adjacent installed checkout; the symlink was removed immediately after the check.
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3003` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused control session action pending-boundary cleanup.
+- Recheck PR #5132 checks, especially the package GraphQL/tRPC tests and
+  Cypress Cloud/default-group pending gates.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Control Start Modal Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
