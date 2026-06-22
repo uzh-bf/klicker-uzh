@@ -40,6 +40,7 @@ function ElementBatchOperationsModal({
   )
   const [selectedActions, setSelectedActions] =
     useState<ElementBatchOperationActions>(INITIAL_ELEMENT_BATCH_OPERATIONS)
+  const [batchOperationPending, setBatchOperationPending] = useState(false)
 
   const utils = trpc.useUtils()
   const applyElementBatchOperations =
@@ -169,7 +170,8 @@ function ElementBatchOperationsModal({
   const numOfUpdatedElements = useMemo(() => {
     return affectedElements.filter((element) => element.actionsApplied).length
   }, [affectedElements])
-  const applyingBatchOperations = applyElementBatchOperations.isLoading
+  const applyingBatchOperations =
+    applyElementBatchOperations.isLoading || batchOperationPending
   const handleClose = () => {
     if (!applyingBatchOperations) {
       onClose()
@@ -266,6 +268,10 @@ function ElementBatchOperationsModal({
                   )
                 }
                 onClick={async () => {
+                  if (applyingBatchOperations) return
+
+                  let shouldClose = false
+                  setBatchOperationPending(true)
                   try {
                     // submit the batch operations
                     const res = await applyElementBatchOperations.mutateAsync({
@@ -301,7 +307,7 @@ function ElementBatchOperationsModal({
                         message: t('manage.questionPool.batchOperationSuccess'),
                         options: { duration: 3000 },
                       })
-                      onClose()
+                      shouldClose = true
                     } else if (res.updatedCount !== 0) {
                       await Promise.all([
                         refreshAffectedElementDetails(),
@@ -315,7 +321,7 @@ function ElementBatchOperationsModal({
                         ),
                         options: { duration: 4500 },
                       })
-                      onClose()
+                      shouldClose = true
                     } else {
                       toast({
                         type: 'error',
@@ -330,6 +336,11 @@ function ElementBatchOperationsModal({
                       message: t('manage.questionPool.batchOperationFailed'),
                       options: { duration: 5000 },
                     })
+                  } finally {
+                    setBatchOperationPending(false)
+                    if (shouldClose) {
+                      onClose()
+                    }
                   }
                 }}
                 loading={applyingBatchOperations}

@@ -43,6 +43,7 @@ function ActivityBatchOperationsModal({
   )
   const [selectedActions, setSelectedActions] =
     useState<ActivityBatchOperationActions>(INITIAL_ACTIVITY_BATCH_OPERATIONS)
+  const [batchOperationPending, setBatchOperationPending] = useState(false)
 
   const applyActivityBatchOperations =
     trpc.activity.applyBatchOperations.useMutation()
@@ -55,7 +56,8 @@ function ActivityBatchOperationsModal({
   const courses = dataCourses?.activeUserCourses
   const initialCoursesLoading = loadingCourses && !courses
   const coursesUnavailable = Boolean(coursesError && !courses)
-  const applyingBatchOperations = applyActivityBatchOperations.isLoading
+  const applyingBatchOperations =
+    applyActivityBatchOperations.isLoading || batchOperationPending
   const handleClose = () => {
     if (!applyingBatchOperations) {
       onClose()
@@ -314,6 +316,10 @@ function ActivityBatchOperationsModal({
                   (selectedActions.course && !selectedActions.course.id)
                 }
                 onClick={async () => {
+                  if (applyingBatchOperations) return
+
+                  let shouldClose = false
+                  setBatchOperationPending(true)
                   try {
                     const res = await applyActivityBatchOperations.mutateAsync({
                       activityIds: selectedActivities.map(
@@ -341,7 +347,7 @@ function ActivityBatchOperationsModal({
                         message: t('manage.activities.batchOperationSuccess'),
                         options: { duration: 3000 },
                       })
-                      onClose()
+                      shouldClose = true
                     } else if (res.appliedCount !== 0) {
                       await refetchActivities().catch(console.error)
                       resetSelectedActivities()
@@ -352,7 +358,7 @@ function ActivityBatchOperationsModal({
                         ),
                         options: { duration: 4500 },
                       })
-                      onClose()
+                      shouldClose = true
                     } else {
                       toast({
                         type: 'error',
@@ -367,6 +373,11 @@ function ActivityBatchOperationsModal({
                       message: t('manage.activities.batchOperationFailed'),
                       options: { duration: 5000 },
                     })
+                  } finally {
+                    setBatchOperationPending(false)
+                    if (shouldClose) {
+                      onClose()
+                    }
                   }
                 }}
                 loading={applyingBatchOperations}
