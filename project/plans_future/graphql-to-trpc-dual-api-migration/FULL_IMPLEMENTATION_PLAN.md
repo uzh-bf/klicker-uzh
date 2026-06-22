@@ -423,6 +423,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Live-Quiz Cancellation Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage live
+quiz cancellation modal. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `6e28c12bca18d85712f1948dc1c0944848fc9660`.
+- The new check matrix on that head had GitGuardian green and the remaining
+  checks pending at the first refresh; no red jobs were observed before this
+  local patch.
+- `CancelLiveQuizModal` already used the migrated `api.liveQuiz.cancel` tRPC
+  mutation and displayed an inline system-error notification when the summary
+  query could not provide cancellation counts.
+- The confirm button loading state only tracked the tRPC mutation. Successful
+  cancellation still awaited `liveQuiz.running` and `activity.liveQuizSummary`
+  invalidations, then navigated to `/activities`.
+- That left a duplicate-click/close window while the post-mutation refresh and
+  route transition were still running, and the navigation result was not
+  checked.
+
+Changes:
+
+- Added a local cancellation pending guard covering the mutation, awaited
+  invalidations, and route transition.
+- The modal primary action now stays disabled/loading through the full
+  cancellation boundary; close/secondary actions are ignored while cancellation
+  is pending.
+- A falsy `/activities` route transition now goes through the existing generic
+  system-error toast path and releases the pending guard.
+- Existing summary loading/error states, confirmation checklist behavior, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/liveQuiz/cockpit/CancelLiveQuizModal.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused manage live-quiz cancellation pending-boundary
+  cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud and
+  `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: PWA Auth Navigation Fallbacks
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
