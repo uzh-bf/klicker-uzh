@@ -263,6 +263,7 @@ function AccountSelector({
                   basic
                   className={{ root: 'w-max px-2 py-1 text-sm' }}
                   onClick={() => setStep('choice')}
+                  disabled={isSubmitting || loginTemporaryParticipant.isLoading}
                   data={{ cy: 'cancel-define-pseudonym' }}
                 >
                   <Button.Icon icon={faArrowLeft} />
@@ -287,6 +288,8 @@ function AccountSelector({
                 <Button
                   type="button"
                   disabled={
+                    isSubmitting ||
+                    loginTemporaryParticipant.isLoading ||
                     !values.pseudonym ||
                     values.pseudonym.length < 5 ||
                     values.pseudonym.length > 15
@@ -306,6 +309,7 @@ function AccountSelector({
                   basic
                   className={{ root: 'w-max px-2 py-1 text-sm' }}
                   onClick={() => setStep('pseudonym')}
+                  disabled={isSubmitting || loginTemporaryParticipant.isLoading}
                   data={{ cy: 'cancel-choose-avatar' }}
                 >
                   <Button.Icon icon={faArrowLeft} />

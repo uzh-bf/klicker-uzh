@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Live-Quiz Temporary Login Step Pending Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa
+live-quiz temporary participant login workflow. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `AccountSelector` submits temporary participant login through the migrated
+  `participant.loginTemporary` tRPC mutation and then awaits
+  `participant.self.fetch({ liveQuizId })` before closing the modal.
+- The final submit button was already disabled/loading while Formik or the
+  tRPC mutation was pending.
+- The pseudonym/avatar step navigation controls stayed active during the same
+  pending window, so the user could move the wizard while the login mutation
+  and self refresh were still in flight.
+- Context7 tRPC docs were refreshed before this change. They show keeping
+  mutation UI disabled while pending and awaiting follow-up cache work before
+  changing UI state.
+
+Changes:
+
+- Disable the temporary-login step navigation buttons while Formik submission
+  or the tRPC login mutation is pending.
+- Keep the existing submit loading state and awaited self refresh behavior
+  unchanged.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-pwa/src/components/liveQuiz/AccountSelector.tsx` passed after
+  applying Prettier to the touched file.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3001` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused PWA temporary-login pending guard.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Random Group Assignment Cache Refresh Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
