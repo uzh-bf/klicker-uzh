@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Template Conversion Success Close Correction
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage template-conversion workflow. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `76ff492d205607f349be6f7ed24293dd4346c460`.
+- Fresh PR checks on that head were mostly pending; GitGuardian, CodeQL Python,
+  Claude review, and one check job had passed.
+- The prior activity-modal cleanup correctly blocked user close while template
+  creation was pending, but reused the same guarded close helper after confirmed
+  creation success. Because mutation loading state can still be true in the
+  current render after `mutateAsync` resolves, the success path could skip the
+  intended modal close.
+
+Changes:
+
+- Template conversion now has a guarded user-close helper for close/cancel
+  interactions and a separate success-close helper for confirmed mutation
+  completion.
+- The pending close guard remains active for user-triggered close/cancel while
+  template creation is in flight.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query mutation pending/loading
+  state and invalidation before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/courses/modals/TemplateConversionModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` returned `404`, but `curl` to `127.0.0.1:3002` failed with
+  connection refused, so no local manage dev server was available for
+  screenshots.
+
+Next:
+
+- Commit and push this focused template-conversion success-close correction.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Activity Modal Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

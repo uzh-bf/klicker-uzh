@@ -72,11 +72,7 @@ function TemplateConversionModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateInfo])
 
-  const handleModalClose = () => {
-    if (creatingTemplate) {
-      return
-    }
-
+  const closeModal = () => {
     onClose()
     setCurrentStep(0)
     setConfirmations({
@@ -85,6 +81,11 @@ function TemplateConversionModal({
       questionAccess: false,
       resourceAccess: false,
     })
+  }
+  const handleModalClose = () => {
+    if (!creatingTemplate) {
+      closeModal()
+    }
   }
 
   return (
@@ -140,7 +141,7 @@ function TemplateConversionModal({
             if (result.createActivityTemplate) {
               await refetchActivities?.().catch(console.error)
               onSuccess()
-              handleModalClose()
+              closeModal()
             } else {
               onError()
             }
