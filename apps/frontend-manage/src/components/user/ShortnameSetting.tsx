@@ -60,7 +60,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                   shortname: t('manage.settings.shortnameTaken'),
                 })
               } else {
-                void utils.user.profile.invalidate().catch(console.error)
+                await utils.user.profile.invalidate().catch(console.error)
                 setEditShortname(false)
               }
             } catch (error) {

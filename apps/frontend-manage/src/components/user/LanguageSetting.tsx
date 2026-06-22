@@ -17,7 +17,11 @@ function LanguageSetting({ user }: LanguageSettingProps) {
   const router = useRouter()
   const { pathname, query, asPath } = router
   const utils = trpc.useUtils()
-  const changeUserLocale = trpc.user.changeUserLocale.useMutation()
+  const changeUserLocale = trpc.user.changeUserLocale.useMutation({
+    onSuccess: async () => {
+      await utils.user.profile.invalidate().catch(console.error)
+    },
+  })
 
   return (
     <SimpleSetting
@@ -34,7 +38,6 @@ function LanguageSetting({ user }: LanguageSettingProps) {
             await changeUserLocale.mutateAsync({
               locale: newLocale as UserLocale,
             })
-            void utils.user.profile.invalidate().catch(console.error)
             await router.push({ pathname, query }, asPath, {
               locale: newLocale,
             })

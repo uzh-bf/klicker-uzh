@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Manage User Settings Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and already migrated frontend-manage user-settings workflows. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup is
+started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `4726c3d6f704fd99b0caf2b4eac983690496522b`.
+- Fresh PR checks on that head are still mostly pending; GitGuardian and Claude
+  review are green.
+- Manage language, shortname, and email settings mutate via tRPC and then launch
+  `user.profile` invalidation in the background. That can show the updated route
+  or close the shortname edit state before the visible profile cache has caught
+  up.
+
+Changes:
+
+- Language changes now await the existing `user.profile` invalidation from the
+  tRPC mutation success callback before changing the locale route.
+- Shortname changes now await the existing `user.profile` invalidation before
+  closing the shortname edit form.
+- Email update settings now await the existing `user.profile` invalidation from
+  the tRPC mutation success callback before the switch action completes.
+- Keep invalidation failures caught and logged so confirmed server success is
+  not converted into a failed settings mutation.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/user/LanguageSetting.tsx apps/frontend-manage/src/components/user/ShortnameSetting.tsx apps/frontend-manage/src/components/user/EmailSetting.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3002` failed with connection refused / `000`, and `curl` to
+  `127.0.0.1:3000` also failed with connection refused / `000`, so no local
+  manage/backend dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused manage user-settings refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: PWA Profile and Practice Feedback Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
