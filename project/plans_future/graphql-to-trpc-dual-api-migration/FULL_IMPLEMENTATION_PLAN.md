@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Answer-Collection Removal Completion Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage answer-collection removal workflow. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `72ab2ea559f01aa4246c606b71aa512ba57302ab`.
+- Fresh PR checks on that head were still mostly pending after the previous
+  push; GitGuardian, lint, one check job, CodeQL Python, and CodeQL Java/Kotlin
+  had passed.
+- Answer-collection removal awaited the tRPC mutation result and kept the modal
+  open on null `removedAnswerCollectionId`, but still launched
+  `resources.answerCollectionsInfo` invalidation in the background before the
+  success toast and modal close. That could leave the removed collection visible
+  in the parent answer-collection list until the background refresh finished.
+
+Changes:
+
+- Answer-collection removal now waits for the answer-collection list refresh
+  attempt before showing success and closing the modal. Refresh failures are
+  caught and logged so a confirmed server removal is not reported as failed.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/sharing/AnswerCollectionRemovalModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` returned `404`, but `curl` to `127.0.0.1:3002` failed with
+  connection refused, so no local manage dev server was available for
+  screenshots.
+
+Next:
+
+- Commit and push this focused answer-collection removal completion-boundary
+  cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Element Deletion Completion Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

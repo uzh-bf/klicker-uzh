@@ -54,7 +54,7 @@ function AnswerCollectionRemovalModal({
           })
 
           if (res.removedAnswerCollectionId !== null) {
-            void utils.resources.answerCollectionsInfo
+            await utils.resources.answerCollectionsInfo
               .invalidate()
               .catch(console.error)
             toast({
