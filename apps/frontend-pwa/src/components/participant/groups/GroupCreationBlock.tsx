@@ -39,15 +39,8 @@ function GroupCreationBlock({
 
           if (result?.id) {
             void Promise.resolve(onCourseOverviewChanged?.())
-              .then(() => setSelectedTab(result.id))
-              .catch((error) => {
-                console.error(error)
-                toast({
-                  type: 'error',
-                  message: t('shared.generic.systemError'),
-                  options: { duration: 5000 },
-                })
-              })
+              .catch(console.error)
+              .finally(() => setSelectedTab(result.id))
             return
           }
         } catch (error) {

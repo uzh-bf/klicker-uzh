@@ -31,14 +31,7 @@ function PoolNotification({
             })
             if (result) {
               void Promise.resolve(onCourseOverviewChanged?.()).catch(
-                (error) => {
-                  console.error(error)
-                  toast({
-                    type: 'error',
-                    message: t('shared.generic.systemError'),
-                    options: { duration: 5000 },
-                  })
-                }
+                console.error
               )
               return
             }

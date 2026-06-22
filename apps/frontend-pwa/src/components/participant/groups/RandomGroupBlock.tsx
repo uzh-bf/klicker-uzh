@@ -26,14 +26,9 @@ function RandomGroupBlock({
             courseId,
           })
           if (result) {
-            void Promise.resolve(onCourseOverviewChanged?.()).catch((error) => {
-              console.error(error)
-              toast({
-                type: 'error',
-                message: t('shared.generic.systemError'),
-                options: { duration: 5000 },
-              })
-            })
+            void Promise.resolve(onCourseOverviewChanged?.()).catch(
+              console.error
+            )
             return
           }
         } catch (error) {

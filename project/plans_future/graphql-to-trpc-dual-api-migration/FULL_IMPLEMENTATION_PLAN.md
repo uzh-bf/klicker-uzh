@@ -423,6 +423,48 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: PWA Participant Group Post-Success Refresh Cleanup
+
+Status: complete. Scope stayed within the already migrated PWA participant
+group controls on the course landing page. No new migration slice, S06 cleanup,
+GraphQL removal, Apollo removal, or subscription cleanup is being started.
+
+Finding:
+
+- Group create, join, random-pool join, and random-pool leave controls already
+  show loading states and mutation-failure toasts, but they also show a generic
+  error toast when the post-success course-overview refresh callback rejects.
+  That makes a confirmed server mutation look like a failed submit.
+
+Change:
+
+- Keep mutation failures visible with the existing toasts.
+- Treat the course-overview refresh callback as best-effort after confirmed
+  mutation success.
+- Preserve the selected-tab behavior for create/join success.
+
+Evidence:
+
+- PR #5132 current head is `6bd17c71438eabf341d6de9fc30fb52c58aafd82`
+  before this local cleanup commit.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed PWA participant group controls and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from `apps/frontend-pwa`
+  passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept existing mutation-failure
+  toasts and loading guards intact. Only post-success refresh callback failures
+  became console-only best-effort work.
+
+Next:
+
+- Commit and push the PWA participant group post-success refresh cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: PWA Course Group Activity Query-State Cleanup
 
 Status: complete. Scope stayed within the already migrated PWA course landing
