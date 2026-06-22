@@ -104,7 +104,6 @@ function ObjectSharingModal({
     objectId,
     objectType,
     catalogCollectionId,
-    onError: () => onRemovalFailure(),
     refetchElements,
     refetchActivities,
   })
@@ -158,7 +157,7 @@ function ObjectSharingModal({
             newPermissionLevel,
             newPropagation,
           }) => {
-            await onPermissionLevelChange({
+            return onPermissionLevelChange({
               permissionId,
               newPermissionLevel,
               newPropagation,
@@ -179,8 +178,10 @@ function ObjectSharingModal({
               } else {
                 onRemovalFailure()
               }
+              return success
             } catch (error) {
               onRemovalFailure()
+              return false
             }
           }}
           shareObjectCallback={async (values) => await onShareObject(values)}

@@ -8,14 +8,12 @@ type RevokeObjectAccessInput = RouterInputs['sharing']['revokeObjectAccess']
 function usePermissionRevocation({
   objectId,
   objectType,
-  onError,
   refetchElements,
   refetchActivities,
 }: {
   objectId: string | number
   objectType: ObjectType
   catalogCollectionId?: string
-  onError: () => void
   refetchElements?: () => Promise<void>
   refetchActivities?: () => Promise<void>
 }): {
@@ -111,12 +109,10 @@ function usePermissionRevocation({
 
         return true
       } else {
-        onError()
         return false
       }
     } catch (error) {
       console.error(error)
-      onError()
       return false
     }
   }

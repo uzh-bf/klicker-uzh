@@ -29,8 +29,11 @@ function ExistingPermissionEntries({
     permissionId: number
     newPermissionLevel: PermissionLevel
     newPropagation: boolean
-  }) => Promise<void>
-  onPermissionRemoval: (permissionId: number, isOwn: boolean) => Promise<void>
+  }) => Promise<boolean>
+  onPermissionRemoval: (
+    permissionId: number,
+    isOwn: boolean
+  ) => Promise<boolean>
 }) {
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
   const t = useTranslations()
@@ -107,20 +110,19 @@ function ExistingPermissionEntries({
   // confirm modifying own permissions
   const confirmModifyOwnPermissions = async () => {
     if (modifyOwnPermissionsModal.action === 'change') {
-      await onPermissionLevelChange({
+      return onPermissionLevelChange({
         permissionId: modifyOwnPermissionsModal.permissionId!,
         newPermissionLevel: modifyOwnPermissionsModal.newPermissionLevel!,
         newPropagation: modifyOwnPermissionsModal.newPropagation!,
       })
     } else {
-      await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!, true)
+      return onPermissionRemoval(modifyOwnPermissionsModal.permissionId!, true)
     }
-    setModifyOwnPermissionsModal({ ...modifyOwnPermissionsModal, open: false })
   }
 
   // confirm permission revocation
   const confirmRevocation = async () => {
-    await onPermissionRemoval(revocationModal.permissionId!, false)
+    return onPermissionRemoval(revocationModal.permissionId!, false)
   }
 
   return (

@@ -39,8 +39,11 @@ function GrantedPermissionsTable({
     permissionId: number
     newPermissionLevel: PermissionLevel
     newPropagation: boolean
-  }) => Promise<void>
-  onPermissionRemoval: (permissionId: number, isOwn: boolean) => Promise<void>
+  }) => Promise<boolean>
+  onPermissionRemoval: (
+    permissionId: number,
+    isOwn: boolean
+  ) => Promise<boolean>
   onOwnershipTransfer: () => void
   shareObjectCallback: ({
     shortnameOrEmail,

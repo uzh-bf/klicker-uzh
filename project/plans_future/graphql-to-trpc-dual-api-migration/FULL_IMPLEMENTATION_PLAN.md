@@ -423,6 +423,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Sharing Permission Confirmation Pending Boundaries
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage object
+sharing permission actions. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `b052ed2561891f28957d41d86f3a4cdeb274b3f5`.
+- Fresh PR checks have no red jobs. CodeQL, GitGuardian, SonarCloud, build,
+  check, lint, format, tests, `packages/api tRPC Vitest`, and
+  `packages/graphql Vitest` are green. Cypress Cloud is still pending in the
+  Cloud recording step, so downloadable job logs are not available yet.
+- GitHub review threads queried through the first 80 threads are all resolved;
+  no unresolved inline review threads were observed.
+- Context7 tRPC v11 and TanStack Query v5 docs were refreshed before editing.
+  The relevant client pattern is a mutation pending guard plus explicit cache
+  updates/invalidation; optimistic updates need cancellation, snapshotting,
+  rollback, and settle invalidation.
+- `PermissionRevocationModal` shows a primary loading state while revoking a
+  direct permission, but its modal close and secondary cancel paths can still
+  close the dialog while the async tRPC-backed action is in flight.
+- `ModifyOwnPermissionsModal` confirms own permission changes/removals through
+  async tRPC-backed callbacks without a visible pending state or duplicate-click
+  guard.
+- Slice review and simplification agents found no correctness blocker. Both
+  called out that the cancel action may still look clickable while pending
+  because the local `Modal` API usage does not expose a secondary disabled prop.
+  The simplification pass also found a pre-existing duplicate failure-toast risk
+  between `usePermissionRevocation` and `ObjectSharingModal`.
+
+Changes:
+
+- Return success booleans through the existing permission change/removal
+  callback chain so confirmation dialogs can close only after successful
+  completion.
+- Add local pending guards to direct revocation and own-permission confirmation
+  dialogs so primary, secondary, overlay, and escape close paths stay locked
+  while the async action is active.
+- Centralize permission revocation failure toasts in `ObjectSharingModal` so
+  handled failures show one error toast while keeping the dialog open.
+- Keep existing cache update/invalidation targets, success/error toasts, and
+  GraphQL/tRPC coexistence unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/sharing/PermissionRevocationModal.tsx apps/frontend-manage/src/components/sharing/ModifyOwnPermissionsModal.tsx apps/frontend-manage/src/components/sharing/ExistingPermissionEntries.tsx apps/frontend-manage/src/components/sharing/GrantedPermissionsTable.tsx apps/frontend-manage/src/components/sharing/ObjectSharingModal.tsx apps/frontend-manage/src/components/sharing/usePermissionRevocation.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Passed: slice review agent with no correctness/type blocker; browser coverage
+  remains unavailable because the local runtime is down.
+- Passed with accepted cleanup: slice simplification agent; removed redundant
+  `return await` wrappers and centralized the revocation failure toast.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` also returns connection refused from this checkout.
+
+Next:
+
+- Run the slice review and simplification checks, then commit and push this
+  focused manage sharing permission confirmation pending-boundary cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Control Live-Quiz Start Navigation Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
