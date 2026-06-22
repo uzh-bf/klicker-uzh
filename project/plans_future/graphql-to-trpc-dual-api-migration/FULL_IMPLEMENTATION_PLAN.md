@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage User Group Edit Modal Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+user-group edit mutations. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `UserGroupEditModal` coordinates migrated tRPC user-group mutations for
+  rename, demote, promote, remove, and ownership transfer.
+- The hook-level actions already expose combined pending states that cover the
+  tRPC mutation and awaited `sharing.userGroups` invalidation.
+- The modal close path and group-name edit/save controls did not consistently
+  honor that combined pending boundary, so the modal could be dismissed or the
+  title action retriggered while a user-group update was still refreshing.
+- Context7 tRPC docs were refreshed before this change. They support guarding
+  mutation UI with pending/loading state and awaiting invalidation after
+  confirmed mutation success.
+
+Changes:
+
+- Ignore modal close/escape while a user-group mutation or awaited invalidation
+  is pending.
+- Disable group-name edit/save actions while the shared pending boundary is
+  active, and show the existing save icon loading state for name changes.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/groups/UserGroupEditModal.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused user-group edit pending-boundary cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Chatbot Model Settings Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
