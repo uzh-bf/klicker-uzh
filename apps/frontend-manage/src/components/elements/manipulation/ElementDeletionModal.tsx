@@ -72,8 +72,13 @@ function ElementDeletionModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await deleteElement.mutateAsync({ id: elementId })
-        void Promise.all([
+        const result = await deleteElement.mutateAsync({ id: elementId })
+
+        if (!result.deletedElementId) {
+          throw new Error('Failed to delete element')
+        }
+
+        await Promise.all([
           utils.resources.answerCollectionsInfo.invalidate(),
           utils.element.tags.invalidate(),
           refetchElements(),

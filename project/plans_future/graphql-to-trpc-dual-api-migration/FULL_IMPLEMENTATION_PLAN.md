@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Element Deletion Completion Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage question-pool element deletion workflow. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `8fdbe22ecea429757bdbbfc91832abe5a5256962`.
+- Fresh PR checks on that head were still mostly pending; GitGuardian and
+  CodeQL Python were green, and draft-only jobs were skipped.
+- The tRPC `element.delete` procedure returns `{ deletedElementId: null }` when
+  admin permission is missing. The element deletion modal ignored that nullable
+  result, so a denied delete could close the confirmation modal as if deletion
+  succeeded.
+- After a confirmed deletion, answer-collection, tag, and element-list refreshes
+  were launched in the background, so the modal could close while stale
+  question-pool rows or tag filters remained visible until refetch completion.
+
+Changes:
+
+- Element deletion now treats null `deletedElementId` results as failed
+  submissions, keeping the modal open and using the existing
+  confirmation-modal system-error toast path.
+- After a confirmed deletion, the modal now waits for the answer-collection,
+  tag, and parent element-list refresh attempt before closing. Refetch errors
+  are caught and logged so a confirmed server deletion is not reported as
+  failed.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/elements/manipulation/ElementDeletionModal.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` and `127.0.0.1:3002` both failed with connection refused, so
+  no local backend or manage dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused element deletion completion-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Element Removal Completion Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
