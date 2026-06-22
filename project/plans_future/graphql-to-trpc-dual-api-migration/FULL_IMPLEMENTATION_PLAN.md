@@ -2192,6 +2192,19 @@ Second-pass verification:
   blocked: `curl` to `127.0.0.1:3000` and `127.0.0.1:3002` failed with
   connection refused, so no local backend or manage dev server was available
   for screenshots.
+- Follow-up verification for the manage course manipulation pending-guard
+  cleanup: Context7 TanStack Query v4 docs confirmed `isLoading` and
+  `mutateAsync` semantics, and tRPC docs confirmed `useUtils` invalidation
+  patterns before the change. Scope stayed limited to the existing tRPC course
+  create/settings modal path. The shared modal now accepts caller mutation
+  loading state so close and submit controls stay guarded during
+  `course.create` / `course.updateSettings`, while GraphQL and Apollo
+  coexistence remains unchanged. `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier
+  --check` on the touched files and notes passed, `node_modules/.bin/tsc
+  --noEmit` from `apps/frontend-manage` passed in the commit worktree, and
+  `git diff --check` passed. Browser verification remains blocked because
+  `127.0.0.1:3000` and `127.0.0.1:3002` both refused connections, so no local
+  backend or manage dev server was available for screenshots.
 
 PR #5132 status after `bb92153b` before the manage overview-list batch:
 

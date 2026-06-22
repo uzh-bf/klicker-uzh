@@ -210,6 +210,7 @@ function CourseOverviewHeader({
           containsActivities={containsActivities}
           containsGroups={containsGroups}
           onModalClose={() => setCourseSettingsModal(false)}
+          submitting={updateCourseSettings.isLoading}
           onSubmit={async (
             values: CourseManipulationFormData,
             setSubmitting,
@@ -256,7 +257,7 @@ function CourseOverviewHeader({
             } catch (error) {
               onError()
               setSubmitting(false)
-              console.log(error)
+              console.error(error)
             }
           }}
         />

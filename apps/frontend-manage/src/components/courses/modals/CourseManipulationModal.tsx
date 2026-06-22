@@ -51,6 +51,7 @@ interface CourseManipulationModalProps {
   latestEndDate?: string
   containsActivities?: boolean
   containsGroups?: boolean
+  submitting?: boolean
   onModalClose: () => void
   onSubmit: (
     values: CourseManipulationFormData,
@@ -82,6 +83,7 @@ function CourseManipulationModal({
   latestEndDate,
   containsActivities = false,
   containsGroups = false,
+  submitting = false,
   onModalClose,
   onSubmit,
 }: CourseManipulationModalProps) {
@@ -238,7 +240,13 @@ function CourseManipulationModal({
           ? t('manage.course.modifyCourse')
           : t('manage.courseList.createNewCourse')
       }
-      onClose={onModalClose}
+      onClose={() => {
+        if (submitting) {
+          return
+        }
+
+        onModalClose()
+      }}
       className={{ content: 'w-full!' }}
     >
       <Formik
@@ -515,7 +523,8 @@ function CourseManipulationModal({
             )}
             <Button
               primary
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isSubmitting || submitting}
+              loading={isSubmitting || submitting}
               type="submit"
               className={{ root: 'float-right mt-3' }}
               data={{ cy: 'manipulate-course-submit' }}

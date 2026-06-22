@@ -157,6 +157,7 @@ function CourseSelectionPage() {
           {createCourseModal && (
             <CourseManipulationModal
               onModalClose={() => showCreateCourseModal(false)}
+              submitting={createCourse.isLoading}
               onSubmit={async (
                 values: CourseManipulationFormData,
                 setSubmitting,
@@ -210,7 +211,7 @@ function CourseSelectionPage() {
                 } catch (error) {
                   onError()
                   setSubmitting(false)
-                  console.log(error)
+                  console.error(error)
                 }
               }}
             />
