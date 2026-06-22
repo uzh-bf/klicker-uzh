@@ -19,11 +19,13 @@ function SuspendedCourseComparison({
   const t = useTranslations()
   const router = useRouter()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
+  const currentCourseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : null
 
   const { data, isLoading } = trpc.course.userCourses.useQuery()
   const courses =
     data?.userCourses
-      ?.filter((course) => course.id !== router.query.courseId)
+      ?.filter((course) => course.id !== currentCourseId)
       .map((course) => ({
         label: course.name,
         value: course.id,

@@ -29,6 +29,10 @@ function ActivityList({
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const highlightedActivityId =
+    typeof router.query.highlight === 'string'
+      ? router.query.highlight
+      : undefined
 
   if (noActivities) {
     return (
@@ -73,8 +77,8 @@ function ActivityList({
           key={`activity-list-entry-${activity.id}`}
           activity={activity}
           highlighted={
-            router.query?.highlight
-              ? (router.query.highlight as string) === activity.id
+            highlightedActivityId
+              ? highlightedActivityId === activity.id
               : undefined
           }
           hideType={hideActivityType}

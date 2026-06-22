@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Query-Param Display-State Cleanup
+
+Status: complete. Scope stayed within already migrated PWA/manage tRPC
+surfaces that read URL query params only for visible form/filter/highlight
+state. No new migration slice, S06 cleanup, GraphQL removal, Apollo removal,
+or subscription cleanup was started.
+
+Finding:
+
+- A few migrated pages/components still cast optional URL query values directly
+  into visible UI state. Repeated query params can become arrays, which is noisy
+  for PWA course-join PIN prefill, manage catalog object filters, analytics
+  course selectors, highlighted activity/resource rows, course overview tab
+  selection, and evaluation question selection.
+
+Change:
+
+- Accept only single string query params for visible state.
+- Validate catalog object-type filters against local manage enum constants.
+- Validate course overview activity/gamification tabs against the tab values
+  rendered by the page.
+- Validate evaluation `questionIx` as a non-negative integer before it drives
+  active-instance or solution/explanation initialization.
+- Keep existing tRPC query inputs, loading/error UI, and GraphQL/Apollo
+  coexistence unchanged.
+
+Evidence:
+
+- PR #5132 current head is `d18b03a60039a0a2a4f3a1c6340f32701762c216`.
+- Current PR checks are green except Cypress Cloud run `6847`, whose GitHub
+  status reports `1 test failed`; the wrapper job is still stuck in the Cloud
+  recording step and has not exposed normal job logs.
+- Context7 docs were refreshed for tRPC `useUtils` cache helpers and TanStack
+  Query v4 loading/refetch/mutation state before this pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on all
+  touched code files and this plan passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-pwa` passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-manage` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+
+Next:
+
+- Commit and push the query-param display-state cleanup.
+- Recheck Cypress wrapper/log availability after the push.
+
 ### 2026-06-22 Completed: Manage Instance Update Loading/Error Cleanup
 
 Status: complete. Scope stayed within an already migrated manage tRPC element

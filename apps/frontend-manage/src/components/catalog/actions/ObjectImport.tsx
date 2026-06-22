@@ -26,6 +26,17 @@ import CatalogSeparatorTitle from './CatalogSeparatorTitle'
 import ObjectFilters from './ObjectFilters'
 import useObjectFilters from './useObjectFilters'
 
+function getObjectTypeFilter(value: string | string[] | undefined) {
+  if (
+    typeof value === 'string' &&
+    Object.values(ObjectType).includes(value as ObjectType)
+  ) {
+    return value as ObjectType
+  }
+
+  return 'all'
+}
+
 function ObjectImport({
   collectionName,
   catalogCollectionId,
@@ -90,10 +101,8 @@ function ObjectImport({
 
   // set initial filter values based on query params
   useEffect(() => {
-    if (router.query.filter) {
-      setTypeFilter(router.query.filter as ObjectType)
-    }
-  }, [router.query])
+    setTypeFilter(getObjectTypeFilter(router.query.filter))
+  }, [router.query.filter])
 
   return (
     <div className="pb-4">

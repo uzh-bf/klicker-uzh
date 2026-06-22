@@ -46,8 +46,7 @@ function JoinCourse({
   })
 
   useEffect(() => {
-    const pin = router.query.pin ? String(router.query.pin) : undefined
-    setInitialPin(pin || '')
+    setInitialPin(typeof router.query.pin === 'string' ? router.query.pin : '')
   }, [router.query.pin])
 
   const { isLoading: loadingParticipant, data: dataParticipant } =

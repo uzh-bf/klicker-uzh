@@ -36,6 +36,26 @@ import { trpc } from '../../../lib/trpc'
 const REVIEW_STATUS_REVIEWED = 'REVIEWED'
 const REVIEW_STATUS_MODIFIED_AFTER_REVIEW = 'MODIFIED_AFTER_REVIEW'
 
+const courseActivityTabValues = [
+  'liveQuizzes',
+  'practiceQuizzes',
+  'microLearnings',
+  'groupActivities',
+] as const
+const courseGamificationTabValues = [
+  'ind-leaderboard',
+  'group-leaderboard',
+  'groups',
+] as const
+
+function isCourseActivityTab(value: string) {
+  return (courseActivityTabValues as readonly string[]).includes(value)
+}
+
+function isCourseGamificationTab(value: string) {
+  return (courseGamificationTabValues as readonly string[]).includes(value)
+}
+
 function CourseOverviewPage() {
   const t = useTranslations()
   const router = useRouter()
@@ -74,14 +94,20 @@ function CourseOverviewPage() {
   }, [data, router])
 
   useEffect(() => {
-    if (router.query.tab) {
-      setTabValue(router.query.tab as string)
+    if (
+      typeof router.query.tab === 'string' &&
+      isCourseActivityTab(router.query.tab)
+    ) {
+      setTabValue(router.query.tab)
     }
   }, [router.query.tab])
 
   useEffect(() => {
-    if (router.query.gamificationTab) {
-      setGamificationTabValue(router.query.gamificationTab as string)
+    if (
+      typeof router.query.gamificationTab === 'string' &&
+      isCourseGamificationTab(router.query.gamificationTab)
+    ) {
+      setGamificationTabValue(router.query.gamificationTab)
     }
   }, [router.query.gamificationTab])
 

@@ -19,6 +19,11 @@ function AnswerCollectionList({
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const highlightedCollectionId =
+    typeof router.query.highlight === 'string'
+      ? Number(router.query.highlight)
+      : undefined
+  const hasHighlightedCollectionId = Number.isInteger(highlightedCollectionId)
 
   if (loading) {
     return <Loader />
@@ -46,8 +51,8 @@ function AnswerCollectionList({
               key={`answer-collection-${collection.id}`}
               collection={collection}
               highlighted={
-                router.query?.highlight
-                  ? parseInt(router.query.highlight as string) === collection.id
+                hasHighlightedCollectionId
+                  ? highlightedCollectionId === collection.id
                   : undefined
               }
             />

@@ -28,6 +28,8 @@ function AnalyticsNavigation({
   const { data, isLoading } = trpc.course.userCourses.useQuery()
   const router = useRouter()
   const t = useTranslations()
+  const selectedCourseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
   return (
     <div className="mb-6 grid w-full grid-cols-2 md:grid-cols-3">
@@ -51,7 +53,7 @@ function AnalyticsNavigation({
           <SelectField
             label={`${t('shared.generic.course')}:`}
             labelType="large"
-            value={router.query.courseId as string}
+            value={selectedCourseId}
             items={data.userCourses.map((course) => ({
               label: course.name,
               value: course.id,
