@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage User Group Edit Action Loading
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+user-group edit workflow. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- User-group creation, add-member, leave, delete, name-change, and member/admin
+  mutation hooks already keep duplicate clicks guarded through their async tRPC
+  mutation plus `sharing.userGroups` invalidation boundary.
+- `UserGroupEditModal` disables promote, demote, remove, and ownership-transfer
+  action buttons through the shared pending state, but the icon-only buttons do
+  not show which tRPC action is currently settling.
+- Context7 TanStack Query v4 docs were refreshed before this change. They
+  confirm `mutateAsync` supports promise-based side-effect composition for
+  post-mutation work; this audit item only improves the visible pending state
+  around the existing composed mutation flow.
+
+Changes:
+
+- Add action-specific loading icons for promote, demote, remove, and ownership
+  transfer while preserving the existing global pending guard and cache
+  invalidation behavior.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/groups/UserGroupEditModal.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed after formatting `UserGroupEditModal.tsx`.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because the available multi-agent
+  tool explicitly requires a user request before spawning subagents.
+
+Next:
+
+- Commit and push this focused user-group edit loading affordance.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Feedback Publish Pending Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

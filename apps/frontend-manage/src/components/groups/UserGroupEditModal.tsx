@@ -167,7 +167,11 @@ function UserGroupEditModal({
                           cy: `transfer-group-ownership-${admin.shortname}`,
                         }}
                       >
-                        <Button.Icon withoutLabel icon={faUserTie} />
+                        <Button.Icon
+                          withoutLabel
+                          icon={faUserTie}
+                          loading={transferringOwnership}
+                        />
                       </Button>
                     ) : null}
                     <Button
@@ -182,7 +186,11 @@ function UserGroupEditModal({
                       }}
                       data={{ cy: `demote-group-admin-${admin.shortname}` }}
                     >
-                      <Button.Icon withoutLabel icon={faUserMinus} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserMinus}
+                        loading={demoting}
+                      />
                     </Button>
                     <Button
                       basic
@@ -198,7 +206,11 @@ function UserGroupEditModal({
                       }}
                       data={{ cy: `remove-group-admin-${admin.shortname}` }}
                     >
-                      <Button.Icon withoutLabel icon={faUserXmark} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserXmark}
+                        loading={removing}
+                      />
                     </Button>
                   </div>
                 ) : null}
@@ -278,7 +290,11 @@ function UserGroupEditModal({
                         cy: `promote-group-member-${member.shortname}`,
                       }}
                     >
-                      <Button.Icon withoutLabel icon={faUserPlus} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserPlus}
+                        loading={promoting}
+                      />
                     </Button>
                     <Button
                       basic
@@ -294,7 +310,11 @@ function UserGroupEditModal({
                       }}
                       data={{ cy: `remove-group-member-${member.shortname}` }}
                     >
-                      <Button.Icon withoutLabel icon={faUserXmark} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserXmark}
+                        loading={removing}
+                      />
                     </Button>
                   </div>
                 ) : null}
