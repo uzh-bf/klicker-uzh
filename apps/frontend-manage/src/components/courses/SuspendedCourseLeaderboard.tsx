@@ -124,9 +124,17 @@ function SuspendedCourseLeaderboard({
                         leaderboardType === 'weekly' ||
                         leaderboardType === 'custom'
                       ) {
-                        await updateWeeklyTimelineEntriesCourse.mutateAsync({
-                          courseId,
-                        })
+                        const result =
+                          await updateWeeklyTimelineEntriesCourse.mutateAsync({
+                            courseId,
+                          })
+
+                        if (!result.updateWeeklyTimelineEntriesCourse) {
+                          throw new Error(
+                            'Weekly timeline recomputation failed'
+                          )
+                        }
+
                         void refetch().catch(console.error)
                         return
                       }

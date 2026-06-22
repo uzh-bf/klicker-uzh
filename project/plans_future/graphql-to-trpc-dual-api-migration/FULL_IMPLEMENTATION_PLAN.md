@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Course Leaderboard Recompute Result Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-manage
+course leaderboard recompute control and its `course.updateWeeklyTimelineEntries`
+tRPC mutation. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup is being started.
+
+Finding:
+
+- The course leaderboard recompute button awaits the tRPC mutation for weekly
+  and custom leaderboards, but ignores the returned
+  `updateWeeklyTimelineEntriesCourse` payload. If the API returns `null` or a
+  falsey value instead of confirming recomputation, the UI still starts a
+  refetch and gives no visible failure feedback.
+
+Change:
+
+- Treat `updateWeeklyTimelineEntriesCourse` as the mutation success boundary.
+- Show the existing generic system-error toast when the server does not confirm
+  recomputation.
+- Keep the leaderboard refetch best-effort after confirmed recomputation.
+
+Evidence:
+
+- PR #5132 current head is `ec3ebd7efbaf62de314f4210d1043b2f391a479b`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for mutation success callbacks,
+  invalidation, and error handling before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed manage course leaderboard component and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed files.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept the existing refresh button,
+  loading state, non-mutating rolling leaderboard refetch behavior, and
+  best-effort post-success refetch. Only falsey recompute payloads now surface
+  as action failures.
+
+Next:
+
+- Commit and push the manage course leaderboard recompute result cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: Manage Template Live Quiz Navigation Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-manage
