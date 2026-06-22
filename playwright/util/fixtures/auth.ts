@@ -51,7 +51,7 @@ export async function useStudentContextFixture(
   options: UseStudentContextOptions
 ) {
   await page.context().clearCookies()
-  await page.goto(URL_STUDENT_LOGIN)
+  await page.goto(process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN)
   await page.setViewportSize(viewPorts[options.viewport || 'default'])
 
   // login
