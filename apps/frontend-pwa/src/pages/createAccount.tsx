@@ -59,7 +59,7 @@ function CreateAccount({
             const participantToken = createResult?.participantToken ?? null
 
             if (participantToken) {
-              await router.replace(
+              const routed = await router.replace(
                 `/editProfile?newAccount=true&participantToken=${participantToken}`,
                 {
                   pathname: '/editProfile',
@@ -69,15 +69,21 @@ function CreateAccount({
                   },
                 }
               )
+              if (!routed) {
+                window.location.assign(
+                  `/editProfile?newAccount=true&participantToken=${encodeURIComponent(participantToken)}`
+                )
+              }
               return
             }
 
             // keep legacy non-LTI behavior for direct /createAccount usage
             if (!signedLtiData && createResult?.participant) {
-              await router.push({
+              const routed = await router.push({
                 pathname: '/login',
                 query: { newAccount: true },
               })
+              if (!routed) window.location.assign('/login?newAccount=true')
               return
             }
           } catch (error) {

@@ -101,7 +101,8 @@ function JoinCourse({
                       utils.participant.self.invalidate(),
                       utils.participant.participations.invalidate(),
                     ]).catch(console.error)
-                    await router.push('/')
+                    const routed = await router.push('/')
+                    if (!routed) window.location.assign('/')
                     return
                   }
 
@@ -168,12 +169,14 @@ function JoinCourse({
                     })
 
                   if (createResult?.participant) {
-                    await router.push({
+                    const routed = await router.push({
                       pathname: '/login',
                       query: {
                         newAccount: true,
                       },
                     })
+                    if (!routed)
+                      window.location.assign('/login?newAccount=true')
                     return
                   }
                 } catch (error) {

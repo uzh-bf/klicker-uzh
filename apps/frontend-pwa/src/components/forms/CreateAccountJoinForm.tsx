@@ -46,10 +46,15 @@ function CreateAccountJoinForm() {
             })
 
             if (courseId) {
-              await router.push({
+              const routed = await router.push({
                 pathname: '/course/[courseId]/join',
                 query: { courseId, pin: normalizedPin },
               })
+              if (!routed) {
+                window.location.assign(
+                  `/course/${encodeURIComponent(courseId)}/join?pin=${encodeURIComponent(normalizedPin)}`
+                )
+              }
               return
             }
 

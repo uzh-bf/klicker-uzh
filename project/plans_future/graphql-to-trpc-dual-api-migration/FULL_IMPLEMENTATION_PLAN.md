@@ -423,6 +423,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: PWA Join and Account Navigation Fallbacks
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-pwa join-course
+and account-creation flows. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `cbfd7bc9a72d725e5807c45d56f4e29f46faa444`.
+- Fresh PR checks on that head had no red jobs. GitGuardian, format, lint, one
+  check job, one test job, `packages/api tRPC Vitest`, Claude review, and
+  multiple CodeQL/build jobs were green; Cypress Cloud, `packages/graphql
+  Vitest`, SonarCloud, and the remaining matrix jobs were still pending.
+- Prior PWA join cleanup already keeps join submit boundaries active through
+  the tRPC join mutation and participant cache invalidation.
+- Remaining post-success route transitions still awaited
+  `router.push`/`router.replace` without handling a falsy Pages Router result.
+  A cancelled transition could therefore re-enable a joined/account-created
+  form or leave a PIN redirect without feedback.
+- Context7 tRPC v11 docs were refreshed before editing and confirm explicit
+  awaited cache utilities remain the correct client pattern. Context7 Next.js
+  Pages Router docs were refreshed and document route-change cancellation/error
+  behavior.
+
+Changes:
+
+- Added same-origin full-page navigation fallbacks after successful standalone
+  course join, course-specific logged-in join, course-specific account creation,
+  direct account creation, and LTI-backed create-account redirects.
+- Added the same fallback for the create-account PIN form redirect to the
+  course-specific join page after a successful `checkValidCoursePin` tRPC
+  fetch.
+- Existing tRPC mutation behavior, participant cache invalidation semantics,
+  toasts/errors, and GraphQL/tRPC coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/pages/join.tsx 'apps/frontend-pwa/src/pages/course/[courseId]/join.tsx' apps/frontend-pwa/src/components/forms/CreateAccountJoinForm.tsx apps/frontend-pwa/src/pages/createAccount.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3001` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused PWA join/account navigation fallback cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Live-Quiz Start Navigation Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
