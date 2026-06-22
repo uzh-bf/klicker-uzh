@@ -212,12 +212,12 @@ function useLiveQuizActions({
                 ActivityType.LiveQuiz as RouterInputs['activity']['unpublish']['activityType'],
             })
             if (result.unpublishActivity?.id) {
-              if (quiz.courseId) {
-                void utils.course.detail
-                  .invalidate({ courseId: quiz.courseId })
-                  .catch(console.error)
-              }
-              void refetchActivities?.().catch(console.error)
+              await Promise.all([
+                quiz.courseId
+                  ? utils.course.detail.invalidate({ courseId: quiz.courseId })
+                  : undefined,
+                refetchActivities?.(),
+              ]).catch(console.error)
             } else {
               toast({
                 type: 'error',

@@ -165,14 +165,14 @@ function usePracticeQuizActions({
                 ActivityType.PracticeQuiz as RouterInputs['activity']['unpublish']['activityType'],
             })
             if (result.unpublishActivity?.id) {
-              if (practiceQuiz.courseId) {
-                void utils.course.detail
-                  .invalidate({
-                    courseId: practiceQuiz.courseId,
-                  })
-                  .catch(console.error)
-              }
-              void refetchActivities?.().catch(console.error)
+              await Promise.all([
+                practiceQuiz.courseId
+                  ? utils.course.detail.invalidate({
+                      courseId: practiceQuiz.courseId,
+                    })
+                  : undefined,
+                refetchActivities?.(),
+              ]).catch(console.error)
             } else {
               toast({
                 type: 'error',

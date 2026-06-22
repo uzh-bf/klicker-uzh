@@ -201,14 +201,14 @@ function useMicroLearningActions({
                 ActivityType.MicroLearning as RouterInputs['activity']['unpublish']['activityType'],
             })
             if (result.unpublishActivity?.id) {
-              if (microLearning.courseId) {
-                void utils.course.detail
-                  .invalidate({
-                    courseId: microLearning.courseId,
-                  })
-                  .catch(console.error)
-              }
-              void refetchActivities?.().catch(console.error)
+              await Promise.all([
+                microLearning.courseId
+                  ? utils.course.detail.invalidate({
+                      courseId: microLearning.courseId,
+                    })
+                  : undefined,
+                refetchActivities?.(),
+              ]).catch(console.error)
             } else {
               toast({
                 type: 'error',

@@ -84,14 +84,14 @@ function useGroupActivityActions({
                 ActivityType.GroupActivity as RouterInputs['activity']['unpublish']['activityType'],
             })
             if (result.unpublishActivity?.id) {
-              if (groupActivity.courseId) {
-                void utils.course.detail
-                  .invalidate({
-                    courseId: groupActivity.courseId,
-                  })
-                  .catch(console.error)
-              }
-              void refetchActivities?.().catch(console.error)
+              await Promise.all([
+                groupActivity.courseId
+                  ? utils.course.detail.invalidate({
+                      courseId: groupActivity.courseId,
+                    })
+                  : undefined,
+                refetchActivities?.(),
+              ]).catch(console.error)
             } else {
               toast({
                 type: 'error',
