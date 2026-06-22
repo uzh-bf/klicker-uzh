@@ -80,31 +80,44 @@ create_token_with_docker() {
 create_token_with_http() {
   wait_for_hatchet_http
 
-  local cookie_jar response_file
-  cookie_jar=$(mktemp)
+  local auth_cookie header_file login_file response_file
+  header_file=$(mktemp)
+  login_file=$(mktemp)
   response_file=$(mktemp)
 
   for i in {1..10}; do
     echo "[hatchet-token] Logging in to Hatchet API..."
-    if curl -s -f -c "$cookie_jar" \
+    if curl -s -f -D "$header_file" -o "$login_file" \
       -H 'content-type: application/json' \
       -d "{\"email\":\"${HATCHET_ADMIN_EMAIL}\",\"password\":\"${HATCHET_ADMIN_PASSWORD}\"}" \
-      "${HATCHET_API_URL}/api/v1/users/login" >/dev/null &&
-      curl -s -f -b "$cookie_jar" \
+      "${HATCHET_API_URL}/api/v1/users/login"; then
+      auth_cookie=$(tr -d '\r' < "$header_file" | sed -n 's/^[Ss]et-[Cc]ookie: \(hatchet=[^;]*\).*/\1/p' | tail -n1)
+
+      if [[ -z "$auth_cookie" ]]; then
+        echo "[hatchet-token] Hatchet login succeeded, but no auth cookie was returned."
+      elif curl -s -f \
         -H 'content-type: application/json' \
+        -H "Cookie: ${auth_cookie}" \
         -d '{"name":"playwright-ci","expiresIn":"2160h"}' \
         "${HATCHET_API_URL}/api/v1/tenants/${TENANT_ID}/api-tokens" > "$response_file"; then
-      TOKEN=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(data.token || '')" "$response_file")
+        TOKEN=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(data.token || '')" "$response_file")
 
-      if [[ -n "$TOKEN" ]]; then
-        rm -f "$cookie_jar" "$response_file"
-        echo "[hatchet-token] Token generated successfully through HTTP API."
-        return 0
+        if [[ -n "$TOKEN" ]]; then
+          rm -f "$header_file" "$login_file" "$response_file"
+          echo "[hatchet-token] Token generated successfully through HTTP API."
+          return 0
+        fi
+
+        echo "[hatchet-token] Hatchet API token response did not include a token."
+      else
+        echo "[hatchet-token] Hatchet API token request failed."
       fi
+    else
+      echo "[hatchet-token] Hatchet API login request failed."
     fi
 
     if [[ "$i" == "10" ]]; then
-      rm -f "$cookie_jar" "$response_file"
+      rm -f "$header_file" "$login_file" "$response_file"
       echo "[hatchet-token] Failed to generate token through HTTP API after 10 attempts." >&2
       return 1
     fi
