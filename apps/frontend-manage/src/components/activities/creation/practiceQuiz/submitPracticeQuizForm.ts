@@ -37,6 +37,7 @@ async function submitPracticeQuizForm({
 }: PracticeQuizFormSubmissionProps) {
   try {
     let success = false
+    const courseIdsToInvalidate = new Set<string>()
 
     const createOrUpdateJSON = {
       name: values.name,
@@ -74,28 +75,29 @@ async function submitPracticeQuizForm({
 
       success = Boolean(result.editPracticeQuiz)
       if (result.editPracticeQuiz?.courseId) {
-        const courseIds = new Set(
-          [previousCourseId, result.editPracticeQuiz.courseId].filter(
-            (courseId): courseId is string => Boolean(courseId)
-          )
-        )
-        void Promise.all(
-          Array.from(courseIds).map(invalidateCourseDetail)
-        ).catch(console.error)
+        const courseIds = [
+          previousCourseId,
+          result.editPracticeQuiz.courseId,
+        ].filter((courseId): courseId is string => Boolean(courseId))
+
+        courseIds.forEach((courseId) => courseIdsToInvalidate.add(courseId))
       }
     } else {
       const result = await createPracticeQuiz(createOrUpdateJSON)
 
       success = Boolean(result.createPracticeQuiz)
       if (result.createPracticeQuiz?.courseId) {
-        void invalidateCourseDetail(result.createPracticeQuiz.courseId).catch(
-          console.error
-        )
+        courseIdsToInvalidate.add(result.createPracticeQuiz.courseId)
       }
     }
 
     if (success) {
-      void invalidateActivities().catch(console.error)
+      await Promise.all([
+        invalidateActivities(),
+        ...Array.from(courseIdsToInvalidate).map((courseId) =>
+          invalidateCourseDetail(courseId).catch(console.error)
+        ),
+      ])
       setIsWizardCompleted(true)
     } else {
       onError()

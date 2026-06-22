@@ -351,11 +351,11 @@ function MicroLearningWizard({
           completionSuccessMessage={(elementName) => (
             <div>
               {editMode
-                ? t.rich('manage.activityWizard.microlearningCreated', {
+                ? t.rich('manage.activityWizard.microlearningEdited', {
                     b: (text) => <strong>{text}</strong>,
                     name: elementName,
                   })
-                : t.rich('manage.activityWizard.microlearningEdited', {
+                : t.rich('manage.activityWizard.microlearningCreated', {
                     b: (text) => <strong>{text}</strong>,
                     name: elementName,
                   })}

@@ -42,6 +42,7 @@ async function submitMicrolearningForm({
 }: MicroLearningFormSubmissionProps) {
   try {
     let success = false
+    const courseIdsToInvalidate = new Set<string>()
 
     const createUpdateJSON = {
       name: values.name,
@@ -74,27 +75,28 @@ async function submitMicrolearningForm({
       const result = await editMicroLearning({ id, ...createUpdateJSON })
       success = Boolean(result.editMicroLearning)
       if (result.editMicroLearning?.courseId) {
-        const courseIds = new Set(
-          [previousCourseId, result.editMicroLearning.courseId].filter(
-            (courseId): courseId is string => Boolean(courseId)
-          )
-        )
-        void Promise.all(
-          Array.from(courseIds).map(invalidateCourseDetail)
-        ).catch(console.error)
+        const courseIds = [
+          previousCourseId,
+          result.editMicroLearning.courseId,
+        ].filter((courseId): courseId is string => Boolean(courseId))
+
+        courseIds.forEach((courseId) => courseIdsToInvalidate.add(courseId))
       }
     } else {
       const result = await createMicroLearning(createUpdateJSON)
       success = Boolean(result.createMicroLearning)
       if (result.createMicroLearning?.courseId) {
-        void invalidateCourseDetail(result.createMicroLearning.courseId).catch(
-          console.error
-        )
+        courseIdsToInvalidate.add(result.createMicroLearning.courseId)
       }
     }
 
     if (success) {
-      void invalidateActivities().catch(console.error)
+      await Promise.all([
+        invalidateActivities(),
+        ...Array.from(courseIdsToInvalidate).map((courseId) =>
+          invalidateCourseDetail(courseId).catch(console.error)
+        ),
+      ])
       setIsWizardCompleted(true)
     } else {
       onError()

@@ -37,6 +37,7 @@ async function submitGroupActivityForm({
 }: GroupActivityFormSubmissionProps) {
   try {
     let success = false
+    const courseIdsToInvalidate = new Set<string>()
     const createUpdateJSON = {
       name: values.name,
       displayName: values.displayName,
@@ -62,28 +63,29 @@ async function submitGroupActivityForm({
 
       success = Boolean(result.editGroupActivity)
       if (result.editGroupActivity?.courseId) {
-        const courseIds = new Set(
-          [previousCourseId, result.editGroupActivity.courseId].filter(
-            (courseId): courseId is string => Boolean(courseId)
-          )
-        )
-        void Promise.all(
-          Array.from(courseIds).map(invalidateCourseDetail)
-        ).catch(console.error)
+        const courseIds = [
+          previousCourseId,
+          result.editGroupActivity.courseId,
+        ].filter((courseId): courseId is string => Boolean(courseId))
+
+        courseIds.forEach((courseId) => courseIdsToInvalidate.add(courseId))
       }
     } else {
       const result = await createGroupActivity(createUpdateJSON)
 
       success = Boolean(result.createGroupActivity)
       if (result.createGroupActivity?.courseId) {
-        void invalidateCourseDetail(result.createGroupActivity.courseId).catch(
-          console.error
-        )
+        courseIdsToInvalidate.add(result.createGroupActivity.courseId)
       }
     }
 
     if (success) {
-      void invalidateActivities().catch(console.error)
+      await Promise.all([
+        invalidateActivities(),
+        ...Array.from(courseIdsToInvalidate).map((courseId) =>
+          invalidateCourseDetail(courseId).catch(console.error)
+        ),
+      ])
       setIsWizardCompleted(true)
     } else {
       onError()

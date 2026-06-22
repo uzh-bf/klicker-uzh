@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Activity Wizard Completion Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and
+the already migrated manage activity authoring workflows. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `86ef9a7ff60db9b1451d3a3d37aded0e4477371b`.
+- All non-Cypress checks on that head were green, including
+  `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+- Cypress Cloud run `6859` was still pending with "Tests are running"; GitHub
+  still withheld logs while the Cypress job was in progress, and Cypress Cloud
+  redirected unauthenticated requests to login.
+- The practice quiz, microlearning, and group activity tRPC authoring helpers
+  had the same completion-boundary issue previously fixed for live quizzes:
+  they fired activity-list and course-detail invalidations in the background,
+  then immediately displayed the wizard completion action.
+- The microlearning completion message was swapped: edit mode showed the
+  creation message, while create mode showed the edit message.
+
+Changes:
+
+- Practice quiz, microlearning, and group activity submissions now collect
+  affected course IDs and await course-detail invalidation together with the
+  activity-list invalidation before showing wizard completion.
+- The microlearning completion message now matches the actual create/edit mode.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query invalidation and mutation
+  success ordering before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md apps/frontend-manage/src/components/activities/creation/practiceQuiz/submitPracticeQuizForm.ts apps/frontend-manage/src/components/activities/creation/microLearning/MicroLearningWizard.tsx apps/frontend-manage/src/components/activities/creation/microLearning/submitMicrolearningForm.ts apps/frontend-manage/src/components/activities/creation/groupActivity/submitGroupActivityForm.ts`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/local Cypress remains blocked in this temp worktree because the full
+  local dev stack is not running here; remote Cypress run `6859` remains the
+  next runtime signal.
+
+Next:
+
+- Commit and push this focused authoring completion-boundary cleanup.
+- Recheck GraphQL/tRPC package parity and Cypress Cloud on the new head.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Live-Quiz Completion Cache Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and
