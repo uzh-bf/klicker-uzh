@@ -30,10 +30,29 @@ type ActivityModeFilterVariables = {
   isAssessmentEnabled?: boolean
   pinProtected?: boolean
 }
+const activityTypes = Object.values(ActivityType)
+
+function getQueryString(value: string | string[] | undefined) {
+  return typeof value === 'string' ? value : undefined
+}
+
+function getActivityTypeQuery(value: string | string[] | undefined) {
+  const stringValue = getQueryString(value)
+
+  return activityTypes.includes(stringValue as ActivityType)
+    ? (stringValue as ActivityType)
+    : undefined
+}
 
 function Activities() {
   const t = useTranslations()
   const router = useRouter()
+  const openActivityDetailsId = getQueryString(
+    router.query.openActivityDetailsId
+  )
+  const openActivityDetailsType = getActivityTypeQuery(
+    router.query.openActivityDetailsType
+  )
 
   const [searchString, setSearchString] = useState('')
 
@@ -205,13 +224,10 @@ function Activities() {
 
   // if passed through the query arguments, open the activity details dialog
   useEffect(() => {
-    if (
-      router.query.openActivityDetailsId &&
-      router.query.openActivityDetailsType
-    ) {
+    if (openActivityDetailsId && openActivityDetailsType) {
       setShowDetails(true)
     }
-  }, [router.query.openActivityDetailsId, router.query.openActivityDetailsType])
+  }, [openActivityDetailsId, openActivityDetailsType])
 
   const filtersActive =
     filters.status.length > 0 ||
@@ -324,12 +340,10 @@ function Activities() {
         </div>
       </div>
 
-      {showDetails &&
-      router.query.openActivityDetailsId &&
-      router.query.openActivityDetailsType ? (
+      {showDetails && openActivityDetailsId && openActivityDetailsType ? (
         <ActivityDetailsModal
-          activityId={router.query.openActivityDetailsId as string}
-          activityType={router.query.openActivityDetailsType as ActivityType}
+          activityId={openActivityDetailsId}
+          activityType={openActivityDetailsType}
           onClose={() => {
             // close the modal
             setShowDetails(false)

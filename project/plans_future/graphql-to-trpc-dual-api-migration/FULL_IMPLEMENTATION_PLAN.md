@@ -423,6 +423,50 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Query-Param Modal Guard Cleanup
+
+Status: complete. Scope stayed within already migrated manage tRPC entry
+points. No new migration slice, S06 cleanup, GraphQL removal, Apollo removal,
+or subscription cleanup was started.
+
+Finding:
+
+- Manage question-pool and activity-overview pages still passed raw
+  `router.query` values into migrated modal/wizard entry points.
+- Malformed or repeated query params could become array values, invalid
+  activity types, or accidental partial numeric parses before reaching tRPC
+  query keys and modal inputs.
+
+Change:
+
+- Added local query-param normalization on `pages/index.tsx` and
+  `pages/activities.tsx`.
+- Open activity details and activity creation/editing modals only from string
+  params with valid local `ActivityType` values.
+- Parse element edit IDs only after string validation and require positive
+  integers.
+- Preserve the existing `microLearningToPracticeQuiz` conversion route by
+  mapping it to the practice-quiz creation flow while keeping the conversion
+  flag.
+- Kept GraphQL/Apollo coexistence unchanged.
+
+Evidence so far:
+
+- Context7 docs rechecked for tRPC `useUtils`/type-only client usage and
+  TanStack Query v4 enabled guards/cache lifecycle before editing.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched manage pages passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-manage` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+
+Next:
+
+- Commit and push the manage query-param modal guard cleanup.
+- Recheck Cypress Cloud completion after the push.
+
 ### 2026-06-22 Completed: PWA Microlearning Route-Param Guard Cleanup
 
 Status: complete. Scope was limited to already migrated PWA microlearning

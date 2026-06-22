@@ -41,10 +41,49 @@ type ElementListElement = NonNullable<
   ComponentProps<typeof ElementList>['elements']
 >[number]
 type ElementSelection = Record<number, ElementListElement>
+const activityTypes = Object.values(ActivityType)
+
+function getQueryString(value: string | string[] | undefined) {
+  return typeof value === 'string' ? value : undefined
+}
+
+function getActivityTypeQuery(value: string | string[] | undefined) {
+  const stringValue = getQueryString(value)
+
+  return activityTypes.includes(stringValue as ActivityType)
+    ? (stringValue as ActivityType)
+    : undefined
+}
+
+function getPositiveIntegerQuery(value: string | string[] | undefined) {
+  const numericValue = Number.parseInt(getQueryString(value) ?? '', 10)
+
+  return Number.isInteger(numericValue) && numericValue > 0
+    ? numericValue
+    : undefined
+}
 
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const queryElementId = getQueryString(router.query.elementId)
+  const queryEditMode = getActivityTypeQuery(router.query.editMode)
+  const queryDuplicationMode = getActivityTypeQuery(
+    router.query.duplicationMode
+  )
+  const queryConversionMode =
+    getQueryString(router.query.conversionMode) ===
+    'microLearningToPracticeQuiz'
+      ? 'microLearningToPracticeQuiz'
+      : undefined
+  const queryCreationMode: ActivityType | undefined = queryElementId
+    ? (queryEditMode ??
+      queryDuplicationMode ??
+      (queryConversionMode ? ActivityType.PracticeQuiz : undefined))
+    : undefined
+  const queryEditElementId = getPositiveIntegerQuery(router.query.editElementId)
+  const filterByCourse = getQueryString(router.query.filterByCourse)
+  const filterByActivity = getQueryString(router.query.filterByActivity)
 
   // search, filter and pagination states
   const [searchString, setSearchString] = useState('')
@@ -115,7 +154,7 @@ function Index() {
 
   const handleResetCleanURL = useCallback(() => {
     // if a filtering by activity / course is set through the URL, reset it
-    if (router.query.filterByActivity || router.query.filterByCourse) {
+    if (filterByActivity || filterByCourse) {
       router.push({ pathname: '/', query: {} }, undefined, {
         shallow: true,
       })
@@ -123,7 +162,7 @@ function Index() {
 
     // reset the filters and sorting
     handleReset()
-  }, [router.query.filterByCourse, router.query.filterByActivity])
+  }, [filterByCourse, filterByActivity])
 
   const elementListInput: ElementListInput = {
     status: filters.status as ElementListInput['status'],
@@ -228,14 +267,10 @@ function Index() {
     router.prefetch('/quizzes')
     router.prefetch('/activities')
 
-    if (router.query.elementId && router.query.editMode) {
-      setCreationMode(router.query.editMode as ActivityType)
-    } else if (router.query.elementId && router.query.duplicationMode) {
-      setCreationMode(router.query.duplicationMode as ActivityType)
-    } else if (router.query.elementId && router.query.conversionMode) {
-      setCreationMode(router.query.conversionMode as ActivityType)
+    if (queryCreationMode) {
+      setCreationMode(queryCreationMode)
     }
-  }, [router])
+  }, [router, queryCreationMode])
 
   // once the activity wizard is opened, deselect all invalid elements
   useEffect(() => {
@@ -253,26 +288,26 @@ function Index() {
 
   // if passed through the query arguments, open the element editing dialog
   useEffect(() => {
-    if (router.query.editElementId) {
+    if (queryEditElementId) {
       setModificationModalOpen(true)
     }
-  }, [router.query.editElementId])
+  }, [queryEditElementId])
 
   // if the library should be filtered by activity, reset the filters and re-set them accordingly
   useEffect(() => {
-    if (router.query.filterByActivity) {
+    if (filterByActivity) {
       handleReset()
 
-      if (router.query.filterByCourse) {
+      if (filterByCourse) {
         toggleCourseIdFilter({
-          courseId: router.query.filterByCourse as string,
+          courseId: filterByCourse,
         })
       }
       toggleActivityIdFilter({
-        activityId: router.query.filterByActivity as string,
+        activityId: filterByActivity,
       })
     }
-  }, [router.query.filterByCourse, router.query.filterByActivity])
+  }, [filterByCourse, filterByActivity])
 
   // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
   const filtersActiveExceptCourse = !!(
@@ -308,10 +343,10 @@ function Index() {
               router.push('/')
               setCreationMode(() => undefined)
             }}
-            activityId={router.query.elementId as string}
-            editMode={router.query.editMode as ActivityType}
-            conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as ActivityType}
+            activityId={queryElementId}
+            editMode={queryEditMode}
+            conversionMode={queryConversionMode}
+            duplicationMode={queryDuplicationMode}
             selection={
               selectedElements as Record<number, CreationElement | undefined>
             }
@@ -496,7 +531,7 @@ function Index() {
           }}
         />
       )}
-      {modificationModalOpen && router.query.editElementId && (
+      {modificationModalOpen && queryEditElementId && (
         <ElementEditModal
           isOpen
           inputsDisabled={false}
@@ -508,7 +543,7 @@ function Index() {
               options: { duration: 4000 },
             })
           }
-          elementId={parseInt(router.query.editElementId as string, 10)}
+          elementId={queryEditElementId}
           mode={ElementEditMode.EDIT}
           refetchElements={async () => {
             await refetchElements()
