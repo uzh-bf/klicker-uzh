@@ -238,6 +238,7 @@ function Activities() {
     typeof filters.multiplier !== 'undefined' ||
     typeof filters.reviewStatus !== 'undefined' ||
     Object.values(filters.mode).some((value) => value)
+  const searchActive = searchString.trim().length > 0
 
   // compute the number of total pagination pages
   const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
@@ -311,8 +312,11 @@ function Activities() {
                 <>
                   <ActivityList
                     filtersActive={filtersActive}
+                    searchActive={searchActive}
                     activities={activities}
-                    noActivities={!filtersActive && numOfActivities === 0}
+                    noActivities={
+                      !filtersActive && !searchActive && numOfActivities === 0
+                    }
                     highlightedActivity={null}
                     selectedActivities={selectedActivities}
                     setSelectedActivities={setSelectedActivities}

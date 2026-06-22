@@ -8,6 +8,7 @@ import ActivityListEntry from './ActivityListEntry'
 
 function ActivityList({
   filtersActive,
+  searchActive = false,
   activities,
   noActivities,
   hideActivityType = false,
@@ -18,6 +19,7 @@ function ActivityList({
   refetchActivities,
 }: {
   filtersActive: boolean
+  searchActive?: boolean
   activities: ActivityInfo[]
   noActivities: boolean
   hideActivityType?: boolean
@@ -56,20 +58,22 @@ function ActivityList({
 
   return (
     <div className="flex flex-col gap-2">
-      {filtersActive && (
+      {(filtersActive || (searchActive && activities.length === 0)) && (
         <UserNotification type="warning" className={{ root: 'ml-6.5' }}>
           {activities.length === 0 &&
             t('manage.activities.noActivitiesWarning')}{' '}
-          {t.rich('manage.activities.activeFiltersWarning', {
-            reset: (text) => (
-              <span
-                className="cursor-pointer font-bold underline"
-                onClick={handleFilterReset}
-              >
-                {text}
-              </span>
-            ),
-          })}
+          {filtersActive
+            ? t.rich('manage.activities.activeFiltersWarning', {
+                reset: (text) => (
+                  <span
+                    className="cursor-pointer font-bold underline"
+                    onClick={handleFilterReset}
+                  >
+                    {text}
+                  </span>
+                ),
+              })
+            : null}
         </UserNotification>
       )}
       {activities.map((activity) => (

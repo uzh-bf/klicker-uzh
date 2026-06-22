@@ -423,6 +423,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Manage Live-Quiz Creation Pending-State Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and
+the already migrated manage live-quiz authoring surface. No new migration slice,
+S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `1df161fe8aa9b7f59f7d472637c0a7f5d86f5f6b`. Non-Cypress checks were green,
+  including `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+- Cypress Cloud run `6857` failed in `O-live-quiz-workflow.cy.ts` because the
+  next test could not find `[data-cy="activity-LIVE_QUIZ-Live Quiz 1"]`.
+- The failure screenshot showed the manage Activities search for `Live Quiz 1`
+  rendering the generic no-activities empty state. The page did not treat search
+  text as an active list constraint, so search misses could look like a globally
+  empty account.
+- The live-quiz creation Cypress test submitted the final wizard step and ended
+  immediately, without waiting for the success/completion UI. That made the
+  subsequent edit test the first hard persistence assertion.
+- The shared wizard navigation showed loading during submit but did not
+  explicitly disable the submit button while Formik was submitting.
+
+Changes:
+
+- `WizardNavigation` now disables the next/save/create button while Formik is
+  submitting, preventing duplicate pending mutations.
+- Live-quiz submission now awaits activity-list cache invalidation before
+  showing the completion step.
+- The manage Activities page distinguishes search-empty results from a truly
+  empty account by treating active search text as a list constraint.
+- The first live-quiz Cypress creation test now waits for the completion action,
+  opens the activity overview, and asserts that the created live quiz exists
+  before the next test starts.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/creation/WizardNavigation.tsx apps/frontend-manage/src/components/activities/creation/liveQuiz/submitLiveQuizForm.tsx apps/frontend-manage/src/pages/activities.tsx apps/frontend-manage/src/components/activities/overview/ActivityList.tsx cypress/cypress/e2e/O-live-quiz-workflow.cy.ts`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Blocked: `pnpm --filter @klicker-uzh/api test -- manage-activities.test.ts`
+  failed before running tests because the local package-manager shim could not
+  verify/fetch `pnpm@11.5.0` in the restricted environment.
+- Blocked: direct package Vitest from `/private/tmp/klicker-trpc-ux` could start
+  but could not resolve `@klicker-uzh/prisma/client` from this temp worktree's
+  partial `node_modules`.
+- Blocked: `tsc -p cypress/tsconfig.json --noEmit --pretty false` could not
+  resolve Cypress type packages from this temp worktree's partial
+  `node_modules`.
+- Browser/local Cypress remains blocked: local ports `3000`, `3001`, `3002`,
+  `3003`, and `7078` were not listening during the previous runtime probe.
+
+Next:
+
+- Commit and push this focused manage live-quiz pending-state / Cypress wait
+  cleanup.
+- Recheck PR #5132 package checks and Cypress Cloud on the new head.
+- Continue the UX/client-quality audit only after the new Cypress signal is
+  available; do not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: PWA Live-Feedback Cache Update
 
 Status: complete locally. Scope stays within the migrated PWA live-feedback

@@ -60,7 +60,7 @@ function WizardNavigation({
       </div>
       <Button
         primary={lastStep}
-        disabled={!stepValidity[activeStep] || continueDisabled}
+        disabled={isSubmitting || !stepValidity[activeStep] || continueDisabled}
         loading={isSubmitting}
         type="submit"
         data={{ cy: 'next-or-submit' }}

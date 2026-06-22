@@ -496,6 +496,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.name}"]`
+    ).should('exist')
   })
 
   it('Edit the created live quiz and check if all settings persist', function () {

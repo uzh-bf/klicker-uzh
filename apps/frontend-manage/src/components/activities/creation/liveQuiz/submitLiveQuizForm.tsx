@@ -102,7 +102,7 @@ async function submitLiveQuizForm({
     }
 
     if (success) {
-      void invalidateActivities().catch(console.error)
+      await invalidateActivities()
       setIsWizardCompleted(true)
     } else {
       onError()
