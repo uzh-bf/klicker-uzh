@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Cockpit Stale Data Error Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+live-quiz cockpit tRPC query. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx` polls the migrated
+  `api.liveQuiz.cockpit` tRPC query every two seconds.
+- The page currently renders a full-page system error whenever `cockpitError`
+  is set, even if the React Query cache still contains a usable
+  `cockpitQuiz`.
+- This can replace a useful stale cockpit with a blocker during transient
+  polling/refetch failures.
+- Context7 TanStack Query v4 docs were refreshed before this change. They
+  distinguish initial loading/error rendering from background fetching and
+  cached-data rendering.
+
+Changes:
+
+- `Cockpit` now derives `cockpitQuiz` once from the tRPC query data.
+- The full-page cockpit error state only renders when a query error occurs and
+  no cockpit data is available.
+- Polling/background refetch errors no longer replace an already-rendered
+  cockpit with a blocking error page.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because current available
+  subagent tooling is not being used unless explicitly requested by the user.
+
+Next:
+
+- Commit and push this focused cockpit stale-data error-boundary cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Template Edit Submit Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

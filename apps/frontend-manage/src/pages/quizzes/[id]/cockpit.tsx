@@ -61,8 +61,9 @@ function Cockpit() {
       refetchInterval: 2000,
     }
   )
+  const cockpitQuiz = cockpitData?.cockpitQuiz
 
-  if (cockpitError) {
+  if (cockpitError && !cockpitQuiz) {
     return (
       <Layout>
         <UserNotification
@@ -74,7 +75,7 @@ function Cockpit() {
   }
 
   // data has not been received yet
-  if (cockpitLoading || !cockpitData?.cockpitQuiz)
+  if (cockpitLoading || !cockpitQuiz)
     return (
       <Layout>
         <Loader />
@@ -96,7 +97,7 @@ function Cockpit() {
     blocks,
     confusionSummary,
     feedbacks,
-  } = cockpitData.cockpitQuiz
+  } = cockpitQuiz
 
   return (
     <Layout>
