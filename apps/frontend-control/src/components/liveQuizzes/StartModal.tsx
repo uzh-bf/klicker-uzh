@@ -42,8 +42,6 @@ function StartModal({
             utils.liveQuiz.unassigned.invalidate(),
             utils.course.controlCourses.invalidate(),
           ]).catch(console.error)
-
-          onClose()
         } catch (error) {
           console.error(error)
           toast({
@@ -57,7 +55,10 @@ function StartModal({
 
         try {
           const routed = await router.push(`/session/${quizId}`)
-          if (!routed) throw new Error('Navigation to live quiz failed')
+          if (!routed) {
+            window.location.assign(`/session/${encodeURIComponent(quizId)}`)
+            return
+          }
           onClose()
         } catch (error) {
           console.error(error)

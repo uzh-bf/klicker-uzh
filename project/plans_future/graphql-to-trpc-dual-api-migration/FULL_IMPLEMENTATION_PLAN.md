@@ -423,6 +423,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Control Live-Quiz Start Navigation Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-control
+live-quiz start modal. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `ab70e7578dadd1420c0e5cd14dbcecc244afc130`.
+- Fresh PR checks on that head had no red jobs. GitGuardian was green; CodeQL,
+  SonarCloud, build, check, lint, format, test, Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest` were pending.
+- GitHub review threads queried through the first 80 threads were all
+  resolved; no unresolved inline review threads were observed.
+- Context7 tRPC v11 docs were refreshed before editing and confirm
+  `useUtils().invalidate()` is an explicit cache operation after mutation
+  success.
+- Context7 Next.js Pages Router docs were refreshed before editing and confirm
+  route transitions can be cancelled.
+- `StartModal` already keeps a local pending guard through the tRPC
+  `liveQuiz.start` mutation and control overview invalidations.
+- After a successful start and invalidation, the modal closed before attempting
+  navigation to `/session/[quizId]`, so the visible pending boundary no longer
+  covered the route transition and a cancelled transition could leave feedback
+  detached from the action surface.
+
+Changes:
+
+- Kept the modal open and loading through the route transition.
+- Close now happens only after successful client-side navigation, with a
+  same-origin full-page fallback when the Pages Router transition returns a
+  falsy result.
+- Kept existing start error/system error toasts, invalidation targets, and
+  GraphQL/tRPC coexistence unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-control/src/components/liveQuizzes/StartModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed after adding and removing a temporary `apps/frontend-control/node_modules` symlink to `/private/tmp/klicker-trpc-ux/apps/frontend-control/node_modules`: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3003` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused control live-quiz start navigation-boundary
+  cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Answer Collection Modal Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
