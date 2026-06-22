@@ -18,7 +18,7 @@ function LiveQuizSubscriber({
     { id },
     {
       onData() {
-        void onChangedRef.current()
+        void Promise.resolve(onChangedRef.current()).catch(console.error)
       },
     }
   )
@@ -27,7 +27,7 @@ function LiveQuizSubscriber({
     { quizId: id },
     {
       onData() {
-        void onChangedRef.current()
+        void Promise.resolve(onChangedRef.current()).catch(console.error)
       },
     }
   )

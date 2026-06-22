@@ -47,7 +47,9 @@ function LecturerView() {
     {
       enabled: Boolean(liveQuizId),
       onData() {
-        void refetchLecturerViewRef.current()
+        void Promise.resolve(refetchLecturerViewRef.current()).catch(
+          console.error
+        )
       },
     }
   )

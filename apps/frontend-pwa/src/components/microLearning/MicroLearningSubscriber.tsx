@@ -41,7 +41,9 @@ function MicroLearningSubscriber({
           options: { duration: 10000 },
         })
 
-        void onEndedRef.current?.(microLearning)
+        void Promise.resolve(onEndedRef.current?.(microLearning)).catch(
+          console.error
+        )
       },
     }
   )

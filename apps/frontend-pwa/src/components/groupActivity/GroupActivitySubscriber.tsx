@@ -31,7 +31,7 @@ function GroupActivitySubscriber({
           options: { duration: 10000 },
         })
 
-        void onEnded()
+        void Promise.resolve(onEnded()).catch(console.error)
       },
     }
   )

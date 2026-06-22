@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Realtime Refetch Error Handling Cleanup
+
+Status: complete. Scope stayed within already migrated PWA/manage tRPC
+realtime subscription callbacks that invoke page refetch or invalidation
+handlers. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup was started.
+
+Finding:
+
+- Several PWA realtime subscriber wrappers and the manage lecturer realtime
+  callback call async refetch/change handlers with `void handler()`. If those
+  handlers reject, the rejection is unhandled. The manage audience interaction
+  component already uses the safer local pattern:
+  `Promise.resolve(handler()).catch(console.error)`.
+
+Change:
+
+- Align PWA live-quiz, feedback, group-activity, and microlearning subscribers
+  plus manage lecturer pinned-feedback refresh with the existing safe callback
+  pattern.
+- Keep existing subscription inputs, duplicate-event guards, toasts, query
+  refetch behavior, and GraphQL/tRPC coexistence unchanged.
+
+Evidence:
+
+- PR #5132 current head is `e042233af114d9cf146e833cb915b42fdd8ff8a5`.
+- Current-head CI is mostly pending after the last push; GitGuardian, Claude
+  review, and CodeQL Python already pass.
+- Context7 TanStack Query v4 docs were refreshed for query state, mutation
+  state, invalidation, and async rollback/callback handling before this audit
+  pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched realtime callback files and this plan passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-pwa` passed.
+- `node_modules/.bin/tsc --noEmit` from `apps/frontend-manage` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Current pushed-head CI has CodeQL, GitGuardian, lint, format, both check
+  jobs, `packages/api tRPC Vitest`, one test job, and several builds passing;
+  Cypress Cloud, `packages/graphql Vitest`, SonarCloud, remaining builds, and
+  one test job are still pending.
+
+Next:
+
+- Commit and push the realtime refetch error-handling cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, SonarCloud, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: PWA Feedback Query Error Cleanup
 
 Status: complete. Scope stayed within the already migrated PWA live-quiz

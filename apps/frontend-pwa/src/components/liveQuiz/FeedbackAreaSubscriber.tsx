@@ -19,7 +19,7 @@ function FeedbackAreaSubscriber({
     {
       enabled: Boolean(quizId),
       onData() {
-        void onChangedRef.current()
+        void Promise.resolve(onChangedRef.current()).catch(console.error)
       },
     }
   )
@@ -29,7 +29,7 @@ function FeedbackAreaSubscriber({
     {
       enabled: Boolean(quizId),
       onData() {
-        void onChangedRef.current()
+        void Promise.resolve(onChangedRef.current()).catch(console.error)
       },
     }
   )
@@ -39,7 +39,7 @@ function FeedbackAreaSubscriber({
     {
       enabled: Boolean(quizId),
       onData() {
-        void onChangedRef.current()
+        void Promise.resolve(onChangedRef.current()).catch(console.error)
       },
     }
   )

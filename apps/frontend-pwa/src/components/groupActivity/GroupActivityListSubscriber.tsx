@@ -39,7 +39,7 @@ function GroupActivityListSubscriber({
           options: { duration: 10000 },
         })
 
-        void onChangedRef.current?.()
+        void Promise.resolve(onChangedRef.current?.()).catch(console.error)
       },
     }
   )
@@ -62,7 +62,7 @@ function GroupActivityListSubscriber({
           options: { duration: 10000 },
         })
 
-        void onChangedRef.current?.()
+        void Promise.resolve(onChangedRef.current?.()).catch(console.error)
       },
     }
   )
