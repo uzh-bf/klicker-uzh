@@ -1,5 +1,5 @@
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { DisclaimersService } from '@/src/services/disclaimers'
-import { jwtVerify, type JWTPayload } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const maxDuration = 60
@@ -12,40 +12,11 @@ export async function GET(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const participantToken = req.cookies.get('participant_token')?.value
-
-  if (!participantToken) {
-    return NextResponse.json(
-      { error: 'No authentication token found' },
-      { status: 401 }
-    )
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-
-  let participantData: JWTPayload
-  let participantId: string | null = null
-  try {
-    const jwtPayload = await jwtVerify(
-      participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
-    )
-    participantData = jwtPayload.payload
-    participantId =
-      typeof participantData.sub === 'string' && participantData.sub
-        ? participantData.sub
-        : null
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      )
-    }
-  } catch (error) {
-    console.error('JWT verification failed:', error)
-    return NextResponse.json(
-      { error: 'Invalid authentication token' },
-      { status: 401 }
-    )
-  }
+  const { participantId } = authResult
 
   try {
     // Get disclaimer for chatbot
@@ -79,40 +50,11 @@ export async function POST(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const participantToken = req.cookies.get('participant_token')?.value
-
-  if (!participantToken) {
-    return NextResponse.json(
-      { error: 'No authentication token found' },
-      { status: 401 }
-    )
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-
-  let participantData: JWTPayload
-  let participantId: string | null = null
-  try {
-    const jwtPayload = await jwtVerify(
-      participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
-    )
-    participantData = jwtPayload.payload
-    participantId =
-      typeof participantData.sub === 'string' && participantData.sub
-        ? participantData.sub
-        : null
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      )
-    }
-  } catch (error) {
-    console.error('JWT verification failed:', error)
-    return NextResponse.json(
-      { error: 'Invalid authentication token' },
-      { status: 401 }
-    )
-  }
+  const { participantId } = authResult
 
   try {
     const body = await req.json()

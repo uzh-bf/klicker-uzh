@@ -152,7 +152,20 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
+  body {
+    height: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Hide scrollbar utility – keeps content scrollable via touch/wheel */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

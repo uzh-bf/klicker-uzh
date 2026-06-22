@@ -1,0 +1,26 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-backend-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  API_DOMAIN: {{ .Values.assessment.backendGraphql.apiDomain | quote }}
+  APP_MANAGE_DOMAIN: {{ .Values.assessment.backendGraphql.appManageDomain | quote }}
+  APP_STUDENT_DOMAIN: {{ .Values.assessment.backendGraphql.appStudentDomain | quote }}
+  APP_CONTROL_DOMAIN: {{ .Values.assessment.backendGraphql.appControlDomain | quote }}
+  APP_MANAGE_SUBDOMAIN: {{ .Values.assessment.backendGraphql.appManageSubdomain | quote }}
+  APP_STUDENT_SUBDOMAIN: {{ .Values.assessment.backendGraphql.appStudentSubdomain | quote }}
+  APP_CONTROL_SUBDOMAIN: {{ .Values.assessment.backendGraphql.appControlSubdomain | quote }}
+  COOKIE_DOMAIN: {{ .Values.assessment.backendGraphql.cookieDomain | quote }}
+  {{- if .Values.assessment.backendGraphql.debug }}
+  DEBUG: {{ .Values.assessment.backendGraphql.debug | quote }}
+  {{ end }}
+  {{- if .Values.heartbeats.dailyGroupScores }}
+  HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
+  {{ end }}
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  # Deprecated - kept for backward compatibility during transition
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  ASSESSMENT_MODE: 'true'

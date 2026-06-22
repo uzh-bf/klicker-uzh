@@ -1045,5 +1045,6 @@ export enum PointCorrectionType {
   ALL_COURSE = 'ALL_COURSE',
   PARTICIPATING = 'PARTICIPATING',
   SINGLE = 'SINGLE',
+  MULTIPLE = 'MULTIPLE',
 }
 // #endregion

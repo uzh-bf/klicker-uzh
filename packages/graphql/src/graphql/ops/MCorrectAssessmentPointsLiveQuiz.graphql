@@ -10,6 +10,7 @@ mutation CorrectAssessmentPointsLiveQuiz(
   $studentReason: String!
   $scope: PointCorrectionType!
   $participantId: String
+  $participantIds: [String!]!
 ) {
   correctAssessmentPointsLiveQuiz(
     liveQuizId: $liveQuizId
@@ -23,6 +24,7 @@ mutation CorrectAssessmentPointsLiveQuiz(
     studentReason: $studentReason
     scope: $scope
     participantId: $participantId
+    participantIds: $participantIds
   ) {
     ...PointCorrectionData
   }

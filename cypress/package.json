@@ -7,14 +7,14 @@
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@prisma/adapter-pg": "~6.16.1",
-    "@testing-library/cypress": "~10.1.0",
+    "@testing-library/cypress": "~10.1.3",
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.10.1",
     "@types/uuid": "^10.0.0",
     "bcryptjs": "~2.4.3",
     "cypress": "~15.2.0",
     "cypress-real-events": "~1.15.0",
-    "cypress-split": "~1.24.2",
+    "cypress-split": "~1.24.31",
     "generate-password": "~1.7.1",
     "jose": "~5.9.4",
     "localforage": "~1.10.0",
@@ -22,15 +22,15 @@
     "uuid": "~10.0.0"
   },
   "scripts": {
-    "test": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open",
+    "test": "../util/_run_with_infisical.sh --env dev-cypress cypress open",
     "test:raw": "cypress open",
-    "test:run": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run",
-    "test:run:one": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run --spec",
+    "test:run": "../util/_run_with_infisical.sh --env dev-cypress cypress run",
+    "test:run:one": "../util/_run_with_infisical.sh --env dev-cypress cypress run --spec",
     "test:run:raw": "cypress run",
-    "test:watch": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open --watch"
+    "test:watch": "../util/_run_with_infisical.sh --env dev-cypress cypress open --watch"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../package.json"

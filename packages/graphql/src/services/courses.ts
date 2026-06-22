@@ -161,28 +161,24 @@ export async function ensureParticipation(
   try {
     const course = await ctx.prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true, isAssessmentEnabled: true },
+      select: { id: true },
     })
 
-    if (!course || course.isAssessmentEnabled) {
+    if (!course) {
       return false
     }
 
-    await ctx.prisma.participation.upsert({
+    const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
           courseId,
           participantId: ctx.user.sub,
         },
       },
-      create: {
-        course: { connect: { id: courseId } },
-        participant: { connect: { id: ctx.user.sub } },
-      },
-      update: {},
+      select: { id: true },
     })
 
-    return true
+    return participation !== null
   } catch (error) {
     console.error('ensureParticipation failed', {
       courseId,
@@ -1249,6 +1245,7 @@ export async function correctAssessmentPointsInstance(
     studentReason,
     scope,
     participantId,
+    participantIds,
   }: {
     instanceId: number
     awardBasePoints?: boolean | null // true = award, null / undefined = no change
@@ -1259,13 +1256,22 @@ export async function correctAssessmentPointsInstance(
     deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
     reason: string
     studentReason: string
-    scope: DB.PointCorrectionType // SINGLE = single participant, PARTICIPATING = all participants with a response to this instance, ALL_COURSE = all participants of the assessment course
+    scope: DB.PointCorrectionType // SINGLE = single participant, MULTIPLE = multiple participants, PARTICIPATING = all participants with a response to this instance, ALL_COURSE = all participants of the assessment course
     participantId?: string | null
+    participantIds?: string[] | null
   },
   ctx: ContextWithUser
 ) {
   // if the scope is set to a single participant, but no participant is provided, return early
   if (scope === PointCorrectionType.SINGLE && !participantId) {
+    return null
+  }
+
+  // if the scope is set to multiple participants, but no participants are provided, return early
+  if (
+    scope === PointCorrectionType.MULTIPLE &&
+    (!participantIds || participantIds.length === 0)
+  ) {
     return null
   }
 
@@ -1509,11 +1515,20 @@ export async function correctAssessmentPointsInstance(
     return createdCorrection
   }
 
-  // if the points of all students in the course should be modified, fetch all responses and update them
-  if (scope === PointCorrectionType.ALL_COURSE) {
+  // if the points of multiple students / all students in the course should be modified, fetch all responses and update them
+  if (
+    scope === PointCorrectionType.ALL_COURSE ||
+    scope === PointCorrectionType.MULTIPLE
+  ) {
     // find all participants of the course and the corresponding responses for the given instance
     const participations = await ctx.prisma.participation.findMany({
-      where: { courseId: instance.elementBlock.liveQuiz.courseId! },
+      where: {
+        courseId: instance.elementBlock.liveQuiz.courseId!,
+        participantId:
+          scope === PointCorrectionType.MULTIPLE
+            ? { in: participantIds! }
+            : undefined,
+      },
       include: {
         participant: {
           include: {
@@ -1550,11 +1565,15 @@ export async function correctAssessmentPointsInstance(
                 : null,
             reason,
             studentReason,
-            type: PointCorrectionType.ALL_COURSE,
+            type: scope,
             correctedBy: { connect: { id: ctx.user.sub } },
+            participants:
+              scope === PointCorrectionType.MULTIPLE
+                ? { connect: participantIds!.map((id) => ({ id })) }
+                : undefined,
             instance: { connect: { id: instanceId } },
           },
-          include: { correctedBy: true, instance: true },
+          include: { correctedBy: true, participants: true, instance: true },
         })
 
         // initialize the audit log entries that should be executed
@@ -1619,6 +1638,7 @@ export async function correctAssessmentPointsLiveQuiz(
     studentReason,
     scope,
     participantId,
+    participantIds,
   }: {
     liveQuizId: string
     awardBasePoints?: boolean | null // true = award, null / undefined = no change
@@ -1629,13 +1649,22 @@ export async function correctAssessmentPointsLiveQuiz(
     deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
     reason: string
     studentReason: string
-    scope: DB.PointCorrectionType // SINGLE -> single participant, PARTICIPATING -> all participants with a response to some question, ALL_COURSE -> all participants in the assessment course
+    scope: DB.PointCorrectionType // SINGLE -> single participant, MULTIPLE -> multiple participants, PARTICIPATING -> all participants with a response to some question, ALL_COURSE -> all participants in the assessment course
     participantId?: string | null
+    participantIds?: string[] | null
   },
   ctx: ContextWithUser
 ) {
   // if the scope is set to a single participant, but no participant is provided, return early
   if (scope === PointCorrectionType.SINGLE && !participantId) {
+    return null
+  }
+
+  // if the scope is set to multiple participants, but no participants are provided, return early
+  if (
+    scope === PointCorrectionType.MULTIPLE &&
+    (!participantIds || participantIds.length === 0)
+  ) {
     return null
   }
 
@@ -1757,7 +1786,12 @@ export async function correctAssessmentPointsLiveQuiz(
             participant: { connect: { id: participantId } },
             liveQuiz: { connect: { id: liveQuiz.id } },
           },
-          include: { correctedBy: true, participant: true, liveQuiz: true },
+          include: {
+            correctedBy: true,
+            participant: true,
+            participants: true,
+            liveQuiz: true,
+          },
         })
 
         // initialize the audit log entries that should be executed
@@ -1956,11 +1990,20 @@ export async function correctAssessmentPointsLiveQuiz(
     return createdCorrection
   }
 
-  // if the points of all students in the course should be modified, fetch all responses and update them
-  if (scope === PointCorrectionType.ALL_COURSE) {
+  // if the points of multiple students / all students in the course should be modified, fetch all responses and update them
+  if (
+    scope === PointCorrectionType.ALL_COURSE ||
+    scope === PointCorrectionType.MULTIPLE
+  ) {
     // get all participations of the course, including the linked participants
     const participations = await ctx.prisma.participation.findMany({
-      where: { courseId: liveQuiz.courseId },
+      where: {
+        courseId: liveQuiz.courseId,
+        participantId:
+          scope === PointCorrectionType.MULTIPLE
+            ? { in: participantIds! }
+            : undefined,
+      },
       include: { participant: true },
     })
 
@@ -1987,11 +2030,15 @@ export async function correctAssessmentPointsLiveQuiz(
                 : null,
             reason,
             studentReason,
-            type: PointCorrectionType.ALL_COURSE,
+            type: scope,
             correctedBy: { connect: { id: ctx.user.sub } },
+            participants:
+              scope === PointCorrectionType.MULTIPLE
+                ? { connect: participantIds!.map((id) => ({ id })) }
+                : undefined,
             liveQuiz: { connect: { id: liveQuiz.id } },
           },
-          include: { correctedBy: true, liveQuiz: true },
+          include: { correctedBy: true, participants: true, liveQuiz: true },
         })
 
         // initialize the audit log entries that should be executed
@@ -2121,6 +2168,11 @@ export async function getPreviousPointCorrections(
                 accounts: { where: { ssoType: preferredAffiliation } },
               },
             },
+            participants: {
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -2130,14 +2182,22 @@ export async function getPreviousPointCorrections(
     return instance?.corrections
       ? instance.corrections.map((correction) => {
           let participant = correction.participant
-          if (!participant) return correction
+          let participants = correction.participants
+          if (!participant && !participants) return correction
 
-          participant['email'] =
-            correction.participant?.accounts[0]?.ssoEmail ??
-            correction.participant?.email ??
-            null
+          if (participant) {
+            participant['email'] =
+              correction.participant?.accounts[0]?.ssoEmail ??
+              correction.participant?.email ??
+              null
+          } else if (participants) {
+            participants = correction.participants.map((p) => {
+              p['email'] = p.accounts[0]?.ssoEmail ?? p.email ?? null
+              return p
+            })
+          }
 
-          return { ...correction, participant, instance }
+          return { ...correction, participant, participants, instance }
         })
       : []
   } else if (liveQuizId !== null && typeof liveQuizId !== 'undefined') {
@@ -2166,6 +2226,11 @@ export async function getPreviousPointCorrections(
                 accounts: { where: { ssoType: preferredAffiliation } },
               },
             },
+            participants: {
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
+            },
           },
         },
         // include the corrections of all instances as well
@@ -2177,6 +2242,11 @@ export async function getPreviousPointCorrections(
                   include: {
                     correctedBy: true,
                     participant: {
+                      include: {
+                        accounts: { where: { ssoType: preferredAffiliation } },
+                      },
+                    },
+                    participants: {
                       include: {
                         accounts: { where: { ssoType: preferredAffiliation } },
                       },
@@ -2196,17 +2266,27 @@ export async function getPreviousPointCorrections(
       block.elements.flatMap((element) =>
         element.corrections.map((correction) => {
           let participant = correction.participant
-          if (!participant) return { ...correction, instance: element }
+          let participants = correction.participants
+          if (!participant && !participants)
+            return { ...correction, instance: element }
 
-          participant['email'] =
-            correction.participant?.accounts[0]?.ssoEmail ??
-            correction.participant?.email ??
-            null
+          if (participant) {
+            participant['email'] =
+              correction.participant?.accounts[0]?.ssoEmail ??
+              correction.participant?.email ??
+              null
+          } else if (participants) {
+            participants = correction.participants.map((p) => {
+              p['email'] = p.accounts[0]?.ssoEmail ?? p.email ?? null
+              return p
+            })
+          }
 
           return {
             ...correction,
             instance: element,
             participant,
+            participants,
           }
         })
       )
@@ -2214,14 +2294,22 @@ export async function getPreviousPointCorrections(
 
     const quizCorrections = liveQuiz?.corrections.map((correction) => {
       let participant = correction.participant
-      if (!participant) return correction
+      let participants = correction.participants
+      if (!participant && !participants) return correction
 
-      participant['email'] =
-        correction.participant?.accounts[0]?.ssoEmail ??
-        correction.participant?.email ??
-        null
+      if (participant) {
+        participant['email'] =
+          correction.participant?.accounts[0]?.ssoEmail ??
+          correction.participant?.email ??
+          null
+      } else if (participants) {
+        participants = correction.participants.map((p) => {
+          p['email'] = p.accounts[0]?.ssoEmail ?? p.email ?? null
+          return p
+        })
+      }
 
-      return { ...correction, participant }
+      return { ...correction, participant, participants }
     })
 
     // return both the quiz- and instance-level corrections

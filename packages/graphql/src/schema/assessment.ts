@@ -172,6 +172,7 @@ export const PointCorrectionRef = builder.objectRef<
   DB.PointCorrection & {
     correctedBy?: DB.User | null
     participant?: DB.Participant | null
+    participants?: DB.Participant[] | null
     liveQuiz?: DB.LiveQuiz | null
     instance?: DB.ElementInstance | null
   }
@@ -189,6 +190,10 @@ export const PointCorrection = PointCorrectionRef.implement({
     correctedBy: t.expose('correctedBy', { type: UserRef, nullable: true }),
     participant: t.expose('participant', {
       type: ParticipantRef,
+      nullable: true,
+    }),
+    participants: t.expose('participants', {
+      type: [ParticipantRef],
       nullable: true,
     }),
     liveQuiz: t.expose('liveQuiz', { type: LiveQuizRef, nullable: true }),

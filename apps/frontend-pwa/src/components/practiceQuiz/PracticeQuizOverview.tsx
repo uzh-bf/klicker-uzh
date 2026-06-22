@@ -44,34 +44,40 @@ function PracticeQuizOverview({
   const router = useRouter()
   const { data } = useQuery(SelfDocument, { skip: previewOnly })
 
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
+
   return (
     <div className="flex flex-col space-y-4">
       {!previewOnly &&
         (!data?.self || data.self.role === UserRole.TemporaryParticipant) && (
           <UserNotification type="warning">
-            {t.rich('pwa.general.userNotLoggedIn', {
-              login: (text) => (
-                <Button
-                  basic
-                  className={{
-                    root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
-                  }}
-                  onClick={() =>
-                    router.push(
-                      `/login?expired=true&redirect_to=${
-                        encodeURIComponent(
-                          window?.location?.pathname +
-                            (window?.location?.search ?? '')
-                        ) ?? '/'
-                      }`
-                    )
-                  }
-                  data={{ cy: 'login-to-student-login-collect-points' }}
-                >
-                  {text}
-                </Button>
-              ),
-            })}
+            {pageInFrame
+              ? t('pwa.general.userNotLoggedInFrame')
+              : t.rich('pwa.general.userNotLoggedIn', {
+                  login: (text) => (
+                    <Button
+                      basic
+                      className={{
+                        root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
+                      }}
+                      onClick={() =>
+                        router.push(
+                          `/login?expired=true&redirect_to=${
+                            encodeURIComponent(
+                              window?.location?.pathname +
+                                (window?.location?.search ?? '')
+                            ) ?? '/'
+                          }`
+                        )
+                      }
+                      data={{ cy: 'login-to-student-login-collect-points' }}
+                    >
+                      {text}
+                    </Button>
+                  ),
+                })}
           </UserNotification>
         )}
 

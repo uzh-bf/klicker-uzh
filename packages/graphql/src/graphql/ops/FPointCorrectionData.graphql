@@ -18,6 +18,11 @@ fragment PointCorrectionData on PointCorrection {
     username
     email
   }
+  participants {
+    id
+    username
+    email
+  }
   liveQuiz {
     id
     name

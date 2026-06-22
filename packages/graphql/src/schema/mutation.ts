@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -68,7 +69,12 @@ import {
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
-import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
+import {
+  AnswerCollection,
+  AnswerCollectionEntry,
+  Chatbot,
+  ChatbotReasoningConfigInput,
+} from './resource.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -1381,6 +1387,23 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      updateChatbotModelSettings: t.withAuth(asUser).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
       updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: { courseId: t.arg.string({ required: true }) },
@@ -1465,6 +1488,7 @@ export const Mutation = builder.mutationType({
           studentReason: t.arg.string({ required: true }),
           scope: t.arg({ type: PointCorrectionType, required: true }),
           participantId: t.arg.string({ required: false }),
+          participantIds: t.arg.stringList({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.correctAssessmentPointsInstance(args, ctx)
@@ -1486,6 +1510,7 @@ export const Mutation = builder.mutationType({
           studentReason: t.arg.string({ required: true }),
           scope: t.arg({ type: PointCorrectionType, required: true }),
           participantId: t.arg.string({ required: false }),
+          participantIds: t.arg.stringList({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.correctAssessmentPointsLiveQuiz(args, ctx)

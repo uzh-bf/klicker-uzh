@@ -1,8 +1,9 @@
 import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
-import { FormikSelectField } from '@uzh-bf/design-system'
+import { FormikSelectField, FormLabel } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
+import Select from 'react-select'
 import type { PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsAudienceStep({
@@ -16,6 +17,8 @@ function PointCorrectionsAudienceStep({
   const [participantScopeField] =
     useField<PointCorrectionsFormValues['participantScope']>('participantScope')
   const [participantField, _, participantHelpers] = useField('participantId')
+  const [participantsField, __, participantsHelpers] =
+    useField('participantIds')
 
   useEffect(() => {
     if (
@@ -51,6 +54,10 @@ function PointCorrectionsAudienceStep({
                 label: t('manage.pointCorrections.audienceOptionSingle'),
               },
               {
+                value: PointCorrectionType.Multiple,
+                label: t('manage.pointCorrections.audienceOptionMultiple'),
+              },
+              {
                 value: PointCorrectionType.Participating,
                 label: t('manage.pointCorrections.audienceOptionParticipating'),
               },
@@ -74,6 +81,31 @@ function PointCorrectionsAudienceStep({
               placeholder={t('manage.pointCorrections.participantPlaceholder')}
               items={participantOptions}
               className={{ select: { trigger: 'h-9 w-72' } }}
+            />
+          </div>
+        ) : null}
+
+        {participantScopeField.value === PointCorrectionType.Multiple ? (
+          <div>
+            <FormLabel
+              required
+              labelType="small"
+              label={t('manage.pointCorrections.participantsLabel')}
+            />
+            <Select
+              required
+              isMulti
+              value={participantOptions.filter((option) =>
+                participantsField.value.includes(option.value)
+              )}
+              placeholder={t('manage.pointCorrections.participantsPlaceholder')}
+              options={participantOptions}
+              onChange={(selected) =>
+                participantsHelpers.setValue(
+                  selected.map((option) => option.value)
+                )
+              }
+              className="h-max min-h-9 w-96"
             />
           </div>
         ) : null}

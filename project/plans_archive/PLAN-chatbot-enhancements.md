@@ -9,6 +9,19 @@ This document outlines the implementation plan for enhancing the chat applicatio
 3. **Tool filtering per mode** - Control which tools from each MCP server are available based on the chat mode (tutor, explainer, etc.)
 4. **Priority-based MCP loading** - Define the order in which MCP servers are loaded and how tool conflicts are resolved
 
+## Compatibility with Course↔Chatbot N:N
+
+- MCP configuration remains chatbot-scoped; access/routing will move to course-scoped endpoints once a link table exists.
+- If course-scoped contexts are introduced, consider whether MCP calls should include course context (header or tool metadata) in addition to chatbot ID.
+
+## Progress (feat/chat-gpt-5-1)
+
+**Done on this branch**
+- Updated GPT-5.1 Azure integration to use the Azure Responses API (`/openai/v1/responses`) with `api-version=preview` for reliable streaming.
+
+**Remaining**
+- If we move to course-scoped chat context with course↔chatbot many-to-many, consider passing course context to MCP calls and/or supporting per-course overrides for MCP configuration.
+
 ## Architecture Goals
 
 - **Relational design** - Use dedicated tables for MCP servers with proper relationships

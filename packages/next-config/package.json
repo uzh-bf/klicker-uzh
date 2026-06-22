@@ -5,7 +5,10 @@
     "index.js"
   ],
   "peerDependencies": {
-    "next": "^15.3.4"
+    "next": "^15.5.18"
+  },
+  "engines": {
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

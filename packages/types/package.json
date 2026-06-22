@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@hatchet-dev/typescript-sdk": "~1.9.4",
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "graphql-yoga": "~3.9.1",
     "ioredis": "~5.4.1",
@@ -29,11 +29,11 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit -p tsconfig.json",
     "dev": "tsc -w -p tsconfig.json",
-    "dev:doppler": "doppler run --config dev -- pnpm run dev",
+    "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:ts": "tsc -w -p tsconfig.json"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"
