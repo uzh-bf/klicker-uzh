@@ -29,13 +29,29 @@ HATCHET_CHECK_HOST="${HATCHET_CHECK_HOST:-localhost}"
 HATCHET_HTTP_PORT="${HATCHET_HTTP_PORT:-8888}"
 HATCHET_GRPC_PORT="${HATCHET_GRPC_PORT:-7077}"
 
+check_tcp() {
+  local host="$1"
+  local port="$2"
+
+  if command -v nc >/dev/null 2>&1; then
+    nc -z "$host" "$port" >/dev/null 2>&1
+    return $?
+  fi
+
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 5 bash -c ': </dev/tcp/$1/$2' _ "$host" "$port" >/dev/null 2>&1
+  else
+    bash -c ': </dev/tcp/$1/$2' _ "$host" "$port" >/dev/null 2>&1
+  fi
+}
+
 # Check Redis
 check_redis_endpoint() {
   local label="$1"
   local host="$2"
   local port="$3"
 
-  if ! nc -z "$host" "$port" 2>/dev/null; then
+  if ! check_tcp "$host" "$port"; then
     echo "$label Redis is not running on ${host}:${port}"
     return 1
   fi
@@ -60,7 +76,7 @@ check_redis() {
 
 # Check PostgreSQL
 check_postgres() {
-  if ! nc -z "$POSTGRES_CHECK_HOST" "$POSTGRES_CHECK_PORT" 2>/dev/null; then
+  if ! check_tcp "$POSTGRES_CHECK_HOST" "$POSTGRES_CHECK_PORT"; then
     echo "PostgreSQL is not running on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT}"
     return 1
   fi
@@ -77,12 +93,19 @@ check_hatchet() {
   fi
 
   # Check gRPC port
-  if ! nc -z "$HATCHET_CHECK_HOST" "$HATCHET_GRPC_PORT" 2>/dev/null; then
+  if ! check_tcp "$HATCHET_CHECK_HOST" "$HATCHET_GRPC_PORT"; then
     echo "Hatchet gRPC is not ready on ${HATCHET_CHECK_HOST}:${HATCHET_GRPC_PORT}"
     return 1
   fi
 
   echo "Hatchet is ready (HTTP: ${HATCHET_HTTP_PORT}, gRPC: ${HATCHET_GRPC_PORT})"
+  return 0
+}
+
+check_dependencies() {
+  check_redis || return 1
+  check_postgres || return 1
+  check_hatchet || return 1
   return 0
 }
 
@@ -117,9 +140,22 @@ trap cleanup EXIT
 
 # Check dependencies before starting
 echo "🔍 Checking dependencies..."
-check_redis || { echo "Redis check failed"; exit 1; }
-check_postgres || { echo "PostgreSQL check failed"; exit 1; }
-check_hatchet || { echo "Hatchet check failed"; exit 1; }
+dependencies_elapsed=0
+while [ $dependencies_elapsed -lt $TIMEOUT_SECONDS ]; do
+  if check_dependencies; then
+    echo "✨ Dependencies are ready!"
+    break
+  fi
+
+  sleep $CHECK_INTERVAL
+  dependencies_elapsed=$((dependencies_elapsed + CHECK_INTERVAL))
+  echo "⏳ Still waiting for dependencies... ($dependencies_elapsed seconds elapsed)"
+done
+
+if [ $dependencies_elapsed -ge $TIMEOUT_SECONDS ]; then
+  echo "Dependency check failed"
+  exit 1
+fi
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."
