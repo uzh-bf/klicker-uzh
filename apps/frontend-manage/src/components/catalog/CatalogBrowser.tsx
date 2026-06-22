@@ -1,4 +1,6 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { trpc } from '../../lib/trpc'
 import ObjectImport from './actions/ObjectImport'
@@ -9,28 +11,42 @@ function CatalogBrowser({
 }: {
   catalogCollectionId?: string
 }) {
+  const t = useTranslations()
   const router = useRouter()
   const isCollectionView = typeof catalogCollectionId === 'string'
 
   // get current collection metadata (only if inside a collection)
-  const { data: metaData, isLoading: metaDataLoading } =
-    trpc.sharing.catalogCollectionInfo.useQuery(
-      { catalogCollectionId },
-      {
-        enabled: isCollectionView,
-      }
-    )
+  const {
+    data: metaData,
+    error: metaDataError,
+    isLoading: metaDataLoading,
+  } = trpc.sharing.catalogCollectionInfo.useQuery(
+    { catalogCollectionId },
+    {
+      enabled: isCollectionView,
+    }
+  )
   const collectionInfo = metaData?.catalogCollectionInfo
 
-  if (isCollectionView && metaDataLoading) {
+  if (isCollectionView && metaDataLoading && !collectionInfo) {
     return <Loader />
+  }
+
+  if (isCollectionView && metaDataError && !collectionInfo) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
   // redirect user to home of catalog if access is not valid
   if (
     typeof catalogCollectionId !== 'undefined' &&
     !collectionInfo &&
-    !metaDataLoading
+    !metaDataLoading &&
+    !metaDataError
   ) {
     void router.push('/resources/catalog')
   }

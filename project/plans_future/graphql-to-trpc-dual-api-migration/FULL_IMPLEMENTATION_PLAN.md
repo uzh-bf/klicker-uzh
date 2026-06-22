@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Catalog Collection Metadata Error Cleanup
+
+Status: complete. Scope stayed within the already migrated
+frontend-manage catalog collection metadata tRPC query. No new migration slice,
+S06 cleanup, GraphQL removal, Apollo removal, or subscription cleanup is being
+started.
+
+Finding:
+
+- `CatalogBrowser` loads collection metadata through the migrated
+  `sharing.catalogCollectionInfo` tRPC query, but a failed metadata request is
+  indistinguishable from a missing/inaccessible collection. The component
+  redirects to `/resources/catalog`, hiding the transport failure.
+
+Change:
+
+- Keep the existing loader while collection metadata is initially loading.
+- Show the existing generic system-error notification when the collection
+  metadata request fails without usable data.
+- Preserve the existing redirect when the collection is genuinely missing or
+  inaccessible.
+
+Evidence:
+
+- PR #5132 current head is `050badb2d78e76900d396199ec529f737946af82`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for current React Query query/mutation
+  patterns before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed catalog browser component and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed component.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept the successful stale-data path
+  and genuine missing/inaccessible redirect unchanged, adding only the missing
+  initial query-error branch. Subagent review was not spawned because the
+  available multi-agent tool requires explicit user authorization.
+
+Next:
+
+- Commit and push the manage catalog collection metadata error cleanup.
+- Stop further UI-slice work until a browser/runtime verification path is
+  available or the user explicitly asks to continue with static-only audit
+  slices.
+
 ### 2026-06-22 Completed: Manage Weekly Activity Comparison Error Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-manage weekly
