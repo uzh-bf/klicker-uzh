@@ -3,7 +3,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
-import { H3 } from '@uzh-bf/design-system'
+import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState, type ComponentProps } from 'react'
 import {
@@ -42,7 +42,7 @@ function TemplateElementPreview({
         'CaseStudyElementData')
 
   // fetch answer collection entries for the selected answer collection (for preview)
-  const { data: answerCollectionData } =
+  const { data: answerCollectionData, error: answerCollectionError } =
     trpc.activity.templatePreviewAnswerCollectionEntries.useQuery(
       {
         templateId,
@@ -60,15 +60,18 @@ function TemplateElementPreview({
   const shouldFetchArtificialInstance =
     templateElement.useExistingElement && existingElementId !== -1
 
-  const { data: artificialInstanceData, isLoading: artificialInstanceLoading } =
-    trpc.element.artificialInstance.useQuery(
-      {
-        elementId: existingElementId,
-      },
-      {
-        enabled: shouldFetchArtificialInstance,
-      }
-    )
+  const {
+    data: artificialInstanceData,
+    error: artificialInstanceError,
+    isLoading: artificialInstanceLoading,
+  } = trpc.element.artificialInstance.useQuery(
+    {
+      elementId: existingElementId,
+    },
+    {
+      enabled: shouldFetchArtificialInstance,
+    }
+  )
 
   const artificialInstance = artificialInstanceData?.artificialInstance as
     | ElementInstance
@@ -132,12 +135,29 @@ function TemplateElementPreview({
     templateElement.useTemplateInstance || showTemplateInstancePreview
       ? templateElement.instance
       : loadedInstance
+  const usesComputedPreview =
+    !templateElement.useTemplateInstance && !showTemplateInstancePreview
+  const previewUnavailable =
+    usesComputedPreview &&
+    (Boolean(answerCollectionError) ||
+      Boolean(artificialInstanceError) ||
+      (shouldFetchArtificialInstance &&
+        !artificialInstanceLoading &&
+        !artificialInstance))
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
     instance: effectiveInstance as StudentElementInstance | null,
     setStudentResponse,
   })
+
+  if (previewUnavailable) {
+    return (
+      <UserNotification type="error">
+        {t('shared.generic.systemError')}
+      </UserNotification>
+    )
+  }
 
   if (!effectiveInstance) {
     return <Loader />

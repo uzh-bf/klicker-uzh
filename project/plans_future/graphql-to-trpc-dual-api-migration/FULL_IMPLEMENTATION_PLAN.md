@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Template Element Preview Failure Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-manage
+live-quiz template preview component and its `element.artificialInstance` tRPC
+query. No new migration slice, S06 cleanup, GraphQL removal, Apollo removal, or
+subscription cleanup is being started.
+
+Finding:
+
+- In the live-quiz template wizard, choosing an existing element for preview
+  depends on the migrated `element.artificialInstance` tRPC query. If that query
+  fails or returns no preview instance after loading, the component keeps
+  rendering `<Loader />`, which looks like an endless load instead of a clean
+  failure state.
+
+Change:
+
+- Keep the current loader while the selected existing element preview is still
+  loading.
+- Show the existing generic system-error notification when the selected
+- existing element preview or the answer-collection data needed for a computed
+  preview cannot be loaded.
+- Leave template-instance and newly defined element previews unchanged.
+
+Evidence:
+
+- PR #5132 current head is `98b3618bdb8b305af755539441c3abdd0b2e6d1c`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for current React Query mutation/cache
+  helper patterns before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed template preview component and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed component.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept template-instance preview,
+  normal computed preview, and loading behavior unchanged. Only failed or
+  unavailable computed preview data now exits the endless loader path with the
+  existing generic error notification.
+
+Next:
+
+- Commit and push the manage template element preview failure cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: Manage Course Leaderboard Recompute Result Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-manage
