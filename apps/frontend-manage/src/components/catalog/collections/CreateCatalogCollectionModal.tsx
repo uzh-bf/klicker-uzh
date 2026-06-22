@@ -7,6 +7,7 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as yup from 'yup'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
@@ -24,7 +25,8 @@ function CreateCatalogCollectionModal({
   const utils = trpc.useUtils()
   const createCatalogCollection =
     trpc.sharing.createCatalogCollection.useMutation()
-  const creating = createCatalogCollection.isLoading
+  const [createPending, setCreatePending] = useState(false)
+  const creating = createCatalogCollection.isLoading || createPending
   const handleClose = () => {
     if (!creating) {
       onClose()
@@ -35,6 +37,7 @@ function CreateCatalogCollectionModal({
     <Modal
       open
       onClose={handleClose}
+      escapeDisabled={creating}
       title={t('manage.catalog.createCatalogCollectionTitle')}
       data={{ cy: 'create-catalog-collection-modal' }}
       className={{ content: 'pb-1' }}
@@ -53,6 +56,11 @@ function CreateCatalogCollectionModal({
           access: yup.string().required(t('manage.catalog.accessRequired')),
         })}
         onSubmit={async (values, { resetForm }) => {
+          if (createPending) return
+
+          setCreatePending(true)
+          let didCreateCollection = false
+
           try {
             const input: RouterInputs['sharing']['createCatalogCollection'] = {
               name: values.name,
@@ -72,13 +80,19 @@ function CreateCatalogCollectionModal({
                 })
               )
               resetForm()
-              onSuccess()
+              didCreateCollection = true
             } else {
               onError()
             }
           } catch (error) {
             console.error('Error creating catalog collection:', error)
             onError()
+          } finally {
+            setCreatePending(false)
+
+            if (didCreateCollection) {
+              onSuccess()
+            }
           }
         }}
       >

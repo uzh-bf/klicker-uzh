@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Catalog Collection Create Close Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+catalog collection creation workflow. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Catalog collection rename and deletion already guard their close/confirm
+  controls while the migrated tRPC mutation is running.
+- `CreateCatalogCollectionModal` disabled its visible cancel/submit buttons
+  during Formik submission, but the modal close path only checked the tRPC
+  mutation `isLoading` flag. That left a narrow gap where the modal close/escape
+  path could dismiss the form while Formik submission had started but before the
+  mutation state was visible.
+- Context7 Formik docs were refreshed before this change. They confirm Formik
+  exposes `isSubmitting` for async submit phases, while the modal-level close
+  guard needs local state because the close handler lives outside the Formik
+  render props.
+
+Changes:
+
+- Add a local `createPending` state that spans Formik submit handling and the
+  tRPC `sharing.createCatalogCollection` mutation.
+- Use the combined pending state for modal close/escape, cancel, and submit
+  loading/disabled behavior.
+- Preserve the existing tRPC cache `setData`, success/error callbacks, and
+  GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/catalog/collections/CreateCatalogCollectionModal.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because the available multi-agent
+  tool explicitly requires a user request before spawning subagents.
+
+Next:
+
+- Commit and push this focused catalog collection create close guard.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage User Group Edit Action Loading
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
