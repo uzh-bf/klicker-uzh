@@ -16,61 +16,67 @@ function DelegatedPasswordChangeModal({
 }) {
   const t = useTranslations()
   const updateUserLogin = trpc.user.updateUserLogin.useMutation()
+  const handleClose = (isSubmitting: boolean) => {
+    if (!isSubmitting) {
+      onClose()
+    }
+  }
 
   if (!loginId) {
     return null
   }
 
   return (
-    <Modal
-      open
-      title={t('manage.settings.changeDelegatedLoginPassword')}
-      onClose={onClose}
-      className={{
-        content: 'min-h-40! max-w-100 h-max pb-2',
+    <Formik
+      initialValues={{
+        password: generatePassword.generate(PW_SETTINGS),
+      }}
+      validationSchema={Yup.object().shape({
+        password: Yup.string().required(),
+      })}
+      onSubmit={async (values, { setSubmitting }) => {
+        setSubmitting(true)
+        try {
+          const result = await updateUserLogin.mutateAsync({
+            id: loginId,
+            password: values.password,
+          })
+
+          if (!result?.id) {
+            throw new Error('Failed to change delegated login password')
+          }
+
+          onClose()
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        } finally {
+          setSubmitting(false)
+        }
       }}
     >
-      <div className="mb-3 text-sm">
-        {t('manage.settings.changeDelegatedLoginPasswordMessage')}
-      </div>
-      <Formik
-        initialValues={{
-          password: generatePassword.generate(PW_SETTINGS),
-        }}
-        validationSchema={Yup.object().shape({
-          password: Yup.string().required(),
-        })}
-        onSubmit={async (values, { setSubmitting }) => {
-          setSubmitting(true)
-          try {
-            const result = await updateUserLogin.mutateAsync({
-              id: loginId,
-              password: values.password,
-            })
-
-            if (!result?.id) {
-              throw new Error('Failed to change delegated login password')
-            }
-
-            onClose()
-          } catch (error) {
-            console.error(error)
-            toast({
-              type: 'error',
-              message: t('shared.generic.systemError'),
-              options: { duration: 5000 },
-            })
-          } finally {
-            setSubmitting(false)
-          }
-        }}
-      >
-        {({ values, setFieldValue, isValid, isSubmitting }) => (
+      {({ values, setFieldValue, isValid, isSubmitting }) => (
+        <Modal
+          open
+          title={t('manage.settings.changeDelegatedLoginPassword')}
+          onClose={() => handleClose(isSubmitting)}
+          className={{
+            content: 'min-h-40! max-w-100 h-max pb-2',
+          }}
+        >
+          <div className="mb-3 text-sm">
+            {t('manage.settings.changeDelegatedLoginPasswordMessage')}
+          </div>
           <Form className="w-full">
             <DelegatedAccessPassword
               modificationMode
               password={values.password}
               setFieldValue={setFieldValue}
+              disableGenerate={isSubmitting}
               className="mb-2 md:w-full"
             />
             <Button
@@ -85,9 +91,9 @@ function DelegatedPasswordChangeModal({
               <Button.Label>{t('manage.settings.changePassword')}</Button.Label>
             </Button>
           </Form>
-        )}
-      </Formik>
-    </Modal>
+        </Modal>
+      )}
+    </Formik>
   )
 }
 

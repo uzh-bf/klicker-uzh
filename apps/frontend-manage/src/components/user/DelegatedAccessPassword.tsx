@@ -18,11 +18,13 @@ function DelegatedAccessPassword({
   setFieldValue,
   modificationMode = false,
   className,
+  disableGenerate = false,
 }: {
   password: string
   setFieldValue: (field: string, value: string) => void
   modificationMode?: boolean
   className?: string
+  disableGenerate?: boolean
 }) {
   const t = useTranslations()
 
@@ -71,6 +73,7 @@ function DelegatedAccessPassword({
           onClick={() =>
             setFieldValue('password', generatePassword.generate(PW_SETTINGS))
           }
+          disabled={disableGenerate}
           className={{ root: 'h-8 w-8' }}
           data={{ cy: 'generate-new-delegated-login-password' }}
         >

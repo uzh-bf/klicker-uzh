@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Delegated Password Change Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+delegated-login password update mutation. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `6c036e07cb1b5f4a5c2a434b877b7d4b5cf4b784`.
+- Fresh PR checks have no red jobs. GitGuardian, lint, format, Claude review,
+  one check job, `packages/api tRPC Vitest`, one test job, several CodeQL jobs,
+  and some Docker builds are green; Cypress Cloud, `packages/graphql Vitest`,
+  SonarCloud, JavaScript analyzers, and remaining builds/tests are still
+  pending.
+- `DelegatedPasswordChangeModal` uses the migrated `trpc.user.updateUserLogin`
+  mutation through Formik. The submit button already disables while submitting.
+- The modal `onClose` path remains active during submission, so the password
+  change dialog can close while the tRPC update is in flight.
+- The nested delegated-password generator also remains active during
+  submission, which can change the displayed password while the mutation is
+  saving the previous submitted value. The copy button can stay available
+  because copying the visible generated password is still useful.
+- Context7 Formik docs were refreshed in this turn. They confirm
+  `isSubmitting` is true while async submission is in progress and submit
+  buttons should use it to prevent duplicate submits.
+
+Changes:
+
+- Guard the delegated password-change modal close path with `isSubmitting` and
+  disable only password regeneration while the update mutation is active.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/user/DelegatedAccessPassword.tsx apps/frontend-manage/src/components/user/DelegatedPasswordChangeModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Passed: local review and simplification of the focused diff. No subagent was
+  spawned because the current multi-agent tool contract only allows delegated
+  agents when explicitly requested by the user.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` also returns connection refused from this checkout.
+
+Next:
+
+- Commit and push this focused manage delegated-password change guard cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Delegated Login Confirmation Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
