@@ -671,7 +671,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     //  start editing again and check if correct values were saved
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -789,7 +789,7 @@ describe('Different live-quiz workflows', function () {
       .should('contain', this.data.SC.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
     ).should('exist')
@@ -999,7 +999,7 @@ describe('Different live-quiz workflows', function () {
       type: 'block',
     })
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
     ).should('exist')
@@ -1798,7 +1798,7 @@ describe('Different live-quiz workflows', function () {
     })
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1836,7 +1836,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1887,7 +1887,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1920,7 +1920,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -2070,7 +2070,7 @@ describe('Different live-quiz workflows', function () {
       .should('contain', this.data.liveQuiz.newSCTitle.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
     ).should('exist')
@@ -3782,7 +3782,7 @@ describe('Different live-quiz workflows', function () {
         },
       ],
     })
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.details.name}"]`).should(
       'exist'
     )
@@ -3971,7 +3971,7 @@ describe('Different live-quiz workflows', function () {
         },
       ],
     })
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.details.nameNonGamified}"]`
     ).should('exist')
@@ -4102,7 +4102,7 @@ describe('Different live-quiz workflows', function () {
         },
       ],
     })
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get('[data-cy="activities-search-input"]').type(
       `${this.data.details.nameNoCourse}{enter}`
     )

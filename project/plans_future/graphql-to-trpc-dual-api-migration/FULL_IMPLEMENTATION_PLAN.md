@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Live-Quiz Completion Cache Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and
+the already migrated manage live-quiz authoring workflows. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head was `6f30949d0db9748bafa1116d72ab19f6b54bbec9`.
+- Non-Cypress PR checks on that head were green, including
+  `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+- Cypress Cloud run `6858` reported `3 tests failed`, but the GitHub
+  `cypress-run-cloud` job remained stuck in the Cloud recording step and did
+  not expose logs yet. Cypress Cloud itself required login for direct failure
+  details.
+- The live-quiz authoring helper awaited activity-list invalidation before
+  showing the completion action, but course-detail invalidations were still
+  fire-and-forget. Tests and users could therefore leave the completion screen
+  before course-level live-quiz lists/tabs were refreshed.
+- Several O live-quiz Cypress transitions clicked the completion action
+  immediately after submit without first asserting that the completion action
+  had rendered. The first create path already had that wait; edit, duplicate,
+  and later live-quiz creation paths did not.
+
+Changes:
+
+- Live-quiz create/edit submission now collects affected course IDs and awaits
+  course-detail invalidation together with the activity-list invalidation before
+  showing wizard completion.
+- The O live-quiz Cypress workflow now waits for
+  `[data-cy="open-activity-overview"]` before clicking it at every wizard exit,
+  so post-submit assertions start from the explicit completion state.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query query/mutation state and
+  cache utility patterns before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md apps/frontend-manage/src/components/activities/creation/liveQuiz/submitLiveQuizForm.tsx cypress/cypress/e2e/O-live-quiz-workflow.cy.ts`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/local Cypress remains blocked in this temp worktree for the same
+  reason as the previous pass: the full local dev stack is not running here, and
+  prior direct Cypress typecheck could not resolve local Cypress type packages.
+
+Next:
+
+- Commit and push this focused live-quiz completion cache-boundary cleanup.
+- Recheck the new PR head for GraphQL/tRPC package parity and Cypress Cloud.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Manage Live-Quiz Creation Pending-State Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and

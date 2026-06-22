@@ -50,6 +50,7 @@ async function submitLiveQuizForm({
 
   try {
     let success = false
+    const courseIdsToInvalidate = new Set<string>()
 
     const createOrUpdateJSON = {
       name: values.name,
@@ -78,14 +79,12 @@ async function submitLiveQuizForm({
 
       success = Boolean(result.editLiveQuiz)
       if (result.editLiveQuiz) {
-        const courseIds = new Set(
-          [previousCourseId, result.editLiveQuiz.courseId].filter(
-            (courseId): courseId is string => Boolean(courseId)
-          )
-        )
-        void Promise.all(
-          Array.from(courseIds).map(invalidateCourseDetail)
-        ).catch(console.error)
+        const courseIds = [
+          previousCourseId,
+          result.editLiveQuiz.courseId,
+        ].filter((courseId): courseId is string => Boolean(courseId))
+
+        courseIds.forEach((courseId) => courseIdsToInvalidate.add(courseId))
       }
     } else {
       const result = await createLiveQuiz({
@@ -95,14 +94,17 @@ async function submitLiveQuizForm({
 
       success = Boolean(result.createLiveQuiz)
       if (result.createLiveQuiz?.courseId) {
-        void invalidateCourseDetail(result.createLiveQuiz.courseId).catch(
-          console.error
-        )
+        courseIdsToInvalidate.add(result.createLiveQuiz.courseId)
       }
     }
 
     if (success) {
-      await invalidateActivities()
+      await Promise.all([
+        invalidateActivities(),
+        ...Array.from(courseIdsToInvalidate).map((courseId) =>
+          invalidateCourseDetail(courseId).catch(console.error)
+        ),
+      ])
       setIsWizardCompleted(true)
     } else {
       onError()
