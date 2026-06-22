@@ -423,6 +423,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: PWA Login Mode Submit Guards
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa login
+page password/magic-link mutations. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `a362869d4d13cd658a82948a414e5be62fb6986e`.
+- Fresh PR checks after the previous push are pending; GitGuardian passed and
+  no red job was observed before this local slice started.
+- Context7 Formik docs were refreshed before editing. They confirm
+  `isSubmitting` is true while async submission is in progress and submit
+  buttons should use it to prevent duplicate submits.
+- `LoginForm` already disables the password-login submit button while Formik is
+  submitting.
+- The magic-link submit button shows loading while Formik is submitting but
+  does not disable duplicate submits. The password/magic-link mode switch
+  buttons also remain clickable during the same async tRPC-backed form
+  submission, allowing the visible form mode to change while the request is
+  still in flight.
+
+Changes:
+
+- Add `isSubmitting` disabled guards to the magic-link submit button and the
+  login mode-switch buttons while keeping the existing loading state and form
+  handlers unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/components/forms/LoginForm.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Passed: local review and simplification of the focused diff. No subagent was
+  spawned because the current multi-agent tool contract only allows delegated
+  agents when explicitly requested by the user.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3001` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` also returns connection refused from this checkout.
+
+Next:
+
+- Commit and push this focused PWA login-mode submit-guard cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: PWA Edit Profile Submit Guards
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
