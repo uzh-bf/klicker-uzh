@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Activity Removal Completion Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage activity overview removal workflow. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `ffa7c386fa81650ac4063b4456c06443f591c8ef`.
+- Fresh PR checks on that head were still mostly pending; GitGuardian was green
+  and draft Playwright/Cypress parallel jobs were skipped.
+- Activity removal awaited the tRPC `sharing.removeObject` mutation, but ignored
+  the nullable `removedObjectId` result. A permission or invalid-scope failure
+  could therefore close the confirmation modal as if removal succeeded.
+- After a confirmed removal, the parent activity overview refetch was launched
+  in the background, so the modal could close while the removed activity row was
+  still visible until the refetch completed.
+
+Changes:
+
+- Activity removal now treats unsupported activity types and null
+  `removedObjectId` results as failed submissions, keeping the modal open and
+  using the existing confirmation-modal system-error toast path.
+- After a confirmed removal, the modal now waits for the parent list refetch
+  attempt before closing. Refetch errors are caught and logged so a confirmed
+  server removal is not reported as failed.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  mutation pending state before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/activities/overview/ActivityRemovalModal.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3000` and `127.0.0.1:3002` both failed with connection refused, so
+  no local backend or manage dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused activity removal completion-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Course List Cache Update Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit

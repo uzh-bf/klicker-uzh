@@ -58,13 +58,20 @@ function ActivityRemovalModal({
       onSubmit={async () => {
         const objectType = getRemovalObjectType(activityType)
 
-        if (objectType) {
-          await removeObject.mutateAsync({
-            objectId: activityId,
-            objectType,
-          })
-          void refetchActivities?.().catch(console.error)
+        if (!objectType) {
+          throw new Error('Unsupported activity type')
         }
+
+        const result = await removeObject.mutateAsync({
+          objectId: activityId,
+          objectType,
+        })
+
+        if (!result.removedObjectId) {
+          throw new Error('Failed to remove activity')
+        }
+
+        await refetchActivities?.().catch(console.error)
       }}
       submitting={removeObject.isLoading}
       confirmations={confirmations}
