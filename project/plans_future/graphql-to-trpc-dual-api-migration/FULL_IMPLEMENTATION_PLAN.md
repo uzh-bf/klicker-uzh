@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage User Group Modal Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage user
+group create, leave, and delete flows. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `72d4cb2a76039fa6cd68786f6b5a7116ac5e7f19`.
+- Fresh PR checks on that head showed no red jobs. Format, lint, GitGuardian,
+  `packages/api tRPC Vitest`, one test job, and one build-arm job were green;
+  `packages/graphql Vitest`, Cypress Cloud, SonarCloud, JavaScript analyzers,
+  and the remaining build/check/test matrix were still pending.
+- Add-member flows inside `UserGroupEditModal` already stay guarded by Formik
+  `isSubmitting` through mutation and `sharing.userGroups` invalidation.
+- The leave/delete group modals only used the tRPC mutation loading flag for
+  their close/confirm guards while still awaiting `sharing.userGroups`
+  invalidation after a successful mutation.
+- The user-group creation form showed submit loading, but cancel/add/remove
+  controls and submit disabled state were not explicitly guarded by
+  `isSubmitting`.
+
+Changes:
+
+- Added local pending guards to leave/delete group modals so close, cancel, and
+  confirm stay guarded through the mutation and awaited `sharing.userGroups`
+  invalidation.
+- Guarded user-group creation cancel, add-member, remove-member, and submit
+  controls while Formik submission is active.
+- Existing success/error toasts, refresh behavior, and GraphQL/tRPC coexistence
+  remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/groups/DeleteUserGroupModal.tsx apps/frontend-manage/src/components/groups/LeaveUserGroupModal.tsx apps/frontend-manage/src/components/groups/UserGroupCreationForm.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage user-group modal pending-boundary cleanup.
+- Recheck PR #5132 checks after push, especially `packages/graphql Vitest`,
+  Cypress Cloud, SonarCloud, and the remaining build/check/test matrix.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage User Group Action Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

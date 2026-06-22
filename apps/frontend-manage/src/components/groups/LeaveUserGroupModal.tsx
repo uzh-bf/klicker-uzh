@@ -5,6 +5,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../lib/trpc'
 
 function LeaveUserGroupModal({
@@ -21,7 +22,8 @@ function LeaveUserGroupModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const leaveUserGroup = trpc.sharing.leaveUserGroup.useMutation()
-  const loading = leaveUserGroup.isLoading
+  const [leavePending, setLeavePending] = useState(false)
+  const loading = leaveUserGroup.isLoading || leavePending
   const handleClose = () => {
     if (!loading) {
       onClose()
@@ -52,10 +54,16 @@ function LeaveUserGroupModal({
       primaryLoading={loading}
       primaryDisabled={loading}
       onPrimaryAction={async () => {
+        if (loading) return
+
+        let releasePending = true
+        setLeavePending(true)
+
         try {
           const success = await leaveUserGroup.mutateAsync({ groupId })
           if (success.left) {
             await refreshUserGroups()
+            releasePending = false
             onSuccess()
           } else {
             onErrorToast()
@@ -63,6 +71,10 @@ function LeaveUserGroupModal({
         } catch (error) {
           console.error('Error leaving user group:', error)
           onErrorToast()
+        } finally {
+          if (releasePending) {
+            setLeavePending(false)
+          }
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-leave-group' }}

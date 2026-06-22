@@ -123,6 +123,7 @@ function UserGroupCreationForm({
                       </div>
                       <Button
                         onClick={() => remove(index)}
+                        disabled={isSubmitting}
                         data={{ cy: `remove-member-${index}` }}
                         className={{
                           root: 'h-9 w-9 self-end border-red-600 text-red-600 hover:text-red-600',
@@ -136,6 +137,7 @@ function UserGroupCreationForm({
                     onClick={() =>
                       push({ shortnameOrEmail: '', isAdmin: false })
                     }
+                    disabled={isSubmitting}
                     className={{ root: 'w-full' }}
                     data={{ cy: 'add-member' }}
                   >
@@ -158,6 +160,7 @@ function UserGroupCreationForm({
               <Button
                 className={{ root: 'h-8 border-red-400' }}
                 onClick={onClose}
+                disabled={isSubmitting}
                 data={{ cy: 'cancel-create-user-group' }}
               >
                 <Button.Icon icon={faBan} />
@@ -165,7 +168,7 @@ function UserGroupCreationForm({
               </Button>
               <Button
                 type="submit"
-                disabled={!isValid}
+                disabled={!isValid || isSubmitting}
                 loading={isSubmitting}
                 className={{ root: 'h-8 border-green-700' }}
                 data={{ cy: 'submit-create-user-group' }}

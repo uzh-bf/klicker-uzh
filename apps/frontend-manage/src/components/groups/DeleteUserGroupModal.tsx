@@ -20,7 +20,8 @@ function DeleteUserGroupModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const deleteUserGroup = trpc.sharing.deleteUserGroup.useMutation()
-  const loading = deleteUserGroup.isLoading
+  const [deletePending, setDeletePending] = useState(false)
+  const loading = deleteUserGroup.isLoading || deletePending
   const handleClose = () => {
     if (!loading) {
       onClose()
@@ -69,10 +70,16 @@ function DeleteUserGroupModal({
         loading || Object.values(confirmations).some((value) => !value)
       }
       onPrimaryAction={async () => {
+        if (loading) return
+
+        let releasePending = true
+        setDeletePending(true)
+
         try {
           const success = await deleteUserGroup.mutateAsync({ groupId })
           if (success.deleted) {
             await refreshUserGroups()
+            releasePending = false
             onSuccess()
           } else {
             onErrorToast()
@@ -80,6 +87,10 @@ function DeleteUserGroupModal({
         } catch (error) {
           console.error('Error deleting user group:', error)
           onErrorToast()
+        } finally {
+          if (releasePending) {
+            setDeletePending(false)
+          }
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-group' }}
