@@ -423,6 +423,71 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Control Course Missing Redirect Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-control
+course overview query. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `75a8afdc4a40d17fab9f2eb6183d5f0a8d24bed9`.
+- Fresh PR checks have no red jobs. CodeQL, GitGuardian, SonarCloud, build,
+  check, lint, format, tests, `packages/api tRPC Vitest`, and
+  `packages/graphql Vitest` are green. Cypress Cloud is still pending in the
+  Cloud recording step, so downloadable job logs are not available yet.
+- GitHub review threads queried through the first 100 threads are all resolved;
+  no unresolved inline review threads were observed.
+- Context7 Next.js Pages Router docs were refreshed before editing. They
+  confirm client redirects belong in `useEffect`, async `router.push` promises
+  can be awaited, and cancelled route changes can be observed through
+  `routeChangeError`.
+- `apps/frontend-control/src/pages/course/[id].tsx` already uses an enabled
+  tRPC query guard, initial loader, and error state. When the query succeeds
+  with no `controlCourse`, it starts `router.push('/404')` in an effect but
+  renders the generic loading-failed state while the redirect is in flight and
+  does not handle a cancelled/falsy route transition.
+- Slice review and simplification agents found no GraphQL/tRPC coexistence or
+  S05/S06 drift. The simplification pass found that an effect-set redirecting
+  state could still allow a one-render generic error flash before the effect
+  runs; this was accepted by deriving the pending redirect state directly from
+  the missing-course query result. The review pass found cancelled route errors
+  should not be treated as redirect failures; this was accepted by ignoring
+  `error.cancelled`.
+
+Changes:
+
+- Track the missing-course redirect as a pending state and render the existing
+  loader while redirecting to `/404`.
+- Add a same-origin full-page fallback when the Pages Router transition returns
+  false, and fall back to the existing error notification only if the redirect
+  promise rejects.
+- Derive the pending redirect loader from `data && !controlCourse` to avoid a
+  one-render loading-failed flash before `useEffect` runs.
+- Ignore explicit cancelled route-change errors instead of showing the generic
+  loading-failed state for user/competing navigation cancellation.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check 'apps/frontend-control/src/pages/course/[id].tsx' project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed after adding and removing a temporary `apps/frontend-control/node_modules` symlink to `/private/tmp/klicker-trpc-ux/apps/frontend-control/node_modules`: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Passed with accepted fixes: slice review and simplification agents.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3003` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` also returns connection refused from this checkout.
+
+Next:
+
+- Run the slice review and simplification checks, then commit and push this
+  focused control course missing-redirect boundary cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Sharing Form Pending Boundaries
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

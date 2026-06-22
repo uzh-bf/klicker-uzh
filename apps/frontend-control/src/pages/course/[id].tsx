@@ -4,7 +4,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
 
@@ -19,6 +19,7 @@ function Course() {
   const router = useRouter()
   const courseId = router.query.id
   const validCourseId = typeof courseId === 'string' ? courseId : undefined
+  const [redirectFailed, setRedirectFailed] = useState(false)
 
   const {
     isLoading: loading,
@@ -28,16 +29,41 @@ function Course() {
     { courseId: validCourseId ?? '' },
     { enabled: typeof validCourseId !== 'undefined' }
   )
+  const controlCourse = data?.controlCourse
+  const missingControlCourse = Boolean(data && !controlCourse)
 
   useEffect(() => {
-    if (data && !data.controlCourse) {
-      router.push('/404')
+    if (!missingControlCourse || redirectFailed) return
+
+    let cancelled = false
+
+    const redirectToNotFound = async () => {
+      try {
+        const navigated = await router.push('/404')
+        if (!navigated && !cancelled) {
+          window.location.assign('/404')
+        }
+      } catch (error) {
+        if ((error as { cancelled?: boolean }).cancelled) return
+
+        console.error(error)
+        if (!cancelled) {
+          setRedirectFailed(true)
+        }
+      }
     }
-  }, [data, router])
 
-  const controlCourse = data?.controlCourse
+    void redirectToNotFound()
 
-  if (loading && !controlCourse) {
+    return () => {
+      cancelled = true
+    }
+  }, [missingControlCourse, redirectFailed, router])
+
+  if (
+    (loading || (missingControlCourse && !redirectFailed)) &&
+    !controlCourse
+  ) {
     return (
       <Layout title={t('control.course.courseOverview')}>
         <Loader />
