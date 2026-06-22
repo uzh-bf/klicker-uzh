@@ -57,12 +57,16 @@ function ElementRemovalModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await removeObject.mutateAsync({
+        const result = await removeObject.mutateAsync({
           objectId: String(elementId),
           objectType: 'ELEMENT',
         })
-        setModalOpen(false)
-        void refetchElements().catch(console.error)
+
+        if (!result.removedObjectId) {
+          throw new Error('Failed to remove element')
+        }
+
+        await refetchElements().catch(console.error)
       }}
       submitting={removeObject.isLoading}
       confirmations={confirmations}
