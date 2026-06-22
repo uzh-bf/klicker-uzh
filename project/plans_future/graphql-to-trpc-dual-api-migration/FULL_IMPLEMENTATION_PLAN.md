@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Verification Blockers: Control Live-Quiz Refresh Boundary Cleanup
+
+Status: complete locally, with control typecheck and browser verification
+blocked by the local temp-worktree environment. Scope stays inside the tRPC
+UX/client-quality audit and already migrated frontend-control live-quiz
+workflows. No new migration slice, S06 cleanup, GraphQL removal, Apollo removal,
+or package cleanup is started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `0bd3603e0f1ca786b6d9f27f89259aa2284c9e0e`.
+- Fresh PR checks on that head are mostly pending; GitGuardian and CodeQL
+  Java/Kotlin are green.
+- Control session block activate/deactivate/end actions await the tRPC
+  mutations but launch `liveQuiz.control`, `course.controlCourse`, and
+  `liveQuiz.unassigned` invalidations in the background before advancing local
+  state or routing away.
+- Control start modal starts a live quiz and closes/routes while unassigned and
+  course list invalidations are still running in the background.
+
+Changes:
+
+- Control session block activate/deactivate actions now await the existing
+  `liveQuiz.control` invalidation before local block state advances.
+- Control session end action now awaits the existing current live-quiz and
+  control overview invalidations before routing back to the course/unassigned
+  overview.
+- Control start modal now awaits the existing unassigned-live-quiz and course
+  list invalidations before closing and routing to the control session.
+- Keep refresh failures caught and logged so confirmed server success is not
+  converted into a failed mutation.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check 'apps/frontend-control/src/pages/session/[id].tsx' apps/frontend-control/src/components/liveQuizzes/StartModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `git diff --check`
+- Blocked: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false` fails before reaching the slice with broad missing module/type resolution errors for React, Next, design-system, FontAwesome, and workspace imports in the temp worktree.
+- Blocked: `pnpm --filter @klicker-uzh/frontend-control check` failed after a long silent run because the local pnpm shim attempted to switch to `pnpm@11.5.0` and could not verify/fetch the release under restricted network.
+- Blocked: `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control check` still invoked the cached pnpm 11 binary and failed under Node 20 with missing `node:sqlite`.
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3003` failed with connection refused / `000`, and `curl` to
+  `127.0.0.1:3000` also failed with connection refused / `000`, so no local
+  control/backend dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused control refresh-boundary cleanup.
+- Use PR CI as the authoritative control typecheck/build signal for this slice.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Live-Quiz Wizard and Cockpit Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and

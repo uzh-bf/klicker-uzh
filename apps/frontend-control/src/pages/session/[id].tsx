@@ -36,9 +36,9 @@ function RunningLiveQuiz() {
       options: { duration: 5000 },
     })
   }
-  const refreshCurrentLiveQuiz = () => {
+  const refreshCurrentLiveQuiz = async () => {
     if (validQuizId) {
-      void utils.liveQuiz.control
+      await utils.liveQuiz.control
         .invalidate({ id: validQuizId })
         .catch(console.error)
     }
@@ -110,6 +110,18 @@ function RunningLiveQuiz() {
   }
 
   const { id, name, course, blocks } = controlLiveQuiz
+  const refreshControlOverview = async () => {
+    if (course) {
+      await utils.course.controlCourse
+        .invalidate({
+          courseId: course.id,
+        })
+        .catch(console.error)
+      return
+    }
+
+    await utils.liveQuiz.unassigned.invalidate().catch(console.error)
+  }
 
   if (!blocks) {
     return (
@@ -171,7 +183,7 @@ function RunningLiveQuiz() {
                     return
                   }
 
-                  refreshCurrentLiveQuiz()
+                  await refreshCurrentLiveQuiz()
                   setCurrentBlockOrder(undefined)
                 } catch {
                   showControlActionError()
@@ -224,7 +236,7 @@ function RunningLiveQuiz() {
                     return
                   }
 
-                  refreshCurrentLiveQuiz()
+                  await refreshCurrentLiveQuiz()
                   setCurrentBlockOrder(nextBlockOrder)
                   setNextBlockOrder(nextBlockOrder + 1)
                 } catch {
@@ -261,26 +273,13 @@ function RunningLiveQuiz() {
                     return
                   }
 
-                  refreshCurrentLiveQuiz()
-                  if (course) {
-                    void utils.course.controlCourse
-                      .invalidate({
-                        courseId: course.id,
-                      })
-                      .catch(console.error)
-                  } else {
-                    void utils.liveQuiz.unassigned
-                      .invalidate()
-                      .catch(console.error)
-                  }
-                  void router
-                    .push(
-                      course ? `/course/${course.id}` : '/course/unassigned'
-                    )
-                    .catch((error) => {
-                      console.error(error)
-                      showControlActionError()
-                    })
+                  await Promise.all([
+                    refreshCurrentLiveQuiz(),
+                    refreshControlOverview(),
+                  ])
+                  await router.push(
+                    course ? `/course/${course.id}` : '/course/unassigned'
+                  )
                 } catch {
                   showControlActionError()
                 }
