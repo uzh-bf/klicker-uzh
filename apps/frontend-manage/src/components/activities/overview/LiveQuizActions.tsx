@@ -243,7 +243,7 @@ function LiveQuizActions({
                 throw new Error('Failed to delete live quiz')
               }
 
-              void Promise.all([
+              await Promise.all([
                 liveQuiz.courseId
                   ? utils.course.detail.invalidate({
                       courseId: liveQuiz.courseId,
