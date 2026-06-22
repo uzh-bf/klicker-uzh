@@ -97,7 +97,7 @@ function JoinCourse({
                   })
 
                   if (participant) {
-                    void Promise.all([
+                    await Promise.all([
                       utils.participant.self.invalidate(),
                       utils.participant.participations.invalidate(),
                     ]).catch(console.error)

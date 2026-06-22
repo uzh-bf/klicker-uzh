@@ -423,6 +423,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: PWA Course Join Refresh Boundary Cleanup
+
+Status: complete locally. Scope stayed inside the tRPC UX/client-quality audit
+and the already migrated PWA course join flows. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head is
+  `cd6e2f471dcf39f7d382f25c5dc55bf62616dcda`.
+- Fresh PR checks on this head show CodeQL, SonarCloud, GitGuardian,
+  `packages/api tRPC Vitest`, `packages/graphql Vitest`, format, lint, TypeScript
+  checks, generic test jobs, and Docker staging builds green.
+- Cypress Cloud run `6867` has a red external status with `3 tests failed`, but
+  the GitHub `cypress-run-cloud` job is still in progress. GitHub logs are not
+  exposed yet (`job ... is still in progress`; logs API returned
+  `BlobNotFound`), Cypress Cloud direct GraphQL access returns `Not authorized`,
+  and no Cypress bot summary for run `6867` is posted on the PR yet.
+- The PWA global join page and course-specific join page both successfully join
+  via tRPC, start participant cache invalidation in the background, and
+  immediately navigate to `/`. This can land the participant on the home page
+  before the joined course is visible in `participant.participations`.
+- Context7 tRPC v11 docs were refreshed before editing and explicitly show
+  awaitable invalidation/cache utilities in mutation success flows, including
+  route-change ordering considerations.
+
+Change:
+
+- Keep both PWA join form submit boundaries active until the existing
+  participant cache invalidations settle, then navigate to `/`. Invalidation
+  failures remain logged and do not block navigation, preserving the current
+  recovery behavior.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-pwa/src/pages/join.tsx apps/frontend-pwa/src/pages/course/[courseId]/join.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/runtime verification remains blocked in the current local environment:
+  API `127.0.0.1:3000/api/trpc`, PWA `127.0.0.1:3001`, Manage
+  `127.0.0.1:3002`, and Control `127.0.0.1:3003` all returned connection
+  refused / `000`.
+- Review/simplification subagents were not spawned because the active tool list
+  does not expose user-requested subagent delegation; self-review kept the patch
+  to the existing two cache invalidation calls and preserved the current
+  navigation/error behavior.
+
+Next:
+
+- Commit and push this focused PWA join refresh-boundary cleanup.
+- Recheck Cypress Cloud run `6867` and the GitHub wrapper logs/comments when the
+  serial Cypress job completes.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Manage Admin Private Preview Refresh Boundary Cleanup
 
 Status: complete locally. Scope stayed inside the tRPC UX/client-quality audit
