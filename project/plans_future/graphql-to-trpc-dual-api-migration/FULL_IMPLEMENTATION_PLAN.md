@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Manage Weekly Activity Comparison Error Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-manage weekly
+activity analytics comparison query. No new migration slice, S06 cleanup,
+GraphQL removal, Apollo removal, or subscription cleanup is being started.
+
+Finding:
+
+- When a lecturer selects a comparison course in the weekly activity chart, the
+  migrated `analytics.courseWeeklyActivity` tRPC query can fail silently. The
+  chart keeps rendering without comparison data, but the dropdown area gives no
+  failure feedback.
+
+Change:
+
+- Keep the existing chart and selector mounted.
+- Surface comparison-course query failures with the existing analytics loading
+  failure copy next to the comparison selector.
+- Preserve the current loading spinner while comparison data is in flight.
+
+Evidence:
+
+- PR #5132 current head is `d2b2c08bdd81dde529160d87a83a08fbad60edd2`
+  before this local cleanup commit.
+- Context7 tRPC docs were refreshed for current React Query query/mutation
+  patterns before this audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  changed analytics comparison components and this plan passed.
+- `node_modules/.bin/tsc --noEmit --pretty false` from the dependency checkout
+  `apps/frontend-manage` passed after syncing the changed components.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+- Review/simplification: local self-review kept the chart and selector mounted,
+  preserved the existing comparison loading spinner, and only added the
+  existing analytics loading-failure notification for failed comparison-course
+  query refreshes.
+
+Next:
+
+- Commit and push the manage weekly activity comparison error cleanup.
+- Continue monitoring Cypress, GraphQL Vitest, API tRPC Vitest, and remaining
+  pending checks after the push.
+
 ### 2026-06-22 Completed: Manage Activity Creation Missing Preload Cleanup
 
 Status: complete. Scope stayed within the already migrated frontend-manage

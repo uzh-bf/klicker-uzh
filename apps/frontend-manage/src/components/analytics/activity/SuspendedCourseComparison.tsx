@@ -9,12 +9,14 @@ function SuspendedCourseComparison({
   courseComparison,
   setCourseComparison,
   comparisonCourseLoading,
+  comparisonCourseError,
 }: {
   courseComparison: { id: string; name: string } | undefined
   setCourseComparison: (
     course: { id: string; name: string } | undefined
   ) => void
   comparisonCourseLoading: boolean
+  comparisonCourseError: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -89,6 +91,13 @@ function SuspendedCourseComparison({
             />
             {comparisonCourseLoading && <Loader />}
           </div>
+          {comparisonCourseError ? (
+            <UserNotification
+              type="error"
+              message={t('manage.analytics.analyticsLoadingFailed')}
+              className={{ root: 'text-sm' }}
+            />
+          ) : null}
         </div>
       ) : undefined}
     </div>

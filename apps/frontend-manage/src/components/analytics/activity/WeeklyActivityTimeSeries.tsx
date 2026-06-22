@@ -21,10 +21,11 @@ function WeeklyActivityTimeSeries({
   >(undefined)
 
   const comparisonCourseId = courseComparison?.id
-  const { data, isLoading } = trpc.analytics.courseWeeklyActivity.useQuery(
-    { courseId: comparisonCourseId ?? '' },
-    { enabled: typeof comparisonCourseId !== 'undefined' }
-  )
+  const { data, error, isLoading } =
+    trpc.analytics.courseWeeklyActivity.useQuery(
+      { courseId: comparisonCourseId ?? '' },
+      { enabled: typeof comparisonCourseId !== 'undefined' }
+    )
   const secondParticipants = data?.courseWeeklyActivity?.totalParticipants ?? 0
   const secondActivity = data?.courseWeeklyActivity?.weeklyActivity ?? []
 
@@ -74,6 +75,7 @@ function WeeklyActivityTimeSeries({
               courseComparison={courseComparison}
               setCourseComparison={setCourseComparison}
               comparisonCourseLoading={isLoading}
+              comparisonCourseError={Boolean(error)}
             />
           </Suspense>
         </div>
