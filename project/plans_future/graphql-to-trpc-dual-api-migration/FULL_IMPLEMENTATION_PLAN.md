@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Sharing Request Approval Close Guard
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+catalog sharing-request approval modal. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `893ac3a65547c3429251ca203f7bb5b7bac1cb6f`.
+- Fresh PR checks on that head had no red jobs. GitGuardian, format, Claude
+  review, CodeQL Java/Kotlin, CodeQL Python, CodeQL JavaScript/TypeScript, one
+  Docker build pair, and `packages/api tRPC Vitest` were green; Cypress Cloud,
+  `packages/graphql Vitest`, SonarCloud, JavaScript CodeQL, and remaining
+  matrix jobs were still pending.
+- GitHub review threads queried through the first 80 threads were all
+  resolved; no unresolved inline review threads were observed.
+- Context7 tRPC v11 docs were refreshed before editing and confirm mutation
+  status plus explicit cache helpers remain the relevant client pattern.
+- `SharingRequestApprovalModal` already disables its cancel and approve
+  buttons while the migrated `sharing.approveObjectSharingRequest` tRPC
+  mutation is pending.
+- The modal overlay/escape close path still called `onClose()` while the same
+  mutation was pending, unlike the surrounding migrated catalog modals that
+  ignore close requests during active mutations.
+
+Changes:
+
+- Add a shared approving guard and close handler so overlay/escape/cancel close
+  actions are ignored while approval is pending.
+- Keep the existing narrow cache updates, success/error toasts, and GraphQL/tRPC
+  coexistence unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/catalog/actions/SharingRequestApprovalModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification cannot run because
+  `127.0.0.1:3002` returns connection refused. Backend
+  `127.0.0.1:3000/api/trpc` answers `404` for a direct GET probe, so the local
+  stack is still not in a browser-verifiable state from this checkout.
+
+Next:
+
+- Commit and push this focused manage sharing-request approval close-guard
+  cleanup.
+- Recheck PR #5132 checks after push, especially Cypress Cloud,
+  `packages/api tRPC Vitest`, and `packages/graphql Vitest`.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Manage Catalog Removal Close Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

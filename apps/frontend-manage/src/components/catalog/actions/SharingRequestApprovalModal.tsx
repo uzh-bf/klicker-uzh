@@ -34,6 +34,12 @@ function SharingRequestApprovalModal({
   const utils = trpc.useUtils()
   const approveObjectSharingRequest =
     trpc.sharing.approveObjectSharingRequest.useMutation()
+  const approving = approveObjectSharingRequest.isLoading
+  const handleClose = () => {
+    if (!approving) {
+      onClose()
+    }
+  }
 
   const removeRequestFromCaches = () => {
     utils.sharing.catalogSharingRequests.setData(undefined, (queryData) => {
@@ -64,7 +70,7 @@ function SharingRequestApprovalModal({
       open
       onClose={(e) => {
         e?.stopPropagation()
-        onClose()
+        handleClose()
       }}
       title={t('manage.catalog.approveSharingRequest')}
       className={{ content: 'pb-2' }}
@@ -91,9 +97,9 @@ function SharingRequestApprovalModal({
         <Button
           onClick={(e) => {
             e?.stopPropagation()
-            onClose()
+            handleClose()
           }}
-          disabled={approveObjectSharingRequest.isLoading}
+          disabled={approving}
           className={{ root: 'h-8 border-red-600 py-0 text-base' }}
           data={{ cy: 'cancel-approval' }}
         >
@@ -102,8 +108,8 @@ function SharingRequestApprovalModal({
         </Button>
         <Button
           primary
-          loading={approveObjectSharingRequest.isLoading}
-          disabled={approveObjectSharingRequest.isLoading}
+          loading={approving}
+          disabled={approving}
           className={{ root: 'h-8 py-0' }}
           data={{ cy: 'confirm-approval' }}
           onClick={async (e) => {
@@ -140,10 +146,7 @@ function SharingRequestApprovalModal({
             }
           }}
         >
-          <Button.Icon
-            icon={faCheck}
-            loading={approveObjectSharingRequest.isLoading}
-          />
+          <Button.Icon icon={faCheck} loading={approving} />
           <Button.Label>{t('shared.generic.approve')}</Button.Label>
         </Button>
       </div>
