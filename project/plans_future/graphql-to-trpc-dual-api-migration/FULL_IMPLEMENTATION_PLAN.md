@@ -423,6 +423,45 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed: Control Course-List Error Copy Cleanup
+
+Status: complete. Scope stayed within the already migrated frontend-control
+course selection page. No new migration slice, S06 cleanup, GraphQL removal,
+Apollo removal, or subscription cleanup is being started.
+
+Finding:
+
+- The migrated `course.controlCourses` page already distinguishes initial
+  loading, failed initial load, and missing data, but its error notification
+  still uses a hard-coded German string instead of the existing localized
+  control loading-failure copy used by the neighboring control course page.
+
+Change:
+
+- Reuse the existing `control.course.loadingFailed` i18n message for both
+  no-data failure branches.
+- Keep existing loading/error layout and tRPC query behavior unchanged.
+
+Evidence:
+
+- PR #5132 current head is `775de9822ff17664a1fe2fe85034d40b3ae7a7f3`.
+- Current-head CI is green except Cypress Cloud run `6849`, which is still
+  running in the Cloud recording step.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check` on the
+  touched control page and this plan passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc --noEmit` from
+  `apps/frontend-control` passed after mirroring the touched source file into
+  the installed dependency checkout.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked: `curl` to `127.0.0.1:3000`,
+  `3001`, `3002`, and `3003` all failed with connection refused, so no local
+  app screenshots are available for this cleanup.
+
+Next:
+
+- Commit and push the control course-list error-copy cleanup.
+- Recheck Cypress wrapper/log availability after the push.
+
 ### 2026-06-22 Completed: Evaluation QR Route-Param Cleanup
 
 Status: complete. Scope stayed within an already migrated manage live-quiz

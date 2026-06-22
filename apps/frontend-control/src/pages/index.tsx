@@ -30,8 +30,7 @@ function Index() {
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
-          message="Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen
-        Sie es später erneut."
+          message={t('control.course.loadingFailed')}
         />
       </Layout>
     )
@@ -43,8 +42,7 @@ function Index() {
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
-          message="Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen
-        Sie es später erneut."
+          message={t('control.course.loadingFailed')}
         />
       </Layout>
     )
