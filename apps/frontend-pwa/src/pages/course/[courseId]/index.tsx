@@ -117,8 +117,11 @@ function CourseOverview({
       onError: onLeaderboardMutationError,
     })
 
+  const joiningLeaderboard =
+    joinCourseLeaderboard.isLoading || leaderboardMutationRefreshing
+
   const onJoinCourseLeaderboard = () => {
-    if (joinCourseLeaderboard.isLoading || leaderboardMutationRefreshing) {
+    if (joiningLeaderboard) {
       return
     }
 
@@ -454,8 +457,8 @@ function CourseOverview({
                                   <Button
                                     fluid
                                     primary
-                                    disabled={joinCourseLeaderboard.isLoading}
-                                    loading={joinCourseLeaderboard.isLoading}
+                                    disabled={joiningLeaderboard}
+                                    loading={joiningLeaderboard}
                                     onClick={onJoinCourseLeaderboard}
                                     className={{ root: 'mt-3 h-max py-1' }}
                                     data={{

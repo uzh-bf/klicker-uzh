@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: PWA Leaderboard Join Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa course
+leaderboard join workflow. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `ecf6f77b37a9a30de279e616bb5b4869f88be8e9`.
+- Fresh PR checks on that head had just restarted after the previous push and
+  were pending.
+- The PWA course leaderboard join handler already guarded against duplicate
+  clicks while the mutation or post-success cache refresh was running.
+- The visible join button only used `joinCourseLeaderboard.isLoading`, so it
+  could stop showing a loading/disabled state before `courseLeaderboard` and
+  `courseOverview` invalidation finished.
+
+Changes:
+
+- Added a shared `joiningLeaderboard` pending flag for mutation plus cache
+  refresh work.
+- Reused that flag in the click guard and visible join button
+  disabled/loading state.
+- Existing tRPC mutation, invalidation targets, error toast behavior, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check 'apps/frontend-pwa/src/pages/course/[courseId]/index.tsx' project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3001` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused PWA leaderboard join pending-boundary cleanup.
+- Recheck PR #5132 checks, especially package GraphQL/tRPC tests and Cypress
+  Cloud/default-group pending gates.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: Control Session Action Pending Boundaries
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
