@@ -464,10 +464,13 @@ Evidence:
 - Cypress Cloud run `6855` on the previous pushed head is still running with
   `101` passed and `0` failed; `MA-elements-operations-workflow.cy.ts` remains
   running and later specs remain unclaimed at the latest poll.
+- Pushed code commit `3d24a5ed1 fix(trpc): show live quiz load failures` to
+  PR #5132. The PR now points at that head and has started a fresh pending CI
+  round.
 
 Next:
 
-- Commit and push this PWA live-quiz query error-state cleanup.
+- Monitor CI and Cypress on the new PR head.
 - Stop further UI-slice work until a browser/runtime verification path is
   available or the user explicitly asks to continue with static-only audit
   slices.
