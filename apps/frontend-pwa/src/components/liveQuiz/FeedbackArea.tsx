@@ -48,6 +48,7 @@ function FeedbackArea({
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const utils = trpc.useUtils()
   const quizId = typeof router.query.id === 'string' ? router.query.id : ''
 
   const createFeedback = trpc.participant.createLiveQuizFeedback.useMutation()
@@ -76,11 +77,31 @@ function FeedbackArea({
 
   const onAddFeedback = async (input: string) => {
     if (!quizId) return
-    await createFeedback.mutateAsync({
+    const result = await createFeedback.mutateAsync({
       quizId,
       content: input,
     })
-    await refetchFeedbacks().catch(console.error)
+    const createdFeedback = result.feedback
+
+    if (!createdFeedback) {
+      throw new Error('Feedback was not created')
+    }
+
+    if (createdFeedback.isPublished) {
+      utils.participant.liveQuizFeedbacks.setData({ quizId }, (previous) => {
+        if (!previous) return { feedbacks: [createdFeedback] }
+        if (
+          previous.feedbacks.some(
+            (feedback) => feedback.id === createdFeedback.id
+          )
+        ) {
+          return previous
+        }
+
+        return { feedbacks: [createdFeedback, ...previous.feedbacks] }
+      })
+    }
+
     toast({ type: 'success', message: t('pwa.feedbacks.feedbackSubmitted') })
   }
 

@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: PWA Live-Feedback Cache Update
+
+Status: complete locally. Scope stays within the migrated PWA live-feedback
+tRPC workflow. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or subscription cleanup is being started.
+
+Finding:
+
+- `apps/frontend-pwa/src/components/liveQuiz/FeedbackArea.tsx` creates live
+  quiz feedback through tRPC and then forces `refetchFeedbacks()`.
+- The same workflow also has tRPC realtime invalidation subscriptions that can
+  refetch feedback after a published feedback event.
+- This leaves a redundant request path and delays local feedback visibility
+  even though `createLiveQuizFeedback` already returns the created feedback.
+
+Change:
+
+- Use the `createLiveQuizFeedback` mutation result to update the active
+  `participant.liveQuizFeedbacks` tRPC query cache immediately when the created
+  feedback is published.
+- Treat a null creation result as a failure so the existing form-level catch
+  path shows an error toast instead of reporting success.
+- Remove the forced post-create refetch and leave cross-client/background
+  freshness to the existing realtime subscription refetch.
+
+Evidence:
+
+- Context7 tRPC docs were refreshed for React Query hook state and cache
+  utility patterns before editing this pass.
+- Current Web Interface Guidelines were fetched before the UX audit pass.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-pwa/src/components/liveQuiz/FeedbackArea.tsx` passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl` to `127.0.0.1:3000`, `3001`, `3002`, `3003`, and `7078` all failed
+  with connection refused, so no local app screenshots are available for this
+  UI-facing cleanup.
+- Cypress Cloud run `6856` for the previous code commit advanced to `218`
+  passed and `0` failed, with `O-live-quiz-workflow.cy.ts` running at the
+  latest poll. The cache update itself was verified locally and needs the next
+  pushed CI round for remote validation.
+
+Next:
+
+- Push this focused cache update.
+- Monitor the new CI round and Cypress run for remote validation.
+
 ### 2026-06-22 Completed: PWA Live-Quiz Query Error State Cleanup
 
 Status: complete locally. Scope stayed within migrated PWA live-quiz session tRPC
