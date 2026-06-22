@@ -277,9 +277,9 @@ function LiveQuizWizard({
   const editLiveQuiz = trpc.activity.editLiveQuiz.useMutation()
   const utils = trpc.useUtils()
   const startLiveQuiz = trpc.liveQuiz.start.useMutation({
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       if (!result.liveQuiz) return
-      void utils.liveQuiz.running.invalidate().catch(console.error)
+      await utils.liveQuiz.running.invalidate().catch(console.error)
     },
   })
   const invalidateCourseDetail = useCallback(
@@ -303,7 +303,7 @@ function LiveQuizWizard({
 
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
-      submitLiveQuizForm({
+      await submitLiveQuizForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         editMode,

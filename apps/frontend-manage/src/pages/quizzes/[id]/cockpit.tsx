@@ -21,9 +21,26 @@ function Cockpit() {
     })
   }
 
-  const activateLiveQuizBlock = api.liveQuiz.activateBlock.useMutation()
-  const deactivateLiveQuizBlock = api.liveQuiz.deactivateBlock.useMutation()
-  const endLiveQuiz = api.liveQuiz.end.useMutation()
+  const activateLiveQuizBlock = api.liveQuiz.activateBlock.useMutation({
+    onSuccess: async () => {
+      await utils.liveQuiz.cockpit
+        .invalidate({ id: quizId })
+        .catch(console.error)
+    },
+  })
+  const deactivateLiveQuizBlock = api.liveQuiz.deactivateBlock.useMutation({
+    onSuccess: async () => {
+      await utils.liveQuiz.cockpit
+        .invalidate({ id: quizId })
+        .catch(console.error)
+    },
+  })
+  const endLiveQuiz = api.liveQuiz.end.useMutation({
+    onSuccess: async (result) => {
+      if (!result.liveQuiz?.id) return
+      await utils.liveQuiz.running.invalidate().catch(console.error)
+    },
+  })
 
   const {
     data: cockpitData,
@@ -94,7 +111,6 @@ function Cockpit() {
                 return
               }
 
-              void utils.liveQuiz.running.invalidate().catch(console.error)
               await router.push('/activities')
             } catch {
               showCockpitActionError()
@@ -106,9 +122,6 @@ function Cockpit() {
                 quizId: id,
                 blockId,
               })
-              void utils.liveQuiz.cockpit
-                .invalidate({ id })
-                .catch(console.error)
             } catch {
               showCockpitActionError()
             }
@@ -119,9 +132,6 @@ function Cockpit() {
                 quizId: id,
                 blockId,
               })
-              void utils.liveQuiz.cockpit
-                .invalidate({ id })
-                .catch(console.error)
             } catch {
               showCockpitActionError()
             }

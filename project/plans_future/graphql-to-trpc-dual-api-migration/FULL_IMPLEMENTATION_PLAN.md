@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Live-Quiz Wizard and Cockpit Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and
+already migrated manage live-quiz workflows. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup is started.
+
+Findings:
+
+- PR #5132 head before this local patch is
+  `feaa764b99eed88e7d2f701c75c3ea85358682aa`.
+- Fresh PR checks on that head have restarted and are pending.
+- Manage cockpit end/open/close block actions await the tRPC mutations but
+  launch their live-quiz cache invalidations in the background, so timeline and
+  running-state updates can lag after the action handler resolves.
+- The live-quiz wizard quick-start mutation uses an `onSuccess` invalidation,
+  but the callback is fire-and-forget. The main wizard submit handler also
+  starts `submitLiveQuizForm` without awaiting it, even though the helper awaits
+  the activity/course cache refreshes internally.
+
+Changes:
+
+- Cockpit block open/close mutations now await the existing targeted
+  `liveQuiz.cockpit` invalidation through async mutation success callbacks, so
+  timeline action handlers do not resolve before the refresh attempt.
+- Cockpit end mutation now awaits the existing `liveQuiz.running` invalidation
+  through an async mutation success callback before routing back to activities.
+- Live-quiz wizard quick-start now awaits the existing `liveQuiz.running`
+  invalidation from its async mutation success callback before routing to the
+  cockpit.
+- Live-quiz wizard form submit now awaits `submitLiveQuizForm`, which already
+  awaits the activity/course refreshes before completing the wizard.
+- Keep refresh failures caught and logged so confirmed server success is not
+  converted into a failed mutation.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check 'apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx' apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizWizard.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser verification remains blocked in this temp worktree: `curl` to
+  `127.0.0.1:3002` failed with connection refused / `000`, and `curl` to
+  `127.0.0.1:3000` also failed with connection refused / `000`, so no local
+  manage/backend dev server was available for screenshots.
+
+Next:
+
+- Commit and push this focused live-quiz refresh-boundary cleanup.
+- Recheck PR #5132 checks on the new head, especially GraphQL/tRPC package
+  parity and Cypress.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Resource and Sharing Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit and
