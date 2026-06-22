@@ -3,6 +3,7 @@ import { UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
 import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
@@ -13,6 +14,7 @@ function Cockpit() {
   const router = useRouter()
   const quizId = typeof router.query.id === 'string' ? router.query.id : ''
   const utils = api.useUtils()
+  const [cockpitActionPending, setCockpitActionPending] = useState(false)
   const showCockpitActionError = () => {
     toast({
       type: 'error',
@@ -41,6 +43,11 @@ function Cockpit() {
       await utils.liveQuiz.running.invalidate().catch(console.error)
     },
   })
+  const cockpitActionLoading =
+    activateLiveQuizBlock.isLoading ||
+    deactivateLiveQuizBlock.isLoading ||
+    endLiveQuiz.isLoading ||
+    cockpitActionPending
 
   const {
     data: cockpitData,
@@ -104,6 +111,11 @@ function Cockpit() {
           language={course?.language ?? null}
           isGamificationEnabled={isGamificationEnabled}
           handleEndLiveQuiz={async () => {
+            if (cockpitActionLoading) return
+
+            let releasePending = true
+            setCockpitActionPending(true)
+
             try {
               const result = await endLiveQuiz.mutateAsync({ id })
               if (!result.liveQuiz?.id) {
@@ -111,37 +123,54 @@ function Cockpit() {
                 return
               }
 
-              await router.push('/activities')
-            } catch {
+              const routed = await router.push('/activities')
+              if (!routed) throw new Error('Live quiz end navigation failed')
+              releasePending = false
+            } catch (error) {
+              console.error(error)
               showCockpitActionError()
+            } finally {
+              if (releasePending) {
+                setCockpitActionPending(false)
+              }
             }
           }}
           handleOpenBlock={async (blockId: number) => {
+            if (cockpitActionLoading) return
+
+            setCockpitActionPending(true)
+
             try {
               await activateLiveQuizBlock.mutateAsync({
                 quizId: id,
                 blockId,
               })
-            } catch {
+            } catch (error) {
+              console.error(error)
               showCockpitActionError()
+            } finally {
+              setCockpitActionPending(false)
             }
           }}
           handleCloseBlock={async (blockId: number) => {
+            if (cockpitActionLoading) return
+
+            setCockpitActionPending(true)
+
             try {
               await deactivateLiveQuizBlock.mutateAsync({
                 quizId: id,
                 blockId,
               })
-            } catch {
+            } catch (error) {
+              console.error(error)
               showCockpitActionError()
+            } finally {
+              setCockpitActionPending(false)
             }
           }}
           startedAt={startedAt}
-          loading={
-            activateLiveQuizBlock.isLoading ||
-            deactivateLiveQuizBlock.isLoading ||
-            endLiveQuiz.isLoading
-          }
+          loading={cockpitActionLoading}
         />
       </div>
 

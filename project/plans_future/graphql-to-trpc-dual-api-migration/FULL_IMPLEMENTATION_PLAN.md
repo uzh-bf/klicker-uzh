@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally With Runtime Blockers: Manage Cockpit Action Pending Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage live
+quiz cockpit actions. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- PR #5132 current head before this local patch is
+  `a8218fe344e722008570aea9012b413833d254af`.
+- Fresh PR checks on that head showed no red jobs. CodeQL, SonarCloud,
+  GitGuardian, format, lint, check, Claude review, several build/test jobs,
+  and `packages/api tRPC Vitest` were green; `packages/graphql Vitest`,
+  Cypress Cloud, and a small remainder of the build/test matrix were still
+  pending.
+- The manage cockpit page already catches failed migrated tRPC block/end
+  actions and renders a system-error notification for failed cockpit queries.
+- The timeline `loading` prop still only tracked tRPC mutation loading, while
+  end-quiz performs route navigation after the mutation and query invalidation
+  callbacks complete.
+- That left a duplicate-click window during post-success navigation, and a
+  failed `router.push('/activities')` did not surface as an action failure.
+- Context7 tRPC v11 docs were refreshed before editing and confirm tRPC React
+  mutation hooks expose mutation status while cache invalidation remains an
+  explicit awaited operation.
+
+Changes:
+
+- Added a local cockpit action pending guard shared by block activation,
+  block deactivation, and end-quiz actions.
+- The existing timeline loading prop now stays active through tRPC mutation
+  callbacks and end-quiz route navigation.
+- Failed mutation or failed navigation still shows the existing generic system
+  error toast and releases the local pending guard.
+
+Checks:
+
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`.
+- Blocked locally: browser/runtime verification ports are not running in this
+  temp checkout (`127.0.0.1:3002` and `127.0.0.1:3000/api/trpc` return
+  connection refused / `000`).
+
+Next:
+
+- Commit and push this focused manage cockpit action pending-boundary cleanup.
+- Recheck PR #5132 checks after push, especially `packages/graphql Vitest`,
+  Cypress Cloud, and the remaining build/test matrix.
+- Continue the UX/client-quality audit only from fresh CI/runtime evidence; do
+  not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally With Runtime Blockers: PWA Microlearning Finish Pending Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
