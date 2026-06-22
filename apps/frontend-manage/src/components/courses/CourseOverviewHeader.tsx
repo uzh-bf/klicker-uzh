@@ -271,10 +271,10 @@ function CourseOverviewHeader({
                       }
                     : data
                 )
-                void utils.course.detail
-                  .invalidate({ courseId: course.id })
-                  .catch(console.error)
-                void utils.course.userCourses.invalidate().catch(console.error)
+                await Promise.all([
+                  utils.course.detail.invalidate({ courseId: course.id }),
+                  utils.course.userCourses.invalidate(),
+                ])
                 setCourseSettingsModal(false)
               } else {
                 onError()

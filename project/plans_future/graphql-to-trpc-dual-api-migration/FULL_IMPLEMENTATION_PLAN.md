@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-22 Completed Locally: Course Settings Refresh Boundary Cleanup
+
+Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
+and the already migrated manage course settings workflow. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- PR #5132 head before this local patch was
+  `602f9dce809ff5d0adc9ae33f7100776ec379154`.
+- All non-Cypress PR checks on that head were green, including
+  `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+- Cypress Cloud run `6861` was still pending with "Tests are running"; the
+  GitHub job had completed setup, install, build, migration, seed, readiness,
+  and service-log upload, but was still in the Cypress Cloud recording step.
+  GitHub withheld logs while that step was in progress.
+- The course settings save flow already updated the `course.detail` and
+  `course.userCourses` caches via `setData`, but still fired the confirming
+  invalidations in the background before closing the modal. That could leave
+  stale course header/list data if the user navigated immediately after a
+  successful save.
+
+Changes:
+
+- Course settings save now awaits `course.detail` and `course.userCourses`
+  invalidation before closing the modal, keeping the existing targeted cache
+  updates for immediate UI feedback.
+
+Checks:
+
+- Context7 tRPC docs were refreshed for React Query cache utilities and
+  awaitable invalidation before editing.
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- Passed: `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- Passed: `git diff --check`
+- Browser/local Cypress remains blocked in this temp worktree because the full
+  local dev stack is not running here; remote Cypress on the current PR head is
+  still the next runtime signal.
+
+Next:
+
+- Run focused formatting/type/whitespace checks.
+- Commit and push this focused course settings refresh-boundary cleanup if
+  checks pass.
+- Recheck Cypress Cloud on the new head; do not start S06 cleanup.
+
 ### 2026-06-22 Completed Locally: Answer-Collection Refresh Boundary Cleanup
 
 Status: complete locally. Scope stays inside the tRPC UX/client-quality audit
