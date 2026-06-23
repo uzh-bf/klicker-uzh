@@ -1,4 +1,4 @@
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { trpc } from '../../lib/trpc'
@@ -9,6 +9,7 @@ function AnswerCollections() {
   const t = useTranslations()
   const { data, error, isLoading } =
     trpc.resources.answerCollectionsInfo.useQuery()
+  const staleAnswerCollectionsError = Boolean(error && data)
 
   return (
     <div className="h-full w-full">
@@ -25,6 +26,13 @@ function AnswerCollections() {
           ),
         })}
       </div>
+      {staleAnswerCollectionsError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mt-4' }}
+        />
+      ) : null}
       <div className="mt-6 flex flex-col lg:flex-row-reverse">
         <div className="lg:w-1/2 lg:border-l lg:pl-4">
           <AnswerCollectionCreation />

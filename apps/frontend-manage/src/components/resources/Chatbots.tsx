@@ -1,4 +1,4 @@
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { trpc } from '../../lib/trpc'
@@ -32,6 +32,10 @@ function Chatbots() {
       : undefined
   const selectedChatbot =
     chatbots?.find((chatbot) => chatbot.id === selectedId) ?? chatbots?.[0]
+  const staleChatbotsError = Boolean(error && data)
+  const staleModelRegistryError = Boolean(
+    modelRegistryError && modelRegistryData
+  )
   const detailsError = Boolean(
     (error && !data) || (modelRegistryError && !modelRegistryData)
   )
@@ -50,6 +54,13 @@ function Chatbots() {
   return (
     <div className="h-full w-full">
       <H2>{t('manage.resources.chatbots')}</H2>
+      {staleChatbotsError || staleModelRegistryError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mt-4' }}
+        />
+      ) : null}
       <div className="mt-6 flex flex-col lg:flex-row-reverse">
         <div className="lg:w-1/2 lg:border-l lg:pl-4">
           <ChatbotDetails
