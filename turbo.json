@@ -166,7 +166,8 @@
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+      "cache": false,
+      "persistent": true
     },
     "test": {
       "cache": false

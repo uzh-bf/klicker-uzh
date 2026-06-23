@@ -28,8 +28,11 @@ if [ -z "${CHECK_INTERVAL:-}" ]; then
   CHECK_INTERVAL=5
 fi
 
+SERVICE_LOG="${SERVICE_LOG:-service.log}"
 POSTGRES_CHECK_HOST="${POSTGRES_CHECK_HOST:-localhost}"
 POSTGRES_CHECK_PORT="${POSTGRES_CHECK_PORT:-5432}"
+POSTGRES_CHECK_USER="${POSTGRES_CHECK_USER:-${POSTGRES_USER:-}}"
+POSTGRES_CHECK_DATABASE="${POSTGRES_CHECK_DATABASE:-${POSTGRES_DB:-}}"
 REDIS_CHECK_HOST="${REDIS_CHECK_HOST:-${REDIS_HOST:-localhost}}"
 REDIS_CHECK_PORT="${REDIS_CHECK_PORT:-${REDIS_PORT:-6379}}"
 REDIS_CACHE_CHECK_HOST="${REDIS_CACHE_CHECK_HOST:-${REDIS_CACHE_HOST:-}}"
@@ -87,6 +90,20 @@ check_redis() {
 
 # Check PostgreSQL
 check_postgres() {
+  if command -v pg_isready >/dev/null 2>&1 && [ -n "$POSTGRES_CHECK_USER" ] && [ -n "$POSTGRES_CHECK_DATABASE" ]; then
+    if ! pg_isready \
+      -h "$POSTGRES_CHECK_HOST" \
+      -p "$POSTGRES_CHECK_PORT" \
+      -U "$POSTGRES_CHECK_USER" \
+      -d "$POSTGRES_CHECK_DATABASE" >/dev/null 2>&1; then
+      echo "PostgreSQL is not ready on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT} as ${POSTGRES_CHECK_USER}/${POSTGRES_CHECK_DATABASE}"
+      return 1
+    fi
+
+    echo "PostgreSQL is ready on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT} as ${POSTGRES_CHECK_USER}/${POSTGRES_CHECK_DATABASE}"
+    return 0
+  fi
+
   if ! check_tcp "$POSTGRES_CHECK_HOST" "$POSTGRES_CHECK_PORT"; then
     echo "PostgreSQL is not running on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT}"
     return 1
@@ -170,38 +187,11 @@ if [ $dependencies_elapsed -ge $TIMEOUT_SECONDS ]; then
   exit 1
 fi
 
-# Start the service in the background and capture all output
-echo "🚀 Starting service..."
-echo "📋 Service logs will be streamed below:"
-echo "----------------------------------------"
-
-# Start service and stream logs in real-time
-pnpm run start:test:ci > service.log 2>&1 &
-
-# Store the PID of the background process
-SERVICE_PID=$!
-
-# Start background log streaming
-tail -f service.log &
-TAIL_PID=$!
-
-# Give the process a moment to fail fast if it's going to
-sleep 2
-
-# Check if process is still running after initial start
-if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
-  echo "Service failed to start. Last few lines of output:"
-  tail -n 20 service.log
-  exit 1
-fi
-
-echo "📋 Initial service start successful (PID: $SERVICE_PID)"
-
 # Function to check if process is still running
 check_process() {
   if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
     echo "Service process died. Last few lines of output:"
-    tail -n 20 service.log
+    tail -n 20 "$SERVICE_LOG"
     return 1
   fi
   return 0
@@ -240,55 +230,124 @@ check_endpoints() {
   $all_up
 }
 
-# Initialize elapsed time
-elapsed=0
+start_service() {
+  if [ -z "${TAIL_PID:-}" ]; then
+    : > "$SERVICE_LOG"
+    tail -f "$SERVICE_LOG" &
+    TAIL_PID=$!
+  fi
 
-echo "⚙️ Configuration:"
-echo "🔍 Monitoring endpoints: $SERVICE_ENDPOINTS"
-echo "⏲️ Timeout: ${TIMEOUT_SECONDS}s, Check interval: ${CHECK_INTERVAL}s"
+  echo "🚀 Starting service..."
+  echo "📋 Service logs will be streamed below:"
+  echo "----------------------------------------"
 
-while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
-  # Check if the process is still running
-  if ! check_process; then
-    echo "📑 Full service log:"
-    cat service.log
+  {
+    echo ""
+    echo "===== start:test:ci started at $(date -u +"%Y-%m-%dT%H:%M:%SZ") ====="
+  } >> "$SERVICE_LOG"
+
+  pnpm run start:test:ci >> "$SERVICE_LOG" 2>&1 &
+  SERVICE_PID=$!
+
+  # Give the process a moment to fail fast if it's going to
+  sleep 2
+
+  if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
+    echo "Service failed to start. Last few lines of output:"
+    tail -n 20 "$SERVICE_LOG"
     exit 1
   fi
 
-  # Try to access all endpoints
-  if check_endpoints; then
-    echo "✨ All services are ready!"
+  echo "📋 Service start successful (PID: $SERVICE_PID)"
+}
 
-    # Stop log streaming but keep service running
-    if [ ! -z "${TAIL_PID:-}" ]; then
-      kill $TAIL_PID 2>/dev/null || true
-      echo "📋 Service logs are available in service.log"
+stop_service() {
+  if [ ! -z "${SERVICE_PID:-}" ]; then
+    echo "🛑 Stopping service process (PID: $SERVICE_PID)..."
+    kill $SERVICE_PID 2>/dev/null || true
+    wait $SERVICE_PID 2>/dev/null || true
+    SERVICE_PID=
+  fi
+}
+
+run_command_with_service_guard() {
+  "$@" &
+  local command_pid=$!
+
+  while true; do
+    if ! kill -0 "$command_pid" 2>/dev/null; then
+      set +e
+      wait "$command_pid"
+      local command_status=$?
+      set -e
+      return $command_status
     fi
 
-    if [ "$RUN_COMMAND_AFTER_READY" = "true" ]; then
-      echo "▶️ Running command: $*"
-      "$@"
-      exit $?
+    if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
+      echo "Service process died while the command was running. Recent service logs:"
+      tail -n 120 "$SERVICE_LOG"
+      kill "$command_pid" 2>/dev/null || true
+      wait "$command_pid" 2>/dev/null || true
+      return 1
     fi
 
-    # Keep the background process running but exit the script successfully
-    trap - TERM  # Remove SIGTERM trap as we want to keep the service running
-    trap - EXIT  # Remove exit trap as we want to keep the service running
-    exit 0
-  fi
+    sleep 2
+  done
+}
 
-  sleep $CHECK_INTERVAL
-  elapsed=$((elapsed + CHECK_INTERVAL))
+wait_for_service_readiness() {
+  local elapsed=0
 
-  echo "⏳ Still waiting for services... ($elapsed seconds elapsed)"
+  echo "⚙️ Configuration:"
+  echo "🔍 Monitoring endpoints: $SERVICE_ENDPOINTS"
+  echo "⏲️ Timeout: ${TIMEOUT_SECONDS}s, Check interval: ${CHECK_INTERVAL}s"
 
-  # Show recent logs periodically
-  if [ $((elapsed % 30)) -eq 0 ]; then
-    echo "📑 Recent service logs:"
-    tail -n 30 service.log
-  fi
-done
+  while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
+    if ! check_process; then
+      echo "📑 Full service log:"
+      cat "$SERVICE_LOG"
+      exit 1
+    fi
 
-echo "Timeout waiting for services to be ready. Full service log:"
-cat service.log
-exit 1
+    if check_endpoints; then
+      echo "✨ All services are ready!"
+      echo "📋 Service logs are available in $SERVICE_LOG"
+      return 0
+    fi
+
+    sleep $CHECK_INTERVAL
+    elapsed=$((elapsed + CHECK_INTERVAL))
+
+    echo "⏳ Still waiting for services... ($elapsed seconds elapsed)"
+
+    if [ $((elapsed % 30)) -eq 0 ]; then
+      echo "📑 Recent service logs:"
+      tail -n 30 "$SERVICE_LOG"
+    fi
+  done
+
+  echo "Timeout waiting for services to be ready. Full service log:"
+  cat "$SERVICE_LOG"
+  exit 1
+}
+
+start_service
+wait_for_service_readiness
+
+if [ "$RUN_COMMAND_AFTER_READY" = "true" ]; then
+  echo "▶️ Running command: $*"
+  set +e
+  run_command_with_service_guard "$@"
+  command_status=$?
+  set -e
+  exit $command_status
+fi
+
+# Keep the background process running but exit the script successfully
+if [ ! -z "${TAIL_PID:-}" ]; then
+  kill $TAIL_PID 2>/dev/null || true
+  echo "📋 Service logs are available in $SERVICE_LOG"
+fi
+trap - TERM  # Remove SIGTERM trap as we want to keep the service running
+trap - EXIT  # Remove exit trap as we want to keep the service running
+exit 0

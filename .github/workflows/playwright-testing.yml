@@ -42,7 +42,7 @@ jobs:
           POSTGRES_PASSWORD: klicker
           POSTGRES_DB: klicker-prod
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -154,6 +154,26 @@ jobs:
 
       - name: Build all packages and apps
         run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+          NODE_ENV: test
+          REDIS_HOST: redis_exec
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
+          REDIS_CACHE_HOST: redis_cache
+          REDIS_CACHE_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6379
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_HOST: redis_assessment_exec
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Prepare .env files
         run: |
@@ -198,6 +218,8 @@ jobs:
           CHECK_INTERVAL: '5'
           POSTGRES_CHECK_HOST: postgres
           POSTGRES_CHECK_PORT: 5432
+          POSTGRES_CHECK_USER: klicker-prod
+          POSTGRES_CHECK_DATABASE: klicker-prod
           REDIS_HOST: redis_exec
           REDIS_PASS: ''
           REDIS_PORT: 6379
@@ -216,7 +238,7 @@ jobs:
           HATCHET_CLIENT_TLS_STRATEGY: none
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
-          APP_ORIGIN_LTI: http://127.0.0.1:3005
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
           APP_ORIGIN_PWA: http://127.0.0.1:3001
           APP_ORIGIN_MANAGE: http://127.0.0.1:3002
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
