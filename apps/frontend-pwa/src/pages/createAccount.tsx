@@ -59,16 +59,13 @@ function CreateAccount({
             const participantToken = createResult?.participantToken ?? null
 
             if (participantToken) {
-              const routed = await router.replace(
-                `/editProfile?newAccount=true&participantToken=${participantToken}`,
-                {
-                  pathname: '/editProfile',
-                  query: {
-                    newAccount: true,
-                    participantToken,
-                  },
-                }
-              )
+              const routed = await router.replace({
+                pathname: '/editProfile',
+                query: {
+                  newAccount: true,
+                  participantToken,
+                },
+              })
               if (!routed) {
                 window.location.assign(
                   `/editProfile?newAccount=true&participantToken=${encodeURIComponent(participantToken)}`
@@ -123,9 +120,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       if (!cookiesAvailable) {
         return {
           redirect: {
-            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${participantToken}`,
+            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${encodeURIComponent(participantToken)}`,
             permanent: false,
-            query: { participantToken },
           },
         }
       }

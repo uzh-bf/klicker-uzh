@@ -22522,6 +22522,44 @@ git diff --check
 # pass
 ```
 
+### 2026-06-23 PWA Participant-Token Redirect UX/Security Audit
+
+Status:
+
+- Audited the known create-account route-interpolation blocker and surrounding
+  PWA participant-token redirects.
+- `CreateAccountJoinForm` already uses a Next route object plus encoded
+  fallback for course-pin join redirects on the current head.
+- The remaining participant-token redirects in `createAccount` and
+  `useParticipantToken` still mixed raw token interpolation with encoded
+  fallbacks.
+
+Changes:
+
+- Replaced the LTI create-account client redirect with a Next router URL object
+  so `participantToken` is encoded through `query`.
+- Changed `useParticipantToken` to build a URL object from `redirectTo` and
+  attach `participantToken` via `URLSearchParams` instead of string
+  interpolation.
+- Encoded the SSR `/editProfile?participantToken=...` redirect and removed the
+  unsupported `query` property from the Next redirect object.
+
+Verification evidence:
+
+```bash
+# Context7: /vercel/next.js useRouter docs confirm router.push/replace accepts
+# UrlObject with pathname/query for Pages Router navigation.
+
+/private/tmp/klicker-trpc-commit/node_modules/.bin/prettier --write apps/frontend-pwa/src/lib/useParticipantToken.ts apps/frontend-pwa/src/pages/createAccount.tsx
+# pass
+
+(cd /private/tmp/klicker-trpc-commit/apps/frontend-pwa && ./node_modules/.bin/tsc --noEmit)
+# pass
+
+rg -n 'participantToken=|router\\.push\\(`|router\\.replace\\(`' apps/frontend-pwa/src apps/frontend-manage/src apps/frontend-control/src
+# remaining participantToken hits are encoded; other dynamic route pushes are internal object IDs or auth URLs.
+```
+
 ## Remaining Implementation Plan
 
 ### S04E PWA Participant Shell and Course Reads

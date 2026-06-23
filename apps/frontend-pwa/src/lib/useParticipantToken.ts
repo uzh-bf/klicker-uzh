@@ -1,6 +1,20 @@
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
+function getParticipantTokenRedirect(
+  redirectTo: string,
+  participantToken: string
+) {
+  const target = new URL(redirectTo, window.location.origin)
+  target.searchParams.set('participantToken', participantToken)
+
+  return {
+    pathname: target.pathname,
+    query: Object.fromEntries(target.searchParams.entries()),
+    hash: target.hash || undefined,
+  }
+}
+
 export default function useParticipantToken({
   participantToken,
   cookiesAvailable,
@@ -21,12 +35,9 @@ export default function useParticipantToken({
           sessionStorage.setItem('participant_token', participantToken)
 
           if (redirectTo) {
-            router.push(`${redirectTo}?participantToken=${participantToken}`, {
-              query: {
-                ...router.query,
-                participantToken,
-              },
-            })
+            router.push(
+              getParticipantTokenRedirect(redirectTo, participantToken)
+            )
           } else {
             callback?.()
           }
