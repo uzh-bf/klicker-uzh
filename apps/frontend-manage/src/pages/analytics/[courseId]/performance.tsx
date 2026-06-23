@@ -1,4 +1,4 @@
-import { H1, TabContent, Tabs } from '@uzh-bf/design-system'
+import { H1, TabContent, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -68,6 +68,13 @@ function PerformanceDashboard() {
   return (
     <Layout displayName={t('manage.analytics.performanceDashboard')}>
       {navigation}
+      {error && course ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div>
         <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
           <div className="flex flex-row items-center gap-5">

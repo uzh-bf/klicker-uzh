@@ -1,6 +1,6 @@
 import { faChartSimple } from '@fortawesome/free-solid-svg-icons'
 import { ActivityType } from '@klicker-uzh/types'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -68,6 +68,13 @@ function QuizAnalytics() {
   return (
     <Layout displayName={t('manage.analytics.quizDashboard')}>
       {navigation}
+      {error && analytics ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
         <div className="relative mb-3 flex w-full flex-row items-end justify-between">
           <div className="flex flex-row items-center gap-5">
