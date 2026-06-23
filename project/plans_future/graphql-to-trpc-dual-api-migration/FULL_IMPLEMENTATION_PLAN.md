@@ -423,6 +423,72 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Activity Course Filter Query UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+activity overview course-filter query. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `apps/frontend-manage/src/pages/activities.tsx` loads course filter options
+  through the migrated `activity.userActivitiesCourses` query, but passes
+  `[]` to `ActivityOverviewFilters` while the query is loading or when the
+  initial fetch fails.
+- This makes the course filter silently disappear on initial query failure,
+  which looks like an empty course state rather than a loading/error state.
+- Context7 TanStack Query v4 docs were refreshed before the edit. They confirm
+  that `data` contains the last successful result while `error` can represent
+  a failed fetch, so blocking fallback UI should be limited to error-with-no
+  data while stale data remains visible.
+
+Changes:
+
+- Passed the course-filter query loading and error state into
+  `ActivityOverviewFilters`.
+- Added a small course-filter loading/error state inside the existing filter
+  panel when no course-filter data is available.
+- Kept cached/stale course filters visible on background errors and show a
+  small inline error message instead of collapsing the filter list.
+
+Review / simplification:
+
+- Self-review kept the behavior local to the filter panel and avoided changing
+  the activity-list query, API shape, GraphQL parity, or successful empty-course
+  behavior.
+- No optimistic update, invalidation, or cache-key changes were needed for this
+  read-only filter query.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/pages/activities.tsx apps/frontend-manage/src/components/activities/overview/ActivityOverviewFilters.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed for the component/page files; the plan file was not printed by the local Prettier invocation.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__/manage-activities.test.ts` passed: 88 tests.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__` passed: 48 files, 472 tests.
+- `./packages/graphql/node_modules/.bin/vitest run` was not runnable because
+  the package-local binary path is absent in this checkout.
+- `pnpm --filter @klicker-uzh/graphql test` and
+  `pnpm --filter @klicker-uzh/api test` were stopped after producing no output
+  for 90s and 60s respectively; direct Vitest was used for the tRPC package
+  signal.
+- A root `./packages/graphql/node_modules/.bin/vitest run` fallback is not a
+  clean package signal in this repo: it discovered unrelated root/app suites
+  and failed on existing environment/config blockers including missing
+  `HATCHET_CLIENT_TOKEN`, missing OLAT `API_KEY`, Playwright tests under
+  Vitest, package alias resolution, and DB-backed Prisma GraphQL tests.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused manage activity course-filter query UX cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces
+  after this commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Element Collection Initial Load Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

@@ -140,7 +140,11 @@ function Activities() {
   }
 
   // get available courses
-  const { data: dataCourses } = trpc.activity.userActivitiesCourses.useQuery()
+  const {
+    data: dataCourses,
+    error: coursesError,
+    isLoading: loadingCourses,
+  } = trpc.activity.userActivitiesCourses.useQuery()
 
   // get user activities while respecting the corresponding filters and pagination
   const {
@@ -262,6 +266,8 @@ function Activities() {
             toggleModeFilter={toggleModeFilter}
             handleReset={handleReset}
             availableCourses={dataCourses?.userActivitiesCourses ?? []}
+            availableCoursesError={Boolean(coursesError)}
+            availableCoursesLoading={loadingCourses && !dataCourses}
             filtersActive={filtersActive}
           />
         </div>
