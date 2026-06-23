@@ -79,6 +79,13 @@ function MicroLearningsOverview({
       <Layout>
         <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
           <H2>{t.rich('shared.generic.activeMicroLearnings')}</H2>
+          {!isInactive && error && data ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'text-base' }}
+            />
+          ) : null}
           <UserNotification
             type="warning"
             message={t('pwa.general.noMicroLearningsActive')}
@@ -97,6 +104,13 @@ function MicroLearningsOverview({
             name: course.displayName,
           })}
         </H2>
+        {error && data ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'text-base' }}
+          />
+        ) : null}
         <div className="flex flex-col gap-1.5">
           {microLearnings.map((microlearning) => (
             <LinkButton

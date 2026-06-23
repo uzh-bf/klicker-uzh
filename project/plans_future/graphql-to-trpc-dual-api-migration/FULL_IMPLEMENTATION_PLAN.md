@@ -423,6 +423,64 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Overview Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-pwa course
+overview/bookmark queries. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- The active practice quiz, active microlearning, active live quiz, and course
+  bookmarks pages already use migrated tRPC queries and have blocking initial
+  loading/error fallbacks.
+- They render stale/SSR-seeded data when available, but background/refetch
+  errors are silent once cached data exists.
+- The same TanStack Query v4 stale-data rule applies here: keep cached content
+  visible while surfacing that the refresh failed.
+
+Changes:
+
+- Add non-blocking generic error notifications above stale list/bookmark
+  content when the migrated query has cached data and a refetch/background
+  request fails.
+- Preserve existing inactive/empty states, SSR initialData, route redirects,
+  tRPC inputs, cache keys, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write
+  apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/overview.tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/overview.tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/liveQuizzes/overview.tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/bookmarks.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit
+  --pretty false` passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  produced no output and exited with code 124 after the timeout. Local GraphQL
+  package Vitest remains blocked in this environment; the GitHub
+  `packages/graphql Vitest` PR check is the current authoritative signal.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+- Self-review/simplification completed in the main session because no subagent
+  was requested for this continuation. The diff only adds existing
+  `UserNotification` fallbacks under stale-data conditions and does not alter
+  SSR initialData, tRPC inputs, cache keys, redirects, route behavior, or
+  GraphQL coexistence.
+
+Next:
+
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Practice and Bookmark List Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

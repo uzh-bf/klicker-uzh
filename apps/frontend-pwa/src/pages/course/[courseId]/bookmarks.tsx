@@ -77,6 +77,12 @@ function Bookmarks() {
       course={bookmarksPageData?.course ?? undefined}
       displayName={t('shared.generic.bookmarks')}
     >
+      {error && hasBookmarksPageData ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
       {quiz.course && quiz.stacks && quiz.stacks.length > 0 ? (
         <PracticeQuiz
           quiz={{ ...quiz, course: quiz.course! }}
