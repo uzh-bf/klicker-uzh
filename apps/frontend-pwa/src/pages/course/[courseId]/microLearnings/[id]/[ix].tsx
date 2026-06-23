@@ -136,6 +136,12 @@ function MicrolearningInstance() {
               displayName={microLearning.displayName}
             />
           ) : null}
+          {error && microLearning ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+          ) : null}
           {selfUnavailable ? (
             <UserNotification
               type="error"

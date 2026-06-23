@@ -423,6 +423,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Quiz and Microlearning Detail Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-pwa join,
+practice quiz, course practice, and microlearning detail/evaluation queries. No
+new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or
+package cleanup was started.
+
+Findings:
+
+- The audited PWA quiz and microlearning detail surfaces already have blocking
+  initial loading/error fallbacks and keep cached content visible when data
+  exists.
+- Background/refetch errors with cached quiz or microlearning data were silent,
+  even though TanStack Query v4 can expose an error while keeping stale data.
+
+Changes:
+
+- Add existing `UserNotification` error fallbacks above stale join,
+  practice-quiz, course-practice, and microlearning content when the migrated
+  tRPC query has cached data and a refetch/background request fails.
+- Preserve existing initial loading/error/not-found states, route guards,
+  embedded practice quiz messaging, subscription invalidation, mutations,
+  tRPC inputs, cache keys, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write
+  apps/frontend-pwa/src/pages/join/[shortname].tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/practice.tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/[id].tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/index.tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/[ix].tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/evaluation.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit
+  --pretty false` passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  produced no output and exited with code 124 after the timeout. Local GraphQL
+  package Vitest remains blocked in this environment; the GitHub
+  `packages/graphql Vitest` PR check is the current authoritative signal.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+- Self-review/simplification completed in the main session because no subagent
+  was requested for this continuation. The diff only adds existing
+  `UserNotification` fallbacks under stale-data conditions and does not alter
+  query inputs, cache keys, route behavior, subscription invalidation,
+  mutations, embedded practice-quiz messaging, or GraphQL coexistence.
+
+Next:
+
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces;
+  do not start S05/S06 cleanup or new migration slices.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Profile and Insights Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

@@ -127,6 +127,13 @@ function MicrolearningIntroduction({
             className="mb-4"
           />
         ) : null}
+        {error && microLearning ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-4' }}
+          />
+        ) : null}
         {selfUnavailable ? (
           <UserNotification
             type="error"

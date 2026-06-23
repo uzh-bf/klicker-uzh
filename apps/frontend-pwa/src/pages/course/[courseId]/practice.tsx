@@ -69,6 +69,13 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
       displayName={t('shared.generic.practiceTitle')}
       course={data.practiceQuiz.course ?? undefined}
     >
+      {error && data.practiceQuiz ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <PracticeQuiz
         quiz={{
           ...data.practiceQuiz,

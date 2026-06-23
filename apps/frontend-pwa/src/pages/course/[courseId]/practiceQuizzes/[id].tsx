@@ -241,6 +241,13 @@ function PracticeQuizPage({
         displayName={practiceQuiz.displayName}
         course={practiceQuiz.course ?? undefined}
       >
+        {error && practiceQuiz ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
         <UserNotification
           type="warning"
           message={t('pwa.practiceQuiz.scheduledAvailableFrom', {
@@ -263,6 +270,13 @@ function PracticeQuizPage({
       displayName={practiceQuiz.displayName}
       course={practiceQuiz.course ?? undefined}
     >
+      {error && practiceQuiz ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <PracticeQuiz
         showResetLocalStorage
         embedded={embedded}

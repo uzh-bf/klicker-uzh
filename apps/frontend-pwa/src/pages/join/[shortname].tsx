@@ -82,6 +82,13 @@ function Join({
               name: shortname,
             })}
           </H2>
+          {error && shortnameQuizzes ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'text-base' }}
+            />
+          ) : null}
           <UserNotification
             type="warning"
             message={t('pwa.general.noLiveQuizzesActive')}
@@ -100,6 +107,13 @@ function Join({
             name: shortname,
           })}
         </H2>
+        {error && shortnameQuizzes ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'text-base' }}
+          />
+        ) : null}
         <div className="-mt-1 mb-1 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm text-gray-600 sm:mb-0 sm:mt-0">
           <span className="flex items-center gap-1.5">
             <FontAwesomeIcon
