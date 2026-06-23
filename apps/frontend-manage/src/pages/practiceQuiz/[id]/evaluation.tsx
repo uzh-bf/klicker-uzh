@@ -53,12 +53,23 @@ function PracticeQuizEvaluation() {
   const evaluation = data?.practiceQuizEvaluation
 
   return (
-    <ActivityEvaluation
-      courseId={evaluation?.courseId}
-      activityId={id}
-      activityName={evaluation?.displayName ?? ''}
-      stacks={evaluation?.results ?? []}
-    />
+    <>
+      {error && data ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{
+            root: 'mx-auto mb-4 max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
+          }}
+        />
+      ) : null}
+      <ActivityEvaluation
+        courseId={evaluation?.courseId}
+        activityId={id}
+        activityName={evaluation?.displayName ?? ''}
+        stacks={evaluation?.results ?? []}
+      />
+    </>
   )
 }
 

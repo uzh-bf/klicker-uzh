@@ -97,6 +97,13 @@ function AssessmentLiveQuiz() {
 
   return (
     <Layout>
+      {error && quiz ? (
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingLiveQuizResults')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div className="mb-2 flex flex-row justify-between">
         <H2>{`${t('manage.assessment.assessmentResults')} - ${t('shared.generic.liveQuiz')}: ${quiz.name}`}</H2>
 

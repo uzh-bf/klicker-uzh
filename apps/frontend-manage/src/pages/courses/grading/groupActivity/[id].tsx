@@ -99,6 +99,13 @@ function GroupActivityGrading() {
 
   return (
     <Layout>
+      {error && groupActivity ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <H1 className={{ root: 'mb-4' }}>
         {t('manage.groupActivity.gradingTitle', { name: groupActivity.name })}
       </H1>

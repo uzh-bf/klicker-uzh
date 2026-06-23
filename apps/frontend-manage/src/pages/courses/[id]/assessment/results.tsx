@@ -71,6 +71,13 @@ function CourseAssessmentResults() {
 
   return (
     <Layout>
+      {error && course ? (
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingCourseResults')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div className="mb-2 flex flex-row justify-between">
         <H2>{`${t('manage.assessment.assessmentResults')} - ${t('shared.generic.course')}: ${course.name}`}</H2>
 

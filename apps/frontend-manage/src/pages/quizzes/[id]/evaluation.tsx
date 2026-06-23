@@ -54,19 +54,30 @@ function LiveQuizEvaluation() {
   }
 
   return (
-    <ActivityEvaluation
-      type="LiveQuiz"
-      hideActiveBlockResults={!hmac} // hide the results for active blocks when not inside PPT
-      activityId={id}
-      activityName={evaluation?.displayName ?? ''}
-      courseLanguage={evaluation?.courseLanguage}
-      stacks={evaluation?.results ?? []}
-      feedbacks={evaluation?.feedbacks}
-      confusionFeedbacks={evaluation?.confusionFeedbacks}
-      isAssessmentEnabled={evaluation?.isAssessmentEnabled ?? false}
-      pinCode={evaluation?.pinCode ?? null}
-      leaderboard={leaderboard}
-    />
+    <>
+      {error && data ? (
+        <UserNotification
+          className={{
+            root: 'mx-auto mb-4 max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
+          }}
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+      <ActivityEvaluation
+        type="LiveQuiz"
+        hideActiveBlockResults={!hmac} // hide the results for active blocks when not inside PPT
+        activityId={id}
+        activityName={evaluation?.displayName ?? ''}
+        courseLanguage={evaluation?.courseLanguage}
+        stacks={evaluation?.results ?? []}
+        feedbacks={evaluation?.feedbacks}
+        confusionFeedbacks={evaluation?.confusionFeedbacks}
+        isAssessmentEnabled={evaluation?.isAssessmentEnabled ?? false}
+        pinCode={evaluation?.pinCode ?? null}
+        leaderboard={leaderboard}
+      />
+    </>
   )
 }
 
