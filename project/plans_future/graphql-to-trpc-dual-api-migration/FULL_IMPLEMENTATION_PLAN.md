@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 In Progress: Course Deletion Refresh Follow-Up
+
+Context:
+
+- After `0410ba4d1`, Cypress Cloud run `6928` started for PR merge ref
+  `8f223f021190875c11b62bfc537bac1d7867992b`.
+- Earlier workflow specs through `MB-instance-updates-workflow.cy.ts` passed.
+- `N-course-workflow.cy.ts` improved from the previous 6 failures to 1
+  remaining failure.
+
+Evidence:
+
+- Remaining failure:
+  `Test course creation and editing functionalities > Create a course with live quiz, practice quiz, and microlearning, and delete it again`.
+- First attempt timed out waiting for
+  `course-list-button-Course to be deleted` to disappear after confirming
+  course deletion.
+- Retry attempts then found multiple `Course to be deleted` entries because the
+  failed first attempt left created courses behind.
+
+Finding:
+
+- The previous refresh-boundary cleanup made
+  `CourseDeletionModal` close before `utils.course.userCourses.invalidate()`
+  finished.
+- For destructive course deletion, closing before the server-backed course list
+  refresh can briefly restore stale list data after the local cache removal.
+- This behavior differs from the user-visible expectation and the Cypress
+  workflow, which both require the deleted course to be gone once the modal
+  closes.
+
+Change:
+
+- Restore awaited `utils.course.userCourses.invalidate()` before closing
+  `CourseDeletionModal`.
+- Keep the create-course path non-blocking; only destructive deletion needs the
+  stricter refresh boundary.
+
+Verification:
+
+- Passed locally:
+  - `./node_modules/.bin/prettier --write apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Next: commit, push, and monitor the replacement Cypress Cloud run.
+
 ### 2026-06-23 Completed Locally With CI Evidence: Course Creation Navigation Refresh Follow-Up
 
 Context:
