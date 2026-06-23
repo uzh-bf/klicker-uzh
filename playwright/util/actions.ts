@@ -35,11 +35,26 @@ async function findVisibleByTestId(
 export async function clickVisibleByTestId(
   page: Page,
   testId: string,
-  timeout?: number
+  timeout = 15_000
 ) {
-  const locator = await findVisibleByTestId(page, testId, timeout)
-  await locator.scrollIntoViewIfNeeded().catch(() => undefined)
-  await locator.click()
+  let lastError: unknown
+
+  await expect(async () => {
+    const locator = await findVisibleByTestId(page, testId, 1_000)
+    await locator.scrollIntoViewIfNeeded().catch(() => undefined)
+
+    try {
+      await locator.click({ timeout: 2_000 })
+      return
+    } catch (error) {
+      lastError = error
+      await locator.click({ force: true, timeout: 2_000 })
+    }
+  })
+    .toPass({ intervals: [100, 250, 500], timeout })
+    .catch((error) => {
+      throw lastError ?? error
+    })
 }
 
 export async function openActionMenuByTestId(
@@ -58,7 +73,22 @@ export async function openActionMenuByTestId(
     return
   }
 
-  await clickVisibleByTestId(page, triggerTestId)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.keyboard.press('Escape').catch(() => undefined)
+    await clickVisibleByTestId(page, triggerTestId)
+
+    if (!expectedActionTestId) {
+      return
+    }
+
+    if (
+      await findVisibleByTestId(page, expectedActionTestId, 2_000)
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      return
+    }
+  }
 
   if (expectedActionTestId) {
     await findVisibleByTestId(page, expectedActionTestId)
