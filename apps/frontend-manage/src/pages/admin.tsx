@@ -22,7 +22,12 @@ import { trpc } from '../lib/trpc'
 function AdminPanel() {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const { data, isLoading } = trpc.user.privatePreviewUsers.useQuery()
+  const {
+    data,
+    error: privatePreviewUsersError,
+    isLoading,
+  } = trpc.user.privatePreviewUsers.useQuery()
+  const hasPrivatePreviewUsersData = typeof data !== 'undefined'
   const grantPrivatePreviewAccess =
     trpc.user.grantPrivatePreviewAccess.useMutation()
 
@@ -139,9 +144,16 @@ function AdminPanel() {
                   )}
                 </Formik>
               </div>
-              {isLoading && !data ? (
+              {privatePreviewUsersError && hasPrivatePreviewUsersData ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                  className={{ root: 'mb-2' }}
+                />
+              ) : null}
+              {isLoading && !hasPrivatePreviewUsersData ? (
                 <Loader />
-              ) : !data ? (
+              ) : !hasPrivatePreviewUsersData ? (
                 <UserNotification
                   type="error"
                   message={t('shared.generic.systemError')}

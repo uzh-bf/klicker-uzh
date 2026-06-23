@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Admin Private Preview Stale Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage admin
+private-preview user list. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Finding:
+
+- `apps/frontend-manage/src/pages/admin.tsx` loads private-preview users through
+  the migrated `user.privatePreviewUsers` tRPC query.
+- Initial no-data failures already fall back to a generic error panel.
+- Background/refetch failures with stale table data are not surfaced because the
+  query error is not read.
+- Context7 tRPC and TanStack Query v4 docs were refreshed for this pass. The
+  same stale-data rule applies: keep existing data visible on refetch errors and
+  surface a compact non-blocking failure notification.
+
+Change:
+
+- Read the tRPC query error in the admin page.
+- Keep the private-preview user table visible whenever cached data exists.
+- Show a compact generic error notification above the table when a background
+  refetch fails.
+
+Review and simplification:
+
+- Kept the fix in `admin.tsx` instead of adding shared query wrappers or cache
+  policy changes.
+- Reused the page's existing generic error notification copy and preserved the
+  existing mutation/invalidation behavior.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/pages/admin.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- `git diff --check`
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- Runtime/browser verification remains blocked because local services are not
+  listening:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with
+  `Couldn't connect to server`.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Join Identity Query UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
