@@ -39,6 +39,7 @@ function SuspendedTags({
   const { data, error, isLoading } = trpc.element.tags.useQuery()
   const updateTagOrdering = trpc.element.updateTagOrdering.useMutation()
   const hasTagData = typeof data !== 'undefined'
+  const staleTagsError = Boolean(error && hasTagData)
   const userTags = useMemo(() => data?.tags ?? [], [data?.tags])
 
   // setup search
@@ -91,6 +92,13 @@ function SuspendedTags({
   if (userTags.length === 0)
     return (
       <div className="px-2">
+        {staleTagsError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-1 py-1 text-sm' }}
+          />
+        ) : null}
         <UserNotification type="info" className={{ root: 'py-1' }}>
           {t('manage.questionPool.noTagsAvailable')}
         </UserNotification>
@@ -99,6 +107,13 @@ function SuspendedTags({
 
   return (
     <>
+      {staleTagsError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-1 py-1 text-sm' }}
+        />
+      ) : null}
       <TextField
         placeholder={t('manage.general.searchPlaceholder')}
         value={searchQuery}

@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Tag Sidebar Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+element tag sidebar query. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed before work: PR 5132 points at
+  `codex/trpc-dual-api-migration`, base `v3`, ready for review, and still
+  review-required / blocked by pending external gates.
+- Context7 docs refreshed for tRPC React Query and TanStack Query v4. Relevant
+  behavior: tRPC React hooks wrap React Query state, and React Query can expose
+  an error while cached data remains available during background refetches.
+- `SuspendedTags` already blocked only initial no-data failures and kept cached
+  tags visible when available, but background/refetch failures with stale tag
+  data were not surfaced to users.
+
+Changes:
+
+- Added a compact existing `UserNotification` error fallback when
+  `element.tags` has stale data and a background/refetch request fails.
+- Kept cached tags, search state, empty-state rendering, tag ordering mutation
+  guards, targeted `utils.element.tags` cache updates, and GraphQL/tRPC
+  coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/elements/tags/SuspendedTags.tsx`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  exited 124 with no output after the timeout. This matches the known local
+  GraphQL package test blocker; the GitHub `packages/graphql Vitest` check
+  remains the authoritative GraphQL signal for this PR.
+
+Runtime:
+
+- Browser/runtime verification blocked locally because no stack is listening:
+  `curl -sS -I http://127.0.0.1:3002` failed with connection refused, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with connection refused.
+
+Next:
+
+- Commit and push this focused manage tag-sidebar refetch-error UX cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Media Library Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
