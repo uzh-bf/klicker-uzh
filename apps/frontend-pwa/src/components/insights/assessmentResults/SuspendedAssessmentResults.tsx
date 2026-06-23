@@ -42,6 +42,12 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
 
   return (
     <div>
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('pwa.assessment.failedToLoadActivityResults')}
+        />
+      ) : null}
       <div className="mb-4 text-sm md:mb-6 md:text-base">
         {t('pwa.assessment.activityResultsDescription')}
       </div>

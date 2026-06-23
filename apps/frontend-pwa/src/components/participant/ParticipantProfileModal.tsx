@@ -66,6 +66,13 @@ function ParticipantProfileModal({
         />
       ) : null}
 
+      {error && participant ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
       {participant ? (
         <div className="px-auto flex h-full w-full flex-col items-center justify-between">
           <ProfileData

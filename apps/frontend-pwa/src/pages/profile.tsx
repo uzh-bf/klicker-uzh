@@ -62,6 +62,12 @@ const Profile = () => {
       displayName={t('pwa.profile.myProfile')}
     >
       <div className="flex flex-col items-center gap-2 rounded border p-2 md:mx-auto md:w-max md:p-4">
+        {error && profile ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         <Button
           basic
           onClick={() => router.push('/editProfile')}

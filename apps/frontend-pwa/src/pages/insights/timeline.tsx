@@ -43,12 +43,26 @@ function StudentTimelines() {
       displayName={`${t('pwa.general.insights')} - ${t('pwa.general.timeline')}`}
     >
       {!courses || courses.length === 0 ? (
-        <UserNotification
-          type="info"
-          message={t('pwa.insights.noCourseDataAvailable')}
-        />
+        <>
+          {error && courses ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+          ) : null}
+          <UserNotification
+            type="info"
+            message={t('pwa.insights.noCourseDataAvailable')}
+          />
+        </>
       ) : (
         <div className="flex flex-col gap-12 md:gap-5">
+          {error && courses ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+          ) : null}
           {courses.map((course) => (
             <TimelineCourse
               key={`timeline-insights-course-${course.courseId}`}

@@ -90,6 +90,12 @@ function EditProfile({
       displayName={t('pwa.profile.editProfile')}
     >
       <div className="flex flex-col gap-8 md:mx-auto md:w-full md:max-w-5xl md:gap-4">
+        {error && self ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         <div className="flex w-full flex-col gap-8 md:flex-row md:gap-4">
           <div className="w-full md:h-full md:w-1/2">
             <UpdateAccountInfoForm
