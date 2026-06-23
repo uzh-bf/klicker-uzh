@@ -423,6 +423,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Element Collection Initial Load Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+element edit answer-collection dependency query. No new migration slice,
+S05/S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Findings:
+
+- `ElementEditForm` loads answer collections through the migrated
+  `resources.answerCollectionsForElements.useQuery`.
+- Selection and case-study option UIs receive `collections` and loading flags,
+  but not the initial query error state.
+- If the initial collection query fails with no cached data, these option UIs
+  can render the existing "answer collection required" guidance, which is
+  misleading because the collection state is unknown rather than empty.
+
+Changes:
+
+- Add a no-data collection error fallback for selection and case-study options.
+- Keep stale collection data visible on background refetch errors by only
+  showing the fallback when the query has an error and no collection data.
+- Preserve existing empty-collection guidance when the collection query
+  succeeds with an empty list.
+
+Review / simplification:
+
+- Self-review kept the error flag derived in `ElementEditForm`, close to the
+  `resources.answerCollectionsForElements` query, and passed only a boolean to
+  the option components.
+- No server, GraphQL, cache-key, mutation, or answer-collection behavior was
+  changed.
+- Dedicated subagent review was not run because the available multi-agent tool
+  requires an explicit user request before spawning agents; no external review
+  was needed for this narrow UI-state fix.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/elements/manipulation/ElementEditForm.tsx apps/frontend-manage/src/components/elements/manipulation/options/SelectionOptions.tsx apps/frontend-manage/src/components/elements/manipulation/options/CaseStudyOptions.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed for the component files; the plan file was not printed by the local Prettier invocation.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused manage element collection initial-load error UX
+  cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces
+  after this commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Element Edit Initial Load Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

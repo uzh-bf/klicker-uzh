@@ -106,12 +106,17 @@ function ElementEditForm({
 
   const {
     data,
+    error: collectionsError,
     isLoading: collectionsLoading,
     isFetching: collectionsFetching,
     refetch,
   } = trpc.resources.answerCollectionsForElements.useQuery(
     { templateId },
     { refetchOnMount: 'always' }
+  )
+  const hasCollectionsData = typeof data !== 'undefined'
+  const collectionsInitialError = Boolean(
+    collectionsError && !hasCollectionsData
   )
   const collections = data?.answerCollections ?? []
   const refetchAnswerCollections = useCallback(async () => {
@@ -292,6 +297,7 @@ function ElementEditForm({
                         values={values}
                         collections={collections}
                         collectionsLoading={collectionsLoading}
+                        collectionsError={collectionsInitialError}
                         collectionsRefetching={collectionsFetching}
                         refetchCollections={refetchAnswerCollections}
                         setAnswerCollectionEntries={setAnswerCollectionEntries}
@@ -315,6 +321,7 @@ function ElementEditForm({
                         hasSampleSolution={values.options.hasSampleSolution}
                         collections={collections}
                         collectionsLoading={collectionsLoading}
+                        collectionsError={collectionsInitialError}
                         collectionsRefetching={collectionsFetching}
                         refetchCollections={refetchAnswerCollections}
                         setAnswerCollectionEntries={setAnswerCollectionEntries}
