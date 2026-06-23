@@ -8,9 +8,11 @@ import { trpc } from '../../lib/trpc'
 
 function Analytics() {
   const t = useTranslations()
-  const { data, isLoading } = trpc.course.userCourses.useQuery()
+  const { data, error, isLoading } = trpc.course.userCourses.useQuery()
+  const courseList = data?.userCourses
+  const hasCourseListData = typeof courseList !== 'undefined'
 
-  if (isLoading && !data) {
+  if (isLoading && !hasCourseListData) {
     return (
       <Layout displayName={t('shared.generic.learningAnalytics')}>
         <Loader />
@@ -18,7 +20,7 @@ function Analytics() {
     )
   }
 
-  if (!data?.userCourses) {
+  if (!hasCourseListData) {
     return (
       <Layout displayName={t('shared.generic.learningAnalytics')}>
         <UserNotification
@@ -31,7 +33,14 @@ function Analytics() {
 
   return (
     <Layout displayName={t('shared.generic.learningAnalytics')}>
-      <CourseDashboardList courses={data?.userCourses} />
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('manage.analytics.analyticsLoadingFailed')}
+          className={{ root: 'mb-4 text-sm' }}
+        />
+      ) : null}
+      <CourseDashboardList courses={courseList} />
     </Layout>
   )
 }
