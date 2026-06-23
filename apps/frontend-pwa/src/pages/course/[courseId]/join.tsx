@@ -49,19 +49,39 @@ function JoinCourse({
     setInitialPin(typeof router.query.pin === 'string' ? router.query.pin : '')
   }, [router.query.pin])
 
-  const { isLoading: loadingParticipant, data: dataParticipant } =
-    trpc.participant.self.useQuery()
+  const {
+    data: dataParticipant,
+    error: participantError,
+    isLoading: loadingParticipant,
+  } = trpc.participant.self.useQuery()
   const joinCourseWithPin = trpc.participant.joinCourseWithPin.useMutation()
   const createParticipantAccount = trpc.participant.createAccount.useMutation()
   const utils = trpc.useUtils()
 
-  if (loadingParticipant || courseLoading) {
+  if ((loadingParticipant && !dataParticipant) || courseLoading) {
     return (
       <Layout
         displayName={t('pwa.general.joinCourse')}
         course={{ displayName: displayName, color: color, id: courseId }}
       >
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (participantError && !dataParticipant) {
+    return (
+      <Layout
+        displayName={t('pwa.general.joinCourse')}
+        course={{ displayName: displayName, color: color, id: courseId }}
+      >
+        <div className="mx-auto max-w-5xl md:mb-4 md:rounded md:border md:p-8 md:pt-6">
+          <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
+          <UserNotification
+            message={t('pwa.joinCourse.genericError')}
+            type="error"
+          />
+        </div>
       </Layout>
     )
   }
@@ -73,6 +93,13 @@ function JoinCourse({
     >
       <div className="mx-auto max-w-5xl md:mb-4 md:rounded md:border md:p-8 md:pt-6">
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
+        {participantError ? (
+          <UserNotification
+            message={t('pwa.joinCourse.genericError')}
+            type="error"
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
 
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self &&

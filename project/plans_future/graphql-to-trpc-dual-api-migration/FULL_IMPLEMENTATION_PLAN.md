@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Join Identity Query UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA course-specific
+join page. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Finding:
+
+- `apps/frontend-pwa/src/pages/course/[courseId]/join.tsx` loads participant
+  identity through the migrated `participant.self` tRPC query.
+- Initial loading is handled, but an initial `participant.self` failure with no
+  data falls through to the new-user account creation form.
+- That can present the wrong join path when the app cannot determine whether
+  the visitor is already logged in.
+- Context7 TanStack Query v4 docs were refreshed for this pass. The same
+  stale-data rule applies: block only initial no-data errors and keep existing
+  identity data usable during background/refetch errors.
+
+Change:
+
+- Show a stable system-error notification when the initial participant identity
+  query fails with no usable data.
+- Keep the existing logged-in and new-user join flows unchanged when identity
+  data is available or the query succeeds with no participant.
+- Keep stale identity data usable if a background/refetch error happens.
+
+Review and simplification:
+
+- Kept the change in the existing join page instead of adding new wrappers,
+  hooks, cache policy changes, or route/API behavior.
+- Reused the existing generic join-course error copy and `UserNotification`
+  component so GraphQL/tRPC parity and i18n behavior stay unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-pwa/src/pages/course/[courseId]/join.tsx' project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- `git diff --check`
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- Runtime/browser verification remains blocked because local services are not
+  listening:
+  `curl -sS -I http://127.0.0.1:3001`,
+  `curl -sS -I http://127.0.0.1:3102`, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` all failed with
+  `Couldn't connect to server`.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Analytics Selector Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
