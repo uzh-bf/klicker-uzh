@@ -5,7 +5,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Suspense, type MouseEvent } from 'react'
+import { Suspense, useState, type MouseEvent } from 'react'
 import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useRequestCatalogObject from './useRequestCatalogObject'
 
@@ -41,9 +41,11 @@ function CatalogRequestModal({
     objectId,
     catalogCollectionId,
   })
+  const [requestPending, setRequestPending] = useState(false)
+  const pending = requesting || requestPending
   const handleClose = (e?: MouseEvent) => {
     e?.stopPropagation()
-    if (!requesting) {
+    if (!pending) {
       onClose()
     }
   }
@@ -52,6 +54,7 @@ function CatalogRequestModal({
     <Modal
       open
       onClose={handleClose}
+      escapeDisabled={pending}
       title={t('manage.catalog.requestCatalogObjectAccess', {
         object: t(`shared.types.${objectType}`),
       })}
@@ -65,21 +68,31 @@ function CatalogRequestModal({
       dataSecondaryAction={{ cy: 'cancel-request-access' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!requesting && <FontAwesomeIcon icon={faPaperPlane} />}
+          {!pending && <FontAwesomeIcon icon={faPaperPlane} />}
           <span>{t('manage.catalog.requestAccess')}</span>
         </div>
       }
-      primaryLoading={requesting}
-      primaryDisabled={requesting}
+      primaryLoading={pending}
+      primaryDisabled={pending}
       onPrimaryAction={async (e) => {
         e?.stopPropagation()
-        const success = await onRequest()
+        if (pending) return
 
-        if (success) {
-          onSuccess()
-        } else {
-          onErrorToast()
+        setRequestPending(true)
+        let success = false
+
+        try {
+          success = await onRequest()
+        } finally {
+          setRequestPending(false)
         }
+
+        if (!success) {
+          onErrorToast()
+          return
+        }
+
+        onSuccess()
       }}
       dataPrimaryAction={{ cy: 'confirm-request-access' }}
     >

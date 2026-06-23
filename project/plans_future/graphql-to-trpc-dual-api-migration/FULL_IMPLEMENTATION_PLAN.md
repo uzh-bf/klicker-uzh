@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Catalog Request Modal Close Guards
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+catalog object/collection request and request-cancellation workflows. No new
+migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Findings:
+
+- `CatalogRequestModal` and `CatalogRequestCancellationModal` already route
+  their writes through migrated tRPC hooks and surface success/failure through
+  existing toast callbacks.
+- Their modal close/escape and primary-button loading states depended only on
+  the React Query mutation hook `isLoading` flag. That left a narrow pre-hook
+  timing window where the full primary action had started but the modal close
+  path was still considered idle.
+- Context7 TanStack Query v4 docs were refreshed before this change. They
+  confirm `mutateAsync` is promise-based and `isLoading` represents the
+  executing mutation state; the extra local pending state covers the component
+  action boundary around the existing hook.
+
+Changes:
+
+- Add local action-pending state to request and request-cancellation modals.
+- Use the combined pending state for close/escape guards, primary loading, and
+  duplicate primary-click prevention.
+- Preserve existing tRPC hook cache updates, success toasts, error toasts, and
+  GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/catalog/actions/CatalogRequestModal.tsx
+  apps/frontend-manage/src/components/catalog/actions/CatalogRequestCancellationModal.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because the available multi-agent
+  tool explicitly requires a user request before spawning subagents.
+
+Next:
+
+- Commit and push this focused catalog request modal close-guard cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Catalog Collection Create Close Guard
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

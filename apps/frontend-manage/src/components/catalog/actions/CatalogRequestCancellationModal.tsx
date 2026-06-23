@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import type { MouseEvent } from 'react'
+import { useState, type MouseEvent } from 'react'
 import useRequestCancellationCatalogObject from './useRequestCancellationCatalogObject'
 
 function CatalogRequestCancellationModal({
@@ -36,9 +36,11 @@ function CatalogRequestCancellationModal({
     objectId,
     catalogCollectionId,
   })
+  const [cancellationPending, setCancellationPending] = useState(false)
+  const pending = cancelling || cancellationPending
   const handleClose = (e?: MouseEvent) => {
     e?.stopPropagation()
-    if (!cancelling) {
+    if (!pending) {
       onClose()
     }
   }
@@ -47,26 +49,38 @@ function CatalogRequestCancellationModal({
     <Modal
       open
       onClose={handleClose}
+      escapeDisabled={pending}
       title={t('manage.catalog.cancelCatalogObjectRequest', {
         object: t(`shared.types.${objectType}`),
       })}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          {!cancelling && <FontAwesomeIcon icon={faTrashCan} />}
+          {!pending && <FontAwesomeIcon icon={faTrashCan} />}
           <span>{t('manage.catalog.cancelRequest')}</span>
         </div>
       }
       primaryButtonStyle="destructive"
-      primaryLoading={cancelling}
-      primaryDisabled={cancelling}
+      primaryLoading={pending}
+      primaryDisabled={pending}
       onPrimaryAction={async (e) => {
         e?.stopPropagation()
-        const success = await onCancellation()
-        if (success) {
-          onSuccess()
-        } else {
-          onErrorToast()
+        if (pending) return
+
+        setCancellationPending(true)
+        let success = false
+
+        try {
+          success = await onCancellation()
+        } finally {
+          setCancellationPending(false)
         }
+
+        if (!success) {
+          onErrorToast()
+          return
+        }
+
+        onSuccess()
       }}
       dataPrimaryAction={{ cy: 'confirm-request-cancellation' }}
       className={{ footer: 'justify-end', content: 'max-w-xl' }}
