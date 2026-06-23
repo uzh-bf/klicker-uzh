@@ -15,6 +15,8 @@ import {
 import { trpc } from '../../lib/trpc'
 
 type StudentElementInstance = ComponentProps<typeof StudentElement>['element']
+const previewShellClassName =
+  'flex min-h-screen w-full items-center justify-center'
 
 function InstancePreview() {
   const t = useTranslations()
@@ -49,19 +51,25 @@ function InstancePreview() {
   })
 
   if (!router.isReady || (shouldFetchInstance && isLoading)) {
-    return <Loader />
+    return (
+      <div className={`${previewShellClassName} p-6`}>
+        <Loader />
+      </div>
+    )
   }
 
   if (!instance) {
     return (
-      <UserNotification className={{ root: 'm-auto w-max' }} type="error">
-        {t('shared.generic.systemError')}
-      </UserNotification>
+      <div className={`${previewShellClassName} p-6`}>
+        <UserNotification className={{ root: 'w-full max-w-lg' }} type="error">
+          {t('shared.generic.systemError')}
+        </UserNotification>
+      </div>
     )
   }
 
   return (
-    <div className="flex w-full items-center justify-center">
+    <div className={previewShellClassName}>
       <div className="flex w-full flex-col items-center p-6">
         <H2 className={{ root: 'mb-3' }}>
           {t('manage.general.elementPreview', {

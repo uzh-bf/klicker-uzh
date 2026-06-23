@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Standalone Preview Query States
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+standalone element/instance preview pages. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- The manage standalone preview pages already guard migrated tRPC route-param
+  queries with `enabled`, so they do not fire invalid placeholder IDs while the
+  router is not ready.
+- Their initial loading state still rendered a bare `Loader` outside the
+  centered preview surface used by the loaded student-element preview.
+- Their no-data/error state rendered a narrow notification without the same
+  full-height centering, causing a rough transition from loading/error to the
+  loaded preview surface.
+- Adjacent migrated route-param pages keep route-param loading/error states in
+  a layout or centered surface while preserving stale/loaded content where
+  available.
+
+Changes:
+
+- Add a small local preview shell class to the standalone question and instance
+  preview pages.
+- Render loading, missing-data, and loaded preview states in the same centered
+  full-height surface.
+- Preserve existing tRPC inputs, `enabled` guards, student-response
+  initialization, preview rendering, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/pages/questions/[id].tsx
+  apps/frontend-manage/src/pages/instances/[id].tsx` passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` failed with connection refused.
+
+Next:
+
+- Commit and push this focused standalone-preview query-state cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Query Shell Loading and Profile Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
