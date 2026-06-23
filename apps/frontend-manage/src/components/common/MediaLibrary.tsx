@@ -15,6 +15,9 @@ interface Props {
 function SuspendedMediaFiles({ onImageClick }: Props) {
   const t = useTranslations()
   const { data, error, isLoading } = trpc.element.mediaFiles.useQuery()
+  const mediaFiles = data?.mediaFiles ?? []
+  const mediaFilesUnavailable = Boolean(error && !data)
+  const staleMediaFilesError = Boolean(error && data)
 
   if (isLoading && !data) {
     return <Loader />
@@ -24,26 +27,35 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
     <div className="w-4/5 flex-none border-r p-2">
       <div className="font-bold">{t('manage.elements.mediaLibrary')}</div>
       <div className="grid max-h-64 grid-cols-5 gap-2 overflow-y-auto">
-        {error && !data ? (
+        {mediaFilesUnavailable ? (
           <UserNotification
             type="error"
             message={t('shared.generic.systemError')}
             className={{ root: 'col-span-5 text-sm' }}
           />
         ) : (
-          data?.mediaFiles.map((file) => (
-            <Button
-              className={{ root: 'flex flex-col overflow-hidden text-xs' }}
-              key={file.id}
-              onClick={() => onImageClick(file.href, file.name)}
-              data={{ cy: `media-file-${file.name}` }}
-            >
-              <Image src={file.href} width={50} height={50} alt={file.name} />
-              <Ellipsis maxLines={1} className={{ root: 'text-xs' }}>
-                {file.name}
-              </Ellipsis>
-            </Button>
-          ))
+          <>
+            {staleMediaFilesError ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+                className={{ root: 'col-span-5 text-sm' }}
+              />
+            ) : null}
+            {mediaFiles.map((file) => (
+              <Button
+                className={{ root: 'flex flex-col overflow-hidden text-xs' }}
+                key={file.id}
+                onClick={() => onImageClick(file.href, file.name)}
+                data={{ cy: `media-file-${file.name}` }}
+              >
+                <Image src={file.href} width={50} height={50} alt={file.name} />
+                <Ellipsis maxLines={1} className={{ root: 'text-xs' }}>
+                  {file.name}
+                </Ellipsis>
+              </Button>
+            ))}
+          </>
         )}
       </div>
     </div>

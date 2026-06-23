@@ -423,6 +423,64 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Media Library Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+media-library file list query. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `MediaLibrary` already uses `element.mediaFiles` through tRPC, shows a loader
+  on true initial load, shows a generic error notification when the initial
+  file-list query fails, and catches upload / SAS mutation failures with a
+  generic error toast.
+- When `element.mediaFiles` has cached data and a later background/refetch
+  request fails, the media grid keeps the usable cached images visible but does
+  not show the refresh failure.
+- Context7 TanStack Query v4 docs were refreshed for this continuation. Cached
+  data can stay rendered while a background refetch fails, so this path should
+  preserve the media grid and show non-blocking failure feedback.
+
+Changes:
+
+- Add an existing generic `UserNotification` error fallback inside the media
+  grid when `element.mediaFiles` has stale data and a background/refetch request
+  fails.
+- Preserve the initial loader, initial error notification, upload/SAS mutation
+  behavior, media-file rendering, tRPC query input/cache key, and GraphQL/tRPC
+  coexistence.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write
+  apps/frontend-manage/src/components/common/MediaLibrary.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit
+  --pretty false` passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  produced no output and exited with code 124 after the timeout. Local GraphQL
+  package Vitest remains blocked in this environment; the GitHub
+  `packages/graphql Vitest` PR check is the current authoritative signal.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+- Self-review/simplification completed in the main session because no subagent
+  was requested for this continuation. The diff only adds an existing
+  `UserNotification` fallback for the stale media-list refetch-error path and
+  does not alter upload behavior, media-file rendering, query inputs/cache keys,
+  or GraphQL coexistence.
+
+Next:
+
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Point-Correction History Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
