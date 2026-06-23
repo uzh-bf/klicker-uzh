@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Analytics Comparison Course Selector Stale Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+analytics comparison course selector. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Finding:
+
+- `SuspendedCourseComparison` loads comparison course options through the
+  migrated `course.userCourses` tRPC query.
+- Initial no-data failures already fall back to an analytics error
+  notification.
+- Background/refetch failures with stale course options are not surfaced because
+  the query error is not read.
+- Context7 TanStack Query v4 docs were refreshed for this pass. Refetch errors
+  can coexist with cached data, so the selector should stay usable while a
+  compact error message explains that the refresh failed.
+
+Change:
+
+- Read the comparison course-list query error.
+- Keep stale course options visible when cached data exists.
+- Show a compact analytics loading-failed notification above the selector on
+  background/refetch failure.
+
+Review and simplification:
+
+- Kept the change in `SuspendedCourseComparison` and reused the existing
+  analytics loading-failed copy.
+- Checked the actual `userCourses` field instead of only the top-level query
+  payload so malformed/no-field data still follows the existing error path.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/analytics/activity/SuspendedCourseComparison.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- `git diff --check`
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- Runtime/browser verification remains blocked because local services are not
+  listening:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with
+  `Couldn't connect to server`.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Admin Private Preview Stale Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

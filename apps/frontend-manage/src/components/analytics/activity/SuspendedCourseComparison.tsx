@@ -24,16 +24,22 @@ function SuspendedCourseComparison({
   const currentCourseId =
     typeof router.query.courseId === 'string' ? router.query.courseId : null
 
-  const { data, isLoading } = trpc.course.userCourses.useQuery()
+  const {
+    data,
+    error: courseListError,
+    isLoading,
+  } = trpc.course.userCourses.useQuery()
+  const courseList = data?.userCourses
+  const hasCourseListData = typeof courseList !== 'undefined'
   const courses =
-    data?.userCourses
+    courseList
       ?.filter((course) => course.id !== currentCourseId)
       .map((course) => ({
         label: course.name,
         value: course.id,
       })) ?? []
 
-  if (isLoading && !data) {
+  if (isLoading && !hasCourseListData) {
     return (
       <div className="w-full px-4 lg:w-1/4">
         <Loader />
@@ -41,7 +47,7 @@ function SuspendedCourseComparison({
     )
   }
 
-  if (!data?.userCourses) {
+  if (!hasCourseListData) {
     return (
       <div className="w-full px-4 lg:w-1/4">
         <UserNotification
@@ -75,6 +81,13 @@ function SuspendedCourseComparison({
       {showCourseDropdown ? (
         <div className="flex flex-col gap-2 pl-7">
           <div>{t('manage.analytics.courseComparisonDescription')}</div>
+          {courseListError ? (
+            <UserNotification
+              type="error"
+              message={t('manage.analytics.analyticsLoadingFailed')}
+              className={{ root: 'text-sm' }}
+            />
+          ) : null}
           <div className="flex w-full flex-row">
             <Select
               items={courses}
