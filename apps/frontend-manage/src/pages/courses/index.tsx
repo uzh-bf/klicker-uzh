@@ -226,17 +226,17 @@ function CourseSelectionPage() {
                         }
                       : data
                   )
-                  try {
-                    await utils.course.userCourses.invalidate()
-                  } catch (refreshError) {
-                    console.error(refreshError)
-                    toast({
-                      type: 'error',
-                      message: t('shared.generic.systemError'),
-                      options: { duration: 5000 },
-                    })
-                  }
                   showCreateCourseModal(false)
+                  void utils.course.userCourses
+                    .invalidate()
+                    .catch((refreshError) => {
+                      console.error(refreshError)
+                      toast({
+                        type: 'error',
+                        message: t('shared.generic.systemError'),
+                        options: { duration: 5000 },
+                      })
+                    })
                   try {
                     const routed = await router.push(
                       `/courses/${createdCourse.id}`

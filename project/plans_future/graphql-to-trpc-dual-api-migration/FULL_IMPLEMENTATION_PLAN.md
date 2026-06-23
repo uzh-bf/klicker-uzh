@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With CI Evidence: Course Creation Navigation Refresh Follow-Up
+
+Context:
+
+- After `998b6b1c2`, Cypress Cloud run `6926` started for PR merge ref
+  `634afece1b856ae6d1b307a3e1e179bb82b6f847`.
+- Direct Cypress Cloud status while running showed `totalPassed=212`,
+  `totalFailed=6`, `totalTests=296`.
+- All six fresh failures were in `N-course-workflow.cy.ts`; the previous
+  `O-live-quiz-workflow.cy.ts` failure cluster had not reappeared at this
+  point.
+
+Evidence:
+
+- First failure remained
+  `Test course creation and editing functionalities > Test the creation of a new gamified course`.
+- Error examples:
+  - `expected '/courses/<id>' to equal '/courses'` at
+    `cypress/e2e/N-course-workflow.cy.ts:287`.
+  - Missing `course-list-button-<course name>` at
+    `cypress/e2e/N-course-workflow.cy.ts:291`.
+  - Later duplicated course-list actions remained downstream symptoms after the
+    first test left multiple created courses behind.
+
+Finding:
+
+- `apps/frontend-manage/src/pages/courses/index.tsx` still awaited
+  `utils.course.userCourses.invalidate()` after a successful create mutation
+  and before closing the modal / starting the route to the new course detail.
+- In the Cypress workflow, the next command clicks the global Courses nav and
+  expects `/courses`; delaying the post-create route creates a race where that
+  route can fire after the test has already clicked back to the course list.
+
+Change:
+
+- Keep the local `userCourses.setData` optimistic insert.
+- Close the create-course modal immediately after the local cache update.
+- Start navigation to the newly created course without awaiting a list
+  invalidation first.
+- Move the list invalidation to a background refresh with existing error toast
+  handling.
+
+Verification:
+
+- Passed locally after this patch:
+  - `./node_modules/.bin/prettier --write apps/frontend-manage/src/pages/courses/index.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Still pending:
+  - push and monitor the next Cypress Cloud run
+
 ### 2026-06-23 Completed Locally With CI Evidence: Cypress Refresh Boundary Follow-Up
 
 Status: complete locally with Cypress Cloud evidence still running. Scope stayed
