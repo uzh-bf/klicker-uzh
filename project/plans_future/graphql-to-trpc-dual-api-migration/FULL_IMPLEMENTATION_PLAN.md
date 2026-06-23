@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Auth Redirect Failure Fallbacks
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA magic-login /
+account-activation mutation pages. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `magicLogin.tsx` and `activation.tsx` submit through migrated participant
+  tRPC mutations and already toast failures before redirecting to `/login`.
+- After a missing/invalid token or mutation failure, both pages keep rendering
+  the processing headline and spinner for the five-second redirect delay.
+- This makes the failure state visually misleading even though the toast is
+  correct.
+
+Changes:
+
+- Keep the existing failure toasts and delayed redirect behavior.
+- Add a persistent inline error notification after failure, using the existing
+  localized failure messages.
+- Hide the processing loader once the page is in a known failed state.
+
+Review / simplification:
+
+- Self-review found no need for new i18n keys because the existing failure
+  messages already include the redirect context.
+- The change intentionally keeps the delayed redirect and existing toast
+  behavior, and only changes the persistent page body after failure.
+- Dedicated subagent review was not run because the available multi-agent tool
+  requires an explicit user request before spawning agents; no external review
+  was needed for this narrow two-page UX fix.
+
+Checks:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/pages/magicLogin.tsx apps/frontend-pwa/src/pages/activation.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed with local engine
+  warnings only (`node v22.23.0` / `pnpm 11.5.0` while repo packages declare
+  Node 20/24 engines).
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001`, `curl -sS -I http://127.0.0.1:3102`,
+  and `curl -sS -I http://127.0.0.1:3000/api/trpc` all failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused PWA auth redirect failure fallback cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces after
+  this commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Live Quiz Confusion Feedback Failure State
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

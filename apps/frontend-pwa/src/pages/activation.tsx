@@ -1,17 +1,18 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
-import { H2, toast } from '@uzh-bf/design-system'
+import { H2, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 function Activation() {
   const router = useRouter()
   const t = useTranslations()
   const loginTimeout = useRef<any>(null)
   const redirectionTimeout = useRef<any>(null)
+  const [failureMessage, setFailureMessage] = useState<string | null>(null)
   const token =
     typeof router.query.token === 'string' && router.query.token.trim() !== ''
       ? router.query.token
@@ -26,6 +27,7 @@ function Activation() {
 
     clearTimeout(loginTimeout.current)
     clearTimeout(redirectionTimeout.current)
+    setFailureMessage(null)
 
     const redirectToLogin = () => {
       redirectionTimeout.current = setTimeout(() => {
@@ -38,13 +40,19 @@ function Activation() {
       }, 5000)
     }
 
-    if (!token) {
+    const showFailure = () => {
+      const message = t('pwa.general.accountActivationFailed')
+      setFailureMessage(message)
       toast({
         type: 'error',
-        message: t('pwa.general.accountActivationFailed'),
+        message,
         options: { duration: 8000 },
       })
       redirectToLogin()
+    }
+
+    if (!token) {
+      showFailure()
       return
     }
 
@@ -59,21 +67,11 @@ function Activation() {
           const routed = await router.push('/')
           if (!routed) window.location.assign('/')
         } else {
-          toast({
-            type: 'error',
-            message: t('pwa.general.accountActivationFailed'),
-            options: { duration: 8000 },
-          })
-          redirectToLogin()
+          showFailure()
         }
       } catch (error) {
         console.error(error)
-        toast({
-          type: 'error',
-          message: t('pwa.general.accountActivationFailed'),
-          options: { duration: 8000 },
-        })
-        redirectToLogin()
+        showFailure()
       }
     }, 1500)
 
@@ -93,10 +91,20 @@ function Activation() {
         className="mx-auto"
         data-cy="login-logo"
       />
-      <H2 className={{ root: 'mb-2 mt-4' }}>
-        {t('pwa.general.processingActivation')}
-      </H2>
-      <Loader />
+      {failureMessage ? (
+        <UserNotification
+          type="error"
+          message={failureMessage}
+          className={{ root: 'mt-4 max-w-md text-base' }}
+        />
+      ) : (
+        <>
+          <H2 className={{ root: 'mb-2 mt-4' }}>
+            {t('pwa.general.processingActivation')}
+          </H2>
+          <Loader />
+        </>
+      )}
     </div>
   )
 }
