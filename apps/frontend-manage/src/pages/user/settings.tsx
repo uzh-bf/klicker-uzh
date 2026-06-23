@@ -15,15 +15,21 @@ function Settings() {
   const { data: user, error, isLoading } = trpc.user.profile.useQuery()
 
   if (isLoading && !user) {
-    return <Loader />
+    return (
+      <Layout displayName={t('shared.generic.settings')}>
+        <Loader />
+      </Layout>
+    )
   }
 
   if (!user) {
     return (
-      <UserNotification
-        type="error"
-        message={t('shared.generic.systemError')}
-      />
+      <Layout displayName={t('shared.generic.settings')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
     )
   }
 

@@ -35,7 +35,11 @@ function MicrolearningInstance() {
   })
 
   if (isLoading && !data) {
-    return <Loader />
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
   }
 
   if (error && !data?.microLearning) {

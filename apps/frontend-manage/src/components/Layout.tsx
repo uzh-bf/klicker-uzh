@@ -28,15 +28,34 @@ function Layout({
   const t = useTranslations()
   const router = useRouter()
 
-  const { isLoading: loadingUser, data: dataUser } =
-    trpc.user.profile.useQuery()
-  const shouldRedirectToLogin = !dataUser && !loadingUser
+  const {
+    isLoading: loadingUser,
+    error: errorUser,
+    data: dataUser,
+  } = trpc.user.profile.useQuery()
+  const unauthorizedProfileError = isUnauthorizedError(errorUser)
+  const shouldShowProfileError =
+    !dataUser && Boolean(errorUser) && !unauthorizedProfileError
+  const shouldRedirectToLogin =
+    !dataUser &&
+    !shouldShowProfileError &&
+    (!loadingUser || unauthorizedProfileError)
 
   useEffect(() => {
     if (!shouldRedirectToLogin) return
 
     void router.push('/login')
   }, [router, shouldRedirectToLogin])
+
+  if (shouldShowProfileError) {
+    return (
+      <div className="mx-auto my-auto">
+        <UserNotification type="error">
+          {t('shared.generic.systemError')}
+        </UserNotification>
+      </div>
+    )
+  }
 
   if (loadingUser && !dataUser) {
     return (
@@ -89,3 +108,12 @@ function Layout({
 }
 
 export default Layout
+
+function isUnauthorizedError(error: unknown) {
+  if (!(error instanceof Error)) return false
+
+  return (
+    error.message === 'Unauthorized' ||
+    (error as { data?: { code?: string } }).data?.code === 'UNAUTHORIZED'
+  )
+}

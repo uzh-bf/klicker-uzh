@@ -423,6 +423,64 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Query Shell Loading and Profile Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated manage/PWA query shells.
+No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or
+package cleanup was started.
+
+Findings:
+
+- The frontend-control layout already distinguishes unauthorized profile
+  errors from non-auth profile load failures before redirecting to login.
+- The frontend-manage layout still redirected on any completed no-data profile
+  query, so a non-auth `user.profile` system failure could send users to the
+  login flow instead of showing a localized error state.
+- The manage settings page used the normal manage `Layout` only after
+  `user.profile` loaded successfully. Its initial loading and no-user error
+  branches rendered bare content without the application shell.
+- The PWA microlearning step page rendered a bare `Loader` for the initial
+  migrated `participant.microLearning` query state, unlike adjacent PWA
+  microlearning pages that keep the app layout visible during loading.
+- Context7 TanStack Query v4 docs were refreshed before the query UX edit. They
+  confirm that `isLoading` is the no-data loading state, while stale/cached data
+  should stay rendered during background fetching or background failures.
+
+Changes:
+
+- Mirror the control app unauthorized-vs-system-error profile handling in the
+  manage app layout.
+- Keep manage settings initial loading and no-user error states inside
+  `Layout`.
+- Keep the PWA microlearning step initial loading state inside `Layout`.
+- Preserve GraphQL/tRPC coexistence and all existing query inputs, cache keys,
+  and mutation behavior.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/Layout.tsx
+  apps/frontend-manage/src/pages/user/settings.tsx
+  apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/[ix].tsx`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc`,
+  `curl -sS -I http://127.0.0.1:3002`, and
+  `curl -sS -I http://127.0.0.1:3001` all failed with connection refused.
+- Review/simplification was performed locally because the available multi-agent
+  tool explicitly requires a user request before spawning subagents.
+
+Next:
+
+- Commit and push this focused query-shell/profile-error UX cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Catalog Add/Access Action Guards
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
