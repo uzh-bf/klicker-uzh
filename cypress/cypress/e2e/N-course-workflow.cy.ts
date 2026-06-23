@@ -290,7 +290,10 @@ describe('Test course creation and editing functionalities', function () {
     // check that random group assignment should be disabled
     cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="tab-groups"]').click()
-    cy.get('[data-cy="assign-random-groups"]:visible').should('be.disabled')
+    cy.get('[data-cy="assign-random-groups"]')
+      .filter(':visible')
+      .first()
+      .should('be.disabled')
     cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
       'exist'
     )
@@ -411,9 +414,15 @@ describe('Test course creation and editing functionalities', function () {
     cy.location('pathname').should('eq', '/courses')
     cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="tab-groups"]').click()
-    cy.get('[data-cy="assign-random-groups"]:visible').click()
+    cy.get('[data-cy="assign-random-groups"]')
+      .filter(':visible')
+      .first()
+      .click()
     cy.get('[data-cy="cancel-random-group-assignment"]').click()
-    cy.get('[data-cy="assign-random-groups"]:visible').click()
+    cy.get('[data-cy="assign-random-groups"]')
+      .filter(':visible')
+      .first()
+      .click()
     cy.get('[data-cy="confirm-random-group-assignment"]').click()
     cy.wait(1000)
     cy.get('body')
@@ -479,7 +488,9 @@ describe('Test course creation and editing functionalities', function () {
 
     // check that random assignment of groups would be possible again once students join the pool
     cy.get('[data-cy="tab-groups"]').click()
-    cy.get('[data-cy="assign-random-groups"]:visible')
+    cy.get('[data-cy="assign-random-groups"]')
+      .filter(':visible')
+      .first()
       .should('exist')
       .should('be.disabled')
     cy.findByText(messages.manage.course.randomGroupsNotPossible).should(

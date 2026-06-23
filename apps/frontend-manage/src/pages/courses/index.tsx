@@ -45,7 +45,10 @@ function CourseSelectionPage() {
     isLoading: loadingCourses,
     data: dataCourses,
     error: coursesError,
-  } = trpc.course.userCourses.useQuery()
+  } = trpc.course.userCourses.useQuery(undefined, {
+    refetchOnMount: 'always',
+    staleTime: 0,
+  })
   const courseList = dataCourses?.userCourses
   const hasCourseListData = typeof courseList !== 'undefined'
 
@@ -223,9 +226,16 @@ function CourseSelectionPage() {
                         }
                       : data
                   )
-                  void utils.course.userCourses
-                    .invalidate()
-                    .catch(console.error)
+                  try {
+                    await utils.course.userCourses.invalidate()
+                  } catch (refreshError) {
+                    console.error(refreshError)
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
+                  }
                   showCreateCourseModal(false)
                   try {
                     const routed = await router.push(
