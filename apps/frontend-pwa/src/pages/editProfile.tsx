@@ -34,8 +34,27 @@ function EditProfile({
       message: t('pwa.profile.editProfileSuccess'),
       options: { duration: 3500 },
     })
+  const onRefreshError = (error?: unknown) => {
+    if (error) console.error(error)
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 6000 },
+    })
+  }
   const onProfileMutationSuccess = async () => {
-    await refetch().catch(console.error)
+    const result = await refetch().catch((error) => {
+      onRefreshError(error)
+      return null
+    })
+
+    if (!result) return
+
+    if (result.error) {
+      onRefreshError(result.error)
+      return
+    }
+
     onSuccess()
   }
 

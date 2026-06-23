@@ -423,6 +423,80 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Edit Profile Mutation Refresh UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa
+edit-profile page. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed before work: PR 5132 points at
+  `codex/trpc-dual-api-migration`, base `v3`, ready for review, and local /
+  remote branch state is aligned at `60faff6c7`.
+- Current CI snapshot after the previous push: GitGuardian, lint,
+  `claude-review`, one check job, one test job, some build jobs, and CodeQL
+  java-kotlin / python analyses pass. Most matrix builds, SonarCloud,
+  JavaScript analyses, Cypress Cloud, `packages/api tRPC Vitest`, and
+  `packages/graphql Vitest` are still pending.
+- Context7 docs refreshed for tRPC React Query and TanStack Query v4. Relevant
+  behavior: tRPC hooks expose React Query state, mutation success handlers
+  should invalidate/refetch the affected cache intentionally, and background
+  refresh errors can coexist with stale data.
+- `apps/frontend-pwa/src/pages/editProfile.tsx` already keeps stale profile
+  data rendered with an inline error notification when the `participant.self`
+  query has cached data and a later request fails.
+- The profile and avatar forms have pending submit guards and mutation failure
+  toasts, but the shared post-mutation success callback ignores the
+  `participant.self` refetch result. A save can therefore show the success toast
+  even when the visible profile data failed to refresh.
+
+Changes:
+
+- Inspect the `participant.self` refetch result before showing the success
+  toast. If the refresh fails, keep the page usable and show the existing generic
+  system-error toast instead of the success toast.
+- Preserve form submit guards, mutation inputs, mutation failure toasts,
+  profile query loading/error fallbacks, token callback behavior, and
+  GraphQL/tRPC coexistence.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/pages/editProfile.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  exited 124 with no output after the timeout. This matches the known local
+  GraphQL package test blocker; the GitHub `packages/graphql Vitest` check is
+  still pending in the latest snapshot.
+
+Runtime:
+
+- Browser/runtime verification blocked locally because no stack is listening:
+  `curl -sS -I http://127.0.0.1:3001` failed with connection refused, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the edit-profile callback
+  diff. The implementation intentionally reuses the existing generic system
+  error toast and adds no new copy, cache abstraction, or broader invalidation
+  behavior.
+- Dedicated subagent review was skipped because the available multi-agent tool
+  contract says not to spawn subagents unless the user explicitly asks for
+  delegation.
+
+Next:
+
+- Commit and push this focused PWA edit-profile mutation refresh UX cleanup.
+- Stop before another audit surface because local browser/runtime verification
+  is blocked in the current environment.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Live Quiz Session Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
