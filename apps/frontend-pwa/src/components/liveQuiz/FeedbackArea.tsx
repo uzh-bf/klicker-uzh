@@ -156,40 +156,50 @@ function FeedbackArea({
   // handle creation of a new confusion timestep with debounce for aggregation
   const handleNewConfusionTS = useCallback(
     async ({ speed = 0, difficulty = 0 }): Promise<void> => {
+      if (!quizId) return
+
       try {
         await addConfusionTimestep.mutateAsync({
           quizId,
           difficulty: difficulty,
           speed: speed,
         })
+      } catch (error) {
+        console.error(error)
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+        return
+      }
 
-        localForage.setItem(`${quizId}-confusion`, {
+      void localForage
+        .setItem(`${quizId}-confusion`, {
           prevSpeed: speed,
           prevDifficulty: difficulty,
           prevTimestamp: dayjs().format(),
         })
-        push([
-          'trackEvent',
-          'Join Live Quiz',
-          'Confusion Interacted',
-          `speed=${speed}, difficulty=${difficulty}`,
-        ])
-      } catch ({ message }: any) {
-        console.error(message)
-      } finally {
-        // disable confusion voting for 1 minute
-        setConfusionEnabled(false)
-        if (confusionButtonTimeout.current) {
-          clearTimeout(confusionButtonTimeout.current)
-        }
-        confusionButtonTimeout.current = setTimeout(
-          setConfusionEnabled,
-          60000,
-          true
-        )
+        .catch(console.error)
+      push([
+        'trackEvent',
+        'Join Live Quiz',
+        'Confusion Interacted',
+        `speed=${speed}, difficulty=${difficulty}`,
+      ])
+
+      // disable confusion voting for 1 minute
+      setConfusionEnabled(false)
+      if (confusionButtonTimeout.current) {
+        clearTimeout(confusionButtonTimeout.current)
       }
+      confusionButtonTimeout.current = setTimeout(
+        setConfusionEnabled,
+        60000,
+        true
+      )
     },
-    [addConfusionTimestep, quizId]
+    [addConfusionTimestep, quizId, t]
   )
 
   // custom implementation of confusion feedback debouncing
@@ -231,6 +241,8 @@ function FeedbackArea({
     () => feedbacks?.filter((feedback) => feedback?.isResolved === true),
     [feedbacks]
   )
+  const isConfusionSliderDisabled =
+    !isConfusionEnabled || addConfusionTimestep.isLoading
 
   if (feedbacksLoading && typeof feedbacks === 'undefined') {
     return <Loader />
@@ -337,7 +349,7 @@ function FeedbackArea({
             </H3>
             <div className="-mt-1 w-full">
               <Slider
-                disabled={!isConfusionEnabled}
+                disabled={isConfusionSliderDisabled}
                 handleChange={(newValue: any): Promise<void> =>
                   onNewConfusionTS(newValue, 'speed')
                 }
@@ -357,7 +369,7 @@ function FeedbackArea({
             </H3>
             <div className="-mt-1 w-full">
               <Slider
-                disabled={!isConfusionEnabled}
+                disabled={isConfusionSliderDisabled}
                 handleChange={(newValue: any): Promise<void> =>
                   onNewConfusionTS(newValue, 'difficulty')
                 }

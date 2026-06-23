@@ -423,6 +423,59 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Live Quiz Confusion Feedback Failure State
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA live-quiz
+feedback surface. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- The live-quiz feedback area already keeps stale feedback data visible during
+  background refetch errors, guards feedback submission with Formik pending
+  state, and handles feedback vote failures with rollback and toasts.
+- The confusion sliders submit through the migrated
+  `participant.addLiveQuizConfusionTimestep` tRPC mutation, but failed
+  submissions only log to the console and still trigger the one-minute slider
+  cooldown.
+- Context7 TanStack Query v4 docs were refreshed before the edit. They confirm
+  `mutateAsync` promise handling and `isLoading` as the mutation pending state.
+
+Changes:
+
+- Show localized failure feedback if a confusion timestep cannot be submitted.
+- Keep the sliders available after a failed confusion submission so users can
+  retry, while preserving the existing cooldown after successful submissions.
+- Disable the sliders while the tRPC mutation itself is pending.
+
+Review / simplification:
+
+- Self-review found no extra abstraction or broader cache change needed; the
+  final handler uses an early return on mutation failure and keeps local
+  persistence best-effort.
+- Dedicated subagent review was not run because the available multi-agent tool
+  requires an explicit user request before spawning agents; no external review
+  was needed for this narrow one-component UX fix.
+
+Checks:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/components/liveQuiz/FeedbackArea.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed with local engine
+  warnings only (`node v22.23.0` / `pnpm 11.5.0` while repo packages declare
+  Node 20/24 engines).
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001`, `curl -sS -I http://127.0.0.1:3102`,
+  and `curl -sS -I http://127.0.0.1:3000/api/trpc` all failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused PWA feedback failure-state cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces after
+  this commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Lecturer View Fallback States
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
