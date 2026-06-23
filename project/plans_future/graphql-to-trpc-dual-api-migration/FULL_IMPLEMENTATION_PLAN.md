@@ -423,6 +423,54 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Course List Stale Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+course list. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Finding:
+
+- `apps/frontend-manage/src/pages/courses/index.tsx` loads the course list
+  through the migrated `course.userCourses` tRPC query.
+- Initial loading and initial no-data failures already have a loader/error
+  fallback.
+- Course create/archive/delete/remove actions already use pending guards,
+  close-on-success behavior, and targeted `course.userCourses` cache
+  update/invalidation paths.
+- Background/refetch failures with stale course-list data are not surfaced
+  because the query error is not read.
+
+Change:
+
+- Read the course-list query error.
+- Kept the existing initial loading/error behavior.
+- Show the existing system-error notification above the course list when a
+  refetch fails but cached course data still exists.
+
+Review and simplification:
+
+- Kept the change in the `/courses` page instead of adding shared query
+  wrappers or changing React Query cache policy.
+- Reused the existing generic system-error copy already used by the page's
+  initial no-data failure path.
+- Kept existing create/archive/delete/remove mutation pending guards and
+  targeted course-list cache update/invalidation behavior unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/pages/courses/index.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+- `git diff --check`
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- Runtime/browser verification remains blocked because local services are not
+  listening:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with
+  `Couldn't connect to server`.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Analytics Overview Stale Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

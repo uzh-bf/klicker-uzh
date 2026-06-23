@@ -41,10 +41,15 @@ function CourseSelectionPage() {
     courseName: string | null
   }>({ open: false, courseId: null, courseName: null })
 
-  const { isLoading: loadingCourses, data: dataCourses } =
-    trpc.course.userCourses.useQuery()
+  const {
+    isLoading: loadingCourses,
+    data: dataCourses,
+    error: coursesError,
+  } = trpc.course.userCourses.useQuery()
+  const courseList = dataCourses?.userCourses
+  const hasCourseListData = typeof courseList !== 'undefined'
 
-  if (loadingCourses && !dataCourses) {
+  if (loadingCourses && !hasCourseListData) {
     return (
       <Layout>
         <Loader />
@@ -52,7 +57,7 @@ function CourseSelectionPage() {
     )
   }
 
-  if (!dataCourses?.userCourses) {
+  if (!hasCourseListData) {
     return (
       <Layout>
         <UserNotification
@@ -63,7 +68,7 @@ function CourseSelectionPage() {
     )
   }
 
-  const courses = dataCourses?.userCourses?.filter((course) =>
+  const courses = courseList.filter((course) =>
     showArchive ? true : !course.isArchived
   )
 
@@ -73,7 +78,7 @@ function CourseSelectionPage() {
         <div className="md:w-180 flex w-full flex-col">
           <div className="mb-1 flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
-            {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
+            {courseList.length > 0 ? (
               <Switch
                 checked={showArchive}
                 onCheckedChange={(newValue) => setShowArchive(newValue)}
@@ -87,7 +92,14 @@ function CourseSelectionPage() {
               />
             ) : null}
           </div>
-          {courses && courses.length > 0 ? (
+          {coursesError ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'mb-3 text-sm' }}
+            />
+          ) : null}
+          {courses.length > 0 ? (
             <div className="w-full">
               <div className="flex flex-col gap-2">
                 {courses.map((course) => {
@@ -119,10 +131,7 @@ function CourseSelectionPage() {
             </div>
           ) : (
             <div
-              className={twMerge(
-                'w-full',
-                (dataCourses?.userCourses?.length ?? 0) > 0 && 'md:pr-24'
-              )}
+              className={twMerge('w-full', courseList.length > 0 && 'md:pr-24')}
             >
               <UserNotification className={{ root: 'mb-3 text-base' }}>
                 {t('manage.courseList.noCoursesFound')}
