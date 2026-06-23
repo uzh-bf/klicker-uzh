@@ -284,12 +284,13 @@ describe('Test course creation and editing functionalities', function () {
 
     // check if the course is in the list
     cy.get('[data-cy="courses"]').click()
+    cy.location('pathname').should('eq', '/courses')
     cy.findByText(this.data.course2.name).should('exist')
 
     // check that random group assignment should be disabled
     cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="tab-groups"]').click()
-    cy.get('[data-cy="assign-random-groups"]').should('be.disabled')
+    cy.get('[data-cy="assign-random-groups"]:visible').should('be.disabled')
     cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
       'exist'
     )
@@ -407,14 +408,17 @@ describe('Test course creation and editing functionalities', function () {
   it('Trigger the random group assignment for the gamified course', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
+    cy.location('pathname').should('eq', '/courses')
     cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="tab-groups"]').click()
-    cy.get('[data-cy="assign-random-groups"]').click()
+    cy.get('[data-cy="assign-random-groups"]:visible').click()
     cy.get('[data-cy="cancel-random-group-assignment"]').click()
-    cy.get('[data-cy="assign-random-groups"]').click()
+    cy.get('[data-cy="assign-random-groups"]:visible').click()
     cy.get('[data-cy="confirm-random-group-assignment"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="assign-random-groups"]').should('not.exist')
+    cy.get('body')
+      .find('[data-cy="assign-random-groups"]:visible')
+      .should('not.exist')
     cy.findByText(
       messages.manage.course.groupAssignmentFinalizedMessage
     ).should('exist')
@@ -441,6 +445,7 @@ describe('Test course creation and editing functionalities', function () {
   it('Check that if group formation deadline is moved into the future, randomized assignment is possible again', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
+    cy.location('pathname').should('eq', '/courses')
     cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
 
     // modify the course end date and group creation deadline
@@ -474,7 +479,7 @@ describe('Test course creation and editing functionalities', function () {
 
     // check that random assignment of groups would be possible again once students join the pool
     cy.get('[data-cy="tab-groups"]').click()
-    cy.get('[data-cy="assign-random-groups"]')
+    cy.get('[data-cy="assign-random-groups"]:visible')
       .should('exist')
       .should('be.disabled')
     cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
@@ -918,6 +923,7 @@ describe('Test course creation and editing functionalities', function () {
   it('Cleanup: Delete all created courses and created questions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
+    cy.location('pathname').should('eq', '/courses')
 
     // delete the non-gamified course
     cy.get(`[data-cy="delete-course-${this.data.course1.nameNew}"]`).click()

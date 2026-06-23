@@ -22469,6 +22469,59 @@ Residual risk / next step:
 
 - S04E1 intentionally did not migrate `ParticipationsDocument`, login/auth, joins, push registration, activity/account mutations, bookmark mutations, practice quiz detail/attempt flows, or realtime. Next slice: S04F PWA home, participations, and course landing reads.
 
+### 2026-06-23 Cypress Cloud Run 6917 Triage
+
+Status:
+
+- Refreshed PR #5132 checks with `gh pr checks 5132 --watch=false`.
+- Cypress Cloud run `6917` was the only failing area: `cypress-run-cloud`
+  failed after about 1h24m, `cypress: default-group (merge)` reported
+  9 failed tests, and `cypress/flake` reported 1 flaky test.
+- Non-Cypress gates were green, including `packages/api tRPC Vitest` and
+  `packages/graphql Vitest`.
+
+Failure mapping:
+
+- `O-live-quiz-workflow.cy.ts`: three failures were caused by
+  `cy.waitForPageInteraction` being called inside `cy.origin()`, where custom
+  Cypress commands are not registered automatically.
+- `N-course-workflow.cy.ts`: failures were consistent with course-list route
+  readiness and duplicate hidden `assign-random-groups` matches after the tRPC
+  manage flow returns to the course detail/list.
+- `MA-elements-operations-workflow.cy.ts`: shared/public element removal could
+  not render the final deletion confirmation because the migrated tRPC
+  `element.summary` procedure required admin access, while the GraphQL removal
+  path allowed the readable shared element summary needed by the removal modal.
+
+Changes:
+
+- Inlined the page-interaction body readiness assertion inside the live-quiz
+  `cy.origin()` callbacks and removed the unused custom Cypress command/type.
+- Added route readiness checks when returning to the manage course list and
+  scoped random-group assignment actions to visible controls.
+- Relaxed `element.summary` from admin-only to read-or-above access while
+  preserving the nested admin-level checks that drive summary warning flags.
+- Updated focused tRPC API coverage for the new summary permission contract.
+
+Verification evidence:
+
+```bash
+/private/tmp/klicker-trpc-commit/node_modules/.bin/prettier --write cypress/cypress/support/commands.ts cypress/cypress/e2e/O-live-quiz-workflow.cy.ts cypress/cypress/e2e/N-course-workflow.cy.ts packages/api/src/trpc/routers/element.ts packages/api/src/trpc/__tests__/manage-elements.test.ts
+# pass
+
+/private/tmp/klicker-trpc-commit/node_modules/.bin/tsc -p cypress/tsconfig.json --noEmit
+# pass
+
+(cd /private/tmp/klicker-trpc-commit/packages/api && ./node_modules/.bin/vitest run src/trpc/__tests__/manage-elements.test.ts)
+# pass: 1 file, 27 tests
+
+(cd /private/tmp/klicker-trpc-commit/packages/api && ./node_modules/.bin/tsc --noEmit)
+# pass
+
+git diff --check
+# pass
+```
+
 ## Remaining Implementation Plan
 
 ### S04E PWA Participant Shell and Course Reads

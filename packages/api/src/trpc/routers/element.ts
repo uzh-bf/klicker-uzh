@@ -2469,7 +2469,13 @@ export const elementRouter = router({
   }),
 
   summary: userProcedure.input(elementIdInput).query(async ({ ctx, input }) => {
-    if (!(await hasElementAdminPermission({ ctx, id: input.id }))) {
+    if (
+      !(await hasElementPermission({
+        ctx,
+        id: input.id,
+        permissionLevel: PermissionLevel.READ,
+      }))
+    ) {
       return { elementSummary: null }
     }
 

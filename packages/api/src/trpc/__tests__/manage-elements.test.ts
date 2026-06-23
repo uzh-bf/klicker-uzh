@@ -1109,7 +1109,7 @@ describe('manage element router', () => {
     })
   })
 
-  test('returns null summary when admin permission is missing', async () => {
+  test('returns null summary when read permission is missing', async () => {
     const findFirst = vi.fn().mockResolvedValue(null)
     const elementFindUnique = vi.fn()
     const prisma = {
@@ -1126,14 +1126,20 @@ describe('manage element router', () => {
         elementId: 17,
         userId: user.id,
         permissionLevel: {
-          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+          in: [
+            PermissionLevel.READ,
+            PermissionLevel.EXECUTE,
+            PermissionLevel.WRITE,
+            PermissionLevel.ADMIN,
+            PermissionLevel.OWNER,
+          ],
         },
       },
     })
     expect(elementFindUnique).not.toHaveBeenCalled()
   })
 
-  test('returns element summary flags for admin users', async () => {
+  test('returns element summary flags for readable elements', async () => {
     const findFirst = vi.fn().mockResolvedValue({ id: 3 })
     const elementFindUnique = vi.fn().mockResolvedValue({
       answerCollection: {
