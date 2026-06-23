@@ -14,7 +14,7 @@ function QuizAnalyticsNavigation({
   courseId: string
   activityId: string
 }) {
-  const { data, isLoading } = trpc.course.activities.useQuery(
+  const { data, error, isLoading } = trpc.course.activities.useQuery(
     { courseId },
     { enabled: !!courseId }
   )
@@ -44,41 +44,50 @@ function QuizAnalyticsNavigation({
             className={{ root: 'text-sm' }}
           />
         ) : (
-          <SelectField
-            label={`${t('shared.generic.activity')}:`}
-            labelType="large"
-            value={activityId}
-            groups={[
-              ...(course.practiceQuizzes.length > 0
-                ? [
-                    {
-                      label: `${t('shared.generic.practiceQuizzes')}:`,
-                      items: course.practiceQuizzes.map((activity) => ({
-                        label: activity.name,
-                        value: activity.id,
-                      })),
-                    },
-                  ]
-                : []),
-              ...(course.microLearnings.length > 0
-                ? [
-                    {
-                      label: `${t('shared.generic.microlearnings')}:`,
-                      items: course.microLearnings.map((activity) => ({
-                        label: activity.name,
-                        value: activity.id,
-                      })),
-                    },
-                  ]
-                : []),
-            ]}
-            onChange={(value) => {
-              router.push({
-                pathname: `/analytics/${courseId}/quizzes/${value}`,
-              })
-            }}
-            className={{ select: { trigger: 'h-8' } }}
-          />
+          <div className="flex flex-col items-center gap-1">
+            <SelectField
+              label={`${t('shared.generic.activity')}:`}
+              labelType="large"
+              value={activityId}
+              groups={[
+                ...(course.practiceQuizzes.length > 0
+                  ? [
+                      {
+                        label: `${t('shared.generic.practiceQuizzes')}:`,
+                        items: course.practiceQuizzes.map((activity) => ({
+                          label: activity.name,
+                          value: activity.id,
+                        })),
+                      },
+                    ]
+                  : []),
+                ...(course.microLearnings.length > 0
+                  ? [
+                      {
+                        label: `${t('shared.generic.microlearnings')}:`,
+                        items: course.microLearnings.map((activity) => ({
+                          label: activity.name,
+                          value: activity.id,
+                        })),
+                      },
+                    ]
+                  : []),
+              ]}
+              onChange={(value) => {
+                router.push({
+                  pathname: `/analytics/${courseId}/quizzes/${value}`,
+                })
+              }}
+              className={{ select: { trigger: 'h-8' } }}
+            />
+            {error ? (
+              <UserNotification
+                type="error"
+                message={t('manage.analytics.analyticsLoadingFailed')}
+                className={{ root: 'py-1 text-sm' }}
+              />
+            ) : null}
+          </div>
         )}
       </div>
     </div>

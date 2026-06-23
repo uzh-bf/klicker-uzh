@@ -423,6 +423,51 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Analytics Selector Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+analytics navigation selectors. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `AnalyticsNavigation` loads course selector options through the migrated
+  `course.userCourses` tRPC query.
+- `QuizAnalyticsNavigation` loads activity selector options through the
+  migrated `course.activities` tRPC query.
+- Both selectors handle initial loading and initial no-data failures, but
+  background/refetch errors with stale selector data are dropped silently.
+- Context7 TanStack Query v4 docs were refreshed for this pass. A refetch error
+  can coexist with previous `data`, so the selector should remain usable while
+  surfacing a compact failure notice.
+
+Changes:
+
+- Kept stale course/activity selector data visible on background/refetch errors.
+- Added compact inline error notifications next to the selector when stale data
+  is being shown after a failed refetch.
+- Did not change query inputs, cache keys, invalidation, routes, or GraphQL/tRPC
+  coexistence.
+
+Review / simplification:
+
+- Self-review kept the change local to the two selector components and reused
+  the existing localized analytics-loading error message.
+- No optimistic updates, invalidation changes, API shape changes, or new shared
+  abstractions were needed for these read-only selector queries.
+
+Verification:
+
+- Passed `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/analytics/overview/AnalyticsNavigation.tsx apps/frontend-manage/src/components/analytics/quiz/QuizAnalyticsNavigation.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`.
+- Passed `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`.
+- Passed `git diff --check`.
+- Passed `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__` (48 files, 472 tests).
+- Browser/runtime verification is still blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the manage frontend and backend are not listening.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Live-Quiz Template Course Query UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

@@ -25,7 +25,7 @@ function AnalyticsNavigation({
   labelRight,
   slug,
 }: AnalyticsNavigationProps) {
-  const { data, isLoading } = trpc.course.userCourses.useQuery()
+  const { data, error, isLoading } = trpc.course.userCourses.useQuery()
   const router = useRouter()
   const t = useTranslations()
   const selectedCourseId =
@@ -50,19 +50,28 @@ function AnalyticsNavigation({
             className={{ root: 'text-sm' }}
           />
         ) : (
-          <SelectField
-            label={`${t('shared.generic.course')}:`}
-            labelType="large"
-            value={selectedCourseId}
-            items={data.userCourses.map((course) => ({
-              label: course.name,
-              value: course.id,
-            }))}
-            onChange={(value) => {
-              router.push({ pathname: `/analytics/${value}/${slug}` })
-            }}
-            className={{ select: { trigger: 'h-8' } }}
-          />
+          <div className="flex flex-col items-center gap-1">
+            <SelectField
+              label={`${t('shared.generic.course')}:`}
+              labelType="large"
+              value={selectedCourseId}
+              items={data.userCourses.map((course) => ({
+                label: course.name,
+                value: course.id,
+              }))}
+              onChange={(value) => {
+                router.push({ pathname: `/analytics/${value}/${slug}` })
+              }}
+              className={{ select: { trigger: 'h-8' } }}
+            />
+            {error ? (
+              <UserNotification
+                type="error"
+                message={t('manage.analytics.analyticsLoadingFailed')}
+                className={{ root: 'py-1 text-sm' }}
+              />
+            ) : null}
+          </div>
         )}
       </div>
       <Link
