@@ -7,6 +7,7 @@ import {
   Modal,
   TabContent,
   Tabs,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -51,6 +52,7 @@ function ElementEditForm({
   mode,
   elementId,
   loading,
+  loadingError = false,
   initialValues,
   onSubmitElement,
   setAutoSavedElement,
@@ -72,6 +74,7 @@ function ElementEditForm({
   elementId?: number
   // loading state
   loading: boolean
+  loadingError?: boolean
   // form data props
   initialValues?: ElementFormTypes
   onSubmitElement: (
@@ -129,7 +132,7 @@ function ElementEditForm({
       open
       fullScreen
       escapeDisabled
-      loading={loading || (!isTemplate && !initialValues)}
+      loading={!loadingError && (loading || (!isTemplate && !initialValues))}
       title={t(`manage.elements.${mode}Title`)}
       onClose={() => onClose()}
       className={{
@@ -139,6 +142,13 @@ function ElementEditForm({
       }}
       dataCloseButton={{ cy: 'close-element-modal' }}
     >
+      {loadingError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
       {initialValues && (
         <Formik
           validateOnMount

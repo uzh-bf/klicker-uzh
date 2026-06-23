@@ -82,13 +82,25 @@ function ElementEditModal({
       undefined
     )
 
-  const { isInitialLoading: loadingQuestion, data: dataQuestion } =
-    trpc.element.single.useQuery(
-      { id: elementId! },
-      {
-        enabled: typeof elementId !== 'undefined' && isOpen,
-      }
-    )
+  const {
+    isInitialLoading: loadingQuestion,
+    isFetched: questionFetched,
+    data: dataQuestion,
+    error: questionError,
+  } = trpc.element.single.useQuery(
+    { id: elementId! },
+    {
+      enabled: typeof elementId !== 'undefined' && isOpen,
+    }
+  )
+  const initialElementUnavailable =
+    mode !== ElementEditMode.CREATE &&
+    isOpen &&
+    questionFetched &&
+    !dataQuestion?.element
+  const initialElementLoadError = Boolean(
+    (questionError || initialElementUnavailable) && !dataQuestion?.element
+  )
 
   const manipulateContentElement = trpc.element.manipulateContent.useMutation()
   const manipulateFlashcardElement =
@@ -132,6 +144,7 @@ function ElementEditModal({
         !formikInitialValues ||
         Object.keys(formikInitialValues).length === 0
       }
+      loadingError={initialElementLoadError}
       initialValues={formikInitialValues}
       onClose={() => {
         // close the modal

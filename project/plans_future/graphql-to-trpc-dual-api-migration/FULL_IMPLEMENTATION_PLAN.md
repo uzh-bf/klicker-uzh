@@ -423,6 +423,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Element Edit Initial Load Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+element edit modal. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `ElementEditModal` loads edit data through the migrated
+  `element.single.useQuery`.
+- When that query fails or returns no element, `formikInitialValues` remains
+  undefined and the full-screen `ElementEditForm` remains in its modal loading
+  state indefinitely.
+- Context7 TanStack Query v4 docs were already refreshed for this audit pass.
+  They confirm no-data query errors should be handled separately from
+  stale-data states.
+
+Changes:
+
+- Add a modal-level inline error state for unavailable initial element data.
+- Keep the modal close path available while avoiding the permanent full-screen
+  loading state.
+- Preserve stale data behavior: if `element.single` already has data, a
+  background refetch error does not replace the form with the error fallback.
+
+Review / simplification:
+
+- Self-review kept the change local to `ElementEditModal` /
+  `ElementEditForm`, with one boolean prop instead of introducing a shared
+  query-state abstraction.
+- The adjacent status-dropdown audit found no patch-worthy parity change:
+  both GraphQL and tRPC currently allow `changeElementStatus` with read-level
+  element permission, so disabling that field for non-editor `inputsDisabled`
+  users would change behavior outside this UX error-state fix.
+- Dedicated subagent review was not run because the available multi-agent tool
+  requires an explicit user request before spawning agents; no external review
+  was needed for this narrow UI-state fix.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/elements/manipulation/ElementEditModal.tsx apps/frontend-manage/src/components/elements/manipulation/ElementEditForm.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed for the two component files; the plan file was not printed by the local Prettier invocation.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused manage element-edit initial-load error UX
+  cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces
+  after this commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Element Removal Summary Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
