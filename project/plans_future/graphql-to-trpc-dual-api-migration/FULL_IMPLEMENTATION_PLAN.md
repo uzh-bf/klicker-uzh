@@ -423,6 +423,64 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Group Activity Initial State UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA group-activity
+detail query page. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `group/[groupId]/activity/[activityId].tsx` already uses an enabled route-id
+  guard for `participant.groupActivityDetails`, keeps the loaded UI available
+  after initial data exists, and shows failure toasts for subscription refetch
+  and start-activity mutation failures.
+- The initial loading state is a bare full-page loader, and the no-data state
+  renders raw text instead of a stable notification surface.
+- Context7 TanStack Query v4 docs were refreshed before the edit. They confirm
+  the current `isLoading && !data` initial-load gate and stale-data-preserving
+  error handling pattern.
+
+Changes:
+
+- Keep the tRPC query, mutation, subscription refetch, and route guard behavior
+  unchanged.
+- Replace the rough initial loading, initial error, and not-active fallbacks
+  with centered stable UI using existing `Loader` and `UserNotification`
+  patterns.
+
+Review / simplification:
+
+- Self-review kept the change local to the page and avoided touching the tRPC
+  query key, mutation path, subscription refetch, or route behavior.
+- The fallback wrapper removes repeated `Layout` markup without introducing a
+  shared abstraction for a one-page state.
+- Dedicated subagent review was not run because the available multi-agent tool
+  requires an explicit user request before spawning agents; no external review
+  was needed for this narrow UI-state fix.
+
+Checks:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write 'apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx' project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed with local engine
+  warnings only (`node v22.23.0` / `pnpm 11.5.0` while repo packages declare
+  Node 20/24 engines).
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked for the PWA in the current
+  environment: `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3102` failed with connection refused.
+- The local backend listener is present, but a bare
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` returns `HTTP/1.1 404 Not
+  Found`; without the PWA server, the group-activity page cannot be browser
+  verified.
+
+Next:
+
+- Commit and push this focused PWA group-activity initial-state UX cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces after
+  this commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Auth Redirect Failure Fallbacks
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

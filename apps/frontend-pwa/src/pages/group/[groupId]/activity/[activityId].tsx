@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
@@ -74,25 +74,32 @@ function GroupActivityDetails() {
 
   if (!routeParamsAvailable || (isLoading && !data)) {
     return (
-      <Layout>
+      <GroupActivityFallback>
         <Loader />
-      </Layout>
+      </GroupActivityFallback>
     )
   }
 
   if (error && !data?.groupActivityDetails) {
     return (
-      <Layout>
+      <GroupActivityFallback>
         <UserNotification
           type="error"
           message={t('shared.generic.systemError')}
         />
-      </Layout>
+      </GroupActivityFallback>
     )
   }
 
   if (!data?.groupActivityDetails) {
-    return <Layout>{t('pwa.groupActivity.activityNotYetActive')}</Layout>
+    return (
+      <GroupActivityFallback>
+        <UserNotification
+          type="info"
+          message={t('pwa.groupActivity.activityNotYetActive')}
+        />
+      </GroupActivityFallback>
+    )
   }
 
   const groupActivity = data.groupActivityDetails
@@ -326,6 +333,16 @@ function GroupActivityDetails() {
             </div>
           )}
         </div>
+      </div>
+    </Layout>
+  )
+}
+
+function GroupActivityFallback({ children }: { children: ReactNode }) {
+  return (
+    <Layout>
+      <div className="mx-auto flex min-h-[40vh] w-full max-w-xl items-center justify-center">
+        {children}
       </div>
     </Layout>
   )
