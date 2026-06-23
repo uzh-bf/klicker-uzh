@@ -423,6 +423,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Sharing Activity Log Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+sharing activity log. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed before work: PR 5132 points at
+  `codex/trpc-dual-api-migration`, base `v3`, ready for review, and still
+  review-required / blocked by pending external gates.
+- Context7 docs refreshed for tRPC React Query and TanStack Query v4. Relevant
+  behavior: tRPC React hooks expose React Query state, and React Query can
+  expose an error while cached query data remains available during background
+  refetches.
+- `useObjectActivity` already kept cached activity-log entries visible during
+  background fetches, but it collapsed all query errors into an initial
+  unavailable state. Refetch failures with stale activity data were therefore
+  silent in `ActivityLog`.
+
+Changes:
+
+- Split the activity-log hook state into raw `error` and `unavailable`
+  booleans so the UI can distinguish initial/no-data failures from stale-data
+  refetch failures.
+- Kept the existing fatal retry block for unavailable/no-data failures.
+- Added a compact existing `UserNotification` above cached activity entries
+  when a background/refetch request fails, while keeping cached entries and the
+  message input usable.
+- Left query inputs/cache keys, mutation cache updates, and GraphQL/tRPC
+  coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/lib/hooks/useObjectActivity.ts apps/frontend-manage/src/components/sharing/ActivityLog.tsx`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  exited 124 with no output after the timeout. This matches the known local
+  GraphQL package test blocker; the GitHub `packages/graphql Vitest` check
+  remains the authoritative GraphQL signal for this PR.
+
+Runtime:
+
+- Browser/runtime verification blocked locally because no stack is listening:
+  `curl -sS -I http://127.0.0.1:3002` failed with connection refused, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the two-file diff. No
+  additional abstraction was needed because `useObjectActivity` has a single
+  local consumer.
+- Dedicated subagent review was skipped for this tiny slice because the
+  available multi-agent tool contract only permits spawning subagents when the
+  user explicitly requests delegation.
+
+Next:
+
+- Commit and push this focused manage sharing activity-log refetch-error UX
+  cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Derived Permission Origin Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

@@ -1,7 +1,12 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import type { ObjectType } from '@lib/constants/sharingEnums'
-import { Button, TextareaField, toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  TextareaField,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
@@ -33,6 +38,7 @@ function ActivityLog({
     entries,
     loading: queryLoading,
     error: queryError,
+    unavailable: queryUnavailable,
     addActivityMessage,
     deleteActivityMessage,
     isAddingMessage: hookIsAddingMessage,
@@ -101,6 +107,7 @@ function ActivityLog({
   // determine which entries, loading and error states to use
   const loading = queryLoading
   const error = !!queryError
+  const unavailable = !!queryUnavailable
   const isAddingMessage = hookIsAddingMessage
 
   if (loading) {
@@ -111,7 +118,7 @@ function ActivityLog({
     )
   }
 
-  if (error) {
+  if (unavailable) {
     return (
       <div className="flex w-full flex-col rounded-md border border-red-300 bg-red-50 p-4">
         <div className="flex flex-col items-center justify-center">
@@ -165,6 +172,14 @@ function ActivityLog({
         }}
       >
         <div className="flex flex-col space-y-2">
+          {error ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'mb-2 py-1 text-sm' }}
+            />
+          ) : null}
+
           {entries.length === 0 && (
             <div className="flex flex-col items-center justify-center p-4 text-center">
               <div className="mb-2 text-4xl text-gray-300">📝</div>
