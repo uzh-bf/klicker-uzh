@@ -423,6 +423,79 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Leaderboard and Group Activity Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa course
+overview leaderboard / group activity tabs. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed before work: PR 5132 points at
+  `codex/trpc-dual-api-migration`, base `v3`, ready for review, and still
+  review-required / blocked by pending external gates.
+- Current CI snapshot: build/check/lint/test, SonarCloud, CodeQL,
+  GitGuardian, and `packages/api tRPC Vitest` pass; `packages/graphql Vitest`
+  and Cypress Cloud are still pending.
+- Context7 docs refreshed for tRPC React Query and TanStack Query v4. Relevant
+  behavior: tRPC hooks expose React Query state, cached data can remain visible
+  while a background refetch reports an error, and targeted cache helpers should
+  be preferred over broad invalidation when no wider refresh is needed.
+- The PWA course overview individual leaderboard already kept cached
+  leaderboard data visible when a background refetch failed, but the failure was
+  silent.
+- The PWA suspended group tab already kept cached group activities and cached
+  group activity instances visible when background refetches failed, but those
+  failures were silent once stale data existed.
+
+Changes:
+
+- Added a compact existing `UserNotification` above the cached individual
+  leaderboard when `participant.courseLeaderboard` has stale data and a refetch
+  error.
+- Added compact existing `UserNotification` feedback above the cached group
+  activity list when `participant.courseGroupActivities` or
+  `participant.groupActivityInstances` has stale data and a refetch error.
+- Left query inputs/cache keys, invalidation behavior, mutation behavior, and
+  GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-pwa/src/pages/course/[courseId]/index.tsx' apps/frontend-pwa/src/components/course/SuspendedGroupView.tsx`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  exited 124 with no output after the timeout. This matches the known local
+  GraphQL package test blocker; the GitHub `packages/graphql Vitest` check
+  remains the authoritative GraphQL signal for this PR.
+
+Runtime:
+
+- Browser/runtime verification blocked locally because no stack is listening:
+  `curl -sS -I http://127.0.0.1:3001` failed with connection refused, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the two-file UI diff. The
+  implementation intentionally reuses the existing `UserNotification` fallback
+  and adds no hook abstraction because both stale-error checks are local to the
+  rendered sections.
+- Dedicated subagent review was skipped because the available multi-agent tool
+  contract says not to spawn subagents unless the user explicitly asks for
+  delegation.
+
+Next:
+
+- Commit and push this focused PWA course overview stale-refetch error UX
+  cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Sharing Activity Log Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

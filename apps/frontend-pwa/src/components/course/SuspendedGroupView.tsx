@@ -103,6 +103,12 @@ function SuspendedGroupView({
     groupActivities.length > 0 &&
     Boolean(groupActivityInstancesError) &&
     !rawActivityInstances
+  const showGroupActivitiesStaleError =
+    groupActivities.length > 0 && groupActivitiesError
+  const showGroupActivityInstancesStaleError =
+    groupActivities.length > 0 &&
+    Boolean(groupActivityInstancesError) &&
+    Boolean(rawActivityInstances)
 
   return (
     <TabContent key={group.id} value={group.id} className={{ root: 'md:px-4' }}>
@@ -257,11 +263,21 @@ function SuspendedGroupView({
             </div>
           </div>
         ) : groupActivities.length > 0 ? (
-          <GroupActivityList
-            groupId={group.id}
-            groupActivities={groupActivities}
-            groupActivityInstances={groupActivityInstances}
-          />
+          <>
+            {showGroupActivitiesStaleError ||
+            showGroupActivityInstancesStaleError ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+                className={{ root: 'mt-4 text-sm' }}
+              />
+            ) : null}
+            <GroupActivityList
+              groupId={group.id}
+              groupActivities={groupActivities}
+              groupActivityInstances={groupActivityInstances}
+            />
+          </>
         ) : null}
 
         <div className="mt-4">

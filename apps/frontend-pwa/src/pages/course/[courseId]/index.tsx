@@ -422,6 +422,13 @@ function CourseOverview({
                           )
                         ) : (
                           <>
+                            {leaderboardError ? (
+                              <UserNotification
+                                type="error"
+                                message={t('shared.generic.systemError')}
+                                className={{ root: 'mb-4 text-sm' }}
+                              />
+                            ) : null}
                             {participant?.id && participation?.isActive && (
                               <Leaderboard
                                 leaderboard={dataLeaderboard.leaderboard ?? []}
