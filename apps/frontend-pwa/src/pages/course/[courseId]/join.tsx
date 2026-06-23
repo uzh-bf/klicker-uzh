@@ -82,6 +82,7 @@ function JoinCourse({
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
+              enableReinitialize
               validateOnMount
               initialValues={{
                 pin: initialPin,

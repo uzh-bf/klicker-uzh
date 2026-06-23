@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Join PIN Prefill
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA course join flow.
+No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or
+package cleanup was started.
+
+Findings:
+
+- The general PWA login, magic-link login, activation, and account-creation
+  flows already show pending states, disable duplicate submissions, and surface
+  localized failure feedback around their migrated participant tRPC mutations.
+- The course-specific join page reads `?pin=` from the router after hydration
+  and passes it into the Formik `initialValues` for the migrated
+  `participant.joinCourseWithPin` flow.
+- Formik defaults `enableReinitialize` to `false`, so the form did not reset
+  when `initialPin` changed from the hydrated route query. Invite links with a
+  PIN query could therefore render an empty PIN field even though the URL
+  carried the value.
+- Context7 Formik docs were refreshed before this change. They confirm
+  `enableReinitialize` controls whether Formik resets when `initialValues`
+  changes.
+
+Changes:
+
+- Enable Formik reinitialization for the logged-in course join PIN form.
+- Preserve existing tRPC mutation behavior, validation, pending state,
+  invalidation, redirect behavior, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-pwa/src/pages/course/[courseId]/join.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001` failed with connection refused.
+
+Next:
+
+- Verify, commit, and push this focused course-join PIN-prefill cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Standalone Preview Query States
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
