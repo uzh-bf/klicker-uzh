@@ -16,10 +16,19 @@ function SuspendedActivitySelection({
   toggleActivityIdFilter: ({ activityId }: { activityId?: string }) => void
 }) {
   const t = useTranslations()
-  const { data: userCourses, isLoading: loadingCourses } =
-    trpc.course.userCourses.useQuery()
-  const { data: courseActivities, isLoading: loadingActivities } =
-    trpc.course.activityIds.useQuery({ courseId: activeCourseId })
+  const {
+    data: userCourses,
+    error: coursesError,
+    isLoading: loadingCourses,
+  } = trpc.course.userCourses.useQuery()
+  const {
+    data: courseActivities,
+    error: activitiesError,
+    isLoading: loadingActivities,
+  } = trpc.course.activityIds.useQuery({ courseId: activeCourseId })
+  const staleSelectionError = Boolean(
+    (coursesError && userCourses) || (activitiesError && courseActivities)
+  )
 
   // combine the activities in a course into the format required by the select field
   const activities = useMemo(
@@ -80,6 +89,13 @@ function SuspendedActivitySelection({
   // group the activities by type for the select field
   return (
     <div>
+      {staleSelectionError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-1 py-1 text-sm' }}
+        />
+      ) : null}
       <SelectField
         id="course-select"
         label={t('shared.generic.course')}
