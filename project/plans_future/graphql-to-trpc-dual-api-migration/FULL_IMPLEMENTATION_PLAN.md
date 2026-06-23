@@ -423,6 +423,47 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Live-Quiz Template Course Query UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+live-quiz template settings course query.
+No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or
+package cleanup was started.
+
+Findings:
+
+- `LiveQuizTemplateSettings` loads course options through the migrated
+  `course.activeUserCourses` query.
+- It currently maps missing query data to an empty course option list with no
+  loading or error feedback, so an initial query failure is indistinguishable
+  from a valid no-course/empty-course state.
+- Because selected-course metadata drives displayed gamification and assessment
+  state, saving while the course query is unavailable can preserve misleading
+  UI state.
+- Context7 TanStack Query v4 docs were refreshed during this audit. The same
+  stale-data semantics apply here: keep last successful data visible on
+  background/refetch errors, but show blocking fallback UI when the initial
+  request has no usable data.
+
+Change:
+
+- Added inline loading and error feedback around the course selector.
+- Kept the existing no-course behavior when the query succeeds with no courses.
+- Disabled the course selector and settings submission while the initial course
+  query has no usable data, while keeping stale course data visible on
+  background/refetch failures.
+
+Verification:
+
+- Passed `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`.
+- Passed `git diff --check`.
+- Passed `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__` (48 files, 472 tests).
+- Browser/runtime verification is still blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the manage frontend and backend are not listening.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Activity Course Filter Query UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
