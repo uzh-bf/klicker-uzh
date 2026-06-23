@@ -128,7 +128,7 @@ function JoinCourse({
                     await Promise.all([
                       utils.participant.self.invalidate(),
                       utils.participant.participations.invalidate(),
-                    ]).catch(console.error)
+                    ])
                     const routed = await router.push('/')
                     if (!routed) window.location.assign('/')
                     return

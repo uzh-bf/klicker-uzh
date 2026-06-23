@@ -50,9 +50,7 @@ function JoinPage() {
               })
 
               if (participant) {
-                await utils.participant.participations
-                  .invalidate()
-                  .catch(console.error)
+                await utils.participant.participations.invalidate()
                 const routed = await router.push('/')
                 if (!routed) window.location.assign('/')
                 return

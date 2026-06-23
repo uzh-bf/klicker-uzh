@@ -423,6 +423,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Join Refresh UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-pwa join flows.
+No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal, or
+package cleanup was started.
+
+Findings:
+
+- Branch state refreshed after the previous push: PR 5132 head is
+  `0d118374c`, ready for review, with fresh checks pending and GitGuardian
+  already passing.
+- The generic join page and course-specific join page already had form
+  validation, disabled/loading submit states, invalid-PIN errors, generic
+  failure errors, and route-fallback handling.
+- Both successful join paths still swallowed the required
+  `participant.participations` and, for course-specific joins,
+  `participant.self` invalidation before routing to the PWA home surface, where
+  the visible course list and participant state depend on those reads.
+
+Changes:
+
+- Await `participant.participations` invalidation directly after successful PIN
+  joins on `/join`.
+- Await both `participant.self` and `participant.participations` invalidations
+  directly after successful course-specific PIN joins before routing.
+- Leave mutation inputs, route targets, validation, visible copy, and
+  GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/pages/join.tsx 'apps/frontend-pwa/src/pages/course/[courseId]/join.tsx'`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+  passed.
+- `./node_modules/.pnpm/node_modules/.bin/vitest run packages/api/src/trpc/__tests__/participant-join.test.ts`
+  passed: 1 file, 13 tests.
+
+Runtime:
+
+- Browser/runtime verification is blocked locally because no stack is
+  listening: `curl -sS -I http://127.0.0.1:3001` failed with connection
+  refused, and `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with
+  connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the two-file PWA diff. The
+  implementation removes hidden required refresh failures and reuses existing
+  submit loading/error UI; it adds no helper, copy, broad invalidation, or
+  routing behavior.
+
+Next:
+
+- Commit and push this focused PWA join refresh-failure UX cleanup.
+- Continue monitoring fresh PR checks from the latest head commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Admin and Live-Quiz Refresh UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
