@@ -23,10 +23,24 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
     trpc.participant.bookmarkElementStack.useMutation({
       onMutate: async (variables) => {
         const bookmarkQueryInput = { courseId: variables.courseId, quizId }
-        await utils.participant.practiceQuizBookmarks.cancel(bookmarkQueryInput)
+        const bookmarksPageQueryInput = { courseId: variables.courseId }
+        const shouldUpdateBookmarksPage =
+          !variables.bookmarked && typeof quizId === 'undefined'
+
+        await Promise.all([
+          utils.participant.practiceQuizBookmarks.cancel(bookmarkQueryInput),
+          shouldUpdateBookmarksPage
+            ? utils.participant.bookmarksPageData.cancel(
+                bookmarksPageQueryInput
+              )
+            : Promise.resolve(),
+        ])
 
         const previousBookmarks =
           utils.participant.practiceQuizBookmarks.getData(bookmarkQueryInput)
+        const previousBookmarksPageData = shouldUpdateBookmarksPage
+          ? utils.participant.bookmarksPageData.getData(bookmarksPageQueryInput)
+          : undefined
 
         utils.participant.practiceQuizBookmarks.setData(
           bookmarkQueryInput,
@@ -38,7 +52,30 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
           }
         )
 
-        return { bookmarkQueryInput, previousBookmarks }
+        if (shouldUpdateBookmarksPage) {
+          utils.participant.bookmarksPageData.setData(
+            bookmarksPageQueryInput,
+            (current) => {
+              if (!current) return current
+
+              return {
+                ...current,
+                stacks:
+                  current.stacks?.filter(
+                    (entry) => entry.id !== variables.stackId
+                  ) ?? [],
+              }
+            }
+          )
+        }
+
+        return {
+          bookmarkQueryInput,
+          bookmarksPageQueryInput,
+          previousBookmarks,
+          previousBookmarksPageData,
+          shouldUpdateBookmarksPage,
+        }
       },
       onError: (_error, _variables, context) => {
         if (context) {
@@ -46,6 +83,13 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
             context.bookmarkQueryInput,
             context.previousBookmarks
           )
+
+          if (context.shouldUpdateBookmarksPage) {
+            utils.participant.bookmarksPageData.setData(
+              context.bookmarksPageQueryInput,
+              context.previousBookmarksPageData
+            )
+          }
         }
 
         toast({
@@ -59,6 +103,11 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
           { courseId: variables.courseId, quizId },
           result
         )
+      },
+      onSettled: (_result, _error, variables) => {
+        utils.participant.bookmarksPageData
+          .invalidate({ courseId: variables.courseId })
+          .catch(console.error)
       },
     })
 

@@ -423,6 +423,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Bookmarks Page Cache Coherence
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA practice quiz /
+bookmarks flow. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- The migrated bookmark mutation already used the expected tRPC/React Query
+  pattern for the bookmark id list: cancel the active query, apply an optimistic
+  `setData`, roll back on error, reconcile with the mutation result on success,
+  and show a localized failure toast.
+- The course bookmarks page renders its stack list from
+  `participant.bookmarksPageData`, while the bookmark button only updated
+  `participant.practiceQuizBookmarks`.
+- On `/course/[courseId]/bookmarks`, unbookmarking a stack could therefore
+  flip the bookmark icon while leaving the removed stack visible until a later
+  manual refresh/refetch.
+- Context7 TanStack Query v4 docs were refreshed before this change. They
+  confirm the optimistic mutation pattern: cancel outgoing refetches, snapshot
+  previous query data, update cache with `setQueryData`, roll back in
+  `onError`, and invalidate after settlement.
+
+Changes:
+
+- When unbookmarking from the bookmarks page, optimistically remove the stack
+  from `participant.bookmarksPageData`.
+- Roll back both the bookmark id list and bookmarks page data on mutation
+  failure.
+- Invalidate `participant.bookmarksPageData` after bookmark mutations settle so
+  inactive cached bookmarks pages do not stay stale.
+- Preserve existing duplicate-click guard, failure toast, mutation result
+  reconciliation, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --config
+  .prettierrc.mjs --write
+  apps/frontend-pwa/src/components/practiceQuiz/Bookmark.tsx` passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- Focused local API bookmark parity test was attempted with
+  `/private/tmp/klicker-trpc-ux/node_modules/.pnpm/node_modules/.bin/vitest run
+  packages/api/src/trpc/__tests__/participant-bookmarks.test.ts`; it failed
+  before collecting tests because this worktree dependency setup could not
+  resolve `@klicker-uzh/prisma/client`.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001` failed with connection refused.
+
+Next:
+
+- Verify, commit, and push this focused bookmarks cache cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Profile Save Sensitive Field Reset
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
