@@ -423,6 +423,76 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage User Settings Refresh Failure UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage user
+settings flows. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed before work: local branch
+  `codex/trpc-dual-api-migration` is aligned with origin and PR 5132 remains
+  ready for review.
+- Current CI snapshot before this local slice: CodeQL, SonarCloud,
+  GitGuardian, lint, format, check, regular tests, and `packages/api tRPC
+  Vitest` pass. Cypress Cloud is still pending and remains in the workflow
+  build step, before the actual Cypress recording step. `packages/graphql
+  Vitest` is still pending in the PR check snapshot.
+- Context7 docs refreshed for TanStack Query v4 and tRPC React Query. Relevant
+  behavior: promise-returning mutation callbacks are awaited, and tRPC
+  `useUtils()` exposes targeted cache helpers such as `invalidate`.
+- Manage user settings already had initial loading/error fallbacks through the
+  settings page and delegated-access section, plus mutation pending guards and
+  generic mutation failure toasts.
+- Several successful user-settings mutations still swallowed the follow-up
+  profile/delegated-access cache refresh with `catch(console.error)`. This
+  could close forms, stop loading, or navigate after a server mutation while
+  leaving stale settings visible with no user-facing refresh failure.
+
+Changes:
+
+- Await `user.profile` refresh directly after language, email, shortname, and
+  first-login settings mutations so refresh failures keep the existing pending
+  path and surface through existing generic error handling.
+- Await `user.delegatedAccess` refresh directly after delegated-login create
+  and delete mutations so stale delegated-login lists are not silently accepted.
+- Leave tRPC inputs/cache keys, success semantics, existing toasts, local form
+  validation, and GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/user/LanguageSetting.tsx apps/frontend-manage/src/components/user/EmailSetting.tsx apps/frontend-manage/src/components/user/ShortnameSetting.tsx apps/frontend-manage/src/components/user/DelegatedAccessSettings.tsx apps/frontend-manage/src/components/user/SuspendedFirstLoginModal.tsx`
+  passed.
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `git diff --check` passed.
+
+Runtime:
+
+- Browser/runtime verification is blocked locally because no stack is
+  listening: `curl -sS -I http://127.0.0.1:3002` failed with connection
+  refused, and `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with
+  connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the five-file settings diff.
+  The implementation removes fire-and-forget refresh handling and adds no new
+  helper, copy, or broad invalidation behavior.
+
+Next:
+
+- Run `git diff --check`, commit and push this focused manage user-settings
+  refresh-failure UX cleanup, then refresh PR checks.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces
+  if Cypress / GraphQL CI remain pending or green.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Edit Profile Mutation Refresh UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

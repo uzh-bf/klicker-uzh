@@ -8,11 +8,7 @@ type UserProfile = NonNullable<RouterOutputs['user']['profile']>
 function EmailSetting({ user }: { user: UserProfile }) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const changeEmailSettings = trpc.user.changeEmailSettings.useMutation({
-    onSuccess: async () => {
-      await utils.user.profile.invalidate().catch(console.error)
-    },
-  })
+  const changeEmailSettings = trpc.user.changeEmailSettings.useMutation()
 
   return (
     <SimpleSetting
@@ -25,6 +21,7 @@ function EmailSetting({ user }: { user: UserProfile }) {
         onCheckedChange={async (projectUpdates) => {
           try {
             await changeEmailSettings.mutateAsync({ projectUpdates })
+            await utils.user.profile.invalidate()
           } catch (error) {
             console.error(error)
             toast({

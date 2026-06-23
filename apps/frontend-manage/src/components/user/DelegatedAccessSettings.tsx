@@ -155,9 +155,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                         throw new Error('Failed to delete delegated login')
                       }
 
-                      void utils.user.delegatedAccess
-                        .invalidate()
-                        .catch(console.error)
+                      await utils.user.delegatedAccess.invalidate()
                     } catch (error) {
                       console.error(error)
                       toast({
@@ -209,9 +207,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                   throw new Error('Failed to create delegated login')
                 }
 
-                void utils.user.delegatedAccess
-                  .invalidate()
-                  .catch(console.error)
+                await utils.user.delegatedAccess.invalidate()
                 setConfirmationModal(false)
                 resetForm()
                 await setFieldValue(
