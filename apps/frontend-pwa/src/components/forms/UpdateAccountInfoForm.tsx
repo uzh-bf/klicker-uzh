@@ -83,7 +83,7 @@ function UpdateAccountInfoForm({
         password: '',
         passwordRepetition: '',
       }}
-      onSubmit={async (values, { setSubmitting }) => {
+      onSubmit={async (values, { resetForm, setSubmitting }) => {
         setSubmitting(true)
 
         if (
@@ -109,6 +109,13 @@ function UpdateAccountInfoForm({
           if (!result) {
             onError()
           } else {
+            resetForm({
+              values: {
+                ...values,
+                password: '',
+                passwordRepetition: '',
+              },
+            })
             await onSuccess()
           }
         } catch {

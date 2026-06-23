@@ -423,6 +423,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Profile Save Sensitive Field Reset
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA profile update
+flow. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal,
+or package cleanup was started.
+
+Findings:
+
+- The PWA profile and edit-profile pages already keep migrated tRPC query
+  loading/error states inside the app layout.
+- Avatar/profile save actions already use Formik submission loading, disable
+  duplicate submits, and surface localized success/failure toasts through the
+  page-level callbacks.
+- The migrated `participant.updateProfile` save path left password and
+  password-repetition values in the form after a successful server mutation
+  until a later form reset/remount happened.
+- Context7 Formik docs were refreshed before this change. They confirm
+  `resetForm({ values })` can reset the form to a new initial state after a
+  successful submit.
+
+Changes:
+
+- Reset the profile update form after a successful `participant.updateProfile`
+  mutation while preserving the submitted profile values and clearing the
+  password fields.
+- Preserve existing tRPC mutation behavior, validation, profile refetch,
+  success/error toasts, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-pwa/src/components/forms/UpdateAccountInfoForm.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001` failed with connection refused.
+
+Next:
+
+- Verify, commit, and push this focused profile-save cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Join PIN Prefill
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
