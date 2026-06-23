@@ -423,6 +423,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Derived Permission Origin Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+derived-permission origin dialog. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch state refreshed before work: the local checkout is on
+  `codex/trpc-dual-api-migration` and tracks
+  `origin/codex/trpc-dual-api-migration`.
+- Context7 docs refreshed for tRPC React Query and TanStack Query v4. Relevant
+  behavior: tRPC React hooks expose React Query state, and React Query can
+  expose an error while cached query data remains available during background
+  refetches.
+- `DerivedPermissionInfoDialog` already had initial loading and initial error
+  fallbacks for `sharing.derivedPermissionOrigin`, but a background/refetch
+  failure with stale origin data replaced the useful permission details with
+  only a generic error state.
+
+Changes:
+
+- Kept stale derived-permission origin details visible when cached data exists
+  and a background/refetch request fails.
+- Added a compact existing `UserNotification` error fallback above the stale
+  dialog details for that background failure case.
+- Left query inputs/cache keys, dialog behavior, and GraphQL/tRPC coexistence
+  unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/sharing/DerivedPermissionInfoDialog.tsx`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  exited 124 with no output after the timeout. This matches the known local
+  GraphQL package test blocker; the GitHub `packages/graphql Vitest` check
+  remains the authoritative GraphQL signal for this PR.
+
+Runtime:
+
+- Browser/runtime verification blocked locally because no stack is listening:
+  `curl -sS -I http://127.0.0.1:3002` failed with connection refused, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with connection refused.
+
+Next:
+
+- Commit and push this focused manage derived-permission origin refetch-error
+  UX cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Tag Activity Filter Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

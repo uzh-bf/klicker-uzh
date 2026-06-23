@@ -35,6 +35,8 @@ function DerivedPermissionInfoDialog({
       { enabled: Boolean(derivedPermissionOriginAlert.permissionId) }
     )
   const info = data?.derivedPermissionOrigin
+  const originUnavailable = Boolean(error && !info)
+  const staleOriginError = Boolean(error && info)
 
   return (
     <AlertDialog
@@ -55,15 +57,22 @@ function DerivedPermissionInfoDialog({
             {t('manage.sharing.derivedPermissionOrigin')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {isLoading ? (
+            {isLoading && !info ? (
               <Loader />
-            ) : error ? (
+            ) : originUnavailable ? (
               <UserNotification
                 type="error"
                 message={t('shared.generic.systemError')}
               />
             ) : (
               <>
+                {staleOriginError ? (
+                  <UserNotification
+                    type="error"
+                    message={t('shared.generic.systemError')}
+                    className={{ root: 'mb-2 py-1 text-sm' }}
+                  />
+                ) : null}
                 <span className="mb-2">
                   {t('manage.sharing.derivedAccessFor', {
                     user: info?.permissionUser ?? t('shared.generic.unknown'),
