@@ -1,6 +1,12 @@
 import { faClipboard } from '@fortawesome/free-solid-svg-icons'
 import { trpc } from '@lib/trpc'
-import { Button, H2, Modal, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H2,
+  Modal,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
@@ -15,6 +21,7 @@ function HMACLink({
   params: string
   identifier: string
 }) {
+  const t = useTranslations()
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
   }/quizzes/${quizId}/evaluation?hmac=${hmac}${params ? `&${params}` : ''}`
@@ -32,7 +39,22 @@ function HMACLink({
         </a>
       </Link>
       <Button
-        onClick={() => navigator?.clipboard?.writeText(link)}
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(link)
+            toast({
+              type: 'success',
+              message: t('control.course.embeddingLinkCopied'),
+            })
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          }
+        }}
         data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
       >
         <Button.Icon withoutLabel icon={faClipboard} />

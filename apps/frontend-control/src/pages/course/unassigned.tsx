@@ -1,5 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { trpc } from '@lib/trpc'
+import { trpc, type RouterOutputs } from '@lib/trpc'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -13,6 +13,9 @@ const publicationStatus = {
   scheduled: 'SCHEDULED',
 } as const
 
+type UnassignedLiveQuiz =
+  RouterOutputs['liveQuiz']['unassigned']['liveQuizzes'][number]
+
 function UnassignedLiveQuizzes() {
   const t = useTranslations()
   const {
@@ -24,13 +27,13 @@ function UnassignedLiveQuizzes() {
 
   const runningQuizzes = useMemo(() => {
     return data?.liveQuizzes.filter(
-      (quiz) => quiz.status === publicationStatus.published
+      (quiz: UnassignedLiveQuiz) => quiz.status === publicationStatus.published
     )
   }, [data])
 
   const plannedQuizzes = useMemo(() => {
     return data?.liveQuizzes.filter(
-      (quiz) =>
+      (quiz: UnassignedLiveQuiz) =>
         quiz.status === publicationStatus.scheduled ||
         quiz.status === publicationStatus.draft
     )

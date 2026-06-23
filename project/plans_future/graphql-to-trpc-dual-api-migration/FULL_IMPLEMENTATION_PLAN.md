@@ -423,6 +423,48 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Control Embedding Copy Feedback
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-control
+embedding/unassigned live-quiz surfaces. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Control course selection, course detail, unassigned quiz listing, session
+  action, and live-quiz start flows already have loading/error states and
+  pending guards around their migrated tRPC queries and mutations.
+- The embedding modal query already has loading and unavailable states, but
+  the clipboard copy action fired silently with no success or failure feedback.
+- The local frontend-control check exposed two implicit `any` callback
+  parameters in the migrated unassigned live-quiz filters after the API package
+  dist types were available.
+
+Changes:
+
+- Await the clipboard write in the control embedding modal and show localized
+  success/error toasts.
+- Add English and German `control.course.embeddingLinkCopied` messages.
+- Type the unassigned live-quiz filters from the local tRPC `RouterOutputs`
+  alias instead of leaving callback parameters implicit.
+
+Checks:
+
+- `pnpm exec prettier --config .prettierrc.mjs --check apps/frontend-control/src/components/liveQuizzes/EmbeddingModal.tsx apps/frontend-control/src/pages/course/unassigned.tsx packages/i18n/messages/en.ts packages/i18n/messages/de.ts` passed.
+- `pnpm --filter @klicker-uzh/frontend-control check` passed with local engine
+  warnings only (`node v22.23.0` / `pnpm 11.5.0` while the repo packages declare
+  Node 20/24 engines).
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3003` failed with connection refused.
+
+Next:
+
+- Commit and push this focused control UX/type cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces after
+  the user explicitly asks to continue.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Overview Missing-Course State
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
