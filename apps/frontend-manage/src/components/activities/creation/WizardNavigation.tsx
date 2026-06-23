@@ -37,6 +37,7 @@ function WizardNavigation({
           <Button
             type="button"
             onClick={() => onPrevStep()}
+            disabled={isSubmitting}
             className={{ root: 'h-8' }}
             data={{ cy: 'back-activity-creation' }}
           >
@@ -47,6 +48,7 @@ function WizardNavigation({
         <Button
           className={{ root: 'h-8 border-red-400' }}
           onClick={() => onCloseWizard()}
+          disabled={isSubmitting}
           data={{ cy: 'cancel-activity-creation' }}
           type="button"
         >

@@ -322,7 +322,7 @@ function GroupActivityWizard({
 
   const handleSubmit = useCallback(
     async (values: GroupActivityFormValues) => {
-      submitGroupActivityForm({
+      return submitGroupActivityForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,

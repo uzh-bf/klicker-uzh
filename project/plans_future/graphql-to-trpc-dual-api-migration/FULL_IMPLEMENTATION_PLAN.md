@@ -423,6 +423,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Group Activity Wizard Submit Boundary
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage group
+activity creation/editing wizard. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `GroupActivityWizard` delegates its migrated tRPC create/edit save to
+  `submitGroupActivityForm`, which awaits the write and follow-up activity /
+  course invalidations before marking the wizard complete.
+- The `handleSubmit` callback was declared `async` but did not return or await
+  `submitGroupActivityForm`, so Formik could release `isSubmitting` before the
+  tRPC write and refresh boundary had settled.
+- `WizardNavigation` already used `isSubmitting` for the final submit button,
+  but Back and Cancel stayed active while a submit was in flight.
+
+Changes:
+
+- Return the `submitGroupActivityForm` promise from `GroupActivityWizard` so
+  Formik keeps the final submit button disabled/loading through the actual tRPC
+  save and refresh boundary.
+- Disable Back and Cancel in the shared wizard navigation while a Formik submit
+  is in flight.
+- Preserve existing tRPC mutations, cache invalidation behavior, completion
+  step, error toast, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/activities/creation/groupActivity/GroupActivityWizard.tsx
+  apps/frontend-manage/src/components/activities/creation/WizardNavigation.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because the available multi-agent
+  tool explicitly requires a user request before spawning subagents.
+
+Next:
+
+- Commit and push this focused group-activity wizard submit-boundary cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Catalog Request Modal Close Guards
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
