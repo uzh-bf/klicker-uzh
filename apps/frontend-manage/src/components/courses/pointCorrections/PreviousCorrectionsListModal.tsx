@@ -40,6 +40,7 @@ function PreviousCorrectionsListModal({
   const corrections = previousCorrectionsData?.previousPointCorrections
   const initialLoading = isLoading && !corrections
   const correctionsUnavailable = Boolean(error && !corrections)
+  const staleCorrectionsError = Boolean(error && previousCorrectionsData)
 
   return (
     <Modal
@@ -54,14 +55,25 @@ function PreviousCorrectionsListModal({
           type="error"
           message={t('shared.generic.systemError')}
         />
-      ) : corrections && corrections.length > 0 ? (
-        <PreviousPointCorrectionList corrections={corrections} />
       ) : (
-        <div className="text-sm text-gray-600">
-          {!!instanceId
-            ? t('manage.pointCorrections.historyPlaceholderInstance')
-            : t('manage.pointCorrections.historyPlaceholder')}
-        </div>
+        <>
+          {staleCorrectionsError ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'mb-3' }}
+            />
+          ) : null}
+          {corrections && corrections.length > 0 ? (
+            <PreviousPointCorrectionList corrections={corrections} />
+          ) : (
+            <div className="text-sm text-gray-600">
+              {!!instanceId
+                ? t('manage.pointCorrections.historyPlaceholderInstance')
+                : t('manage.pointCorrections.historyPlaceholder')}
+            </div>
+          )}
+        </>
       )}
     </Modal>
   )

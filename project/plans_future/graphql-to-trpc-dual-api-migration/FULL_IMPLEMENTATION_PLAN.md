@@ -423,6 +423,65 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Point-Correction History Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+point-correction history queries. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `PreviousCorrectionsListModal` and `SuspendedPreviousCorrections` already use
+  `activity.previousPointCorrections` through tRPC and distinguish initial
+  loading, failed initial loads, successful empty history, and populated history.
+- When a point-correction history query has cached data and a later refetch
+  fails, the components keep the usable history/empty state visible but do not
+  show a refresh failure.
+- Context7 TanStack Query v4 and tRPC docs were refreshed for this continuation.
+  tRPC query hooks expose TanStack Query state, and background/refetch errors can
+  coexist with cached data, so this path should preserve stale UI and show a
+  non-blocking error notification.
+
+Changes:
+
+- Add existing generic `UserNotification` error fallbacks when
+  `activity.previousPointCorrections` has stale data and a background/refetch
+  request fails.
+- Preserve initial loaders, failed-initial-load notifications, empty-history
+  placeholders, populated-history rendering, tRPC query inputs/cache keys, and
+  GraphQL/tRPC coexistence.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write
+  apps/frontend-manage/src/components/courses/pointCorrections/PreviousCorrectionsListModal.tsx
+  apps/frontend-manage/src/components/courses/pointCorrections/SuspendedPreviousCorrections.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit
+  --pretty false` passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  produced no output and exited with code 124 after the timeout. Local GraphQL
+  package Vitest remains blocked in this environment; the GitHub
+  `packages/graphql Vitest` PR check is the current authoritative signal.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+- Self-review/simplification completed in the main session because no subagent
+  was requested for this continuation. The diff only adds existing
+  `UserNotification` fallbacks for stale point-correction history refetch-error
+  paths and does not alter query inputs/cache keys, modal/collapsible behavior,
+  point-correction mutations, or GraphQL coexistence.
+
+Next:
+
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Resource List Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
