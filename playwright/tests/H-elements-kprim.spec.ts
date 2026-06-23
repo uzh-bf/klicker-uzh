@@ -10,7 +10,6 @@ import { cleanupTest } from '../util/cleanup.js'
 import { KP_DATA as KP } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
-  clearFeedbackField,
   fillAnswerField,
   fillEditorField,
   fillFeedbackField,
@@ -219,9 +218,11 @@ test.describe('Test creation and editing functionalities for KPRIM elements', ()
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing feedbacks re-disables
-    await clearFeedbackField(page, 1)
+    await page.getByTestId('insert-answer-feedback-1').click()
+    await page.getByTestId('insert-answer-feedback-1').clear()
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
-    await clearFeedbackField(page, 0)
+    await page.getByTestId('insert-answer-feedback-0').click()
+    await page.getByTestId('insert-answer-feedback-0').clear()
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 0, KP.choicesFeedbacks[0])
     await expect(page.getByTestId('save-new-question')).toBeDisabled()

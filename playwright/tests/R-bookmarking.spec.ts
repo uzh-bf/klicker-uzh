@@ -1,5 +1,4 @@
 import bookmarkingData from '../../cypress/cypress/fixtures/R-bookmarking.json' with { type: 'json' }
-import { openActionMenuByTestId } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { LECTURER_ID, URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
@@ -196,7 +195,7 @@ test.describe('Test bookmarking and flagging workflows for practice quizzes and 
     await page.getByTestId(`course-list-button-${data.course}`).click()
 
     await page.getByTestId('tab-practiceQuizzes').click()
-    await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${data.PQ.name}`)
+    await page.getByTestId(`actions-PRACTICE_QUIZ-${data.PQ.name}`).click()
     await page.getByTestId(`delete-practice-quiz-${data.PQ.name}`).click()
     await expect(page.getByTestId('confirmation-modal-confirm')).toBeDisabled()
     await page.getByTestId('confirm-deletion-responses').click()
@@ -291,7 +290,7 @@ test.describe('Test bookmarking and flagging workflows for practice quizzes and 
     await page.getByTestId(`course-list-button-${data.course}`).click()
 
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${data.ML.name}`)
+    await page.getByTestId(`actions-MICRO_LEARNING-${data.ML.name}`).click()
     await page.getByTestId(`delete-microlearning-${data.ML.name}`).click()
     await expect(page.getByTestId('confirmation-modal-confirm')).toBeDisabled()
     await page.getByTestId('confirm-deletion-responses').click()

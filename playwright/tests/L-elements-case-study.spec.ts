@@ -10,10 +10,6 @@
  */
 
 import { Page } from '@playwright/test'
-import {
-  chooseAnswerCollectionAction,
-  openAnswerCollectionActionMenu,
-} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -645,11 +641,8 @@ test.describe('Test creation and editing functionalities for Case Study elements
   }) => {
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      CS.collection,
-      'edit-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
 
     for (const sol of CS.items) {
@@ -676,11 +669,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
   }) => {
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await openAnswerCollectionActionMenu(
-      page,
-      CS.collection,
-      'delete-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
     await expect(page.getByTestId('delete-answer-collection')).toHaveAttribute(
       'data-disabled'
     )
@@ -1124,11 +1113,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('answer-collections').click()
 
     // Country Collection: no longer in use
-    await openAnswerCollectionActionMenu(
-      page,
-      CS.collection,
-      'delete-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
     await expect(
       page.getByTestId('delete-answer-collection')
     ).not.toHaveAttribute('data-disabled')
@@ -1146,11 +1131,9 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('close-answer-collection-edit-modal').click()
 
     // Continent Collection: still in use
-    await openAnswerCollectionActionMenu(
-      page,
-      CS.collectionEdited,
-      'delete-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${CS.collectionEdited}`)
+      .click()
     await expect(page.getByTestId('delete-answer-collection')).toHaveAttribute(
       'data-disabled'
     )
@@ -1185,11 +1168,8 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('answer-collections').click()
 
     // Country Collection
-    await chooseAnswerCollectionAction(
-      page,
-      CS.collection,
-      'edit-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
     for (const sol of [...CS.items, ...CS.unselectedItems]) {
       await expect(
@@ -1199,11 +1179,10 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('close-answer-collection-edit-modal').click()
 
     // Continent Collection
-    await chooseAnswerCollectionAction(
-      page,
-      CS.collectionEdited,
-      'edit-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${CS.collectionEdited}`)
+      .click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
     for (const sol of [...CS.itemsEdited, ...CS.unselectedItemsEdited]) {
       await expect(
@@ -1337,11 +1316,10 @@ test.describe('Test creation and editing functionalities for Case Study elements
     const collectionName = `AC: ${CS_INLINE.title}`
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      collectionName,
-      'edit-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${collectionName}`)
+      .click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
 
     for (const sol of CS_INLINE.items) {

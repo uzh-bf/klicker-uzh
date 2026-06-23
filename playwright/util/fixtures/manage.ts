@@ -6,7 +6,6 @@
 import type { ElementType } from '@klicker-uzh/prisma/client'
 import { expect, Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
-import { openActivityActionMenu } from '../actions.js'
 import { LECTURER_SHORTNAME, SEED, SEEDED_COURSE } from '../constants.js'
 
 export type ValidateFeatureAvailabilityOptions = {
@@ -63,12 +62,7 @@ export async function validateFeatureAvailabilityFixture(
 
   // Live quiz
   await page.getByTestId('tab-liveQuizzes').click()
-  await openActivityActionMenu(
-    page,
-    'LIVE_QUIZ',
-    SEED.liveQuiz,
-    `view-activity-log-${SEED.liveQuiz}`
-  )
+  await page.getByTestId(`actions-LIVE_QUIZ-${SEED.liveQuiz}`).click()
   await expect(
     page.getByTestId(`view-activity-log-${SEED.liveQuiz}`)
   ).toBeVisible()
@@ -85,12 +79,7 @@ export async function validateFeatureAvailabilityFixture(
 
   // Microlearning
   await page.getByTestId('tab-microLearnings').click()
-  await openActivityActionMenu(
-    page,
-    'MICRO_LEARNING',
-    SEED.microlearning,
-    `view-activity-log-${SEED.microlearning}`
-  )
+  await page.getByTestId(`actions-MICRO_LEARNING-${SEED.microlearning}`).click()
   await expect(
     page.getByTestId(`view-activity-log-${SEED.microlearning}`)
   ).toBeVisible()
@@ -107,12 +96,7 @@ export async function validateFeatureAvailabilityFixture(
 
   // Practice quiz
   await page.getByTestId('tab-practiceQuizzes').click()
-  await openActivityActionMenu(
-    page,
-    'PRACTICE_QUIZ',
-    SEED.practiceQuiz,
-    `view-activity-log-${SEED.practiceQuiz}`
-  )
+  await page.getByTestId(`actions-PRACTICE_QUIZ-${SEED.practiceQuiz}`).click()
   await expect(
     page.getByTestId(`view-activity-log-${SEED.practiceQuiz}`)
   ).toBeVisible()
@@ -129,12 +113,7 @@ export async function validateFeatureAvailabilityFixture(
 
   // Group activity
   await page.getByTestId('tab-groupActivities').click()
-  await openActivityActionMenu(
-    page,
-    'GROUP_ACTIVITY',
-    SEED.groupActivity,
-    `view-activity-log-${SEED.groupActivity}`
-  )
+  await page.getByTestId(`actions-GROUP_ACTIVITY-${SEED.groupActivity}`).click()
   await expect(
     page.getByTestId(`view-activity-log-${SEED.groupActivity}`)
   ).toBeVisible()

@@ -10,20 +10,12 @@
  */
 
 import { Page } from '@playwright/test'
-import {
-  chooseAnswerCollectionAction,
-  openAnswerCollectionActionMenu,
-} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   deleteElement,
-  fillEditorField,
   searchAndEdit,
-  setElementStatus,
-  switchElementType,
   validateElement,
-  verifyEditorField,
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
 
@@ -139,16 +131,29 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await expect(page.getByTestId('select-question-type')).toContainText(
       elementTypeLabels.singleChoice
     )
-    await switchElementType(page, elementTypeLabels.selection)
+    await page.getByTestId('select-question-type').click()
+    await page
+      .getByTestId(`select-question-type-${elementTypeLabels.selection}`)
+      .click()
+    await expect(page.getByTestId('select-question-type')).toContainText(
+      elementTypeLabels.selection
+    )
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     await page.getByTestId('insert-question-title').fill(SE.title)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
-    await setElementStatus(page, statusLabels.ready)
+    await page.getByTestId('select-question-status').click()
+    await page
+      .getByTestId(`select-question-status-${statusLabels.ready}`)
+      .click()
 
-    await fillEditorField(page, 'insert-question-text', SE.content)
-    await fillEditorField(page, 'insert-question-explanation', SE.explanation)
+    await page.getByTestId('insert-question-text').click()
+    await page.getByTestId('insert-question-text').pressSequentially(SE.content)
+    await page.getByTestId('insert-question-explanation').click()
+    await page
+      .getByTestId('insert-question-explanation')
+      .pressSequentially(SE.explanation)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     // Select an answer collection
@@ -214,8 +219,14 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await expect(page.getByTestId('select-question-status')).toContainText(
       statusLabels.ready
     )
-    await verifyEditorField(page, 'insert-question-text', SE.content)
-    await verifyEditorField(page, 'insert-question-explanation', SE.explanation)
+    await page.getByTestId('insert-question-text').click()
+    await expect(page.getByTestId('insert-question-text')).toContainText(
+      SE.content
+    )
+    await page.getByTestId('insert-question-explanation').click()
+    await expect(page.getByTestId('insert-question-explanation')).toContainText(
+      SE.explanation
+    )
     await expect(page.getByTestId('select-answer-collection')).toContainText(
       SE.collection
     )
@@ -256,11 +267,8 @@ test.describe('Test creation and editing functionalities for Selection elements'
   }) => {
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      SE.collection,
-      'edit-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
+    await page.getByTestId('edit-answer-collection').click()
 
     await page.getByTestId('open-answer-collection-options').click()
     for (const sol of [...SE.solutions, ...SE.solutionsNotChosen]) {
@@ -337,11 +345,8 @@ test.describe('Test creation and editing functionalities for Selection elements'
   }) => {
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      SE.collection,
-      'edit-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
+    await page.getByTestId('edit-answer-collection').click()
 
     await page.getByTestId('open-answer-collection-options').click()
     await expect(
@@ -376,11 +381,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
   }) => {
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await openAnswerCollectionActionMenu(
-      page,
-      SE.collection,
-      'delete-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
     await expect(page.getByTestId('delete-answer-collection')).toHaveAttribute(
       'data-disabled'
     )
@@ -397,13 +398,16 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('insert-question-title').click()
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(SE.titleEdited)
-    await fillEditorField(page, 'insert-question-text', SE.contentEdited, true)
-    await fillEditorField(
-      page,
-      'insert-question-explanation',
-      SE.explanationEdited,
-      true
-    )
+    await page.getByTestId('insert-question-text').click()
+    await page.getByTestId('insert-question-text').clear()
+    await page
+      .getByTestId('insert-question-text')
+      .pressSequentially(SE.contentEdited)
+    await page.getByTestId('insert-question-explanation').click()
+    await page.getByTestId('insert-question-explanation').clear()
+    await page
+      .getByTestId('insert-question-explanation')
+      .pressSequentially(SE.explanationEdited)
 
     // Switch collection
     await page.getByTestId('select-answer-collection').click()
@@ -440,10 +444,12 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await expect(page.getByTestId('insert-question-title')).toHaveValue(
       SE.titleEdited
     )
-    await verifyEditorField(page, 'insert-question-text', SE.contentEdited)
-    await verifyEditorField(
-      page,
-      'insert-question-explanation',
+    await page.getByTestId('insert-question-text').click()
+    await expect(page.getByTestId('insert-question-text')).toContainText(
+      SE.contentEdited
+    )
+    await page.getByTestId('insert-question-explanation').click()
+    await expect(page.getByTestId('insert-question-explanation')).toContainText(
       SE.explanationEdited
     )
     await expect(page.getByTestId('select-answer-collection')).toContainText(
@@ -471,22 +477,16 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
 
-    await openAnswerCollectionActionMenu(
-      page,
-      SE.collection,
-      'delete-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
     await expect(
       page.getByTestId('delete-answer-collection')
     ).not.toHaveAttribute('data-disabled')
     await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('close-answer-collection-edit-modal').click()
 
-    await openAnswerCollectionActionMenu(
-      page,
-      SE.collectionEdited,
-      'delete-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${SE.collectionEdited}`)
+      .click()
     await expect(page.getByTestId('delete-answer-collection')).toHaveAttribute(
       'data-disabled'
     )
@@ -502,11 +502,8 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('answer-collections').click()
 
     // City collection: solutions are no longer in use → all deletable
-    await chooseAnswerCollectionAction(
-      page,
-      SE.collection,
-      'edit-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
     for (const sol of [...SE.solutions, ...SE.solutionsNotChosen]) {
       await expect(
@@ -519,11 +516,10 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('close-answer-collection-edit-modal').click()
 
     // Meal collection: solutionsEdited are in use → not deletable
-    await chooseAnswerCollectionAction(
-      page,
-      SE.collectionEdited,
-      'edit-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${SE.collectionEdited}`)
+      .click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
     for (const sol of SE.solutionsEdited) {
       await expect(
@@ -556,11 +552,8 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('answer-collections').click()
 
     // City collection
-    await chooseAnswerCollectionAction(
-      page,
-      SE.collection,
-      'edit-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
     for (const sol of [...SE.solutions, ...SE.solutionsNotChosen]) {
       await expect(
@@ -573,11 +566,10 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('close-answer-collection-edit-modal').click()
 
     // Meal collection
-    await chooseAnswerCollectionAction(
-      page,
-      SE.collectionEdited,
-      'edit-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${SE.collectionEdited}`)
+      .click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
     for (const sol of [...SE.solutionsEdited, ...SE.solutionsNotChosenEdited]) {
       await expect(
@@ -599,20 +591,31 @@ test.describe('Test creation and editing functionalities for Selection elements'
   }) => {
     await page.getByTestId('create-question').click()
 
-    await switchElementType(page, elementTypeLabels.selection)
+    await page.getByTestId('select-question-type').click()
+    await page
+      .getByTestId(`select-question-type-${elementTypeLabels.selection}`)
+      .click()
+    await expect(page.getByTestId('select-question-type')).toContainText(
+      elementTypeLabels.selection
+    )
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     await page.getByTestId('insert-question-title').fill(SE_INLINE.title)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
-    await setElementStatus(page, statusLabels.ready)
+    await page.getByTestId('select-question-status').click()
+    await page
+      .getByTestId(`select-question-status-${statusLabels.ready}`)
+      .click()
 
-    await fillEditorField(page, 'insert-question-text', SE_INLINE.content)
-    await fillEditorField(
-      page,
-      'insert-question-explanation',
-      SE_INLINE.explanation
-    )
+    await page.getByTestId('insert-question-text').click()
+    await page
+      .getByTestId('insert-question-text')
+      .pressSequentially(SE_INLINE.content)
+    await page.getByTestId('insert-question-explanation').click()
+    await page
+      .getByTestId('insert-question-explanation')
+      .pressSequentially(SE_INLINE.explanation)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     // Use inline collection creation
@@ -697,11 +700,10 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
 
-    await chooseAnswerCollectionAction(
-      page,
-      SE_INLINE.collection,
-      'edit-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${SE_INLINE.collection}`)
+      .click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
 
     for (const sol of SE_INLINE.items) {
@@ -728,18 +730,16 @@ test.describe('Test creation and editing functionalities for Selection elements'
 
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(SE_INLINE.titleEdited)
-    await fillEditorField(
-      page,
-      'insert-question-text',
-      SE_INLINE.contentEdited,
-      true
-    )
-    await fillEditorField(
-      page,
-      'insert-question-explanation',
-      SE_INLINE.explanationEdited,
-      true
-    )
+    await page.getByTestId('insert-question-text').click()
+    await page.getByTestId('insert-question-text').clear()
+    await page
+      .getByTestId('insert-question-text')
+      .pressSequentially(SE_INLINE.contentEdited)
+    await page.getByTestId('insert-question-explanation').click()
+    await page.getByTestId('insert-question-explanation').clear()
+    await page
+      .getByTestId('insert-question-explanation')
+      .pressSequentially(SE_INLINE.explanationEdited)
 
     // Creating inline collection is not available during edit
     await expect(
@@ -781,11 +781,10 @@ test.describe('Test creation and editing functionalities for Selection elements'
     // After deletion, collection options should all be deletable
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      SE_INLINE.collection,
-      'edit-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${SE_INLINE.collection}`)
+      .click()
+    await page.getByTestId('edit-answer-collection').click()
     await page.getByTestId('open-answer-collection-options').click()
 
     for (const sol of SE_INLINE.items) {
@@ -798,11 +797,9 @@ test.describe('Test creation and editing functionalities for Selection elements'
     }
     await page.getByTestId('close-answer-collection-edit-modal').click()
 
-    await openAnswerCollectionActionMenu(
-      page,
-      SE_INLINE.collection,
-      'delete-answer-collection'
-    )
+    await page
+      .getByTestId(`answer-collection-actions-${SE_INLINE.collection}`)
+      .click()
     await expect(
       page.getByTestId('delete-answer-collection')
     ).not.toHaveAttribute('data-disabled')

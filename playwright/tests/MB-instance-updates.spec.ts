@@ -1,7 +1,6 @@
 import { Page } from '@playwright/test'
 import dmQuestionsData from '../../cypress/cypress/fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
-import { openActivityActionMenu } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { LECTURER_ID } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
@@ -242,7 +241,7 @@ async function openActivityEditView(
   }
 ) {
   await page.getByTestId('activities').click()
-  await openActivityActionMenu(page, type, name)
+  await page.getByTestId(`actions-${type}-${name}`).click()
 
   const outdatedHint = page.getByTestId(`instances-outdated-${name}`)
   if (outdated) {

@@ -7,10 +7,6 @@ import {
   seedActivities,
   seedDatabase,
 } from '../global-setup.js'
-import {
-  chooseActivityAction,
-  chooseAnswerCollectionAction,
-} from './actions.js'
 import { disableAnimations, setSessionCookieForUrl } from './authSession.js'
 import {
   APP_SECRET,
@@ -598,11 +594,8 @@ export async function deleteAnswerCollection(
   page: Page,
   { collectionName }: { collectionName: string }
 ) {
-  await chooseAnswerCollectionAction(
-    page,
-    collectionName,
-    'delete-answer-collection'
-  )
+  await page.getByTestId(`answer-collection-actions-${collectionName}`).click()
+  await page.getByTestId('delete-answer-collection').click()
   await page.getByTestId('confirm-delete-answer-collection').click()
   await expect(
     page.getByTestId(`answer-collection-${collectionName}`)
@@ -978,12 +971,8 @@ export async function addObjectToCatalog(page: Page, args: any) {
 }
 
 export async function convertLiveQuizToTemplate(page: Page, args: any) {
-  await chooseActivityAction(
-    page,
-    'LIVE_QUIZ',
-    args.liveQuiz,
-    `template-from-live-quiz-${args.liveQuiz}`
-  )
+  await page.getByTestId(`actions-LIVE_QUIZ-${args.liveQuiz}`).click()
+  await page.getByTestId(`template-from-live-quiz-${args.liveQuiz}`).click()
   await page
     .getByTestId(
       args.copyBeforeConversion

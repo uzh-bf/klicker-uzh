@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { type Locator, type Page } from '@playwright/test'
 
 export type ActivityActionType =
   | 'LIVE_QUIZ'
@@ -11,119 +11,33 @@ async function findVisibleByTestId(
   testId: string,
   timeout = 15_000
 ): Promise<Locator> {
+  const startedAt = Date.now()
   const locator = page.getByTestId(testId)
-  let visibleIndex = -1
 
-  await expect(async () => {
+  while (Date.now() - startedAt < timeout) {
     const count = await locator.count()
 
     for (let ix = 0; ix < count; ix++) {
       const candidate = locator.nth(ix)
       if (await candidate.isVisible().catch(() => false)) {
-        visibleIndex = ix
-        return
+        return candidate
       }
     }
 
-    visibleIndex = -1
-    expect(visibleIndex).toBeGreaterThanOrEqual(0)
-  }).toPass({ intervals: [100], timeout })
+    await page.waitForTimeout(100)
+  }
 
-  return locator.nth(visibleIndex)
+  throw new Error(`No visible element found for data-cy="${testId}"`)
 }
 
 export async function clickVisibleByTestId(
   page: Page,
   testId: string,
-  timeout = 15_000
+  timeout?: number
 ) {
-  let lastError: unknown
-
-  await expect(async () => {
-    const locator = await findVisibleByTestId(page, testId, 1_000)
-    await locator.scrollIntoViewIfNeeded().catch(() => undefined)
-
-    try {
-      await locator.click({ timeout: 2_000 })
-      return
-    } catch (error) {
-      lastError = error
-      await locator.click({ force: true, timeout: 2_000 })
-    }
-  })
-    .toPass({ intervals: [100, 250, 500], timeout })
-    .catch((error) => {
-      throw lastError ?? error
-    })
-}
-
-export async function openActionMenuByTestId(
-  page: Page,
-  triggerTestId: string,
-  expectedActionTestId?: string
-) {
-  if (
-    expectedActionTestId &&
-    (await page
-      .getByTestId(expectedActionTestId)
-      .first()
-      .isVisible()
-      .catch(() => false))
-  ) {
-    return
-  }
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await page.keyboard.press('Escape').catch(() => undefined)
-    await clickVisibleByTestId(page, triggerTestId)
-
-    if (!expectedActionTestId) {
-      return
-    }
-
-    if (
-      await findVisibleByTestId(page, expectedActionTestId, 2_000)
-        .then(() => true)
-        .catch(() => false)
-    ) {
-      return
-    }
-  }
-
-  if (expectedActionTestId) {
-    await findVisibleByTestId(page, expectedActionTestId)
-  }
-}
-
-export async function chooseActionByTestId(
-  page: Page,
-  triggerTestId: string,
-  actionTestId: string
-) {
-  await openActionMenuByTestId(page, triggerTestId, actionTestId)
-  await clickVisibleByTestId(page, actionTestId)
-}
-
-export async function expectActionMenuItems(
-  page: Page,
-  triggerTestId: string,
-  {
-    visible = [],
-    hidden = [],
-  }: {
-    visible?: string[]
-    hidden?: string[]
-  }
-) {
-  await openActionMenuByTestId(page, triggerTestId, visible[0])
-
-  for (const testId of visible) {
-    await findVisibleByTestId(page, testId)
-  }
-
-  for (const testId of hidden) {
-    await expect(page.getByTestId(testId)).not.toBeVisible()
-  }
+  const locator = await findVisibleByTestId(page, testId, timeout)
+  await locator.scrollIntoViewIfNeeded().catch(() => undefined)
+  await locator.click()
 }
 
 export async function openActivityActionMenu(
@@ -145,69 +59,37 @@ export async function chooseActivityAction(
   name: string,
   actionTestId: string
 ) {
-  await openActivityActionMenu(page, type, name, actionTestId)
-  await clickVisibleByTestId(page, actionTestId)
+  await chooseActionByTestId(page, `actions-${type}-${name}`, actionTestId)
 }
 
-export async function openAnswerCollectionActionMenu(
+export async function openActionMenuByTestId(
   page: Page,
-  collectionName: string,
+  triggerTestId: string,
   expectedActionTestId?: string
 ) {
-  await openActionMenuByTestId(
-    page,
-    `answer-collection-actions-${collectionName}`,
-    expectedActionTestId
-  )
+  if (
+    expectedActionTestId &&
+    (await page
+      .getByTestId(expectedActionTestId)
+      .first()
+      .isVisible()
+      .catch(() => false))
+  ) {
+    return
+  }
+
+  await clickVisibleByTestId(page, triggerTestId)
+
+  if (expectedActionTestId) {
+    await findVisibleByTestId(page, expectedActionTestId)
+  }
 }
 
-export async function chooseAnswerCollectionAction(
+export async function chooseActionByTestId(
   page: Page,
-  collectionName: string,
+  triggerTestId: string,
   actionTestId: string
 ) {
-  await openAnswerCollectionActionMenu(page, collectionName, actionTestId)
-  await clickVisibleByTestId(page, actionTestId)
-}
-
-export async function openUserGroupActionMenu(
-  page: Page,
-  groupName: string,
-  expectedActionTestId?: string
-) {
-  await openActionMenuByTestId(
-    page,
-    `user-group-actions-${groupName}`,
-    expectedActionTestId
-  )
-}
-
-export async function chooseUserGroupAction(
-  page: Page,
-  groupName: string,
-  actionTestId: string
-) {
-  await openUserGroupActionMenu(page, groupName, actionTestId)
-  await clickVisibleByTestId(page, actionTestId)
-}
-
-export async function openCatalogObjectActionMenu(
-  page: Page,
-  objectName: string,
-  expectedActionTestId?: string
-) {
-  await openActionMenuByTestId(
-    page,
-    `actions-dropdown-${objectName}`,
-    expectedActionTestId
-  )
-}
-
-export async function chooseCatalogObjectAction(
-  page: Page,
-  objectName: string,
-  actionTestId: string
-) {
-  await openCatalogObjectActionMenu(page, objectName, actionTestId)
+  await openActionMenuByTestId(page, triggerTestId, actionTestId)
   await clickVisibleByTestId(page, actionTestId)
 }

@@ -11,7 +11,6 @@ import { MC_DATA as MC } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   addAnswerChoices,
-  clearFeedbackField,
   deleteElement,
   fillAnswerField,
   fillEditorField,
@@ -181,7 +180,8 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clear feedback 1 re-disables
-    await clearFeedbackField(page, 1)
+    await page.getByTestId('insert-answer-feedback-1').click()
+    await page.getByTestId('insert-answer-feedback-1').clear()
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 1, MC.choicesFeedbacks[1])
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()

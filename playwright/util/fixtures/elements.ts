@@ -158,31 +158,9 @@ export async function fillFeedbackField(
   const field = page.getByTestId(`insert-answer-feedback-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) {
-    await clearFeedbackField(page, index)
-    await field.click()
-  }
+  if (clear) await field.clear()
   await field.pressSequentially(text)
   await expect(field).toContainText(text)
-}
-
-// ---------------------------------------------------------------------------
-// Clear answer feedback rich-text field at the given index.
-// ---------------------------------------------------------------------------
-export async function clearFeedbackField(page: Page, index: number) {
-  const field = page.getByTestId(`insert-answer-feedback-${index}`)
-  await field.scrollIntoViewIfNeeded()
-  await field.click()
-  await field.press('ControlOrMeta+A')
-  await field.press('Backspace')
-  await expect
-    .poll(async () =>
-      ((await field.textContent()) ?? '').replace('Enter feedback…', '').trim()
-    )
-    .toBe('')
-  await field.evaluate((element) => {
-    if (element instanceof HTMLElement) element.blur()
-  })
 }
 
 // ---------------------------------------------------------------------------

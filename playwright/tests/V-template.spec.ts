@@ -5,7 +5,6 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
-import { openActionMenuByTestId } from '../util/actions.js'
 import { test } from '../util/fixtures.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
@@ -582,10 +581,7 @@ test.describe
       page.getByTestId(`activity-LIVE_QUIZ-${data.liveQuiz.name}`),
       'exist'
     )
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
-    )
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await expectByAssertion(
       page.getByTestId(`edit-live-quiz-${data.liveQuiz.name}`),
       'exist'
@@ -613,10 +609,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId('activities').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
-    )
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await page
       .getByTestId(`template-from-live-quiz-${data.liveQuiz.name}`)
       .click()
@@ -670,10 +663,7 @@ test.describe
       'not.be.disabled'
     )
     await page.getByTestId('close-template-conversion-modal').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
-    )
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await page
       .getByTestId(`template-from-live-quiz-${data.liveQuiz.name}`)
       .click()
@@ -727,10 +717,7 @@ test.describe
       page.getByTestId(`edit-template-${data.liveQuiz.template1Orig.name}`),
       'exist'
     )
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
-    )
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await expectByAssertion(
       page.getByTestId(`edit-live-quiz-${data.liveQuiz.name}`),
       'exist'
@@ -748,10 +735,9 @@ test.describe
       'exist'
     )
     await typeInto(page.locator('body'), '{esc}')
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.template1Orig.name}`
-    )
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.template1Orig.name}`)
+      .click()
     await expectByAssertion(
       page.getByTestId(`use-template-${data.liveQuiz.template1Orig.name}`),
       'exist'
@@ -772,10 +758,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId('activities').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
-    )
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await page
       .getByTestId(`template-from-live-quiz-${data.liveQuiz.name}`)
       .click()
@@ -845,10 +828,9 @@ test.describe
       page.getByTestId(`edit-template-${data.liveQuiz.template2.name}`),
       'exist'
     )
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.template2.name}`
-    )
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.template2.name}`)
+      .click()
     await expectByAssertion(
       page.getByTestId(`use-template-${data.liveQuiz.template2.name}`),
       'exist'
@@ -1081,6 +1063,7 @@ test.describe
       messages.manage.sharing.permissionsREAD
     )
     await page.getByTestId('new-permission-submit').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId(`permission-${env('LECTURER_IND_SHORTNAME')}`),
       'exist'
@@ -1668,6 +1651,7 @@ test.describe
     await expectByAssertion(page.getByText(data.SC.content).first(), 'exist')
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1676,6 +1660,7 @@ test.describe
     await page.getByTestId('mc-1-answer-option-0').click()
     await page.getByTestId('mc-1-answer-option-1').click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1694,6 +1679,7 @@ test.describe
     await page.getByTestId('input-numerical-3').clear()
     await typeInto(page.getByTestId('input-numerical-3'), data.NR.answer)
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1701,6 +1687,7 @@ test.describe
     await expectByAssertion(page.getByText(data.FT.content).first(), 'exist')
     await typeInto(page.getByTestId('free-text-input-4'), data.FT.answer)
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1711,6 +1698,7 @@ test.describe
       .locator('[id="react-select-selection-5-field-0-option-1"]')
       .click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1765,6 +1753,7 @@ test.describe
     await expectByAssertion(page.getByText(data.SCML2.content).first(), 'exist')
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1773,6 +1762,7 @@ test.describe
     await page.getByTestId('mc-1-answer-option-0').click()
     await page.getByTestId('mc-1-answer-option-1').click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1791,6 +1781,7 @@ test.describe
     await page.getByTestId('input-numerical-3').clear()
     await typeInto(page.getByTestId('input-numerical-3'), data.NR.answer)
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1798,6 +1789,7 @@ test.describe
     await expectByAssertion(page.getByText(data.FTML2.content).first(), 'exist')
     await typeInto(page.getByTestId('free-text-input-4'), data.FT.answer)
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1808,6 +1800,7 @@ test.describe
       .locator('[id="react-select-selection-5-field-0-option-1"]')
       .click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1865,6 +1858,7 @@ test.describe
     )
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1876,6 +1870,7 @@ test.describe
     await page.getByTestId('mc-1-answer-option-0').click()
     await page.getByTestId('mc-1-answer-option-1').click()
     await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -1984,10 +1979,9 @@ test.describe
     await page.getByTestId('resources').click()
     await page.getByTestId('catalog').click()
     await page.getByText(data.catalog.name, { exact: true }).click()
-    await openActionMenuByTestId(
-      page,
-      `actions-dropdown-${data.liveQuiz.template2.name}`
-    )
+    await page
+      .getByTestId(`actions-dropdown-${data.liveQuiz.template2.name}`)
+      .click()
     await page
       .getByTestId(`use-template-${data.liveQuiz.template2.name}`)
       .click()
@@ -2539,6 +2533,7 @@ test.describe
         ).toContainText(data.SC.content)
         await page.getByTestId('sc-0-answer-option-0').click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2549,6 +2544,7 @@ test.describe
         await page.getByTestId('mc-1-answer-option-0').click()
         await page.getByTestId('mc-1-answer-option-1').click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2571,6 +2567,7 @@ test.describe
         await page.getByTestId('input-numerical-3').clear()
         await typeInto(page.getByTestId('input-numerical-3'), data.NR.answer)
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2580,6 +2577,7 @@ test.describe
         ).toContainText(data.FT.content)
         await typeInto(page.getByTestId('free-text-input-4'), data.FT.answer)
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2592,6 +2590,7 @@ test.describe
           .locator('[id="react-select-selection-5-field-0-option-1"]')
           .click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2669,6 +2668,7 @@ test.describe
         ).toContainText(data.activity2.newElements.SC.content)
         await page.getByTestId('sc-0-answer-option-0').click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2679,6 +2679,7 @@ test.describe
         await page.getByTestId('mc-1-answer-option-0').click()
         await page.getByTestId('mc-1-answer-option-1').click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2704,6 +2705,7 @@ test.describe
           data.activity2.newElements.NR.answer
         )
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2716,6 +2718,7 @@ test.describe
           data.activity2.newElements.FT.answer
         )
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2728,6 +2731,7 @@ test.describe
           .locator('[id="react-select-selection-5-field-0-option-1"]')
           .click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2805,6 +2809,7 @@ test.describe
         ).toContainText(data.SCMLAF3.content)
         await page.getByTestId('sc-0-answer-option-0').click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -2815,6 +2820,7 @@ test.describe
         await page.getByTestId('mc-1-answer-option-0').click()
         await page.getByTestId('mc-1-answer-option-1').click()
         await page.getByTestId('student-submit-answer').click()
+        await page.waitForTimeout(500)
         await expectByAssertion(
           page.getByTestId('student-submit-answer'),
           'be.disabled'
@@ -3102,28 +3108,25 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId('activities').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.template1.name}`
-    )
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.template1.name}`)
+      .click()
     await page
       .getByTestId(`delete-template-${data.liveQuiz.template1.name}`)
       .click()
     await page.getByTestId('cancel-deletion').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.template1.name}`
-    )
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.template1.name}`)
+      .click()
     await page
       .getByTestId(`delete-template-${data.liveQuiz.template1.name}`)
       .click()
     await page.getByTestId('confirm-template-deletion').click()
     await page.waitForTimeout(500)
     await page.getByTestId('activities').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.template2.name}`
-    )
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.template2.name}`)
+      .click()
     await page
       .getByTestId(`delete-template-${data.liveQuiz.template2.name}`)
       .click()

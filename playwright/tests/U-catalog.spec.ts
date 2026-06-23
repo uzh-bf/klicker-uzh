@@ -5,13 +5,6 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
-import {
-  chooseAnswerCollectionAction,
-  chooseUserGroupAction,
-  openActionMenuByTestId,
-  openCatalogObjectActionMenu,
-  openUserGroupActionMenu,
-} from '../util/actions.js'
 import { test } from '../util/fixtures.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
@@ -105,12 +98,6 @@ test.describe
     const actionTestIds = Array.isArray(expectedActionTestIds)
       ? expectedActionTestIds
       : [expectedActionTestIds]
-
-    if (actionTestIds.length === 1) {
-      await openCatalogObjectActionMenu(page, objectName, actionTestIds[0])
-      return actionTestIds[0]
-    }
-
     const trigger = page.getByTestId(`actions-dropdown-${objectName}`)
 
     async function visibleAction() {
@@ -149,7 +136,9 @@ test.describe
     const removeAction = `remove-object-${objectName}`
 
     await page.keyboard.press('Escape')
-    await openCatalogObjectActionMenu(page, objectName)
+    await page
+      .getByTestId(`actions-dropdown-${objectName}`)
+      .click({ force: true })
     await expectByAssertion(
       page.getByTestId(`share-object-${objectName}`),
       'not.exist'
@@ -466,11 +455,8 @@ test.describe
     await loginLecturer(page)
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      data.AC1.name,
-      'share-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
+    await page.getByTestId('share-answer-collection').click()
     await page.getByTestId('new-permission-username-or-email').click()
     await typeInto(
       page.getByTestId('new-permission-username-or-email'),
@@ -1191,7 +1177,7 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.AC1.name}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
-    await openCatalogObjectActionMenu(page, data.AC1.name)
+    await page.getByTestId(`actions-dropdown-${data.AC1.name}`).click()
     await page.getByTestId(`remove-object-${data.AC1.name}`).click()
     await page.getByTestId('cancel-removal').click()
     await expectByAssertion(
@@ -1201,7 +1187,7 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.AC2.name}`)
     ).toContainText(messages.manage.catalog.accessRESTRICTED)
-    await openCatalogObjectActionMenu(page, data.AC2.name)
+    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
     await page.getByTestId(`remove-object-${data.AC2.name}`).click()
     await page.getByTestId('cancel-removal').click()
     await expectByAssertion(
@@ -1211,7 +1197,9 @@ test.describe
     await expect(
       page.getByTestId(`catalog-object-${data.liveQuiz.template.name}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
-    await openCatalogObjectActionMenu(page, data.liveQuiz.template.name)
+    await page
+      .getByTestId(`actions-dropdown-${data.liveQuiz.template.name}`)
+      .click()
     await expectByAssertion(
       page.getByTestId(`use-template-${data.liveQuiz.template.name}`),
       'exist'
@@ -1267,11 +1255,7 @@ test.describe
     await expect(page.getByTestId(`user-group-${data.group1}`)).toContainText(
       messages.shared.generic.owner
     )
-    await openUserGroupActionMenu(
-      page,
-      data.group1,
-      `view-edit-group-${data.group1}`
-    )
+    await page.getByTestId(`user-group-actions-${data.group1}`).click()
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.group1}`),
       'exist'
@@ -1309,11 +1293,7 @@ test.describe
     await expect(page.getByTestId(`user-group-${data.group2}`)).toContainText(
       messages.shared.generic.owner
     )
-    await openUserGroupActionMenu(
-      page,
-      data.group2,
-      `view-edit-group-${data.group2}`
-    )
+    await page.getByTestId(`user-group-actions-${data.group2}`).click()
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.group2}`),
       'exist'
@@ -1352,11 +1332,7 @@ test.describe
     await expect(page.getByTestId(`user-group-${data.group3}`)).toContainText(
       messages.shared.generic.owner
     )
-    await openUserGroupActionMenu(
-      page,
-      data.group3,
-      `view-edit-group-${data.group3}`
-    )
+    await page.getByTestId(`user-group-actions-${data.group3}`).click()
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.group3}`),
       'exist'
@@ -1629,10 +1605,12 @@ test.describe
       page.getByTestId('add-object-to-catalog-button'),
       'not.exist'
     )
-    await openCatalogObjectActionMenu(page, data.AC2.name)
+    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
     await page.getByTestId(`request-access-${data.AC2.name}`).click()
     await page.getByTestId(`cancel-request-access`).click()
-    await openCatalogObjectActionMenu(page, data.liveQuiz.template.name)
+    await page
+      .getByTestId(`actions-dropdown-${data.liveQuiz.template.name}`)
+      .click()
     {
       const useTemplate = page.getByTestId(
         `use-template-${data.liveQuiz.template.name}`
@@ -1681,7 +1659,7 @@ test.describe
       page.getByTestId('add-object-to-catalog-button'),
       'not.exist'
     )
-    await openCatalogObjectActionMenu(page, data.AC2.name)
+    await page.getByTestId(`actions-dropdown-${data.AC2.name}`).click()
     await page.getByTestId(`request-access-${data.AC2.name}`).click()
     await page.getByTestId(`cancel-request-access`).click()
   })
@@ -1810,11 +1788,7 @@ test.describe
     await expect(
       page.getByTestId(`user-group-${data.userGroup.name}`)
     ).toContainText(messages.shared.generic.owner)
-    await openUserGroupActionMenu(
-      page,
-      data.userGroup.name,
-      `view-edit-group-${data.userGroup.name}`
-    )
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.userGroup.name}`),
       'exist'
@@ -1855,11 +1829,7 @@ test.describe
     await expect(
       page.getByTestId(`user-group-${data.userGroup.name}`)
     ).toContainText(messages.shared.generic.owner)
-    await openUserGroupActionMenu(
-      page,
-      data.userGroup.name,
-      `view-edit-group-${data.userGroup.name}`
-    )
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.userGroup.name}`),
       'exist'
@@ -1943,11 +1913,7 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await openUserGroupActionMenu(
-      page,
-      data.userGroup.name,
-      `view-edit-group-${data.userGroup.name}`
-    )
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
     await expect(
       page.getByTestId(`user-group-${data.userGroup.name}`)
     ).toContainText(messages.manage.userGroups.admin)
@@ -2034,11 +2000,7 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await openUserGroupActionMenu(
-      page,
-      data.userGroup.name,
-      `view-edit-group-${data.userGroup.name}`
-    )
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
     await expect(
       page.getByTestId(`user-group-${data.userGroup.name}`)
     ).toContainText(messages.manage.userGroups.member)
@@ -2164,9 +2126,11 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `leave-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`leave-group-${data.userGroup.name}`).click()
     await page.getByTestId('cancel-leave-group').click()
-    await chooseUserGroupAction(page, data.userGroup.name, `leave-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`leave-group-${data.userGroup.name}`).click()
     await page.getByTestId('confirm-leave-group').click()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
@@ -2178,7 +2142,8 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `leave-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`leave-group-${data.userGroup.name}`).click()
     await page.getByTestId('confirm-leave-group').click()
     await expectByAssertion(
       page.getByTestId(`user-group-${data.userGroup.name}`),
@@ -2199,7 +2164,8 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `view-edit-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`view-edit-group-${data.userGroup.name}`).click()
     await expectByAssertion(
       page.getByTestId(`group-admin-${env('LECTURER_IND_SHORTNAME')}`),
       'not.exist'
@@ -2253,7 +2219,8 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `view-edit-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`view-edit-group-${data.userGroup.name}`).click()
     await expectByAssertion(
       page.getByTestId(`group-member-${env('LECTURER_INST2_SHORTNAME')}`),
       'exist'
@@ -2326,7 +2293,8 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `view-edit-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`view-edit-group-${data.userGroup.name}`).click()
     await page
       .getByTestId(`remove-group-admin-${env('LECTURER_INST2_SHORTNAME')}`)
       .click()
@@ -2371,7 +2339,8 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `view-edit-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`view-edit-group-${data.userGroup.name}`).click()
     await page
       .getByTestId(`transfer-group-ownership-${env('LECTURER_INST_SHORTNAME')}`)
       .click()
@@ -2396,7 +2365,8 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `view-edit-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`view-edit-group-${data.userGroup.name}`).click()
     await page
       .getByTestId(`transfer-group-ownership-${env('LECTURER_SHORTNAME')}`)
       .click()
@@ -2430,7 +2400,8 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.name}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.name, `view-edit-group-`)
+    await page.getByTestId(`user-group-actions-${data.userGroup.name}`).click()
+    await page.getByTestId(`view-edit-group-${data.userGroup.name}`).click()
     await page.getByTestId('edit-group-name').click()
     await page.getByTestId('edit-group-name-input').click()
     await page.getByTestId('edit-group-name-input').clear()
@@ -2463,9 +2434,15 @@ test.describe
       page.getByTestId(`user-group-${data.userGroup.nameNew}`),
       'exist'
     )
-    await chooseUserGroupAction(page, data.userGroup.nameNew, `delete-group-`)
+    await page
+      .getByTestId(`user-group-actions-${data.userGroup.nameNew}`)
+      .click()
+    await page.getByTestId(`delete-group-${data.userGroup.nameNew}`).click()
     await page.getByTestId('cancel-delete-group').click()
-    await chooseUserGroupAction(page, data.userGroup.nameNew, `delete-group-`)
+    await page
+      .getByTestId(`user-group-actions-${data.userGroup.nameNew}`)
+      .click()
+    await page.getByTestId(`delete-group-${data.userGroup.nameNew}`).click()
     await expectByAssertion(
       page.getByTestId('confirm-delete-group'),
       'be.disabled'
@@ -2516,31 +2493,22 @@ test.describe
     await loginIndividualCatalyst(page)
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      data.AC1.name,
-      'remove-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
+    await page.getByTestId('remove-answer-collection').click()
     await page.getByTestId('confirm-remove-object').click()
     await logoutUser(page)
     await loginInstitutionalCatalyst(page)
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      data.AC1.name,
-      'remove-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
+    await page.getByTestId('remove-answer-collection').click()
     await page.getByTestId('confirm-remove-object').click()
     await logoutUser(page)
     await loginInstitutionalCatalyst2(page)
     await page.getByTestId('resources').click()
     await page.getByTestId('answer-collections').click()
-    await chooseAnswerCollectionAction(
-      page,
-      data.AC1.name,
-      'remove-answer-collection'
-    )
+    await page.getByTestId(`answer-collection-actions-${data.AC1.name}`).click()
+    await page.getByTestId('remove-answer-collection').click()
     await page.getByTestId('confirm-remove-object').click()
     await logoutUser(page)
     await loginLecturer(page)
@@ -2563,10 +2531,9 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId('activities').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-LIVE_QUIZ-${data.liveQuiz.template.name}`
-    )
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.template.name}`)
+      .click()
     await page
       .getByTestId(`delete-template-${data.liveQuiz.template.name}`)
       .click()

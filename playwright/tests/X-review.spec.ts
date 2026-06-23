@@ -836,6 +836,7 @@ test.describe
     await runTask('cleanupDatabase')
     await runTask('seedDatabase')
     await loginLecturer(page)
+    await page.waitForTimeout(1000)
     await page.getByTestId('show-archive-switch').click()
     await createQuestionSC(page, {
       name: data.SCML.title,
@@ -1451,6 +1452,7 @@ test.describe
     await runTask('cleanupDatabase')
     await runTask('seedDatabase')
     await loginLecturer(page)
+    await page.waitForTimeout(1000)
     await createQuestionSC(page, {
       name: data.SCML.title,
       content: data.SCML.content,
@@ -1604,6 +1606,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await page.getByTestId(`activity-checkbox-${data.batch.liveQuiz}`).click()
     await page
       .getByTestId(`activity-checkbox-${data.batch.microLearning}`)
@@ -1670,6 +1673,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await page.getByTestId('select-all-activities').click()
     await page.getByTestId('activity-batch-operations').click()
     await page.getByTestId('multiplier-checkbox').click()
@@ -1909,6 +1913,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await page.getByTestId('select-all-activities').click()
     await page.getByTestId('activity-batch-operations').click()
     await page.getByTestId('multiplier-checkbox').click()
@@ -1968,6 +1973,7 @@ test.describe
       messages.manage.activityWizard.multiplier3
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'LIVE_QUIZ',
       data.batch.liveQuiz2,
@@ -1979,6 +1985,7 @@ test.describe
     await page.waitForTimeout(500)
     await expectByAssertion(page.getByTestId('select-multiplier'), 'not.exist')
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'PRACTICE_QUIZ',
       data.batch.practiceQuiz,
@@ -1992,6 +1999,7 @@ test.describe
       messages.manage.activityWizard.multiplier3
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'PRACTICE_QUIZ',
       data.batch.practiceQuiz2,
@@ -2003,6 +2011,7 @@ test.describe
     await page.waitForTimeout(500)
     await expectByAssertion(page.getByTestId('select-multiplier'), 'not.exist')
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'MICRO_LEARNING',
       data.batch.microLearning,
@@ -2016,6 +2025,7 @@ test.describe
       messages.manage.activityWizard.multiplier3
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'MICRO_LEARNING',
       data.batch.microLearning2,
@@ -2027,6 +2037,7 @@ test.describe
     await page.waitForTimeout(500)
     await expectByAssertion(page.getByTestId('select-multiplier'), 'not.exist')
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'GROUP_ACTIVITY',
       data.batch.groupActivity,
@@ -2050,6 +2061,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await page.getByTestId(`activity-checkbox-${data.batch.liveQuiz}`).click()
     await page
       .getByTestId(`activity-checkbox-${data.batch.practiceQuiz}`)
@@ -2084,6 +2096,7 @@ test.describe
     }
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'LIVE_QUIZ',
       data.batch.liveQuiz,
@@ -2097,6 +2110,7 @@ test.describe
       data.batch.course2
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'PRACTICE_QUIZ',
       data.batch.practiceQuiz,
@@ -2110,6 +2124,7 @@ test.describe
       data.batch.course2
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'MICRO_LEARNING',
       data.batch.microLearning,
@@ -2123,6 +2138,7 @@ test.describe
       data.batch.course2
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'GROUP_ACTIVITY',
       data.batch.groupActivity,
@@ -2146,6 +2162,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await page.getByTestId(`activity-checkbox-${data.batch.liveQuiz}`).click()
     await page.getByTestId(`activity-checkbox-${data.batch.liveQuiz2}`).click()
     await page.getByTestId('activity-batch-operations').click()
@@ -2184,6 +2201,7 @@ test.describe
     )
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'LIVE_QUIZ',
       data.batch.liveQuiz,
@@ -2216,6 +2234,7 @@ test.describe
     )
     await page.getByTestId('live-quiz-advanced-settings-close').click()
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'LIVE_QUIZ',
       data.batch.liveQuiz2,
@@ -2240,6 +2259,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await page.getByTestId(`activity-checkbox-${data.batch.liveQuiz2}`).click()
     await page
       .getByTestId(`activity-checkbox-${data.batch.practiceQuiz2}`)
@@ -2310,6 +2330,7 @@ test.describe
     }
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'LIVE_QUIZ',
       data.batch.liveQuiz2,
@@ -2326,6 +2347,7 @@ test.describe
       messages.manage.activityWizard.multiplier4
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'PRACTICE_QUIZ',
       data.batch.practiceQuiz2,
@@ -2342,6 +2364,7 @@ test.describe
       messages.manage.activityWizard.multiplier4
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'MICRO_LEARNING',
       data.batch.microLearning2,
@@ -2358,6 +2381,7 @@ test.describe
       messages.manage.activityWizard.multiplier4
     )
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'GROUP_ACTIVITY',
       data.batch.groupActivity,
@@ -2384,6 +2408,7 @@ test.describe
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await page.getByTestId(`activity-checkbox-${data.batch.liveQuiz}`).click()
     await page.getByTestId(`activity-checkbox-${data.batch.liveQuiz2}`).click()
     await page.getByTestId('activity-batch-operations').click()
@@ -2423,6 +2448,7 @@ test.describe
     }
     await page.getByTestId('apply-batch-operations').click()
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'LIVE_QUIZ',
       data.batch.liveQuiz,
@@ -2461,6 +2487,7 @@ test.describe
     )
     await page.getByTestId('live-quiz-advanced-settings-close').click()
     await page.getByTestId(`activities`).click()
+    await page.waitForTimeout(500)
     await editActivity(
       'LIVE_QUIZ',
       data.batch.liveQuiz2,

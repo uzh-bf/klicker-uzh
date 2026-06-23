@@ -5,10 +5,6 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
-import {
-  expectActionMenuItems,
-  openActionMenuByTestId,
-} from '../util/actions.js'
 import { test } from '../util/fixtures.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -479,32 +475,173 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('close-activity-details-modal').click()
   }
 
-  async function expectMicroLearningActionMenuItems(
-    microlearning: string,
-    data: any,
-    visible: string[],
-    hidden: string[] = []
-  ) {
-    await expectActionMenuItems(
-      page,
-      `actions-MICRO_LEARNING-${microlearning}`,
-      { visible, hidden }
+  async function verifyMicroLearningOwnerPermissions(data: any) {
+    await expectByAssertion(
+      page.getByTestId(`publish-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro1}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`edit-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro1}`),
+      'exist'
     )
     await typeInto(page.locator('body'), '{esc}')
-    await verifyMicroLearningDetailsModalContent(microlearning, data)
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro2}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`unpublish-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro3}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`end-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`extend-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(
+        `convert-microlearning-${data.sharing.micro4}-to-practice-quiz`
+      ),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
-  function microLearningSharingNames(data: any) {
-    return [
-      data.sharing.micro1,
-      data.sharing.micro2,
-      data.sharing.micro3,
-      data.sharing.micro4,
-    ]
-  }
-
-  function sharedElementTitles(data: any) {
-    return [
+  async function verifyMicroLearningREADPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    await loginIndividualCatalyst(page)
+    for (const [__index, title] of Array.from([
       data.SCML.title,
       data.MCML.title,
       data.KPML.title,
@@ -513,165 +650,129 @@ test.describe.serial('Different microlearning workflows', () => {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]
-  }
-
-  async function verifySharedElementsHidden(data: any) {
-    for (const title of sharedElementTitles(data)) {
+    ]).entries()) {
       await validateElement(page, { element: title, shouldExist: false })
     }
-  }
-
-  async function verifyMicroLearningActivitiesVisible(
-    data: any,
-    editable: string[] = []
-  ) {
-    for (const microlearning of microLearningSharingNames(data)) {
+    await page.getByTestId('activities').click()
+    for (const [__index, quiz] of Array.from([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).entries()) {
       await expectByAssertion(
-        page.getByTestId(`activity-MICRO_LEARNING-${microlearning}`),
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
         'exist'
       )
       await expectByAssertion(
-        page.getByTestId(`change-activity-name-${microlearning}`),
-        editable.includes(microlearning) ? 'exist' : 'not.exist'
+        page.getByTestId(`change-activity-name-${quiz}`),
+        'not.exist'
       )
     }
-  }
-
-  function microLearningPermissionActions(
-    microlearning: string,
-    groupPermission: boolean,
-    visible: string[]
-  ) {
-    const removeAction = `remove-microlearning-${microlearning}`
-    return {
-      visible: groupPermission ? visible : [...visible, removeAction],
-      hidden: groupPermission ? [removeAction] : [],
-    }
-  }
-
-  async function expectMicroLearningPermissionRows(data: any, rows: any[]) {
-    for (const { microlearning, precondition, visible, hidden = [] } of rows) {
-      await expectByAssertion(page.getByTestId(precondition), 'exist')
-      await expectMicroLearningActionMenuItems(
-        microlearning,
-        data,
-        visible,
-        hidden
-      )
-    }
-  }
-
-  async function verifyMicroLearningOwnerPermissions(data: any) {
-    const { micro1, micro2, micro3, micro4 } = data.sharing
-
-    await expectMicroLearningPermissionRows(data, [
-      {
-        microlearning: micro1,
-        precondition: `publish-microlearning-${micro1}`,
-        visible: [
-          `edit-microlearning-${micro1}`,
-          `open-microlearning-${micro1}`,
-          `copy-microlearning-link-${micro1}`,
-          `copy-lti-link-${micro1}`,
-          `duplicate-microlearning-${micro1}`,
-          `view-activity-log-${micro1}`,
-          `share-microlearning-${micro1}`,
-          `delete-microlearning-${micro1}`,
-        ],
-      },
-      {
-        microlearning: micro2,
-        precondition: `copy-microlearning-link-${micro2}`,
-        visible: [
-          `open-microlearning-${micro2}`,
-          `copy-lti-link-${micro2}`,
-          `duplicate-microlearning-${micro2}`,
-          `view-activity-log-${micro2}`,
-          `share-microlearning-${micro2}`,
-          `unpublish-microlearning-${micro2}`,
-          `delete-microlearning-${micro2}`,
-        ],
-      },
-      {
-        microlearning: micro3,
-        precondition: `copy-microlearning-link-${micro3}`,
-        visible: [
-          `evaluation-microlearning-${micro3}`,
-          `end-microlearning-${micro3}`,
-          `extend-microlearning-${micro3}`,
-          `open-microlearning-${micro3}`,
-          `copy-lti-link-${micro3}`,
-          `duplicate-microlearning-${micro3}`,
-          `view-activity-log-${micro3}`,
-          `share-microlearning-${micro3}`,
-          `delete-microlearning-${micro3}`,
-        ],
-      },
-      {
-        microlearning: micro4,
-        precondition: `evaluation-microlearning-${micro4}`,
-        visible: [
-          `duplicate-microlearning-${micro4}`,
-          `convert-microlearning-${micro4}-to-practice-quiz`,
-          `open-microlearning-${micro4}`,
-          `view-activity-log-${micro4}`,
-          `share-microlearning-${micro4}`,
-          `delete-microlearning-${micro4}`,
-        ],
-      },
-    ])
-  }
-
-  async function verifyMicroLearningREADPermissions(
-    data: any,
-    groupPermission: boolean
-  ) {
-    await loginIndividualCatalyst(page)
-    await verifySharedElementsHidden(data)
-    await page.getByTestId('activities').click()
-    await verifyMicroLearningActivitiesVisible(data)
-
-    const { micro1, micro2, micro3, micro4 } = data.sharing
-    await expectMicroLearningPermissionRows(data, [
-      {
-        microlearning: micro1,
-        precondition: `open-microlearning-${micro1}`,
-        ...microLearningPermissionActions(micro1, groupPermission, [
-          `copy-microlearning-link-${micro1}`,
-          `copy-lti-link-${micro1}`,
-          `view-activity-log-${micro1}`,
-        ]),
-      },
-      {
-        microlearning: micro2,
-        precondition: `copy-microlearning-link-${micro2}`,
-        ...microLearningPermissionActions(micro2, groupPermission, [
-          `open-microlearning-${micro2}`,
-          `copy-lti-link-${micro2}`,
-          `view-activity-log-${micro2}`,
-        ]),
-      },
-      {
-        microlearning: micro3,
-        precondition: `copy-microlearning-link-${micro3}`,
-        ...microLearningPermissionActions(micro3, groupPermission, [
-          `evaluation-microlearning-${micro3}`,
-          `open-microlearning-${micro3}`,
-          `copy-lti-link-${micro3}`,
-          `view-activity-log-${micro3}`,
-        ]),
-      },
-      {
-        microlearning: micro4,
-        precondition: `evaluation-microlearning-${micro4}`,
-        ...microLearningPermissionActions(micro4, groupPermission, [
-          `open-analytics-async-activity`,
-          `open-microlearning-${micro4}`,
-          `view-activity-log-${micro4}`,
-        ]),
-      },
-    ])
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro1}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro1}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro2}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro2}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro3}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro3}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-analytics-async-activity`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro4}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
   async function verifyMicroLearningEXECUTEPermissions(
@@ -679,54 +780,154 @@ test.describe.serial('Different microlearning workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst(page)
-    await verifySharedElementsHidden(data)
+    for (const [__index, title] of Array.from([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).entries()) {
+      await validateElement(page, { element: title, shouldExist: false })
+    }
     await page.getByTestId('activities').click()
-    await verifyMicroLearningActivitiesVisible(data)
-
-    const { micro1, micro2, micro3, micro4 } = data.sharing
-    await expectMicroLearningPermissionRows(data, [
-      {
-        microlearning: micro1,
-        precondition: `publish-microlearning-${micro1}`,
-        ...microLearningPermissionActions(micro1, groupPermission, [
-          `open-microlearning-${micro1}`,
-          `copy-microlearning-link-${micro1}`,
-          `copy-lti-link-${micro1}`,
-          `view-activity-log-${micro1}`,
-        ]),
-      },
-      {
-        microlearning: micro2,
-        precondition: `copy-microlearning-link-${micro2}`,
-        ...microLearningPermissionActions(micro2, groupPermission, [
-          `open-microlearning-${micro2}`,
-          `copy-lti-link-${micro2}`,
-          `view-activity-log-${micro2}`,
-          `unpublish-microlearning-${micro2}`,
-        ]),
-      },
-      {
-        microlearning: micro3,
-        precondition: `copy-microlearning-link-${micro3}`,
-        ...microLearningPermissionActions(micro3, groupPermission, [
-          `evaluation-microlearning-${micro3}`,
-          `end-microlearning-${micro3}`,
-          `extend-microlearning-${micro3}`,
-          `open-microlearning-${micro3}`,
-          `copy-lti-link-${micro3}`,
-          `view-activity-log-${micro3}`,
-        ]),
-      },
-      {
-        microlearning: micro4,
-        precondition: `evaluation-microlearning-${micro4}`,
-        ...microLearningPermissionActions(micro4, groupPermission, [
-          `open-analytics-async-activity`,
-          `open-microlearning-${micro4}`,
-          `view-activity-log-${micro4}`,
-        ]),
-      },
-    ])
+    for (const [__index, quiz] of Array.from([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).entries()) {
+      await expectByAssertion(
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
+        'exist'
+      )
+      await expectByAssertion(
+        page.getByTestId(`change-activity-name-${quiz}`),
+        'not.exist'
+      )
+    }
+    await expectByAssertion(
+      page.getByTestId(`publish-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro1}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro1}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro2}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`unpublish-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro2}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro3}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`end-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`extend-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro3}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-analytics-async-activity`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro4}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
   async function verifyMicroLearningWRITEPermissions(
@@ -734,59 +935,165 @@ test.describe.serial('Different microlearning workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst2(page)
-    await verifySharedElementsHidden(data)
+    for (const [__index, title] of Array.from([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).entries()) {
+      await validateElement(page, { element: title, shouldExist: false })
+    }
     await page.getByTestId('activities').click()
-    await verifyMicroLearningActivitiesVisible(data, [
+    for (const [__index, quiz] of Array.from([
       data.sharing.micro1,
       data.sharing.micro2,
       data.sharing.micro3,
-    ])
-
-    const { micro1, micro2, micro3, micro4 } = data.sharing
-    await expectMicroLearningPermissionRows(data, [
-      {
-        microlearning: micro1,
-        precondition: `publish-microlearning-${micro1}`,
-        ...microLearningPermissionActions(micro1, groupPermission, [
-          `edit-microlearning-${micro1}`,
-          `open-microlearning-${micro1}`,
-          `copy-microlearning-link-${micro1}`,
-          `copy-lti-link-${micro1}`,
-          `view-activity-log-${micro1}`,
-        ]),
-      },
-      {
-        microlearning: micro2,
-        precondition: `copy-microlearning-link-${micro2}`,
-        ...microLearningPermissionActions(micro2, groupPermission, [
-          `open-microlearning-${micro2}`,
-          `copy-lti-link-${micro2}`,
-          `view-activity-log-${micro2}`,
-          `unpublish-microlearning-${micro2}`,
-        ]),
-      },
-      {
-        microlearning: micro3,
-        precondition: `copy-microlearning-link-${micro3}`,
-        ...microLearningPermissionActions(micro3, groupPermission, [
-          `evaluation-microlearning-${micro3}`,
-          `end-microlearning-${micro3}`,
-          `extend-microlearning-${micro3}`,
-          `open-microlearning-${micro3}`,
-          `copy-lti-link-${micro3}`,
-          `view-activity-log-${micro3}`,
-        ]),
-      },
-      {
-        microlearning: micro4,
-        precondition: `evaluation-microlearning-${micro4}`,
-        ...microLearningPermissionActions(micro4, groupPermission, [
-          `open-analytics-async-activity`,
-          `open-microlearning-${micro4}`,
-          `view-activity-log-${micro4}`,
-        ]),
-      },
-    ])
+    ]).entries()) {
+      await expectByAssertion(
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
+        'exist'
+      )
+      await expectByAssertion(
+        page.getByTestId(`change-activity-name-${quiz}`),
+        'exist'
+      )
+    }
+    await expectByAssertion(
+      page.getByTestId(`activity-MICRO_LEARNING-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`change-activity-name-${data.sharing.micro4}`),
+      'not.exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`publish-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro1}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`edit-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro1}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro2}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`unpublish-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro2}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro3}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`end-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`extend-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro3}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-analytics-async-activity`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro4}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
   async function verifyMicroLearningADMINPermissions(
@@ -794,115 +1101,292 @@ test.describe.serial('Different microlearning workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst3(page)
-    for (const title of sharedElementTitles(data)) {
+    for (const [__index, title] of Array.from([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).entries()) {
       await validateElement(page, { element: title })
     }
     await page.getByTestId('activities').click()
-    await verifyMicroLearningActivitiesVisible(data, [
+    for (const [__index, quiz] of Array.from([
       data.sharing.micro1,
       data.sharing.micro2,
       data.sharing.micro3,
-    ])
-
-    const { micro1, micro2, micro3, micro4 } = data.sharing
-    await expectMicroLearningPermissionRows(data, [
-      {
-        microlearning: micro1,
-        precondition: `publish-microlearning-${micro1}`,
-        ...microLearningPermissionActions(micro1, groupPermission, [
-          `edit-microlearning-${micro1}`,
-          `open-microlearning-${micro1}`,
-          `copy-microlearning-link-${micro1}`,
-          `copy-lti-link-${micro1}`,
-          `duplicate-microlearning-${micro1}`,
-          `view-activity-log-${micro1}`,
-          `share-microlearning-${micro1}`,
-          `delete-microlearning-${micro1}`,
-        ]),
-      },
-      {
-        microlearning: micro2,
-        precondition: `copy-microlearning-link-${micro2}`,
-        ...microLearningPermissionActions(micro2, groupPermission, [
-          `open-microlearning-${micro2}`,
-          `copy-lti-link-${micro2}`,
-          `duplicate-microlearning-${micro2}`,
-          `view-activity-log-${micro2}`,
-          `share-microlearning-${micro2}`,
-          `unpublish-microlearning-${micro2}`,
-          `delete-microlearning-${micro2}`,
-        ]),
-      },
-      {
-        microlearning: micro3,
-        precondition: `copy-microlearning-link-${micro3}`,
-        ...microLearningPermissionActions(micro3, groupPermission, [
-          `evaluation-microlearning-${micro3}`,
-          `end-microlearning-${micro3}`,
-          `extend-microlearning-${micro3}`,
-          `open-microlearning-${micro3}`,
-          `copy-lti-link-${micro3}`,
-          `duplicate-microlearning-${micro3}`,
-          `view-activity-log-${micro3}`,
-          `share-microlearning-${micro3}`,
-          `delete-microlearning-${micro3}`,
-        ]),
-      },
-      {
-        microlearning: micro4,
-        precondition: `evaluation-microlearning-${micro4}`,
-        ...microLearningPermissionActions(micro4, groupPermission, [
-          `duplicate-microlearning-${micro4}`,
-          `convert-microlearning-${micro4}-to-practice-quiz`,
-          `open-microlearning-${micro4}`,
-          `view-activity-log-${micro4}`,
-          `share-microlearning-${micro4}`,
-          `delete-microlearning-${micro4}`,
-        ]),
-      },
-    ])
+    ]).entries()) {
+      await expectByAssertion(
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
+        'exist'
+      )
+      await expectByAssertion(
+        page.getByTestId(`change-activity-name-${quiz}`),
+        'exist'
+      )
+    }
+    await expectByAssertion(
+      page.getByTestId(`activity-MICRO_LEARNING-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`change-activity-name-${data.sharing.micro4}`),
+      'not.exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`publish-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro1}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`edit-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro1}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro1}`),
+      'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro2}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`unpublish-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro2}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro2}`),
+      'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+    await expectByAssertion(
+      page.getByTestId(`copy-microlearning-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro3}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`end-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`extend-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`copy-lti-link-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro3}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro3}`),
+      'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+    await expectByAssertion(
+      page.getByTestId(`evaluation-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
+      .click()
+    await expectByAssertion(
+      page.getByTestId(`duplicate-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(
+        `convert-microlearning-${data.sharing.micro4}-to-practice-quiz`
+      ),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`open-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`view-activity-log-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`share-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`remove-microlearning-${data.sharing.micro4}`),
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`delete-microlearning-${data.sharing.micro4}`),
+      'exist'
+    )
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
-  async function verifyMicroLearningPermissionsRevoked(
-    data: any,
-    login: (page: Page) => Promise<void>,
-    verifyElements = false
-  ) {
-    await login(page)
-    if (verifyElements) await verifySharedElementsHidden(data)
+  async function verifyREADPermissionsRevoked(data: any) {
+    await loginIndividualCatalyst(page)
     await page.getByTestId('activities').click()
-    for (const microlearning of microLearningSharingNames(data)) {
+    for (const [__index, quiz] of Array.from([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).entries()) {
       await expectByAssertion(
-        page.getByTestId(`activity-MICRO_LEARNING-${microlearning}`),
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
         'not.exist'
       )
     }
   }
 
-  async function verifyREADPermissionsRevoked(data: any) {
-    await verifyMicroLearningPermissionsRevoked(data, loginIndividualCatalyst)
-  }
-
   async function verifyEXECUTEPermissionsRevoked(data: any) {
-    await verifyMicroLearningPermissionsRevoked(
-      data,
-      loginInstitutionalCatalyst
-    )
+    await loginInstitutionalCatalyst(page)
+    await page.getByTestId('activities').click()
+    for (const [__index, quiz] of Array.from([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).entries()) {
+      await expectByAssertion(
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
+        'not.exist'
+      )
+    }
   }
 
   async function verifyWRITEPermissionsRevoked(data: any) {
-    await verifyMicroLearningPermissionsRevoked(
-      data,
-      loginInstitutionalCatalyst2
-    )
+    await loginInstitutionalCatalyst2(page)
+    await page.getByTestId('activities').click()
+    for (const [__index, quiz] of Array.from([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).entries()) {
+      await expectByAssertion(
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
+        'not.exist'
+      )
+    }
   }
 
   async function verifyADMINPermissionsRevoked(data: any) {
-    await verifyMicroLearningPermissionsRevoked(
-      data,
-      loginInstitutionalCatalyst3,
-      true
-    )
+    await loginInstitutionalCatalyst3(page)
+    for (const [__index, element] of Array.from([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).entries()) {
+      await validateElement(page, { element, shouldExist: false })
+    }
+    await page.getByTestId('activities').click()
+    const quizzes = [
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]
+    for (const [__index, quiz] of Array.from(quizzes).entries()) {
+      await expectByAssertion(
+        page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
+        'not.exist'
+      )
+    }
   }
 
   test('CLEANUP', async ({ page: testPage }, testInfo) => {
@@ -1220,10 +1704,9 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.name}`)
+      .click()
     await page.getByTestId(`edit-microlearning-${data.running.name}`).click()
     await expectByAssertion(
       page.getByText('Edit ' + messages.shared.generic.microlearning).first(),
@@ -1366,10 +1849,9 @@ test.describe.serial('Different microlearning workflows', () => {
       page.getByTestId(`status-${data.running.nameNew}-DRAFT`),
       'exist'
     )
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page.getByTestId(`edit-microlearning-${data.running.nameNew}`).click()
     await expectByAssertion(
       page.getByText('Edit ' + messages.shared.generic.microlearning).first(),
@@ -1463,10 +1945,9 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page
       .getByTestId(`duplicate-microlearning-${data.running.nameNew}`)
       .click()
@@ -1729,18 +2210,16 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page
       .getByTestId(`extend-microlearning-${data.running.nameNew}`)
       .click()
     await page.getByTestId('extend-activity-cancel').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page
       .getByTestId(`extend-microlearning-${data.running.nameNew}`)
       .click()
@@ -1757,10 +2236,9 @@ test.describe.serial('Different microlearning workflows', () => {
     })
     await page.getByTestId('extend-activity-confirm').click()
     await page.waitForTimeout(1000)
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page
       .getByTestId(`extend-microlearning-${data.running.nameNew}`)
       .click()
@@ -1878,10 +2356,9 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page.getByTestId(`end-microlearning-${data.running.nameNew}`).click()
     await expectByAssertion(
       page.getByTestId(`confirm-responses-microlearning`),
@@ -1892,10 +2369,9 @@ test.describe.serial('Different microlearning workflows', () => {
       'not.exist'
     )
     await page.getByTestId(`confirmation-modal-cancel`).click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page.getByTestId(`end-microlearning-${data.running.nameNew}`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
   })
@@ -1939,10 +2415,9 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page
       .getByTestId(`delete-microlearning-${data.running.nameNew}`)
       .click()
@@ -1956,10 +2431,9 @@ test.describe.serial('Different microlearning workflows', () => {
       'not.be.disabled'
     )
     await page.getByTestId(`confirmation-modal-cancel`).click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.running.nameNew}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.running.nameNew}`)
+      .click()
     await page
       .getByTestId(`delete-microlearning-${data.running.nameNew}`)
       .click()
@@ -1969,6 +2443,7 @@ test.describe.serial('Different microlearning workflows', () => {
     )
     await page.getByTestId(`confirm-deletion-responses`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId(`activity-MICRO_LEARNING-${data.running.nameNew}`),
       'not.exist'
@@ -1987,14 +2462,14 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.duplication.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.duplication.name}`)
+      .click()
     await page
       .getByTestId(`delete-microlearning-${data.duplication.name}`)
       .click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId(`activity-MICRO_LEARNING-${data.duplication.name}`),
       'not.exist'
@@ -2096,10 +2571,7 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.future.name}`
-    )
+    await page.getByTestId(`actions-MICRO_LEARNING-${data.future.name}`).click()
     await page
       .getByTestId(`unpublish-microlearning-${data.future.name}`)
       .click()
@@ -2120,10 +2592,7 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.future.name}`
-    )
+    await page.getByTestId(`actions-MICRO_LEARNING-${data.future.name}`).click()
     await page.getByTestId(`delete-microlearning-${data.future.name}`).click()
     await expectByAssertion(
       page.getByTestId(`confirm-deletion-responses`),
@@ -2134,6 +2603,7 @@ test.describe.serial('Different microlearning workflows', () => {
       'not.exist'
     )
     await page.getByTestId(`confirmation-modal-confirm`).click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId(`activity-MICRO_LEARNING-${data.future.name}`),
       'not.exist'
@@ -2266,10 +2736,9 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.completed.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.completed.name}`)
+      .click()
     await page
       .getByTestId(`delete-microlearning-${data.completed.name}`)
       .click()
@@ -2279,6 +2748,7 @@ test.describe.serial('Different microlearning workflows', () => {
     )
     await page.getByTestId(`confirm-deletion-responses`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId(`activity-MICRO_LEARNING-${data.completed.name}`),
       'not.exist'
@@ -2406,11 +2876,11 @@ test.describe.serial('Different microlearning workflows', () => {
       page.getByTestId(`status-${MLName}-PUBLISHED`),
       'exist'
     )
-    await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${MLName}`)
+    await page.getByTestId(`actions-MICRO_LEARNING-${MLName}`).click()
     await page.getByTestId(`end-microlearning-${MLName}`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
     await page.waitForTimeout(500)
-    await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${MLName}`)
+    await page.getByTestId(`actions-MICRO_LEARNING-${MLName}`).click()
     await page
       .getByTestId(`convert-microlearning-${MLName}-to-practice-quiz`)
       .click()
@@ -2571,10 +3041,9 @@ test.describe.serial('Different microlearning workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.manipulation.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.manipulation.name}`)
+      .click()
     await page
       .getByTestId(`edit-microlearning-${data.manipulation.name}`)
       .click()
@@ -2638,10 +3107,9 @@ test.describe.serial('Different microlearning workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.manipulation.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.manipulation.name}`)
+      .click()
     await page
       .getByTestId(`edit-microlearning-${data.manipulation.name}`)
       .click()
@@ -2715,10 +3183,9 @@ test.describe.serial('Different microlearning workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.manipulation.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.manipulation.name}`)
+      .click()
     await page
       .getByTestId(`edit-microlearning-${data.manipulation.name}`)
       .click()
@@ -2853,10 +3320,9 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.manipulation.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.manipulation.name}`)
+      .click()
     await page
       .getByTestId(`duplicate-microlearning-${data.manipulation.name}`)
       .click()
@@ -2994,28 +3460,28 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-microLearnings').click()
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.manipulation.name}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.manipulation.name}`)
+      .click()
     await page
       .getByTestId(`delete-microlearning-${data.manipulation.name}`)
       .click()
     await page.getByTestId(`confirm-deletion-responses`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId(`activity-MICRO_LEARNING-${data.manipulation.name}`),
       'not.exist'
     )
-    await openActionMenuByTestId(
-      page,
-      `actions-MICRO_LEARNING-${data.manipulation.duplicateName}`
-    )
+    await page
+      .getByTestId(`actions-MICRO_LEARNING-${data.manipulation.duplicateName}`)
+      .click()
     await page
       .getByTestId(`delete-microlearning-${data.manipulation.duplicateName}`)
       .click()
     await page.getByTestId(`confirm-deletion-responses`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
+    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId(
         `activity-MICRO_LEARNING-${data.manipulation.duplicateName}`
@@ -3124,7 +3590,7 @@ test.describe.serial('Different microlearning workflows', () => {
       data.sharing.micro3,
       data.sharing.micro4,
     ]).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`share-microlearning-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3292,7 +3758,7 @@ test.describe.serial('Different microlearning workflows', () => {
       env('LECTURER_INST3_SHORTNAME'),
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`share-microlearning-${quiz}`).click()
       for (const [__index, user] of Array.from(users).entries()) {
         await expectByAssertion(page.getByTestId(`permission-${user}`), 'exist')
@@ -3429,7 +3895,7 @@ test.describe.serial('Different microlearning workflows', () => {
       data.sharing.micro3,
       data.sharing.micro4,
     ]).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`share-microlearning-${quiz}`).click()
       await selectOption(
         page,
@@ -3597,7 +4063,7 @@ test.describe.serial('Different microlearning workflows', () => {
       data.sharing.group4,
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`share-microlearning-${quiz}`).click()
       for (const [__index, group] of Array.from(groups).entries()) {
         await expectByAssertion(
@@ -3670,7 +4136,7 @@ test.describe.serial('Different microlearning workflows', () => {
       data.sharing.micro3,
       data.sharing.micro4,
     ]).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`share-microlearning-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3738,7 +4204,7 @@ test.describe.serial('Different microlearning workflows', () => {
       data.sharing.micro3,
       data.sharing.micro4,
     ]).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`share-microlearning-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3804,12 +4270,13 @@ test.describe.serial('Different microlearning workflows', () => {
       data.sharing.micro3,
       data.sharing.micro4,
     ]).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`remove-microlearning-${quiz}`).click()
       await page.getByTestId('confirm-deletion-final').click()
       await page.getByTestId('confirm-derived-access').click()
       await page.getByTestId('confirm-dependency-access').click()
       await page.getByTestId('confirmation-modal-confirm').click()
+      await page.waitForTimeout(500)
       await expectByAssertion(
         page.getByTestId(`activity-MICRO_LEARNING-${quiz}`),
         'not.exist'
@@ -3828,7 +4295,7 @@ test.describe.serial('Different microlearning workflows', () => {
       data.sharing.micro3,
       data.sharing.micro4,
     ]).entries()) {
-      await openActionMenuByTestId(page, `actions-MICRO_LEARNING-${quiz}`)
+      await page.getByTestId(`actions-MICRO_LEARNING-${quiz}`).click()
       await page.getByTestId(`share-microlearning-${quiz}`).click()
       await expectByAssertion(
         page.getByTestId(`permission-${env('LECTURER_IND_SHORTNAME')}`),
