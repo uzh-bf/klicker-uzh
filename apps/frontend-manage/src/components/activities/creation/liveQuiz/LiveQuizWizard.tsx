@@ -280,7 +280,7 @@ function LiveQuizWizard({
   const startLiveQuiz = trpc.liveQuiz.start.useMutation({
     onSuccess: async (result) => {
       if (!result.liveQuiz) return
-      await utils.liveQuiz.running.invalidate().catch(console.error)
+      await utils.liveQuiz.running.invalidate()
     },
   })
   const quickStarting = startLiveQuiz.isLoading || quickStartRouting

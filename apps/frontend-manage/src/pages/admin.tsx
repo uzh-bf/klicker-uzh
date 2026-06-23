@@ -67,9 +67,7 @@ function AdminPanel() {
                         })
 
                       if (success === 0) {
-                        await utils.user.privatePreviewUsers
-                          .invalidate()
-                          .catch(console.error)
+                        await utils.user.privatePreviewUsers.invalidate()
                         toast({
                           type: 'success',
                           message: t('manage.admin.accessGranted'),
@@ -84,9 +82,7 @@ function AdminPanel() {
                         })
                         return
                       } else if (success === 2) {
-                        await utils.user.privatePreviewUsers
-                          .invalidate()
-                          .catch(console.error)
+                        await utils.user.privatePreviewUsers.invalidate()
                         toast({
                           type: 'success',
                           message: t('manage.admin.alreadyAccess'),

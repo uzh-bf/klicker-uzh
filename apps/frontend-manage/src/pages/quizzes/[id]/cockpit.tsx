@@ -25,22 +25,18 @@ function Cockpit() {
 
   const activateLiveQuizBlock = api.liveQuiz.activateBlock.useMutation({
     onSuccess: async () => {
-      await utils.liveQuiz.cockpit
-        .invalidate({ id: quizId })
-        .catch(console.error)
+      await utils.liveQuiz.cockpit.invalidate({ id: quizId })
     },
   })
   const deactivateLiveQuizBlock = api.liveQuiz.deactivateBlock.useMutation({
     onSuccess: async () => {
-      await utils.liveQuiz.cockpit
-        .invalidate({ id: quizId })
-        .catch(console.error)
+      await utils.liveQuiz.cockpit.invalidate({ id: quizId })
     },
   })
   const endLiveQuiz = api.liveQuiz.end.useMutation({
     onSuccess: async (result) => {
       if (!result.liveQuiz?.id) return
-      await utils.liveQuiz.running.invalidate().catch(console.error)
+      await utils.liveQuiz.running.invalidate()
     },
   })
   const cockpitActionLoading =

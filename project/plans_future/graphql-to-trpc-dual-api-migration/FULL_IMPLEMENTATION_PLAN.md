@@ -423,6 +423,77 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Admin and Live-Quiz Refresh UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage admin and
+live-quiz start/cockpit flows. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch state refreshed before work: local
+  `codex/trpc-dual-api-migration` is clean and aligned with origin at
+  `a396e0bbc`.
+- Cypress Cloud run `6924` is still running for the current head; latest
+  reachable Cloud snapshot showed 218 total tests, 178 passed, 0 failed, and
+  40 still running. GitHub PR API refresh timed out, so Cypress Cloud is the
+  current authoritative live test signal.
+- Context7 docs refreshed for tRPC and TanStack Query v4. Relevant behavior:
+  tRPC `useUtils()` invalidations are awaitable, and mutation callbacks that
+  return promises are awaited before mutation state settles.
+- `apps/frontend-manage/src/pages/admin.tsx` already had form validation,
+  disabled submit while submitting, query loading/error handling, and mutation
+  failure toasts, but successful private-preview grants swallowed the required
+  `user.privatePreviewUsers` refresh with `catch(console.error)`.
+- The migrated manage live-quiz cockpit and two live-quiz start entry points
+  already had pending guards and visible generic action errors around
+  `mutateAsync`, but swallowed the required `liveQuiz.cockpit` /
+  `liveQuiz.running` invalidations in mutation success callbacks.
+
+Changes:
+
+- Await `user.privatePreviewUsers` invalidation directly after successful or
+  already-granted private-preview access changes before showing success and
+  resetting the form.
+- Await `liveQuiz.cockpit` and `liveQuiz.running` invalidations directly in the
+  migrated live-quiz cockpit/start mutation callbacks so refresh failures flow
+  into the existing action-level error toasts and pending states.
+- Leave tRPC inputs/cache keys, route targets, success semantics, existing
+  toasts, and GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/pages/admin.tsx 'apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx' apps/frontend-manage/src/components/activities/actions/useStartLiveQuiz.ts apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizWizard.tsx`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `./node_modules/.pnpm/node_modules/.bin/vitest run packages/api/src/trpc/__tests__/user-admin.test.ts packages/api/src/trpc/__tests__/live-quiz-cockpit.test.ts`
+  passed: 2 files, 6 tests.
+- `git diff --check` passed.
+
+Runtime:
+
+- Browser/runtime verification is blocked locally because no stack is
+  listening: `curl -sS -I http://127.0.0.1:3002` failed with connection
+  refused, and `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with
+  connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the four-file manage diff.
+  The implementation removes hidden required refresh failures and reuses
+  existing mutation pending/error UI; it adds no new helper, copy, broad
+  invalidation, or routing behavior.
+
+Next:
+
+- Commit and push this focused manage refresh-failure UX cleanup.
+- Continue monitoring Cypress Cloud run `6924`; investigate exact failed specs
+  only if failures appear on the current head.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces
+  if CI remains pending or green.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Control Live Quiz Refresh Failure UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
