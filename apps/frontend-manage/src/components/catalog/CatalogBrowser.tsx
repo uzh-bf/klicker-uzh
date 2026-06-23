@@ -92,6 +92,13 @@ function CatalogBrowser({
 
   return (
     <div className="h-full">
+      {isCollectionView && metaDataError && collectionInfo ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <PendingSharingRequests />
       <ObjectImport
         collectionName={collectionInfo?.name}
