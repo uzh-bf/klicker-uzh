@@ -122,6 +122,13 @@ function GroupActivityDetails() {
         onEnded={handleGroupActivityEnded}
         setActivityEnded={setActivityEnded}
       />
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mx-auto mb-4 w-full max-w-[1800px] text-base' }}
+        />
+      ) : null}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
