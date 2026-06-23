@@ -547,6 +547,13 @@ function Index({ id }: { id: string }) {
       />
 
       <div className="md:mx-auto md:w-full md:max-w-[88rem] md:pt-5">
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
         {isDesktop ? (
           hasQuestionPanel && hasSidebarPanel ? (
             <ResizablePanelGroup
