@@ -423,6 +423,70 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Element Removal Summary Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+element removal modal. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `ElementRemovalModal` loads `element.summary` through tRPC before showing
+  confirmation items for derived access and dependency-access risks.
+- The adjacent `ElementDeletionModal` already treats a failed or missing
+  summary as an inline error and disables confirmation.
+- `ElementRemovalModal` does not expose the failed summary state. If the query
+  fails, the modal can still render actionable confirmation items without the
+  summary-backed applicability data.
+- Context7 TanStack Query v4 docs were refreshed before editing. They confirm
+  `data` is the last successful value and `error` marks a failed fetch, so
+  initial no-data errors should be handled separately from stale-data states.
+
+Changes:
+
+- Mirror the existing deletion-modal failure pattern in `ElementRemovalModal`.
+- Show the existing design-system error notification if the initial summary
+  query fails and no summary data is available.
+- Disable confirmation by passing an unsatisfied `summaryLoaded` confirmation
+  until summary data exists.
+- Keep the mutation, removal behavior, confirmation labels, and
+  GraphQL/tRPC coexistence unchanged.
+
+Review / simplification:
+
+- Self-review kept the change local to the modal and reused the adjacent
+  `ElementDeletionModal` pattern instead of adding new abstractions or i18n
+  strings.
+- The tag-list audit found no patch-worthy cache-shape issue:
+  `updateTagOrdering` returns the same `{ tags: [...] }` shape consumed by
+  `element.tags`.
+- Dedicated subagent review was not run because the available multi-agent tool
+  requires an explicit user request before spawning agents; no external review
+  was needed for this narrow UI-state fix.
+
+Checks:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/elements/manipulation/ElementRemovalModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` was attempted but the wrapper hung with no output and was stopped.
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/elements/manipulation/ElementRemovalModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed for the component; the plan file was not printed by the local Prettier invocation.
+- `pnpm --filter @klicker-uzh/frontend-manage check` failed before TypeScript
+  ran because the local package-manager wrapper could not verify
+  `pnpm@11.5.0` registry signatures in the restricted environment.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__/manage-elements.test.ts` passed: 27 tests.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002`,
+  `curl -sS -I http://127.0.0.1:3102`, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` all failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused manage element-removal summary-error UX cleanup.
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces
+  after this commit.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Group Activity Initial State UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
