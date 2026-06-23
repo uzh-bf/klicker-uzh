@@ -27,7 +27,7 @@ function QuestionDetails() {
   const shouldFetchArtificialInstance =
     Number.isInteger(elementId) && elementId > 0
 
-  const { data, isLoading } = trpc.element.artificialInstance.useQuery(
+  const { data, error, isLoading } = trpc.element.artificialInstance.useQuery(
     {
       elementId,
     },
@@ -75,6 +75,14 @@ function QuestionDetails() {
   return (
     <div className={previewShellClassName}>
       <div className="flex w-full flex-col items-center p-6">
+        {error ? (
+          <UserNotification
+            className={{ root: 'mb-3 w-full max-w-lg' }}
+            type="error"
+          >
+            {t('shared.generic.systemError')}
+          </UserNotification>
+        ) : null}
         <H2 className={{ root: 'mb-3' }}>
           {t('manage.general.elementPreview', {
             element: instance.elementData.name,

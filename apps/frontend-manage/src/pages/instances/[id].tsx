@@ -26,7 +26,7 @@ function InstancePreview() {
     typeof router.query.id === 'string' ? Number(router.query.id) : -1
   const shouldFetchInstance = Number.isInteger(instanceId) && instanceId > 0
 
-  const { data, isLoading } = trpc.element.singleInstance.useQuery(
+  const { data, error, isLoading } = trpc.element.singleInstance.useQuery(
     {
       id: instanceId,
     },
@@ -71,6 +71,14 @@ function InstancePreview() {
   return (
     <div className={previewShellClassName}>
       <div className="flex w-full flex-col items-center p-6">
+        {error ? (
+          <UserNotification
+            className={{ root: 'mb-3 w-full max-w-lg' }}
+            type="error"
+          >
+            {t('shared.generic.systemError')}
+          </UserNotification>
+        ) : null}
         <H2 className={{ root: 'mb-3' }}>
           {t('manage.general.elementPreview', {
             element: instance.elementData.name,

@@ -423,6 +423,81 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Standalone Preview Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+standalone question / instance preview pages. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed before work: PR 5132 points at
+  `codex/trpc-dual-api-migration`, base `v3`, ready for review, and still
+  review-required / blocked by pending external gates.
+- Current CI snapshot before this commit: CodeQL analyses, GitGuardian,
+  SonarCloud, build, check, format, lint, `packages/api tRPC Vitest`,
+  `packages/graphql Vitest`, and test jobs pass. Draft Cypress/Playwright
+  wrapper jobs are skipped as expected; Cypress Cloud remains pending.
+- Context7 docs refreshed for tRPC React Query and TanStack Query v4. Relevant
+  behavior: tRPC hooks expose React Query state, cached data can remain visible
+  while a background refetch reports an error, and the UI should preserve stale
+  content with inline/background failure feedback where useful.
+- `apps/frontend-manage/src/pages/questions/[id].tsx` and
+  `apps/frontend-manage/src/pages/instances/[id].tsx` already use migrated
+  tRPC reads with stable route-param `enabled` guards and centered preview
+  loading/error shells.
+- Both pages still ignored the query `error` once cached preview data existed,
+  so a background/refetch failure could leave the preview usable but silently
+  stale.
+
+Changes:
+
+- Destructure the migrated tRPC query `error` state in both standalone preview
+  pages.
+- Add a compact existing `UserNotification` above the cached preview when
+  `element.artificialInstance` or `element.singleInstance` has stale data and a
+  refetch/background request fails.
+- Leave tRPC inputs, `enabled` guards, student-response initialization,
+  `StudentElement` preview rendering, and GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-manage/src/pages/questions/[id].tsx' 'apps/frontend-manage/src/pages/instances/[id].tsx'`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  exited 124 with no output after the timeout. This matches the known local
+  GraphQL package test blocker; the GitHub `packages/graphql Vitest` check is
+  passing for this PR.
+
+Runtime:
+
+- Browser/runtime verification blocked locally because no stack is listening:
+  `curl -sS -I http://127.0.0.1:3002` failed with connection refused, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the two-file UI diff. The
+  implementation intentionally reuses the existing `UserNotification` fallback
+  and adds no abstraction because the stale-error state is local to the two
+  preview pages.
+- Dedicated subagent review was skipped because the available multi-agent tool
+  contract says not to spawn subagents unless the user explicitly asks for
+  delegation.
+
+Next:
+
+- Commit and push this focused manage standalone-preview stale-refetch error UX
+  cleanup.
+- Stop before another audit surface because local browser/runtime verification
+  is blocked in the current environment.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Group Activity Detail Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
