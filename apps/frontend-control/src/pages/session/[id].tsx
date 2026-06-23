@@ -38,9 +38,7 @@ function RunningLiveQuiz() {
   }
   const refreshCurrentLiveQuiz = async () => {
     if (validQuizId) {
-      await utils.liveQuiz.control
-        .invalidate({ id: validQuizId })
-        .catch(console.error)
+      await utils.liveQuiz.control.invalidate({ id: validQuizId })
     }
   }
   const activateLiveQuizBlock = trpc.liveQuiz.activateBlock.useMutation()
@@ -118,15 +116,13 @@ function RunningLiveQuiz() {
   const { id, name, course, blocks } = controlLiveQuiz
   const refreshControlOverview = async () => {
     if (course) {
-      await utils.course.controlCourse
-        .invalidate({
-          courseId: course.id,
-        })
-        .catch(console.error)
+      await utils.course.controlCourse.invalidate({
+        courseId: course.id,
+      })
       return
     }
 
-    await utils.liveQuiz.unassigned.invalidate().catch(console.error)
+    await utils.liveQuiz.unassigned.invalidate()
   }
 
   if (!blocks) {

@@ -37,11 +37,6 @@ function StartModal({
         try {
           const response = await startLiveQuiz.mutateAsync({ id: quizId })
           if (!response.liveQuiz?.id) throw new Error('Live quiz not started')
-
-          await Promise.all([
-            utils.liveQuiz.unassigned.invalidate(),
-            utils.course.controlCourses.invalidate(),
-          ]).catch(console.error)
         } catch (error) {
           console.error(error)
           toast({
@@ -51,6 +46,20 @@ function StartModal({
           })
           setStartPending(false)
           return
+        }
+
+        try {
+          await Promise.all([
+            utils.liveQuiz.unassigned.invalidate(),
+            utils.course.controlCourses.invalidate(),
+          ])
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
         }
 
         try {

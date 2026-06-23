@@ -423,6 +423,69 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Control Live Quiz Refresh Failure UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-control live
+quiz control flows. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed after the previous push: PR 5132 now points at
+  `06216cbd3`, and new CI runs are in progress. GitGuardian, lint,
+  `claude-review`, Java/Python CodeQL, and one test job already pass; Cypress
+  Cloud exists for the new commit and is pending.
+- The control live-quiz session page already has initial loading/error states,
+  stale-data refetch error notification, and pending guards for activate,
+  deactivate, and end actions.
+- The `refreshCurrentLiveQuiz` and `refreshControlOverview` helpers still hid
+  targeted tRPC invalidation failures with `catch(console.error)`, letting
+  action handlers continue with manual local state updates or navigation while
+  control data could be stale.
+- The start modal also used one catch block for both starting the quiz and
+  refreshing overview caches, so a post-start refresh failure could be either
+  silent or reported as a start failure.
+
+Changes:
+
+- Let control-session refresh helpers reject so existing action-level error
+  handling keeps the pending path honest and shows the existing generic action
+  error toast when targeted refresh fails.
+- Split the start modal into separate start and refresh phases. A true start
+  failure still shows `liveQuizStartFailed`; a post-start overview refresh
+  failure shows the existing generic system-error toast and still proceeds to
+  the started session.
+- Leave tRPC inputs/cache keys, polling, route targets, existing loading
+  states, and GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-control/src/pages/session/[id].tsx' apps/frontend-control/src/components/liveQuizzes/StartModal.tsx`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+
+Runtime:
+
+- Browser/runtime verification is blocked locally because no stack is
+  listening: `curl -sS -I http://127.0.0.1:3003` failed with connection
+  refused, and `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with
+  connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the two-file control diff.
+  The implementation removes hidden refresh failures and reuses existing toast
+  copy; it adds no new helper or cache abstraction.
+
+Next:
+
+- Run `git diff --check`, commit and push this focused frontend-control
+  refresh-failure UX cleanup, then refresh PR checks.
+- Continue monitoring Cypress Cloud and package parity checks.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage User Settings Refresh Failure UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
