@@ -423,6 +423,48 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Lecturer View Fallback States
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+lecturer live-quiz view. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- The lecturer view uses `api.liveQuiz.lecturerView` with an enabled route-id
+  guard and keeps stale data rendered during background refetches.
+- Its initial no-data states were rough for a standalone display surface:
+  loading was a bare loader, errors used an uncentered notification, and no-data
+  / disabled-audience states rendered raw text.
+- Context7 TanStack Query v4 docs were refreshed before the edit. They confirm
+  the existing pattern of blocking only on initial no-data loading/error while
+  keeping existing data visible during background fetching/refetch errors.
+
+Changes:
+
+- Center the initial lecturer-view loading state in a stable full-viewport
+  surface.
+- Render localized `UserNotification` states for initial system error, no data,
+  and disabled audience interaction.
+- Preserve the loaded lecturer feedback/confusion layout, polling,
+  subscription-triggered refetch, tRPC inputs, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `pnpm exec prettier --config .prettierrc.mjs --write apps/frontend-manage/src/pages/quizzes/[id]/lecturer.tsx` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed with local engine
+  warnings only (`node v22.23.0` / `pnpm 11.5.0` while the repo packages declare
+  Node 20/24 engines).
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` failed with connection refused.
+
+Next:
+
+- Commit and push this focused lecturer-view fallback cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Control Embedding Copy Feedback
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

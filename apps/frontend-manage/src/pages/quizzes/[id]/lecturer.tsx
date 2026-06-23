@@ -18,6 +18,10 @@ type LecturerViewLiveQuiz = NonNullable<
 >
 type LecturerFeedback = LecturerViewLiveQuiz['feedbacks'][number]
 
+const statusContainerClass =
+  'flex min-h-screen w-full items-center justify-center p-4'
+const statusNotificationClass = { root: 'w-full max-w-lg text-lg' }
+
 function LecturerView() {
   const t = useTranslations()
   const router = useRouter()
@@ -83,13 +87,18 @@ function LecturerView() {
   }, [aggregateConfusion])
 
   if (isLoading && !data) {
-    return <Loader />
+    return (
+      <div className={statusContainerClass}>
+        <Loader />
+      </div>
+    )
   }
 
   if (error && !data) {
     return (
-      <div className="p-4">
+      <div className={statusContainerClass}>
         <UserNotification
+          className={statusNotificationClass}
           type="error"
           message={t('shared.generic.systemError')}
         />
@@ -98,7 +107,15 @@ function LecturerView() {
   }
 
   if (!data) {
-    return <div className="p-4">{t('manage.lecturer.noDataAvailable')}</div>
+    return (
+      <div className={statusContainerClass}>
+        <UserNotification
+          className={statusNotificationClass}
+          type="warning"
+          message={t('manage.lecturer.noDataAvailable')}
+        />
+      </div>
+    )
   }
 
   const quiz = data?.lecturerViewLiveQuiz
@@ -109,8 +126,12 @@ function LecturerView() {
 
   if (!isLiveQAEnabled && !isConfusionFeedbackEnabled) {
     return (
-      <div className="p-4">
-        {t('manage.lecturer.audienceInteractionNotActivated')}
+      <div className={statusContainerClass}>
+        <UserNotification
+          className={statusNotificationClass}
+          type="info"
+          message={t('manage.lecturer.audienceInteractionNotActivated')}
+        />
       </div>
     )
   }
