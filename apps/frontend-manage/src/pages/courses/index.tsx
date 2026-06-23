@@ -237,21 +237,9 @@ function CourseSelectionPage() {
                         options: { duration: 5000 },
                       })
                     })
-                  try {
-                    const routed = await router.push(
-                      `/courses/${createdCourse.id}`
-                    )
-                    if (!routed) {
-                      window.location.assign(`/courses/${createdCourse.id}`)
-                    }
-                  } catch (navigationError) {
-                    console.error(navigationError)
-                    toast({
-                      type: 'error',
-                      message: t('shared.generic.systemError'),
-                      options: { duration: 5000 },
-                    })
-                  }
+                  void router
+                    .push(`/courses/${createdCourse.id}`)
+                    .catch(console.error)
                 } catch (error) {
                   onError()
                   setSubmitting(false)

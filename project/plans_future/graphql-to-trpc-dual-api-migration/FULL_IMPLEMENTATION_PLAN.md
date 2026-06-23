@@ -434,6 +434,9 @@ Context:
 - All six fresh failures were in `N-course-workflow.cy.ts`; the previous
   `O-live-quiz-workflow.cy.ts` failure cluster had not reappeared at this
   point.
+- After `a32f6e806`, Cypress Cloud run `6927` reached
+  `N-course-workflow.cy.ts`; it again failed with 6 failures, confirming that
+  moving the list invalidation alone was not sufficient.
 
 Evidence:
 
@@ -455,6 +458,10 @@ Finding:
 - In the Cypress workflow, the next command clicks the global Courses nav and
   expects `/courses`; delaying the post-create route creates a race where that
   route can fire after the test has already clicked back to the course list.
+- Pre-migration GraphQL behavior did not await `router.push`; it closed the
+  modal, fired the detail navigation, and returned. The tRPC path still awaited
+  `router.push`, keeping the Formik submit promise alive through the route
+  transition.
 
 Change:
 
@@ -464,10 +471,16 @@ Change:
   invalidation first.
 - Move the list invalidation to a background refresh with existing error toast
   handling.
+- Align the post-create detail navigation with the original GraphQL behavior:
+  fire `router.push` without awaiting it, with a catch only for logging.
 
 Verification:
 
 - Passed locally after this patch:
+  - `./node_modules/.bin/prettier --write apps/frontend-manage/src/pages/courses/index.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Repeated after the non-awaited navigation follow-up:
   - `./node_modules/.bin/prettier --write apps/frontend-manage/src/pages/courses/index.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
   - `git diff --check`
