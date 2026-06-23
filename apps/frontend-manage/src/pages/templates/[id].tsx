@@ -57,6 +57,13 @@ function Template({ templateId }: { templateId: string }) {
   return (
     <Layout displayName={t('manage.template.activityFromTemplate')}>
       <H2>{t('manage.template.activityFromTemplate')}</H2>
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-3 text-base' }}
+        />
+      ) : null}
       {template.activityType === ActivityType.LIVE_QUIZ ? (
         <LiveQuizTemplate template={template as unknown as ActivityTemplate} />
       ) : null}

@@ -423,6 +423,76 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Template Page Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+activity-template page. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Branch/PR state refreshed before work: PR 5132 points at
+  `codex/trpc-dual-api-migration`, base `v3`, ready for review, and still
+  review-required / blocked by pending external gates.
+- Current CI snapshot before this commit: CodeQL analyses, GitGuardian,
+  SonarCloud, build, check, format, lint, `packages/api tRPC Vitest`, and test
+  jobs pass. Draft Cypress/Playwright wrapper jobs are skipped as expected;
+  Cypress Cloud and `packages/graphql Vitest` remain pending.
+- Context7 docs refreshed for tRPC React Query and TanStack Query v4. Relevant
+  behavior: tRPC hooks expose React Query state, cached data can remain visible
+  while a background refetch reports an error, and the UI should preserve stale
+  content with inline/background failure feedback where useful.
+- `apps/frontend-manage/src/pages/templates/[id].tsx` already uses the
+  migrated `activity.template` tRPC query with a stable `enabled` guard and
+  separate initial loading / no-data error fallbacks.
+- Once an activity template was cached, a later background/refetch error kept
+  the template creation form usable but did not surface the refresh failure.
+
+Changes:
+
+- Add a compact existing `UserNotification` above the cached template form when
+  `activity.template` has stale data and a refetch/background request fails.
+- Leave the tRPC input, `enabled` guard, loading/error/no-data fallbacks,
+  template component selection, and GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-manage/src/pages/templates/[id].tsx'`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed: 48 files, 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  exited 124 with no output after the timeout. This matches the known local
+  GraphQL package test blocker; the GitHub `packages/graphql Vitest` check is
+  still pending in the latest snapshot.
+
+Runtime:
+
+- Browser/runtime verification blocked locally because no stack is listening:
+  `curl -sS -I http://127.0.0.1:3002` failed with connection refused, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` failed with connection refused.
+
+Review and simplification:
+
+- Performed a direct scope/simplification pass on the one-file UI diff. The
+  implementation intentionally reuses the existing `UserNotification` fallback
+  and adds no abstraction because the stale-error state is local to the
+  template page.
+- Dedicated subagent review was skipped because the available multi-agent tool
+  contract says not to spawn subagents unless the user explicitly asks for
+  delegation.
+
+Next:
+
+- Commit and push this focused manage template-page stale-refetch error UX
+  cleanup.
+- Stop before another audit surface because local browser/runtime verification
+  is blocked in the current environment.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Standalone Preview Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
