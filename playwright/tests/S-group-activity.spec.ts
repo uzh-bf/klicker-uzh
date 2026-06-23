@@ -5,6 +5,10 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import {
+  expectActionMenuItems,
+  openActionMenuByTestId,
+} from '../util/actions.js'
 import { test } from '../util/fixtures.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -623,114 +627,137 @@ test.describe.serial('Create and solve a group activity', () => {
     await page.getByTestId('close-activity-details-modal').click()
   }
 
+  async function expectGroupActivityActionMenuItems(
+    activity: string,
+    data: any,
+    visible: string[],
+    hidden: string[] = []
+  ) {
+    await expectActionMenuItems(page, `actions-GROUP_ACTIVITY-${activity}`, {
+      visible,
+      hidden,
+    })
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyGroupActivityDetailsModalContent(activity, data)
+  }
+
+  function groupActivitySharingNames(data: any) {
+    return [
+      data.sharing.ga1,
+      data.sharing.ga2,
+      data.sharing.ga3,
+      data.sharing.ga4,
+      data.sharing.ga5,
+    ]
+  }
+
+  function sharedElementTitles(data: any) {
+    return [
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]
+  }
+
+  async function verifySharedElementsHidden(data: any) {
+    for (const title of sharedElementTitles(data)) {
+      await validateElement(page, { element: title, shouldExist: false })
+    }
+  }
+
+  async function verifyGroupActivitiesVisible(
+    data: any,
+    editable: string[] = []
+  ) {
+    for (const activity of groupActivitySharingNames(data)) {
+      await expectByAssertion(
+        page.getByTestId(`activity-GROUP_ACTIVITY-${activity}`),
+        'exist'
+      )
+      await expectByAssertion(
+        page.getByTestId(`change-activity-name-${activity}`),
+        editable.includes(activity) ? 'exist' : 'not.exist'
+      )
+    }
+  }
+
+  function groupActivityPermissionActions(
+    activity: string,
+    groupPermission: boolean,
+    visible: string[]
+  ) {
+    const removeAction = `remove-group-activity-${activity}`
+    return {
+      visible: groupPermission ? visible : [...visible, removeAction],
+      hidden: groupPermission ? [removeAction] : [],
+    }
+  }
+
+  async function expectGroupActivityPermissionRows(data: any, rows: any[]) {
+    for (const { activity, precondition, visible, hidden = [] } of rows) {
+      await expectByAssertion(page.getByTestId(precondition), 'exist')
+      await expectGroupActivityActionMenuItems(activity, data, visible, hidden)
+    }
+  }
+
   async function verifyGroupActivityOwnerPermissions(data: any) {
-    await expectByAssertion(
-      page.getByTestId(`publish-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`edit-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-group-activity-${data.sharing.ga2}-now`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`unpublish-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
-    await expectByAssertion(
-      page.getByTestId(`extend-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`end-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga5}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga5}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
+    const { ga1, ga2, ga3, ga4, ga5 } = data.sharing
+
+    await expectGroupActivityPermissionRows(data, [
+      {
+        activity: ga1,
+        precondition: `publish-group-activity-${ga1}`,
+        visible: [
+          `edit-group-activity-${ga1}`,
+          `view-activity-log-${ga1}`,
+          `share-group-activity-${ga1}`,
+          `delete-group-activity-${ga1}`,
+        ],
+      },
+      {
+        activity: ga2,
+        precondition: `start-group-activity-${ga2}-now`,
+        visible: [
+          `view-activity-log-${ga2}`,
+          `share-group-activity-${ga2}`,
+          `unpublish-group-activity-${ga2}`,
+          `delete-group-activity-${ga2}`,
+        ],
+      },
+      {
+        activity: ga3,
+        precondition: `extend-group-activity-${ga3}`,
+        visible: [
+          `end-group-activity-${ga3}`,
+          `view-activity-log-${ga3}`,
+          `share-group-activity-${ga3}`,
+          `delete-group-activity-${ga3}`,
+        ],
+      },
+      {
+        activity: ga4,
+        precondition: `grade-group-activity-${ga4}`,
+        visible: [
+          `view-activity-log-${ga4}`,
+          `share-group-activity-${ga4}`,
+          `delete-group-activity-${ga4}`,
+        ],
+      },
+      {
+        activity: ga5,
+        precondition: `grade-group-activity-${ga5}`,
+        visible: [
+          `view-activity-log-${ga5}`,
+          `share-group-activity-${ga5}`,
+          `delete-group-activity-${ga5}`,
+        ],
+      },
+    ])
   }
 
   async function verifyGroupActivityREADPermissions(
@@ -738,56 +765,20 @@ test.describe.serial('Create and solve a group activity', () => {
     groupPermission: boolean
   ) {
     await loginIndividualCatalyst(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga1,
-      data.sharing.ga2,
-      data.sharing.ga3,
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'not.exist'
-      )
-    }
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga1,
-      data.sharing.ga2,
-      data.sharing.ga3,
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`view-activity-log-${quiz}`),
-        'exist'
-      )
-      if (!groupPermission) {
-        await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz}`).click()
-        await expectByAssertion(
-          page.getByTestId(`remove-group-activity-${quiz}`),
-          'exist'
-        )
-        await typeInto(page.locator('body'), '{esc}')
-      }
-      await verifyGroupActivityDetailsModalContent(quiz, data)
-    }
+    await verifyGroupActivitiesVisible(data)
+
+    await expectGroupActivityPermissionRows(
+      data,
+      groupActivitySharingNames(data).map((activity) => ({
+        activity,
+        precondition: `view-activity-log-${activity}`,
+        ...groupActivityPermissionActions(activity, groupPermission, [
+          `view-activity-log-${activity}`,
+        ]),
+      }))
+    )
   }
 
   async function verifyGroupActivityEXECUTEPermissions(
@@ -795,118 +786,50 @@ test.describe.serial('Create and solve a group activity', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga1,
-      data.sharing.ga2,
-      data.sharing.ga3,
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'not.exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`publish-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-group-activity-${data.sharing.ga2}-now`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`unpublish-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga2}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
-    await expectByAssertion(
-      page.getByTestId(`extend-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`end-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga3}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga4}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga5}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga5}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga5}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
+    await verifyGroupActivitiesVisible(data)
+
+    const { ga1, ga2, ga3, ga4, ga5 } = data.sharing
+    await expectGroupActivityPermissionRows(data, [
+      {
+        activity: ga1,
+        precondition: `publish-group-activity-${ga1}`,
+        ...groupActivityPermissionActions(ga1, groupPermission, [
+          `view-activity-log-${ga1}`,
+        ]),
+      },
+      {
+        activity: ga2,
+        precondition: `start-group-activity-${ga2}-now`,
+        ...groupActivityPermissionActions(ga2, groupPermission, [
+          `view-activity-log-${ga2}`,
+          `unpublish-group-activity-${ga2}`,
+        ]),
+      },
+      {
+        activity: ga3,
+        precondition: `extend-group-activity-${ga3}`,
+        ...groupActivityPermissionActions(ga3, groupPermission, [
+          `end-group-activity-${ga3}`,
+          `view-activity-log-${ga3}`,
+        ]),
+      },
+      {
+        activity: ga4,
+        precondition: `grade-group-activity-${ga4}`,
+        ...groupActivityPermissionActions(ga4, groupPermission, [
+          `view-activity-log-${ga4}`,
+        ]),
+      },
+      {
+        activity: ga5,
+        precondition: `grade-group-activity-${ga5}`,
+        ...groupActivityPermissionActions(ga5, groupPermission, [
+          `view-activity-log-${ga5}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyGroupActivityWRITEPermissions(
@@ -914,133 +837,55 @@ test.describe.serial('Create and solve a group activity', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst2(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
+    await verifyGroupActivitiesVisible(data, [
       data.sharing.ga1,
       data.sharing.ga2,
       data.sharing.ga3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'exist'
-      )
-    }
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'not.exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`publish-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`edit-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga1}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-group-activity-${data.sharing.ga2}-now`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`unpublish-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga2}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
-    await expectByAssertion(
-      page.getByTestId(`extend-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`end-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga3}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga4}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga5}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga5}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga5}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
+    ])
+
+    const { ga1, ga2, ga3, ga4, ga5 } = data.sharing
+    await expectGroupActivityPermissionRows(data, [
+      {
+        activity: ga1,
+        precondition: `publish-group-activity-${ga1}`,
+        ...groupActivityPermissionActions(ga1, groupPermission, [
+          `edit-group-activity-${ga1}`,
+          `view-activity-log-${ga1}`,
+        ]),
+      },
+      {
+        activity: ga2,
+        precondition: `start-group-activity-${ga2}-now`,
+        ...groupActivityPermissionActions(ga2, groupPermission, [
+          `unpublish-group-activity-${ga2}`,
+          `view-activity-log-${ga2}`,
+        ]),
+      },
+      {
+        activity: ga3,
+        precondition: `extend-group-activity-${ga3}`,
+        ...groupActivityPermissionActions(ga3, groupPermission, [
+          `end-group-activity-${ga3}`,
+          `view-activity-log-${ga3}`,
+        ]),
+      },
+      {
+        activity: ga4,
+        precondition: `grade-group-activity-${ga4}`,
+        ...groupActivityPermissionActions(ga4, groupPermission, [
+          `view-activity-log-${ga4}`,
+        ]),
+      },
+      {
+        activity: ga5,
+        precondition: `grade-group-activity-${ga5}`,
+        ...groupActivityPermissionActions(ga5, groupPermission, [
+          `view-activity-log-${ga5}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyGroupActivityADMINPermissions(
@@ -1048,254 +893,109 @@ test.describe.serial('Create and solve a group activity', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst3(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
+    for (const title of sharedElementTitles(data)) {
       await validateElement(page, { element: title })
     }
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
+    await verifyGroupActivitiesVisible(data, [
       data.sharing.ga1,
       data.sharing.ga2,
       data.sharing.ga3,
-    ]).entries()) {
+    ])
+
+    const { ga1, ga2, ga3, ga4, ga5 } = data.sharing
+    await expectGroupActivityPermissionRows(data, [
+      {
+        activity: ga1,
+        precondition: `publish-group-activity-${ga1}`,
+        ...groupActivityPermissionActions(ga1, groupPermission, [
+          `edit-group-activity-${ga1}`,
+          `view-activity-log-${ga1}`,
+          `share-group-activity-${ga1}`,
+          `delete-group-activity-${ga1}`,
+        ]),
+      },
+      {
+        activity: ga2,
+        precondition: `start-group-activity-${ga2}-now`,
+        ...groupActivityPermissionActions(ga2, groupPermission, [
+          `view-activity-log-${ga2}`,
+          `share-group-activity-${ga2}`,
+          `unpublish-group-activity-${ga2}`,
+          `delete-group-activity-${ga2}`,
+        ]),
+      },
+      {
+        activity: ga3,
+        precondition: `extend-group-activity-${ga3}`,
+        ...groupActivityPermissionActions(ga3, groupPermission, [
+          `end-group-activity-${ga3}`,
+          `view-activity-log-${ga3}`,
+          `share-group-activity-${ga3}`,
+          `delete-group-activity-${ga3}`,
+        ]),
+      },
+      {
+        activity: ga4,
+        precondition: `grade-group-activity-${ga4}`,
+        ...groupActivityPermissionActions(ga4, groupPermission, [
+          `view-activity-log-${ga4}`,
+          `share-group-activity-${ga4}`,
+          `delete-group-activity-${ga4}`,
+        ]),
+      },
+      {
+        activity: ga5,
+        precondition: `grade-group-activity-${ga5}`,
+        ...groupActivityPermissionActions(ga5, groupPermission, [
+          `view-activity-log-${ga5}`,
+          `share-group-activity-${ga5}`,
+          `delete-group-activity-${ga5}`,
+        ]),
+      },
+    ])
+  }
+
+  async function verifyGroupActivityPermissionsRevoked(
+    data: any,
+    login: (page: Page) => Promise<void>,
+    verifyElements = false
+  ) {
+    await login(page)
+    if (verifyElements) await verifySharedElementsHidden(data)
+    await page.getByTestId('activities').click()
+    for (const activity of groupActivitySharingNames(data)) {
       await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'exist'
-      )
-    }
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
+        page.getByTestId(`activity-GROUP_ACTIVITY-${activity}`),
         'not.exist'
       )
     }
-    await expectByAssertion(
-      page.getByTestId(`publish-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`edit-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga1}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-group-activity-${data.sharing.ga2}-now`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`unpublish-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga2}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga2}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
-    await expectByAssertion(
-      page.getByTestId(`extend-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`end-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga3}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga4}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga4}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
-    await expectByAssertion(
-      page.getByTestId(`grade-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-GROUP_ACTIVITY-${data.sharing.ga5}`).click()
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.ga5}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-group-activity-${data.sharing.ga5}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-group-activity-${data.sharing.ga5}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
 
   async function verifyREADPermissionsRevoked(data: any) {
-    await loginIndividualCatalyst(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga1,
-      data.sharing.ga2,
-      data.sharing.ga3,
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyGroupActivityPermissionsRevoked(data, loginIndividualCatalyst)
   }
 
   async function verifyEXECUTEPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga1,
-      data.sharing.ga2,
-      data.sharing.ga3,
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyGroupActivityPermissionsRevoked(
+      data,
+      loginInstitutionalCatalyst
+    )
   }
 
   async function verifyWRITEPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst2(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.ga1,
-      data.sharing.ga2,
-      data.sharing.ga3,
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyGroupActivityPermissionsRevoked(
+      data,
+      loginInstitutionalCatalyst2
+    )
   }
 
   async function verifyADMINPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst3(page)
-    for (const [__index, element] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element, shouldExist: false })
-    }
-    await page.getByTestId('activities').click()
-    const quizzes = [
-      data.sharing.ga1,
-      data.sharing.ga2,
-      data.sharing.ga3,
-      data.sharing.ga4,
-      data.sharing.ga5,
-    ]
-    for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-GROUP_ACTIVITY-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyGroupActivityPermissionsRevoked(
+      data,
+      loginInstitutionalCatalyst3,
+      true
+    )
   }
 
   test('CLEANUP', async ({ page: testPage }, testInfo) => {
@@ -1679,9 +1379,10 @@ test.describe.serial('Create and solve a group activity', () => {
       page.getByTestId(`status-${data.activity.name}-SCHEDULED`),
       'exist'
     )
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.activity.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-GROUP_ACTIVITY-${data.activity.name}`
+    )
     await page
       .getByTestId(`unpublish-group-activity-${data.activity.name}`)
       .click()
@@ -1704,9 +1405,10 @@ test.describe.serial('Create and solve a group activity', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-groupActivities').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.activity.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-GROUP_ACTIVITY-${data.activity.name}`
+    )
     await page.getByTestId(`edit-group-activity-${data.activity.name}`).click()
     await page.getByTestId('insert-groupactivity-name').click()
     await expectByAssertion(
@@ -2190,15 +1892,17 @@ test.describe.serial('Create and solve a group activity', () => {
     await page.getByTestId('courses').click()
     await page.getByText(data.course).first().click()
     await page.getByTestId('tab-groupActivities').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.running.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-GROUP_ACTIVITY-${data.running.name}`
+    )
     await page.getByTestId(`end-group-activity-${data.running.name}`).click()
     await page.getByTestId('confirm-instances-loosing-access').click()
     await page.getByTestId('confirmation-modal-cancel').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.running.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-GROUP_ACTIVITY-${data.running.name}`
+    )
     await page.getByTestId(`end-group-activity-${data.running.name}`).click()
     await page.getByTestId('confirm-instances-loosing-access').click()
     await page.getByTestId('confirmation-modal-confirm').click()
@@ -2559,9 +2263,10 @@ test.describe.serial('Create and solve a group activity', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-groupActivities').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.running.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-GROUP_ACTIVITY-${data.running.name}`
+    )
     await page.getByTestId(`delete-group-activity-${data.running.name}`).click()
     await page.getByTestId(`confirm-deletion-started-instances`).click()
     await page.getByTestId(`confirm-deletion-submissions`).click()
@@ -2755,9 +2460,10 @@ test.describe.serial('Create and solve a group activity', () => {
     await page.getByTestId('courses').click()
     await page.getByText(data.course).first().click()
     await page.getByTestId('tab-groupActivities').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.synchronous.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-GROUP_ACTIVITY-${data.synchronous.name}`
+    )
     await page
       .getByTestId(`end-group-activity-${data.synchronous.name}`)
       .click()
@@ -2842,9 +2548,10 @@ test.describe.serial('Create and solve a group activity', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-groupActivities').click()
-    await page
-      .getByTestId(`actions-GROUP_ACTIVITY-${data.synchronous.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-GROUP_ACTIVITY-${data.synchronous.name}`
+    )
     await page
       .getByTestId(`delete-group-activity-${data.synchronous.name}`)
       .click()
@@ -3086,7 +2793,7 @@ test.describe.serial('Create and solve a group activity', () => {
       { name: data.sharing.ga4 },
       { name: data.sharing.ga5 },
     ]).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz.name}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz.name}`)
       await page.getByTestId(`share-group-activity-${quiz.name}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3255,7 +2962,7 @@ test.describe.serial('Create and solve a group activity', () => {
       env('LECTURER_INST3_SHORTNAME'),
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz.name}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz.name}`)
       await page.getByTestId(`share-group-activity-${quiz.name}`).click()
       for (const [__index, user] of Array.from(users).entries()) {
         await expectByAssertion(page.getByTestId(`permission-${user}`), 'exist')
@@ -3393,7 +3100,7 @@ test.describe.serial('Create and solve a group activity', () => {
       { name: data.sharing.ga4 },
       { name: data.sharing.ga5 },
     ]).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz.name}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz.name}`)
       await page.getByTestId(`share-group-activity-${quiz.name}`).click()
       await selectOption(
         page,
@@ -3562,7 +3269,7 @@ test.describe.serial('Create and solve a group activity', () => {
       data.sharing.group4,
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz.name}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz.name}`)
       await page.getByTestId(`share-group-activity-${quiz.name}`).click()
       for (const [__index, group] of Array.from(groups).entries()) {
         await expectByAssertion(
@@ -3636,7 +3343,7 @@ test.describe.serial('Create and solve a group activity', () => {
       { name: data.sharing.ga4 },
       { name: data.sharing.ga5 },
     ]).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz.name}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz.name}`)
       await page.getByTestId(`share-group-activity-${quiz.name}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3705,7 +3412,7 @@ test.describe.serial('Create and solve a group activity', () => {
       { name: data.sharing.ga4 },
       { name: data.sharing.ga5 },
     ]).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz.name}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz.name}`)
       await page.getByTestId(`share-group-activity-${quiz.name}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3772,7 +3479,7 @@ test.describe.serial('Create and solve a group activity', () => {
       data.sharing.ga4,
       data.sharing.ga5,
     ]).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz}`)
       await page.getByTestId(`remove-group-activity-${quiz}`).click()
       await page.getByTestId('confirm-deletion-final').click()
       await page.getByTestId('confirm-derived-access').click()
@@ -3797,7 +3504,7 @@ test.describe.serial('Create and solve a group activity', () => {
       { name: data.sharing.ga4 },
       { name: data.sharing.ga5 },
     ]).entries()) {
-      await page.getByTestId(`actions-GROUP_ACTIVITY-${quiz.name}`).click()
+      await openActionMenuByTestId(page, `actions-GROUP_ACTIVITY-${quiz.name}`)
       await page.getByTestId(`share-group-activity-${quiz.name}`).click()
       await expectByAssertion(
         page.getByTestId(`permission-${env('LECTURER_IND_SHORTNAME')}`),

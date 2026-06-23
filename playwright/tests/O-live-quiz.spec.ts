@@ -5,6 +5,10 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import {
+  expectActionMenuItems,
+  openActionMenuByTestId,
+} from '../util/actions.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
 import { PARTICIPANT_IDS } from '../util/constants.js'
 import { test } from '../util/fixtures.js'
@@ -660,135 +664,137 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('close-activity-details-modal').click()
   }
 
+  async function expectLiveQuizActionMenuItems(
+    quiz: string,
+    data: any,
+    visible: string[],
+    hidden: string[] = []
+  ) {
+    await expectActionMenuItems(page, `actions-LIVE_QUIZ-${quiz}`, {
+      visible,
+      hidden,
+    })
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyLiveQuizDetailsModalContent(quiz, data)
+  }
+
+  function liveQuizSharingNames(data: any) {
+    return [
+      data.sharing.quiz1,
+      data.sharing.quiz2,
+      data.sharing.quiz3,
+      data.sharing.quiz4,
+    ]
+  }
+
+  function sharedElementTitles(data: any) {
+    return [
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]
+  }
+
+  async function verifySharedElementsHidden(data: any) {
+    for (const title of sharedElementTitles(data)) {
+      await validateElement(page, { element: title, shouldExist: false })
+    }
+  }
+
+  async function verifyLiveQuizActivitiesVisible(
+    data: any,
+    editable: string[] = []
+  ) {
+    for (const quiz of liveQuizSharingNames(data)) {
+      await expectByAssertion(
+        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
+        'exist'
+      )
+      await expectByAssertion(
+        page.getByTestId(`change-activity-name-${quiz}`),
+        editable.includes(quiz) ? 'exist' : 'not.exist'
+      )
+    }
+  }
+
+  function liveQuizPermissionActions(
+    quiz: string,
+    groupPermission: boolean,
+    visible: string[]
+  ) {
+    const removeAction = `remove-live-quiz-${quiz}`
+    return {
+      visible: groupPermission ? visible : [...visible, removeAction],
+      hidden: groupPermission ? [removeAction] : [],
+    }
+  }
+
+  async function expectLiveQuizPermissionRows(data: any, rows: any[]) {
+    for (const { quiz, precondition, visible, hidden = [] } of rows) {
+      await expectByAssertion(page.getByTestId(precondition), 'exist')
+      await expectLiveQuizActionMenuItems(quiz, data, visible, hidden)
+    }
+  }
+
   async function verifyLiveQuizOwnerPermissions(data: any) {
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`edit-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`template-from-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-cockpit-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-live-quiz-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
+    const { quiz1, quiz2, quiz3, quiz4 } = data.sharing
+
+    await expectLiveQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `start-live-quiz-${quiz1}`,
+        visible: [
+          `edit-live-quiz-${quiz1}`,
+          `show-qr-modal-${quiz1}`,
+          `show-embedding-modal-${quiz1}`,
+          `duplicate-live-quiz-${quiz1}`,
+          `template-from-live-quiz-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+          `share-live-quiz-${quiz1}`,
+          `delete-live-quiz-${quiz1}`,
+        ],
+      },
+      {
+        quiz: quiz2,
+        precondition: `start-live-quiz-${quiz2}`,
+        visible: [
+          `duplicate-live-quiz-${quiz2}`,
+          `show-qr-modal-${quiz2}`,
+          `show-embedding-modal-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+          `share-live-quiz-${quiz2}`,
+          `delete-live-quiz-${quiz2}`,
+        ],
+      },
+      {
+        quiz: quiz3,
+        precondition: `live-quiz-cockpit-${quiz3}`,
+        visible: [
+          `live-quiz-evaluation-${quiz3}`,
+          `show-qr-modal-${quiz3}`,
+          `show-embedding-modal-${quiz3}`,
+          `duplicate-live-quiz-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+          `share-live-quiz-${quiz3}`,
+        ],
+      },
+      {
+        quiz: quiz4,
+        precondition: `live-quiz-evaluation-${quiz4}`,
+        visible: [
+          `duplicate-live-quiz-${quiz4}`,
+          `show-embedding-modal-${quiz4}`,
+          `view-activity-log-${quiz4}`,
+          `share-live-quiz-${quiz4}`,
+          `delete-live-quiz-${quiz4}`,
+        ],
+      },
+    ])
   }
 
   async function submitAndVerifyPermission(
@@ -823,120 +829,46 @@ test.describe.serial('Different live-quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginIndividualCatalyst(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-      data.sharing.quiz4,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'not.exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    if (!groupPermission) {
-      await expectByAssertion(
-        page.getByTestId(`remove-live-quiz-${data.sharing.quiz1}`),
-        'exist'
-      )
-    }
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    if (!groupPermission) {
-      await expectByAssertion(
-        page.getByTestId(`remove-live-quiz-${data.sharing.quiz2}`),
-        'exist'
-      )
-    }
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz3}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz4}`),
-      'exist'
-    )
-    if (!groupPermission) {
-      await expectByAssertion(
-        page.getByTestId(`remove-live-quiz-${data.sharing.quiz4}`),
-        'exist'
-      )
-    }
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
+    await verifyLiveQuizActivitiesVisible(data)
+
+    const { quiz1, quiz2, quiz3, quiz4 } = data.sharing
+    await expectLiveQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `show-qr-modal-${quiz1}`,
+        ...liveQuizPermissionActions(quiz1, groupPermission, [
+          `show-embedding-modal-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `show-qr-modal-${quiz2}`,
+        ...liveQuizPermissionActions(quiz2, groupPermission, [
+          `show-embedding-modal-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `live-quiz-evaluation-${quiz3}`,
+        ...liveQuizPermissionActions(quiz3, groupPermission, [
+          `show-qr-modal-${quiz3}`,
+          `show-embedding-modal-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+        ]),
+      },
+      {
+        quiz: quiz4,
+        precondition: `live-quiz-evaluation-${quiz4}`,
+        ...liveQuizPermissionActions(quiz4, groupPermission, [
+          `show-embedding-modal-${quiz4}`,
+          `view-activity-log-${quiz4}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyLiveQuizEXECUTEPermissions(
@@ -944,128 +876,49 @@ test.describe.serial('Different live-quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-      data.sharing.quiz4,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'not.exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz1}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz2}`),
-      !groupPermission ? 'exist' : 'not.exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-cockpit-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz4}`),
-      'exist'
-    )
-    if (!groupPermission) {
-      await expectByAssertion(
-        page.getByTestId(`remove-live-quiz-${data.sharing.quiz4}`),
-        'exist'
-      )
-    }
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
+    await verifyLiveQuizActivitiesVisible(data)
+
+    const { quiz1, quiz2, quiz3, quiz4 } = data.sharing
+    await expectLiveQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `start-live-quiz-${quiz1}`,
+        ...liveQuizPermissionActions(quiz1, groupPermission, [
+          `show-qr-modal-${quiz1}`,
+          `show-embedding-modal-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `start-live-quiz-${quiz2}`,
+        ...liveQuizPermissionActions(quiz2, groupPermission, [
+          `show-qr-modal-${quiz2}`,
+          `show-embedding-modal-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `live-quiz-cockpit-${quiz3}`,
+        ...liveQuizPermissionActions(quiz3, groupPermission, [
+          `live-quiz-evaluation-${quiz3}`,
+          `show-qr-modal-${quiz3}`,
+          `show-embedding-modal-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+        ]),
+      },
+      {
+        quiz: quiz4,
+        precondition: `live-quiz-evaluation-${quiz4}`,
+        ...liveQuizPermissionActions(quiz4, groupPermission, [
+          `show-embedding-modal-${quiz4}`,
+          `view-activity-log-${quiz4}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyLiveQuizWRITEPermissions(
@@ -1073,139 +926,54 @@ test.describe.serial('Different live-quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst2(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
+    await verifyLiveQuizActivitiesVisible(data, [
       data.sharing.quiz1,
       data.sharing.quiz2,
       data.sharing.quiz3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`activity-LIVE_QUIZ-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`change-activity-name-${data.sharing.quiz4}`),
-      'not.exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`edit-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz2}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-cockpit-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz4}`),
-      'exist'
-    )
-    if (!groupPermission) {
-      await expectByAssertion(
-        page.getByTestId(`remove-live-quiz-${data.sharing.quiz4}`),
-        'exist'
-      )
-    }
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
+    ])
+
+    const { quiz1, quiz2, quiz3, quiz4 } = data.sharing
+    await expectLiveQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `start-live-quiz-${quiz1}`,
+        ...liveQuizPermissionActions(quiz1, groupPermission, [
+          `edit-live-quiz-${quiz1}`,
+          `show-qr-modal-${quiz1}`,
+          `show-embedding-modal-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `start-live-quiz-${quiz2}`,
+        ...liveQuizPermissionActions(quiz2, groupPermission, [
+          `show-qr-modal-${quiz2}`,
+          `show-embedding-modal-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `live-quiz-cockpit-${quiz3}`,
+        ...liveQuizPermissionActions(quiz3, groupPermission, [
+          `live-quiz-evaluation-${quiz3}`,
+          `show-qr-modal-${quiz3}`,
+          `show-embedding-modal-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+        ]),
+      },
+      {
+        quiz: quiz4,
+        precondition: `live-quiz-evaluation-${quiz4}`,
+        ...liveQuizPermissionActions(quiz4, groupPermission, [
+          `show-embedding-modal-${quiz4}`,
+          `view-activity-log-${quiz4}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyLiveQuizADMINPermissions(
@@ -1213,262 +981,104 @@ test.describe.serial('Different live-quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst3(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
+    for (const title of sharedElementTitles(data)) {
       await validateElement(page, { element: title })
     }
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
+    await verifyLiveQuizActivitiesVisible(data, [
       data.sharing.quiz1,
       data.sharing.quiz2,
       data.sharing.quiz3,
-    ]).entries()) {
+    ])
+
+    const { quiz1, quiz2, quiz3, quiz4 } = data.sharing
+    await expectLiveQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `start-live-quiz-${quiz1}`,
+        ...liveQuizPermissionActions(quiz1, groupPermission, [
+          `edit-live-quiz-${quiz1}`,
+          `show-qr-modal-${quiz1}`,
+          `show-embedding-modal-${quiz1}`,
+          `duplicate-live-quiz-${quiz1}`,
+          `template-from-live-quiz-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+          `share-live-quiz-${quiz1}`,
+          `delete-live-quiz-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `start-live-quiz-${quiz2}`,
+        ...liveQuizPermissionActions(quiz2, groupPermission, [
+          `duplicate-live-quiz-${quiz2}`,
+          `show-qr-modal-${quiz2}`,
+          `show-embedding-modal-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+          `share-live-quiz-${quiz2}`,
+          `delete-live-quiz-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `live-quiz-cockpit-${quiz3}`,
+        ...liveQuizPermissionActions(quiz3, groupPermission, [
+          `live-quiz-evaluation-${quiz3}`,
+          `show-qr-modal-${quiz3}`,
+          `show-embedding-modal-${quiz3}`,
+          `duplicate-live-quiz-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+          `share-live-quiz-${quiz3}`,
+        ]),
+      },
+      {
+        quiz: quiz4,
+        precondition: `live-quiz-evaluation-${quiz4}`,
+        ...liveQuizPermissionActions(quiz4, groupPermission, [
+          `duplicate-live-quiz-${quiz4}`,
+          `show-embedding-modal-${quiz4}`,
+          `view-activity-log-${quiz4}`,
+          `share-live-quiz-${quiz4}`,
+          `delete-live-quiz-${quiz4}`,
+        ]),
+      },
+    ])
+  }
+
+  async function verifyLiveQuizPermissionsRevoked(
+    data: any,
+    login: (page: Page) => Promise<void>,
+    verifyElements = false
+  ) {
+    await login(page)
+    if (verifyElements) await verifySharedElementsHidden(data)
+    await page.getByTestId('activities').click()
+    for (const quiz of liveQuizSharingNames(data)) {
       await expectByAssertion(
         page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'exist'
+        'not.exist'
       )
     }
-    await expectByAssertion(
-      page.getByTestId(`activity-LIVE_QUIZ-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`change-activity-name-${data.sharing.quiz4}`),
-      'not.exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
-    await expectByAssertion(
-      page.getByTestId(`edit-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`template-from-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-live-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`start-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz2}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-live-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-cockpit-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-qr-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
-    await expectByAssertion(
-      page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
-    await expectByAssertion(
-      page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-live-quiz-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-live-quiz-${data.sharing.quiz4}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-live-quiz-${data.sharing.quiz4}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
 
   async function verifyREADPermissionsRevoked(data: any) {
-    await loginIndividualCatalyst(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-      data.sharing.quiz4,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyLiveQuizPermissionsRevoked(data, loginIndividualCatalyst)
   }
 
   async function verifyEXECUTEPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-      data.sharing.quiz4,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyLiveQuizPermissionsRevoked(data, loginInstitutionalCatalyst)
   }
 
   async function verifyWRITEPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst2(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-      data.sharing.quiz4,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyLiveQuizPermissionsRevoked(data, loginInstitutionalCatalyst2)
   }
 
   async function verifyADMINPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst3(page)
-    for (const [__index, element] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element, shouldExist: false })
-    }
-    await page.getByTestId('activities').click()
-    const quizzes = [
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-      data.sharing.quiz4,
-    ]
-    for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-LIVE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyLiveQuizPermissionsRevoked(
+      data,
+      loginInstitutionalCatalyst3,
+      true
+    )
   }
 
   async function createAndStartProtectedLiveQuizzes(data: any) {
@@ -2331,9 +1941,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`activity-LIVE_QUIZ-${data.course1.quiz.name}`),
       'exist'
     )
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course1.quiz.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course1.quiz.name}`
+    )
     await page.getByTestId(`edit-live-quiz-${data.course1.quiz.name}`).click()
     await expectByAssertion(
       page.getByTestId('insert-live-quiz-name'),
@@ -2562,9 +2173,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`activity-LIVE_QUIZ-${data.course1.quiz.nameNew}`),
       'exist'
     )
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course1.quiz.nameNew}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course1.quiz.nameNew}`
+    )
     await page
       .getByTestId(`edit-live-quiz-${data.course1.quiz.nameNew}`)
       .click()
@@ -2673,9 +2285,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`activity-LIVE_QUIZ-${data.course1.quiz.nameNew}`),
       'exist'
     )
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course1.quiz.nameNew}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course1.quiz.nameNew}`
+    )
     await page
       .getByTestId(`duplicate-live-quiz-${data.course1.quiz.nameNew}`)
       .click()
@@ -2749,16 +2362,18 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`activity-LIVE_QUIZ-${data.course1.quiz.nameDupl}`),
       'exist'
     )
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course1.quiz.nameDupl}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course1.quiz.nameDupl}`
+    )
     await page
       .getByTestId(`delete-live-quiz-${data.course1.quiz.nameDupl}`)
       .click()
     await page.getByTestId(`confirmation-modal-cancel`).click()
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course1.quiz.nameDupl}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course1.quiz.nameDupl}`
+    )
     await page
       .getByTestId(`delete-live-quiz-${data.course1.quiz.nameDupl}`)
       .click()
@@ -2856,9 +2471,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`activity-LIVE_QUIZ-${data.course1.quiz.nameNew}`),
       'exist'
     )
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course1.quiz.nameNew}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course1.quiz.nameNew}`
+    )
     await page
       .getByTestId(`delete-live-quiz-${data.course1.quiz.nameNew}`)
       .click()
@@ -3061,7 +2677,6 @@ test.describe.serial('Different live-quiz workflows', () => {
     await acceptGamifiedLiveQuizAccountPrompt(data.course2.quiz.displayName)
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -3069,7 +2684,6 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('mc-1-answer-option-0').click()
     await page.getByTestId('mc-1-answer-option-1').click()
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -3159,14 +2773,12 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('input-numerical-3').clear()
     await typeInto(page.getByTestId('input-numerical-3'), data.NR.answer)
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
     )
     await typeInto(page.getByTestId('free-text-input-4'), data.FT.answer)
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -3309,7 +2921,6 @@ test.describe.serial('Different live-quiz workflows', () => {
     await acceptGamifiedLiveQuizAccountPrompt(data.course2.quiz.displayName)
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -3317,7 +2928,6 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('mc-1-answer-option-0').click()
     await page.getByTestId('mc-1-answer-option-1').click()
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -3327,7 +2937,6 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('toggle-kp-2-answer-2-incorrect').click()
     await page.getByTestId('toggle-kp-2-answer-3-correct').click()
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -3335,14 +2944,12 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('input-numerical-3').clear()
     await typeInto(page.getByTestId('input-numerical-3'), data.NR.answer)
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
     )
     await typeInto(page.getByTestId('free-text-input-4'), data.FT.answer)
     await page.getByTestId('student-submit-answer').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('student-submit-answer'),
       'be.disabled'
@@ -3975,9 +3582,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`activity-LIVE_QUIZ-${data.course2.quiz.name}`),
       'exist'
     )
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course2.quiz.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course2.quiz.name}`
+    )
     await page.getByTestId(`delete-live-quiz-${data.course2.quiz.name}`).click()
     await expectByAssertion(
       page.getByTestId(`confirmation-modal-confirm`),
@@ -3994,9 +3602,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       'not.be.disabled'
     )
     await page.getByTestId(`confirmation-modal-cancel`).click()
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.course2.quiz.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.course2.quiz.name}`
+    )
     await page.getByTestId(`delete-live-quiz-${data.course2.quiz.name}`).click()
     await expectByAssertion(
       page.getByTestId(`confirmation-modal-confirm`),
@@ -4085,7 +3694,10 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('save-new-question').click()
     await page.waitForTimeout(1000)
     await page.getByTestId('activities').click()
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
+    )
     await page.getByTestId(`edit-live-quiz-${data.liveQuiz.name}`).click()
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
@@ -4124,7 +3736,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       userId: env('LECTURER_ID'),
     })
     await page.getByTestId('activities').click()
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
+    )
     await page.getByTestId(`edit-live-quiz-${data.liveQuiz.name}`).click()
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
@@ -4181,7 +3796,10 @@ test.describe.serial('Different live-quiz workflows', () => {
     await deleteElement(page, { elementName: data.liveQuiz.newSCTitle })
     await deleteElement(page, { elementName: data.MC2.title })
     await page.getByTestId('activities').click()
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
+    )
     await page.getByTestId(`edit-live-quiz-${data.liveQuiz.name}`).click()
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
@@ -4274,7 +3892,6 @@ test.describe.serial('Different live-quiz workflows', () => {
       )
       await page.getByTestId('sc-0-answer-option-0').click()
       await page.getByTestId('student-submit-answer').click()
-      await page.waitForTimeout(500)
       await expectByAssertion(
         page.getByTestId('student-submit-answer'),
         'be.disabled'
@@ -4322,7 +3939,10 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`activity-LIVE_QUIZ-${data.liveQuiz.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
+    )
     await page.getByTestId(`duplicate-live-quiz-${data.liveQuiz.name}`).click()
     await expectByAssertion(
       page.getByTestId('next-or-submit'),
@@ -4455,7 +4075,6 @@ test.describe.serial('Different live-quiz workflows', () => {
       )
       await page.getByTestId('sc-0-answer-option-0').click()
       await page.getByTestId('student-submit-answer').click()
-      await page.waitForTimeout(500)
       await expectByAssertion(
         page.getByTestId('student-submit-answer'),
         'be.disabled'
@@ -4497,15 +4116,19 @@ test.describe.serial('Different live-quiz workflows', () => {
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await page.getByTestId('activities').click()
-    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.liveQuiz.name}`
+    )
     await page.getByTestId(`delete-live-quiz-${data.liveQuiz.name}`).click()
     await confirmResponseDeletionIfAvailable(page)
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()
-    await page
-      .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.duplicateName}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-LIVE_QUIZ-${data.liveQuiz.duplicateName}`
+    )
     await page
       .getByTestId(`delete-live-quiz-${data.liveQuiz.duplicateName}`)
       .click()
@@ -4600,7 +4223,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`share-live-quiz-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -4736,7 +4359,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       env('LECTURER_INST3_SHORTNAME'),
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`share-live-quiz-${quiz}`).click()
       for (const [__index, user] of Array.from(users).entries()) {
         await expectByAssertion(page.getByTestId(`permission-${user}`), 'exist')
@@ -4873,7 +4496,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`share-live-quiz-${quiz}`).click()
       await selectOption(
         page,
@@ -5041,7 +4664,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.sharing.group4,
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`share-live-quiz-${quiz}`).click()
       for (const [__index, group] of Array.from(groups).entries()) {
         await expectByAssertion(
@@ -5114,7 +4737,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`share-live-quiz-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -5182,7 +4805,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`share-live-quiz-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -5248,7 +4871,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`remove-live-quiz-${quiz}`).click()
       await page.getByTestId('confirm-deletion-final').click()
       await page.getByTestId('confirm-derived-access').click()
@@ -5272,7 +4895,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).entries()) {
-      await page.getByTestId(`actions-LIVE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${quiz}`)
       await page.getByTestId(`share-live-quiz-${quiz}`).click()
       await expectByAssertion(
         page.getByTestId(`permission-${env('LECTURER_IND_SHORTNAME')}`),

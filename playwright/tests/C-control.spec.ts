@@ -6,6 +6,7 @@
  * running it from the control app, and cleaning up.
  */
 
+import { chooseActivityAction } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { CONTROL_DATA, LECTURER_ID, viewPorts } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
@@ -88,8 +89,12 @@ test.describe('Test functionalities of frontend-control application', () => {
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${CONTROL_DATA.quizName}`)
     ).toBeVisible()
-    await page.getByTestId(`actions-LIVE_QUIZ-${CONTROL_DATA.quizName}`).click()
-    await page.getByTestId(`delete-live-quiz-${CONTROL_DATA.quizName}`).click()
+    await chooseActivityAction(
+      page,
+      'LIVE_QUIZ',
+      CONTROL_DATA.quizName,
+      `delete-live-quiz-${CONTROL_DATA.quizName}`
+    )
     await page.getByTestId('confirmation-modal-confirm').click()
     await expect(page.getByText(CONTROL_DATA.quizName)).not.toBeVisible()
   })

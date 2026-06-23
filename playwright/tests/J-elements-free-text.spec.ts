@@ -8,7 +8,14 @@
 
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
-import { searchAndEdit, validateElement } from '../util/fixtures/elements.js'
+import {
+  fillEditorField,
+  searchAndEdit,
+  setElementStatus,
+  switchElementType,
+  validateElement,
+  verifyEditorField,
+} from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
 
 // Fixture data (mirrors cypress/cypress/fixtures/DM-questions.json FT section)
@@ -43,23 +50,13 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await expect(page.getByTestId('select-question-type')).toContainText(
       elementTypeLabels.singleChoice
     )
-    await page.getByTestId('select-question-type').click()
-    await page
-      .getByTestId(`select-question-type-${elementTypeLabels.freeText}`)
-      .click()
-    await expect(page.getByTestId('select-question-type')).toContainText(
-      elementTypeLabels.freeText
-    )
+    await switchElementType(page, elementTypeLabels.freeText)
 
     await page.getByTestId('insert-question-title').fill(FT.title)
 
-    await page.getByTestId('select-question-status').click()
-    await page
-      .getByTestId(`select-question-status-${statusLabels.ready}`)
-      .click()
+    await setElementStatus(page, statusLabels.ready)
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').pressSequentially(FT.content)
+    await fillEditorField(page, 'insert-question-text', FT.content)
 
     await page.getByTestId('set-free-text-length').click()
     await page.getByTestId('set-free-text-length').fill(String(FT.maxLength))
@@ -94,10 +91,7 @@ test.describe('Test creation and editing functionalities for Free Text elements'
       statusLabels.ready
     )
 
-    await page.getByTestId('insert-question-text').click()
-    await expect(page.getByTestId('insert-question-text')).toContainText(
-      FT.content
-    )
+    await verifyEditorField(page, 'insert-question-text', FT.content)
 
     await expect(page.getByTestId('set-free-text-length')).toHaveValue(
       String(FT.maxLength)
@@ -116,11 +110,7 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(FT.titleEdited)
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(FT.contentEdited)
+    await fillEditorField(page, 'insert-question-text', FT.contentEdited, true)
 
     await page.getByTestId('set-free-text-length').click()
     await page.getByTestId('set-free-text-length').clear()
@@ -161,10 +151,7 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await expect(page.getByTestId('insert-question-title')).toHaveValue(
       FT.titleEdited
     )
-    await page.getByTestId('insert-question-text').click()
-    await expect(page.getByTestId('insert-question-text')).toContainText(
-      FT.contentEdited
-    )
+    await verifyEditorField(page, 'insert-question-text', FT.contentEdited)
 
     await expect(page.getByTestId('set-free-text-length')).toHaveValue(
       String(FT.maxLengthEdited)

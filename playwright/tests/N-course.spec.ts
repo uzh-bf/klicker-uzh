@@ -7,6 +7,7 @@
  */
 
 import { type Page } from '@playwright/test'
+import { openActionMenuByTestId } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -45,6 +46,8 @@ import {
   createQuestionSC,
   createQuestionSE as createQuestionSEDirect,
   deleteElement,
+  fillEditorField,
+  switchElementType,
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 
@@ -193,8 +196,7 @@ async function createSCQuestion(
 ) {
   await page.getByTestId('create-question').click()
   await page.getByTestId('insert-question-title').fill(title)
-  await page.getByTestId('insert-question-text').click()
-  await page.getByTestId('insert-question-text').pressSequentially(content)
+  await fillEditorField(page, 'insert-question-text', content)
   for (let i = 0; i < choices.length; i++) {
     if (i > 0) {
       await page.getByTestId('add-new-answer').click()
@@ -224,13 +226,10 @@ async function createNRQuestion(
   }
 ) {
   await page.getByTestId('create-question').click()
-  // Switch to NR type
-  await page.getByTestId('select-question-type').click()
-  await page.getByTestId('select-question-type-Numerical (NR)').click()
+  await switchElementType(page, 'Numerical (NR)')
 
   await page.getByTestId('insert-question-title').fill(title)
-  await page.getByTestId('insert-question-text').click()
-  await page.getByTestId('insert-question-text').pressSequentially(content)
+  await fillEditorField(page, 'insert-question-text', content)
 
   if (options.min !== undefined) {
     await page.getByTestId('set-numerical-minimum').fill(options.min)
@@ -296,13 +295,10 @@ async function createSEQuestion(
   numInputs: number
 ) {
   await page.getByTestId('create-question').click()
-  // Switch to SE type
-  await page.getByTestId('select-question-type').click()
-  await page.getByTestId('select-question-type-Selection (SE)').click()
+  await switchElementType(page, 'Selection (SE)')
 
   await page.getByTestId('insert-question-title').fill(title)
-  await page.getByTestId('insert-question-text').click()
-  await page.getByTestId('insert-question-text').pressSequentially(content)
+  await fillEditorField(page, 'insert-question-text', content)
 
   await page.getByTestId('select-answer-collection').click()
   await page.getByTestId(`select-answer-collection-${collectionName}`).click()
@@ -1241,7 +1237,7 @@ test.describe('Part 4: Course deletion', () => {
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
     ).toBeVisible()
-    await page.getByTestId(`actions-LIVE_QUIZ-${DELETION.lqName}`).click()
+    await openActionMenuByTestId(page, `actions-LIVE_QUIZ-${DELETION.lqName}`)
     await page.getByTestId(`delete-live-quiz-${DELETION.lqName}`).click()
     await page.getByTestId('confirmation-modal-confirm').click()
     await expect(page.getByText(DELETION.lqName)).not.toBeVisible()

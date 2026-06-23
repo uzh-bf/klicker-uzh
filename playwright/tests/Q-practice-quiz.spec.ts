@@ -5,6 +5,10 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import {
+  expectActionMenuItems,
+  openActionMenuByTestId,
+} from '../util/actions.js'
 import { test } from '../util/fixtures.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -767,122 +771,123 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('close-activity-details-modal').click()
   }
 
+  async function expectPracticeQuizActionMenuItems(
+    quiz: string,
+    data: any,
+    visible: string[],
+    hidden: string[] = []
+  ) {
+    await expectActionMenuItems(page, `actions-PRACTICE_QUIZ-${quiz}`, {
+      visible,
+      hidden,
+    })
+    await typeInto(page.locator('body'), '{esc}')
+    await verifyPracticeQuizDetailsModalContent(quiz, data)
+  }
+
+  function practiceQuizSharingNames(data: any) {
+    return [data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]
+  }
+
+  function sharedElementTitles(data: any) {
+    return [
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]
+  }
+
+  async function verifySharedElementsHidden(data: any) {
+    for (const title of sharedElementTitles(data)) {
+      await validateElement(page, { element: title, shouldExist: false })
+    }
+  }
+
+  async function verifyPracticeQuizActivitiesVisible(
+    data: any,
+    editable: boolean
+  ) {
+    for (const quiz of practiceQuizSharingNames(data)) {
+      await expectByAssertion(
+        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
+        'exist'
+      )
+      await expectByAssertion(
+        page.getByTestId(`change-activity-name-${quiz}`),
+        editable ? 'exist' : 'not.exist'
+      )
+    }
+  }
+
+  function practiceQuizPermissionActions(
+    quiz: string,
+    groupPermission: boolean,
+    visible: string[]
+  ) {
+    const removeAction = `remove-practice-quiz-${quiz}`
+    return {
+      visible: groupPermission ? visible : [...visible, removeAction],
+      hidden: groupPermission ? [removeAction] : [],
+    }
+  }
+
+  async function expectPracticeQuizPermissionRows(data: any, rows: any[]) {
+    for (const { quiz, precondition, visible, hidden = [] } of rows) {
+      await expectByAssertion(page.getByTestId(precondition), 'exist')
+      await expectPracticeQuizActionMenuItems(quiz, data, visible, hidden)
+    }
+  }
+
   async function verifyPracticeQuizOwnerPermissions(data: any) {
-    await expectByAssertion(
-      page.getByTestId(`publish-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz1}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`edit-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz2}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`unpublish-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`evaluation-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz3}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+    const { quiz1, quiz2, quiz3 } = data.sharing
+
+    await expectPracticeQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `publish-practice-quiz-${quiz1}`,
+        visible: [
+          `edit-practice-quiz-${quiz1}`,
+          `open-practice-quiz-${quiz1}`,
+          `copy-access-link-${quiz1}`,
+          `copy-lti-link-${quiz1}`,
+          `duplicate-practice-quiz-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+          `share-practice-quiz-${quiz1}`,
+          `delete-practice-quiz-${quiz1}`,
+        ],
+      },
+      {
+        quiz: quiz2,
+        precondition: `copy-access-link-${quiz2}`,
+        visible: [
+          `open-practice-quiz-${quiz2}`,
+          `copy-lti-link-${quiz2}`,
+          `duplicate-practice-quiz-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+          `share-practice-quiz-${quiz2}`,
+          `unpublish-practice-quiz-${quiz2}`,
+          `delete-practice-quiz-${quiz2}`,
+        ],
+      },
+      {
+        quiz: quiz3,
+        precondition: `evaluation-practice-quiz-${quiz3}`,
+        visible: [
+          `copy-access-link-${quiz3}`,
+          `open-practice-quiz-${quiz3}`,
+          `copy-lti-link-${quiz3}`,
+          `duplicate-practice-quiz-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+          `share-practice-quiz-${quiz3}`,
+          `delete-practice-quiz-${quiz3}`,
+        ],
+      },
+    ])
   }
 
   async function verifyPracticeQuizREADPermissions(
@@ -890,112 +895,41 @@ test.describe.serial('Different practice quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginIndividualCatalyst(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'not.exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz1}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz2}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz2}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`evaluation-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz3}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+    await verifyPracticeQuizActivitiesVisible(data, false)
+
+    const { quiz1, quiz2, quiz3 } = data.sharing
+    await expectPracticeQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `open-practice-quiz-${quiz1}`,
+        ...practiceQuizPermissionActions(quiz1, groupPermission, [
+          `copy-access-link-${quiz1}`,
+          `copy-lti-link-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `copy-access-link-${quiz2}`,
+        ...practiceQuizPermissionActions(quiz2, groupPermission, [
+          `open-practice-quiz-${quiz2}`,
+          `copy-lti-link-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `evaluation-practice-quiz-${quiz3}`,
+        ...practiceQuizPermissionActions(quiz3, groupPermission, [
+          `copy-access-link-${quiz3}`,
+          `open-practice-quiz-${quiz3}`,
+          `copy-lti-link-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyPracticeQuizEXECUTEPermissions(
@@ -1003,120 +937,43 @@ test.describe.serial('Different practice quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'not.exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`publish-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz1}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz2}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`unpublish-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz2}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`evaluation-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz3}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+    await verifyPracticeQuizActivitiesVisible(data, false)
+
+    const { quiz1, quiz2, quiz3 } = data.sharing
+    await expectPracticeQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `publish-practice-quiz-${quiz1}`,
+        ...practiceQuizPermissionActions(quiz1, groupPermission, [
+          `open-practice-quiz-${quiz1}`,
+          `copy-access-link-${quiz1}`,
+          `copy-lti-link-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `copy-access-link-${quiz2}`,
+        ...practiceQuizPermissionActions(quiz2, groupPermission, [
+          `open-practice-quiz-${quiz2}`,
+          `copy-lti-link-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+          `unpublish-practice-quiz-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `evaluation-practice-quiz-${quiz3}`,
+        ...practiceQuizPermissionActions(quiz3, groupPermission, [
+          `copy-access-link-${quiz3}`,
+          `open-practice-quiz-${quiz3}`,
+          `copy-lti-link-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyPracticeQuizWRITEPermissions(
@@ -1124,124 +981,44 @@ test.describe.serial('Different practice quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst2(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element: title, shouldExist: false })
-    }
+    await verifySharedElementsHidden(data)
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'exist'
-      )
-    }
-    await expectByAssertion(
-      page.getByTestId(`publish-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz1}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`edit-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz2}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`unpublish-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz2}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`evaluation-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz3}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+    await verifyPracticeQuizActivitiesVisible(data, true)
+
+    const { quiz1, quiz2, quiz3 } = data.sharing
+    await expectPracticeQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `publish-practice-quiz-${quiz1}`,
+        ...practiceQuizPermissionActions(quiz1, groupPermission, [
+          `edit-practice-quiz-${quiz1}`,
+          `open-practice-quiz-${quiz1}`,
+          `copy-access-link-${quiz1}`,
+          `copy-lti-link-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `copy-access-link-${quiz2}`,
+        ...practiceQuizPermissionActions(quiz2, groupPermission, [
+          `open-practice-quiz-${quiz2}`,
+          `copy-lti-link-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+          `unpublish-practice-quiz-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `evaluation-practice-quiz-${quiz3}`,
+        ...practiceQuizPermissionActions(quiz3, groupPermission, [
+          `copy-access-link-${quiz3}`,
+          `open-practice-quiz-${quiz3}`,
+          `copy-lti-link-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+        ]),
+      },
+    ])
   }
 
   async function verifyPracticeQuizADMINPermissions(
@@ -1249,229 +1026,94 @@ test.describe.serial('Different practice quiz workflows', () => {
     groupPermission: boolean
   ) {
     await loginInstitutionalCatalyst3(page)
-    for (const [__index, title] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
+    for (const title of sharedElementTitles(data)) {
       await validateElement(page, { element: title })
     }
     await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-    ]).entries()) {
+    await verifyPracticeQuizActivitiesVisible(data, true)
+
+    const { quiz1, quiz2, quiz3 } = data.sharing
+    await expectPracticeQuizPermissionRows(data, [
+      {
+        quiz: quiz1,
+        precondition: `publish-practice-quiz-${quiz1}`,
+        ...practiceQuizPermissionActions(quiz1, groupPermission, [
+          `edit-practice-quiz-${quiz1}`,
+          `open-practice-quiz-${quiz1}`,
+          `copy-access-link-${quiz1}`,
+          `copy-lti-link-${quiz1}`,
+          `duplicate-practice-quiz-${quiz1}`,
+          `view-activity-log-${quiz1}`,
+          `share-practice-quiz-${quiz1}`,
+          `delete-practice-quiz-${quiz1}`,
+        ]),
+      },
+      {
+        quiz: quiz2,
+        precondition: `copy-access-link-${quiz2}`,
+        ...practiceQuizPermissionActions(quiz2, groupPermission, [
+          `open-practice-quiz-${quiz2}`,
+          `copy-lti-link-${quiz2}`,
+          `duplicate-practice-quiz-${quiz2}`,
+          `view-activity-log-${quiz2}`,
+          `share-practice-quiz-${quiz2}`,
+          `unpublish-practice-quiz-${quiz2}`,
+          `delete-practice-quiz-${quiz2}`,
+        ]),
+      },
+      {
+        quiz: quiz3,
+        precondition: `evaluation-practice-quiz-${quiz3}`,
+        ...practiceQuizPermissionActions(quiz3, groupPermission, [
+          `copy-access-link-${quiz3}`,
+          `open-practice-quiz-${quiz3}`,
+          `copy-lti-link-${quiz3}`,
+          `duplicate-practice-quiz-${quiz3}`,
+          `view-activity-log-${quiz3}`,
+          `share-practice-quiz-${quiz3}`,
+          `delete-practice-quiz-${quiz3}`,
+        ]),
+      },
+    ])
+  }
+
+  async function verifyPracticeQuizPermissionsRevoked(
+    data: any,
+    login: (page: Page) => Promise<void>,
+    verifyElements = false
+  ) {
+    await login(page)
+    if (verifyElements) await verifySharedElementsHidden(data)
+    await page.getByTestId('activities').click()
+    for (const quiz of practiceQuizSharingNames(data)) {
       await expectByAssertion(
         page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'exist'
-      )
-      await expectByAssertion(
-        page.getByTestId(`change-activity-name-${quiz}`),
-        'exist'
+        'not.exist'
       )
     }
-    await expectByAssertion(
-      page.getByTestId(`publish-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz1}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`edit-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz1}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-practice-quiz-${data.sharing.quiz1}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz2}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`unpublish-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz2}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-practice-quiz-${data.sharing.quiz2}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
-    await expectByAssertion(
-      page.getByTestId(`evaluation-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.sharing.quiz3}`)
-      .click()
-    await expectByAssertion(
-      page.getByTestId(`copy-access-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`open-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`copy-lti-link-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`duplicate-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`view-activity-log-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`share-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`remove-practice-quiz-${data.sharing.quiz3}`),
-      groupPermission ? 'not.exist' : 'exist'
-    )
-    await expectByAssertion(
-      page.getByTestId(`delete-practice-quiz-${data.sharing.quiz3}`),
-      'exist'
-    )
-    await typeInto(page.locator('body'), '{esc}')
-    await verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
   async function verifyREADPermissionsRevoked(data: any) {
-    await loginIndividualCatalyst(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyPracticeQuizPermissionsRevoked(data, loginIndividualCatalyst)
   }
 
   async function verifyEXECUTEPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyPracticeQuizPermissionsRevoked(data, loginInstitutionalCatalyst)
   }
 
   async function verifyWRITEPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst2(page)
-    await page.getByTestId('activities').click()
-    for (const [__index, quiz] of Array.from([
-      data.sharing.quiz1,
-      data.sharing.quiz2,
-      data.sharing.quiz3,
-    ]).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyPracticeQuizPermissionsRevoked(
+      data,
+      loginInstitutionalCatalyst2
+    )
   }
 
   async function verifyADMINPermissionsRevoked(data: any) {
-    await loginInstitutionalCatalyst3(page)
-    for (const [__index, element] of Array.from([
-      data.SCML.title,
-      data.MCML.title,
-      data.KPML.title,
-      data.NRML.title,
-      data.FTML.title,
-      data.SEML.title,
-      data.CSML.title,
-      data.CT.title,
-    ]).entries()) {
-      await validateElement(page, { element, shouldExist: false })
-    }
-    await page.getByTestId('activities').click()
-    const quizzes = [data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]
-    for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await expectByAssertion(
-        page.getByTestId(`activity-PRACTICE_QUIZ-${quiz}`),
-        'not.exist'
-      )
-    }
+    await verifyPracticeQuizPermissionsRevoked(
+      data,
+      loginInstitutionalCatalyst3,
+      true
+    )
   }
 
   test('CLEANUP', async ({ page: testPage }, testInfo) => {
@@ -1711,7 +1353,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page.getByTestId(`actions-PRACTICE_QUIZ-${data.running.name}`).click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.running.name}`
+    )
     await page.getByTestId(`edit-practice-quiz-${data.running.name}`).click()
     await expectByAssertion(
       page.getByText('Edit ' + messages.shared.generic.practiceQuiz).first(),
@@ -1835,9 +1480,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.running.nameNew}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.running.nameNew}`
+    )
     await page.getByTestId(`edit-practice-quiz-${data.running.nameNew}`).click()
     await expectByAssertion(
       page.getByText('Edit ' + messages.shared.generic.practiceQuiz).first(),
@@ -1935,9 +1581,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.running.nameNew}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.running.nameNew}`
+    )
     await page
       .getByTestId(`duplicate-practice-quiz-${data.running.nameNew}`)
       .click()
@@ -2018,9 +1665,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.running.nameDupl}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.running.nameDupl}`
+    )
     await page
       .getByTestId(`delete-practice-quiz-${data.running.nameDupl}`)
       .click()
@@ -2150,9 +1798,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.running.nameNew}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.running.nameNew}`
+    )
     await page
       .getByTestId(`delete-practice-quiz-${data.running.nameNew}`)
       .click()
@@ -2317,9 +1966,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.scheduled.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.scheduled.name}`
+    )
     await page
       .getByTestId(`unpublish-practice-quiz-${data.scheduled.name}`)
       .click()
@@ -2395,9 +2045,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${data.course}`).click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.scheduled.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.scheduled.name}`
+    )
     await page
       .getByTestId(`delete-practice-quiz-${data.scheduled.name}`)
       .click()
@@ -2483,9 +2134,10 @@ test.describe.serial('Different practice quiz workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.manipulation.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.manipulation.name}`
+    )
     await page
       .getByTestId(`edit-practice-quiz-${data.manipulation.name}`)
       .click()
@@ -2542,9 +2194,10 @@ test.describe.serial('Different practice quiz workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.manipulation.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.manipulation.name}`
+    )
     await page
       .getByTestId(`edit-practice-quiz-${data.manipulation.name}`)
       .click()
@@ -2602,9 +2255,10 @@ test.describe.serial('Different practice quiz workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.manipulation.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.manipulation.name}`
+    )
     await page
       .getByTestId(`edit-practice-quiz-${data.manipulation.name}`)
       .click()
@@ -2645,9 +2299,10 @@ test.describe.serial('Different practice quiz workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.manipulation.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.manipulation.name}`
+    )
     await page
       .getByTestId(`duplicate-practice-quiz-${data.manipulation.name}`)
       .click()
@@ -2797,9 +2452,10 @@ test.describe.serial('Different practice quiz workflows', () => {
       .getByTestId(`course-list-button-${data.manipulation.course}`)
       .click()
     await page.getByTestId('tab-practiceQuizzes').click()
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.manipulation.name}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.manipulation.name}`
+    )
     await page
       .getByTestId(`delete-practice-quiz-${data.manipulation.name}`)
       .click()
@@ -2810,9 +2466,10 @@ test.describe.serial('Different practice quiz workflows', () => {
       page.getByTestId(`activity-PRACTICE_QUIZ-${data.manipulation.name}`),
       'not.exist'
     )
-    await page
-      .getByTestId(`actions-PRACTICE_QUIZ-${data.manipulation.duplicateName}`)
-      .click()
+    await openActionMenuByTestId(
+      page,
+      `actions-PRACTICE_QUIZ-${data.manipulation.duplicateName}`
+    )
     await page
       .getByTestId(`delete-practice-quiz-${data.manipulation.duplicateName}`)
       .click()
@@ -2900,7 +2557,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       data.sharing.quiz2,
       data.sharing.quiz3,
     ]).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`share-practice-quiz-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3063,7 +2720,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       env('LECTURER_INST3_SHORTNAME'),
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`share-practice-quiz-${quiz}`).click()
       for (const [__index, user] of Array.from(users).entries()) {
         await expectByAssertion(page.getByTestId(`permission-${user}`), 'exist')
@@ -3199,7 +2856,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       data.sharing.quiz2,
       data.sharing.quiz3,
     ]).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`share-practice-quiz-${quiz}`).click()
       await selectOption(
         page,
@@ -3362,7 +3019,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       data.sharing.group4,
     ]
     for (const [__index, quiz] of Array.from(quizzes).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`share-practice-quiz-${quiz}`).click()
       for (const [__index, group] of Array.from(groups).entries()) {
         await expectByAssertion(
@@ -3434,7 +3091,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       data.sharing.quiz2,
       data.sharing.quiz3,
     ]).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`share-practice-quiz-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3501,7 +3158,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       data.sharing.quiz2,
       data.sharing.quiz3,
     ]).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`share-practice-quiz-${quiz}`).click()
       await page.getByTestId('new-permission-username-or-email').click()
       await typeInto(
@@ -3566,7 +3223,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       data.sharing.quiz2,
       data.sharing.quiz3,
     ]).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`remove-practice-quiz-${quiz}`).click()
       await page.getByTestId('confirm-deletion-final').click()
       await page.getByTestId('confirm-derived-access').click()
@@ -3589,7 +3246,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       data.sharing.quiz2,
       data.sharing.quiz3,
     ]).entries()) {
-      await page.getByTestId(`actions-PRACTICE_QUIZ-${quiz}`).click()
+      await openActionMenuByTestId(page, `actions-PRACTICE_QUIZ-${quiz}`)
       await page.getByTestId(`share-practice-quiz-${quiz}`).click()
       await expectByAssertion(
         page.getByTestId(`permission-${env('LECTURER_IND_SHORTNAME')}`),

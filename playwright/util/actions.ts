@@ -1,4 +1,4 @@
-import { type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 export type ActivityActionType =
   | 'LIVE_QUIZ'
@@ -11,23 +11,25 @@ async function findVisibleByTestId(
   testId: string,
   timeout = 15_000
 ): Promise<Locator> {
-  const startedAt = Date.now()
   const locator = page.getByTestId(testId)
+  let visibleIndex = -1
 
-  while (Date.now() - startedAt < timeout) {
+  await expect(async () => {
     const count = await locator.count()
 
     for (let ix = 0; ix < count; ix++) {
       const candidate = locator.nth(ix)
       if (await candidate.isVisible().catch(() => false)) {
-        return candidate
+        visibleIndex = ix
+        return
       }
     }
 
-    await page.waitForTimeout(100)
-  }
+    visibleIndex = -1
+    expect(visibleIndex).toBeGreaterThanOrEqual(0)
+  }).toPass({ intervals: [100], timeout })
 
-  throw new Error(`No visible element found for data-cy="${testId}"`)
+  return locator.nth(visibleIndex)
 }
 
 export async function clickVisibleByTestId(
@@ -40,10 +42,9 @@ export async function clickVisibleByTestId(
   await locator.click()
 }
 
-export async function openActivityActionMenu(
+export async function openActionMenuByTestId(
   page: Page,
-  type: ActivityActionType,
-  name: string,
+  triggerTestId: string,
   expectedActionTestId?: string
 ) {
   if (
@@ -57,11 +58,55 @@ export async function openActivityActionMenu(
     return
   }
 
-  await clickVisibleByTestId(page, `actions-${type}-${name}`)
+  await clickVisibleByTestId(page, triggerTestId)
 
   if (expectedActionTestId) {
     await findVisibleByTestId(page, expectedActionTestId)
   }
+}
+
+export async function chooseActionByTestId(
+  page: Page,
+  triggerTestId: string,
+  actionTestId: string
+) {
+  await openActionMenuByTestId(page, triggerTestId, actionTestId)
+  await clickVisibleByTestId(page, actionTestId)
+}
+
+export async function expectActionMenuItems(
+  page: Page,
+  triggerTestId: string,
+  {
+    visible = [],
+    hidden = [],
+  }: {
+    visible?: string[]
+    hidden?: string[]
+  }
+) {
+  await openActionMenuByTestId(page, triggerTestId, visible[0])
+
+  for (const testId of visible) {
+    await findVisibleByTestId(page, testId)
+  }
+
+  for (const testId of hidden) {
+    await expect(page.getByTestId(testId)).not.toBeVisible()
+  }
+}
+
+export async function openActivityActionMenu(
+  page: Page,
+  type: ActivityActionType,
+  name: string,
+  expectedActionTestId?: string
+) {
+  await openActionMenuByTestId(
+    page,
+    `actions-${type}-${name}`,
+    expectedActionTestId
+  )
 }
 
 export async function chooseActivityAction(
@@ -71,5 +116,68 @@ export async function chooseActivityAction(
   actionTestId: string
 ) {
   await openActivityActionMenu(page, type, name, actionTestId)
+  await clickVisibleByTestId(page, actionTestId)
+}
+
+export async function openAnswerCollectionActionMenu(
+  page: Page,
+  collectionName: string,
+  expectedActionTestId?: string
+) {
+  await openActionMenuByTestId(
+    page,
+    `answer-collection-actions-${collectionName}`,
+    expectedActionTestId
+  )
+}
+
+export async function chooseAnswerCollectionAction(
+  page: Page,
+  collectionName: string,
+  actionTestId: string
+) {
+  await openAnswerCollectionActionMenu(page, collectionName, actionTestId)
+  await clickVisibleByTestId(page, actionTestId)
+}
+
+export async function openUserGroupActionMenu(
+  page: Page,
+  groupName: string,
+  expectedActionTestId?: string
+) {
+  await openActionMenuByTestId(
+    page,
+    `user-group-actions-${groupName}`,
+    expectedActionTestId
+  )
+}
+
+export async function chooseUserGroupAction(
+  page: Page,
+  groupName: string,
+  actionTestId: string
+) {
+  await openUserGroupActionMenu(page, groupName, actionTestId)
+  await clickVisibleByTestId(page, actionTestId)
+}
+
+export async function openCatalogObjectActionMenu(
+  page: Page,
+  objectName: string,
+  expectedActionTestId?: string
+) {
+  await openActionMenuByTestId(
+    page,
+    `actions-dropdown-${objectName}`,
+    expectedActionTestId
+  )
+}
+
+export async function chooseCatalogObjectAction(
+  page: Page,
+  objectName: string,
+  actionTestId: string
+) {
+  await openCatalogObjectActionMenu(page, objectName, actionTestId)
   await clickVisibleByTestId(page, actionTestId)
 }

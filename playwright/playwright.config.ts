@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
+const recordVideo = process.env.PLAYWRIGHT_RECORD_VIDEO === 'true'
 
 // URL defaults mirror cypress.config.ts env block
 const baseURL =
@@ -41,7 +42,7 @@ export default defineConfig({
     testIdAttribute: 'data-cy',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: isCI && !recordVideo ? 'off' : 'retain-on-failure',
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     ignoreHTTPSErrors: true,

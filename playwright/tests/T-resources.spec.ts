@@ -5,6 +5,12 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import {
+  chooseAnswerCollectionAction,
+  openAnswerCollectionActionMenu,
+  openCatalogObjectActionMenu,
+  openUserGroupActionMenu,
+} from '../util/actions.js'
 import { test } from '../util/fixtures.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
@@ -44,8 +50,7 @@ const data = Object.assign({}, readFixture('T-resources.json'))
 
 test.describe.serial('Create, edit and share answer collections', () => {
   async function removeAnswerCollection({ name }: { name: string }) {
-    await page.getByTestId(`answer-collection-actions-${name}`).click()
-    await page.getByTestId('remove-answer-collection').click()
+    await chooseAnswerCollectionAction(page, name, 'remove-answer-collection')
     await page.getByTestId('confirm-remove-object').click()
   }
 
@@ -90,27 +95,14 @@ test.describe.serial('Create, edit and share answer collections', () => {
     collectionName: string,
     expectedAction = 'edit-answer-collection'
   ) {
-    const action = page.getByTestId(expectedAction)
-
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await page
-        .getByTestId(`answer-collection-actions-${collectionName}`)
-        .click()
-
-      if (await action.isVisible({ timeout: 1_000 }).catch(() => false)) {
-        return
-      }
-    }
-
-    await expect(action).toBeVisible()
+    await openAnswerCollectionActionMenu(page, collectionName, expectedAction)
   }
 
   async function clickAnswerCollectionAction(
     collectionName: string,
     actionTestId: string
   ) {
-    await openAnswerCollectionActions(collectionName, actionTestId)
-    await page.getByTestId(actionTestId).click()
+    await chooseAnswerCollectionAction(page, collectionName, actionTestId)
   }
 
   async function grantCollectionAccess({
@@ -123,10 +115,11 @@ test.describe.serial('Create, edit and share answer collections', () => {
     username: string
   }) {
     await openAnswerCollectionsPage()
-    await page
-      .getByTestId(`answer-collection-actions-${collectionName}`)
-      .click()
-    await page.getByTestId('share-answer-collection').click()
+    await chooseAnswerCollectionAction(
+      page,
+      collectionName,
+      'share-answer-collection'
+    )
     await expectByAssertion(
       page.getByTestId('new-permission-submit'),
       'be.disabled'
@@ -157,10 +150,11 @@ test.describe.serial('Create, edit and share answer collections', () => {
 
   async function testAnswerCollectionEditPermissions(data) {
     await openAnswerCollectionsPage()
-    await page
-      .getByTestId(`answer-collection-actions-${data.access.name}`)
-      .click()
-    await page.getByTestId('edit-answer-collection').click()
+    await chooseAnswerCollectionAction(
+      page,
+      data.access.name,
+      'edit-answer-collection'
+    )
     await expectByAssertion(
       page.getByTestId('answer-collection-name'),
       'have.value',
@@ -207,10 +201,11 @@ test.describe.serial('Create, edit and share answer collections', () => {
 
   async function validateAndUndoWritePermissionChanges(data) {
     await openAnswerCollectionsPage()
-    await page
-      .getByTestId(`answer-collection-actions-${data.access.replacedName}`)
-      .click()
-    await page.getByTestId('edit-answer-collection').click()
+    await chooseAnswerCollectionAction(
+      page,
+      data.access.replacedName,
+      'edit-answer-collection'
+    )
     await expectByAssertion(
       page.getByTestId('answer-collection-name'),
       'have.value',
@@ -361,10 +356,11 @@ test.describe.serial('Create, edit and share answer collections', () => {
     page.setDefaultNavigationTimeout(300_000)
     await loginLecturer(page)
     await openAnswerCollectionsPage()
-    await page
-      .getByTestId(`answer-collection-actions-${data.public.name}`)
-      .click()
-    await page.getByTestId('edit-answer-collection').click()
+    await chooseAnswerCollectionAction(
+      page,
+      data.public.name,
+      'edit-answer-collection'
+    )
     await expectByAssertion(
       page.getByTestId('answer-collection-name'),
       'have.value',
@@ -715,7 +711,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await expectByAssertion(
       page.getByTestId(`copy-object-${data.restricted.name}`),
       'not.exist'
@@ -803,10 +799,10 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.restricted.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await page.getByTestId(`request-access-${data.restricted.name}`).click()
     await page.getByTestId('cancel-request-access').click()
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await page.getByTestId(`request-access-${data.restricted.name}`).click()
     await page.getByTestId('confirm-request-access').click()
     await expect(
@@ -828,7 +824,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.restricted.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await page.getByTestId(`request-access-${data.restricted.name}`).click()
     await page.getByTestId('confirm-request-access').click()
     await expect(
@@ -1026,10 +1022,10 @@ test.describe.serial('Create, edit and share answer collections', () => {
     await expect(
       page.getByTestId(`catalog-object-${data.restricted.name}`)
     ).toContainText(messages.manage.catalog.accessRequested)
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await page.getByTestId(`cancel-request-${data.restricted.name}`).click()
     await page.getByTestId('confirm-request-cancellation').click()
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await page.getByTestId(`request-access-${data.restricted.name}`).click()
     await page.getByTestId('confirm-request-access').click()
     await expect(
@@ -1326,7 +1322,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.restricted.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await expectByAssertion(
       page.getByTestId(`copy-object-${data.restricted.name}`),
       'exist'
@@ -1355,7 +1351,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
     await loginLecturer(page)
     await page.getByTestId('resources').click()
     await page.getByTestId('catalog').click()
-    await page.getByTestId(`actions-dropdown-${data.restricted.name}`).click()
+    await openCatalogObjectActionMenu(page, data.restricted.name)
     await page.getByTestId(`remove-object-${data.restricted.name}`).click()
     await page.getByTestId('confirm-removal').click()
   })
@@ -1615,7 +1611,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.public.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.public.name}`).click()
+    await openCatalogObjectActionMenu(page, data.public.name)
     await expectByAssertion(
       page.getByTestId(`copy-object-${data.public.name}`),
       'not.exist'
@@ -1644,7 +1640,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.public.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.public.name}`).click()
+    await openCatalogObjectActionMenu(page, data.public.name)
     await page.getByTestId(`request-access-${data.public.name}`).click()
     await expect(
       page.getByText(messages.manage.catalog.requestPublicResource).first()
@@ -1669,7 +1665,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.public.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.public.name}`).click()
+    await openCatalogObjectActionMenu(page, data.public.name)
     await page.getByTestId(`request-access-${data.public.name}`).click()
     await page.getByTestId('confirm-request-access').click()
     await expect(
@@ -1845,13 +1841,13 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.public.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.public.name}`).click()
+    await openCatalogObjectActionMenu(page, data.public.name)
     await page.getByTestId(`copy-object-${data.public.name}`).click()
     await page.getByTestId('close-object-copy-modal').click()
-    await page.getByTestId(`actions-dropdown-${data.public.name}`).click()
+    await openCatalogObjectActionMenu(page, data.public.name)
     await page.getByTestId(`copy-object-${data.public.name}`).click()
     await page.getByTestId('cancel-object-copy').click()
-    await page.getByTestId(`actions-dropdown-${data.public.name}`).click()
+    await openCatalogObjectActionMenu(page, data.public.name)
     await page.getByTestId(`copy-object-${data.public.name}`).click()
     await page.getByTestId('confirm-object-copy').click()
     await openAnswerCollectionsPage()
@@ -1877,7 +1873,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
     )
     await page.getByTestId(`catalog-object-${data.public.name}`).click()
     await page.getByTestId('cancel-object-import').click()
-    await page.getByTestId(`actions-dropdown-${data.public.name}`).click()
+    await openCatalogObjectActionMenu(page, data.public.name)
     await page.getByTestId(`import-object-${data.public.name}`).click()
     await page.getByTestId('confirm-object-import').click()
     await openAnswerCollectionsPage()
@@ -2162,7 +2158,11 @@ test.describe.serial('Create, edit and share answer collections', () => {
     await expect(page.getByTestId(`user-group-${data.group1}`)).toContainText(
       messages.shared.generic.owner
     )
-    await page.getByTestId(`user-group-actions-${data.group1}`).click()
+    await openUserGroupActionMenu(
+      page,
+      data.group1,
+      `view-edit-group-${data.group1}`
+    )
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.group1}`),
       'exist'
@@ -2200,7 +2200,11 @@ test.describe.serial('Create, edit and share answer collections', () => {
     await expect(page.getByTestId(`user-group-${data.group2}`)).toContainText(
       messages.shared.generic.owner
     )
-    await page.getByTestId(`user-group-actions-${data.group2}`).click()
+    await openUserGroupActionMenu(
+      page,
+      data.group2,
+      `view-edit-group-${data.group2}`
+    )
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.group2}`),
       'exist'
@@ -2239,7 +2243,11 @@ test.describe.serial('Create, edit and share answer collections', () => {
     await expect(page.getByTestId(`user-group-${data.group3}`)).toContainText(
       messages.shared.generic.owner
     )
-    await page.getByTestId(`user-group-actions-${data.group3}`).click()
+    await openUserGroupActionMenu(
+      page,
+      data.group3,
+      `view-edit-group-${data.group3}`
+    )
     await expectByAssertion(
       page.getByTestId(`view-edit-group-${data.group3}`),
       'exist'
@@ -2500,7 +2508,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.private.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.private.name}`).click()
+    await openCatalogObjectActionMenu(page, data.private.name)
     await page.getByTestId(`request-access-${data.private.name}`).click()
     await page.getByTestId('confirm-request-access').click()
     await expect(
@@ -2586,7 +2594,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.private.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.private.name}`).click()
+    await openCatalogObjectActionMenu(page, data.private.name)
     await expectByAssertion(
       page.getByTestId(`copy-object-${data.private.name}`),
       'exist'
@@ -2607,7 +2615,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.private.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.private.name}`).click()
+    await openCatalogObjectActionMenu(page, data.private.name)
     await page.getByTestId(`request-access-${data.private.name}`).click()
     await page.getByTestId('confirm-request-access').click()
     await expect(
@@ -2650,7 +2658,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.private.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.private.name}`).click()
+    await openCatalogObjectActionMenu(page, data.private.name)
     await expectByAssertion(
       page.getByTestId(`copy-object-${data.private.name}`),
       'not.exist'
@@ -2688,7 +2696,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
     await loginLecturer(page)
     await page.getByTestId('resources').click()
     await page.getByTestId('catalog').click()
-    await page.getByTestId(`actions-dropdown-${data.private.name}`).click()
+    await openCatalogObjectActionMenu(page, data.private.name)
     await page.getByTestId(`remove-object-${data.private.name}`).click()
     await page.getByTestId('confirm-removal').click()
   })
@@ -2835,7 +2843,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId(`catalog-object-${data.direct.name}`),
       'exist'
     )
-    await page.getByTestId(`actions-dropdown-${data.direct.name}`).click()
+    await openCatalogObjectActionMenu(page, data.direct.name)
     await page.getByTestId(`request-access-${data.direct.name}`).click()
     await page.getByTestId('confirm-request-access').click()
   })

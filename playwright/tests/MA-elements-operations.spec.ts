@@ -1,7 +1,10 @@
 import { Page } from '@playwright/test'
 import dmQuestionsData from '../../cypress/cypress/fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
-import { chooseActivityAction } from '../util/actions.js'
+import {
+  chooseActivityAction,
+  openActionMenuByTestId,
+} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -24,8 +27,10 @@ import {
   createQuestionSC,
   createQuestionSE,
   deleteElement,
+  fillEditorField,
   searchAndEdit,
   validateElement,
+  verifyEditorField,
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -136,10 +141,7 @@ async function validateElementPresence(
 
 async function enterSCQuestionContent(page: Page) {
   await page.getByTestId('insert-question-title').fill(data.autoSave.title)
-  await page.getByTestId('insert-question-text').click()
-  await page
-    .getByTestId('insert-question-text')
-    .pressSequentially(data.autoSave.content)
+  await fillEditorField(page, 'insert-question-text', data.autoSave.content)
 
   await page.getByTestId('insert-answer-field-0').click()
   await page
@@ -162,13 +164,6 @@ async function enterSCQuestionContent(page: Page) {
       await page.getByTestId(`set-correctness-${ix}`).click()
     }
   }
-}
-
-async function clearAndTypeEditor(page: Page, testId: string, text: string) {
-  const editor = page.getByTestId(testId)
-  await editor.click()
-  await editor.clear()
-  await editor.pressSequentially(text)
 }
 
 async function saveElementModal(page: Page) {
@@ -286,7 +281,7 @@ async function openShareModalForElement(page: Page, elementName: string) {
   await page.getByTestId('elements-search-input').clear()
   await page.getByTestId('elements-search-input').fill(elementName)
   await page.keyboard.press('Enter')
-  await page.getByTestId(`actions-element-${elementName}`).click()
+  await openActionMenuByTestId(page, `actions-element-${elementName}`)
   await page.getByTestId(`share-element-${elementName}`).click()
 }
 
@@ -432,10 +427,11 @@ test.describe('Create different types of elements (with and without sample solut
         '[data-cy="select-question-status"]',
         messages.shared.DRAFT.statusLabel
       )
-      await page.getByTestId('insert-question-text').click()
-      await page
-        .getByTestId('insert-question-text')
-        .pressSequentially(data.duplication.content)
+      await fillEditorField(
+        page,
+        'insert-question-text',
+        data.duplication.content
+      )
       await page.getByTestId('insert-answer-field-0').click()
       await page.getByTestId('insert-answer-field-0').pressSequentially('50%')
       await page.getByTestId('insert-question-title').click()
@@ -509,8 +505,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.title
       )
-      await page.getByTestId('insert-question-text').click()
-      await expect(page.getByTestId('insert-question-text')).toContainText(
+      await verifyEditorField(
+        page,
+        'insert-question-text',
         data.autoSave.content
       )
       for (let ix = 0; ix < data.autoSave.choices.length; ix++) {
@@ -576,13 +573,16 @@ test.describe('Create different types of elements (with and without sample solut
       await page
         .getByTestId('insert-question-title')
         .fill(data.autoSave.titleEdited)
-      await expect(page.getByTestId('insert-question-text')).toContainText(
-        data.autoSave.content
-      )
-      await clearAndTypeEditor(
+      await verifyEditorField(
         page,
         'insert-question-text',
-        data.autoSave.contentEdited
+        data.autoSave.content
+      )
+      await fillEditorField(
+        page,
+        'insert-question-text',
+        data.autoSave.contentEdited,
+        true
       )
       await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
@@ -592,7 +592,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.titleEdited
       )
-      await expect(page.getByTestId('insert-question-text')).toContainText(
+      await verifyEditorField(
+        page,
+        'insert-question-text',
         data.autoSave.contentEdited
       )
     })
@@ -607,13 +609,16 @@ test.describe('Create different types of elements (with and without sample solut
       await page
         .getByTestId('insert-question-title')
         .fill(data.autoSave.titleEdited)
-      await expect(page.getByTestId('insert-question-text')).toContainText(
-        data.autoSave.content
-      )
-      await clearAndTypeEditor(
+      await verifyEditorField(
         page,
         'insert-question-text',
-        data.autoSave.contentEdited
+        data.autoSave.content
+      )
+      await fillEditorField(
+        page,
+        'insert-question-text',
+        data.autoSave.contentEdited,
+        true
       )
       await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
@@ -623,7 +628,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.title
       )
-      await expect(page.getByTestId('insert-question-text')).toContainText(
+      await verifyEditorField(
+        page,
+        'insert-question-text',
         data.autoSave.content
       )
       await page.waitForTimeout(3000)
@@ -643,13 +650,16 @@ test.describe('Create different types of elements (with and without sample solut
       await page
         .getByTestId('insert-question-title')
         .fill(data.autoSave.titleEdited)
-      await expect(page.getByTestId('insert-question-text')).toContainText(
-        data.autoSave.content
-      )
-      await clearAndTypeEditor(
+      await verifyEditorField(
         page,
         'insert-question-text',
-        data.autoSave.contentEdited
+        data.autoSave.content
+      )
+      await fillEditorField(
+        page,
+        'insert-question-text',
+        data.autoSave.contentEdited,
+        true
       )
       await page.waitForTimeout(3000)
       await saveElementModal(page)
@@ -658,7 +668,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.titleEdited
       )
-      await expect(page.getByTestId('insert-question-text')).toContainText(
+      await verifyEditorField(
+        page,
+        'insert-question-text',
         data.autoSave.contentEdited
       )
     })
@@ -672,7 +684,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.titleEditedDuplicated
       )
-      await expect(page.getByTestId('insert-question-text')).toContainText(
+      await verifyEditorField(
+        page,
+        'insert-question-text',
         data.autoSave.contentEdited
       )
       await page.waitForTimeout(3000)
@@ -691,10 +705,11 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.titleEditedDuplicated
       )
-      await clearAndTypeEditor(
+      await fillEditorField(
         page,
         'insert-question-text',
-        data.autoSave.contentEdited2
+        data.autoSave.contentEdited2,
+        true
       )
       await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
@@ -704,7 +719,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.titleEditedDuplicated
       )
-      await expect(page.getByTestId('insert-question-text')).toContainText(
+      await verifyEditorField(
+        page,
+        'insert-question-text',
         data.autoSave.contentEdited2
       )
     })
@@ -858,25 +875,28 @@ test.describe('Create different types of elements (with and without sample solut
       await searchAndEdit(page, data.update.title1)
 
       await page.getByTestId('insert-question-title').fill(data.update.title2)
-      await clearAndTypeEditor(
+      await fillEditorField(
         page,
         'insert-question-text',
-        data.update.content2
+        data.update.content2,
+        true
       )
 
       for (let ix = 0; ix < data.update.choices2.length; ix++) {
-        await clearAndTypeEditor(
+        await fillEditorField(
           page,
           `insert-answer-field-${ix}`,
-          data.update.choices2[ix].value
+          data.update.choices2[ix].value,
+          true
         )
       }
 
       for (let ix = 0; ix < data.update.choices2.length; ix++) {
-        await clearAndTypeEditor(
+        await fillEditorField(
           page,
           `insert-answer-feedback-${ix}`,
-          data.update.choices2[ix].feedback ?? ''
+          data.update.choices2[ix].feedback ?? '',
+          true
         )
       }
 
@@ -934,17 +954,19 @@ test.describe('Create different types of elements (with and without sample solut
       await searchAndEdit(page, data.update.title2)
 
       await page.getByTestId('insert-question-title').fill(data.update.title3)
-      await clearAndTypeEditor(
+      await fillEditorField(
         page,
         'insert-question-text',
-        data.update.content3
+        data.update.content3,
+        true
       )
 
       for (let ix = 0; ix < data.update.choices3.length; ix++) {
-        await clearAndTypeEditor(
+        await fillEditorField(
           page,
           `insert-answer-field-${ix}`,
-          data.update.choices3[ix].value
+          data.update.choices3[ix].value,
+          true
         )
       }
 
@@ -1268,7 +1290,7 @@ test.describe('Create different types of elements (with and without sample solut
         permissionLevel: 'restricted',
       })
 
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await expectNotAttached(
         page.getByTestId(`copy-object-${data.SEML.title}`)
       )
@@ -1343,10 +1365,10 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`request-access-${data.SEML.title}`).click()
       await page.getByTestId('cancel-request-access').click()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`request-access-${data.SEML.title}`).click()
       await page.getByTestId('confirm-request-access').click()
 
@@ -1366,7 +1388,7 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`request-access-${data.SEML.title}`).click()
       await page.getByTestId('confirm-request-access').click()
 
@@ -1473,11 +1495,11 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toContainText(messages.manage.catalog.accessRequested)
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`cancel-request-${data.SEML.title}`).click()
       await page.getByTestId('confirm-request-cancellation').click()
 
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`request-access-${data.SEML.title}`).click()
       await page.getByTestId('confirm-request-access').click()
       await expect(
@@ -1585,7 +1607,7 @@ test.describe('Create different types of elements (with and without sample solut
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toBeVisible()
 
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await expect(
         page.getByTestId(`copy-object-${data.SEML.title}`)
       ).toBeVisible()
@@ -1608,7 +1630,7 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('analytics')).toBeVisible()
       await page.getByTestId('resources').click()
       await page.getByTestId('catalog').click()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`remove-object-${data.SEML.title}`).click()
       await page.getByTestId('confirm-removal').click()
     })
@@ -1712,7 +1734,7 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await expectNotAttached(
         page.getByTestId(`copy-object-${data.SEML.title}`)
       )
@@ -1735,7 +1757,7 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`request-access-${data.SEML.title}`).click()
       await expect(
         page.getByText(messages.manage.catalog.requestPublicResource)
@@ -1757,7 +1779,7 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`request-access-${data.SEML.title}`).click()
       await page.getByTestId('confirm-request-access').click()
       await expect(
@@ -1862,14 +1884,14 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`catalog-object-${data.SEML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`copy-object-${data.SEML.title}`).click()
       await page.getByTestId('close-object-copy-modal').click()
 
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`copy-object-${data.SEML.title}`).click()
       await page.getByTestId('cancel-object-copy').click()
-      await page.getByTestId(`actions-dropdown-${data.SEML.title}`).click()
+      await openActionMenuByTestId(page, `actions-dropdown-${data.SEML.title}`)
       await page.getByTestId(`copy-object-${data.SEML.title}`).click()
       await page.getByTestId('confirm-object-copy').click()
 
@@ -2018,7 +2040,7 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(page, `actions-element-${data.SCML.title}`)
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
@@ -2040,7 +2062,7 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(page, `actions-element-${data.SCML.title}`)
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
