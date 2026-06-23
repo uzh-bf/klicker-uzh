@@ -182,7 +182,7 @@ function CourseOverview({
   if (!courseOverview || !course) {
     return (
       <Layout displayName={t('shared.generic.leaderboard')}>
-        <Loader />
+        <UserNotification type="error" message={t('shared.error.404')} />
       </Layout>
     )
   }

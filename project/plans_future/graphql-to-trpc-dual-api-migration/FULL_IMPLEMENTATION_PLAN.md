@@ -423,6 +423,50 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Course Overview Missing-Course State
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated PWA course overview
+flow. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal,
+or package cleanup was started.
+
+Findings:
+
+- The migrated course overview page has explicit loading and error states for
+  the `participant.courseOverview`, `participant.courseLeaderboard`, and
+  `participant.courseGroupActivities` tRPC queries.
+- The course leaderboard, leave-leaderboard modal, group creation/join, random
+  group pool, group leave, group rename, and group-message mutations already
+  disable duplicate actions, show loading state, invalidate the relevant tRPC
+  queries, and surface localized failure toasts.
+- `participant.courseOverview` intentionally returns
+  `{ courseOverview: null, participantGroups: [] }` when the course id does not
+  resolve, but the page rendered a loader for that state after loading had
+  already finished.
+
+Changes:
+
+- Replace the infinite fallback loader for a missing/null course overview with
+  the existing localized `shared.error.404` error notification.
+- Preserve existing query loading/error behavior, mutation guards, cache
+  invalidations, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --config
+  .prettierrc.mjs --write
+  apps/frontend-pwa/src/pages/course/[courseId]/index.tsx` passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-pwa/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3001` failed with connection refused.
+
+Next:
+
+- Verify, commit, and push this focused missing-course UX cleanup.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Bookmarks Page Cache Coherence
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
