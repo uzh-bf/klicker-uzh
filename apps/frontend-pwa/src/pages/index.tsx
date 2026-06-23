@@ -136,13 +136,18 @@ function Index() {
     () => ({ endpoint: subscription?.endpoint, assessmentOnly }),
     [assessmentOnly, subscription?.endpoint]
   )
-  const { data, isLoading } =
-    trpc.participant.participations.useQuery(participationsInput)
+  const {
+    data,
+    error: participationsError,
+    isLoading,
+  } = trpc.participant.participations.useQuery(participationsInput)
+  const participations = data?.participations
+  const hasParticipationsData = typeof participations !== 'undefined'
 
   const { courses, oldCourses, activeLiveQuizzes, activeMicrolearning } =
-    useStudentOverviewSplit({ participations: data?.participations ?? [] })
+    useStudentOverviewSplit({ participations: participations ?? [] })
 
-  if (isLoading && !data) {
+  if (isLoading && !hasParticipationsData) {
     return (
       <Layout key="loading-layout" displayName={t('shared.generic.title')}>
         <Loader />
@@ -150,7 +155,7 @@ function Index() {
     )
   }
 
-  if (!data?.participations) {
+  if (!hasParticipationsData) {
     return (
       <Layout key="error-layout" displayName={t('shared.generic.title')}>
         <UserNotification
@@ -218,6 +223,13 @@ function Index() {
         className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
         data-cy="homepage"
       >
+        {participationsError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
         {/* {hasSeenSurvey === 'false' && (
           <Link
             href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"

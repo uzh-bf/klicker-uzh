@@ -423,6 +423,57 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: PWA Home Participation Stale Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-pwa home
+participation list. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Finding:
+
+- `apps/frontend-pwa/src/pages/index.tsx` loads the participant home overview
+  through the migrated `participant.participations` tRPC query.
+- Initial loading and initial no-data failures already have a loader/error
+  fallback.
+- The participation query input is memoized from the push subscription endpoint
+  and assessment mode, so query-key churn is already controlled.
+- Push notification subscribe/unsubscribe UI is currently commented out in
+  `CourseElement`; the shared push hook already sets user-facing info messages
+  for push subscription failures.
+- Background/refetch failures with stale participation data are not surfaced
+  because the query error is not read.
+
+Change:
+
+- Read the home participation query error.
+- Kept the existing initial loading/error behavior.
+- Show the existing system-error notification above the home content when a
+  refetch fails but cached participation data still exists.
+
+Review and simplification:
+
+- Kept the change in the PWA home page instead of adding shared query wrappers
+  or changing React Query cache policy.
+- Reused the existing generic system-error copy already used by the page's
+  initial no-data failure path.
+- Left push notification mutation behavior unchanged because the course
+  subscribe button is currently commented out and the shared push hook already
+  sets user-facing info messages for subscription failures.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/pages/index.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+- `git diff --check`
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- Runtime/browser verification remains blocked because local services are not
+  listening:
+  `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with
+  `Couldn't connect to server`.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Course List Stale Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
