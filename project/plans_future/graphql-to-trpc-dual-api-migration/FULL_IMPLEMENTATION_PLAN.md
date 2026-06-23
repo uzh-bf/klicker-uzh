@@ -423,6 +423,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Assessment Student Detail Refetch Error UX
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and already migrated frontend-manage
+assessment selected-student detail panes. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- Course assessment and live-quiz assessment parent pages now surface
+  background/refetch failures while stale parent data stays visible.
+- The selected-student detail panes use separate migrated tRPC queries:
+  `activity.studentCourseResults` and
+  `activity.liveQuizStudentAssessmentResponses`.
+- Those panes already have blocking initial loading/error/empty states, but a
+  refetch failure after detail data is visible is silent.
+
+Changes:
+
+- Add existing `UserNotification` error fallbacks above stale selected-student
+  course/live-quiz detail content when the nested migrated tRPC query has cached
+  data and a refetch/background request fails.
+- Preserve existing initial loading/error/null states, empty states,
+  point-correction modals, selected response modal behavior, tRPC inputs/cache
+  keys, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write
+  apps/frontend-manage/src/components/liveQuiz/results/CourseSingleStudentResults.tsx
+  apps/frontend-manage/src/components/liveQuiz/results/LiveQuizSingleStudentResults.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit
+  --pretty false` passed.
+- `git diff --check` passed.
+- `./packages/api/node_modules/.bin/vitest run packages/api/src/trpc/__tests__`
+  passed with 48 files and 472 tests.
+- `/opt/homebrew/bin/timeout 90s pnpm --filter @klicker-uzh/graphql test`
+  produced no output and exited with code 124 after the timeout. Local GraphQL
+  package Vitest remains blocked in this environment; the GitHub
+  `packages/graphql Vitest` PR check is the current authoritative signal.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+- Self-review/simplification completed in the main session because no subagent
+  was requested for this continuation. The diff only adds existing
+  `UserNotification` fallbacks under stale-data conditions and does not alter
+  initial loading/error/null states, empty states, point-correction modals,
+  selected response modal behavior, tRPC inputs/cache keys, or GraphQL
+  coexistence.
+
+Next:
+
+- Continue the UX/client-quality audit only on already migrated tRPC surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Evaluation and Assessment Refetch Error UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

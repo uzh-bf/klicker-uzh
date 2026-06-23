@@ -50,10 +50,19 @@ function CourseSingleStudentResults({
 
   if (studentCourseResults.length === 0) {
     return (
-      <UserNotification
-        type="info"
-        message={t('pwa.assessment.noCompletedLiveQuizzesYet')}
-      />
+      <>
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t('manage.assessment.errorLoadingCourseResults')}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
+        <UserNotification
+          type="info"
+          message={t('pwa.assessment.noCompletedLiveQuizzesYet')}
+        />
+      </>
     )
   }
 
@@ -71,6 +80,12 @@ function CourseSingleStudentResults({
 
   return (
     <div className="space-y-3">
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingCourseResults')}
+        />
+      ) : null}
       {studentCourseResults.map((result) => (
         <div
           key={result.id}

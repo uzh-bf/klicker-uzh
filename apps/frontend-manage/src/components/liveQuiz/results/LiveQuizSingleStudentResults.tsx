@@ -192,10 +192,21 @@ function LiveQuizSingleStudentResults({
 
   if (computedBlocks.length === 0) {
     return (
-      <UserNotification
-        type="info"
-        message={t('manage.assessment.liveQuizStudentHasNoResponses')}
-      />
+      <>
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t(
+              'manage.assessment.errorLoadingStudentLiveQuizResponses'
+            )}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
+        <UserNotification
+          type="info"
+          message={t('manage.assessment.liveQuizStudentHasNoResponses')}
+        />
+      </>
     )
   }
 
@@ -215,6 +226,13 @@ function LiveQuizSingleStudentResults({
 
   return (
     <>
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingStudentLiveQuizResponses')}
+          className={{ root: 'mb-3' }}
+        />
+      ) : null}
       <ShadcnTable className="text-xs sm:text-sm">
         <ShadcnTableHeader>
           <ShadcnTableRow>
