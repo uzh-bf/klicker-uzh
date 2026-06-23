@@ -1,6 +1,7 @@
 import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 function CatalogChangeAccessModal({
@@ -24,7 +25,9 @@ function CatalogChangeAccessModal({
     trpc.sharing.changeCatalogObjectAccess.useMutation()
   const changeCatalogCollectionAccess =
     trpc.sharing.changeCatalogCollectionAccess.useMutation()
+  const [changePending, setChangePending] = useState(false)
   const changing =
+    changePending ||
     changeCatalogObjectAccess.isLoading ||
     changeCatalogCollectionAccess.isLoading
   const handleClose = () => {
@@ -38,8 +41,12 @@ function CatalogChangeAccessModal({
       open
       title={t('manage.catalog.changeAccessTitle')}
       onClose={handleClose}
+      escapeDisabled={changing}
       primaryLabel={t('manage.catalog.changeAccessConfirm')}
       onPrimaryAction={async () => {
+        if (changing) return
+
+        setChangePending(true)
         let success = false
 
         try {
@@ -102,6 +109,8 @@ function CatalogChangeAccessModal({
         } catch (e) {
           console.error('Error changing object access', e)
           success = false
+        } finally {
+          setChangePending(false)
         }
 
         if (success) {

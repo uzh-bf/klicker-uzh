@@ -2,6 +2,7 @@ import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Button, H4, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as Yup from 'yup'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 import ObjectTypeSelection from './ObjectTypeSelection'
@@ -30,7 +31,8 @@ function AddObjectToCatalogModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const addObjectToCatalog = trpc.sharing.addObjectToCatalog.useMutation()
-  const adding = addObjectToCatalog.isLoading
+  const [addPending, setAddPending] = useState(false)
+  const adding = addObjectToCatalog.isLoading || addPending
   const handleClose = () => {
     if (!adding) {
       onClose()
@@ -42,6 +44,7 @@ function AddObjectToCatalogModal({
       open
       title={t('manage.catalog.addObjectToCatalogTitle')}
       onClose={handleClose}
+      escapeDisabled={adding}
       className={{ content: 'max-w-2xl pb-2' }}
       dataCloseButton={{ cy: 'close-add-object-modal' }}
     >
@@ -66,7 +69,10 @@ function AddObjectToCatalogModal({
           }),
         })}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
+          if (addPending) return
+
           setSubmitting(true)
+          setAddPending(true)
 
           // check that values are valid
           if (
@@ -75,6 +81,7 @@ function AddObjectToCatalogModal({
             typeof values.access === 'undefined'
           ) {
             setSubmitting(false)
+            setAddPending(false)
             onError()
             return
           }
@@ -115,16 +122,16 @@ function AddObjectToCatalogModal({
                 .invalidate()
                 .catch(console.error)
               resetForm()
-              setSubmitting(false)
               onSuccess()
             } else {
-              setSubmitting(false)
               onError()
             }
           } catch (error) {
             console.error('Error submitting form:', error)
-            setSubmitting(false)
             onError()
+          } finally {
+            setSubmitting(false)
+            setAddPending(false)
           }
         }}
       >

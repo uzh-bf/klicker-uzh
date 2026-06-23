@@ -423,6 +423,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With Runtime Blockers: Manage Catalog Add/Access Action Guards
+
+Status: complete locally with documented runtime blockers. Scope stayed inside
+the tRPC UX/client-quality audit and the already migrated frontend-manage
+catalog add-object and access-change workflows. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Findings:
+
+- `AddObjectToCatalogModal` and `CatalogChangeAccessModal` already use migrated
+  tRPC writes and update the React Query catalog caches directly after
+  confirmed server success.
+- Both modals guarded close/primary controls with mutation-hook loading state,
+  but the visible action begins in the component before that hook state is
+  necessarily reflected.
+- The add-object modal also exposes a modal close/escape path outside Formik's
+  render props, so it needs a component-level pending state in addition to
+  Formik `isSubmitting`.
+- Context7 Formik docs were refreshed before this change. They confirm async
+  Formik submission state follows the returned promise; the added local state
+  covers modal-level close paths outside Formik.
+
+Changes:
+
+- Add local pending state around add-object submit and access-change confirm
+  actions.
+- Use the combined pending state for modal close/escape, submit/confirm loading,
+  and duplicate-action prevention.
+- Preserve existing tRPC cache `setData`, best-effort catalog collection
+  invalidation, success/error callbacks, and GraphQL/tRPC coexistence.
+
+Checks:
+
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/prettier --check
+  apps/frontend-manage/src/components/catalog/administration/AddObjectToCatalogModal.tsx
+  apps/frontend-manage/src/components/catalog/actions/CatalogChangeAccessModal.tsx
+  project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `/private/tmp/klicker-trpc-ux/node_modules/.bin/tsc -p
+  apps/frontend-manage/tsconfig.json --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- Browser/runtime verification remains blocked in the current environment:
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` and
+  `curl -sS -I http://127.0.0.1:3002` both failed with connection refused.
+- Review/simplification was performed locally because the available multi-agent
+  tool explicitly requires a user request before spawning subagents.
+
+Next:
+
+- Commit and push this focused catalog add/access action guard.
+- Continue only already migrated tRPC UX/client-quality audit surfaces.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: Manage Group Activity Wizard Submit Boundary
 
 Status: complete locally with documented runtime blockers. Scope stayed inside
