@@ -31,6 +31,13 @@ function Practice() {
           />
         ) : null}
 
+        {error && practiceCourses ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
         {practiceCourses?.map((course) => {
           return (
             <LinkButton

@@ -58,6 +58,12 @@ function Bookmarks() {
     >
       <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H1 className={{ root: 'text-xl' }}>{t('pwa.general.selectCourse')}</H1>
+        {error && participantCourses ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         {participantCourses.length === 0 && (
           <div className="flex flex-col gap-2">
             <UserNotification type="info">

@@ -73,6 +73,12 @@ function Repetition() {
     >
       <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H2>{t('shared.generic.practiceQuizzes')}</H2>
+        {error && practiceQuizList ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         {courses?.length
           ? courses.map((course) => (
               <CourseCollapsible
