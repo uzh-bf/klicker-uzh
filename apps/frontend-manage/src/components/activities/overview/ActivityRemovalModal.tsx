@@ -71,7 +71,7 @@ function ActivityRemovalModal({
           throw new Error('Failed to remove activity')
         }
 
-        await refetchActivities?.().catch(console.error)
+        await refetchActivities?.()
       }}
       submitting={removeObject.isLoading}
       confirmations={confirmations}

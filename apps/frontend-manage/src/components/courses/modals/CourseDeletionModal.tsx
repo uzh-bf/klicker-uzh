@@ -127,8 +127,8 @@ function CourseDeletionModal({
                 }
               : data
           )
-          await utils.course.userCourses.invalidate().catch(console.error)
           closeModal()
+          void utils.course.userCourses.invalidate().catch(console.error)
         } catch (error) {
           console.error(error)
           toast({

@@ -423,6 +423,53 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-23 Completed Locally With CI Evidence: Cypress Refresh Boundary Follow-Up
+
+Status: complete locally with Cypress Cloud evidence still running. Scope stayed
+inside S04 client UX and Cypress stabilization; no S05/S06 cleanup or GraphQL
+removal was started.
+
+Scope:
+
+- Investigated current Cypress Cloud run `6925` for PR `#5132` at branch head
+  `d22a70688` / merge commit `1898df2b`.
+- Extracted failed specs and titles directly from Cypress Cloud GraphQL:
+  `N-course-workflow.cy.ts` had 6 failures and `O-live-quiz-workflow.cy.ts`
+  had 8 failures while the run was still active.
+- Downloaded representative Cypress thumbnails for the first course failure,
+  random-group failure, and live-quiz leaderboard failure.
+
+Findings:
+
+- Course settings submit showed the course detail page with a generic error
+  toast after the successful local cache update path, suggesting non-essential
+  invalidation should not block modal closure.
+- Activity/live-quiz deletion and removal flows closed modals after swallowing
+  visible list refetch failures, which can leave stale rows visible and cascade
+  into missing or duplicate Cypress selectors.
+
+Changes:
+
+- Keep course settings, course deletion, and course removal UI responsive by
+  applying local cache updates first, closing the modal, and backgrounding
+  non-essential `userCourses` / `course.detail` invalidations.
+- Require visible activity-list refreshes for activity removal and live-quiz
+  deletion before modal close, so refresh failures surface through the existing
+  modal error handling instead of leaving stale rows in the UI.
+
+Verification:
+
+- `./node_modules/.bin/prettier --write` on the 5 touched manage files passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+
+Next:
+
+- Commit and push the refresh-boundary follow-up.
+- Let the next Cypress run determine whether remaining PWA live-quiz account
+  failures need a separate fix.
+
 ### 2026-06-23 Completed Locally With Runtime Blockers: PWA Join Refresh UX
 
 Status: complete locally with documented runtime blockers. Scope stayed inside

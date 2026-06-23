@@ -59,7 +59,7 @@ function CourseRemovalModal({
               }
             : data
         )
-        await utils.course.userCourses.invalidate().catch(console.error)
+        void utils.course.userCourses.invalidate().catch(console.error)
       }}
       submitting={removeObject.isLoading}
       confirmations={confirmations}
