@@ -145,6 +145,13 @@ function RunningLiveQuiz() {
       title={t('control.liveQuiz.liveQuizWithName', { name: name })}
       quizId={id}
     >
+      {quizError && controlLiveQuiz ? (
+        <UserNotification
+          message={t('control.liveQuiz.errorLoadingLiveQuiz')}
+          type="error"
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
         {typeof currentBlockOrder !== 'undefined' ? (
           <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>

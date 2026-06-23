@@ -51,6 +51,13 @@ function Index() {
   return (
     <Layout title={t('control.home.courseSelection')}>
       <div className="flex w-full flex-col gap-4">
+        {errorCourses && dataCourses ? (
+          <UserNotification
+            type="error"
+            className={{ root: 'text-base' }}
+            message={t('control.course.loadingFailed')}
+          />
+        ) : null}
         {dataCourses?.controlCourses && (
           <div>
             <H4>{t('control.home.selectCourse')}</H4>

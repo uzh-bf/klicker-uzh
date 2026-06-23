@@ -71,6 +71,13 @@ function UnassignedLiveQuizzes() {
 
   return (
     <Layout title={t('control.home.liveQuizzesNoCourse')}>
+      {error && data ? (
+        <UserNotification
+          type="error"
+          className={{ root: 'mb-4 text-base' }}
+          message={t('control.home.loadingLiveQuizzesFailed')}
+        />
+      ) : null}
       <LiveQuizLists
         runningLiveQuizzes={runningQuizzes || []}
         plannedLiveQuizzes={plannedQuizzes || []}

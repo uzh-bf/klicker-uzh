@@ -106,6 +106,13 @@ function Course() {
 
   return (
     <Layout title={controlCourse.name}>
+      {error && controlCourse ? (
+        <UserNotification
+          type="error"
+          className={{ root: 'mb-4 text-base' }}
+          message={t('control.course.loadingFailed')}
+        />
+      ) : null}
       <LiveQuizLists
         runningLiveQuizzes={runningQuizzes || []}
         plannedLiveQuizzes={plannedQuizzes || []}
