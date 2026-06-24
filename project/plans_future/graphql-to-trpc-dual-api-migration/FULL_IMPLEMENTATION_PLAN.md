@@ -423,6 +423,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 In Progress: PWA Edit Profile Token Refresh UX Follow-Up
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and an already migrated frontend-pwa edit-profile
+refresh path. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration` is clean and
+  aligned with origin at `8efa0203e`; PR head is `8efa0203e`.
+- Current PR checks for `8efa0203e`: `packages/api tRPC Vitest`,
+  `packages/graphql Vitest`, typecheck, lint, format, SonarCloud, CodeQL,
+  Claude review, and Docker image builds are green. Cypress Cloud run `6934`
+  is running for merge ref `aa098f75` with 11/18 tests passed and 0 failed at
+  the time of this audit.
+
+Findings:
+
+- `apps/frontend-pwa/src/pages/editProfile.tsx` already separates initial
+  loading, no-data error, stale-data refetch error, mutation failure, and
+  post-mutation refresh failure states.
+- The page still passed a participant-token callback to `useParticipantToken`
+  that refreshed `participant.self` with `catch(console.error)`.
+- This callback is used when the participant token is synchronized through
+  client storage/cookies; if the refresh fails, the visible profile page can
+  keep stale identity/profile data with no user-facing failure.
+
+Change:
+
+- Reuse the existing `onRefreshError` helper for the token callback's
+  `participant.self` refetch failure instead of console-only logging.
+- Leave token synchronization, routing, mutation behavior, loading/error
+  fallbacks, and GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- Passed locally:
+  - `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/pages/editProfile.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  - `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Browser/runtime verification is blocked locally because no stack is
+  listening: `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+- Review/simplification: subagent tooling was not used because the available
+  subagent tool requires an explicit user request in this environment. Manual
+  review found no smaller implementation than reusing the existing
+  `onRefreshError` callback; no new helper, copy, cache key, or behavior branch
+  was added.
+
+Next:
+
+- Commit and push this focused PWA edit-profile token-refresh UX cleanup, then
+  refresh PR checks and Cypress Cloud run `6934`.
+
 ### 2026-06-24 In Progress: PWA Element Feedback Cache UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

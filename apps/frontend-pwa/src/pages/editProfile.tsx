@@ -61,7 +61,7 @@ function EditProfile({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
-    callback: () => void refetch().catch(console.error),
+    callback: () => void refetch().catch(onRefreshError),
   })
 
   if (isLoading && !self) {
