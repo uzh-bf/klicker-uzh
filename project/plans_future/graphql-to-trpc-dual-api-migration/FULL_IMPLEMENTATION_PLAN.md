@@ -423,6 +423,90 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity Start/Delete Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage activity start
+and deletion confirmation workflows. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state before this patch: local `codex/trpc-dual-api-migration` was
+  clean and aligned with origin at `2bb35b270`.
+- PR #5132 head is `2bb35b2706f4cc4d155b4a07b34d8fff769483c8`, ready for
+  review, not draft, with review approval still required and no active
+  unresolved current review threads.
+- Current-head checks for `2bb35b270` show `packages/api tRPC Vitest`, format,
+  lint, syncpack, util tests, GitGuardian, CodeQL java-kotlin/python/js-ts, and
+  selected Docker builds green. `packages/graphql Vitest`, Cypress Cloud,
+  typecheck, SonarCloud, OLAT API tests, Claude review, CodeQL JavaScript, and
+  remaining staged Docker builds were still running when this local slice was
+  verified.
+- Context7 docs were refreshed before editing. Relevant behavior: tRPC
+  `useUtils()` invalidation helpers wrap TanStack Query cache operations, and
+  TanStack Query mutation success flows can invalidate targeted query keys after
+  mutation success.
+
+Findings:
+
+- `GroupActivityStartingModal` already uses the migrated
+  `activity.openGroupActivity` tRPC mutation.
+- `PracticeQuizDeletionModal`, `MicroLearningDeletionModal`, and
+  `GroupActivityDeletionModal` already use the migrated `activity.delete` tRPC
+  mutation.
+- All four flows use `ActivityConfirmationModal`, which keeps the modal open,
+  disables duplicate submit with its pending state, and shows the existing
+  generic system-error toast when `onSubmit` rejects.
+- After a successful start/delete mutation, the visible course detail and
+  activity list depend on refreshing `course.detail` and the parent activity
+  list before the confirmation modal closes.
+- The required post-success refreshes were hidden behind `catch(console.error)`,
+  so refresh failures could still close the modal while the visible activity
+  state stayed stale and the user saw no failure.
+
+Change:
+
+- Let the `course.detail` invalidation / parent activity-list refetch reject in
+  the group-activity start flow and all three activity deletion flows.
+- The existing `ActivityConfirmationModal` error boundary now keeps the modal
+  open and shows the existing generic system-error toast if required refresh
+  fails after the server-side mutation succeeds.
+- Existing mutation inputs, summary loading/error fallback, confirmation
+  checklist behavior, pending guards, query keys, and GraphQL/tRPC coexistence
+  remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/modals/GroupActivityStartingModal.tsx apps/frontend-manage/src/components/courses/modals/PracticeQuizDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/MicroLearningDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/GroupActivityDeletionModal.tsx`:
+  passed; files unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "catch\\(console\\.error\\)|openGroupActivity|deleteActivity|course\\.detail\\.invalidate|ActivityConfirmationModal|systemError" apps/frontend-manage/src/components/courses/modals/GroupActivityStartingModal.tsx apps/frontend-manage/src/components/courses/modals/PracticeQuizDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/MicroLearningDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/GroupActivityDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/ActivityConfirmationModal.tsx`:
+  old silent refresh catches removed from the start/delete flows; shared
+  confirmation modal still owns the visible generic error path.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3002`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Review / simplification:
+
+- Dedicated review/simplification subagents were not used because the available
+  multi-agent tool requires explicit user authorization for delegation in this
+  environment.
+- Self-review confirmed the diff is limited to already migrated confirmation
+  workflows plus this progress entry; it changes no tRPC inputs, no
+  GraphQL/Apollo coexistence paths, and no broader cache policy.
+- Simplification check: no new helper or abstraction was added; all four flows
+  rely on the existing `ActivityConfirmationModal` failure handling instead of
+  duplicating local toast logic.
+
+Next:
+
+- Commit and push this focused manage activity start/delete refresh-failure UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity End Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

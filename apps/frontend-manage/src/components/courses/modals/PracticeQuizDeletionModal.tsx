@@ -82,7 +82,7 @@ function PracticeQuizDeletionModal({
         await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
-        ]).catch(console.error)
+        ])
       }}
       submitting={deleteActivity.isLoading}
       confirmations={confirmations}

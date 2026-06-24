@@ -56,7 +56,7 @@ function GroupActivityStartingModal({
         await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
-        ]).catch(console.error)
+        ])
       }}
       submitting={openGroupActivity.isLoading}
       confirmations={confirmations}
