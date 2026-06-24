@@ -423,6 +423,86 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity Extension Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage activity
+extension workflow. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state before this patch: local `codex/trpc-dual-api-migration` was
+  clean and aligned with origin at `91f16fcf`.
+- PR #5132 head is `91f16fcfa4f256842f28c89c6375a0242c06d3cb`, ready for
+  review, not draft, with review approval still required and no active
+  unresolved current review threads.
+- Current-head checks for `91f16fcf` show `packages/api tRPC Vitest`,
+  typecheck, lint, format, syncpack, SonarCloud, CodeQL, GitGuardian, Claude
+  review, OLAT API tests, util tests, and staged Docker builds green.
+  `packages/graphql Vitest` and `cypress-run-cloud` were still in progress when
+  this local slice was verified.
+- GitHub Cypress wrapper run `28073921634` is current-head for
+  `91f16fcf`, with `cypress-run-cloud` still in progress.
+- Context7 docs were refreshed before editing. Relevant behavior: tRPC
+  `useUtils()` invalidation helpers wrap TanStack Query cache operations, and
+  React Query v4 `mutateAsync` supports promise-based sequencing for required
+  post-mutation side effects.
+
+Findings:
+
+- `ExtensionModal` already uses the migrated `activity.extend` tRPC mutation
+  and prevents duplicate submission/closing through Formik `isSubmitting` plus
+  the mutation loading state.
+- After a successful extension, the visible course detail and activity list
+  depend on refreshing `course.detail` and the parent activity list before the
+  modal closes.
+- The required post-success refresh was hidden behind `catch(console.error)`,
+  so a refresh failure could still close the modal while the visible course or
+  activity state stayed stale and the user saw no failure.
+
+Change:
+
+- Let `refreshCourseActivityData` reject when `course.detail` invalidation or
+  the parent activity-list refetch fails.
+- The existing submit `try/catch` now keeps the modal open and shows the
+  existing generic system-error toast if required refresh fails after the
+  server-side extension mutation succeeds.
+- Existing mutation input, validation, pending guards, close-on-success
+  behavior after successful refresh, query keys, and GraphQL/tRPC coexistence
+  remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/modals/ExtensionModal.tsx`:
+  passed; file unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "refreshCourseActivityData|catch\\(console\\.error\\)|extendActivity|systemError" apps/frontend-manage/src/components/courses/modals/ExtensionModal.tsx`:
+  old silent refresh catch removed; mutation, pending, and generic error paths
+  remain present.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3002`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Review / simplification:
+
+- Dedicated review/simplification subagents were not used because the available
+  multi-agent tool requires explicit user authorization for delegation in this
+  environment.
+- Self-review confirmed the diff is limited to the already migrated activity
+  extension workflow plus this progress entry; it changes no tRPC inputs, no
+  GraphQL/Apollo coexistence paths, and no broader cache policy.
+- Simplification check: no new helper or abstraction was added; the existing
+  refresh helper now has the required-refresh contract and reuses the existing
+  generic error toast path.
+
+Next:
+
+- Commit and push this focused manage activity-extension refresh-failure UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Practice Quiz Publishing Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

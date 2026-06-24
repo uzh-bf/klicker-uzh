@@ -39,7 +39,7 @@ function ExtensionModal({
     return Promise.all([
       utils.course.detail.invalidate({ courseId }),
       refetchActivities?.(),
-    ]).catch(console.error)
+    ])
   }
   const handleClose = () => {
     if (!extendActivity.isLoading) {
