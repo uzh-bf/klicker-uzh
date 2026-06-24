@@ -423,6 +423,72 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Answer Collection Add-Entry Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage answer
+collection entry creation flow. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed before this patch: local
+  `codex/trpc-dual-api-migration` is clean and aligned with origin at
+  `fd791e888`.
+- PR #5132 head is `fd791e8887176550af6434a4aefa9fc3a7c28c02`, ready for
+  review, not draft, with no active unresolved review threads.
+- Current-head GitHub checks show `packages/graphql Vitest`, `packages/api tRPC
+  Vitest`, typecheck, lint, format, SonarCloud, CodeQL, GitGuardian, Claude
+  review, and Docker builds green. `cypress-run-cloud` is still running.
+- Cypress Cloud still only exposes stale merge-SHA runs in the recent-runs API;
+  no Cloud run for the current PR merge ref was visible at the time of this
+  local slice.
+- Context7 TanStack Query v4 and tRPC docs were refreshed before editing:
+  mutation side-effect promises can be awaited, and tRPC `useUtils()`
+  invalidation helpers wrap TanStack Query cache operations.
+
+Findings:
+
+- `AddAnswerCollectionEntry` already uses migrated
+  `resources.addAnswerCollectionOption` and has Formik pending guards plus an
+  existing generic failure toast.
+- Sibling answer-collection metadata/edit/delete paths already await inline
+  list refreshes plus `resources.answerCollectionsInfo` and
+  `resources.singleAnswerCollection` invalidations before success transitions.
+- Add-entry still swallowed both the inline parent refresh and the tRPC
+  list/detail invalidations with `catch(console.error)`.
+- A successful add mutation followed by a failed required refresh could close
+  the inline field and call `onSuccess()` while the visible collection entries
+  stayed stale with no user-facing refresh failure.
+
+Change:
+
+- Let required inline refresh and tRPC invalidation failures reject instead of
+  being hidden inside helper functions.
+- Split post-mutation refresh failure handling from mutation failure handling:
+  the add mutation can succeed, but refresh failure now shows the existing
+  generic system-error toast and keeps the inline form from reporting success.
+- Leave mutation inputs, validation, cache keys, success callback semantics, and
+  GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/resources/answerCollections/AddAnswerCollectionEntry.tsx`:
+  passed; file unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "refetchAnswerCollections\(\)\.catch\(console\.error\)|answerCollectionsInfo\.invalidate\(\).*catch\(console\.error\)|singleAnswerCollection\.invalidate\(\{ id: collectionId \}\).*catch\(console\.error\)|Error refreshing answer collection option" apps/frontend-manage/src/components/resources/answerCollections/AddAnswerCollectionEntry.tsx`:
+  old silent helper catches removed; explicit refresh-failure log present.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3002`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Next:
+
+- Commit and push this focused manage answer-collection add-entry refresh UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: PWA Live Quiz Manual Retry Failure UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
