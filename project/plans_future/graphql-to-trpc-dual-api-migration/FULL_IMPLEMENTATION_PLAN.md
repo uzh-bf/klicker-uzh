@@ -423,6 +423,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Control Start Modal Background Refresh UX
+
+Status: complete locally with runtime blockers. Scope was limited to the already migrated
+frontend-control live-quiz start modal. No new migration slice, S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup is being started.
+
+Context:
+
+- Work is running on `codex/trpc-dual-api-migration` at PR #5132 head
+  `cdfa23269d0863ff52ad7100fe2fb6da9307042b`.
+- Current-head checks are green except Cypress Cloud run `6951`, which is still
+  in progress. `packages/graphql Vitest` and `packages/api tRPC Vitest` are
+  green on this head.
+- Current PR review threads are resolved and outdated; the PR still requires
+  human review.
+
+Findings:
+
+- Control app tRPC query pages use enabled guards, initial loaders, error
+  notifications, and stale-data refetch-error banners.
+- `StartModal` starts a live quiz, then awaited invalidation of
+  `liveQuiz.unassigned` and `course.controlCourses` before routing to the
+  session. The next visible route fetches `liveQuiz.control`, so these list
+  invalidations are background reconciliation, not a required refresh boundary.
+- If those list invalidations failed, the old code showed a generic error toast
+  even though the live quiz had started successfully and the session route did
+  not depend on the refreshed lists.
+
+Change:
+
+- Reclassify the list invalidations after successful live-quiz start as
+  best-effort background reconciliation.
+- Keep mutation failure and navigation failure user-visible.
+- Keep duplicate-submit prevention and the existing pending modal behavior.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-control/src/components/liveQuizzes/StartModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-control/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "Error refreshing control live quiz lists|shared\\.generic\\.systemError|liveQuiz\\.unassigned\\.invalidate\\(\\)|course\\.controlCourses\\.invalidate\\(\\)" apps/frontend-control/src/components/liveQuizzes/StartModal.tsx`:
+  confirmed list invalidations are background-only and the remaining generic
+  error toast is still tied to navigation failure.
+- Runtime browser verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3003` and
+  `curl -sS -I http://127.0.0.1:3000/api/graphql` both fail with connection
+  refused because the control app and backend are not running.
+
+Next:
+
+- Commit and push this focused control start-modal UX cleanup, then refresh
+  PR/Cypress evidence for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: PWA Group Action Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

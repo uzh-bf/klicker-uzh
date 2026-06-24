@@ -48,19 +48,12 @@ function StartModal({
           return
         }
 
-        try {
-          await Promise.all([
-            utils.liveQuiz.unassigned.invalidate(),
-            utils.course.controlCourses.invalidate(),
-          ])
-        } catch (error) {
-          console.error(error)
-          toast({
-            type: 'error',
-            message: t('shared.generic.systemError'),
-            options: { duration: 5000 },
-          })
-        }
+        void Promise.all([
+          utils.liveQuiz.unassigned.invalidate(),
+          utils.course.controlCourses.invalidate(),
+        ]).catch((error) => {
+          console.error('Error refreshing control live quiz lists', error)
+        })
 
         try {
           const routed = await router.push(`/session/${quizId}`)
