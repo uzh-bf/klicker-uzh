@@ -423,7 +423,7 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
-### 2026-06-24 In Progress: Course Deletion Refresh Follow-Up
+### 2026-06-24 In Progress: Course Deletion Confirmation Follow-Up
 
 Context:
 
@@ -431,35 +431,37 @@ Context:
   `8f223f021190875c11b62bfc537bac1d7867992b`.
 - Earlier workflow specs through `MB-instance-updates-workflow.cy.ts` passed.
 - `N-course-workflow.cy.ts` improved from the previous 6 failures to 1
-  remaining failure.
+  remaining failure. Cypress Cloud run `6929` still showed the same 1 failure
+  after awaiting the destructive course-list refresh.
 
 Evidence:
 
 - Remaining failure:
   `Test course creation and editing functionalities > Create a course with live quiz, practice quiz, and microlearning, and delete it again`.
-- First attempt timed out waiting for
-  `course-list-button-Course to be deleted` to disappear after confirming
-  course deletion.
+- First attempt timed out at
+  `[data-cy="course-deletion-participations-confirm"]').should('not.exist')`.
+- The first-attempt screenshot showed the delete-confirmation modal still open,
+  with the "no participations" row already satisfied and showing a checkmark.
 - Retry attempts then found multiple `Course to be deleted` entries because the
   failed first attempt left created courses behind.
 
 Finding:
 
-- The previous refresh-boundary cleanup made
-  `CourseDeletionModal` close before `utils.course.userCourses.invalidate()`
-  finished.
-- For destructive course deletion, closing before the server-backed course list
-  refresh can briefly restore stale list data after the local cache removal.
-- This behavior differs from the user-visible expectation and the Cypress
-  workflow, which both require the deleted course to be gone once the modal
-  closes.
+- `ConfirmationItem` attached `data-cy` to the row, not to an actionable
+  confirmation state.
+- Rows that are already satisfied or not applicable therefore still matched the
+  Cypress "confirm" selector, even though the UI correctly showed a checkmark
+  and no confirmation button.
+- Not-applicable rows could also briefly be treated as actionable until parent
+  confirmation state settled.
 
 Change:
 
 - Restore awaited `utils.course.userCourses.invalidate()` before closing
-  `CourseDeletionModal`.
-- Keep the create-course path non-blocking; only destructive deletion needs the
-  stricter refresh boundary.
+  `CourseDeletionModal`; this keeps the destructive deletion boundary strict.
+- Update `ConfirmationItem` so not-applicable rows are considered satisfied and
+  confirmation selectors / click affordances are only present while an item is
+  actionable.
 
 Verification:
 
@@ -467,7 +469,11 @@ Verification:
   - `./node_modules/.bin/prettier --write apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
   - `git diff --check`
-- Next: commit, push, and monitor the replacement Cypress Cloud run.
+- Passed after the shared `ConfirmationItem` update:
+  - `./node_modules/.bin/prettier --write apps/frontend-manage/src/components/common/ConfirmationItem.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Next: commit, push, and monitor the Cypress Cloud replacement run.
 
 ### 2026-06-23 Completed Locally With CI Evidence: Course Creation Navigation Refresh Follow-Up
 

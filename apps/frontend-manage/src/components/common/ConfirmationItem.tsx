@@ -26,7 +26,8 @@ function ConfirmationItem({
   data,
 }: ConfirmationItemProps) {
   const t = useTranslations()
-  const canConfirm = !confirmed
+  const isConfirmed = confirmed || notApplicable
+  const canConfirm = !isConfirmed
   const handleConfirm = () => {
     if (canConfirm) {
       onClick()
@@ -39,8 +40,8 @@ function ConfirmationItem({
         'flex min-h-10 flex-row items-center justify-between border-b pb-2 pl-2',
         canConfirm && 'cursor-pointer'
       )}
-      data-cy={data?.cy}
-      data-test={data?.test}
+      data-cy={canConfirm ? data?.cy : undefined}
+      data-test={canConfirm ? data?.test : undefined}
       role={canConfirm ? 'button' : undefined}
       tabIndex={canConfirm ? 0 : undefined}
       onClick={handleConfirm}
@@ -72,7 +73,7 @@ function ConfirmationItem({
           {label}
         </div>
       </div>
-      {confirmed ? (
+      {isConfirmed ? (
         <FontAwesomeIcon icon={faCheck} className="text-green-700" />
       ) : (
         <Button
