@@ -423,6 +423,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Chatbot Model Settings Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage chatbot
+model-settings workflow. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration` is clean and
+  aligned with origin at `738776691`; PR #5132 head is `738776691`.
+- Current PR checks show `packages/graphql Vitest` and `packages/api tRPC
+  Vitest` green on the current head. Cypress Cloud run `6943` remains pending.
+- Local runtime/browser verification is blocked because
+  `http://127.0.0.1:3002` and `http://127.0.0.1:3000/api/trpc` refuse
+  connections.
+
+Findings:
+
+- `ChatbotDetails` already uses the migrated
+  `resources.updateChatbotModelSettings` mutation and the
+  `resources.chatbotsInfo` tRPC query.
+- After a successful model-settings mutation, the visible chatbot details and
+  list depend on refreshing `resources.chatbotsInfo` before showing success.
+  That required refresh is currently hidden behind `catch(console.error)`.
+- Existing `chatbotModelSettingsSaveError` copy says the save failed, so a
+  successful mutation followed by a refresh failure needs a separate truthful
+  generic/system error path.
+
+Change:
+
+- Split true model-settings mutation failure from required post-success
+  `resources.chatbotsInfo` refresh failure.
+- If the mutation succeeds but the required refresh fails, the settings panel no
+  longer shows success. It reuses the existing inline error UI with
+  `shared.generic.systemError`.
+- True mutation failures still use the existing
+  `manage.resources.chatbotModelSettingsSaveError` copy.
+- Mutation inputs, query keys, loading/disabled state, local settings state, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "chatbotsInfo\\.invalidate\\(\\)\\.catch\\(console\\.error\\)|Error refreshing chatbot model settings|chatbotModelSettingsSaveError|shared\\.generic\\.systemError|setSaveSuccess\\(true\\)" apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx`:
+  old silent refresh catch removed; refresh-only and mutation-failure error
+  paths are distinct.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to one already migrated chatbot
+  settings refresh boundary plus this progress entry.
+- Simplification kept the existing local pending state and inline error UI. No
+  new helper, translation key, query key, or global cache policy was introduced.
+
+Next:
+
+- Commit and push this focused manage chatbot-settings refresh-failure UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Media Library Upload Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

@@ -250,7 +250,13 @@ function ChatbotDetails({
         allowedModelIds: normalizedAllowedModelIds,
         allowedReasoningEffortsByModel: normalizedReasoningConfig,
       })
-      await utils.resources.chatbotsInfo.invalidate().catch(console.error)
+      try {
+        await utils.resources.chatbotsInfo.invalidate()
+      } catch (error) {
+        console.error('Error refreshing chatbot model settings', error)
+        setSaveError(t('shared.generic.systemError'))
+        return
+      }
 
       setSaveSuccess(true)
     } catch (error) {
