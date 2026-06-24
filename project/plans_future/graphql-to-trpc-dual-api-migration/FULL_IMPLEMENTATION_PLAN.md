@@ -423,6 +423,75 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity Review Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage activity
+review-status workflow. No new migration slice, S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration`, origin, and
+  PR #5132 all pointed to `093036ecc` before this local fix.
+- Current-head CI for `093036ecc` was green for lint, format, typecheck,
+  SonarCloud, GitGuardian, CodeQL, Docker builds, `packages/graphql Vitest`,
+  and `packages/api tRPC Vitest`.
+- Cypress workflow run `28079129109` / Cypress Cloud run `6948` was still in
+  progress on `093036ecc`; this focused UX fix requires refreshing the evidence
+  ledger after push because the previous Cypress snapshot becomes stale.
+- Current review threads were all resolved/outdated. PR #5132 remained blocked
+  by required human review and pending Cypress.
+- Local runtime/browser verification remained blocked because
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused.
+
+Findings:
+
+- `ActivityReviewButton` already uses the migrated
+  `activity.setReviewStatus` tRPC mutation.
+- The visible details modal and course overview review counters depend on
+  `activity.details` and, when available, `course.detail` being fresh before
+  the success toast is shown.
+- The required invalidations were awaited but hidden behind
+  `catch(console.error)`, so a refresh failure could still show
+  `reviewStatusUpdated` while the button/list stayed stale.
+
+Change:
+
+- Keep the button pending until required invalidations complete.
+- If the mutation succeeds but the required refresh fails, show the existing
+  generic system-error toast and skip the success toast.
+- Keep mutation-specific failures on the existing
+  `reviewStatusUpdateFailed` copy.
+- Existing tRPC mutation input, query keys, GraphQL/tRPC coexistence, and
+  package test parity remain unchanged.
+
+Verification:
+
+- Context7 tRPC docs confirmed `useUtils()` invalidation helpers wrap TanStack
+  Query methods; TanStack Query v4 docs confirmed promise-returning mutation
+  side effects are awaited.
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/activities/overview/details/ActivityReviewButton.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "Promise\\.all\\(\\[|catch\\(console\\.error\\)|reviewStatusUpdated|reviewStatusUpdateFailed|shared\\.generic\\.systemError" apps/frontend-manage/src/components/activities/overview/details/ActivityReviewButton.tsx`:
+  confirmed the old swallowed required-refresh `catch(console.error)` path is
+  gone in `ActivityReviewButton`, refresh failure uses generic system-error
+  copy, and mutation failure keeps the review-status failure copy.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Next:
+
+- Commit and push this focused activity-review refresh UX cleanup, then refresh
+  PR checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Group Activity Grading Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

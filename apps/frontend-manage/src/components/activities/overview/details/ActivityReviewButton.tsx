@@ -47,12 +47,21 @@ function ActivityReviewButton({
           })
 
           if (res.reviewStatus) {
-            await Promise.all([
-              courseId
-                ? utils.course.detail.invalidate({ courseId })
-                : undefined,
-              utils.activity.details.invalidate(detailsInput),
-            ]).catch(console.error)
+            try {
+              await Promise.all([
+                courseId
+                  ? utils.course.detail.invalidate({ courseId })
+                  : undefined,
+                utils.activity.details.invalidate(detailsInput),
+              ])
+            } catch (error) {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+              return
+            }
             toast({
               type: 'success',
               message: t('manage.activities.reviewStatusUpdated'),
