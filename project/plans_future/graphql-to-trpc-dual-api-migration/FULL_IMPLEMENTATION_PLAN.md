@@ -448,6 +448,10 @@ Evidence:
   `MA-elements-operations-workflow.cy.ts`: hiding inactive selectors made
   `[data-cy="confirm-derived-access"]` disappear while the modal still rendered
   that satisfied/not-applicable confirmation row.
+- Cypress Cloud run `6931` on `fe62869b5` confirmed the selector fix for
+  `MA-elements-operations-workflow.cy.ts` and `N-course-workflow.cy.ts`
+  (`MA` passed 71/71, `N` passed 40/40), then failed four tests in
+  `O-live-quiz-workflow.cy.ts` during participant mode checks.
 
 Finding:
 
@@ -461,6 +465,11 @@ Finding:
 - The cleaner contract is to keep row selectors stable for existing modal
   scripts, expose `data-confirmation-active`, and let tests assert inactive
   state directly instead of overloading DOM absence.
+- The `O-live-quiz` failures were Cypress assertion chaining, not an app
+  failure: `.should('not.have.attr', 'data-scroll-locked')` changes the subject
+  away from the body before the following `.should('not.have.css',
+  'pointer-events', 'none')`, causing invalid chai-jQuery assertions and retry
+  side effects such as duplicate temporary pseudonyms.
 
 Change:
 
@@ -472,6 +481,9 @@ Change:
 - Update Cypress confirmation-checklist assertions so rendered but inactive
   rows assert `data-confirmation-active="false"` while pre-step rows still use
   `not.exist`.
+- Split the live-quiz participant-mode body-interactivity assertions into two
+  separate `cy.get('body')` assertions so the CSS check always receives the DOM
+  subject.
 
 Verification:
 
@@ -486,6 +498,17 @@ Verification:
 - Passed after the stable-selector / `data-confirmation-active` Cypress update:
   - `./node_modules/.bin/prettier --write apps/frontend-manage/src/components/common/ConfirmationItem.tsx cypress/cypress/e2e/P-microlearning-workflow.cy.ts cypress/cypress/e2e/N-course-workflow.cy.ts cypress/cypress/e2e/O-live-quiz-workflow.cy.ts cypress/cypress/e2e/V-template-workflow.cy.ts cypress/cypress/support/commands.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  - `./node_modules/.bin/tsc -p cypress/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Cypress Cloud run `6931` evidence before the `O-live-quiz` patch:
+  - `MA-elements-operations-workflow.cy.ts`: passed 71/71
+  - `MB-instance-updates-workflow.cy.ts`: passed 6/6
+  - `N-course-workflow.cy.ts`: passed 40/40
+  - `O-live-quiz-workflow.cy.ts`: failed 4 participant-mode checks at lines
+    3565, 3643, 3730, and 3791; failure payload saved at
+    `/tmp/cypress-run-6931-failed-tests.json`
+- Passed after the `O-live-quiz` body assertion split:
+  - `./node_modules/.bin/prettier --write cypress/cypress/e2e/O-live-quiz-workflow.cy.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   - `./node_modules/.bin/tsc -p cypress/tsconfig.json --noEmit --pretty false`
   - `git diff --check`
 - Next: commit, push, and monitor the Cypress Cloud replacement run.

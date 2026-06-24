@@ -3575,9 +3575,8 @@ describe('Different live-quiz workflows', function () {
         ({ username, password, messages, data }) => {
           cy.get('[data-cy="participate-anonymously"]').click()
           cy.get('[data-cy="participate-anonymously"]').should('not.exist') // wait for temporary account creation to finish
-          cy.get('body')
-            .should('not.have.attr', 'data-scroll-locked')
-            .should('not.have.css', 'pointer-events', 'none')
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3605,9 +3604,8 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="header-page-title"]').contains(
             data.modes.displayName
           )
-          cy.get('body')
-            .should('not.have.attr', 'data-scroll-locked')
-            .should('not.have.css', 'pointer-events', 'none')
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           cy.get('[data-cy="header-avatar"]').click()
           cy.get('[data-cy="header-logged-in-as"]')
@@ -3665,9 +3663,8 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="avatar-carousel-prev"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
-          cy.get('body')
-            .should('not.have.attr', 'data-scroll-locked')
-            .should('not.have.css', 'pointer-events', 'none')
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3697,9 +3694,8 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
-          cy.get('body')
-            .should('not.have.attr', 'data-scroll-locked')
-            .should('not.have.css', 'pointer-events', 'none')
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3747,9 +3743,8 @@ describe('Different live-quiz workflows', function () {
 
           // verify that the participant has been automatically redirected to the live quiz
           cy.get('[data-cy="header-page-title"]').contains(quizName)
-          cy.get('body')
-            .should('not.have.attr', 'data-scroll-locked')
-            .should('not.have.css', 'pointer-events', 'none')
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct account actions are available
           cy.get('[data-cy="header-avatar"]').click()
