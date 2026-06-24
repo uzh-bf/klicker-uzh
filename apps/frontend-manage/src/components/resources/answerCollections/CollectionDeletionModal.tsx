@@ -53,7 +53,21 @@ function CollectionDeletionModal({
           })
 
           if (res.deletedAnswerCollectionId) {
-            await utils.resources.answerCollectionsInfo.invalidate()
+            try {
+              await utils.resources.answerCollectionsInfo.invalidate()
+            } catch (error) {
+              console.error(
+                'Error refreshing answer collections after deletion:',
+                error
+              )
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 3000 },
+              })
+              setDeletionPending(false)
+              return
+            }
             toast({
               type: 'success',
               message: t('manage.resources.deletionSuccessful'),

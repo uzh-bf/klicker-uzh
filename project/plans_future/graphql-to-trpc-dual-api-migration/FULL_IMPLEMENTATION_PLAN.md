@@ -423,6 +423,65 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Answer Collection Deletion Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage
+answer-collection deletion workflow. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch head `23a0b75a` was pushed to PR #5132; remote checks restarted.
+  Cypress workflow run `28076277474` is queued for the current head.
+
+Findings:
+
+- `CollectionDeletionModal` already uses the migrated
+  `resources.deleteAnswerCollection` tRPC mutation and awaits
+  `resources.answerCollectionsInfo.invalidate()` before showing success and
+  closing.
+- If deletion succeeds but the required list refresh fails, the outer catch
+  currently shows `manage.resources.deletionFailed`, which is not truthful for a
+  server-side success followed by a refresh failure.
+
+Change:
+
+- Split true answer-collection deletion failure from required post-deletion list
+  refresh failure.
+- If deletion succeeds but `resources.answerCollectionsInfo` refresh fails, the
+  modal stays open, the pending state is cleared, and the existing generic
+  system-error toast is shown.
+- Existing success close, deletion failure copy, mutation input, query key, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/resources/answerCollections/CollectionDeletionModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "answerCollectionsInfo\\.invalidate\\(\\)\\.catch\\(console\\.error\\)|Error refreshing answer collections after deletion|deletionFailed|deletionSuccessful|shared\\.generic\\.systemError|setDeletionPending\\(false\\)" apps/frontend-manage/src/components/resources/answerCollections/CollectionDeletionModal.tsx`:
+  refresh-only and deletion-failure paths are distinct.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to one already migrated destructive
+  answer-collection modal plus this progress entry.
+- Simplification kept the existing modal pending state, close guard, toast
+  pattern, and success close behavior. No helper, translation key, query key, or
+  global cache policy was introduced.
+
+Next:
+
+- Commit and push this focused manage answer-collection deletion refresh UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Chatbot Model Settings Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
