@@ -423,6 +423,72 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Tag Deletion Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage tag deletion
+workflow. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed after the previous push: local
+  `codex/trpc-dual-api-migration`, origin, and PR #5132 all point to
+  `75d4a90bf`.
+- Current-head checks for `75d4a90bf` are newly queued or in progress.
+  GitGuardian is green; draft Playwright is skipped; Cypress run `28077134335`
+  is queued for this head.
+- Local runtime/browser verification remains blocked because
+  `http://127.0.0.1:3002` and `http://127.0.0.1:3000/api/trpc` refuse
+  connections.
+
+Findings:
+
+- `TagDeletionModal` already uses the migrated `element.deleteTag` tRPC
+  mutation and updates the `element.tags` cache after a successful delete.
+- The parent element list refresh is required before the modal closes because
+  visible element rows can still show tag state. That refresh was hidden behind
+  `catch(console.error)`.
+- The modal pending/disabled state only tracked the tRPC mutation, so after the
+  mutation succeeded but before `refetchElements` completed, close/submit guards
+  no longer reflected the required refresh work.
+
+Change:
+
+- Add local pending state that covers the full delete plus parent refresh
+  boundary.
+- Let required parent element refresh failures route through the existing
+  user-facing system-error toast instead of being logged only.
+- Existing mutation input, tag cache write, success close behavior, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/modals/TagDeletionModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "deleteSubmitting|const deleting|refetchElements\\(\\)\\.catch\\(console\\.error\\)|await refetchElements\\(\\)|setDeleteSubmitting|shared\\.generic\\.systemError" apps/frontend-manage/src/components/courses/modals/TagDeletionModal.tsx`:
+  old silent refresh catch removed; pending state now spans the mutation plus
+  required parent refresh.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to one already migrated tag
+  deletion modal plus this progress entry.
+- Simplification reused the existing generic system-error toast and did not add
+  new translation keys, query keys, or global cache policy.
+
+Next:
+
+- Commit and push this focused tag deletion refresh UX cleanup, then refresh PR
+  checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Element Delete/Remove Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

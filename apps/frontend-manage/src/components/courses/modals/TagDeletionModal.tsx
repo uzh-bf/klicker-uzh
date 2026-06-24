@@ -1,5 +1,6 @@
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { trpc } from '../../../lib/trpc'
 
 function TagDeletionModal({
@@ -16,7 +17,8 @@ function TagDeletionModal({
   const t = useTranslations()
   const utils = trpc.useUtils()
   const deleteTag = trpc.element.deleteTag.useMutation()
-  const deleting = deleteTag.isLoading
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const deleting = deleteTag.isLoading || deleteSubmitting
 
   return (
     <Modal
@@ -32,6 +34,9 @@ function TagDeletionModal({
       primaryDisabled={deleting}
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
+        if (deleting) return
+        setDeleteSubmitting(true)
+
         try {
           const result = await deleteTag.mutateAsync({ id })
 
@@ -51,7 +56,7 @@ function TagDeletionModal({
                 }
               : data
           )
-          await refetchElements().catch(console.error)
+          await refetchElements()
           onClose()
         } catch (error) {
           console.error(error)
@@ -60,6 +65,8 @@ function TagDeletionModal({
             message: t('shared.generic.systemError'),
             options: { duration: 6000 },
           })
+        } finally {
+          setDeleteSubmitting(false)
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-tag' }}
