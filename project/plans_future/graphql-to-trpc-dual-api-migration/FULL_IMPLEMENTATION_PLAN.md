@@ -423,6 +423,76 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Audience Interaction Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC UX/client-quality audit and
+the already migrated frontend-manage audience-interaction workflow. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup was started.
+
+Context:
+
+- Work is running in `/private/tmp/klicker-trpc-commit` on
+  `codex/trpc-dual-api-migration` at current PR #5132 head
+  `51106086bfa4b3418ea68e9497f449823f16bb9b`. The provided cwd was on
+  unrelated `codex/next-16-upgrade` and was not edited.
+- Current PR #5132 is ready for review, targets `v3`, and is blocked by
+  required human review plus Cypress still running.
+- Current-head CI for `51106086bfa4b3418ea68e9497f449823f16bb9b` is green for
+  lint, format, typecheck, SonarCloud, GitGuardian, CodeQL, Docker builds,
+  `packages/graphql Vitest`, and `packages/api tRPC Vitest`.
+- Cypress workflow run `28080695514` / Cypress Cloud run `6949` is still in
+  progress on `51106086bfa4b3418ea68e9497f449823f16bb9b`.
+- Local runtime/browser verification remains blocked until the manage app and
+  backend are reachable locally.
+
+Finding:
+
+- `AudienceInteraction` already uses migrated `liveQuiz.*` tRPC mutations for
+  lecturer feedback and audience settings.
+- The visible cockpit switches, feedback list, confusion charts, and lecturer
+  display depend on the required refresh boundary:
+  `onFeedbackCreatedRef.current()`, `liveQuiz.cockpit.invalidate({ id })`, and
+  `liveQuiz.lecturerView.invalidate({ id })`.
+- That required refresh was hidden behind `catch(console.error)`, so a
+  successful mutation followed by refresh failure could return `true`, fire
+  success analytics, close modals/reset forms, and leave stale visible state.
+
+Change:
+
+- Let required audience-interaction refresh failures reject to the existing
+  generic error toast path.
+- Return `false` on refresh failure so existing modals/forms stay recoverable
+  and success analytics only fire after fresh visible state is requested.
+- Keep existing mutation inputs, tRPC query keys, GraphQL/tRPC coexistence, and
+  realtime best-effort subscriber behavior unchanged.
+
+Verification:
+
+- Context7 tRPC docs confirmed `useUtils()` invalidation helpers wrap TanStack
+  Query methods; TanStack Query v4 docs confirmed `mutateAsync` is the
+  promise-based mutation path and promise-returning mutation callbacks are
+  awaited.
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/interaction/AudienceInteraction.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "refetchAudienceInteraction\\(\\)\\.catch\\(console\\.error\\)|await refetchAudienceInteraction\\(\\)|showAudienceInteractionError|trackEvent|shared\\.generic\\.systemError" apps/frontend-manage/src/components/interaction/AudienceInteraction.tsx`:
+  confirmed the old swallowed required-refresh `catch(console.error)` path is
+  gone, refresh failures use the existing generic system-error path, and
+  success analytics still run only after `success === true`.
+- Runtime browser verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` fails with connection refused because
+  the manage app is not running. `curl -sS -I http://127.0.0.1:3000/api/trpc`
+  reaches a local backend process but returns HTTP 404 for the bare tRPC base
+  path; no manage browser route is available for screenshot verification.
+
+Next:
+
+- Commit and push this focused audience-interaction refresh UX cleanup, then
+  refresh PR checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity Review Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

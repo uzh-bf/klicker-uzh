@@ -87,7 +87,7 @@ function AudienceInteraction({
   ) {
     try {
       await action()
-      await refetchAudienceInteraction().catch(console.error)
+      await refetchAudienceInteraction()
       return true
     } catch (error) {
       console.error(error)
