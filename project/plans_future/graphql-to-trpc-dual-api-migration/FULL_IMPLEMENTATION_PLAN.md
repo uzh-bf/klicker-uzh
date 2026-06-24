@@ -423,6 +423,83 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Template Refresh Failure UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and already migrated frontend-manage activity-template
+edit, delete, and conversion workflows. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state before this local slice: local `codex/trpc-dual-api-migration`
+  was clean and aligned with origin at `8138a9baa`.
+- PR #5132 head is `8138a9baafe263dbdae0039b6a7b45f43af4f29a`, ready for
+  review, not draft, with review approval still required and no active
+  unresolved current review threads.
+- Current-head checks restarted for `8138a9baa`; GitGuardian was green and the
+  rest of CI was running or queued when this local slice started.
+- Context7 docs were refreshed before editing in this audit turn. Relevant
+  behavior: tRPC `useUtils()` cache helpers wrap TanStack Query operations, and
+  React Query v4 async mutation side effects can be awaited for ordered
+  post-mutation refresh behavior.
+
+Findings:
+
+- `TemplateEditModal`, `TemplateDeletionModal`, and
+  `TemplateConversionModal` already use migrated tRPC mutations:
+  `activity.editTemplate`, `activity.deleteTemplate`, and
+  `activity.createActivityTemplate`.
+- All three success paths call the parent `refetchActivities` callback before
+  showing success and closing the modal, so this is a required refresh boundary.
+- The refresh was still hidden behind `catch(console.error)`, and close guards
+  only tracked the tRPC mutation loading flag. Once the mutation finished, users
+  could close while the required parent refresh was still running, or refresh
+  failures could be silently ignored.
+
+Change:
+
+- Let required parent `refetchActivities` failures reject in template edit,
+  delete, and conversion flows.
+- Add local pending guards that cover the full mutation plus parent-refresh
+  sequence, so close/cancel/submit affordances do not re-enable before the
+  required refresh finishes.
+- Reuse the existing `onError` callbacks and modal pending patterns. No tRPC
+  inputs, query keys, GraphQL/Apollo coexistence paths, package APIs, or copy
+  changed.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/modals/TemplateEditModal.tsx apps/frontend-manage/src/components/courses/modals/TemplateDeletionModal.tsx apps/frontend-manage/src/components/courses/modals/TemplateConversionModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- Targeted source search confirmed the three template modals no longer contain
+  `catch(console.error)` around `refetchActivities`, and still use
+  `activity.editTemplate`, `activity.deleteTemplate`, and
+  `activity.createActivityTemplate`.
+- Runtime browser/API verification is still blocked by the local environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- No dedicated subagent review was run for this narrow slice because tool
+  authorization remained unavailable. Self-review confirmed the diff is limited
+  to the three migrated template modal refresh boundaries plus this plan entry.
+- Simplification pass kept the change local to each modal. No shared helper was
+  introduced because the pending guards are small and each modal has different
+  submit/close wiring.
+- No tRPC input shape, query key, GraphQL/Apollo coexistence path, server API,
+  package boundary, or copy changed.
+
+Next:
+
+- Commit and push the completed template refresh failure UX slice, then refresh
+  PR #5132 checks and review threads.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Scheduled Activity Refresh Failure UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

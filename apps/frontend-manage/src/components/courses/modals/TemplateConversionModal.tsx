@@ -59,7 +59,9 @@ function TemplateConversionModal({
   // mutation for template creation
   const createActivityTemplate =
     trpc.activity.createActivityTemplate.useMutation()
-  const creatingTemplate = createActivityTemplate.isLoading
+  const [templateSubmitting, setTemplateSubmitting] = useState(false)
+  const creatingTemplate =
+    createActivityTemplate.isLoading || templateSubmitting
 
   // set corresponding confirmation to true if no resources are required
   useEffect(() => {
@@ -127,6 +129,7 @@ function TemplateConversionModal({
           conversionType: Yup.mixed().oneOf(['convert', 'copy']).required(),
         })}
         onSubmit={async (values) => {
+          setTemplateSubmitting(true)
           try {
             const result = await createActivityTemplate.mutateAsync({
               activityId,
@@ -139,7 +142,7 @@ function TemplateConversionModal({
             })
 
             if (result.createActivityTemplate) {
-              await refetchActivities?.().catch(console.error)
+              await refetchActivities?.()
               onSuccess()
               closeModal()
             } else {
@@ -148,6 +151,8 @@ function TemplateConversionModal({
           } catch (error) {
             console.error(error)
             onError()
+          } finally {
+            setTemplateSubmitting(false)
           }
         }}
       >

@@ -2,6 +2,7 @@ import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as Yup from 'yup'
 import { ActivityType } from '../../../lib/constants/activityEnums'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
@@ -26,7 +27,8 @@ function TemplateEditModal({
 }: TemplateEditModalProps) {
   const t = useTranslations()
   const editActivityTemplate = trpc.activity.editTemplate.useMutation()
-  const editing = editActivityTemplate.isLoading
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const editing = editActivityTemplate.isLoading || editSubmitting
   const handleClose = () => {
     if (!editing) {
       onClose()
@@ -87,6 +89,7 @@ function TemplateEditModal({
               }),
           })}
           onSubmit={async (values) => {
+            setEditSubmitting(true)
             try {
               const result = await editActivityTemplate.mutateAsync({
                 activityId,
@@ -99,7 +102,7 @@ function TemplateEditModal({
               })
 
               if (result.editActivityTemplate) {
-                await refetchActivities?.().catch(console.error)
+                await refetchActivities?.()
                 onSuccess()
                 onClose()
               } else {
@@ -108,6 +111,8 @@ function TemplateEditModal({
             } catch (error) {
               console.error(error)
               onError()
+            } finally {
+              setEditSubmitting(false)
             }
           }}
         >

@@ -2,6 +2,7 @@ import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { ActivityType } from '../../../lib/constants/activityEnums'
 import { trpc, type RouterInputs } from '../../../lib/trpc'
 
@@ -25,7 +26,8 @@ function TemplateDeletionModal({
 }: TemplateDeletionModalProps) {
   const t = useTranslations()
   const deleteActivityTemplate = trpc.activity.deleteTemplate.useMutation()
-  const deleting = deleteActivityTemplate.isLoading
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const deleting = deleteActivityTemplate.isLoading || deleteSubmitting
   const handleClose = () => {
     if (!deleting) {
       onClose()
@@ -48,6 +50,9 @@ function TemplateDeletionModal({
       primaryLoading={deleting}
       primaryDisabled={deleting}
       onPrimaryAction={async () => {
+        if (deleting) return
+        setDeleteSubmitting(true)
+
         try {
           const data = await deleteActivityTemplate.mutateAsync({
             activityId,
@@ -56,7 +61,7 @@ function TemplateDeletionModal({
           })
 
           if (data?.deleteActivityTemplate) {
-            await refetchActivities?.().catch(console.error)
+            await refetchActivities?.()
             onSuccess()
             onClose()
           } else {
@@ -65,6 +70,8 @@ function TemplateDeletionModal({
         } catch (e) {
           console.error(e)
           onError()
+        } finally {
+          setDeleteSubmitting(false)
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-template-deletion' }}
