@@ -15,6 +15,8 @@ on:
       - pnpm-lock.yaml
       - playwright/package.json
       - util/_create_hatchet_token_cypress.sh
+      - util/_with_local_test_origins.sh
+      - util/_run_with_infisical.sh
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -32,8 +34,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
+        shardIndex: [1, 2, 3, 4, 5, 6]
+        shardTotal: [6]
     services:
       postgres:
         image: postgres:15
@@ -214,6 +216,7 @@ jobs:
           URL_STUDENT: http://127.0.0.1:3001
           URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          SERVICE_START_SCRIPT: start:playwright:ci
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
           POSTGRES_CHECK_HOST: postgres

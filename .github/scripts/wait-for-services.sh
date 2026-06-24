@@ -29,6 +29,7 @@ if [ -z "${CHECK_INTERVAL:-}" ]; then
 fi
 
 SERVICE_LOG="${SERVICE_LOG:-service.log}"
+SERVICE_START_SCRIPT="${SERVICE_START_SCRIPT:-start:test:ci}"
 POSTGRES_CHECK_HOST="${POSTGRES_CHECK_HOST:-localhost}"
 POSTGRES_CHECK_PORT="${POSTGRES_CHECK_PORT:-5432}"
 POSTGRES_CHECK_USER="${POSTGRES_CHECK_USER:-${POSTGRES_USER:-}}"
@@ -243,10 +244,10 @@ start_service() {
 
   {
     echo ""
-    echo "===== start:test:ci started at $(date -u +"%Y-%m-%dT%H:%M:%SZ") ====="
+    echo "===== ${SERVICE_START_SCRIPT} started at $(date -u +"%Y-%m-%dT%H:%M:%SZ") ====="
   } >> "$SERVICE_LOG"
 
-  pnpm run start:test:ci >> "$SERVICE_LOG" 2>&1 &
+  pnpm run "$SERVICE_START_SCRIPT" >> "$SERVICE_LOG" 2>&1 &
   SERVICE_PID=$!
 
   # Give the process a moment to fail fast if it's going to

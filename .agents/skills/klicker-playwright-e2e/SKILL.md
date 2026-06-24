@@ -41,8 +41,8 @@ Run from repo root. Use Volta when Node/pnpm versions are confusing.
 
 ```bash
 docker compose down -v
-./_run_app_dependencies.sh test
-pnpm run dev:test
+./_run_app_dependencies.sh
+pnpm run dev:playwright
 ```
 
 Run Playwright:
@@ -63,14 +63,14 @@ For live quiz answer submission, response processing, scheduled microlearnings, 
 ```bash
 pnpm --filter @klicker-uzh/response-api dev
 pnpm --filter @klicker-uzh/hatchet-worker-response-processor dev
-./util/_run_with_infisical.sh --env dev-cypress pnpm --filter @klicker-uzh/hatchet-worker-general dev
+./util/_run_with_infisical.sh --env dev-playwright pnpm --filter @klicker-uzh/hatchet-worker-general dev
 ```
 
 Ensure the response processor is not running with `ASSESSMENT_MODE=true` when validating live quiz mode.
 
 ## Fast Failure Triage
 
-- `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:test` and service readiness first.
+- `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.

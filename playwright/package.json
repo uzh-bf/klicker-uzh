@@ -13,13 +13,13 @@
   },
   "scripts": {
     "show-report": "playwright show-report",
-    "test": "../util/_run_with_infisical.sh --env dev-cypress playwright test",
-    "test:headed": "../util/_run_with_infisical.sh --env dev-cypress playwright test --headed --project=chromium",
+    "test": "../util/_run_with_infisical.sh --env dev-playwright playwright test",
+    "test:headed": "../util/_run_with_infisical.sh --env dev-playwright playwright test --headed --project=chromium",
     "test:headed:raw": "playwright test --headed --project=chromium",
     "test:raw": "playwright test",
-    "test:run": "../util/_run_with_infisical.sh --env dev-cypress playwright test",
+    "test:run": "../util/_run_with_infisical.sh --env dev-playwright playwright test",
     "test:run:raw": "playwright test",
-    "test:ui": "../util/_run_with_infisical.sh --env dev-cypress playwright test --ui",
+    "test:ui": "../util/_run_with_infisical.sh --env dev-playwright playwright test --ui",
     "test:ui:raw": "playwright test --ui"
   },
   "engines": {

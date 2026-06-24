@@ -19,8 +19,9 @@ playwright/
 
 ## Local run
 
-1. Start test stack: `pnpm run dev:test` (from repo root)
-2. Run all tests:
+1. Start dependencies: `./_run_app_dependencies.sh` (from repo root)
+2. Start Playwright app stack: `pnpm run dev:playwright`
+3. Run all tests:
 
 ```bash
 # with Infisical secrets (recommended)
