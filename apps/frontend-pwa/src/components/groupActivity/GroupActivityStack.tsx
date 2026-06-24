@@ -11,7 +11,7 @@ import type {
   GroupActivityDecision,
   GroupActivityResults,
 } from '@klicker-uzh/types'
-import { Button, toast } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -66,6 +66,8 @@ function GroupActivityStack({
   const submitGroupActivityDecisions =
     trpc.participant.submitGroupActivityDecisions.useMutation()
   const [submissionRefreshing, setSubmissionRefreshing] = useState(false)
+  const [submissionConfirmed, setSubmissionConfirmed] = useState(false)
+  const [submissionRefreshFailed, setSubmissionRefreshFailed] = useState(false)
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: true,
@@ -82,6 +84,16 @@ function GroupActivityStack({
   })
 
   useEffect(() => {
+    setSubmissionConfirmed(false)
+    setSubmissionRefreshFailed(false)
+  }, [activityId])
+
+  useEffect(() => {
+    if (decisions) {
+      setSubmissionConfirmed(false)
+      setSubmissionRefreshFailed(false)
+    }
+
     const loadedResponses = decisions?.reduce<StackStudentResponseType>(
       (acc, decision) => {
         if (!decision) return acc
@@ -285,7 +297,8 @@ function GroupActivityStack({
             ) ||
             activityEnded ||
             submitGroupActivityDecisions.isLoading ||
-            submissionRefreshing
+            submissionRefreshing ||
+            submissionConfirmed
           }
           onClick={async () => {
             const responses = buildGroupActivityResponseInput(studentResponse)
@@ -319,17 +332,24 @@ function GroupActivityStack({
                 return
               }
 
-              await onSubmitted().catch((error) => {
+              setSubmissionConfirmed(true)
+              setSubmissionRefreshFailed(false)
+              const refreshResult = await onSubmitted().catch((error) => {
                 console.error(error)
                 toast({
                   type: 'error',
                   message: t('shared.generic.systemError'),
                   options: { duration: 5000 },
                 })
+                setSubmissionRefreshFailed(true)
+                return undefined
               })
 
               // set status and score according to returned correctness
-              setStudentResponse({})
+              if (refreshResult !== undefined) {
+                setStudentResponse({})
+                setSubmissionRefreshFailed(false)
+              }
             } finally {
               setSubmissionRefreshing(false)
             }
@@ -345,6 +365,19 @@ function GroupActivityStack({
         >
           <Button.Label>{t('pwa.groupActivity.sendAnswers')}</Button.Label>
         </Button>
+      ) : null}
+      {submissionConfirmed && submissionRefreshFailed && !decisions ? (
+        <UserNotification type="error" className={{ root: 'mt-4 text-base' }}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>{t('shared.generic.systemError')}</div>
+            <Button
+              onClick={() => window.location.reload()}
+              className={{ root: 'h-8 self-start md:self-auto' }}
+            >
+              <Button.Label>{t('pwa.groupActivity.refreshPage')}</Button.Label>
+            </Button>
+          </div>
+        </UserNotification>
       ) : null}
       {!!decisions && submittedAt ? (
         <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">

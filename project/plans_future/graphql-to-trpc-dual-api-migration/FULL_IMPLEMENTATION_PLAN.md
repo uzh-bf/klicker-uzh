@@ -423,6 +423,69 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: PWA Group Activity Required Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the
+already migrated PWA group-activity start/submission workflow. No new
+migration slice, S06 cleanup, GraphQL removal, Apollo removal, or package
+cleanup is being started.
+
+Context:
+
+- Work is running on `codex/trpc-dual-api-migration` at PR #5132 head
+  `6ae68f1fd9a6547d8f656a050b42edf5326e3e22`.
+- All non-Cypress PR checks are green on this head, including
+  `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+- Cypress Cloud run `6953` / workflow `28083654588` is still in progress for
+  this head. Pushing this focused fix will make that run stale and requires a
+  fresh current-head evidence refresh.
+
+Findings:
+
+- `startGroupActivity` is a non-idempotent participant mutation because the
+  database enforces a unique `GroupActivityInstance` per group activity and
+  group. The mutation returns only the new instance id, not the full details
+  payload needed to render the task area.
+- The PWA detail page marked the start as confirmed before the required
+  details refetch had actually succeeded. If that refetch failed, the UI could
+  stay on the pre-start screen with the start button disabled and no recovery
+  action except a manual browser reload.
+- `submitGroupActivityDecisions` has the same required-refresh boundary. After
+  a successful submission, the page must refresh before the already-submitted
+  state is visible. A refresh failure should not clear the local answers or
+  encourage the user to re-submit.
+
+Change:
+
+- Keep the duplicate-submit guard after server-side start/submission success.
+- Surface post-success required-refresh failures as inline error notifications
+  with a group-activity refresh button instead of relying only on a toast.
+- Only clear local group-answer state after the required submission refresh
+  completes.
+- Leave the realtime-ended `refetch().catch(...)` path as stale-data recovery:
+  it keeps the current content visible and already shows a user-facing toast.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx' apps/frontend-pwa/src/components/groupActivity/GroupActivityStack.tsx packages/i18n/messages/en.ts packages/i18n/messages/de.ts`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "startGroupActivity|submitGroupActivityDecisions|activityStartRefreshFailed|submissionRefreshFailed|refetch\\(\\)\\.catch|setActivityStartConfirmed\\(true\\)|setSubmissionConfirmed\\(true\\)" 'apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx' apps/frontend-pwa/src/components/groupActivity/GroupActivityStack.tsx`:
+  confirmed the required-refresh failure states and the remaining best-effort
+  realtime-ended refetch path.
+- Runtime browser verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3001`,
+  `curl -sS -I http://127.0.0.1:3000/api/graphql`, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` all fail with connection
+  refused because the PWA app and backend are not running.
+
+Next:
+
+- Commit and push this focused PWA group-activity required-refresh UX cleanup,
+  then refresh PR/Cypress evidence for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: PWA Header Locale and Logout Cache UX
 
 Status: complete locally with runtime blockers. Scope was limited to the

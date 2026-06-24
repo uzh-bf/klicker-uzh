@@ -1071,6 +1071,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} participants',
       groupActivityEnded:
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
+      refreshPage: 'Refresh page',
     },
     assessment: {
       homepageHint:

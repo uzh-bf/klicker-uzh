@@ -1071,6 +1071,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
       groupActivityEnded:
         'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
+      refreshPage: 'Seite aktualisieren',
     },
     assessment: {
       homepageHint:

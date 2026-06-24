@@ -39,6 +39,8 @@ function GroupActivityDetails() {
   const [activityEnded, setActivityEnded] = useState(false)
   const [activityStartConfirmed, setActivityStartConfirmed] = useState(false)
   const [activityStartRefreshing, setActivityStartRefreshing] = useState(false)
+  const [activityStartRefreshFailed, setActivityStartRefreshFailed] =
+    useState(false)
   const groupId =
     typeof router.query.groupId === 'string' ? router.query.groupId : ''
   const activityId =
@@ -70,6 +72,7 @@ function GroupActivityDetails() {
   useEffect(() => {
     setActivityStartConfirmed(false)
     setActivityStartRefreshing(false)
+    setActivityStartRefreshFailed(false)
   }, [activityId, groupId])
 
   if (!routeParamsAvailable || (isLoading && !data)) {
@@ -128,6 +131,22 @@ function GroupActivityDetails() {
           message={t('shared.generic.systemError')}
           className={{ root: 'mx-auto mb-4 w-full max-w-[1800px] text-base' }}
         />
+      ) : null}
+      {activityStartConfirmed && activityStartRefreshFailed && !instance ? (
+        <UserNotification
+          type="error"
+          className={{ root: 'mx-auto mb-4 w-full max-w-[1800px] text-base' }}
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>{t('shared.generic.systemError')}</div>
+            <Button
+              onClick={() => router.reload()}
+              className={{ root: 'h-8 self-start md:self-auto' }}
+            >
+              <Button.Label>{t('pwa.groupActivity.refreshPage')}</Button.Label>
+            </Button>
+          </div>
+        </UserNotification>
       ) : null}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
@@ -230,6 +249,7 @@ function GroupActivityDetails() {
                     onClick={async () => {
                       try {
                         setActivityStartRefreshing(true)
+                        setActivityStartRefreshFailed(false)
                         const result = await startGroupActivity.mutateAsync({
                           activityId,
                           groupId,
@@ -240,16 +260,29 @@ function GroupActivityDetails() {
                         }
 
                         setActivityStartConfirmed(true)
-                        await refetch().catch((error) => {
+                        const refreshResult = await refetch().catch((error) => {
                           console.error(error)
                           toast({
                             type: 'error',
                             message: t('shared.generic.systemError'),
                             options: { duration: 5000 },
                           })
+                          setActivityStartRefreshFailed(true)
+                          return undefined
                         })
+
+                        if (
+                          refreshResult?.data?.groupActivityDetails
+                            ?.activityInstance?.id
+                        ) {
+                          setActivityStartRefreshFailed(false)
+                        } else {
+                          setActivityStartRefreshFailed(true)
+                        }
                       } catch (error) {
                         console.error(error)
+                        setActivityStartConfirmed(false)
+                        setActivityStartRefreshFailed(false)
                         toast({
                           type: 'error',
                           message: t('shared.generic.systemError'),
