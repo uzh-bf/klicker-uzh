@@ -105,7 +105,14 @@ function Login() {
                 }),
               ]
             : []),
-        ]).catch(console.error)
+        ]).catch((error) => {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 6000 },
+          })
+        })
 
         // redirect to the specified redirect path (default: question pool)
         const routed = await router.replace(safeRedirectPath)

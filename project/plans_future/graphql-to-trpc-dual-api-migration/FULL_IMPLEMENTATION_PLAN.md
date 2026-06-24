@@ -423,6 +423,71 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 In Progress: PWA Auth Refresh Failure UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and already migrated frontend-pwa authentication /
+activation flows. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration` is clean and
+  aligned with origin at `28665eca9`; PR merge ref is `faa3f368`.
+- Current PR checks for `28665eca9`: `packages/api tRPC Vitest`,
+  `packages/graphql Vitest`, typecheck, lint, format, syncpack, SonarCloud,
+  CodeQL, OLAT tests, utility tests, and all Docker image builds pass. Cypress
+  Cloud remains running.
+- Cypress Cloud run `6932` is the authoritative current-head run for merge ref
+  `faa3f368`. It is running with 28/33 tests passed and 0 failed; early specs
+  through `D-elements-content-workflow.cy.ts` have passed, and
+  `E-elements-flashcards-workflow.cy.ts` is running.
+- Context7 docs refreshed for tRPC and TanStack Query v4. Relevant behavior:
+  tRPC `useUtils()` helpers wrap React Query cache/fetch helpers, mutation
+  flows can await promise side effects, and `mutateAsync`/query fetch failures
+  should be handled explicitly when the next UI depends on fresh cache state.
+
+Findings:
+
+- `apps/frontend-pwa/src/pages/login.tsx`,
+  `apps/frontend-pwa/src/pages/magicLogin.tsx`, and
+  `apps/frontend-pwa/src/pages/activation.tsx` already use migrated tRPC
+  participant auth procedures and have clear initial loading/form/mutation
+  failure handling.
+- After a successful password login, magic-link login, or account activation,
+  the flows still swallowed the follow-up `participant.self` cache refresh with
+  `catch(console.error)` before routing.
+- These refreshes are not the same as failed login/activation mutations: the
+  server-side auth step may have succeeded. The user should get visible generic
+  refresh/system feedback while the successful auth route continues, rather
+  than a silent console-only failure or a misleading auth-failed state.
+
+Change:
+
+- Surface failed post-success `participant.self` refreshes through the existing
+  generic system-error toast in password login, magic-link login, and account
+  activation.
+- Keep successful server mutation behavior, route targets, redirect fallback,
+  auth-failed copy, loading state, form validation, and GraphQL/tRPC
+  coexistence unchanged.
+
+Verification:
+
+- Passed locally:
+  - `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/pages/login.tsx apps/frontend-pwa/src/pages/magicLogin.tsx apps/frontend-pwa/src/pages/activation.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  - `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Browser/runtime verification is blocked locally because no stack is
+  listening: `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused PWA auth-refresh UX cleanup.
+- Continue monitoring Cypress Cloud run `6932` for the current head before
+  starting any non-UX migration slice.
+
 ### 2026-06-24 In Progress: Confirmation Checklist Follow-Up
 
 Context:
@@ -511,7 +576,8 @@ Verification:
   - `./node_modules/.bin/prettier --write cypress/cypress/e2e/O-live-quiz-workflow.cy.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   - `./node_modules/.bin/tsc -p cypress/tsconfig.json --noEmit --pretty false`
   - `git diff --check`
-- Next: commit, push, and monitor the Cypress Cloud replacement run.
+- Pushed as `28665eca9`; current-head Cypress Cloud replacement run `6932` is
+  running for merge ref `faa3f368`.
 
 ### 2026-06-23 Completed Locally With CI Evidence: Course Creation Navigation Refresh Follow-Up
 

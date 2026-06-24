@@ -52,6 +52,15 @@ function MagicLogin() {
       redirectToLogin()
     }
 
+    const showRefreshFailure = (error: unknown) => {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
+    }
+
     if (!token) {
       showFailure()
       return
@@ -64,7 +73,9 @@ function MagicLogin() {
         if (result) {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
-          await utils.participant.self.fetch(undefined).catch(console.error)
+          await utils.participant.self
+            .fetch(undefined)
+            .catch(showRefreshFailure)
           const routed = await router.push('/')
           if (!routed) window.location.assign('/')
         } else {
