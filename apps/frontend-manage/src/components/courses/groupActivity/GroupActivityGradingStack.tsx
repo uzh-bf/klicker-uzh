@@ -236,11 +236,23 @@ function GroupActivityGradingStack({
           })
 
           if (result.gradeGroupActivitySubmission?.id) {
-            void utils.activity.groupActivityGrading
-              .invalidate({
+            try {
+              await utils.activity.groupActivityGrading.invalidate({
                 id: submission.groupActivityId,
               })
-              .catch(console.error)
+            } catch (error) {
+              console.error(
+                'Error refreshing group activity grading after submission grading',
+                error
+              )
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 6000 },
+              })
+              return
+            }
+
             resetForm()
             toast({
               type: 'success',

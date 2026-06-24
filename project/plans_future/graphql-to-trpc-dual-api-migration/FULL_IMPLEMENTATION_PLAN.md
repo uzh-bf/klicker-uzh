@@ -423,6 +423,95 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Group Activity Grading Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage group-activity
+grading workflow. No new migration slice, S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration`, origin, and
+  PR #5132 all pointed to `b13f1776f` before this local fix.
+- Current-head CI for `b13f1776f` was green for lint, format, typecheck,
+  SonarCloud, GitGuardian, CodeQL, Docker builds, `packages/graphql Vitest`,
+  and `packages/api tRPC Vitest`.
+- Current-head Cypress run `28078250162` / Cypress Cloud run `6947` was still
+  in progress. This focused UX fix will require refreshing the evidence ledger
+  after push because the previous Cypress snapshot becomes stale.
+- Current review threads were all resolved/outdated. PR #5132 remained blocked
+  by required human review and pending Cypress.
+- Local runtime/browser verification remained blocked because
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused.
+
+Findings:
+
+- `GroupActivityGradingStack` already uses the migrated
+  `activity.gradeGroupActivitySubmission` tRPC mutation.
+- After a successful grading save, the visible grading page depends on
+  `activity.groupActivityGrading` being fresh before the form is reset and a
+  success toast is shown. The required invalidation was hidden behind
+  `catch(console.error)`.
+- `FinalizeGradingModal` already uses the migrated
+  `activity.finalizeGroupActivityGrading` tRPC mutation.
+- Finalization is not safe to repeat: the server finalization path updates the
+  activity to `GRADED`, stamps solved instances, and awards group score, XP,
+  achievements, leaderboard points, and daily timeline entries. If refresh
+  failed while the UI still looked unfinalized, a second click could duplicate
+  those side effects.
+
+Change:
+
+- Await the required `activity.groupActivityGrading` invalidation after a
+  successful submission grading save before resetting the form, clearing edit
+  state, and showing success.
+- If grading save succeeds but the required refresh fails, keep the form
+  recoverable and show the existing generic system-error toast instead of the
+  mutation-specific grading error.
+- For finalization, use cache-first reconciliation from the mutation response:
+  update the exact `activity.groupActivityGrading({ id })` cache status before
+  closing the modal, then run a targeted background invalidation. This prevents
+  duplicate finalization from stale visible status even if the background
+  refresh fails.
+- Existing mutation inputs, query keys, GraphQL/tRPC coexistence, and package
+  test parity remain unchanged.
+
+Verification:
+
+- Context7 TanStack Query v4 docs confirmed mutation side-effect callbacks can
+  return promises and are awaited; tRPC docs confirmed `useUtils()` wraps
+  TanStack Query helpers such as `invalidate`, `setData`, and `cancel`.
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/groupActivity/FinalizeGradingModal.tsx apps/frontend-manage/src/components/courses/groupActivity/GroupActivityGradingStack.tsx`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "Error refreshing group activity grading after finalization|Error refreshing group activity grading after submission grading|groupActivityGrading\\.invalidate\\(\\{ id: activityId \\}\\)|groupActivityGrading\\.setData|shared\\.generic\\.systemError|catch\\(console\\.error\\)" apps/frontend-manage/src/components/courses/groupActivity/FinalizeGradingModal.tsx apps/frontend-manage/src/components/courses/groupActivity/GroupActivityGradingStack.tsx`:
+  confirmed the old console-only required-refresh path is gone in these files,
+  finalization writes the exact cache key, and submission refresh failure uses
+  generic system-error copy.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to one already migrated
+  group-activity grading workflow plus this progress entry.
+- Simplification kept submission grading as a required refresh and finalization
+  as cache-first reconciliation because the finalization mutation result
+  contains the exact status needed to make the visible page safe against
+  duplicate finalization.
+
+Next:
+
+- Commit and push this focused group-activity grading refresh UX cleanup, then
+  refresh PR checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Random Group Assignment Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

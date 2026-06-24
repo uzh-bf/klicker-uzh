@@ -36,13 +36,30 @@ function FinalizeGradingModal({
           const data = await finalizeGroupActivityGrading.mutateAsync({
             id: activityId,
           })
+          const finalized = data?.finalizeGroupActivityGrading
 
-          if (data?.finalizeGroupActivityGrading?.id) {
+          if (finalized?.id) {
+            utils.activity.groupActivityGrading.setData(
+              { id: activityId },
+              (queryData) => {
+                if (!queryData?.groupActivityGrading) return queryData
+
+                return {
+                  groupActivityGrading: {
+                    ...queryData.groupActivityGrading,
+                    status: finalized.status,
+                  },
+                }
+              }
+            )
             void utils.activity.groupActivityGrading
-              .invalidate({
-                id: activityId,
+              .invalidate({ id: activityId })
+              .catch((error) => {
+                console.error(
+                  'Error refreshing group activity grading after finalization',
+                  error
+                )
               })
-              .catch(console.error)
             toast({
               type: 'success',
               message: t('manage.groupActivity.finalizeGradingSuccess'),
