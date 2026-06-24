@@ -423,6 +423,73 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Shared Answer Collection Removal Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage shared
+answer-collection removal workflow. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration` is clean and
+  aligned with origin at `ccc03aea`; PR #5132 head is `ccc03aea`.
+- Current-head checks show `packages/api tRPC Vitest`, lint, format, syncpack,
+  GitGuardian, selected CodeQL jobs, utility tests, Claude review, and selected
+  Docker builds green. `packages/graphql Vitest`, Cypress run `28076438405`,
+  SonarCloud, typecheck, OLAT tests, and remaining Docker builds are still
+  pending or running.
+- Local runtime/browser verification is blocked because
+  `http://127.0.0.1:3002` and `http://127.0.0.1:3000/api/trpc` refuse
+  connections.
+
+Findings:
+
+- `AnswerCollectionRemovalModal` already uses the migrated
+  `resources.removeAnswerCollection` tRPC mutation and refreshes
+  `resources.answerCollectionsInfo` before showing success and closing.
+- The required refresh is hidden behind `catch(console.error)`. If removal
+  succeeds but the list refresh fails, the user currently sees success and the
+  modal closes with potentially stale list data.
+
+Change:
+
+- Split true shared answer-collection removal failure from required
+  post-removal list refresh failure.
+- If removal succeeds but `resources.answerCollectionsInfo` refresh fails, the
+  modal stays open, the pending state is cleared, and the existing generic
+  system-error toast is shown.
+- Existing success close, removal failure copy, mutation input, query key, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/sharing/AnswerCollectionRemovalModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "answerCollectionsInfo\\s*\\.invalidate\\(\\)\\s*\\.catch\\(console\\.error\\)|Error refreshing answer collections after removal|removalFailed|removalSuccessful|shared\\.generic\\.systemError|setRemovalPending\\(false\\)" apps/frontend-manage/src/components/sharing/AnswerCollectionRemovalModal.tsx`:
+  old silent refresh catch removed; refresh-only and removal-failure paths are
+  distinct.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to one already migrated shared
+  answer-collection removal modal plus this progress entry.
+- Simplification kept the existing modal pending state, close guard, toast
+  pattern, and success close behavior. No new translation key, query key, or
+  global cache policy was introduced.
+
+Next:
+
+- Commit and push this focused manage shared answer-collection removal refresh
+  UX cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Answer Collection Deletion Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

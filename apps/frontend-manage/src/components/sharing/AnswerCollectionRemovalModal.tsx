@@ -34,6 +34,12 @@ function AnswerCollectionRemovalModal({
       message: t('manage.sharing.removalFailed'),
       options: { duration: 3000 },
     })
+  const onRefreshError = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 3000 },
+    })
 
   return (
     <Modal
@@ -57,9 +63,17 @@ function AnswerCollectionRemovalModal({
           })
 
           if (res.removedAnswerCollectionId !== null) {
-            await utils.resources.answerCollectionsInfo
-              .invalidate()
-              .catch(console.error)
+            try {
+              await utils.resources.answerCollectionsInfo.invalidate()
+            } catch (error) {
+              console.error(
+                'Error refreshing answer collections after removal:',
+                error
+              )
+              onRefreshError()
+              setRemovalPending(false)
+              return
+            }
             toast({
               type: 'success',
               message: t('manage.sharing.removalSuccessful'),
