@@ -1,6 +1,7 @@
+import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
-import { H2, UserNotification, toast } from '@uzh-bf/design-system'
+import { Button, H2, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -13,6 +14,8 @@ function MagicLogin() {
   const loginTimeout = useRef<any>(null)
   const redirectionTimeout = useRef<any>(null)
   const [failureMessage, setFailureMessage] = useState<string | null>(null)
+  const [sessionRefreshFailed, setSessionRefreshFailed] = useState(false)
+  const [sessionRefreshing, setSessionRefreshing] = useState(false)
   const token =
     typeof router.query.token === 'string' && router.query.token.trim() !== ''
       ? router.query.token
@@ -21,6 +24,30 @@ function MagicLogin() {
 
   const loginWithMagicLink = trpc.participant.loginWithMagicLink.useMutation()
 
+  const refreshSessionAndRedirect = async () => {
+    setSessionRefreshing(true)
+    setSessionRefreshFailed(false)
+
+    try {
+      await utils.participant.self.fetch(undefined)
+      const routed = await router.push('/')
+      if (!routed) window.location.assign('/')
+    } catch (error) {
+      console.error(
+        'Error refreshing participant session after magic login:',
+        error
+      )
+      setSessionRefreshFailed(true)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
+    } finally {
+      setSessionRefreshing(false)
+    }
+  }
+
   // set timeout of 2 seconds to show the loader and then login in timeout callback
   useEffect(() => {
     if (!router.isReady) return
@@ -28,6 +55,7 @@ function MagicLogin() {
     clearTimeout(loginTimeout.current)
     clearTimeout(redirectionTimeout.current)
     setFailureMessage(null)
+    setSessionRefreshFailed(false)
 
     const redirectToLogin = () => {
       redirectionTimeout.current = setTimeout(() => {
@@ -52,15 +80,6 @@ function MagicLogin() {
       redirectToLogin()
     }
 
-    const showRefreshFailure = (error: unknown) => {
-      console.error(error)
-      toast({
-        type: 'error',
-        message: t('shared.generic.systemError'),
-        options: { duration: 6000 },
-      })
-    }
-
     if (!token) {
       showFailure()
       return
@@ -73,11 +92,7 @@ function MagicLogin() {
         if (result) {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
-          await utils.participant.self
-            .fetch(undefined)
-            .catch(showRefreshFailure)
-          const routed = await router.push('/')
-          if (!routed) window.location.assign('/')
+          await refreshSessionAndRedirect()
         } else {
           showFailure()
         }
@@ -109,6 +124,21 @@ function MagicLogin() {
           message={failureMessage}
           className={{ root: 'mt-4 max-w-md text-base' }}
         />
+      ) : sessionRefreshFailed ? (
+        <div className="mt-4 flex max-w-md flex-col items-center gap-3">
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'text-base' }}
+          />
+          <Button
+            onClick={() => void refreshSessionAndRedirect()}
+            disabled={sessionRefreshing}
+          >
+            <Button.Icon icon={faArrowsRotate} loading={sessionRefreshing} />
+            <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+          </Button>
+        </div>
       ) : (
         <>
           <H2 className={{ root: 'mb-2 mt-4' }}>

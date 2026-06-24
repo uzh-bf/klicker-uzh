@@ -423,6 +423,81 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: PWA Auth Session Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the
+already migrated PWA participant password login, magic-link login, and account
+activation tRPC flows. No new migration slice, GraphQL removal, Apollo removal,
+or S06 cleanup is being started.
+
+Context:
+
+- Work is running on `codex/trpc-dual-api-migration` at PR #5132 head
+  `509eb9b9546ba9ef8f304934b4d1007de2792aae` before this local fix.
+- Current-head non-Cypress PR checks are green, including
+  `packages/graphql Vitest` and `packages/api tRPC Vitest`.
+- Cypress workflow `28084947740` / Cypress Cloud run `6955` is still running
+  on that head. Pushing this focused fix will make that run stale and requires
+  a fresh current-head evidence refresh.
+- GitHub review threads are resolved/outdated; PR #5132 remains blocked by
+  required human review, not by current unresolved review comments.
+- Context7 docs were refreshed before editing. Relevant behavior: tRPC
+  `useUtils().*.fetch()` wraps TanStack Query `fetchQuery`, which resolves with
+  data or throws. Required fetches that gate navigation should be awaited and
+  surfaced when they fail.
+
+Findings:
+
+- Password login, magic-link login, and account activation all require a fresh
+  `participant.self` cache fetch before redirecting. The destination home page
+  immediately reads `participant.self` for locale/session state and
+  `participant.participations` for the visible course list.
+- The password-login flow swallowed `participant.self.fetch()` failures and
+  still redirected. A successful login followed by a required self-refresh
+  failure could therefore navigate with stale or missing participant session
+  cache.
+- Magic-link login and account activation are one-way token flows. Their
+  server mutation can succeed before the required self refresh fails, so the UI
+  should not reuse token-failure copy or automatically redirect to login after
+  a refresh-only failure.
+
+Change:
+
+- Password login now stops before redirecting if the required self-refresh
+  fetch fails, keeps the form recoverable, and shows the existing generic
+  system-error toast.
+- Magic-link login and account activation now keep token-operation failure and
+  session-refresh failure separate. If the token operation succeeds but the
+  required self refresh fails, the page shows an inline generic error with a
+  retry button that attempts only the self refresh and home redirect.
+- No new translation keys, global QueryClient defaults, broad invalidation, or
+  GraphQL/Apollo changes were introduced.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/pages/login.tsx apps/frontend-pwa/src/pages/magicLogin.tsx apps/frontend-pwa/src/pages/activation.tsx`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "participant\\.self\\.fetch\\(undefined\\)|sessionRefreshFailed|Error refreshing participant session after|showRefreshFailure|throw error" apps/frontend-pwa/src/pages/login.tsx apps/frontend-pwa/src/pages/magicLogin.tsx apps/frontend-pwa/src/pages/activation.tsx`:
+  confirmed the required self-fetches are explicit, refresh-failure states are
+  present for token flows, and the old swallowed refresh helper / throw-through
+  pattern is gone.
+- `pnpm --filter @klicker-uzh/frontend-pwa lint`: interrupted after roughly 90s
+  with no output. This is recorded as a local tooling hang; no lint failure was
+  produced.
+- Runtime browser verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3001`,
+  `curl -sS -I http://127.0.0.1:3000/api/graphql`, and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc/participant.self` all fail with
+  connection refused because the PWA app and backend are not running.
+
+Next:
+
+- Commit and push this focused PWA auth session-refresh UX cleanup, then
+  refresh PR/Cypress evidence for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: PWA Group Activity Required Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the

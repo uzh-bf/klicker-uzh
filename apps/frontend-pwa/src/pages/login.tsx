@@ -96,23 +96,30 @@ function Login() {
         )
         const redirectLiveQuizId = getRedirectLiveQuizId(safeRedirectPath)
 
-        await Promise.all([
-          utils.participant.self.fetch(undefined),
-          ...(redirectLiveQuizId
-            ? [
-                utils.participant.self.fetch({
-                  liveQuizId: redirectLiveQuizId,
-                }),
-              ]
-            : []),
-        ]).catch((error) => {
-          console.error(error)
+        try {
+          await Promise.all([
+            utils.participant.self.fetch(undefined),
+            ...(redirectLiveQuizId
+              ? [
+                  utils.participant.self.fetch({
+                    liveQuizId: redirectLiveQuizId,
+                  }),
+                ]
+              : []),
+          ])
+        } catch (error) {
+          console.error(
+            'Error refreshing participant session after login:',
+            error
+          )
           toast({
             type: 'error',
             message: t('shared.generic.systemError'),
             options: { duration: 6000 },
           })
-        })
+          setSubmitting(false)
+          return
+        }
 
         // redirect to the specified redirect path (default: question pool)
         const routed = await router.replace(safeRedirectPath)
