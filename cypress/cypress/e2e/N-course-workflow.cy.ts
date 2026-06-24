@@ -2234,9 +2234,18 @@ describe('Test course creation and editing functionalities', function () {
       microLearnings: 0,
       groupActivities: 0,
     })
+    cy.task('deleteCourseByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_INST4_ID'),
+    })
   })
 
   it('Change the course ADMIN permission to WRITE level for user pro5 (without propagation)', function () {
+    cy.task('deleteCourseByName', {
+      courseName: `${this.data.sharing.course} Admin Copy`,
+      ownerId: Cypress.env('LECTURER_INST4_ID'),
+    })
+
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
