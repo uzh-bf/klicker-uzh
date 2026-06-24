@@ -34,9 +34,7 @@ function PoolNotification({
               courseId,
             })
             if (result) {
-              await Promise.resolve(onCourseOverviewChanged?.()).catch(
-                console.error
-              )
+              await Promise.resolve(onCourseOverviewChanged?.())
               return
             }
           } catch (error) {

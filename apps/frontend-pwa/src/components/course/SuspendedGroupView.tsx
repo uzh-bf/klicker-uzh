@@ -28,6 +28,7 @@ import EditableGroupName from './EditableGroupName'
 
 type CourseOverviewData = RouterOutputs['participant']['courseOverview']
 type ParticipantGroupData = CourseOverviewData['participantGroups'][number]
+type ParticipantGroupMessage = ParticipantGroupData['messages'][number]
 type CourseOverview = NonNullable<CourseOverviewData['courseOverview']>
 type CourseOverviewParticipant = NonNullable<CourseOverview['participant']>
 type CourseOverviewParticipation = NonNullable<CourseOverview['participation']>
@@ -70,6 +71,30 @@ function SuspendedGroupView({
     trpc.participant.leaveParticipantGroup.useMutation()
   const addMessageToGroup = trpc.participant.addMessageToGroup.useMutation()
   const [leaveGroupLoading, setLeaveGroupLoading] = useState(false)
+  const utils = trpc.useUtils()
+
+  function addGroupMessageToCourseOverview(message: ParticipantGroupMessage) {
+    utils.participant.courseOverview.setData({ courseId }, (data) => {
+      if (!data) return data
+
+      return {
+        ...data,
+        participantGroups: data.participantGroups.map((participantGroup) =>
+          participantGroup.id === group.id
+            ? {
+                ...participantGroup,
+                messages: [
+                  message,
+                  ...participantGroup.messages.filter(
+                    (existingMessage) => existingMessage.id !== message.id
+                  ),
+                ],
+              }
+            : participantGroup
+        ),
+      }
+    })
+  }
 
   const {
     data: rawActivityInstances,
@@ -120,6 +145,7 @@ function SuspendedGroupView({
         <div className="flex flex-row flex-wrap gap-4">
           <div className="flex flex-1 flex-col">
             <EditableGroupName
+              courseId={courseId}
               groupId={group.id}
               groupName={group.name}
               onChanged={onCourseOverviewChanged}
@@ -197,10 +223,8 @@ function SuspendedGroupView({
                             return
                           }
 
+                          await Promise.resolve(onCourseOverviewChanged?.())
                           setSelectedTab('global')
-                          await Promise.resolve(
-                            onCourseOverviewChanged?.()
-                          ).catch(console.error)
                         } catch (error) {
                           console.error(error)
                           toast({
@@ -373,7 +397,8 @@ function SuspendedGroupView({
                     content: values.content,
                   })
                   if (result) {
-                    await Promise.resolve(onCourseOverviewChanged?.()).catch(
+                    addGroupMessageToCourseOverview(result)
+                    void Promise.resolve(onCourseOverviewChanged?.()).catch(
                       console.error
                     )
                     resetForm()

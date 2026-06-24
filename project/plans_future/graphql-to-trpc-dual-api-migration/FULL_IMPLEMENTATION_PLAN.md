@@ -423,6 +423,77 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: PWA Group Action Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated PWA group membership, random
+pool, group rename, leave-group, and group-message workflows. No new migration
+slice, S06 cleanup, GraphQL removal, Apollo removal, or package cleanup was
+started.
+
+Context:
+
+- Work ran on `codex/trpc-dual-api-migration` after
+  `f1371ee73c4b29617e48d33fb773f0f252442dfa` was pushed.
+- Current PR #5132 CI restarted for `f1371ee73c4b29617e48d33fb773f0f252442dfa`
+  and was still pending when this follow-up PWA group-action fix began.
+- This fix intentionally batches one workflow family because the same
+  `participant.courseOverview` refresh boundary controls all affected visible
+  PWA group state.
+
+Findings:
+
+- `GroupJoinBlock`, `GroupCreationBlock`, `RandomGroupBlock`, and
+  `PoolNotification` already use migrated `participant.*` tRPC mutations.
+  Their visible next state depends on `participant.courseOverview` being fresh,
+  but each required refresh used `catch(console.error)`.
+- `SuspendedGroupView` left a group by switching the selected tab before the
+  required course-overview refresh; refresh failure could show an error while
+  the tab had already moved to stale global state.
+- `SuspendedGroupView` group-message submit is non-idempotent and the mutation
+  returns the exact new message. The old flow swallowed refresh failure and
+  reset the form even if the message was not visible.
+- `EditableGroupName` receives the exact updated group name. The old flow
+  updated local text but relied on a swallowed refresh for the group list and
+  leaderboard name.
+
+Change:
+
+- Required refreshes now reject to the existing generic error toast path before
+  changing tabs or reporting success for join/create/random-pool/leave-pool.
+- Leave-group now awaits the required course-overview refresh before switching
+  the selected tab to `global`.
+- Group-message submit writes the exact new message into the
+  `participant.courseOverview({ courseId })` cache first, then runs background
+  invalidation for reconciliation.
+- Group rename writes the exact new name into the `participant.courseOverview`
+  group list and group leaderboard cache first, then runs background
+  invalidation for reconciliation.
+- Existing tRPC mutation inputs, query keys, GraphQL/tRPC coexistence, and
+  user-facing error copy remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/components/participant/groups/GroupJoinBlock.tsx apps/frontend-pwa/src/components/participant/groups/GroupCreationBlock.tsx apps/frontend-pwa/src/components/participant/groups/RandomGroupBlock.tsx apps/frontend-pwa/src/components/participant/groups/PoolNotification.tsx apps/frontend-pwa/src/components/course/EditableGroupName.tsx apps/frontend-pwa/src/components/course/SuspendedGroupView.tsx`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "catch\\(console\\.error\\)|Promise\\.resolve\\(on(CourseOverviewChanged|Changed)\\?\\.\\(\\)\\)" apps/frontend-pwa/src/components/participant/groups apps/frontend-pwa/src/components/course/EditableGroupName.tsx apps/frontend-pwa/src/components/course/SuspendedGroupView.tsx`:
+  confirmed required course-overview refreshes are awaited, while the remaining
+  console-only catches are only the intended background reconciliation after
+  cache-first message/name writes.
+- Runtime browser verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3001` fails with connection refused because the
+  PWA app is not running. `curl -sS -I http://127.0.0.1:3000/api/trpc` reaches a
+  local backend process but returns HTTP 404 for the bare tRPC base path; no PWA
+  browser route is available for screenshot verification.
+
+Next:
+
+- Commit and push this focused PWA group-action refresh/cache UX cleanup, then
+  refresh PR checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Audience Interaction Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC UX/client-quality audit and

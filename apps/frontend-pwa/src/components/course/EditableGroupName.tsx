@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react'
 import { trpc } from '../../lib/trpc'
 
 interface EditableGroupNameProps {
+  courseId: string
   groupId: string
   groupName: string
   onChanged?: () => void | Promise<void>
 }
 
 function EditableGroupName({
+  courseId,
   groupId,
   groupName,
   onChanged,
@@ -24,6 +26,7 @@ function EditableGroupName({
     trpc.participant.renameParticipantGroup.useMutation()
   const groupNameSubmitting =
     renameParticipantGroup.isLoading || groupNameSaving
+  const utils = trpc.useUtils()
 
   useEffect(() => {
     setGroupNameValue(groupName)
@@ -74,7 +77,28 @@ function EditableGroupName({
             }
 
             setGroupNameValue(result.name)
-            await Promise.resolve(onChanged?.()).catch(console.error)
+            utils.participant.courseOverview.setData({ courseId }, (data) => {
+              if (!data) return data
+
+              return {
+                ...data,
+                courseOverview: data.courseOverview
+                  ? {
+                      ...data.courseOverview,
+                      groupLeaderboard:
+                        data.courseOverview.groupLeaderboard?.map((entry) =>
+                          entry.id === groupId
+                            ? { ...entry, name: result.name }
+                            : entry
+                        ) ?? null,
+                    }
+                  : data.courseOverview,
+                participantGroups: data.participantGroups.map((group) =>
+                  group.id === groupId ? { ...group, name: result.name } : group
+                ),
+              }
+            })
+            void Promise.resolve(onChanged?.()).catch(console.error)
             setEditMode(false)
           } catch (error) {
             console.error(error)
