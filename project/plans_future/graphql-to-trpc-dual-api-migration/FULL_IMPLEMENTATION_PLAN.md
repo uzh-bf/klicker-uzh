@@ -423,6 +423,73 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Element Delete/Remove Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage element
+deletion/removal confirmation workflows. No new migration slice, S05/S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed after the previous push: local
+  `codex/trpc-dual-api-migration`, origin, and PR #5132 all point to
+  `c6a0aa1b`.
+- Current-head checks for `c6a0aa1b` are newly queued or in progress. Only
+  GitGuardian has already reported green; draft Playwright is skipped.
+- PR #5132 still needs review approval, but the current review-thread query
+  shows no unresolved current review comments.
+- Local runtime/browser verification remains blocked because
+  `http://127.0.0.1:3002` and `http://127.0.0.1:3000/api/trpc` refuse
+  connections.
+
+Findings:
+
+- `ElementDeletionModal` already uses the migrated `element.delete` tRPC
+  mutation and refreshes answer-collection info, element tags, and the parent
+  element list before the shared confirmation modal closes.
+- `ElementRemovalModal` already uses the migrated `sharing.removeObject` tRPC
+  mutation and refreshes the parent element list before the shared confirmation
+  modal closes.
+- Both workflows wrapped required refreshes in `catch(console.error)`. The
+  shared `ActivityConfirmationModal` already keeps the modal open and shows a
+  generic user-facing error when `onSubmit` rejects, so swallowing these
+  required refresh failures bypassed the existing recoverable failure path.
+
+Change:
+
+- Let required post-delete and post-remove refresh failures reject to the shared
+  confirmation modal instead of hiding them behind `catch(console.error)`.
+- Existing mutation inputs, confirmation state, summary loading/error states,
+  tRPC query keys, and GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/elements/manipulation/ElementDeletionModal.tsx apps/frontend-manage/src/components/elements/manipulation/ElementRemovalModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "Promise\\.all\\(\\[[^\\n]*|answerCollectionsInfo\\.invalidate\\(\\)|element\\.tags\\.invalidate\\(\\)|refetchElements\\(\\)\\.catch\\(console\\.error\\)|await refetchElements\\(\\)|ActivityConfirmationModal" apps/frontend-manage/src/components/elements/manipulation/ElementDeletionModal.tsx apps/frontend-manage/src/components/elements/manipulation/ElementRemovalModal.tsx`:
+  old `refetchElements().catch(console.error)` path removed; required
+  deletion/removal refreshes now reject to the shared confirmation modal.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to two already migrated element
+  confirmation modals plus this progress entry.
+- Simplification reused the existing shared `ActivityConfirmationModal`
+  pending/error path instead of adding duplicate local toast or pending state.
+
+Next:
+
+- Commit and push this focused element delete/remove refresh UX cleanup, then
+  refresh PR checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Shared Answer Collection Removal Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

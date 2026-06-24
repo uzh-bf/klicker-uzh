@@ -82,7 +82,7 @@ function ElementDeletionModal({
           utils.resources.answerCollectionsInfo.invalidate(),
           utils.element.tags.invalidate(),
           refetchElements(),
-        ]).catch(console.error)
+        ])
       }}
       submitting={deleteElement.isLoading}
       confirmations={summary ? confirmations : { summaryLoaded: false }}

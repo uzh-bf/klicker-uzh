@@ -71,7 +71,7 @@ function ElementRemovalModal({
           throw new Error('Failed to remove element')
         }
 
-        await refetchElements().catch(console.error)
+        await refetchElements()
       }}
       submitting={removeObject.isLoading}
       confirmations={summary ? confirmations : { summaryLoaded: false }}
