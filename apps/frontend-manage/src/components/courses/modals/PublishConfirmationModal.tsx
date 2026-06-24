@@ -75,7 +75,7 @@ function PublishConfirmationModal({
           await Promise.all([
             utils.course.detail.invalidate({ courseId }),
             refetchActivities?.(),
-          ]).catch(console.error)
+          ])
           onClose()
         } catch (error) {
           console.error(error)

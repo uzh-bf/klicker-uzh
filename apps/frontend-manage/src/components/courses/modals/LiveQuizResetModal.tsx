@@ -87,7 +87,7 @@ function LiveQuizResetModal({
             ? utils.course.detail.invalidate({ courseId })
             : Promise.resolve(),
           onSuccess?.(),
-        ]).catch(console.error)
+        ])
       }}
       submitting={resetLiveQuiz.isLoading}
       confirmations={confirmations}

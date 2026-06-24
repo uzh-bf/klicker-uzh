@@ -70,7 +70,7 @@ function LiveQuizSchedulingModal({
                 courseId
                   ? utils.course.detail.invalidate({ courseId })
                   : Promise.resolve(),
-              ]).catch(console.error)
+              ])
               onClose()
             } else {
               toast({

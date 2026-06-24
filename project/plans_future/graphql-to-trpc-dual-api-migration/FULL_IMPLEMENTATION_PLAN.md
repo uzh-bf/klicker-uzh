@@ -423,6 +423,86 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Scheduled Activity Refresh Failure UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and already migrated frontend-manage scheduled activity
+publish/reset workflows. No new migration slice, S05/S06 cleanup, GraphQL
+removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed before this slice: local
+  `codex/trpc-dual-api-migration` was clean and aligned with origin at
+  `b17fb8ae6`.
+- PR #5132 head is `b17fb8ae6ec655fc5eaeb986032fe64d18ca9ad6`, ready for
+  review, not draft, with review approval still required.
+- Current-head checks show `packages/api tRPC Vitest`, format, lint, syncpack,
+  util tests, SonarCloud analysis, Claude review, GitGuardian, selected CodeQL
+  jobs, and selected Docker builds green. `packages/graphql Vitest`, Cypress
+  Cloud, typecheck, OLAT API tests, CodeQL JavaScript, and remaining Docker
+  builds were still running or queued when this local slice started.
+- Context7 docs were refreshed before editing. Relevant behavior: tRPC
+  `useUtils()` invalidation helpers wrap TanStack Query cache operations, and
+  React Query v4 mutation callbacks / promise side effects can be awaited for
+  ordered post-mutation refresh behavior.
+
+Findings:
+
+- `LiveQuizSchedulingModal` already uses the migrated
+  `activity.scheduleLiveQuiz` tRPC mutation.
+- `PublishConfirmationModal` already uses the migrated `activity.publish` tRPC
+  mutation for scheduled microlearning and group-activity publishing.
+- `LiveQuizResetModal` already uses the migrated
+  `activity.resetAssessmentLiveQuiz` tRPC mutation and the shared
+  `ActivityConfirmationModal` pending/error path.
+- These flows close their modal after the server mutation succeeds and the
+  visible activity/course state is expected to refresh. The refreshes were
+  still hidden behind `catch(console.error)`, so the UI could close with stale
+  course/activity data and no user-facing refresh failure.
+
+Change:
+
+- Let required `activity.userActivities`, `course.detail`, and parent
+  `refetchActivities` / `onSuccess` refresh failures reject in scheduling,
+  scheduled publish, and live-quiz reset flows.
+- Reuse existing form/modal error handling and pending guards. No mutation
+  inputs, query keys, GraphQL/Apollo coexistence paths, cache policy, or copy
+  changed.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/modals/LiveQuizSchedulingModal.tsx apps/frontend-manage/src/components/courses/modals/PublishConfirmationModal.tsx apps/frontend-manage/src/components/courses/modals/LiveQuizResetModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed; code files unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "catch\\(console\\.error\\)|scheduleLiveQuiz|publishActivity|resetAssessmentLiveQuiz|course\\.detail\\.invalidate|refetchActivities|ActivityConfirmationModal|systemError" apps/frontend-manage/src/components/courses/modals/LiveQuizSchedulingModal.tsx apps/frontend-manage/src/components/courses/modals/PublishConfirmationModal.tsx apps/frontend-manage/src/components/courses/modals/LiveQuizResetModal.tsx apps/frontend-manage/src/components/courses/modals/ActivityConfirmationModal.tsx`:
+  required refresh catches removed from scheduling, scheduled publish, and
+  reset flows; existing generic error handling remains in the local modal/form
+  catch paths and the shared confirmation modal.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3002`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Review / simplification:
+
+- Dedicated review/simplification subagents were not used because the available
+  multi-agent tool requires explicit user authorization for delegation in this
+  environment.
+- Self-review confirmed the diff is limited to three already migrated modal
+  refresh boundaries plus this progress entry; it changes no mutation inputs,
+  no query keys, no GraphQL/Apollo coexistence paths, no tRPC procedures, and no
+  broader cache policy.
+- Simplification check: no helper or abstraction was added; each flow now
+  reuses existing modal/form failure handling instead of duplicating local toast
+  logic.
+
+Next:
+
+- Commit and push this focused manage scheduled-activity refresh-failure UX
+  cleanup, then refresh PR checks and review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity Start/Delete Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
