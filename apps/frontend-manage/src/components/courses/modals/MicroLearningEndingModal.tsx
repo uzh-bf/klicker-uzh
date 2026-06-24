@@ -66,7 +66,7 @@ function MicroLearningEndingModal({
         await Promise.all([
           utils.course.detail.invalidate({ courseId }),
           refetchActivities?.(),
-        ]).catch(console.error)
+        ])
       }}
       submitting={endActivity.isLoading}
       confirmations={{}}

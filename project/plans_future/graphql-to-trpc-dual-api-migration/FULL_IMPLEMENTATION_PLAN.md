@@ -423,6 +423,86 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity End Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage microlearning
+and group-activity end workflows. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state before this patch: local `codex/trpc-dual-api-migration` was
+  clean and aligned with origin at `04e2fa276`.
+- PR #5132 head is `04e2fa276e288bbb783e9a50a647deb4ad255a77`, ready for
+  review, not draft, with review approval still required.
+- Current-head checks for `04e2fa276` had restarted after the activity
+  extension refresh UX push. GitGuardian and CodeQL java-kotlin/python were
+  green; Cypress wrapper run `28074297141` had started for the current head;
+  `packages/graphql Vitest`, `packages/api tRPC Vitest`, typecheck, lint,
+  format, SonarCloud, OLAT API tests, util tests, and staged Docker builds
+  were still running or queued when this local slice was verified.
+- Context7 docs were refreshed before this audit work. Relevant behavior: tRPC
+  `useUtils()` invalidation helpers wrap TanStack Query cache operations, and
+  React Query v4 `mutateAsync` supports promise-based sequencing for required
+  post-mutation side effects.
+
+Findings:
+
+- `MicroLearningEndingModal` and `GroupActivityEndingModal` already use the
+  migrated `activity.end` tRPC mutation.
+- Both flows use `ActivityConfirmationModal`, which keeps the modal open,
+  disables duplicate submit with its pending state, and shows the existing
+  generic system-error toast when `onSubmit` rejects.
+- After a successful end mutation, the visible course detail and activity list
+  depend on refreshing `course.detail` and the parent activity list before the
+  confirmation modal closes.
+- Both required post-success refreshes were hidden behind `catch(console.error)`,
+  so refresh failures could still close the modal while the visible activity
+  state stayed stale and the user saw no failure.
+
+Change:
+
+- Let the `course.detail` invalidation / parent activity-list refetch reject in
+  both end flows.
+- The existing `ActivityConfirmationModal` error boundary now keeps the modal
+  open and shows the existing generic system-error toast if required refresh
+  fails after the server-side end mutation succeeds.
+- Existing mutation inputs, summary loading/error fallback, confirmation
+  checklist behavior, pending guards, query keys, and GraphQL/tRPC coexistence
+  remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/modals/MicroLearningEndingModal.tsx apps/frontend-manage/src/components/courses/modals/GroupActivityEndingModal.tsx`:
+  passed; files unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "catch\\(console\\.error\\)|endActivity|course\\.detail\\.invalidate|ActivityConfirmationModal|systemError" apps/frontend-manage/src/components/courses/modals/MicroLearningEndingModal.tsx apps/frontend-manage/src/components/courses/modals/GroupActivityEndingModal.tsx apps/frontend-manage/src/components/courses/modals/ActivityConfirmationModal.tsx`:
+  old silent refresh catches removed from both end flows; shared confirmation
+  modal still owns the visible generic error path.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3002`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Review / simplification:
+
+- Dedicated review/simplification subagents were not used because the available
+  multi-agent tool requires explicit user authorization for delegation in this
+  environment.
+- Self-review confirmed the diff is limited to two already migrated activity
+  end workflows plus this progress entry; it changes no tRPC inputs, no
+  GraphQL/Apollo coexistence paths, and no broader cache policy.
+- Simplification check: no new helper or abstraction was added; both flows now
+  rely on the existing `ActivityConfirmationModal` failure handling instead of
+  duplicating local toast logic.
+
+Next:
+
+- Commit and push this focused manage activity-end refresh-failure UX cleanup,
+  then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity Extension Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
