@@ -281,6 +281,17 @@ function Index({ id }: { id: string }) {
     hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING') ||
     hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT')
   const isPinInvalid = hasLiveQuizError(error, 'LIVE_QUIZ_PIN_INVALID')
+  const handleLiveQuizRetry = async () => {
+    try {
+      await refetch({ throwOnError: true })
+    } catch (error) {
+      console.error('Error refreshing live quiz session:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+      })
+    }
+  }
 
   if (isPinMissing || isPinInvalid) {
     return (
@@ -383,7 +394,7 @@ function Index({ id }: { id: string }) {
             message={t('shared.generic.systemError')}
           />
           <Button
-            onClick={() => void refetch().catch(console.error)}
+            onClick={() => void handleLiveQuizRetry()}
             className={{ root: 'h-8' }}
             disabled={isFetching}
           >

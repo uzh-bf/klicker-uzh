@@ -423,6 +423,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: PWA Live Quiz Manual Retry Failure UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-pwa live-quiz session
+page. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo removal,
+or package cleanup was started.
+
+Context:
+
+- Branch state before this local patch: `codex/trpc-dual-api-migration` was
+  aligned with origin at `4e975feb5`; PR merge ref was `a7c58035`.
+- Current-head PR checks for `4e975feb5` showed all non-Cypress checks green,
+  including `packages/graphql Vitest`, `packages/api tRPC Vitest`, typecheck,
+  format, lint, CodeQL, SonarCloud, GitGuardian, Claude review, and Docker
+  builds.
+- Cypress Cloud run `6936` was current for merge SHA `a7c58035`, running with
+  4/11 tests passed and 0 failed when this slice started.
+- Context7 TanStack Query v4 docs were refreshed before editing; `refetch`
+  supports `throwOnError: true` for manual retry error handling.
+
+Findings:
+
+- The PWA live-quiz session page already distinguishes PIN errors, initial
+  query errors, stale-data refetch errors, and not-found live quizzes.
+- In the initial error fallback, the manual refresh button called
+  `refetch().catch(console.error)`.
+- If the user manually retried and the request failed again, the page stayed in
+  the existing generic error panel, but the failed retry action produced no
+  user-facing feedback and only wrote to the console.
+
+Change:
+
+- Added a local `handleLiveQuizRetry` helper for the fallback refresh button.
+- The helper calls `refetch({ throwOnError: true })` and shows the existing
+  generic system-error toast when the manual retry fails.
+- Existing PIN handling, initial error panel, no-quiz fallback, stale-data
+  refetch notification, tRPC input, and GraphQL/tRPC coexistence remain
+  unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-pwa/src/pages/session/[id].tsx'`:
+  passed; file unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "refetch\(\)\.catch\(console\.error\)|Error refreshing live quiz session|handleLiveQuizRetry" 'apps/frontend-pwa/src/pages/session/[id].tsx'`:
+  old silent retry pattern removed; new handler present.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3001`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Next:
+
+- Commit and push this focused PWA live-quiz manual-retry UX cleanup, then
+  refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage User Groups Refresh Failure UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
