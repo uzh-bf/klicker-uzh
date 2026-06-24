@@ -96,7 +96,7 @@ function CourseOverview({
     await Promise.all([
       utils.participant.courseLeaderboard.invalidate(leaderboardInput),
       utils.participant.courseOverview.invalidate(courseInput),
-    ]).catch(console.error)
+    ])
   }
 
   const onLeaderboardMutationError = () => {
@@ -105,6 +105,17 @@ function CourseOverview({
       message: t('shared.generic.systemError'),
       options: { duration: 5000 },
     })
+  }
+
+  const refreshLeaderboardData = async () => {
+    try {
+      await invalidateLeaderboardData()
+      return true
+    } catch (error) {
+      console.error('Error refreshing course leaderboard data', error)
+      onLeaderboardMutationError()
+      return false
+    }
   }
 
   const joinCourseLeaderboard =
@@ -129,7 +140,7 @@ function CourseOverview({
       try {
         setLeaderboardMutationRefreshing(true)
         await joinCourseLeaderboard.mutateAsync(courseInput)
-        await invalidateLeaderboardData()
+        await refreshLeaderboardData()
       } catch {
         // `onError` shows the toast.
       } finally {
@@ -707,7 +718,8 @@ function CourseOverview({
                 try {
                   setLeaderboardMutationRefreshing(true)
                   await leaveCourseLeaderboard.mutateAsync(courseInput)
-                  await invalidateLeaderboardData()
+                  const refreshed = await refreshLeaderboardData()
+                  if (!refreshed) return
                   setIsLeaveCourseLeaderboardModalOpen(false)
                 } catch {
                   // `onError` shows the toast; keep the modal open for retry.

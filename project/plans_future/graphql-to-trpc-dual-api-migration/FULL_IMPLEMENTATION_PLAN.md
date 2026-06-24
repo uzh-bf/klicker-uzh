@@ -423,6 +423,77 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: PWA Course Leaderboard Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-pwa course leaderboard
+join/leave workflow. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed before this patch: local
+  `codex/trpc-dual-api-migration` is clean and aligned with origin at
+  `1d761016b`.
+- PR #5132 head is `1d761016b8193f8ff9138a78f4e1b14294d5b140`, ready for
+  review, not draft, with no active unresolved review threads.
+- Current PR merge ref is `66683e3f3f199f01c2e71c8d574f5aa21e70bd7f`.
+- Current-head GitHub checks show `packages/graphql Vitest`, `packages/api tRPC
+  Vitest`, typecheck, lint, format, SonarCloud, CodeQL, GitGuardian, Claude
+  review, OLAT API tests, and Docker builds green.
+- Cypress Cloud run `6938` / `267c848b-cabf-4d92-bb43-1d95235d3eff` is current
+  for merge ref `66683e3f...`, running with 39 total tests, 33 passed, and 0
+  failed when this slice started.
+- Context7 TanStack Query v4 and tRPC docs were refreshed before editing:
+  mutation callbacks can await promises, React Query invalidation returns an
+  awaitable operation, and tRPC `useUtils()` invalidation helpers wrap TanStack
+  Query query-client operations.
+
+Findings:
+
+- The course overview leaderboard join/leave mutations are already migrated to
+  tRPC and already use a `leaderboardMutationRefreshing` pending guard.
+- The visible course overview and leaderboard state depends on refreshing both
+  `participant.courseLeaderboard` and `participant.courseOverview` after a
+  successful join or leave.
+- `invalidateLeaderboardData` awaited those targeted invalidations but swallowed
+  failures with `catch(console.error)`, so a required refresh failure looked
+  like success to the join/leave UI.
+- On leave, this could close the confirmation modal while the visible
+  leaderboard and participation state stayed stale. On join, the pending state
+  cleared without any user-facing refresh failure.
+
+Change:
+
+- Let `invalidateLeaderboardData` reject when the required targeted
+  invalidations fail.
+- Added a small `refreshLeaderboardData` helper that surfaces refresh failures
+  through the existing generic error toast while preserving the existing
+  mutation `onError` path for true mutation failures.
+- The leave modal now stays open when the mutation succeeds but the required
+  post-success refresh fails, allowing retry instead of closing on stale data.
+- Existing tRPC inputs, query keys, loading states, GraphQL/tRPC coexistence,
+  and leaderboard behavior remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-pwa/src/pages/course/[courseId]/index.tsx'`:
+  passed; file unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "courseLeaderboard\\.invalidate\\(leaderboardInput\\).*catch\\(console\\.error\\)|Error refreshing course leaderboard data|refreshLeaderboardData" 'apps/frontend-pwa/src/pages/course/[courseId]/index.tsx'`:
+  old silent targeted leaderboard invalidation catch removed; explicit
+  refresh-failure path present.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3001`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Next:
+
+- Commit and push this focused PWA course leaderboard refresh-failure UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Answer Collection Add-Entry Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
