@@ -32,7 +32,7 @@ function useRemoveUserFromGroup() {
         userId,
       })
       if (result.removed) {
-        await utils.sharing.userGroups.invalidate().catch(console.error)
+        await utils.sharing.userGroups.invalidate()
       } else {
         onErrorToast()
       }

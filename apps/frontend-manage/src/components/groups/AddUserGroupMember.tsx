@@ -18,7 +18,7 @@ function AddUserGroupMember({
   const utils = trpc.useUtils()
   const addUserToUserGroup = trpc.sharing.addUserToUserGroup.useMutation()
   const refreshUserGroups = () => {
-    return utils.sharing.userGroups.invalidate().catch(console.error)
+    return utils.sharing.userGroups.invalidate()
   }
 
   const onErrorToast = () =>

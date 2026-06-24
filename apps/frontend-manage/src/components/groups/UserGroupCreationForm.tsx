@@ -33,7 +33,7 @@ function UserGroupCreationForm({
   const utils = trpc.useUtils()
   const createUserGroup = trpc.sharing.createUserGroup.useMutation()
   const refreshUserGroups = () => {
-    return utils.sharing.userGroups.invalidate().catch(console.error)
+    return utils.sharing.userGroups.invalidate()
   }
 
   const validationSchema = Yup.object({

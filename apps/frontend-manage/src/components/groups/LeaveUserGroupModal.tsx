@@ -30,7 +30,7 @@ function LeaveUserGroupModal({
     }
   }
   const refreshUserGroups = () => {
-    return utils.sharing.userGroups.invalidate().catch(console.error)
+    return utils.sharing.userGroups.invalidate()
   }
 
   const onErrorToast = () =>

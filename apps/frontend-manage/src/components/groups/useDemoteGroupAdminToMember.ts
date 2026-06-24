@@ -33,7 +33,7 @@ function useDemoteGroupAdminToMember() {
         adminId,
       })
       if (result.demoted) {
-        await utils.sharing.userGroups.invalidate().catch(console.error)
+        await utils.sharing.userGroups.invalidate()
       } else {
         onErrorToast()
       }

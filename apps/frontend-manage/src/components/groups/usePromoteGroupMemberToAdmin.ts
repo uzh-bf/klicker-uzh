@@ -33,7 +33,7 @@ function usePromoteGroupMemberToAdmin() {
         memberId,
       })
       if (result.promoted) {
-        await utils.sharing.userGroups.invalidate().catch(console.error)
+        await utils.sharing.userGroups.invalidate()
       } else {
         onErrorToast()
       }

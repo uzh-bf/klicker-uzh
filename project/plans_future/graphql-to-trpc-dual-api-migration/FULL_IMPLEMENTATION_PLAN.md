@@ -423,6 +423,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage User Groups Refresh Failure UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage user-groups
+workflow. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed after the previous focused PWA UX fix: local
+  `codex/trpc-dual-api-migration` is aligned with origin at `8a3fe1a9a`; PR
+  merge ref is `9a0baae7`.
+- Current PR checks for `8a3fe1a9a` show `packages/graphql Vitest`,
+  `packages/api tRPC Vitest`, typecheck, format, lint, CodeQL, SonarCloud,
+  GitGuardian, and staged Docker builds green.
+- Current-head `cypress-run-cloud` is still in progress; older Cypress Cloud
+  run `6934` is stale because it belongs to previous merge ref `aa098f75`.
+- Context7 tRPC and TanStack Query v4 docs were refreshed before verification;
+  both document promise-returning mutation callbacks / awaited invalidations as
+  valid freshness handling.
+
+Findings:
+
+- The frontend-manage user-groups workflow already uses migrated tRPC
+  mutations and has pending guards plus existing generic action-error toasts.
+- User-group create, add member, rename, promote, demote, remove member,
+  transfer ownership, leave group, and delete group actions all await
+  `utils.sharing.userGroups.invalidate()`, but each invalidation was wrapped in
+  `catch(console.error)`.
+- A successful server mutation followed by a failed required refresh could
+  close modals, leave edit mode, reset forms, or show success while the visible
+  group list/detail stayed stale with no user-facing error.
+
+Change:
+
+- Let required `userGroups.invalidate()` failures propagate into the existing
+  surrounding `try/catch` blocks.
+- Reuse existing error toasts and pending guards; no new helper, copy,
+  invalidation target, or cache policy is added.
+- Leave mutation inputs, success semantics, query keys, and GraphQL/tRPC
+  coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/groups/*.tsx apps/frontend-manage/src/components/groups/*.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed; touched group files unchanged.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "userGroups\.invalidate\(\)\.catch\(console\.error\)|catch\(console\.error\)" apps/frontend-manage/src/components/groups`:
+  no matches.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3002`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Next:
+
+- Commit and push this focused manage user-groups refresh-failure UX cleanup,
+  then refresh PR checks and review state.
+
 ### 2026-06-24 In Progress: PWA Edit Profile Token Refresh UX Follow-Up
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
