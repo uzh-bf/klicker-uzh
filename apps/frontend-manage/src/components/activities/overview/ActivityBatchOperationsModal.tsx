@@ -339,24 +339,40 @@ function ActivityBatchOperationsModal({
                         selectedActions.liveQuizPoints?.bonusTime,
                     })
 
-                    if (res.appliedCount === numOfUpdatedActivities) {
-                      await refetchActivities().catch(console.error)
+                    if (res.appliedCount !== 0) {
+                      try {
+                        await refetchActivities()
+                      } catch (error) {
+                        console.error(
+                          'Error refreshing activities after batch operation:',
+                          error
+                        )
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                        return
+                      }
+
                       resetSelectedActivities()
                       toast({
-                        type: 'success',
-                        message: t('manage.activities.batchOperationSuccess'),
-                        options: { duration: 3000 },
-                      })
-                      shouldClose = true
-                    } else if (res.appliedCount !== 0) {
-                      await refetchActivities().catch(console.error)
-                      resetSelectedActivities()
-                      toast({
-                        type: 'warning',
-                        message: t(
-                          'manage.activities.batchOperationPartialSuccess'
-                        ),
-                        options: { duration: 4500 },
+                        type:
+                          res.appliedCount === numOfUpdatedActivities
+                            ? 'success'
+                            : 'warning',
+                        message:
+                          res.appliedCount === numOfUpdatedActivities
+                            ? t('manage.activities.batchOperationSuccess')
+                            : t(
+                                'manage.activities.batchOperationPartialSuccess'
+                              ),
+                        options: {
+                          duration:
+                            res.appliedCount === numOfUpdatedActivities
+                              ? 3000
+                              : 4500,
+                        },
                       })
                       shouldClose = true
                     } else {

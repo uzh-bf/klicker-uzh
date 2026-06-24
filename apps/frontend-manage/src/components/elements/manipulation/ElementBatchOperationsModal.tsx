@@ -295,31 +295,43 @@ function ElementBatchOperationsModal({
                         selectedActions.updateTemplateInstances,
                     })
 
-                    // in case of success, reset the selected elements and refetch the elements
-                    if (res.updatedCount === numOfUpdatedElements) {
-                      await Promise.all([
-                        refreshAffectedElementDetails(),
-                        refetchElements().catch(console.error),
-                      ])
+                    if (res.updatedCount !== 0) {
+                      try {
+                        await Promise.all([
+                          refreshAffectedElementDetails(),
+                          refetchElements(),
+                        ])
+                      } catch (error) {
+                        console.error(
+                          'Error refreshing elements after batch operation:',
+                          error
+                        )
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                        return
+                      }
+
                       resetSelectedElements()
                       toast({
-                        type: 'success',
-                        message: t('manage.questionPool.batchOperationSuccess'),
-                        options: { duration: 3000 },
-                      })
-                      shouldClose = true
-                    } else if (res.updatedCount !== 0) {
-                      await Promise.all([
-                        refreshAffectedElementDetails(),
-                        refetchElements().catch(console.error),
-                      ])
-                      resetSelectedElements()
-                      toast({
-                        type: 'warning',
-                        message: t(
-                          'manage.questionPool.batchOperationPartialSuccess'
-                        ),
-                        options: { duration: 4500 },
+                        type:
+                          res.updatedCount === numOfUpdatedElements
+                            ? 'success'
+                            : 'warning',
+                        message:
+                          res.updatedCount === numOfUpdatedElements
+                            ? t('manage.questionPool.batchOperationSuccess')
+                            : t(
+                                'manage.questionPool.batchOperationPartialSuccess'
+                              ),
+                        options: {
+                          duration:
+                            res.updatedCount === numOfUpdatedElements
+                              ? 3000
+                              : 4500,
+                        },
                       })
                       shouldClose = true
                     } else {

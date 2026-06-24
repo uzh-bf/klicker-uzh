@@ -423,6 +423,92 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Batch Operation Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and already migrated frontend-manage batch operation
+workflows. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration`, origin, and
+  PR #5132 all point to `f819c675e`.
+- Current-head Cypress run `28077295451` is in progress for `f819c675e`; it has
+  not reached the Cypress execution step yet and is still in the build/setup
+  phase.
+- Current review threads are all resolved/outdated. PR #5132 is still blocked
+  by required review and pending checks.
+- Local runtime/browser verification remains blocked because
+  `http://127.0.0.1:3002` and `http://127.0.0.1:3000/api/trpc` refuse
+  connections.
+
+Findings:
+
+- `ElementBatchOperationsModal` already uses the migrated
+  `element.applyBatchOperations` tRPC mutation. Parent `refetchElements()` is a
+  required refresh because the visible question-pool rows and selected-element
+  state must match the server result before the modal shows success and closes.
+  The refresh was hidden behind `catch(console.error)`.
+- `refreshAffectedElementDetails()` performs cache-first reconciliation for
+  affected element detail queries, then invalidates those detail queries in the
+  background. That detail invalidation can remain best-effort because the exact
+  visible list refresh still comes from `refetchElements()`.
+- `ActivityBatchOperationsModal` already uses the migrated
+  `activity.applyBatchOperations` tRPC mutation. Parent `refetchActivities()`
+  is a required refresh before resetting selection, showing success or partial
+  success, and closing the modal. The refresh was hidden behind
+  `catch(console.error)`.
+
+Change:
+
+- Await required parent list refreshes before success/partial-success toasts and
+  modal close.
+- If the mutation succeeds but required refresh fails, keep the modal
+  recoverable and show the existing generic system-error toast instead of the
+  mutation-failed copy.
+- Existing tRPC mutation inputs, cache keys, optimistic/detail cache writes, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/elements/manipulation/ElementBatchOperationsModal.tsx apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "refetchElements\\(\\)\\.catch\\(console\\.error\\)|refetchActivities\\(\\)\\.catch\\(console\\.error\\)|Error refreshing elements after batch operation|Error refreshing activities after batch operation|shared\\.generic\\.systemError|refreshAffectedElementDetails\\(\\)|refetchElements\\(\\)|refetchActivities\\(\\)" apps/frontend-manage/src/components/elements/manipulation/ElementBatchOperationsModal.tsx apps/frontend-manage/src/components/activities/overview/ActivityBatchOperationsModal.tsx`:
+  old required parent-refresh catches removed; new refresh-failure paths use the
+  generic system-error toast.
+- Local package Vitest checks could not run through the current local package
+  manager state. `pnpm --filter @klicker-uzh/api test -- --runInBand` and
+  `pnpm --filter @klicker-uzh/graphql test -- --runInBand` failed before
+  running tests because the local pnpm shim could not verify/fetch
+  `pnpm@11.5.0` under restricted network. The Volta-pinned retry still invoked
+  `pnpm@11.5.0` and failed on Node 20 with missing `node:sqlite`; the installed
+  root `.bin` tree does not expose a runnable `vitest` shim. Current-head CI
+  remains the authoritative GraphQL/tRPC package-test evidence.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to two already migrated batch
+  operation modals plus this progress entry.
+- The available multi-agent tool explicitly disallows spawning subagents unless
+  the user asked for delegation, so no external review subagent was launched in
+  this slice.
+- Simplification merged the full-success and partial-success branches after the
+  shared required refresh boundary, avoiding duplicate refresh code while
+  preserving the existing success and warning messages.
+
+Next:
+
+- Commit and push this focused batch-operation refresh UX cleanup, then refresh
+  PR checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Tag Deletion Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
