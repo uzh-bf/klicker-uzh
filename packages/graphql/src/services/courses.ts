@@ -32,7 +32,7 @@ import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
 import { manipulateMicroLearning } from './microLearning.js'
 import { manipulatePracticeQuiz } from './practiceQuizzes.js'
-import { checkAccess } from './sharing.js'
+import { checkAccess, type PermissionCheck } from './sharing.js'
 
 // custom date parser
 dayjs.extend(customParseFormat)
@@ -2621,6 +2621,9 @@ export async function createCourse(
           isGamificationEnabled: isGamificationEnabled,
           isAssessmentEnabled: isAssessmentEnabled ?? false,
           pinCode: randomPin,
+          authType: isAssessmentEnabled
+            ? DB.CourseAuthType.SSO
+            : DB.CourseAuthType.PIN,
           owner: {
             connect: {
               id: ctx.user.sub,
@@ -2670,7 +2673,6 @@ export async function duplicateCourse(
     language,
     notificationEmail,
     isGamificationEnabled,
-    isAssessmentEnabled,
     id,
     duplicateLiveQuizzes,
     duplicatePracticeQuizzes,
@@ -2683,10 +2685,17 @@ export async function duplicateCourse(
     throw new Error('Course ID to duplicate not provided')
   }
 
+  const hasDuplicationAccess = await checkAccess(
+    [{ courseId: id, minimumPermissionLevel: DB.PermissionLevel.ADMIN }],
+    ctx
+  )
+  if (!hasDuplicationAccess) return null
+
   const oldCourse = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
       practiceQuizzes: {
+        where: { isDeleted: false },
         include: {
           stacks: {
             include: {
@@ -2696,6 +2705,7 @@ export async function duplicateCourse(
         },
       },
       liveQuizzes: {
+        where: { isDeleted: false },
         include: {
           blocks: {
             include: {
@@ -2705,6 +2715,7 @@ export async function duplicateCourse(
         },
       },
       microLearnings: {
+        where: { isDeleted: false },
         include: {
           stacks: {
             include: {
@@ -2714,6 +2725,7 @@ export async function duplicateCourse(
         },
       },
       groupActivities: {
+        where: { isDeleted: false },
         include: {
           stacks: {
             include: {
@@ -2728,184 +2740,321 @@ export async function duplicateCourse(
 
   if (!oldCourse) return null
 
-  // Assessment courses don't get PINs - they use invitations instead
-  const newCourse = await createCourse(
-    {
-      name,
-      displayName,
-      description,
-      color,
-      startDate,
-      endDate,
-      isGroupCreationEnabled,
-      groupDeadlineDate,
-      maxGroupSize,
-      preferredGroupSize,
-      language,
-      notificationEmail,
-      isGamificationEnabled,
-      isAssessmentEnabled,
-    },
-    ctx
+  const shouldDuplicateGroupActivities = Boolean(
+    duplicateGroupActivities && isGroupCreationEnabled
   )
 
-  // date computation for micro learnings and group activities
-  const startDateOldCourse = oldCourse.startDate
-  const startDateNewCourse = startDate
-  const deltaCourseStart = dayjs(startDateNewCourse).diff(
-    dayjs(startDateOldCourse),
-    'day'
-  )
+  const selectedActivityAccessChecks: PermissionCheck[] = [
+    ...(duplicateLiveQuizzes
+      ? oldCourse.liveQuizzes.map((liveQuiz) => ({
+          liveQuizId: liveQuiz.id,
+          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+        }))
+      : []),
+    ...(duplicatePracticeQuizzes
+      ? oldCourse.practiceQuizzes.map((practiceQuiz) => ({
+          practiceQuizId: practiceQuiz.id,
+          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+        }))
+      : []),
+    ...(duplicateMicrolearnings
+      ? oldCourse.microLearnings.map((microLearning) => ({
+          microLearningId: microLearning.id,
+          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+        }))
+      : []),
+    ...(shouldDuplicateGroupActivities
+      ? oldCourse.groupActivities.map((groupActivity) => ({
+          groupActivityId: groupActivity.id,
+          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+        }))
+      : []),
+  ]
 
-  if (duplicateLiveQuizzes) {
-    for (const oldLiveQuiz of oldCourse.liveQuizzes) {
-      await manipulateLiveQuiz(
-        {
-          name: oldLiveQuiz.name,
-          displayName: oldLiveQuiz.displayName,
-          description: oldLiveQuiz.description,
-          blocks: oldLiveQuiz.blocks.map((block) => {
-            return {
-              order: block.order,
-              timeLimit: block.timeLimit,
-              elements: block.elements.map((element) => {
-                return {
-                  elementId: element.elementId,
-                  order: element.order,
-                  existingInstanceId: element.id,
-                  duplicateInstance: true,
-                }
-              }),
-            }
-          }),
-          courseId: newCourse.id,
-          multiplier: oldLiveQuiz.pointsMultiplier,
-          defaultPoints: oldLiveQuiz.defaultPoints,
-          defaultCorrectPoints: oldLiveQuiz.defaultCorrectPoints,
-          maxBonusPoints: oldLiveQuiz.maxBonusPoints,
-          timeToZeroBonus: oldLiveQuiz.timeToZeroBonus,
-          isGamificationEnabled: oldLiveQuiz.isGamificationEnabled,
-          isPinProtected: !!oldLiveQuiz.pinCode,
-          isConfusionFeedbackEnabled: oldLiveQuiz.isConfusionFeedbackEnabled,
-          isLiveQAEnabled: oldLiveQuiz.isLiveQAEnabled,
-          isModerationEnabled: oldLiveQuiz.isModerationEnabled,
-        },
-        ctx
-      )
-    }
+  if (
+    selectedActivityAccessChecks.length > 0 &&
+    !(await checkAccess(selectedActivityAccessChecks, ctx))
+  ) {
+    throw new Error('Not all selected activities could be duplicated')
   }
-  if (duplicatePracticeQuizzes) {
-    for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
-      await manipulatePracticeQuiz(
-        {
-          name: oldPracticeQuiz.name,
-          displayName: oldPracticeQuiz.displayName,
-          description: oldPracticeQuiz.description,
-          stacks: oldPracticeQuiz.stacks.map((stack) => {
-            return {
-              order: stack.order,
-              elements: stack.elements.map((element) => {
-                return {
-                  elementId: element.elementId,
-                  order: element.order,
-                  existingInstanceId: element.id,
-                  duplicateInstance: true,
-                }
-              }),
-            }
-          }),
-          courseId: newCourse.id,
-          multiplier: oldPracticeQuiz.pointsMultiplier,
-          order: oldPracticeQuiz.orderType,
-          resetTimeDays: oldPracticeQuiz.resetTimeDays,
-        },
-        ctx
-      )
-    }
-  }
-  if (duplicateMicrolearnings) {
-    for (const oldMicroLearning of oldCourse.microLearnings) {
-      // compute delta
-      const startDateNewMicroLearning = dayjs(oldMicroLearning.scheduledStartAt)
-        .add(deltaCourseStart, 'day')
-        .toDate()
-      const endDateNewMicroLearning = dayjs(oldMicroLearning.scheduledEndAt)
-        .add(deltaCourseStart, 'day')
-        .toDate()
 
-      await manipulateMicroLearning(
-        {
-          name: oldMicroLearning.name,
-          displayName: oldMicroLearning.displayName,
-          description: oldMicroLearning.description,
-          stacks: oldMicroLearning.stacks.map((stack) => {
-            return {
-              order: stack.order,
-              elements: stack.elements.map((element) => {
-                return {
-                  elementId: element.elementId,
-                  order: element.order,
-                  existingInstanceId: element.id,
-                  duplicateInstance: true,
-                }
-              }),
-            }
-          }),
-          courseId: newCourse.id,
-          multiplier: oldMicroLearning.pointsMultiplier,
-          startDate: startDateNewMicroLearning,
-          endDate: endDateNewMicroLearning,
-        },
-        ctx
-      )
-    }
+  if (
+    shouldDuplicateGroupActivities &&
+    oldCourse.groupActivities.some((activity) => activity.stacks.length === 0)
+  ) {
+    throw new Error('Not all group activities could be duplicated')
   }
-  if (duplicateGroupActivities) {
-    for (const oldGroupActivity of oldCourse.groupActivities) {
-      const stack = oldGroupActivity.stacks[0]
-      if (!stack) {
-        console.log(
-          `Failed fetch stack for group activity ${oldGroupActivity.id}`
+
+  const duplicatedInstanceIds = [
+    ...(duplicateLiveQuizzes
+      ? oldCourse.liveQuizzes.flatMap((liveQuiz) =>
+          liveQuiz.blocks.flatMap((block) =>
+            block.elements.map((element) => element.id)
+          )
         )
-        return newCourse
-      }
+      : []),
+    ...(duplicatePracticeQuizzes
+      ? oldCourse.practiceQuizzes.flatMap((practiceQuiz) =>
+          practiceQuiz.stacks.flatMap((stack) =>
+            stack.elements.map((element) => element.id)
+          )
+        )
+      : []),
+    ...(duplicateMicrolearnings
+      ? oldCourse.microLearnings.flatMap((microLearning) =>
+          microLearning.stacks.flatMap((stack) =>
+            stack.elements.map((element) => element.id)
+          )
+        )
+      : []),
+    ...(shouldDuplicateGroupActivities
+      ? oldCourse.groupActivities.flatMap((groupActivity) =>
+          groupActivity.stacks.flatMap((stack) =>
+            stack.elements.map((element) => element.id)
+          )
+        )
+      : []),
+  ]
+  const uniqueDuplicatedInstanceIds = [...new Set(duplicatedInstanceIds)]
 
-      // compute delta
-      const startDateNewGroupActivity = dayjs(oldGroupActivity.scheduledStartAt)
-        .add(deltaCourseStart, 'day')
-        .toDate()
-      const endDateNewGroupActivity = dayjs(oldGroupActivity.scheduledEndAt)
-        .add(deltaCourseStart, 'day')
-        .toDate()
+  if (uniqueDuplicatedInstanceIds.length > 0) {
+    const accessibleInstanceCount = await ctx.prisma.elementInstance.count({
+      where: {
+        id: { in: uniqueDuplicatedInstanceIds },
+        element: {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
+    })
 
-      await manipulateGroupActivity(
-        {
-          name: oldGroupActivity.name,
-          displayName: oldGroupActivity.displayName,
-          description: oldGroupActivity.description,
-          stack: {
-            order: stack.order,
-            elements: stack.elements.map((element) => {
+    if (accessibleInstanceCount !== uniqueDuplicatedInstanceIds.length) {
+      throw new Error('Not all activity instances could be duplicated')
+    }
+  }
+
+  let newCourse: Awaited<ReturnType<typeof createCourse>> | null = null
+  const copiedLiveQuizIds: string[] = []
+  const copiedPracticeQuizIds: string[] = []
+  const copiedMicroLearningIds: string[] = []
+  const copiedGroupActivityIds: string[] = []
+
+  try {
+    newCourse = await createCourse(
+      {
+        name,
+        displayName,
+        description,
+        color,
+        startDate,
+        endDate,
+        isGroupCreationEnabled,
+        groupDeadlineDate,
+        maxGroupSize,
+        preferredGroupSize,
+        language,
+        notificationEmail,
+        isGamificationEnabled,
+        isAssessmentEnabled: oldCourse.isAssessmentEnabled,
+      },
+      ctx
+    )
+
+    // date computation for micro learnings and group activities
+    const startDateOldCourse = oldCourse.startDate
+    const startDateNewCourse = startDate
+    const deltaCourseStart = dayjs(startDateNewCourse).diff(
+      dayjs(startDateOldCourse),
+      'day'
+    )
+
+    if (duplicateLiveQuizzes) {
+      for (const oldLiveQuiz of oldCourse.liveQuizzes) {
+        const copiedLiveQuiz = await manipulateLiveQuiz(
+          {
+            name: oldLiveQuiz.name,
+            displayName: oldLiveQuiz.displayName,
+            description: oldLiveQuiz.description,
+            blocks: oldLiveQuiz.blocks.map((block) => {
               return {
-                elementId: element.elementId,
-                order: element.order,
-                existingInstanceId: element.id,
-                duplicateInstance: true,
+                order: block.order,
+                timeLimit: block.timeLimit,
+                elements: block.elements.map((element) => {
+                  return {
+                    elementId: element.elementId,
+                    order: element.order,
+                    existingInstanceId: element.id,
+                    duplicateInstance: true,
+                  }
+                }),
               }
             }),
+            courseId: newCourse.id,
+            multiplier: oldLiveQuiz.pointsMultiplier,
+            defaultPoints: oldLiveQuiz.defaultPoints,
+            defaultCorrectPoints: oldLiveQuiz.defaultCorrectPoints,
+            maxBonusPoints: oldLiveQuiz.maxBonusPoints,
+            timeToZeroBonus: oldLiveQuiz.timeToZeroBonus,
+            isGamificationEnabled: oldLiveQuiz.isGamificationEnabled,
+            isPinProtected: !!oldLiveQuiz.pinCode,
+            isConfusionFeedbackEnabled: oldLiveQuiz.isConfusionFeedbackEnabled,
+            isLiveQAEnabled: oldLiveQuiz.isLiveQAEnabled,
+            isModerationEnabled: oldLiveQuiz.isModerationEnabled,
           },
-          courseId: newCourse.id,
-          multiplier: oldGroupActivity.pointsMultiplier,
-          clues: oldGroupActivity.clues,
-          startDate: startDateNewGroupActivity,
-          endDate: endDateNewGroupActivity,
-        },
-        ctx
+          ctx
+        )
+        copiedLiveQuizIds.push(copiedLiveQuiz.id)
+      }
+    }
+    if (duplicatePracticeQuizzes) {
+      for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
+        const copiedPracticeQuiz = await manipulatePracticeQuiz(
+          {
+            name: oldPracticeQuiz.name,
+            displayName: oldPracticeQuiz.displayName,
+            description: oldPracticeQuiz.description,
+            stacks: oldPracticeQuiz.stacks.map((stack) => {
+              return {
+                order: stack.order,
+                elements: stack.elements.map((element) => {
+                  return {
+                    elementId: element.elementId,
+                    order: element.order,
+                    existingInstanceId: element.id,
+                    duplicateInstance: true,
+                  }
+                }),
+              }
+            }),
+            courseId: newCourse.id,
+            multiplier: oldPracticeQuiz.pointsMultiplier,
+            order: oldPracticeQuiz.orderType,
+            resetTimeDays: oldPracticeQuiz.resetTimeDays,
+          },
+          ctx
+        )
+        copiedPracticeQuizIds.push(copiedPracticeQuiz.id)
+      }
+    }
+    if (duplicateMicrolearnings) {
+      for (const oldMicroLearning of oldCourse.microLearnings) {
+        // compute delta
+        const startDateNewMicroLearning = dayjs(
+          oldMicroLearning.scheduledStartAt
+        )
+          .add(deltaCourseStart, 'day')
+          .toDate()
+        const endDateNewMicroLearning = dayjs(oldMicroLearning.scheduledEndAt)
+          .add(deltaCourseStart, 'day')
+          .toDate()
+
+        const copiedMicroLearning = await manipulateMicroLearning(
+          {
+            name: oldMicroLearning.name,
+            displayName: oldMicroLearning.displayName,
+            description: oldMicroLearning.description,
+            stacks: oldMicroLearning.stacks.map((stack) => {
+              return {
+                order: stack.order,
+                elements: stack.elements.map((element) => {
+                  return {
+                    elementId: element.elementId,
+                    order: element.order,
+                    existingInstanceId: element.id,
+                    duplicateInstance: true,
+                  }
+                }),
+              }
+            }),
+            courseId: newCourse.id,
+            multiplier: oldMicroLearning.pointsMultiplier,
+            startDate: startDateNewMicroLearning,
+            endDate: endDateNewMicroLearning,
+          },
+          ctx
+        )
+        copiedMicroLearningIds.push(copiedMicroLearning.id)
+      }
+    }
+    if (shouldDuplicateGroupActivities) {
+      for (const oldGroupActivity of oldCourse.groupActivities) {
+        const stack = oldGroupActivity.stacks[0]!
+
+        // compute delta
+        const startDateNewGroupActivity = dayjs(
+          oldGroupActivity.scheduledStartAt
+        )
+          .add(deltaCourseStart, 'day')
+          .toDate()
+        const endDateNewGroupActivity = dayjs(oldGroupActivity.scheduledEndAt)
+          .add(deltaCourseStart, 'day')
+          .toDate()
+
+        const copiedGroupActivity = await manipulateGroupActivity(
+          {
+            name: oldGroupActivity.name,
+            displayName: oldGroupActivity.displayName,
+            description: oldGroupActivity.description,
+            stack: {
+              order: stack.order,
+              elements: stack.elements.map((element) => {
+                return {
+                  elementId: element.elementId,
+                  order: element.order,
+                  existingInstanceId: element.id,
+                  duplicateInstance: true,
+                }
+              }),
+            },
+            courseId: newCourse.id,
+            multiplier: oldGroupActivity.pointsMultiplier,
+            clues: oldGroupActivity.clues,
+            startDate: startDateNewGroupActivity,
+            endDate: endDateNewGroupActivity,
+          },
+          ctx
+        )
+        copiedGroupActivityIds.push(copiedGroupActivity.id)
+      }
+    }
+
+    return newCourse
+  } catch (error) {
+    try {
+      await ctx.prisma.$transaction(async (prisma) => {
+        await prisma.groupActivity.deleteMany({
+          where: { id: { in: copiedGroupActivityIds } },
+        })
+        await prisma.microLearning.deleteMany({
+          where: { id: { in: copiedMicroLearningIds } },
+        })
+        await prisma.practiceQuiz.deleteMany({
+          where: { id: { in: copiedPracticeQuizIds } },
+        })
+        await prisma.liveQuiz.deleteMany({
+          where: { id: { in: copiedLiveQuizIds } },
+        })
+        if (newCourse?.id) {
+          await prisma.course.deleteMany({
+            where: { id: newCourse.id },
+          })
+        }
+      })
+    } catch (cleanupError) {
+      console.error(
+        'Failed to clean up failed course duplication',
+        cleanupError
       )
     }
-  }
 
-  return newCourse
+    throw error
+  }
 }
 
 export async function toggleArchiveCourse(

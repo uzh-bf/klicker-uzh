@@ -113,9 +113,9 @@ function InstanceUpdateSwitch({
                   includeTemplateUpdates ||
                   activity.status !== PublicationStatus.Template
               )
-              .map((activity, ix) => (
+              .map((activity) => (
                 <div
-                  key={`instance-update-list-${activity.activityName}`}
+                  key={`instance-update-list-${activity.activityId}`}
                   className="border-b border-gray-200"
                   data-cy={`instance-update-list-activity-${activity.activityName}`}
                 >
@@ -142,6 +142,7 @@ function InstanceUpdateSwitch({
                     <span className="font-medium">{activity.activityName}</span>
                     <span className="text-xs text-gray-500">
                       ({t(`shared.types.${activity.activityType}`)}
+                      {activity.courseName ? ` - ${activity.courseName}` : ''}
                       {activity.status === PublicationStatus.Template
                         ? ` ${t('shared.generic.template')}`
                         : null}
