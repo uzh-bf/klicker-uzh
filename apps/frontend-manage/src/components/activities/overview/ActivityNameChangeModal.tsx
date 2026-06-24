@@ -38,7 +38,7 @@ function ActivityNameChangeModal({
     return Promise.all([
       courseId ? utils.course.detail.invalidate({ courseId }) : undefined,
       refetchActivities?.(),
-    ]).catch(console.error)
+    ])
   }
   const schema = Yup.object().shape({
     name: Yup.string().required(t('manage.activityWizard.activityName')),
@@ -76,7 +76,18 @@ function ActivityNameChangeModal({
             })
 
             if (result.changeActivityName) {
-              await refreshActivityData()
+              try {
+                await refreshActivityData()
+              } catch (error) {
+                console.error('Error refreshing activity data', error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 4000 },
+                })
+                return
+              }
+
               toast({
                 type: 'success',
                 message: t('manage.activities.activityNameChangeSuccess'),

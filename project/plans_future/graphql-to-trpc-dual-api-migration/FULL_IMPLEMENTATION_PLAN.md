@@ -423,6 +423,86 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Activity Rename Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage activity rename
+workflow. No new migration slice, S05/S06 cleanup, GraphQL removal, Apollo
+removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed before this patch: local
+  `codex/trpc-dual-api-migration` is clean and aligned with origin at
+  `97d2f75d8`.
+- PR #5132 head is `97d2f75d8c53f48a0036e2c5320d7bb88989e3ec`, ready for
+  review, not draft, with no active unresolved review threads.
+- Current PR checks for `97d2f75d8` show `packages/graphql Vitest`,
+  `packages/api tRPC Vitest`, typecheck, lint, format, SonarCloud, CodeQL,
+  GitGuardian, Claude review, OLAT API tests, util tests, and staged Docker
+  builds green.
+- Cypress Cloud run `6939` / `6a91ae1b-0167-418d-bdf8-d8f40cb2a4fe` is current
+  for PR merge ref `fd21ccd618584ad302c66f6c351a33c7f9cd9181`, running with 33
+  total tests, 28 passed, and 0 failed when this slice started.
+- Context7 docs were refreshed before editing. Relevant behavior: React Query
+  v4 `mutateAsync` is the promise path for composed side effects, and tRPC
+  `useUtils()` invalidation helpers wrap TanStack Query invalidation/cache
+  helpers.
+
+Findings:
+
+- `ActivityNameChangeModal` already uses the migrated
+  `activity.changeName` tRPC mutation and has pending guards on modal close,
+  cancel, and confirm actions.
+- After a successful rename, the visible activity list/course detail state
+  depends on refreshing `course.detail` and the parent activity list before
+  showing success and closing the modal.
+- The required post-success refresh was hidden behind `catch(console.error)`,
+  so a refresh failure could still show a success toast and close the modal
+  while the visible activity name/display name stayed stale.
+- The existing mutation failure copy is specific to changing the name, so a
+  successful mutation followed by a refresh failure should not reuse it.
+
+Change:
+
+- Let `refreshActivityData` reject when `course.detail` invalidation or the
+  parent activity-list refetch fails.
+- Split the post-success refresh failure path from true mutation failure: the
+  modal now keeps the user in place and shows the existing generic system-error
+  toast if the server rename succeeds but required refresh fails.
+- Existing mutation input, success copy, validation, pending guards, query keys,
+  and GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/activities/overview/ActivityNameChangeModal.tsx`:
+  passed; file unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "refreshActivityData|Error refreshing activity data|activityNameChangeError|shared\\.generic\\.systemError|catch\\(console\\.error\\)" apps/frontend-manage/src/components/activities/overview/ActivityNameChangeModal.tsx`:
+  old silent refresh catch removed; explicit refresh-failure path present.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3002`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Review / simplification:
+
+- Dedicated review/simplification subagents were not used because the available
+  multi-agent tool requires explicit user authorization for delegation in this
+  environment.
+- Self-review confirmed the diff is limited to the already migrated activity
+  rename workflow plus this progress entry; it changes no tRPC inputs, no
+  GraphQL/Apollo coexistence paths, and no broader cache policy.
+- Simplification check: no new helper or abstraction was added; the existing
+  `refreshActivityData` helper now has the correct required-refresh contract,
+  and the refresh-failure branch reuses existing generic system-error copy.
+
+Next:
+
+- Commit and push this focused manage activity-rename refresh-failure UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: PWA Microlearning Finish Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
