@@ -423,6 +423,69 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 In Progress: PWA Element Feedback Cache UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and already migrated frontend-pwa practice-quiz element
+feedback actions. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration` is clean and
+  aligned with origin at `08768cec7`; PR merge ref is `b89546a7`.
+- Current PR checks for `08768cec7`: `packages/api tRPC Vitest`,
+  `packages/graphql Vitest`, typecheck, lint, format, syncpack, SonarCloud,
+  CodeQL, OLAT tests, utility tests, and Docker image builds are green.
+- Cypress Cloud run `6933` is the authoritative current-head run for merge ref
+  `b89546a7`. It is running with 23/28 tests passed and 0 failed at the time
+  of this audit.
+- Context7 docs refreshed for tRPC and TanStack Query v4. Relevant behavior:
+  tRPC `useUtils()` exposes exact cache helpers, mutation responses can update
+  query data directly, and targeted invalidation can be used as background
+  reconciliation.
+
+Findings:
+
+- `apps/frontend-pwa/src/components/practiceQuiz/InstanceHeader.tsx` and
+  `apps/frontend-pwa/src/components/flags/FlagElementModal.tsx` already use
+  migrated tRPC mutations for rating and flagging element instances.
+- Both actions had pending/disabled states and mutation failure toasts, but
+  their post-success `participant.stackElementFeedbacks` refresh was hidden
+  behind `catch(console.error)`.
+- The mutation responses already return the same record shape used by
+  `participant.stackElementFeedbacks`, so waiting on a refetch is not needed
+  for the immediate UI. Updating the exact cache key avoids avoidable stale UI
+  and keeps broad refetch work in the background.
+
+Change:
+
+- Move stack-feedback cache ownership to `InstanceHeader`, where both rating
+  and flagging state are rendered.
+- Update the exact `participant.stackElementFeedbacks` cache entry from the
+  successful `rateElement` / `flagElement` mutation response.
+- Keep a targeted background invalidation for reconciliation, but surface
+  invalidation failures through the existing generic system-error toast instead
+  of console-only logging.
+- Leave mutation inputs, local pending guards, success/error copy, modal close
+  behavior, and GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- Passed locally:
+  - `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/components/practiceQuiz/InstanceHeader.tsx apps/frontend-pwa/src/components/flags/FlagElementModal.tsx`
+  - `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Browser/runtime verification is blocked locally because no stack is
+  listening: `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both failed with connection
+  refused.
+
+Next:
+
+- Commit and push this focused PWA element-feedback cache UX cleanup.
+- Continue monitoring Cypress Cloud run `6933` for the current head.
+
 ### 2026-06-24 In Progress: PWA Auth Refresh Failure UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

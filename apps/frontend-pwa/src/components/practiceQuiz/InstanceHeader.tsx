@@ -10,7 +10,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { trpc } from '../../lib/trpc'
 import FlagElementModal from '../flags/FlagElementModal'
@@ -56,14 +56,11 @@ function InstanceHeader({
 }: InstanceHeaderProps) {
   const t = useTranslations()
   const utils = trpc.useUtils()
-  const stackFeedbacksInput = { instanceIds: stackInstanceIds }
-  const rateElement = trpc.participant.rateElement.useMutation({
-    onSuccess: async () => {
-      await utils.participant.stackElementFeedbacks
-        .invalidate(stackFeedbacksInput)
-        .catch(console.error)
-    },
-  })
+  const stackFeedbacksInput = useMemo(
+    () => ({ instanceIds: stackInstanceIds }),
+    [stackInstanceIds]
+  )
+  const rateElement = trpc.participant.rateElement.useMutation()
 
   const [vote, setVote] = useState(
     previousElementFeedback?.upvote
@@ -87,6 +84,57 @@ function InstanceHeader({
     setFeedbackValue(previousElementFeedback?.feedback ?? undefined)
   }, [previousElementFeedback])
 
+  const showRefreshFailure = useCallback(
+    (error: unknown) => {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    },
+    [t]
+  )
+
+  const reconcileStackFeedbacks = useCallback(() => {
+    void utils.participant.stackElementFeedbacks
+      .invalidate(stackFeedbacksInput)
+      .catch(showRefreshFailure)
+  }, [showRefreshFailure, stackFeedbacksInput, utils])
+
+  const handleFeedbackChanged = useCallback(
+    (feedback: StackElementFeedback) => {
+      const nextFeedback = {
+        ...feedback,
+        feedback: feedback.feedback ?? null,
+      }
+
+      utils.participant.stackElementFeedbacks.setData(
+        stackFeedbacksInput,
+        (previous) => {
+          if (!previous) return [nextFeedback]
+
+          if (
+            !previous.some(
+              (entry) =>
+                entry.elementInstanceId === nextFeedback.elementInstanceId
+            )
+          ) {
+            return [...previous, nextFeedback]
+          }
+
+          return previous.map((entry) =>
+            entry.elementInstanceId === nextFeedback.elementInstanceId
+              ? nextFeedback
+              : entry
+          )
+        }
+      )
+      reconcileStackFeedbacks()
+    },
+    [reconcileStackFeedbacks, stackFeedbacksInput, utils]
+  )
+
   const handleVote = async (upvote: boolean) => {
     const res = await rateElement
       .mutateAsync({
@@ -108,9 +156,21 @@ function InstanceHeader({
       return
     }
 
-    if (res?.upvote) {
+    if (!res) {
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.errorRatingElement'),
+        options: { duration: 5000 },
+      })
+      setVote(0)
+      return
+    }
+
+    handleFeedbackChanged(res)
+
+    if (res.upvote) {
       setVote(1)
-    } else if (res?.downvote) {
+    } else if (res.downvote) {
       setVote(-1)
     } else {
       toast({
@@ -206,7 +266,7 @@ function InstanceHeader({
               elementId={elementId}
               feedbackValue={feedbackValue}
               setFeedbackValue={setFeedbackValue}
-              stackInstanceIds={stackInstanceIds}
+              onFeedbackChanged={handleFeedbackChanged}
             />
           </div>
         )}

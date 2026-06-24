@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import { trpc } from '../../lib/trpc'
+import type { StackElementFeedback } from '../hooks/useStackElementFeedbacks'
 
 interface FlagElementModalProps {
   index: number
@@ -23,7 +24,7 @@ interface FlagElementModalProps {
   elementId: number
   feedbackValue?: string
   setFeedbackValue: (newValue: string) => void
-  stackInstanceIds: number[]
+  onFeedbackChanged: (feedback: StackElementFeedback) => void
 }
 
 function FlagElementModal({
@@ -32,20 +33,12 @@ function FlagElementModal({
   elementId,
   feedbackValue,
   setFeedbackValue,
-  stackInstanceIds,
+  onFeedbackChanged,
 }: FlagElementModalProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const [flagElementPending, setFlagElementPending] = useState(false)
-  const utils = trpc.useUtils()
-  const stackFeedbacksInput = { instanceIds: stackInstanceIds }
-  const flagElement = trpc.participant.flagElement.useMutation({
-    onSuccess: async () => {
-      await utils.participant.stackElementFeedbacks
-        .invalidate(stackFeedbacksInput)
-        .catch(console.error)
-    },
-  })
+  const flagElement = trpc.participant.flagElement.useMutation()
 
   const flagElementSchema = Yup.object().shape({
     description: Yup.string().test({
@@ -69,6 +62,7 @@ function FlagElementModal({
         })
 
         if (result?.id) {
+          onFeedbackChanged(result)
           toast({
             type: 'success',
             message: t('pwa.practiceQuiz.feedbackTransmitted'),
