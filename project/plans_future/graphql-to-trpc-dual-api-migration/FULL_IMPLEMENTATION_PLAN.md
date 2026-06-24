@@ -423,6 +423,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Media Library Upload Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage media-library
+upload workflow. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration` is clean and
+  aligned with origin at `ddf2ef1e6`; PR #5132 head is `ddf2ef1e6`.
+- Current PR checks are green except Cypress Cloud run `6942`, which is still
+  in progress/pending.
+- Context7 docs were refreshed for tRPC and TanStack Query v4. Relevant
+  behavior: tRPC `useUtils()` helpers wrap React Query cache helpers, and
+  successful mutations can update cache directly or invalidate exact query keys
+  for reconciliation.
+
+Findings:
+
+- `apps/frontend-manage/src/components/common/MediaLibrary.tsx` already uses
+  migrated tRPC APIs for `element.mediaFiles` and `element.fileUploadSas`.
+- The upload flow has a local pending guard and generic error toast for upload
+  failures.
+- After a successful blob upload, the media-file list refresh still uses
+  `utils.element.mediaFiles.invalidate().catch(console.error)`.
+- The uploaded image can be inserted immediately from the upload response, so a
+  media-list refresh failure should be visible but should not block the
+  already-uploaded image from being selected.
+
+Change:
+
+- Surface `element.mediaFiles` refresh failures through the existing generic
+  error toast instead of console-only logging.
+- Keep the already-uploaded image insertion path intact: the upload response
+  still calls `onImageClick(...)` even if the media-list reconciliation refresh
+  fails.
+- Leave tRPC inputs, upload behavior, query key, loading state, and
+  GraphQL/tRPC coexistence unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/common/MediaLibrary.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  passed.
+- `git diff --check` passed.
+- Targeted source search confirmed the old
+  `mediaFiles.invalidate().catch(console.error)` pattern is gone and the
+  refresh failure uses `shared.generic.systemError` toast feedback.
+- Runtime browser/API verification is still blocked by the local environment:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- No dedicated subagent review was run for this narrow slice because tool
+  authorization remained unavailable. Self-review confirmed the diff is limited
+  to one migrated media-library refresh boundary plus this plan entry.
+- Simplification pass kept the existing upload `try/catch`, toast pattern, and
+  success insertion behavior. No helper or broader cache policy was introduced.
+
+Next:
+
+- Commit and push this focused manage media-library refresh-failure UX cleanup,
+  then refresh PR #5132 checks and Cypress Cloud run `6942`.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Template Refresh Failure UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
