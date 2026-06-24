@@ -423,6 +423,73 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: PWA Microlearning Finish Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-pwa microlearning
+completion/evaluation workflow. No new migration slice, S05/S06 cleanup,
+GraphQL removal, Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed before this patch: local
+  `codex/trpc-dual-api-migration` is clean and aligned with origin at
+  `2d98a726f`.
+- PR #5132 head is `2d98a726f82d14c32ca7cbe13681ea4aedc6a1ad`, ready for
+  review, not draft, with no active unresolved review threads.
+- Current PR merge ref is `68ba368e48672943f1e313a5e6e14b0e55174e81`.
+- Current-head GitHub checks restarted after `2d98a726f`; early green checks
+  included GitGuardian, Claude review, lint, syncpack, util tests, and CodeQL
+  java-kotlin/python, while GraphQL/API package tests, typecheck, Docker builds,
+  SonarCloud, and Cypress were still running when this local slice started.
+- Cypress Cloud had not yet exposed a run for merge ref `68ba368e...`; the
+  latest visible run was still stale run `6938` for previous merge ref
+  `66683e3f...`.
+- Context7 TanStack Query v4 and tRPC docs were refreshed earlier in this audit
+  turn: React Query invalidation returns an awaitable operation, and tRPC
+  `useUtils()` invalidation helpers wrap TanStack Query query-client operations.
+
+Findings:
+
+- The microlearning evaluation finish button already uses migrated
+  `participant.markMicroLearningCompleted`, an explicit pending guard, and an
+  existing generic error toast/fallback path.
+- After a successful completion mutation, the page must refresh
+  `participant.participations` before navigating back to the PWA home page; the
+  home page derives active/completed microlearning cards from that query.
+- The required post-success participations refresh was hidden behind
+  `catch(console.error)`, so a refresh failure could still navigate home with
+  stale microlearning state and no user-facing failure.
+
+Change:
+
+- Let the required `participant.participations` invalidation reject after a
+  successful microlearning completion mutation.
+- The existing catch path now keeps the user on the evaluation page, clears the
+  pending state, logs the failure, and shows the existing generic system-error
+  toast instead of navigating to a stale home view.
+- Existing mutation input, loading state, navigation target, GraphQL/tRPC
+  coexistence, and UI copy remain unchanged.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write 'apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/evaluation.tsx'`:
+  passed; file unchanged by formatter.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "participations\\s*\\.invalidate\\(\\)\\s*\\.catch\\(console\\.error\\)|markMicrolearningCompleted|finish-microlearning" 'apps/frontend-pwa/src/pages/course/[courseId]/microLearnings/[id]/evaluation.tsx'`:
+  old silent participations invalidation catch removed; completion mutation and
+  finish button remain present.
+- Browser/runtime verification blocked locally:
+  - `curl -sS -I http://127.0.0.1:3001`: connection refused.
+  - `curl -sS -I http://127.0.0.1:3000/api/trpc`: connection refused.
+
+Next:
+
+- Commit and push this focused PWA microlearning finish refresh-failure UX
+  cleanup, then refresh PR checks and Cypress/review state.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: PWA Course Leaderboard Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC

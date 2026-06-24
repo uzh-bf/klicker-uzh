@@ -198,9 +198,7 @@ function MicrolearningEvaluation() {
                     courseId: microlearning.course!.id,
                     id,
                   })
-                  await utils.participant.participations
-                    .invalidate()
-                    .catch(console.error)
+                  await utils.participant.participations.invalidate()
                   const routed = await router.replace('/')
                   if (!routed) throw new Error('Finish navigation failed')
                 } catch (error) {
