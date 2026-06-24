@@ -423,6 +423,67 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: PWA Header Locale and Logout Cache UX
+
+Status: complete locally with runtime blockers. Scope was limited to the
+already migrated PWA header locale switch and regular participant logout
+actions. No new migration slice, S06
+cleanup, GraphQL removal, Apollo removal, or package cleanup is being started.
+
+Context:
+
+- Work is running on `codex/trpc-dual-api-migration` at PR #5132 head
+  `2a18b6dc584132df953f40a591f22386f9993dbd`.
+- Current-head Cypress workflow `28083211296` is in progress. Several
+  non-Cypress checks are green, including `packages/api tRPC Vitest`; the
+  `packages/graphql Vitest` check is still pending at the time of this audit.
+- Current PR review threads are resolved and outdated; the PR still requires
+  human review.
+
+Findings:
+
+- The PWA header locale switch mutates `participant.changeLocale`, then awaits
+  `participant.self.invalidate().catch(console.error)` before routing to the
+  selected locale. If the invalidation fails, the `participant.self` cache can
+  still contain the old locale while the route locale is new. The PWA home page
+  uses `participant.self.locale` to redirect to the stored locale, so stale
+  locale cache can cause a confusing route bounce.
+- The regular participant logout removes the session token, then awaits
+  `participant.self.invalidate().catch(console.error)` before routing to
+  `/login`. If the invalidation fails, the exact `participant.self` cache key
+  can remain stale until a later refetch even though the user has logged out.
+
+Change:
+
+- Use cache-first reconciliation for `participant.self` after successful locale
+  change by writing the returned locale into the exact `participant.self`
+  query key before routing, then invalidate in the background.
+- Use cache-first reconciliation for regular logout by writing `{ self: null }`
+  into the exact `participant.self` query key after token removal, then
+  invalidate in the background.
+- Keep mutation and navigation failures user-visible through the existing
+  generic error toast and pending guard.
+
+Verification:
+
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-pwa/src/components/common/Header.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-pwa/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "participant\\.self\\.(setData|invalidate\\(\\))|catch\\(console\\.error\\)|Error refreshing participant self" apps/frontend-pwa/src/components/common/Header.tsx`:
+  confirmed locale/logout now write the exact `participant.self` cache key and
+  the remaining invalidation failures are background-only with contextual logs.
+- Runtime browser verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3001` and
+  `curl -sS -I http://127.0.0.1:3000/api/graphql` both fail with connection
+  refused because the PWA app and backend are not running.
+
+Next:
+
+- Commit and push this focused PWA header cache UX cleanup, then refresh
+  PR/Cypress evidence for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Control Start Modal Background Refresh UX
 
 Status: complete locally with runtime blockers. Scope was limited to the already migrated

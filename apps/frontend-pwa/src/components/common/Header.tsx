@@ -304,12 +304,29 @@ function Header({
 
                   try {
                     if (participant && participant.role === PARTICIPANT_ROLE) {
-                      await changeParticipantLocale.mutateAsync({
-                        locale: language.value,
-                      })
-                      await utils.participant.self
+                      const updatedLocale =
+                        await changeParticipantLocale.mutateAsync({
+                          locale: language.value,
+                        })
+                      utils.participant.self.setData(undefined, (data) =>
+                        data?.self?.role === PARTICIPANT_ROLE
+                          ? {
+                              ...data,
+                              self: {
+                                ...data.self,
+                                locale: updatedLocale.locale,
+                              },
+                            }
+                          : data
+                      )
+                      void utils.participant.self
                         .invalidate()
-                        .catch(console.error)
+                        .catch((error) => {
+                          console.error(
+                            'Error refreshing participant self',
+                            error
+                          )
+                        })
                     }
 
                     const routed = await router.push(
@@ -358,9 +375,17 @@ function Header({
 
                         if (loggedOut) {
                           sessionStorage.removeItem('participant_token')
-                          await utils.participant.self
+                          utils.participant.self.setData(undefined, {
+                            self: null,
+                          })
+                          void utils.participant.self
                             .invalidate()
-                            .catch(console.error)
+                            .catch((error) => {
+                              console.error(
+                                'Error refreshing participant self after logout',
+                                error
+                              )
+                            })
                           const routed = await router.push('/login')
                           if (!routed)
                             throw new Error('Logout navigation failed')
