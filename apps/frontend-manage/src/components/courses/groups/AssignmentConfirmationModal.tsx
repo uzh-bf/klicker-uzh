@@ -56,10 +56,24 @@ function AssignmentConfirmationModal({
             return
           }
 
-          await Promise.all([
-            utils.course.groups.invalidate({ courseId }),
-            utils.course.summary.invalidate({ courseId }),
-          ]).catch(console.error)
+          try {
+            await Promise.all([
+              utils.course.groups.invalidate({ courseId }),
+              utils.course.summary.invalidate({ courseId }),
+            ])
+          } catch (error) {
+            console.error(
+              'Error refreshing random group assignment state',
+              error
+            )
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
           onAssigned()
           toast({
             type: 'success',

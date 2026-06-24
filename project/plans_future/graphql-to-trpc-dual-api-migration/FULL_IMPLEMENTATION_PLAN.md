@@ -423,6 +423,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-24 Completed Locally With Runtime Blockers: Manage Random Group Assignment Refresh UX
+
+Status: complete locally with runtime blockers. Scope stayed inside the tRPC
+UX/client-quality audit and the already migrated frontend-manage random group
+assignment workflow. No new migration slice, S05/S06 cleanup, GraphQL removal,
+Apollo removal, or package cleanup was started.
+
+Context:
+
+- Branch state refreshed: local `codex/trpc-dual-api-migration`, origin, and
+  PR #5132 all point to `51d19737c`.
+- Current-head checks are pending/in progress. `lint`, `syncpack`,
+  `GitGuardian`, `Claude Code Review`, and early CodeQL language jobs have
+  passed; `packages/graphql Vitest`, `packages/api tRPC Vitest`, SonarCloud,
+  Docker builds, and Cypress are still pending/in progress for `51d19737c`.
+- Current-head Cypress run `28077931145` is in progress for `51d19737c`; it is
+  still in setup/install and has not reached the Cypress execution step.
+- Current review threads are all resolved/outdated. PR #5132 is still blocked
+  by required review and pending checks.
+- Local runtime/browser verification remains blocked because
+  `http://127.0.0.1:3002` and `http://127.0.0.1:3000/api/trpc` refuse
+  connections.
+
+Findings:
+
+- `AssignmentConfirmationModal` already uses the migrated
+  `course.manualRandomGroupAssignments` tRPC mutation.
+- After a successful mutation, the modal invalidates `course.groups` and
+  `course.summary`, then calls `onAssigned()`, shows success, and closes. Those
+  invalidations are required because the visible pool/groups list and
+  finalized-state banner depend on fresh course/group data.
+- The required invalidation was hidden behind `catch(console.error)`, so a
+  successful assignment followed by a refresh failure could still show success
+  and close on stale visible state.
+- The assignment procedure only writes when `randomAssignmentFinalized` is
+  false, so a duplicate confirm after a server-side success does not create a
+  second assignment, but it can still produce confusing mutation-failure copy.
+
+Change:
+
+- Await the required `course.groups` and `course.summary` invalidations before
+  success, `onAssigned()`, and modal close.
+- If the assignment succeeds but required refresh fails, keep the modal
+  recoverable and show the existing generic system-error toast instead of the
+  assignment-failed copy.
+- Existing tRPC mutation input, query keys, parent state contract, and
+  GraphQL/tRPC coexistence remain unchanged.
+
+Verification:
+
+- Context7 TanStack Query v4 docs confirmed mutation side-effect callbacks can
+  return promises and are awaited sequentially; invalidations after mutation
+  success are the documented freshness pattern. The tRPC Context7 query failed
+  with a transport error, so this slice also reused the already loaded tRPC
+  migration skill guidance for `useUtils()` invalidation sequencing.
+- `./node_modules/.bin/prettier --config .prettierrc.mjs --write apps/frontend-manage/src/components/courses/groups/AssignmentConfirmationModal.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`:
+  passed.
+- `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`:
+  passed.
+- `git diff --check`: passed.
+- `rg -n "course\\.groups\\.invalidate\\(\\{ courseId \\}\\)|course\\.summary\\.invalidate\\(\\{ courseId \\}\\)|\\]\\.catch\\(console\\.error\\)|Error refreshing random group assignment state|groupAssignmentSuccessful|shared\\.generic\\.systemError" apps/frontend-manage/src/components/courses/groups/AssignmentConfirmationModal.tsx`:
+  old required-refresh catch removed; success still occurs only after the
+  required invalidations.
+- Runtime browser/API verification remains blocked locally:
+  `curl -sS -I http://127.0.0.1:3002` and
+  `curl -sS -I http://127.0.0.1:3000/api/trpc` both fail with connection
+  refused because the local manage app and backend are not running.
+
+Review / simplification:
+
+- Self-review confirmed the diff is limited to one already migrated random
+  group assignment modal plus this progress entry.
+- Simplification kept the existing pending state and mutation-specific failure
+  toast, adding only a local refresh-failure boundary with the existing generic
+  system-error toast.
+
+Next:
+
+- Commit and push this focused random-group refresh UX cleanup, then refresh PR
+  checks and Cypress/review state for the new head.
+
 ### 2026-06-24 Completed Locally With Runtime Blockers: Manage Batch Operation Refresh UX
 
 Status: complete locally with runtime blockers. Scope stayed inside the tRPC
