@@ -423,7 +423,7 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
-### 2026-06-24 In Progress: Course Deletion Confirmation Follow-Up
+### 2026-06-24 In Progress: Confirmation Checklist Follow-Up
 
 Context:
 
@@ -444,6 +444,10 @@ Evidence:
   with the "no participations" row already satisfied and showing a checkmark.
 - Retry attempts then found multiple `Course to be deleted` entries because the
   failed first attempt left created courses behind.
+- Cypress Cloud run `6930` on `d93fa403d` then exposed the inverse failure in
+  `MA-elements-operations-workflow.cy.ts`: hiding inactive selectors made
+  `[data-cy="confirm-derived-access"]` disappear while the modal still rendered
+  that satisfied/not-applicable confirmation row.
 
 Finding:
 
@@ -454,14 +458,20 @@ Finding:
   and no confirmation button.
 - Not-applicable rows could also briefly be treated as actionable until parent
   confirmation state settled.
+- The cleaner contract is to keep row selectors stable for existing modal
+  scripts, expose `data-confirmation-active`, and let tests assert inactive
+  state directly instead of overloading DOM absence.
 
 Change:
 
 - Restore awaited `utils.course.userCourses.invalidate()` before closing
   `CourseDeletionModal`; this keeps the destructive deletion boundary strict.
-- Update `ConfirmationItem` so not-applicable rows are considered satisfied and
-  confirmation selectors / click affordances are only present while an item is
-  actionable.
+- Update `ConfirmationItem` so not-applicable rows are considered satisfied,
+  inactive rows have no click affordance, and every row exposes
+  `data-confirmation-active`.
+- Update Cypress confirmation-checklist assertions so rendered but inactive
+  rows assert `data-confirmation-active="false"` while pre-step rows still use
+  `not.exist`.
 
 Verification:
 
@@ -472,6 +482,11 @@ Verification:
 - Passed after the shared `ConfirmationItem` update:
   - `./node_modules/.bin/prettier --write apps/frontend-manage/src/components/common/ConfirmationItem.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
   - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  - `git diff --check`
+- Passed after the stable-selector / `data-confirmation-active` Cypress update:
+  - `./node_modules/.bin/prettier --write apps/frontend-manage/src/components/common/ConfirmationItem.tsx cypress/cypress/e2e/P-microlearning-workflow.cy.ts cypress/cypress/e2e/N-course-workflow.cy.ts cypress/cypress/e2e/O-live-quiz-workflow.cy.ts cypress/cypress/e2e/V-template-workflow.cy.ts cypress/cypress/support/commands.ts project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+  - `./node_modules/.bin/tsc -p apps/frontend-manage/tsconfig.json --noEmit --pretty false`
+  - `./node_modules/.bin/tsc -p cypress/tsconfig.json --noEmit --pretty false`
   - `git diff --check`
 - Next: commit, push, and monitor the Cypress Cloud replacement run.
 

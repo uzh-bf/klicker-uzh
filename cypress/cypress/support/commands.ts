@@ -1086,7 +1086,11 @@ Cypress.Commands.add(
 
     if (copyBeforeConversion) {
       cy.get('[data-cy="copy-option-template"]').click()
-      cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
+      cy.get('[data-cy="confirm-activity-unavailability"]').should(
+        'have.attr',
+        'data-confirmation-active',
+        'false'
+      )
     } else {
       cy.get('[data-cy="convert-option-template"]').click()
       cy.get('[data-cy="template-next-step"]').should('be.disabled')
@@ -1095,15 +1099,27 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-content-visibility"]').click()
-    cy.get('[data-cy="confirm-content-visibility"]').should('not.exist')
+    cy.get('[data-cy="confirm-content-visibility"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-question-access"]').click()
-    cy.get('[data-cy="confirm-question-access"]').should('not.exist')
+    cy.get('[data-cy="confirm-question-access"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     if (resourceAccessRequired) {
       cy.get('[data-cy="template-next-step"]').should('be.disabled')
       cy.get('[data-cy="confirm-resource-access"]').click()
     }
-    cy.get('[data-cy="confirm-resource-access"]').should('not.exist')
+    cy.get('[data-cy="confirm-resource-access"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="template-next-step"]').click()
 
     // insert name, description and instructions for the new template

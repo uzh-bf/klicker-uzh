@@ -865,7 +865,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-deletion-modal-cancel"]').click()
     cy.get(`[data-cy="delete-course-${this.data.deletion.courseName}"]`).click()
     cy.get('[data-cy="course-deletion-participations-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="course-deletion-live-quiz-confirm"]')
       .should('exist')
@@ -882,19 +884,25 @@ describe('Test course creation and editing functionalities', function () {
       'not.be.disabled'
     )
     cy.get('[data-cy="course-deletion-group-activity-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="course-deletion-modal-confirm"]').should(
       'not.be.disabled'
     )
     cy.get('[data-cy="course-deletion-participant-group-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="course-deletion-modal-confirm"]').should(
       'not.be.disabled'
     )
     cy.get('[data-cy="course-deletion-leaderboard-entry-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
     cy.get(

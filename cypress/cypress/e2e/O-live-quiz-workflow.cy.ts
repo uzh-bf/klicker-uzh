@@ -817,10 +817,20 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
-    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course1.quiz.nameDupl).should('not.exist')
@@ -846,13 +856,25 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="abort-live-quiz-cockpit"]').click()
     cy.get('[data-cy="abort-cancel-live-quiz"]').click()
     cy.get('[data-cy="abort-live-quiz-cockpit"]').click()
-    cy.get('[data-cy="lq-deletion-responses-confirm"]').should('not.exist')
-    cy.get('[data-cy="lq-deletion-feedbacks-confirm"]').should('not.exist')
+    cy.get('[data-cy="lq-deletion-responses-confirm"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
+    cy.get('[data-cy="lq-deletion-feedbacks-confirm"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="lq-deletion-confusion-feedbacks-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="lq-deletion-leaderboard-entries-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="confirm-cancel-live-quiz"]')
       .should('not.be.disabled')
@@ -889,10 +911,20 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
-    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    ) // ? azure functions do not work in cypress CI actions
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course1.quiz.nameNew).should('not.exist')
@@ -1742,7 +1774,9 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('not.be.disabled')
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
