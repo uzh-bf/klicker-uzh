@@ -1058,6 +1058,205 @@ describe('Test course creation and editing functionalities', function () {
     )
   }
 
+  function verifyCourseDuplicationModalUi({ data }: { data: any }) {
+    cy.get('[data-cy="course-name"]').should(
+      'have.value',
+      `${data.sharing.course} Copy`
+    )
+    cy.get('[data-cy="course-display-name"]').should(
+      'have.value',
+      `${data.sharing.courseDisplayName} Copy`
+    )
+    cy.get('[data-cy="course-duplication-copy-info"]').should(
+      'contain',
+      messages.manage.courseList.courseDuplicationCopyInfo
+    )
+
+    cy.wrap([
+      'course-live-quizzes',
+      'course-practice-quizzes',
+      'course-microlearnings',
+      'course-group-activities',
+    ]).each((selector: string) => {
+      cy.get(`[data-cy="${selector}"]`)
+        .should('have.attr', 'data-state', 'checked')
+        .realClick()
+      cy.get(`[data-cy="${selector}"]`).should(
+        'have.attr',
+        'data-state',
+        'unchecked'
+      )
+      cy.get(`[data-cy="${selector}"]`).realClick()
+      cy.get(`[data-cy="${selector}"]`).should(
+        'have.attr',
+        'data-state',
+        'checked'
+      )
+    })
+  }
+
+  function getActivityReference({
+    summary,
+    collection,
+    activityName,
+  }: {
+    summary: any
+    collection: string
+    activityName: string
+  }) {
+    return summary.activityReferences[collection].find(
+      (activity: any) => activity.name === activityName
+    )
+  }
+
+  function expectCopiedActivityReferences({
+    sourceSummary,
+    copiedSummary,
+    data,
+  }: {
+    sourceSummary: any
+    copiedSummary: any
+    data: any
+  }) {
+    expect(copiedSummary.courseId).not.to.equal(sourceSummary.courseId)
+
+    const activityChecks = [
+      { collection: 'liveQuizzes', activityName: data.sharing.liveQuiz },
+      {
+        collection: 'practiceQuizzes',
+        activityName: data.sharing.practiceQuiz,
+      },
+      {
+        collection: 'microLearnings',
+        activityName: data.sharing.microLearning,
+      },
+      {
+        collection: 'groupActivities',
+        activityName: data.sharing.groupActivity,
+      },
+    ]
+
+    activityChecks.forEach(({ collection, activityName }) => {
+      const sourceActivity = getActivityReference({
+        summary: sourceSummary,
+        collection,
+        activityName,
+      })
+      const copiedActivity = getActivityReference({
+        summary: copiedSummary,
+        collection,
+        activityName,
+      })
+
+      if (!sourceActivity || !copiedActivity) {
+        throw new Error(`Missing ${collection} activity ${activityName}`)
+      }
+
+      expect(copiedActivity.id).not.to.equal(sourceActivity.id)
+      expect(copiedActivity.instances).to.have.length(
+        sourceActivity.instances.length
+      )
+      expect(
+        copiedActivity.instances.map((instance: any) => instance.instanceId)
+      ).not.to.deep.equal(
+        sourceActivity.instances.map((instance: any) => instance.instanceId)
+      )
+      expect(
+        copiedActivity.instances.map((instance: any) => instance.elementId)
+      ).to.deep.equal(
+        sourceActivity.instances.map((instance: any) => instance.elementId)
+      )
+
+      copiedActivity.instances.forEach((copiedInstance: any, ix: number) => {
+        expect(copiedInstance.instanceId).not.to.equal(
+          sourceActivity.instances[ix].instanceId
+        )
+      })
+    })
+  }
+
+  function editElementContentAndUpdateLinkedInstances({
+    elementName,
+    liveQuizName,
+    content,
+  }: {
+    elementName: string
+    liveQuizName: string
+    content: string
+  }) {
+    cy.loginLecturer()
+    cy.get('[data-cy="library"]').click()
+    cy.get('[data-cy="elements-search-input"]').should('exist')
+    cy.editElement({ element: elementName })
+    cy.get('[data-cy="insert-question-text"]').should('exist')
+    cy.get('[data-cy="instance-update-switch"]', { timeout: 30000 }).should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .realType(content)
+    cy.get('[data-cy="save-new-question"]')
+      .should('not.be.disabled')
+      .click({ force: true })
+    cy.get('[data-cy="elements-search-input"]', { timeout: 30000 }).should(
+      'be.visible'
+    )
+  }
+
+  function expectLiveQuizElementInstanceContent({
+    courseName,
+    liveQuizName,
+    content,
+    attempts = 10,
+  }: {
+    courseName: string
+    liveQuizName: string
+    content: string
+    attempts?: number
+  }) {
+    cy.task('getCourseDuplicationSummary', {
+      courseName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    }).then((summary: any) => {
+      const activity = getActivityReference({
+        summary,
+        collection: 'liveQuizzes',
+        activityName: liveQuizName,
+      })
+
+      if (!activity) {
+        throw new Error(`Missing live quiz ${liveQuizName}`)
+      }
+
+      const hasUpdatedElementReference = activity.instances
+        .map((instance: any) => instance.elementContent)
+        .includes(content)
+      const hasUpdatedElementInstance = activity.instances
+        .map((instance: any) => instance.elementDataContent)
+        .includes(content)
+
+      if (
+        (!hasUpdatedElementReference || !hasUpdatedElementInstance) &&
+        attempts > 0
+      ) {
+        cy.wait(1000)
+        expectLiveQuizElementInstanceContent({
+          courseName,
+          liveQuizName,
+          content,
+          attempts: attempts - 1,
+        })
+        return
+      }
+
+      expect(hasUpdatedElementReference).to.equal(true)
+      expect(hasUpdatedElementInstance).to.equal(true)
+    })
+  }
+
   function openCourseInManage(courseName: string) {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${courseName}"]`).click()
@@ -1811,6 +2010,7 @@ describe('Test course creation and editing functionalities', function () {
 
   it('Duplicate the course as owner and verify copied activities, clean state, and isolated same-name live quiz results', function () {
     const copyName = `${this.data.sharing.course} Copy`
+    const updatedLiveQuizElementContent = `Updated sharing live quiz question content ${Date.now()}`
 
     cy.task('deleteCourseByName', {
       courseName: copyName,
@@ -1827,15 +2027,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.loginLecturer()
     openCourseInManage(this.data.sharing.course)
     cy.get('[data-cy="course-duplicate-button"]').should('exist').click()
-    cy.get('[data-cy="course-duplication-copy-info"]').should(
-      'contain',
-      messages.manage.courseList.courseDuplicationCopyInfo
-    )
-    cy.get('[data-cy="course-group-activities"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
+    verifyCourseDuplicationModalUi({ data: this.data })
     cy.get('[data-cy="manipulate-course-submit"]').click()
 
     cy.get('[data-cy="courses"]').click()
@@ -1850,6 +2042,38 @@ describe('Test course creation and editing functionalities', function () {
       practiceQuizzes: 1,
       microLearnings: 1,
       groupActivities: 1,
+    })
+
+    cy.task('getCourseDuplicationSummary', {
+      courseName: this.data.sharing.course,
+      ownerId: Cypress.env('LECTURER_ID'),
+    }).then((sourceSummary: any) => {
+      cy.task('getCourseDuplicationSummary', {
+        courseName: copyName,
+        ownerId: Cypress.env('LECTURER_ID'),
+      }).then((copiedSummary: any) => {
+        expectCopiedActivityReferences({
+          sourceSummary,
+          copiedSummary,
+          data: this.data,
+        })
+      })
+    })
+
+    editElementContentAndUpdateLinkedInstances({
+      elementName: this.data.SCML.title,
+      liveQuizName: this.data.sharing.liveQuiz,
+      content: updatedLiveQuizElementContent,
+    })
+    expectLiveQuizElementInstanceContent({
+      courseName: this.data.sharing.course,
+      liveQuizName: this.data.sharing.liveQuiz,
+      content: updatedLiveQuizElementContent,
+    })
+    expectLiveQuizElementInstanceContent({
+      courseName: copyName,
+      liveQuizName: this.data.sharing.liveQuiz,
+      content: updatedLiveQuizElementContent,
     })
 
     authenticateStudent()

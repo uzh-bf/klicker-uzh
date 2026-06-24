@@ -2595,19 +2595,91 @@ export default defineConfig({
             ] = await Promise.all([
               prisma.liveQuiz.findMany({
                 where: { courseId: course.id, isDeleted: false },
-                select: { id: true, name: true, status: true },
+                orderBy: { name: 'asc' },
+                include: {
+                  blocks: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                      elements: {
+                        orderBy: { order: 'asc' },
+                        select: {
+                          id: true,
+                          elementId: true,
+                          elementData: true,
+                          element: {
+                            select: { id: true, name: true, content: true },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               }),
               prisma.practiceQuiz.findMany({
                 where: { courseId: course.id, isDeleted: false },
-                select: { id: true, name: true, status: true },
+                orderBy: { name: 'asc' },
+                include: {
+                  stacks: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                      elements: {
+                        orderBy: { order: 'asc' },
+                        select: {
+                          id: true,
+                          elementId: true,
+                          elementData: true,
+                          element: {
+                            select: { id: true, name: true, content: true },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               }),
               prisma.microLearning.findMany({
                 where: { courseId: course.id, isDeleted: false },
-                select: { id: true, name: true, status: true },
+                orderBy: { name: 'asc' },
+                include: {
+                  stacks: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                      elements: {
+                        orderBy: { order: 'asc' },
+                        select: {
+                          id: true,
+                          elementId: true,
+                          elementData: true,
+                          element: {
+                            select: { id: true, name: true, content: true },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               }),
               prisma.groupActivity.findMany({
                 where: { courseId: course.id, isDeleted: false },
-                select: { id: true, name: true, status: true },
+                orderBy: { name: 'asc' },
+                include: {
+                  stacks: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                      elements: {
+                        orderBy: { order: 'asc' },
+                        select: {
+                          id: true,
+                          elementId: true,
+                          elementData: true,
+                          element: {
+                            select: { id: true, name: true, content: true },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               }),
             ])
             const liveQuizIds = liveQuizzes.map((quiz) => quiz.id)
@@ -2709,7 +2781,39 @@ export default defineConfig({
               }),
             ])
 
+            const mapInstance = (instance: any) => {
+              const elementData = instance.elementData as {
+                content?: string
+              } | null
+
+              return {
+                instanceId: instance.id,
+                elementId: instance.elementId,
+                elementName: instance.element.name,
+                elementContent: instance.element.content,
+                elementDataContent: elementData?.content ?? null,
+              }
+            }
+            const mapBlockActivity = (activity: any) => ({
+              id: activity.id,
+              name: activity.name,
+              status: activity.status,
+              instances: activity.blocks.flatMap((block: any) =>
+                block.elements.map(mapInstance)
+              ),
+            })
+            const mapStackActivity = (activity: any) => ({
+              id: activity.id,
+              name: activity.name,
+              status: activity.status,
+              instances: activity.stacks.flatMap((stack: any) =>
+                stack.elements.map(mapInstance)
+              ),
+            })
+
             return {
+              courseId: course.id,
+              ownerId: course.ownerId,
               authType: course.authType,
               isAssessmentEnabled: course.isAssessmentEnabled,
               pinCode: course.pinCode,
@@ -2725,6 +2829,12 @@ export default defineConfig({
               groupActivityStatuses: groupActivities.map(
                 (activity) => activity.status
               ),
+              activityReferences: {
+                liveQuizzes: liveQuizzes.map(mapBlockActivity),
+                practiceQuizzes: practiceQuizzes.map(mapStackActivity),
+                microLearnings: microLearnings.map(mapStackActivity),
+                groupActivities: groupActivities.map(mapStackActivity),
+              },
               participations,
               participantGroups,
               participantInvitations,
