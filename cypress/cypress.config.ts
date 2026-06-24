@@ -2,10 +2,12 @@ import { prisma } from '@klicker-uzh/prisma'
 import {
   AchievementType,
   CourseAuthType,
+  ElementBlockStatus,
   ElementType,
   ObjectAccess,
   PermissionLevel,
   PublicationStatus,
+  ResponseCorrectness,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
@@ -112,6 +114,71 @@ const PARTICIPANT_GROUP_IDS_SINGLE = [
   '38de3f21-abb8-4982-a51d-e654f62ebe34',
   'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
 ]
+
+function resetResultCounts(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(resetResultCounts)
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value).reduce<Record<string, unknown>>(
+      (acc, [key, entry]) => {
+        acc[key] = typeof entry === 'number' ? 0 : resetResultCounts(entry)
+        return acc
+      },
+      {}
+    )
+  }
+
+  return value
+}
+
+function resetElementResults(results: unknown): Record<string, unknown> {
+  const resetResults = resetResultCounts(results)
+  return {
+    ...(resetResults &&
+    typeof resetResults === 'object' &&
+    !Array.isArray(resetResults)
+      ? resetResults
+      : {}),
+    total: 0,
+  }
+}
+
+function incrementChoicesElementResults(results: unknown): {
+  results: Record<string, unknown>
+  choiceIx: number
+} {
+  const currentResults =
+    results && typeof results === 'object' && !Array.isArray(results)
+      ? (results as Record<string, unknown>)
+      : {}
+  const currentChoices =
+    currentResults.choices &&
+    typeof currentResults.choices === 'object' &&
+    !Array.isArray(currentResults.choices)
+      ? (currentResults.choices as Record<string, unknown>)
+      : {}
+  const choiceIx = Object.keys(currentChoices)
+    .map(Number)
+    .sort((a, b) => a - b)[0]
+
+  if (typeof choiceIx !== 'number' || Number.isNaN(choiceIx)) {
+    throw new Error('Live quiz element results do not contain any choices.')
+  }
+
+  return {
+    choiceIx,
+    results: {
+      ...currentResults,
+      choices: {
+        ...currentChoices,
+        [choiceIx]: Number(currentChoices[choiceIx] ?? 0) + 1,
+      },
+      total: Number(currentResults.total ?? 0) + 1,
+    },
+  }
+}
 
 async function seedDatabase() {
   try {
@@ -1708,6 +1775,242 @@ export default defineConfig({
             throw error
           }
         },
+        async getCourseLiveQuizResponseSummary({
+          courseName,
+          liveQuizName,
+          participantUsername,
+        }: {
+          courseName: string
+          liveQuizName: string
+          participantUsername: string
+        }) {
+          try {
+            const course = await prisma.course.findFirst({
+              where: { name: courseName, ownerId: USER_ID_TEST },
+              orderBy: { createdAt: 'desc' },
+              include: {
+                liveQuizzes: {
+                  where: { name: liveQuizName, isDeleted: false },
+                  orderBy: { createdAt: 'desc' },
+                  take: 1,
+                  include: {
+                    blocks: {
+                      include: {
+                        elements: {
+                          select: {
+                            id: true,
+                            results: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found`)
+            }
+
+            const liveQuiz = course.liveQuizzes[0]
+            if (!liveQuiz) {
+              throw new Error(
+                `Live quiz ${liveQuizName} not found in course ${courseName}`
+              )
+            }
+
+            const participant = await prisma.participant.findUnique({
+              where: { username: participantUsername },
+            })
+
+            if (!participant) {
+              throw new Error(
+                `Participant with username ${participantUsername} not found`
+              )
+            }
+
+            const instances = liveQuiz.blocks.flatMap((block) => block.elements)
+            const instanceIds = instances.map((instance) => instance.id)
+            const responses = await prisma.liveQuizResponse.findMany({
+              where: {
+                participantId: participant.id,
+                instanceId: { in: instanceIds },
+              },
+              select: {
+                id: true,
+                correctness: true,
+                basePoints: true,
+                correctnessPoints: true,
+                bonusPoints: true,
+                instanceId: true,
+              },
+            })
+
+            return {
+              courseId: course.id,
+              liveQuizId: liveQuiz.id,
+              status: liveQuiz.status,
+              instanceIds,
+              responseCount: responses.length,
+              correctnesses: responses.map((response) => response.correctness),
+              basePoints: responses.reduce(
+                (total, response) => total + response.basePoints,
+                0
+              ),
+              correctnessPoints: responses.reduce(
+                (total, response) => total + response.correctnessPoints,
+                0
+              ),
+              bonusPoints: responses.reduce(
+                (total, response) => total + response.bonusPoints,
+                0
+              ),
+              resultTotals: instances.map((instance) => {
+                const results = instance.results as { total?: number } | null
+                return results?.total ?? 0
+              }),
+            }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async submitCourseLiveQuizStudentResponse({
+          courseName,
+          liveQuizName,
+          participantUsername,
+        }: {
+          courseName: string
+          liveQuizName: string
+          participantUsername: string
+        }) {
+          try {
+            const course = await prisma.course.findFirst({
+              where: { name: courseName, ownerId: USER_ID_TEST },
+              orderBy: { createdAt: 'desc' },
+              include: {
+                liveQuizzes: {
+                  where: { name: liveQuizName, isDeleted: false },
+                  orderBy: { createdAt: 'desc' },
+                  take: 1,
+                  include: {
+                    blocks: {
+                      orderBy: { order: 'asc' },
+                      include: {
+                        elements: {
+                          orderBy: { order: 'asc' },
+                          select: {
+                            id: true,
+                            results: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found`)
+            }
+
+            const liveQuiz = course.liveQuizzes[0]
+            if (!liveQuiz) {
+              throw new Error(
+                `Live quiz ${liveQuizName} not found in course ${courseName}`
+              )
+            }
+
+            const block =
+              liveQuiz.blocks.find(
+                (candidate) => candidate.id === liveQuiz.activeBlockId
+              ) ??
+              liveQuiz.blocks.find(
+                (candidate) => candidate.status === ElementBlockStatus.ACTIVE
+              ) ??
+              liveQuiz.blocks[0]
+
+            if (!block) {
+              throw new Error(
+                `Live quiz ${liveQuizName} in course ${courseName} has no blocks`
+              )
+            }
+
+            const instance = block.elements[0]
+            if (!instance) {
+              throw new Error(
+                `Live quiz ${liveQuizName} in course ${courseName} has no element instances`
+              )
+            }
+
+            const participant = await prisma.participant.findUnique({
+              where: { username: participantUsername },
+              select: { id: true },
+            })
+
+            if (!participant) {
+              throw new Error(
+                `Participant with username ${participantUsername} not found`
+              )
+            }
+
+            const { choiceIx, results } = incrementChoicesElementResults(
+              instance.results
+            )
+            const response = {
+              choices: [{ ix: choiceIx, selected: true }],
+            }
+            const now = new Date()
+
+            await prisma.$transaction([
+              prisma.liveQuizResponse.upsert({
+                where: {
+                  instanceId_elementBlockExecution_participantId: {
+                    instanceId: instance.id,
+                    elementBlockExecution: block.execution,
+                    participantId: participant.id,
+                  },
+                },
+                create: {
+                  submittedAt: now,
+                  response,
+                  timeSpent: 1,
+                  correctness: ResponseCorrectness.CORRECT,
+                  basePoints: liveQuiz.defaultPoints,
+                  correctnessPoints: liveQuiz.defaultCorrectPoints,
+                  bonusPoints: 0,
+                  instance: { connect: { id: instance.id } },
+                  elementBlockExecution: block.execution,
+                  participant: { connect: { id: participant.id } },
+                },
+                update: {
+                  submittedAt: now,
+                  response,
+                  timeSpent: 1,
+                  correctness: ResponseCorrectness.CORRECT,
+                  basePoints: liveQuiz.defaultPoints,
+                  correctnessPoints: liveQuiz.defaultCorrectPoints,
+                  bonusPoints: 0,
+                  correctionOnly: false,
+                },
+              }),
+              prisma.elementInstance.update({
+                where: { id: instance.id },
+                data: { results },
+              }),
+            ])
+
+            return {
+              courseId: course.id,
+              liveQuizId: liveQuiz.id,
+              instanceId: instance.id,
+              choiceIx,
+            }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
         async deleteLiveQuiz({ name }: { name: string }) {
           try {
             const liveQuiz = await prisma.liveQuiz.findFirst({
@@ -1956,6 +2259,490 @@ export default defineConfig({
             }
 
             return course.pinCode
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
+        async ensureCourseParticipation({
+          courseName,
+          participantUsername,
+        }: {
+          courseName: string
+          participantUsername: string
+        }) {
+          try {
+            const course = await prisma.course.findFirst({
+              where: { name: courseName, ownerId: USER_ID_TEST },
+              orderBy: { createdAt: 'desc' },
+              select: { id: true },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found.`)
+            }
+
+            const participant = await prisma.participant.findUnique({
+              where: { username: participantUsername },
+              select: { id: true },
+            })
+
+            if (!participant) {
+              throw new Error(
+                `Participant with username ${participantUsername} not found.`
+              )
+            }
+
+            await prisma.participation.upsert({
+              where: {
+                courseId_participantId: {
+                  courseId: course.id,
+                  participantId: participant.id,
+                },
+              },
+              create: {
+                course: { connect: { id: course.id } },
+                participant: { connect: { id: participant.id } },
+              },
+              update: {},
+            })
+
+            return course.id
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
+        async resetCourseLiveQuiz({
+          courseName,
+          liveQuizName,
+        }: {
+          courseName: string
+          liveQuizName: string
+        }) {
+          try {
+            const course = await prisma.course.findFirst({
+              where: { name: courseName, ownerId: USER_ID_TEST },
+              orderBy: { createdAt: 'desc' },
+              select: { id: true },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found.`)
+            }
+
+            const liveQuiz = await prisma.liveQuiz.findFirst({
+              where: {
+                name: liveQuizName,
+                courseId: course.id,
+                isDeleted: false,
+              },
+              orderBy: { createdAt: 'desc' },
+              include: {
+                blocks: {
+                  include: {
+                    elements: { select: { id: true, results: true } },
+                  },
+                },
+              },
+            })
+
+            if (!liveQuiz) {
+              throw new Error(
+                `Live quiz ${liveQuizName} not found in course ${courseName}.`
+              )
+            }
+
+            const instanceIds = liveQuiz.blocks.flatMap((block) =>
+              block.elements.map((element) => element.id)
+            )
+
+            await prisma.liveQuizResponse.deleteMany({
+              where: { instanceId: { in: instanceIds } },
+            })
+            await Promise.all(
+              liveQuiz.blocks.flatMap((block) =>
+                block.elements.map((element) =>
+                  prisma.elementInstance.update({
+                    where: { id: element.id },
+                    data: {
+                      results: resetElementResults(
+                        (element as { results?: unknown }).results
+                      ),
+                    },
+                  })
+                )
+              )
+            )
+            await prisma.elementBlock.updateMany({
+              where: { liveQuizId: liveQuiz.id },
+              data: {
+                status: ElementBlockStatus.SCHEDULED,
+                execution: 0,
+                startedAt: null,
+                closedAt: null,
+                expiresAt: null,
+              },
+            })
+            await prisma.liveQuiz.update({
+              where: { id: liveQuiz.id },
+              data: {
+                status: PublicationStatus.DRAFT,
+                startedAt: null,
+                finishedAt: null,
+                activeBlockId: null,
+              },
+            })
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
+        async createDeletedCourseActivities({
+          courseName,
+        }: {
+          courseName: string
+        }) {
+          try {
+            const course = await prisma.course.findFirst({
+              where: { name: courseName, ownerId: USER_ID_TEST },
+              select: { id: true, ownerId: true },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found.`)
+            }
+
+            const deletedActivityName = `${courseName} Deleted Activity`
+            const now = new Date()
+            const later = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
+            await Promise.all([
+              prisma.liveQuiz.create({
+                data: {
+                  name: `${deletedActivityName} Live Quiz`,
+                  displayName: `${deletedActivityName} Live Quiz`,
+                  isDeleted: true,
+                  owner: { connect: { id: course.ownerId } },
+                  course: { connect: { id: course.id } },
+                },
+              }),
+              prisma.practiceQuiz.create({
+                data: {
+                  name: `${deletedActivityName} Practice Quiz`,
+                  displayName: `${deletedActivityName} Practice Quiz`,
+                  isDeleted: true,
+                  owner: { connect: { id: course.ownerId } },
+                  course: { connect: { id: course.id } },
+                },
+              }),
+              prisma.microLearning.create({
+                data: {
+                  name: `${deletedActivityName} Microlearning`,
+                  displayName: `${deletedActivityName} Microlearning`,
+                  scheduledStartAt: now,
+                  scheduledEndAt: later,
+                  isDeleted: true,
+                  owner: { connect: { id: course.ownerId } },
+                  course: { connect: { id: course.id } },
+                },
+              }),
+              prisma.groupActivity.create({
+                data: {
+                  name: `${deletedActivityName} Group Activity`,
+                  displayName: `${deletedActivityName} Group Activity`,
+                  scheduledStartAt: now,
+                  scheduledEndAt: later,
+                  isDeleted: true,
+                  owner: { connect: { id: course.ownerId } },
+                  course: { connect: { id: course.id } },
+                },
+              }),
+            ])
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
+        async createCourseDuplicationFailureFixture({
+          courseName,
+        }: {
+          courseName: string
+        }) {
+          try {
+            await prisma.course.deleteMany({
+              where: { name: courseName, ownerId: USER_ID_TEST },
+            })
+
+            const now = new Date()
+            const later = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+            const course = await prisma.course.create({
+              data: {
+                name: courseName,
+                displayName: courseName,
+                notificationEmail: 'lecturer@df.uzh.ch',
+                isAssessmentEnabled: false,
+                isGamificationEnabled: true,
+                isGroupCreationEnabled: true,
+                color: '#016272',
+                pinCode: Math.floor(100000000 + Math.random() * 900000000),
+                startDate: now,
+                endDate: later,
+                groupDeadlineDate: later,
+                maxGroupSize: 5,
+                preferredGroupSize: 3,
+                authType: CourseAuthType.PIN,
+                owner: { connect: { id: USER_ID_TEST } },
+              },
+            })
+
+            await prisma.derivedPermission.upsert({
+              where: {
+                courseId_userId: {
+                  courseId: course.id,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                course: { connect: { id: course.id } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: { permissionLevel: PermissionLevel.OWNER },
+            })
+
+            const groupActivity = await prisma.groupActivity.create({
+              data: {
+                name: `${courseName} Group Activity`,
+                displayName: `${courseName} Group Activity`,
+                scheduledStartAt: now,
+                scheduledEndAt: later,
+                owner: { connect: { id: USER_ID_TEST } },
+                course: { connect: { id: course.id } },
+              },
+            })
+
+            await prisma.derivedPermission.upsert({
+              where: {
+                groupActivityId_userId: {
+                  groupActivityId: groupActivity.id,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                groupActivity: { connect: { id: groupActivity.id } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: { permissionLevel: PermissionLevel.OWNER },
+            })
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
+        async deleteCourseByName({
+          courseName,
+          ownerId,
+        }: {
+          courseName: string
+          ownerId?: string
+        }) {
+          try {
+            await prisma.course.deleteMany({
+              where: { name: courseName, ownerId },
+            })
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
+        async getCourseDuplicationSummary({
+          courseName,
+          ownerId,
+        }: {
+          courseName: string
+          ownerId?: string
+        }) {
+          try {
+            const course = await prisma.course.findFirst({
+              where: { name: courseName, ownerId },
+              orderBy: { createdAt: 'desc' },
+              select: {
+                id: true,
+                ownerId: true,
+                authType: true,
+                isAssessmentEnabled: true,
+                pinCode: true,
+              },
+            })
+
+            if (!course) return null
+
+            const [
+              liveQuizzes,
+              practiceQuizzes,
+              microLearnings,
+              groupActivities,
+            ] = await Promise.all([
+              prisma.liveQuiz.findMany({
+                where: { courseId: course.id, isDeleted: false },
+                select: { id: true, name: true, status: true },
+              }),
+              prisma.practiceQuiz.findMany({
+                where: { courseId: course.id, isDeleted: false },
+                select: { id: true, name: true, status: true },
+              }),
+              prisma.microLearning.findMany({
+                where: { courseId: course.id, isDeleted: false },
+                select: { id: true, name: true, status: true },
+              }),
+              prisma.groupActivity.findMany({
+                where: { courseId: course.id, isDeleted: false },
+                select: { id: true, name: true, status: true },
+              }),
+            ])
+            const liveQuizIds = liveQuizzes.map((quiz) => quiz.id)
+            const practiceQuizIds = practiceQuizzes.map((quiz) => quiz.id)
+            const microLearningIds = microLearnings.map(
+              (microLearning) => microLearning.id
+            )
+            const groupActivityIds = groupActivities.map(
+              (activity) => activity.id
+            )
+
+            const [
+              participations,
+              participantGroups,
+              participantInvitations,
+              groupAssignmentPoolEntries,
+              directPermissions,
+              questionResponses,
+              questionResponseDetails,
+              liveQuizResponses,
+              pointCorrections,
+              groupActivityInstances,
+              activityPerformances,
+              activityProgresses,
+              participantPerformances,
+              participantActivityPerformances,
+              aggregatedAnalytics,
+              aggregatedCourseAnalytics,
+              participantCourseAnalytics,
+            ] = await Promise.all([
+              prisma.participation.count({ where: { courseId: course.id } }),
+              prisma.participantGroup.count({ where: { courseId: course.id } }),
+              prisma.participantInvitation.count({
+                where: { courseId: course.id },
+              }),
+              prisma.groupAssignmentPoolEntry.count({
+                where: { courseId: course.id },
+              }),
+              prisma.permission.count({
+                where: {
+                  OR: [
+                    { courseId: course.id },
+                    { liveQuizId: { in: liveQuizIds } },
+                    { practiceQuizId: { in: practiceQuizIds } },
+                    { microLearningId: { in: microLearningIds } },
+                    { groupActivityId: { in: groupActivityIds } },
+                  ],
+                },
+              }),
+              prisma.questionResponse.count({
+                where: { courseId: course.id },
+              }),
+              prisma.questionResponseDetail.count({
+                where: {
+                  OR: [
+                    { practiceQuizId: { in: practiceQuizIds } },
+                    { microLearningId: { in: microLearningIds } },
+                  ],
+                },
+              }),
+              prisma.liveQuizResponse.count({
+                where: {
+                  instance: {
+                    elementBlock: { liveQuizId: { in: liveQuizIds } },
+                  },
+                },
+              }),
+              prisma.pointCorrection.count({
+                where: { liveQuizId: { in: liveQuizIds } },
+              }),
+              prisma.groupActivityInstance.count({
+                where: { groupActivityId: { in: groupActivityIds } },
+              }),
+              prisma.activityPerformance.count({
+                where: { courseId: course.id },
+              }),
+              prisma.activityProgress.count({
+                where: { courseId: course.id },
+              }),
+              prisma.participantPerformance.count({
+                where: { courseId: course.id },
+              }),
+              prisma.participantActivityPerformance.count({
+                where: {
+                  OR: [
+                    { practiceQuizId: { in: practiceQuizIds } },
+                    { microLearningId: { in: microLearningIds } },
+                  ],
+                },
+              }),
+              prisma.aggregatedAnalytics.count({
+                where: { courseId: course.id },
+              }),
+              prisma.aggregatedCourseAnalytics.count({
+                where: { courseId: course.id },
+              }),
+              prisma.participantCourseAnalytics.count({
+                where: { courseId: course.id },
+              }),
+            ])
+
+            return {
+              authType: course.authType,
+              isAssessmentEnabled: course.isAssessmentEnabled,
+              pinCode: course.pinCode,
+              liveQuizzes: liveQuizzes.length,
+              practiceQuizzes: practiceQuizzes.length,
+              microLearnings: microLearnings.length,
+              groupActivities: groupActivities.length,
+              liveQuizStatuses: liveQuizzes.map((quiz) => quiz.status),
+              practiceQuizStatuses: practiceQuizzes.map((quiz) => quiz.status),
+              microLearningStatuses: microLearnings.map(
+                (microLearning) => microLearning.status
+              ),
+              groupActivityStatuses: groupActivities.map(
+                (activity) => activity.status
+              ),
+              participations,
+              participantGroups,
+              participantInvitations,
+              groupAssignmentPoolEntries,
+              directPermissions,
+              questionResponses,
+              questionResponseDetails,
+              liveQuizResponses,
+              pointCorrections,
+              groupActivityInstances,
+              activityPerformances,
+              activityProgresses,
+              participantPerformances,
+              participantActivityPerformances,
+              aggregatedAnalytics,
+              aggregatedCourseAnalytics,
+              participantCourseAnalytics,
+            }
           } finally {
             await prisma.$disconnect()
           }

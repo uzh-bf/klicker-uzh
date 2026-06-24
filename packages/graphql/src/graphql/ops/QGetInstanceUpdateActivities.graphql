@@ -8,7 +8,9 @@ query GetInstanceUpdateActivities(
     hasSampleSolution: $hasSampleSolution
     includeTemplateInstances: $includeTemplateInstances
   ) {
+    activityId
     activityName
+    courseName
     activityType
     status
   }

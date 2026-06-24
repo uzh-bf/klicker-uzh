@@ -292,6 +292,59 @@ Cypress.Commands.add(
   )
 )
 
+Cypress.Commands.add('loginStudentWithToken', () => {
+  cy.clearAllCookies()
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+
+  cy.viewport('macbook-16')
+
+  cy.request({
+    method: 'POST',
+    url: 'http://127.0.0.1:3000/api/graphql',
+    headers: {
+      'x-graphql-yoga-csrf': 'true',
+    },
+    body: {
+      operationName: 'LoginParticipant',
+      query:
+        'mutation LoginParticipant($usernameOrEmail: String!, $password: String!) { loginParticipant(usernameOrEmail: $usernameOrEmail, password: $password) }',
+      variables: {
+        usernameOrEmail: Cypress.env('STUDENT_USERNAME'),
+        password: Cypress.env('STUDENT_PASSWORD'),
+      },
+    },
+  }).then((response) => {
+    expect(response.body.data.loginParticipant).to.equal(
+      '6f45065c-667f-4259-818c-c6f6b477eb48'
+    )
+
+    const setCookieHeader = response.headers['set-cookie']
+    const cookies = Array.isArray(setCookieHeader)
+      ? setCookieHeader
+      : [setCookieHeader]
+    const participantCookie = cookies.find((cookie) =>
+      cookie?.startsWith('participant_token=')
+    )
+    const participantToken = participantCookie?.match(
+      /^participant_token=([^;]+)/
+    )?.[1]
+
+    if (!participantToken) {
+      throw new Error('Participant login did not return a participant token.')
+    }
+
+    Cypress.env('PARTICIPANT_TOKEN', participantToken)
+    cy.setCookie('participant_token', participantToken, {
+      domain: '127.0.0.1',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+    })
+  })
+})
+
 Cypress.Commands.add('logoutUser', () => {
   cy.clearAllLocalStorage()
   cy.clearAllSessionStorage()
@@ -1863,6 +1916,7 @@ declare global {
       logoutUser(): Chainable<void>
       loginStudent(options?: StudentLoginOptions): Chainable<void>
       loginAssessmentStudent(): Chainable<void>
+      loginStudentWithToken(): Chainable<void>
       loginStudentPassword({
         username,
         preserveClientState,

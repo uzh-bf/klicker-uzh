@@ -969,6 +969,195 @@ describe('Test course creation and editing functionalities', function () {
 
   // ! Part 5: Course Sharing
   // #region
+  function expectDuplicatedCourseSummary({
+    courseName,
+    ownerId,
+    liveQuizzes,
+    practiceQuizzes,
+    microLearnings,
+    groupActivities,
+  }: {
+    courseName: string
+    ownerId?: string
+    liveQuizzes: number
+    practiceQuizzes: number
+    microLearnings: number
+    groupActivities: number
+  }) {
+    cy.task('getCourseDuplicationSummary', { courseName, ownerId }).then(
+      (summary: any) => {
+        expect(summary).to.not.equal(null)
+        expect(summary).to.include({
+          liveQuizzes,
+          practiceQuizzes,
+          microLearnings,
+          groupActivities,
+          participations: 0,
+          participantGroups: 0,
+          participantInvitations: 0,
+          groupAssignmentPoolEntries: 0,
+          directPermissions: 0,
+          questionResponses: 0,
+          questionResponseDetails: 0,
+          liveQuizResponses: 0,
+          pointCorrections: 0,
+          groupActivityInstances: 0,
+          activityPerformances: 0,
+          activityProgresses: 0,
+          participantPerformances: 0,
+          participantActivityPerformances: 0,
+          aggregatedAnalytics: 0,
+          aggregatedCourseAnalytics: 0,
+          participantCourseAnalytics: 0,
+        })
+        expect(summary.liveQuizStatuses).to.deep.equal(
+          Array(liveQuizzes).fill('DRAFT')
+        )
+        expect(summary.practiceQuizStatuses).to.deep.equal(
+          Array(practiceQuizzes).fill('DRAFT')
+        )
+        expect(summary.microLearningStatuses).to.deep.equal(
+          Array(microLearnings).fill('DRAFT')
+        )
+        expect(summary.groupActivityStatuses).to.deep.equal(
+          Array(groupActivities).fill('DRAFT')
+        )
+      }
+    )
+  }
+
+  function verifyCopiedCourseActivities({ data }: { data: any }) {
+    cy.get('[data-cy="tab-liveQuizzes"]').click()
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="status-${data.sharing.liveQuiz}-DRAFT"]`).should('exist')
+
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${data.sharing.practiceQuiz}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${data.sharing.practiceQuiz}-DRAFT"]`).should(
+      'exist'
+    )
+
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${data.sharing.microLearning}-DRAFT"]`).should(
+      'exist'
+    )
+
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${data.sharing.groupActivity}-DRAFT"]`).should(
+      'exist'
+    )
+  }
+
+  function openCourseInManage(courseName: string) {
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${courseName}"]`).click()
+    cy.get('[data-cy="tab-liveQuizzes"]', { timeout: 30000 }).should('exist')
+  }
+
+  function ensureStudentCourseParticipation(
+    courseName: string
+  ): Cypress.Chainable<string> {
+    return cy
+      .task('ensureCourseParticipation', {
+        courseName,
+        participantUsername: Cypress.env('STUDENT_USERNAME'),
+      })
+      .then((courseId) => {
+        expect(courseId).to.be.a('string')
+        return courseId as string
+      })
+  }
+
+  function startLiveQuizInCourse({
+    courseName,
+    liveQuizName,
+  }: {
+    courseName: string
+    liveQuizName: string
+  }) {
+    cy.loginLecturer()
+    openCourseInManage(courseName)
+    cy.get('[data-cy="tab-liveQuizzes"]').click()
+    cy.get(`[data-cy="start-live-quiz-${liveQuizName}"]`)
+      .should('exist')
+      .click()
+    cy.location('pathname', { timeout: 60000 }).should('include', '/quizzes/')
+    cy.get('[data-cy="next-block-timeline"]', { timeout: 60000 })
+      .should('exist')
+      .click()
+    cy.wait(500)
+  }
+
+  function answerRunningLiveQuizInCourse({
+    courseName,
+    liveQuizName,
+  }: {
+    courseName: string
+    liveQuizName: string
+  }) {
+    cy.task('submitCourseLiveQuizStudentResponse', {
+      courseName,
+      liveQuizName,
+      participantUsername: Cypress.env('STUDENT_USERNAME'),
+    }).then((result: any) => {
+      expect(result.courseId).to.be.a('string')
+      expect(result.liveQuizId).to.be.a('string')
+      expect(result.instanceId).to.be.a('number')
+    })
+  }
+
+  function authenticateStudent() {
+    cy.loginStudentWithToken()
+  }
+
+  function expectLiveQuizResponseSummary({
+    courseName,
+    liveQuizName,
+    attempts = 10,
+  }: {
+    courseName: string
+    liveQuizName: string
+    attempts?: number
+  }): Cypress.Chainable<any> {
+    return cy
+      .task('getCourseLiveQuizResponseSummary', {
+        courseName,
+        liveQuizName,
+        participantUsername: Cypress.env('STUDENT_USERNAME'),
+      })
+      .then((summary: any) => {
+        const hasResponse =
+          summary.responseCount === 1 &&
+          summary.correctnesses.includes('CORRECT') &&
+          summary.resultTotals.includes(1)
+
+        if (!hasResponse && attempts > 0) {
+          cy.wait(1000)
+          return expectLiveQuizResponseSummary({
+            courseName,
+            liveQuizName,
+            attempts: attempts - 1,
+          })
+        }
+
+        expect(summary.responseCount).to.equal(1)
+        expect(summary.correctnesses).to.include('CORRECT')
+        expect(summary.resultTotals).to.include(1)
+
+        return cy.wrap(summary)
+      })
+  }
+
   function verifyCourseReadPermissions({ data }: { data: any }) {
     // check that the elements used in the activities are not visible to the user
     cy.wrap([
@@ -1024,6 +1213,7 @@ describe('Test course creation and editing functionalities', function () {
       .should('exist')
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').should('not.exist')
+    cy.get('[data-cy="course-duplicate-button"]').should('not.exist')
     cy.get('[data-cy="tab-liveQuizzes"]').click()
 
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -1113,6 +1303,7 @@ describe('Test course creation and editing functionalities', function () {
       .should('exist')
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').should('not.exist')
+    cy.get('[data-cy="course-duplicate-button"]').should('not.exist')
 
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -1224,6 +1415,7 @@ describe('Test course creation and editing functionalities', function () {
       .should('exist')
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').should('not.exist')
+    cy.get('[data-cy="course-duplicate-button"]').should('not.exist')
 
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -1340,6 +1532,7 @@ describe('Test course creation and editing functionalities', function () {
     }
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').should('exist')
+    cy.get('[data-cy="course-duplicate-button"]').should('exist')
 
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -1460,6 +1653,7 @@ describe('Test course creation and editing functionalities', function () {
 
     // create four different questions, two of them depending on an answer collection
     cy.get('[data-cy="library"]').click()
+    cy.get('[data-cy="elements-search-input"]').should('exist')
     cy.createQuestionSC({
       name: this.data.SCML.title,
       content: this.data.SCML.content,
@@ -1473,8 +1667,9 @@ describe('Test course creation and editing functionalities', function () {
       userId: Cypress.env('LECTURER_ID'),
     })
 
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
+    cy.visit(
+      `${Cypress.env('URL_MANAGE').replace(/\/$/, '')}/resources/answerCollections`
+    )
     cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.collection.name,
@@ -1484,6 +1679,7 @@ describe('Test course creation and editing functionalities', function () {
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get('[data-cy="elements-search-input"]').should('exist')
     cy.createQuestionSE({
       name: this.data.SEML.title,
       content: this.data.SEML.content,
@@ -1590,8 +1786,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="create-new-activity"]').click()
 
     // verify that all activities are listed correctly in the course
-    cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
+    openCourseInManage(this.data.sharing.course)
 
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(
@@ -1612,6 +1807,218 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="publish-group-activity-${this.data.sharing.groupActivity}"]`
     ).should('exist')
+  })
+
+  it('Duplicate the course as owner and verify copied activities, clean state, and isolated same-name live quiz results', function () {
+    const copyName = `${this.data.sharing.course} Copy`
+
+    cy.task('deleteCourseByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+    cy.task('resetCourseLiveQuiz', {
+      courseName: this.data.sharing.course,
+      liveQuizName: this.data.sharing.liveQuiz,
+    })
+    cy.task('createDeletedCourseActivities', {
+      courseName: this.data.sharing.course,
+    })
+
+    cy.loginLecturer()
+    openCourseInManage(this.data.sharing.course)
+    cy.get('[data-cy="course-duplicate-button"]').should('exist').click()
+    cy.get('[data-cy="course-duplication-copy-info"]').should(
+      'contain',
+      messages.manage.courseList.courseDuplicationCopyInfo
+    )
+    cy.get('[data-cy="course-group-activities"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${copyName}"]`).should('exist')
+    openCourseInManage(copyName)
+    verifyCopiedCourseActivities({ data: this.data })
+
+    expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 1,
+    })
+
+    authenticateStudent()
+    ensureStudentCourseParticipation(this.data.sharing.course).then(() => {
+      ensureStudentCourseParticipation(copyName).then(() => {
+        startLiveQuizInCourse({
+          courseName: this.data.sharing.course,
+          liveQuizName: this.data.sharing.liveQuiz,
+        })
+        startLiveQuizInCourse({
+          courseName: copyName,
+          liveQuizName: this.data.sharing.liveQuiz,
+        })
+
+        authenticateStudent()
+        answerRunningLiveQuizInCourse({
+          courseName: this.data.sharing.course,
+          liveQuizName: this.data.sharing.liveQuiz,
+        })
+        answerRunningLiveQuizInCourse({
+          courseName: copyName,
+          liveQuizName: this.data.sharing.liveQuiz,
+        })
+
+        expectLiveQuizResponseSummary({
+          courseName: this.data.sharing.course,
+          liveQuizName: this.data.sharing.liveQuiz,
+        }).then((sourceSummary) => {
+          expectLiveQuizResponseSummary({
+            courseName: copyName,
+            liveQuizName: this.data.sharing.liveQuiz,
+          }).then((copySummary) => {
+            expect(copySummary.courseId).not.to.equal(sourceSummary.courseId)
+            expect(copySummary.liveQuizId).not.to.equal(
+              sourceSummary.liveQuizId
+            )
+            expect(copySummary.instanceIds[0]).not.to.equal(
+              sourceSummary.instanceIds[0]
+            )
+          })
+        })
+      })
+    })
+  })
+
+  it('Duplicate the course without group creation and verify group activities are not copied', function () {
+    const copyName = `${this.data.sharing.course} Copy Without Groups`
+
+    cy.task('deleteCourseByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
+    cy.get('[data-cy="course-duplicate-button"]').click()
+    cy.get('[data-cy="course-name"]').clear().type(copyName)
+    cy.get('[data-cy="course-display-name"]').clear().type(copyName)
+    cy.get('[data-cy="course-group-creation"]')
+      .should('have.attr', 'data-state', 'checked')
+      .realClick()
+    cy.get('[data-cy="course-group-creation"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="course-group-activities"]')
+      .should('have.attr', 'data-state', 'unchecked')
+      .should('be.disabled')
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${copyName}"]`).should('exist')
+
+    expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 0,
+    })
+  })
+
+  it('Does not leave a partial course when activity duplication fails', function () {
+    const sourceName = `${this.data.sharing.course} Invalid Duplication Source`
+    const copyName = `${sourceName} Copy`
+
+    cy.task('deleteCourseByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+    cy.task('createCourseDuplicationFailureFixture', {
+      courseName: sourceName,
+    })
+
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${sourceName}"]`).click()
+    cy.get('[data-cy="course-duplicate-button"]').click()
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+    cy.findByText(messages.manage.courseList.courseCreationFailed).should(
+      'exist'
+    )
+    cy.task('getCourseDuplicationSummary', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    }).should('be.null')
+    cy.task('deleteCourseByName', {
+      courseName: sourceName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+  })
+
+  it('Allows assessment courses to be duplicated as assessment courses', function () {
+    const assessmentCourseName = `${this.data.sharing.course} Assessment`
+    const assessmentCopyName = `${assessmentCourseName} Copy`
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    cy.task('deleteCourseByName', {
+      courseName: assessmentCopyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+    cy.task('deleteCourseByName', {
+      courseName: assessmentCourseName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+
+    cy.loginLecturer()
+    cy.createCourse({
+      name: assessmentCourseName,
+      displayName: assessmentCourseName,
+      notificationEmail: Cypress.env('LECTURER_EMAIL'),
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+    })
+    cy.get(`[data-cy="course-list-button-${assessmentCourseName}"]`).click()
+    cy.get('[data-cy="course-duplicate-button"]').should('exist').click()
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${assessmentCopyName}"]`).should(
+      'exist'
+    )
+
+    cy.task('getCourseDuplicationSummary', {
+      courseName: assessmentCopyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    }).then((summary: any) => {
+      expect(summary).to.include({
+        isAssessmentEnabled: true,
+        authType: 'SSO',
+        pinCode: null,
+        liveQuizzes: 0,
+        practiceQuizzes: 0,
+        microLearnings: 0,
+        groupActivities: 0,
+      })
+    })
+    cy.task('deleteCourseByName', {
+      courseName: assessmentCopyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+    cy.task('deleteCourseByName', {
+      courseName: assessmentCourseName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
   })
 
   it('Share the course directly with other users with READ, EXECUTE, WRITE and ADMIN permissions', function () {
@@ -1753,26 +2160,80 @@ describe('Test course creation and editing functionalities', function () {
   it('Verify that the user with individual READ permissions can only see course & activities with READ permissions', function () {
     cy.loginIndividualCatalyst()
     verifyCourseReadPermissions({ data: this.data })
+    cy.task('getCourseDuplicationSummary', {
+      courseName: `${this.data.sharing.course} Copy`,
+      ownerId: Cypress.env('LECTURER_IND_ID'),
+    }).should('be.null')
   })
 
   it('Verify that the user with individual EXECUTE permissions can only see course & activities with EXECUTE permissions', function () {
     cy.loginInstitutionalCatalyst()
     verifyCourseExecutePermissions({ data: this.data })
+    cy.task('getCourseDuplicationSummary', {
+      courseName: `${this.data.sharing.course} Copy`,
+      ownerId: Cypress.env('LECTURER_INST_ID'),
+    }).should('be.null')
   })
 
   it('Verify that the user with individual WRITE permissions (no propagation) can only see course & activities with EXECUTE permissions', function () {
     cy.loginInstitutionalCatalyst2()
     verifyCourseWritePermissions({ data: this.data, propagation: false })
+    cy.task('getCourseDuplicationSummary', {
+      courseName: `${this.data.sharing.course} Copy`,
+      ownerId: Cypress.env('LECTURER_INST2_ID'),
+    }).should('be.null')
   })
 
   it('Verify that the user with individual WRITE permissions (with propagation) can only see course & activities with WRITE permissions', function () {
     cy.loginInstitutionalCatalyst3()
     verifyCourseWritePermissions({ data: this.data, propagation: true })
+    cy.task('getCourseDuplicationSummary', {
+      courseName: `${this.data.sharing.course} Copy`,
+      ownerId: Cypress.env('LECTURER_INST3_ID'),
+    }).should('be.null')
   })
 
   it('Verify that the user with individual ADMIN permissions can see course, activities, elements, and the answer collection', function () {
     cy.loginInstitutionalCatalyst4()
     verifyCourseAdminPermissions({ data: this.data, checkBadge: true })
+  })
+
+  it('Verify that an ADMIN user can duplicate selected course activities', function () {
+    const copyName = `${this.data.sharing.course} Admin Copy`
+
+    cy.task('deleteCourseByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_INST4_ID'),
+    })
+
+    cy.loginInstitutionalCatalyst4()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
+    cy.get('[data-cy="course-duplicate-button"]').should('exist').click()
+    cy.get('[data-cy="course-name"]').clear().type(copyName)
+    cy.get('[data-cy="course-display-name"]').clear().type(copyName)
+    cy.get('[data-cy="course-practice-quizzes"]')
+      .should('have.attr', 'data-state', 'checked')
+      .realClick()
+    cy.get('[data-cy="course-microlearnings"]')
+      .should('have.attr', 'data-state', 'checked')
+      .realClick()
+    cy.get('[data-cy="course-group-activities"]')
+      .should('have.attr', 'data-state', 'checked')
+      .realClick()
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${copyName}"]`).should('exist')
+
+    expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_INST4_ID'),
+      liveQuizzes: 1,
+      practiceQuizzes: 0,
+      microLearnings: 0,
+      groupActivities: 0,
+    })
   })
 
   it('Change the course ADMIN permission to WRITE level for user pro5 (without propagation)', function () {

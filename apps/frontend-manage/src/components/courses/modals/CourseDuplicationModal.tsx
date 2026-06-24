@@ -126,6 +126,22 @@ function ApplyGroupDeadlineDelta({
   return null
 }
 
+function ApplyGroupActivityCopyGuard({
+  values,
+  setFieldValue,
+}: {
+  values: { isGroupCreationEnabled: boolean; copyGroupActivities: boolean }
+  setFieldValue: (field: string, value: any) => void
+}) {
+  useEffect(() => {
+    if (!values.isGroupCreationEnabled && values.copyGroupActivities) {
+      setFieldValue('copyGroupActivities', false)
+    }
+  }, [values.isGroupCreationEnabled, values.copyGroupActivities, setFieldValue])
+
+  return null
+}
+
 function CourseDuplicationModal({
   initialValues,
   earliestGroupDeadline,
@@ -394,6 +410,10 @@ function CourseDuplicationModal({
               values={values}
               setFieldValue={setFieldValue}
             />
+            <ApplyGroupActivityCopyGuard
+              values={values}
+              setFieldValue={setFieldValue}
+            />
             <div className="flex flex-col gap-2">
               <div className="flex w-full flex-col gap-3 md:flex-row">
                 <FormikTextField
@@ -596,6 +616,11 @@ function CourseDuplicationModal({
             </div>
             <div className="mt-6 flex flex-col">
               <H3>{`${t('shared.generic.activities')}`}</H3>
+              <div data-cy="course-duplication-copy-info">
+                <UserNotification type="info" className={{ root: 'mb-3' }}>
+                  {t('manage.courseList.courseDuplicationCopyInfo')}
+                </UserNotification>
+              </div>
               <div className="flex flex-col md:grid md:grid-cols-3">
                 <FormikSwitchField
                   required

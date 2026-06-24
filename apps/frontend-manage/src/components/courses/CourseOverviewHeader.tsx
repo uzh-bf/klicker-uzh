@@ -151,14 +151,16 @@ function CourseOverviewHeader({
           <Button.Icon icon={faMessage} />
           <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
         </Button>
-        <Button
-          onClick={() => setDuplicationModal(true)}
-          className={{ root: 'h-8' }}
-          data={{ cy: 'course-duplicate-button' }}
-        >
-          <Button.Icon icon={faCopy} />
-          <Button.Label>{t('manage.course.duplicateCourse')}</Button.Label>
-        </Button>
+        {course.isManager ? (
+          <Button
+            onClick={() => setDuplicationModal(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'course-duplicate-button' }}
+          >
+            <Button.Icon icon={faCopy} />
+            <Button.Label>{t('manage.course.duplicateCourse')}</Button.Label>
+          </Button>
+        ) : null}
         {!course.isAssessmentEnabled && course.pinCode && (
           <QRCodePopover
             triggerStyle="button"

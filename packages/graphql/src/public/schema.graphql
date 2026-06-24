@@ -1590,8 +1590,10 @@ type InstanceQuizAnalytics {
 }
 
 type InstanceUpdateActivityInfo {
+  activityId: String!
   activityName: String!
   activityType: ActivityType!
+  courseName: String
   status: PublicationStatus!
 }
 
