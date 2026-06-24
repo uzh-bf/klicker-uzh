@@ -38,8 +38,8 @@
   },
   "liveQuizWordCloud": {
     "course": "Testkurs",
-    "name": "Live Quiz 4",
-    "displayName": "Live Quiz 4 (Display)"
+    "name": "Live Quiz Word Cloud",
+    "displayName": "Live Quiz Word Cloud (Display)"
   },
   "sharing": {
     "quiz1": "Sharing Live Quiz 1",

@@ -13,6 +13,35 @@ describe('Different live-quiz workflows', function () {
 
   // Fail-fast handled globally in support/e2e.ts
 
+  function openNextBlock() {
+    cy.get('[data-cy="next-block-timeline"]', { timeout: 30000 })
+      .should('be.visible')
+      .and('not.be.disabled')
+      .click()
+    cy.get('[data-cy="next-block-timeline"]', { timeout: 30000 }).should(
+      'be.visible'
+    )
+  }
+
+  function visitEvaluationFromCockpit() {
+    cy.get('[data-cy="evaluation-results-cockpit"]', { timeout: 30000 })
+      .should('be.visible')
+      .closest('a')
+      .invoke('attr', 'href')
+      .should('include', '/evaluation')
+      .then((href) => {
+        const evaluationHref = String(href)
+        const evaluationUrl = evaluationHref.startsWith('http')
+          ? evaluationHref
+          : `${Cypress.env('URL_MANAGE')}${evaluationHref}`
+
+        cy.visit({ url: evaluationUrl })
+      })
+    cy.get('[data-cy="change-chart-type"]', { timeout: 30000 }).should(
+      'be.visible'
+    )
+  }
+
   it('CLEANUP', () => {
     cy.cleanup()
     cy.seed()
@@ -4698,15 +4727,9 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-block-timeline"]', { timeout: 30000 }).should(
       'exist'
     )
-    cy.get('[data-cy="next-block-timeline"]').click()
-    cy.wait(500)
+    openNextBlock()
 
-    cy.get('[data-cy="evaluation-results-cockpit"]')
-      .closest('a')
-      .invoke('attr', 'href')
-      .then((href) => {
-        cy.visit({ url: `${Cypress.env('URL_MANAGE')}${href}` })
-      })
+    visitEvaluationFromCockpit()
     cy.get('[data-cy="change-chart-type"]').click()
     cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
     cy.get('[data-cy="show-results-evaluation"]').click()
@@ -4772,14 +4795,8 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="live-quiz-cockpit-${this.data.liveQuizWordCloud.name}"]`,
       { timeout: 30000 }
     ).click()
-    cy.get('[data-cy="next-block-timeline"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="evaluation-results-cockpit"]')
-      .closest('a')
-      .invoke('attr', 'href')
-      .then((href) => {
-        cy.visit({ url: `${Cypress.env('URL_MANAGE')}${href}` })
-      })
+    openNextBlock()
+    visitEvaluationFromCockpit()
     cy.get('[data-cy="change-chart-type"]').click()
     cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
     cy.wait(1000)
