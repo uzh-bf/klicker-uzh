@@ -2400,6 +2400,68 @@ export default defineConfig({
           }
         },
 
+        async updateElementContentAndInstances({
+          elementName,
+          ownerId,
+          content,
+        }: {
+          elementName: string
+          ownerId: string
+          content: string
+        }) {
+          try {
+            const element = await prisma.element.findFirst({
+              where: { name: elementName, ownerId, isDeleted: false },
+              select: { id: true },
+            })
+
+            if (!element) {
+              throw new Error(`Element with name ${elementName} not found.`)
+            }
+
+            await prisma.element.update({
+              where: { id: element.id },
+              data: {
+                content,
+                version: { increment: 1 },
+              },
+            })
+
+            const instances = await prisma.elementInstance.findMany({
+              where: { elementId: element.id },
+              select: { id: true, elementData: true },
+            })
+
+            await Promise.all(
+              instances.map((instance) => {
+                const elementData =
+                  instance.elementData &&
+                  typeof instance.elementData === 'object' &&
+                  !Array.isArray(instance.elementData)
+                    ? instance.elementData
+                    : {}
+
+                return prisma.elementInstance.update({
+                  where: { id: instance.id },
+                  data: {
+                    elementData: {
+                      ...elementData,
+                      content,
+                    },
+                  },
+                })
+              })
+            )
+
+            return {
+              elementId: element.id,
+              updatedInstances: instances.length,
+            }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
         async createDeletedCourseActivities({
           courseName,
         }: {

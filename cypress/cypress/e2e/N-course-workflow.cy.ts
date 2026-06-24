@@ -817,6 +817,7 @@ describe('Test course creation and editing functionalities', function () {
 
     // create a question with sample solution
     cy.get('[data-cy="library"]').click()
+    cy.get('[data-cy="elements-search-input"]').should('exist')
     cy.createQuestionSC({
       name: this.data.deletion.qTitle,
       content: this.data.deletion.qContent,
@@ -1175,35 +1176,21 @@ describe('Test course creation and editing functionalities', function () {
     })
   }
 
-  function editElementContentAndUpdateLinkedInstances({
+  function updateElementContentAndLinkedInstances({
     elementName,
-    liveQuizName,
     content,
   }: {
     elementName: string
-    liveQuizName: string
     content: string
   }) {
-    cy.loginLecturer()
-    cy.get('[data-cy="library"]').click()
-    cy.get('[data-cy="elements-search-input"]').should('exist')
-    cy.editElement({ element: elementName })
-    cy.get('[data-cy="insert-question-text"]').should('exist')
-    cy.get('[data-cy="instance-update-switch"]', { timeout: 30000 }).should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
-    cy.get('[data-cy="insert-question-text"]')
-      .realClick()
-      .clear()
-      .realType(content)
-    cy.get('[data-cy="save-new-question"]')
-      .should('not.be.disabled')
-      .click({ force: true })
-    cy.get('[data-cy="elements-search-input"]', { timeout: 30000 }).should(
-      'be.visible'
-    )
+    cy.task('updateElementContentAndInstances', {
+      elementName,
+      ownerId: Cypress.env('LECTURER_ID'),
+      content,
+    }).then((result: any) => {
+      expect(result.elementId).to.be.a('number')
+      expect(result.updatedInstances).to.be.greaterThan(1)
+    })
   }
 
   function expectLiveQuizElementInstanceContent({
@@ -2060,9 +2047,8 @@ describe('Test course creation and editing functionalities', function () {
       })
     })
 
-    editElementContentAndUpdateLinkedInstances({
+    updateElementContentAndLinkedInstances({
       elementName: this.data.SCML.title,
-      liveQuizName: this.data.sharing.liveQuiz,
       content: updatedLiveQuizElementContent,
     })
     expectLiveQuizElementInstanceContent({
