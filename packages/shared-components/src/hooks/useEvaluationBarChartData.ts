@@ -1,7 +1,7 @@
 import type { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
-import { SMALL_BAR_THRESHOLD } from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
+import { SMALL_BAR_THRESHOLD } from '../constants'
 
 interface UseEvaluationBarChartDataProps {
   instance: ElementInstanceEvaluation

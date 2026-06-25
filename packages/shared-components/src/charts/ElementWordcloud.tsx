@@ -2,7 +2,6 @@ import {
   type ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import type { LayoutWord } from '@klicker-uzh/word-cloud'
 import { Select, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -13,6 +12,7 @@ import {
   eng as stopwordsEng,
 } from 'stopword'
 import { twMerge } from 'tailwind-merge'
+import { CHART_COLORS } from '../constants'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import FontSizeButtons from '../FontSizeButtons'
 import NativeD3WordCloud from './NativeD3WordCloud'

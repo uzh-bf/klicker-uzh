@@ -10,8 +10,8 @@
     "@klicker-uzh/word-cloud": "workspace:*",
     "@tanstack/react-table": "~8.20.5",
     "@types/js-cookie": "^3.0.6",
-    "@types/lodash": "^4.17.10",
-    "@types/node": "^20.19.11",
+    "@types/lodash": "^4.17.24",
+    "@types/node": "^24.10.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-tagcloud": "^2.3.2",
@@ -38,15 +38,15 @@
     "@klicker-uzh/word-cloud": "workspace:*",
     "@tailwindcss/postcss": "^4.1.11",
     "@uzh-bf/design-system": "4.1.6",
-    "dayjs": "^1.11.13",
-    "formik": "^2.4.6",
-    "js-cookie": "^3.0.5",
+    "dayjs": "^1.11.20",
+    "formik": "^2.4.9",
+    "js-cookie": "^3.0.7",
     "localforage": "^1.10.0",
-    "next": "^15.3.8",
+    "next": "^15.5.18",
     "next-intl": "^4.3.4",
     "react": "^19.1.2",
     "react-dom": "^19.1.2",
-    "react-select": "^5.10.1",
+    "react-select": "^5.10.2",
     "remeda": "^2.15.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
@@ -54,6 +54,9 @@
   },
   "scripts": {
     "check": "tsc --noEmit"
+  },
+  "engines": {
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

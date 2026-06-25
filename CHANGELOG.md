@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.63...v3.4.0-alpha.64) (2026-06-15)
+
+
+### Features
+
+* **packages/export:** add @klicker-uzh/export package for assessment course data export ([#5043](https://github.com/uzh-bf/klicker-uzh/issues/5043)) ([7d51542](https://github.com/uzh-bf/klicker-uzh/commit/7d5154210c33c11ac9f4f7c0bba6024e566cbaf8))
+
+
+### Bug Fixes
+
+* **chat:** route fallback models through chat completions ([#5121](https://github.com/uzh-bf/klicker-uzh/issues/5121)) ([b6ed437](https://github.com/uzh-bf/klicker-uzh/commit/b6ed43799a29428d5f9e6cbd0c0c298b04f99281))
+* **packages/graphql:** authenticate against every email candidate ([#5069](https://github.com/uzh-bf/klicker-uzh/issues/5069)) ([059d348](https://github.com/uzh-bf/klicker-uzh/commit/059d348dd6e1546008ba7ea3208f66b0ab73f996))
+
+
+### Refactors
+
+* add Playwright PoC workspace and draft PR CI workflow ([#5008](https://github.com/uzh-bf/klicker-uzh/issues/5008)) ([c638d9b](https://github.com/uzh-bf/klicker-uzh/commit/c638d9b393742b8d4507d0aea7c2bd38f287f137))
+
+
+### Documentation
+
+* slim AGENTS.md to a high-level overview + consolidate skills under .agents ([#5122](https://github.com/uzh-bf/klicker-uzh/issues/5122)) ([1f35b4a](https://github.com/uzh-bf/klicker-uzh/commit/1f35b4a85b263bd9f64f3ca1622daea5cba88128))
+
+## [3.4.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.61...v3.4.0-alpha.62) (2026-05-05)
+
+
+### Features
+
+* **chat:** make reasoning effort registry config-driven ([bb52d44](https://github.com/uzh-bf/klicker-uzh/commit/bb52d4449fe21fa828b38aa7410982e77d0eced0))
+
+## [3.4.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.60...v3.4.0-alpha.61) (2026-05-03)
+
+
+### Bug Fixes
+
+* **apps/chat:** stabilize image attachments and login redirects ([#5079](https://github.com/uzh-bf/klicker-uzh/issues/5079)) ([76c36ff](https://github.com/uzh-bf/klicker-uzh/commit/76c36ff6a63ab30bd8e6ab57d000b4807e063962))
+* **deploy:** enable chat image attachments in model registry ([bc31b07](https://github.com/uzh-bf/klicker-uzh/commit/bc31b079c9941a6a783dd3ace43a638a007e6018))
+
+## [3.4.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.59...v3.4.0-alpha.60) (2026-04-21)
+
+
+### Features
+
+* **chat:** add image attachment support ([#5045](https://github.com/uzh-bf/klicker-uzh/issues/5045)) ([9e90bf0](https://github.com/uzh-bf/klicker-uzh/commit/9e90bf0d2d4ab75dc088d7d508df983158b816fb))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** pin embedded PQ buttons with sticky positioning ([#5071](https://github.com/uzh-bf/klicker-uzh/issues/5071)) ([0cf06a4](https://github.com/uzh-bf/klicker-uzh/commit/0cf06a490a3a8f47567c537b21d00ff6ff474460))
+
 ## [3.4.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.58...v3.4.0-alpha.59) (2026-04-15)
 
 

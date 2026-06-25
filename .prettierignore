@@ -1,4 +1,6 @@
 node_modules/
+.pnpm-store/
+**/.venv/
 .next/
 .turbo/
 .vercel/
@@ -22,6 +24,7 @@ client.json
 server.json
 
 *.sql
+*.prisma
 
 CHANGELOG.md
 

@@ -168,6 +168,10 @@ chat:
 
   openai:
     baseUrl: ''
+    storeResponses: false
+
+  telemetry:
+    enabled: true
 
   mcp:
     key: ''
