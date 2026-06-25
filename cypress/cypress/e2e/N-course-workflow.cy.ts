@@ -13,6 +13,21 @@ describe('Test course creation and editing functionalities', function () {
 
   // Fail-fast handled globally in support/e2e.ts
 
+  function openManageActivities() {
+    cy.visit(`${Cypress.env('URL_MANAGE').replace(/\/$/, '')}/activities`)
+  }
+
+  function cleanupAdminDuplicatedCourse({ data }: { data: any }) {
+    cy.task('deleteCourseWithActivitiesByName', {
+      courseName: `${data.sharing.course} Admin Copy`,
+      ownerId: Cypress.env('LECTURER_INST4_ID'),
+    })
+    cy.task('deleteLiveQuizByNameAndOwner', {
+      name: data.sharing.liveQuiz,
+      ownerId: Cypress.env('LECTURER_INST4_ID'),
+    })
+  }
+
   it('CLEANUP', () => {
     cy.cleanup()
     cy.seed()
@@ -917,7 +932,7 @@ describe('Test course creation and editing functionalities', function () {
     ).should('not.exist')
 
     // check that the live quiz has been removed from the course
-    cy.get('[data-cy="activities"]').click()
+    openManageActivities()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).should('exist')
@@ -932,7 +947,7 @@ describe('Test course creation and editing functionalities', function () {
 
   it('Cleanup: Delete the live quiz that is not assigned to the course anymore', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
+    openManageActivities()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).should('exist')
@@ -1363,7 +1378,7 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    cy.get('[data-cy="activities"]').click()
+    openManageActivities()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )
@@ -1453,7 +1468,7 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    cy.get('[data-cy="activities"]').click()
+    openManageActivities()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )
@@ -1549,7 +1564,7 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    cy.get('[data-cy="activities"]').click()
+    openManageActivities()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )
@@ -1680,7 +1695,7 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    cy.get('[data-cy="activities"]').click()
+    openManageActivities()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )
@@ -1997,7 +2012,6 @@ describe('Test course creation and editing functionalities', function () {
 
   it('Duplicate the course as owner and verify copied activities, clean state, and isolated same-name live quiz results', function () {
     const copyName = `${this.data.sharing.course} Copy`
-    const updatedLiveQuizElementContent = `Updated sharing live quiz question content ${Date.now()}`
 
     cy.task('deleteCourseByName', {
       courseName: copyName,
@@ -2045,21 +2059,6 @@ describe('Test course creation and editing functionalities', function () {
           data: this.data,
         })
       })
-    })
-
-    updateElementContentAndLinkedInstances({
-      elementName: this.data.SCML.title,
-      content: updatedLiveQuizElementContent,
-    })
-    expectLiveQuizElementInstanceContent({
-      courseName: this.data.sharing.course,
-      liveQuizName: this.data.sharing.liveQuiz,
-      content: updatedLiveQuizElementContent,
-    })
-    expectLiveQuizElementInstanceContent({
-      courseName: copyName,
-      liveQuizName: this.data.sharing.liveQuiz,
-      content: updatedLiveQuizElementContent,
     })
 
     authenticateStudent()
@@ -2411,10 +2410,7 @@ describe('Test course creation and editing functionalities', function () {
   it('Verify that an ADMIN user can duplicate selected course activities', function () {
     const copyName = `${this.data.sharing.course} Admin Copy`
 
-    cy.task('deleteCourseByName', {
-      courseName: copyName,
-      ownerId: Cypress.env('LECTURER_INST4_ID'),
-    })
+    cleanupAdminDuplicatedCourse({ data: this.data })
 
     cy.loginInstitutionalCatalyst4()
     cy.get('[data-cy="courses"]').click()
@@ -2444,17 +2440,11 @@ describe('Test course creation and editing functionalities', function () {
       microLearnings: 0,
       groupActivities: 0,
     })
-    cy.task('deleteCourseByName', {
-      courseName: copyName,
-      ownerId: Cypress.env('LECTURER_INST4_ID'),
-    })
+    cleanupAdminDuplicatedCourse({ data: this.data })
   })
 
   it('Change the course ADMIN permission to WRITE level for user pro5 (without propagation)', function () {
-    cy.task('deleteCourseByName', {
-      courseName: `${this.data.sharing.course} Admin Copy`,
-      ownerId: Cypress.env('LECTURER_INST4_ID'),
-    })
+    cleanupAdminDuplicatedCourse({ data: this.data })
 
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -3052,6 +3042,26 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsOWNER)
+  })
+
+  it('Modify one referenced element and verify it updates both same-name live quizzes', function () {
+    const copyName = `${this.data.sharing.course} Copy`
+    const updatedLiveQuizElementContent = `Updated sharing live quiz question content ${Date.now()}`
+
+    updateElementContentAndLinkedInstances({
+      elementName: this.data.SCML.title,
+      content: updatedLiveQuizElementContent,
+    })
+    expectLiveQuizElementInstanceContent({
+      courseName: this.data.sharing.course,
+      liveQuizName: this.data.sharing.liveQuiz,
+      content: updatedLiveQuizElementContent,
+    })
+    expectLiveQuizElementInstanceContent({
+      courseName: copyName,
+      liveQuizName: this.data.sharing.liveQuiz,
+      content: updatedLiveQuizElementContent,
+    })
   })
   // #endregion
 })

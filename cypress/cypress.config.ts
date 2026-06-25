@@ -2627,6 +2627,66 @@ export default defineConfig({
           }
         },
 
+        async deleteCourseWithActivitiesByName({
+          courseName,
+          ownerId,
+        }: {
+          courseName: string
+          ownerId?: string
+        }) {
+          try {
+            const courses = await prisma.course.findMany({
+              where: { name: courseName, ownerId },
+              select: { id: true },
+            })
+            const courseIds = courses.map((course) => course.id)
+
+            if (courseIds.length === 0) {
+              return true
+            }
+
+            await prisma.$transaction([
+              prisma.groupActivity.deleteMany({
+                where: { courseId: { in: courseIds } },
+              }),
+              prisma.microLearning.deleteMany({
+                where: { courseId: { in: courseIds } },
+              }),
+              prisma.practiceQuiz.deleteMany({
+                where: { courseId: { in: courseIds } },
+              }),
+              prisma.liveQuiz.deleteMany({
+                where: { courseId: { in: courseIds } },
+              }),
+              prisma.course.deleteMany({
+                where: { id: { in: courseIds } },
+              }),
+            ])
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
+        async deleteLiveQuizByNameAndOwner({
+          name,
+          ownerId,
+        }: {
+          name: string
+          ownerId: string
+        }) {
+          try {
+            await prisma.liveQuiz.deleteMany({
+              where: { name, ownerId },
+            })
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
         async getCourseDuplicationSummary({
           courseName,
           ownerId,
