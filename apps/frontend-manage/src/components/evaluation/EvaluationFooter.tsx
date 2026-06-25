@@ -21,7 +21,6 @@ import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ActiveStackType } from './ActivityEvaluation'
-// import { WordCloudFilter } from './filter/WordCloudFilter'
 import { TextSizeType } from './textSizes'
 
 interface EvaluationFooterProps {
