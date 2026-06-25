@@ -106,12 +106,11 @@ function getWordFrequencies({
         frequencies[sentence] = (frequencies[sentence] || 0) + response.count
       }
     } else {
-      const words = response.value
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9äöüß\s'-]/g, '')
-        .split(/\s+/)
-      for (const word of words) {
+      const tokens = response.value.trim().toLowerCase().split(/\s+/)
+      for (const token of tokens) {
+        if (token.length === 0) continue
+        const isNumeric = /^[+-]?\d+(?:[.,]\d+)*%?$/.test(token)
+        const word = isNumeric ? token : token.replace(/[^a-z0-9äöüß'-]/g, '')
         if (word.length === 0) continue
         const filtered =
           stopwords.length > 0 ? removeStopwords([word], stopwords)[0] : word
