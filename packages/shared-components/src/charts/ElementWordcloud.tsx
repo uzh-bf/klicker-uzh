@@ -333,15 +333,18 @@ function ElementWordCloud({
                   {t('manage.evaluation.wordCloudFilterMode')}
                 </span>
                 <Select
+                  data={{ cy: 'word-cloud-mode-select' }}
                   value={splitMode}
                   items={[
                     {
                       value: WordCloudSplitMode.WORDS,
                       label: t('manage.evaluation.wordCloudModeWords'),
+                      data: { cy: 'word-cloud-mode-select-words' },
                     },
                     {
                       value: WordCloudSplitMode.SENTENCES,
                       label: t('manage.evaluation.wordCloudModeSentences'),
+                      data: { cy: 'word-cloud-mode-select-sentences' },
                     },
                   ]}
                   onChange={(val) => setSplitMode(val as WordCloudSplitMode)}
@@ -364,14 +367,24 @@ function ElementWordCloud({
                     </span>
                   </Tooltip>
                   <Select
+                    data={{ cy: 'word-cloud-language-select' }}
                     value={language}
                     items={[
                       {
                         value: WordCloudLanguage.NONE,
                         label: t('manage.evaluation.wordCloudLanguageNone'),
+                        data: { cy: 'word-cloud-language-select-none' },
                       },
-                      { value: WordCloudLanguage.EN, label: 'EN' },
-                      { value: WordCloudLanguage.DE, label: 'DE' },
+                      {
+                        value: WordCloudLanguage.EN,
+                        label: 'EN',
+                        data: { cy: 'word-cloud-language-select-en' },
+                      },
+                      {
+                        value: WordCloudLanguage.DE,
+                        label: 'DE',
+                        data: { cy: 'word-cloud-language-select-de' },
+                      },
                     ]}
                     onChange={(val) => setLanguage(val as WordCloudLanguage)}
                     className={{ trigger: 'w-28' }}

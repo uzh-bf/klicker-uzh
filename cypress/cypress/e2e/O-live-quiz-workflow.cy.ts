@@ -4804,6 +4804,46 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="word-cloud"]').should('contain', '50')
     cy.get('[data-cy="word-cloud-language-filter"]').should('not.exist')
     cy.get('[data-cy="word-cloud-display-limit"]').should('not.exist')
+
+    // check for correct behaviour of filters
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT4.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="word-cloud"]').should('contain', 'hello')
+    cy.get('[data-cy="word-cloud"]').should('contain', '42')
+    cy.get('[data-cy="word-cloud"]').should('not.contain', 'of')
+
+    cy.selectOption('[data-cy="word-cloud-language-select"]', 'none')
+    cy.wait(500)
+    cy.get('[data-cy="word-cloud"]').should('contain', 'of')
+
+    cy.selectOption('[data-cy="word-cloud-mode-select"]', 'sentences')
+    cy.wait(500)
+    cy.get('[data-cy="word-cloud"]').should('contain', 'of')
+    cy.get('[data-cy="word-cloud-language-filter"]').should('not.exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('not.exist')
+
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT5.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="word-cloud"]').should('contain', 'hallo')
+    cy.get('[data-cy="word-cloud"]').should('contain', '42')
+    cy.get('[data-cy="word-cloud"]').should('contain', 'von')
+
+    cy.selectOption('[data-cy="word-cloud-language-select"]', 'de')
+    cy.wait(500)
+    cy.get('[data-cy="word-cloud"]').should('contain', 'hallo')
+    cy.get('[data-cy="word-cloud"]').should('not.contain', 'von')
   })
   // #endregion
 
