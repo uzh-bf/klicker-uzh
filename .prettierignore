@@ -11,6 +11,7 @@ email/
 .claude/
 .serena/
 project/
+.agents/skills/**/.agnix.toml
 
 # Symlinks
 .github/skills
