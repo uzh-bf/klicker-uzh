@@ -28,6 +28,13 @@ Use this skill when you need to:
 
 Run from repo root.
 
+Start Cypress dependencies and the Cypress app stack first:
+
+```bash
+./_run_app_dependencies.sh test
+pnpm run dev:test
+```
+
 ```bash
 # GUI
 pnpm --filter @klicker-uzh/cypress test
