@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { expect, type Locator, type Page } from '@playwright/test'
 import * as jose from 'jose'
+import { createHash } from 'node:crypto'
 import {
   cleanupDatabase,
   getPrisma,
@@ -1226,6 +1227,104 @@ export async function runTask(name: string, args: any = {}) {
       where: { id: activity.id },
       data: { status: args.status },
     })
+    return true
+  }
+  if (name === 'seedWordCloudLiveQuizResponses') {
+    const { ElementBlockStatus, ElementType } = await import(
+      '@klicker-uzh/prisma/client'
+    )
+    const liveQuiz = await prisma.liveQuiz.findFirstOrThrow({
+      where: { name: args.quizName, isDeleted: false },
+      include: {
+        blocks: {
+          include: { elements: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+    const block = liveQuiz.blocks[0]
+
+    if (!block) {
+      throw new Error(`Live quiz ${args.quizName} has no blocks`)
+    }
+
+    const instances = liveQuiz.blocks.flatMap((block) => block.elements)
+    const getInstance = (
+      title: string,
+      type: (typeof ElementType)[keyof typeof ElementType]
+    ) => {
+      const instance = instances.find(
+        (element) =>
+          element.elementType === type &&
+          typeof element.elementData === 'object' &&
+          element.elementData !== null &&
+          'name' in element.elementData &&
+          element.elementData.name === title
+      )
+
+      if (!instance) {
+        throw new Error(
+          `Instance ${title} (${type}) not found in live quiz ${args.quizName}`
+        )
+      }
+
+      return instance
+    }
+    const openResults = (value: string, normalize: boolean) => {
+      const normalizedValue = normalize
+        ? value.trim().toLowerCase()
+        : String(parseFloat(value))
+      const hash = createHash('md5').update(normalizedValue).digest('hex')
+
+      return {
+        responses: {
+          [hash]: {
+            value: normalizedValue,
+            count: 1,
+          },
+        },
+        total: 1,
+      }
+    }
+
+    await prisma.$transaction([
+      prisma.elementInstance.update({
+        where: {
+          id: getInstance(args.numericalTitle, ElementType.NUMERICAL).id,
+        },
+        data: {
+          anonymousResults: openResults(args.numericalAnswer, false),
+        },
+      }),
+      prisma.elementInstance.update({
+        where: {
+          id: getInstance(args.freeTextTitle, ElementType.FREE_TEXT).id,
+        },
+        data: {
+          anonymousResults: openResults(args.freeTextAnswer, true),
+        },
+      }),
+      prisma.elementInstance.update({
+        where: {
+          id: getInstance(args.secondFreeTextTitle, ElementType.FREE_TEXT).id,
+        },
+        data: {
+          anonymousResults: openResults(args.secondFreeTextAnswer, true),
+        },
+      }),
+      prisma.elementBlock.update({
+        where: { id: block.id },
+        data: {
+          closedAt: new Date(),
+          status: ElementBlockStatus.EXECUTED,
+        },
+      }),
+      prisma.liveQuiz.update({
+        where: { id: liveQuiz.id },
+        data: { activeBlockId: null },
+      }),
+    ])
+
     return true
   }
   if (name === 'updateLecturerPreviewFlags') {

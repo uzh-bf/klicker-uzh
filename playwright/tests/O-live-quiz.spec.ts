@@ -169,6 +169,54 @@ async function openActivitiesListForQuiz(page: Page, quizName: string) {
   )
 }
 
+async function openNextBlockFromCockpit(page: Page) {
+  const nextBlock = page.getByTestId('next-block-timeline')
+  await expect(nextBlock).toBeVisible({ timeout: 30000 })
+  await expect(nextBlock).toBeEnabled()
+  await nextBlock.click()
+  await expect(nextBlock).toBeVisible({ timeout: 30000 })
+}
+
+async function visitEvaluationFromCockpit(page: Page) {
+  const evaluationLink = page
+    .getByTestId('evaluation-results-cockpit')
+    .locator('xpath=ancestor::a[1]')
+  await expect(evaluationLink).toBeVisible({ timeout: 30000 })
+
+  const href = await evaluationLink.getAttribute('href')
+  if (!href || !href.includes('/evaluation')) {
+    throw new Error(`Unexpected evaluation link: ${href}`)
+  }
+
+  await gotoCommit(
+    page,
+    href.startsWith('http') ? href : `${env('URL_MANAGE')}${href}`
+  )
+  await expect(page.getByTestId('change-chart-type')).toBeVisible({
+    timeout: 30000,
+  })
+}
+
+async function selectWordCloudChart(page: Page) {
+  await page.getByTestId('change-chart-type').click()
+  await page
+    .getByTestId('change-chart-type-manage.evaluation.wordCloud')
+    .click()
+  await showEvaluationResultsIfAvailable(page)
+  await expect(page.getByTestId('word-cloud')).toBeVisible({ timeout: 30000 })
+}
+
+async function selectEvaluationInstance(page: Page, title: string) {
+  await page.getByTestId('evaluate-question-select').click()
+  await page.getByTestId(`evaluation-select-instance-${title}`).click()
+  await expect(page.getByTestId('evaluate-question-select')).toContainText(
+    title
+  )
+}
+
+const noWordCloudResponsesMessage =
+  'No participants have submitted responses for this question'
+
 test.describe.serial('Different live-quiz workflows', () => {
   async function snapshotWebStorage(page: Page) {
     return page.evaluate(() => ({
@@ -6459,4 +6507,138 @@ test.describe.serial('Different live-quiz workflows', () => {
     await loginLecturer(page)
     await endPinProtectedLiveQuizzes(data)
   })
+
+  // ! Part 8: Word Cloud
+  // #region
+  test('Test word cloud display', async ({ page: testPage }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+
+    await createQuestionNR(page, {
+      name: data.NR4.title,
+      content: data.NR4.content,
+      explanation: data.NR4.explanation,
+      ...data.NR4.options,
+      userId: env('LECTURER_ID'),
+    })
+    await createQuestionFT(page, {
+      name: data.FT4.title,
+      content: data.FT4.content,
+      explanation: data.FT4.explanation,
+      ...data.FT4.options,
+      userId: env('LECTURER_ID'),
+    })
+    await createQuestionFT(page, {
+      name: data.FT5.title,
+      content: data.FT5.content,
+      explanation: data.FT5.explanation,
+      ...data.FT5.options,
+      userId: env('LECTURER_ID'),
+    })
+
+    await createLiveQuiz(page, {
+      name: data.liveQuizWordCloud.name,
+      displayName: data.liveQuizWordCloud.displayName,
+      courseName: data.liveQuizWordCloud.course,
+      blocks: [
+        {
+          elements: [data.NR4.title, data.FT4.title, data.FT5.title],
+        },
+      ],
+    })
+
+    await page.getByTestId('quick-start').click()
+    await openNextBlockFromCockpit(page)
+    await visitEvaluationFromCockpit(page)
+    await selectWordCloudChart(page)
+
+    await expect(page.getByTestId('word-cloud')).toContainText(
+      noWordCloudResponsesMessage
+    )
+    await expect(page.getByTestId('word-cloud-language-filter')).toBeHidden()
+    await expect(page.getByTestId('word-cloud-display-limit')).toBeHidden()
+
+    await selectEvaluationInstance(page, data.FT4.title)
+    await selectWordCloudChart(page)
+    await expect(page.getByTestId('word-cloud')).toContainText(
+      noWordCloudResponsesMessage
+    )
+    await expect(page.getByTestId('word-cloud-language-filter')).toBeVisible()
+    await expect(page.getByTestId('word-cloud-display-limit')).toBeVisible()
+
+    await selectEvaluationInstance(page, data.FT5.title)
+    await selectWordCloudChart(page)
+    await expect(page.getByTestId('word-cloud')).toContainText(
+      noWordCloudResponsesMessage
+    )
+    await expect(page.getByTestId('word-cloud-language-filter')).toBeVisible()
+    await expect(page.getByTestId('word-cloud-display-limit')).toBeVisible()
+  })
+
+  test('Seed live quiz answers for word cloud display', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await runTask('seedWordCloudLiveQuizResponses', {
+      freeTextAnswer: data.FT4.answer,
+      freeTextTitle: data.FT4.title,
+      numericalAnswer: data.NR4.answer,
+      numericalTitle: data.NR4.title,
+      quizName: data.liveQuizWordCloud.name,
+      secondFreeTextAnswer: data.FT5.answer,
+      secondFreeTextTitle: data.FT5.title,
+    })
+  })
+
+  test('Test word cloud display after receiving answers', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await openActivitiesListForQuiz(page, data.liveQuizWordCloud.name)
+    await page
+      .getByTestId(`live-quiz-cockpit-${data.liveQuizWordCloud.name}`)
+      .click()
+    await openNextBlockFromCockpit(page)
+    await visitEvaluationFromCockpit(page)
+    await selectWordCloudChart(page)
+
+    await expect(page.getByTestId('word-cloud')).toContainText('50')
+    await expect(page.getByTestId('word-cloud-language-filter')).toBeHidden()
+    await expect(page.getByTestId('word-cloud-display-limit')).toBeHidden()
+
+    await selectEvaluationInstance(page, data.FT4.title)
+    await selectWordCloudChart(page)
+    await expect(page.getByTestId('word-cloud')).toContainText('hello')
+    await expect(page.getByTestId('word-cloud')).toContainText('42')
+    await expect(page.getByTestId('word-cloud')).not.toContainText('of')
+
+    await selectOption(page, '[data-cy="word-cloud-language-select"]', 'none')
+    await expect(page.getByTestId('word-cloud')).toContainText('of')
+
+    await selectOption(page, '[data-cy="word-cloud-mode-select"]', 'sentences')
+    await expect(page.getByTestId('word-cloud')).toContainText('of')
+    await expect(page.getByTestId('word-cloud-language-filter')).toBeHidden()
+    await expect(page.getByTestId('word-cloud-display-limit')).toBeHidden()
+
+    await selectEvaluationInstance(page, data.FT5.title)
+    await selectWordCloudChart(page)
+    await expect(page.getByTestId('word-cloud')).toContainText('hallo')
+    await expect(page.getByTestId('word-cloud')).toContainText('42')
+    await expect(page.getByTestId('word-cloud')).toContainText('von')
+
+    await selectOption(page, '[data-cy="word-cloud-language-select"]', 'de')
+    await expect(page.getByTestId('word-cloud')).toContainText('hallo')
+    await expect(page.getByTestId('word-cloud')).not.toContainText('von')
+  })
+  // #endregion
 })

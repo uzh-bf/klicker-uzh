@@ -123,6 +123,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -134,6 +135,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -145,6 +147,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -156,6 +159,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
