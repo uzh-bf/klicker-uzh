@@ -401,6 +401,8 @@ export default {
       unknownUser: 'Unbekannter Nutzer',
       deletedUser: 'Gelöschter Nutzer',
       correction: 'Korrektur',
+      filter: 'Filter',
+      listExamples: 'z.B.',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -2591,6 +2593,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       displayedWindow: 'Displayed running window: {window} times interval',
       table: 'Tabelle',
       wordCloud: 'Word Cloud',
+      wordCloudFilterMode: 'Filtermodus',
+      wordCloudLanguageFilter: 'Sprachfilter',
+      wordCloudLanguageFilterTooltip:
+        'Wenn eine Sprache ausgewählt ist, werden Stoppwörter dieser Sprache (z. B. "und", "der") herausgefiltert. Deaktivieren, um alle Wörter anzuzeigen.',
+      wordCloudLanguageNone: 'Deaktiviert',
+      wordCloudDisplayLimit: 'Anzeigelimit',
+      wordCloudDisplayLimitAll: 'Alle',
+      wordCloudModeWords: 'Einzelne Wörter',
+      wordCloudOmittedWords:
+        '{count} {count, plural, one {Wort} other {Wörter}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
+      wordCloudOmittedSentences:
+        '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
+      wordCloudModeSentences: 'Vollständige Antworten',
+      wordCloudNoResponses:
+        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert 😔.',
+      wordCloudNoResponsesFiltered:
+        'Keine Antworten entsprechen den aktuellen Filtereinstellungen 🧐.',
+      wordCloudNoResponsesDisplayed:
+        'Keine Antworten werden aufgrund der aktuellen Filtereinstellungen oder der angegebenen Schriftgrößen angezeigt 😰.',
+      numberOfVotes: 'Häufigkeit: {number}',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
       scatterPlot: 'Streudiagramm',

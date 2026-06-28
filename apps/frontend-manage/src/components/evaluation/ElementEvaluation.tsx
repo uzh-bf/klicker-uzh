@@ -214,6 +214,7 @@ function ElementEvaluation({
             isAssessmentEnabled={isAssessmentEnabled}
             pinCode={pinCode}
             type={type}
+            // TODO: word cloud for case study?
           />
         )}
 
@@ -233,6 +234,7 @@ function ElementEvaluation({
             key={currentInstance.id}
             evaluation={currentInstance}
             textSize={textSize}
+            // TODO: word cloud for content?
           />
         )}
       </div>

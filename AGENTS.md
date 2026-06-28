@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-- **Monorepo**: pnpm 10.x + Turborepo, Node.js 20 (Volta-pinned)
+- **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned)
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
@@ -21,6 +21,8 @@ pnpm run check:all            # check + format:check + lint + syncpack
 pnpm run dev                  # full dev (requires Infisical secrets)
 pnpm run dev:raw              # dev without secret injection
 pnpm run dev:test             # dev in test/cypress mode
+pnpm run dev:playwright:raw   # dev in Playwright/local-port mode without Infisical
+pnpm run test:run:playwright  # run Playwright E2E tests
 ```
 
 ### Workspace-filtered
@@ -53,6 +55,8 @@ pnpm --filter @klicker-uzh/graphql dev        # watch mode (codegen + rollup)
 ```bash
 pnpm run test:run             # vitest across all packages
 pnpm --filter @klicker-uzh/graphql test       # single package
+pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+pnpm --filter @klicker-uzh/playwright test:run -- --project=chromium tests/A-login.spec.ts
 ```
 
 ## Repo Layout
@@ -87,6 +91,7 @@ packages/
   next-config/             # Shared Next.js config
   transactional/           # Transactional email templates
 cypress/                   # E2E tests
+playwright/                # Playwright E2E tests
 ```
 
 ## Tech Stack
@@ -102,7 +107,7 @@ cypress/                   # E2E tests
 | Workflow orchestration | Hatchet (workers for async processing)                |
 | Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
 | Build                  | Turborepo + Rollup                                    |
-| Test                   | Vitest (unit), Cypress (E2E)                          |
+| Test                   | Vitest (unit), Cypress + Playwright (E2E)             |
 | Formatting             | Prettier (no semi, single quotes, trailing comma es5) |
 
 ## GraphQL Workflow
@@ -122,6 +127,19 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 ## Local Dev Setup
 
 Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/hosts` entries + mkcert certs; Docker Compose runs Postgres, Redis, Traefik, Hatchet-lite). Without Traefik, hit `http://localhost:<port>` directly — per-app ports are in [Repo Layout](#repo-layout). The `*.klicker.com` domains better mirror production cookie/domain behavior.
+
+### Local Playwright E2E
+
+Use Playwright for local E2E iteration when possible. Agent-friendly setup:
+
+```bash
+KLICKER_NONINTERACTIVE=1 KLICKER_DEPENDENCIES_DETACH=1 ./_run_app_dependencies.sh playwright
+volta run pnpm run dev:playwright:raw
+volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+volta run pnpm --filter @klicker-uzh/playwright test:run:raw -- --project=chromium tests/A-login.spec.ts
+```
+
+`dev:playwright:raw` runs `build:test` before serving so `apps/backend-docker/instrumented` is fresh and includes current tRPC routes. In Codex/agent shells, prefer Volta's pinned pnpm (`volta run pnpm` or `/Users/roland/.volta/bin/pnpm`) because the ambient pnpm can use a different version and recreate `node_modules`. `KLICKER_NONINTERACTIVE=1` skips optional prompts; `KLICKER_DEPENDENCIES_DETACH=1` leaves Docker services running and returns. Stop Docker dependencies with `./_down.sh`.
 
 ### Test credentials (local seeded DB only)
 
@@ -166,5 +184,6 @@ Non-obvious patterns, per-area gotchas, and architectural decisions are collecte
 Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync.
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
+- **`klicker-playwright-e2e`** — Playwright E2E authoring, Cypress parity, local agentic test loop, and CI triage ([SKILL.md](.agents/skills/klicker-playwright-e2e/SKILL.md)).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
 - **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).

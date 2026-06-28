@@ -22,6 +22,7 @@ overrides:
 
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
+  - '@parcel/watcher'
   - keytar
 
 onlyBuiltDependencies:
@@ -45,6 +46,7 @@ allowBuilds:
   '@apollo/protobufjs': true
   '@hatchet-dev/typescript-sdk': true
   '@microsoft/teamsapp-cli': false
+  '@parcel/watcher': false
   '@prisma/client': true
   '@prisma/engines': true
   '@swc/core': true
