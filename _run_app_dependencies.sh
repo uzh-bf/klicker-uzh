@@ -66,18 +66,22 @@ cleanup() {
 trap cleanup INT TERM HUP EXIT
 
 ## Determine mode from first argument
-# Modes: local (default) | cypress (when arg is 'test' or 'cypress')
+# Modes:
+# - local (default): normal dev and Playwright dependencies, no forced DB reset
+# - cypress: Cypress dependencies, including Cypress Hatchet token + forced DB reset
 MODE="local"
 case "${1:-}" in
-    test|cypress)
-        MODE="cypress"
-        ;;
-    ""|local)
-        MODE="local"
-        ;;
-    *)
-        MODE="local"
-        ;;
+	test|cypress)
+		MODE="cypress"
+		;;
+	""|local|dev|playwright)
+		MODE="local"
+		;;
+	*)
+		echo "Unknown mode: $1" >&2
+		echo "Usage: ./_run_app_dependencies.sh [local|dev|playwright|test|cypress]" >&2
+		exit 1
+		;;
 esac
 
 ## Resolve platform and proxy
@@ -112,20 +116,26 @@ fi
 
 # create hatchet client token (switch script for cypress/test mode)
 if [ "$MODE" = "cypress" ]; then
-    echo "Using cypress hatchet token script"
-    ./util/_create_hatchet_token_cypress.sh
+	echo "Using cypress hatchet token script"
+	./util/_create_hatchet_token_cypress.sh
 
 	# reset prisma database after tokens are created
 	echo "Resetting Prisma database (pnpm run prisma:reset)"
 	pnpm run prisma:reset -f || {
-			echo "Prisma reset failed" >&2
-			exit 1
+		echo "Prisma reset failed" >&2
+		exit 1
 	}
 else
-    echo "Using local hatchet token script"
-    ./util/_create_hatchet_token.sh
+	echo "Using local hatchet token script"
+	./util/_create_hatchet_token.sh
 
-    if confirm "Run Prisma database setup (pnpm run prisma:setup)?"; then
+	echo "Applying Prisma schema without reset (pnpm run --filter @klicker-uzh/prisma prisma:push)"
+	pnpm run --filter @klicker-uzh/prisma prisma:push || {
+		echo "Prisma push failed" >&2
+		exit 1
+	}
+
+	if confirm "Run full Prisma database setup (destructive reset + seed via pnpm run prisma:setup)?"; then
 		# prepare prisma database after tokens are created
 		echo "Preparing Prisma database (pnpm run prisma:setup)"
 		# prisma:setup may prompt for a destructive reset; if the user declines,
@@ -136,13 +146,10 @@ else
 			SETUP_STATUS=$?
 			echo "Prisma setup exited with status $SETUP_STATUS."
 			echo "Assuming reset/seed were declined; preserving existing data and continuing."
-			echo "Applying schema without reset (pnpm run --filter @klicker-uzh/prisma prisma:push)"
-			# Try a non-destructive push to keep the schema in sync; do not fail the script if this also fails.
-			pnpm run --filter @klicker-uzh/prisma prisma:push || echo "Prisma push failed; you may need to run migrations manually."
 		fi
-    else
+	else
 		echo "Skipping Prisma database setup"
-    fi
+	fi
 fi
 
 docker compose logs -f
