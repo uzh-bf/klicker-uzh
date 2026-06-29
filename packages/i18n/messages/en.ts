@@ -399,6 +399,8 @@ export default {
       unknownUser: 'Unknown User',
       deletedUser: 'Deleted User',
       correction: 'Correction',
+      filter: 'Filter',
+      listExamples: 'e.g.',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -2551,6 +2553,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       displayedWindow: 'Displayed running window: {window} times interval',
       table: 'Table',
       wordCloud: 'Word Cloud',
+      wordCloudFilterMode: 'Filter Mode',
+      wordCloudLanguageFilter: 'Language Filter',
+      wordCloudLanguageFilterTooltip:
+        'When a language is selected, stopwords for that language (e.g. "the", "and") are filtered out. Disable the filter to show all words.',
+      wordCloudLanguageNone: 'Disabled',
+      wordCloudDisplayLimit: 'Display limit',
+      wordCloudDisplayLimitAll: 'All',
+      wordCloudModeWords: 'Individual words',
+      wordCloudOmittedWords:
+        '{count} {count, plural, one {word} other {words}} could not be displayed due to the display limit or space constraints.',
+      wordCloudOmittedSentences:
+        '{count} {count, plural, one {response} other {responses}} could not be displayed due to the display limit or space constraints.',
+      wordCloudModeSentences: 'Full responses',
+      wordCloudNoResponses:
+        'No participants have submitted responses for this question 😔.',
+      wordCloudNoResponsesFiltered:
+        'No responses match the current filter settings 🧐.',
+      wordCloudNoResponsesDisplayed:
+        'No responses are displayed due to the current filter settings or the provided font sizes 😰.',
+      numberOfVotes: 'Frequency: {number}',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
       scatterPlot: 'Scatter Plot',

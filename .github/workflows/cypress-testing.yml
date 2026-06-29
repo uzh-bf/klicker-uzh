@@ -13,6 +13,8 @@ on:
       - packages/**
       - cypress/**
       - .github/workflows/cypress-testing.yml
+      - util/_with_local_test_origins.sh
+      - package.json
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}

@@ -49,6 +49,8 @@ jobs:
           pnpm run build
           cd ../hatchet
           pnpm run build
+          cd ../word-cloud
+          pnpm run build
 
       - name: Check the typescript types of all packages and apps
         shell: bash

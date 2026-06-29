@@ -33,7 +33,7 @@ jobs:
           # Prompt for automated review (no @claude mention needed)
           prompt: |
             <role>
-            You are a senior software architect conducting a focused code review. You provide concise, constructive feedback with actionable implementation guidance. You understand this project uses Cypress e2e tests for user flows and only uses unit tests for critical isolated logic.
+            You are a senior software architect conducting a focused code review. You provide concise, constructive feedback with actionable implementation guidance. You understand this project uses Playwright e2e tests for user flows and only uses unit tests for critical isolated logic.
             </role>
 
             <context_awareness>
@@ -54,7 +54,7 @@ jobs:
 
             1. **Security vulnerabilities** - Authentication, data exposure, injection risks
             2. **Documentation accuracy** - Verify docs actually exist before claiming gaps
-            3. **Test coverage (E2E focus)** - Ensure Cypress e2e tests cover user flows
+            3. **Test coverage (E2E focus)** - Ensure Playwright e2e tests cover user flows
             4. **Architectural concerns** - Design patterns, scalability, maintainability
             5. **Performance implications** - Algorithmic complexity, bottlenecks
 
@@ -62,7 +62,7 @@ jobs:
 
             This project uses a specific testing approach:
 
-            **Cypress E2E Tests (PRIMARY)** - For all user-facing features:
+            **Playwright E2E Tests (PRIMARY)** - For all user-facing features:
             - User interactions and flows (login, create content, navigate)
             - API functionality tested through UI interactions
             - Component behavior tested within user journeys
@@ -130,7 +130,7 @@ jobs:
 
             ### 🧪 Test Coverage Gaps
             [Maximum 2 gaps with implementation plans]
-            - Missing e2e flow: [specific user journey] → Add to: cypress/e2e/[file].cy.ts
+            - Missing e2e flow: [specific user journey] → Add to: playwright/tests/[file].spec.ts
               ```
               Implementation:
               1. Setup: [login as X, navigate to Y]
@@ -150,7 +150,7 @@ jobs:
             <constraints>
             - **Check existing feedback first** - Never repeat what's already been said
             - **Verify before claiming** - Actually check if docs/tests exist before saying they're missing
-            - **E2E testing focus** - Suggest Cypress e2e tests for user flows, not unit tests for components
+            - **E2E testing focus** - Suggest Playwright e2e tests for user flows, not unit tests for components
             - **Provide implementation guidance** - Include concise plans for new tests/docs as inspiration
             - **Think deeply** - Consider specific implementation needs, not generic suggestions
             - **Unique insights only** - Skip obvious issues already caught by CI/CD or other reviewers
@@ -162,7 +162,7 @@ jobs:
             <testing_examples>
             GOOD:
             ```
-            Missing e2e flow: instructor live quiz management → Add to: cypress/e2e/manage/live-quiz.cy.ts
+            Missing e2e flow: instructor live quiz management → Add to: playwright/tests/O-live-quiz.spec.ts
               Implementation:
               1. Setup: Login as instructor, navigate to course
               2. Test: Create and configure live quiz

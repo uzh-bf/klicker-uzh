@@ -61,3 +61,6 @@ output/
 
 .claude/worktrees
 .claude/scheduled_tasks.lock
+
+playwright/playwright-report/
+playwright/test-results/

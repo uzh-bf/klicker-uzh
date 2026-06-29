@@ -261,8 +261,8 @@ chat:
         - xhigh
       fallback: false
       cost:
-        input: 1.25
-        output: 10.0
+        input: 5.0
+        output: 30.0
     - id: gpt-4.1-mini
       deploymentId: klickeruzh/azure/gpt-4.1-mini
       name: GPT-4.1 Mini

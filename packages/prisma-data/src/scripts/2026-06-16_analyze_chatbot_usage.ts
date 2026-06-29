@@ -1,8 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import { open } from 'fs/promises'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import type { WorkbookSheet } from './lib/simpleWorkbook.js'
+import type { SheetValue, WorkbookSheet } from './lib/simpleWorkbook.js'
 import {
   formatDate,
   sanitizeFilename,
@@ -12,6 +13,9 @@ import {
 type CliOptions = {
   all: boolean
   query?: string
+  chatbotId?: string
+  courseId?: string
+  scopeLabel: string
   semester: string
   from: Date
   to: Date
@@ -19,6 +23,7 @@ type CliOptions = {
   filePrefix: string
   minTopicMessages: number
   minTopicParticipants: number
+  includeMessageContent: boolean
 }
 
 type ChatContentItem = {
@@ -41,6 +46,7 @@ type ModelConfig = {
 }
 
 type MessageRecord = {
+  courseId: string
   courseName: string
   courseDisplayName: string | null
   chatbotId: string
@@ -66,8 +72,25 @@ type MessageRecord = {
   chatMode: string | null
   modelId: string | null
   reasoningEffort: string | null
+  reasoningContent: string | null
   creditsUsed: number | null
   attachmentCount: number
+}
+
+type CourseActivityMetrics = {
+  participantCount: number
+  responseCount: number
+  responseTrialCount: number
+  respondingParticipantCount: number
+  windowResponseCount: number
+  windowResponseTrialCount: number
+  windowRespondingParticipantCount: number
+}
+
+type CostAnalysisConfig = {
+  currency: string
+  calibratedTotalCost: number | null
+  modelCostMultipliers: Map<string, number>
 }
 
 type TopicAssignment = {
@@ -136,6 +159,10 @@ type ClusterTerm = {
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(scriptDir, '../../../..')
 const todayPrefix = new Date().toISOString().slice(0, 10)
+const XLSX_CELL_TEXT_LIMIT = 32767
+const WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT = 2000
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const DEFAULT_MODEL_REGISTRY: ModelConfig[] = [
   {
@@ -548,11 +575,16 @@ function usage() {
   return [
     'Usage:',
     '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --all',
+    '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --chatbotId <uuid>',
+    '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --courseId <uuid>',
     '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --query MAT183',
     '',
     'Options:',
     '  --all                      Analyze all chatbots with activity in the date window.',
+    '  --chatbotId <uuid>          Analyze one chatbot by database ID.',
+    '  --courseId <uuid>           Analyze all chatbots for one course by database ID.',
     '  --query, --course <text>    Restrict to matching course/chatbot names.',
+    '                              UUID values also match chatbotId/courseId.',
     '  --semester <current|fs26>   Date window when --from/--to are omitted. Default: current.',
     '  --from YYYY-MM-DD           Inclusive start date.',
     '  --to YYYY-MM-DD             Inclusive end date.',
@@ -560,16 +592,54 @@ function usage() {
     '  --filePrefix <prefix>       Output filename prefix. Default: date + scope.',
     '  --minTopicMessages <n>      Minimum user messages for topic labels. Default: 5.',
     '  --minTopicParticipants <n>  Minimum participants for topic labels. Default: 3.',
+    '  --includeMessageContent     Write full raw message content JSONL and include workbook previews.',
   ].join('\n')
 }
 
 function getArgValue(args: string[], name: string) {
   const index = args.indexOf(name)
-  return index >= 0 ? args[index + 1] : undefined
+  if (index < 0) return undefined
+
+  const value = args[index + 1]
+  if (!value || value.startsWith('--')) {
+    throw new Error(`Missing value for ${name}.`)
+  }
+  return value
 }
 
 function hasFlag(args: string[], name: string) {
   return args.includes(name)
+}
+
+function validateArgs(args: string[]) {
+  const knownFlags = new Set([
+    '--help',
+    '--all',
+    '--query',
+    '--course',
+    '--chatbotId',
+    '--courseId',
+    '--semester',
+    '--from',
+    '--to',
+    '--outDir',
+    '--filePrefix',
+    '--minTopicMessages',
+    '--minTopicParticipants',
+    '--includeMessageContent',
+  ])
+
+  for (const arg of args) {
+    if (arg.startsWith('--') && !knownFlags.has(arg)) {
+      throw new Error(`Unknown option: ${arg}.`)
+    }
+  }
+}
+
+function assertUuid(name: string, value: string | undefined) {
+  if (value && !UUID_PATTERN.test(value)) {
+    throw new Error(`Invalid UUID for ${name}: ${value}.`)
+  }
 }
 
 function parseDate(value: string | undefined, endOfDay = false) {
@@ -663,13 +733,31 @@ function parseArgs(): CliOptions {
     process.exit(0)
   }
 
+  validateArgs(args)
+
   const all = hasFlag(args, '--all')
   const query = getArgValue(args, '--query') ?? getArgValue(args, '--course')
-  if (!all && !query) {
+  const chatbotId = getArgValue(args, '--chatbotId')
+  const courseId = getArgValue(args, '--courseId')
+  const selectors = [
+    all ? 'all' : undefined,
+    query,
+    chatbotId,
+    courseId,
+  ].filter(Boolean)
+  if (selectors.length === 0) {
     throw new Error(
-      'Pass either --all or --query. No course is selected by default.'
+      'Pass one selector: --all, --chatbotId, --courseId, or --query. No course is selected by default.'
     )
   }
+  if (selectors.length > 1) {
+    throw new Error(
+      'Pass only one selector: --all, --chatbotId, --courseId, or --query.'
+    )
+  }
+
+  assertUuid('--chatbotId', chatbotId)
+  assertUuid('--courseId', courseId)
 
   const now = new Date()
   const semester = getArgValue(args, '--semester') ?? 'current'
@@ -682,7 +770,14 @@ function parseArgs(): CliOptions {
     )
   }
 
-  const scope = query ? sanitizeFilename(query) : 'all_chatbots'
+  const scopeLabel = all
+    ? 'all_chatbots'
+    : chatbotId
+      ? `chatbot:${chatbotId}`
+      : courseId
+        ? `course:${courseId}`
+        : `query:${query}`
+  const scope = sanitizeFilename(scopeLabel.replace(':', '_'))
   const windowLabel = getArgValue(args, '--semester') ?? defaultWindow.label
   const filePrefix =
     getArgValue(args, '--filePrefix') ??
@@ -691,6 +786,9 @@ function parseArgs(): CliOptions {
   return {
     all,
     query,
+    chatbotId,
+    courseId,
+    scopeLabel,
     semester: defaultWindow.label,
     from,
     to,
@@ -706,6 +804,7 @@ function parseArgs(): CliOptions {
       getArgValue(args, '--minTopicParticipants'),
       3
     ),
+    includeMessageContent: hasFlag(args, '--includeMessageContent'),
   }
 }
 
@@ -737,6 +836,30 @@ function toolNames(value: Prisma.JsonValue) {
 
 function toolCallCount(value: Prisma.JsonValue) {
   return asArray(value).filter((item) => item.type === 'tool-call').length
+}
+
+function toolCallDetailRows(message: MessageRecord): SheetValue[][] {
+  return asArray(message.content)
+    .filter((item) => item.type === 'tool-call')
+    .map((item) => {
+      const result =
+        item.result && typeof item.result === 'object'
+          ? (item.result as Record<string, unknown>)
+          : null
+
+      return [
+        message.courseName,
+        message.chatbotKey,
+        message.chatbotName,
+        message.threadKey,
+        message.messageKey,
+        message.participantKey,
+        message.messageCreatedAt,
+        typeof item.toolName === 'string' ? item.toolName : null,
+        typeof item.toolCallId === 'string' ? item.toolCallId : null,
+        typeof result?.isError === 'boolean' ? result.isError : null,
+      ]
+    })
 }
 
 function decimalToNumber(value: unknown): number | null {
@@ -782,12 +905,28 @@ function round(value: number, digits = 6) {
   return Math.round(value * factor) / factor
 }
 
+function truncateForWorkbookCell(value: string, limit = XLSX_CELL_TEXT_LIMIT) {
+  const safeLimit = Math.min(limit, XLSX_CELL_TEXT_LIMIT)
+  if (value.length <= safeLimit) return value
+
+  const suffix = '\n...[truncated; full value is in message content JSONL]'
+  return `${value.slice(0, safeLimit - suffix.length)}${suffix}`
+}
+
 function sum(values: number[]) {
   return values.reduce((total, value) => total + value, 0)
 }
 
 function average(values: number[]) {
   return values.length > 0 ? sum(values) / values.length : 0
+}
+
+function safeDivide(numerator: number, denominator: number, digits = 6) {
+  return denominator > 0 ? round(numerator / denominator, digits) : 0
+}
+
+function safePercent(numerator: number, denominator: number) {
+  return safeDivide(numerator * 100, denominator, 2)
 }
 
 function toDateKey(date: Date) {
@@ -848,6 +987,124 @@ function parseModelRegistry() {
   } catch {
     return DEFAULT_MODEL_REGISTRY
   }
+}
+
+function parsePositiveNumberEnv(name: string) {
+  const raw = process.env[name]
+  if (!raw) return null
+  const parsed = Number(raw)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${name} must be a positive number, got: ${raw}`)
+  }
+  return parsed
+}
+
+function parseModelCostMultipliers() {
+  const raw = process.env.CHATBOT_ANALYSIS_MODEL_COST_MULTIPLIERS_JSON
+  if (!raw) return new Map<string, number>()
+
+  const parsed = JSON.parse(raw)
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(
+      'CHATBOT_ANALYSIS_MODEL_COST_MULTIPLIERS_JSON must be a JSON object.'
+    )
+  }
+
+  return new Map(
+    Object.entries(parsed).map(([modelId, multiplier]) => {
+      if (typeof multiplier !== 'number' || multiplier < 0) {
+        throw new Error(
+          `Invalid cost multiplier for ${modelId}: ${String(multiplier)}`
+        )
+      }
+      return [modelId, multiplier]
+    })
+  )
+}
+
+function parseCostAnalysisConfig(): CostAnalysisConfig {
+  return {
+    currency: process.env.CHATBOT_ANALYSIS_COST_CURRENCY ?? 'configured',
+    calibratedTotalCost: parsePositiveNumberEnv(
+      'CHATBOT_ANALYSIS_CALIBRATED_TOTAL_COST'
+    ),
+    modelCostMultipliers: parseModelCostMultipliers(),
+  }
+}
+
+function adjustedMessageCost(
+  message: MessageRecord,
+  costConfig: CostAnalysisConfig
+) {
+  const rawCost = message.creditsUsed ?? 0
+  const multiplier = message.modelId
+    ? (costConfig.modelCostMultipliers.get(message.modelId) ?? 1)
+    : 1
+  return rawCost * multiplier
+}
+
+function adjustedCost(
+  messages: MessageRecord[],
+  costConfig: CostAnalysisConfig
+) {
+  return sum(
+    messages.map((message) => adjustedMessageCost(message, costConfig))
+  )
+}
+
+function allocateCost(
+  localAdjustedCost: number,
+  totalAdjustedCost: number,
+  costConfig: CostAnalysisConfig
+) {
+  if (
+    costConfig.calibratedTotalCost !== null &&
+    totalAdjustedCost > 0 &&
+    localAdjustedCost > 0
+  ) {
+    return (
+      (localAdjustedCost / totalAdjustedCost) * costConfig.calibratedTotalCost
+    )
+  }
+  return localAdjustedCost
+}
+
+function formatModelMessageShares(
+  messages: MessageRecord[],
+  role: 'assistant' | 'user' | null = 'assistant'
+) {
+  const filteredMessages = role
+    ? messages.filter((message) => message.role === role)
+    : messages
+  const denominator = filteredMessages.length
+  const counts = new Map<string, number>()
+
+  for (const message of filteredMessages) {
+    const modelId = message.modelId ?? 'no-model'
+    counts.set(modelId, (counts.get(modelId) ?? 0) + 1)
+  }
+
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(
+      ([modelId, count]) =>
+        `${modelId} ${denominator > 0 ? round((count / denominator) * 100, 1) : 0}%`
+    )
+    .join('|')
+}
+
+function modelMessageShare(
+  messages: MessageRecord[],
+  modelId: string,
+  role: 'assistant' | 'user' | null = 'assistant'
+) {
+  const filteredMessages = role
+    ? messages.filter((message) => message.role === role)
+    : messages
+  return safePercent(
+    filteredMessages.filter((message) => message.modelId === modelId).length,
+    filteredMessages.length
+  )
 }
 
 const TOPIC_MAX_FEATURES = 4500
@@ -1606,40 +1863,49 @@ function buildTopicAnalysis(
 }
 
 async function loadChatbots(options: CliOptions) {
-  const activeWindowFilter = {
-    threads: {
-      some: {
-        messages: {
-          some: {
-            createdAt: {
-              gte: options.from,
-              lte: options.to,
-            },
-          },
-        },
-      },
-    },
-  }
-  const queryFilter = options.query
+  const activeWindowFilter: Prisma.ChatbotWhereInput = options.all
     ? {
-        OR: [
-          { name: { contains: options.query, mode: 'insensitive' as const } },
-          {
-            course: {
-              name: { contains: options.query, mode: 'insensitive' as const },
-            },
-          },
-          {
-            course: {
-              displayName: {
-                contains: options.query,
-                mode: 'insensitive' as const,
+        threads: {
+          some: {
+            messages: {
+              some: {
+                createdAt: {
+                  gte: options.from,
+                  lte: options.to,
+                },
               },
             },
           },
-        ],
+        },
       }
     : {}
+  const queryFilter: Prisma.ChatbotWhereInput = options.chatbotId
+    ? { id: options.chatbotId }
+    : options.courseId
+      ? { courseId: options.courseId }
+      : options.query
+        ? {
+            OR: [
+              { name: { contains: options.query, mode: 'insensitive' } },
+              ...(UUID_PATTERN.test(options.query)
+                ? [{ id: options.query }, { courseId: options.query }]
+                : []),
+              {
+                course: {
+                  name: { contains: options.query, mode: 'insensitive' },
+                },
+              },
+              {
+                course: {
+                  displayName: {
+                    contains: options.query,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            ],
+          }
+        : {}
 
   return prisma.chatbot.findMany({
     where: {
@@ -1704,6 +1970,126 @@ async function loadCreditRows(chatbotIds: string[]) {
   })
 }
 
+function emptyCourseActivityMetrics(): CourseActivityMetrics {
+  return {
+    participantCount: 0,
+    responseCount: 0,
+    responseTrialCount: 0,
+    respondingParticipantCount: 0,
+    windowResponseCount: 0,
+    windowResponseTrialCount: 0,
+    windowRespondingParticipantCount: 0,
+  }
+}
+
+function ensureCourseActivityMetrics(
+  metricsByCourseId: Map<string, CourseActivityMetrics>,
+  courseId: string
+) {
+  let metrics = metricsByCourseId.get(courseId)
+  if (!metrics) {
+    metrics = emptyCourseActivityMetrics()
+    metricsByCourseId.set(courseId, metrics)
+  }
+  return metrics
+}
+
+async function loadCourseActivity(courseIds: string[], options: CliOptions) {
+  const uniqueCourseIds = Array.from(new Set(courseIds))
+  const metricsByCourseId = new Map(
+    uniqueCourseIds.map((courseId) => [courseId, emptyCourseActivityMetrics()])
+  )
+
+  const responseWindowWhere = {
+    courseId: { in: uniqueCourseIds },
+    OR: [
+      {
+        lastAnsweredAt: {
+          gte: options.from,
+          lte: options.to,
+        },
+      },
+      {
+        createdAt: {
+          gte: options.from,
+          lte: options.to,
+        },
+      },
+    ],
+  } satisfies Prisma.QuestionResponseWhereInput
+
+  const [
+    participantCounts,
+    responseCounts,
+    respondingParticipants,
+    windowResponseCounts,
+    windowRespondingParticipants,
+  ] = await Promise.all([
+    prisma.participation.groupBy({
+      by: ['courseId'],
+      where: { courseId: { in: uniqueCourseIds } },
+      _count: { _all: true },
+    }),
+    prisma.questionResponse.groupBy({
+      by: ['courseId'],
+      where: { courseId: { in: uniqueCourseIds } },
+      _count: { _all: true },
+      _sum: { trialsCount: true },
+    }),
+    prisma.questionResponse.groupBy({
+      by: ['courseId', 'participantId'],
+      where: { courseId: { in: uniqueCourseIds } },
+      _count: { _all: true },
+    }),
+    prisma.questionResponse.groupBy({
+      by: ['courseId'],
+      where: responseWindowWhere,
+      _count: { _all: true },
+      _sum: { trialsCount: true },
+    }),
+    prisma.questionResponse.groupBy({
+      by: ['courseId', 'participantId'],
+      where: responseWindowWhere,
+      _count: { _all: true },
+    }),
+  ])
+
+  for (const row of participantCounts) {
+    ensureCourseActivityMetrics(
+      metricsByCourseId,
+      row.courseId
+    ).participantCount = row._count._all
+  }
+
+  for (const row of responseCounts) {
+    const metrics = ensureCourseActivityMetrics(metricsByCourseId, row.courseId)
+    metrics.responseCount = row._count._all
+    metrics.responseTrialCount = row._sum.trialsCount ?? 0
+  }
+
+  for (const row of respondingParticipants) {
+    ensureCourseActivityMetrics(
+      metricsByCourseId,
+      row.courseId
+    ).respondingParticipantCount += 1
+  }
+
+  for (const row of windowResponseCounts) {
+    const metrics = ensureCourseActivityMetrics(metricsByCourseId, row.courseId)
+    metrics.windowResponseCount = row._count._all
+    metrics.windowResponseTrialCount = row._sum.trialsCount ?? 0
+  }
+
+  for (const row of windowRespondingParticipants) {
+    ensureCourseActivityMetrics(
+      metricsByCourseId,
+      row.courseId
+    ).windowRespondingParticipantCount += 1
+  }
+
+  return metricsByCourseId
+}
+
 function flattenMessages(
   chatbots: ChatbotRecord[],
   threads: ThreadRecord[],
@@ -1724,6 +2110,7 @@ function flattenMessages(
       const reasoningCharCount = message.reasoningContent?.length ?? 0
 
       return {
+        courseId: chatbot.course.id,
         courseName: chatbot.course.name,
         courseDisplayName: chatbot.course.displayName,
         chatbotId: chatbot.id,
@@ -1751,6 +2138,7 @@ function flattenMessages(
         chatMode: message.chatMode,
         modelId: message.modelId,
         reasoningEffort: message.reasoningEffort,
+        reasoningContent: message.reasoningContent,
         creditsUsed: decimalToNumber(message.creditsUsed),
         attachmentCount: message.attachments.length,
       }
@@ -1773,8 +2161,10 @@ function buildSheets(
   chatbotKeyById: Map<string, string>,
   messages: MessageRecord[],
   creditRows: Awaited<ReturnType<typeof loadCreditRows>>,
+  courseActivityById: Map<string, CourseActivityMetrics>,
   topicAnalysis: ReturnType<typeof buildTopicAnalysis>,
-  modelRegistry: ModelConfig[]
+  modelRegistry: ModelConfig[],
+  costConfig: CostAnalysisConfig
 ): WorkbookSheet[] {
   const chatbotById = new Map(chatbots.map((chatbot) => [chatbot.id, chatbot]))
   const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
@@ -1783,6 +2173,13 @@ function buildSheets(
       `${credit.chatbotId}:${credit.participantId}`,
       credit,
     ])
+  )
+  const participantKeyById = createKeyMap(
+    [
+      ...messages.map((message) => message.participantId),
+      ...creditRows.map((credit) => credit.participantId),
+    ],
+    'participant'
   )
   const topicAssignmentByMessageKey = new Map(
     topicAnalysis.assignments.map((assignment) => [
@@ -1796,6 +2193,12 @@ function buildSheets(
   )
   const threadKeys = new Set(messages.map((message) => message.threadKey))
   const totalCredits = sum(messages.map((message) => message.creditsUsed ?? 0))
+  const totalAdjustedCost = adjustedCost(messages, costConfig)
+  const totalAllocatedCost = allocateCost(
+    totalAdjustedCost,
+    totalAdjustedCost,
+    costConfig
+  )
   const userMessages = messages.filter((message) => message.role === 'user')
   const assistantMessages = messages.filter(
     (message) => message.role === 'assistant'
@@ -1810,11 +2213,19 @@ function buildSheets(
         ['semester', options.semester],
         ['from', formatDate(options.from)],
         ['to', formatDate(options.to)],
-        ['scope', options.query ? `query:${options.query}` : 'all chatbots'],
+        ['scope', options.scopeLabel],
         ['chatbots', chatbots.length],
         [
           'privacy',
-          'No raw message text, participant names, emails, LMS identifiers, or database ids are included.',
+          options.includeMessageContent
+            ? 'Raw message text/content is included because --includeMessageContent was passed. Participant names, emails, LMS identifiers, and database ids are still excluded.'
+            : 'No raw message text, participant names, emails, LMS identifiers, or database ids are included.',
+        ],
+        [
+          'messageContent',
+          options.includeMessageContent
+            ? `Full raw message content is written to ${sanitizeFilename(options.filePrefix)}_message_content.jsonl. Workbook content columns are previews capped to ${WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT} characters.`
+            : 'Full raw message content is not exported.',
         ],
         [
           'participants',
@@ -1825,9 +2236,22 @@ function buildSheets(
           'Provider token counts are not persisted; token columns are rough visible-text estimates from stored message text only.',
         ],
         [
+          'cost',
+          `Cost columns use stored creditsUsed, optional CHATBOT_ANALYSIS_MODEL_COST_MULTIPLIERS_JSON, and optional CHATBOT_ANALYSIS_CALIBRATED_TOTAL_COST. Currency label: ${costConfig.currency}.`,
+        ],
+        [
+          'courseActivity',
+          'courseParticipants counts Participation rows. Response activity counts QuestionResponse rows and trialsCount; window response activity uses lastAnsweredAt or createdAt inside the export window.',
+        ],
+        [
           'topics',
           `Context-window TF-IDF clustering over current user turns, nearby conversation turns, and lightweight thread terms; labels require at least ${options.minTopicMessages} user messages and ${options.minTopicParticipants} participants.`,
         ],
+        [
+          'costMultipliers',
+          JSON.stringify(Object.fromEntries(costConfig.modelCostMultipliers)),
+        ],
+        ['calibratedTotalCost', costConfig.calibratedTotalCost],
       ],
     },
     {
@@ -1842,6 +2266,13 @@ function buildSheets(
         'toolCalls',
         'attachments',
         'creditsUsed',
+        'adjustedCost',
+        'allocatedCost',
+        'costCurrency',
+        'costPerActiveParticipant',
+        'costPerConversation',
+        'costPerMessage',
+        'assistantModelMessageShare',
         'estimatedVisibleTextTokens',
         'estimatedReasoningTokens',
         'firstActivityAt',
@@ -1858,6 +2289,13 @@ function buildSheets(
           sum(messages.map((message) => toolCallCount(message.content))),
           sum(messages.map((message) => message.attachmentCount)),
           round(totalCredits),
+          round(totalAdjustedCost),
+          round(totalAllocatedCost),
+          costConfig.currency,
+          safeDivide(totalAllocatedCost, activeParticipantKeys.size),
+          safeDivide(totalAllocatedCost, threadKeys.size),
+          safeDivide(totalAllocatedCost, messages.length),
+          formatModelMessageShares(messages),
           sum(messages.map((message) => message.estimatedTextTokens)),
           sum(messages.map((message) => message.estimatedReasoningTokens)),
           messages.length > 0
@@ -1883,6 +2321,125 @@ function buildSheets(
     },
   ]
 
+  const chatbotsByCourseId = groupBy(chatbots, (chatbot) => chatbot.course.id)
+  const messagesByCourseId = groupBy(messages, (message) => message.courseId)
+
+  sheets.push({
+    name: 'Courses',
+    headers: [
+      'courseName',
+      'courseDisplayName',
+      'courseStartDate',
+      'courseEndDate',
+      'chatbots',
+      'courseParticipants',
+      'respondingCourseParticipants',
+      'courseResponses',
+      'courseResponseTrials',
+      'windowRespondingCourseParticipants',
+      'windowCourseResponses',
+      'windowCourseResponseTrials',
+      'responsesPerCourseParticipant',
+      'windowResponsesPerCourseParticipant',
+      'chatbotParticipants',
+      'chatbotParticipantSharePct',
+      'conversations',
+      'messages',
+      'userMessages',
+      'assistantMessages',
+      'avgMessagesPerConversation',
+      'avgMessagesPerChatbotParticipant',
+      'toolCalls',
+      'images',
+      'creditsUsed',
+      'adjustedCost',
+      'allocatedCost',
+      'costCurrency',
+      'costPerCourseParticipant',
+      'costPerChatbotParticipant',
+      'costPerConversation',
+      'costPerMessage',
+      'assistantModelMessageShare',
+      'gpt55AssistantMessageSharePct',
+      'estimatedVisibleTextTokens',
+      'estimatedReasoningTokens',
+      'firstActivityAt',
+      'lastActivityAt',
+    ],
+    rows: Array.from(chatbotsByCourseId.entries()).map(
+      ([courseId, courseChatbots]) => {
+        const firstChatbot = courseChatbots[0]!
+        const courseMessages = messagesByCourseId.get(courseId) ?? []
+        const courseUserMessages = courseMessages.filter(
+          (message) => message.role === 'user'
+        )
+        const courseAssistantMessages = courseMessages.filter(
+          (message) => message.role === 'assistant'
+        )
+        const participantKeys = new Set(
+          courseMessages.map((message) => message.participantKey)
+        )
+        const conversationKeys = new Set(
+          courseMessages.map((message) => message.threadKey)
+        )
+        const dates = courseMessages.map((message) =>
+          message.messageCreatedAt.getTime()
+        )
+        const activity =
+          courseActivityById.get(courseId) ?? emptyCourseActivityMetrics()
+        const localAdjustedCost = adjustedCost(courseMessages, costConfig)
+        const localAllocatedCost = allocateCost(
+          localAdjustedCost,
+          totalAdjustedCost,
+          costConfig
+        )
+
+        return [
+          firstChatbot.course.name,
+          firstChatbot.course.displayName,
+          firstChatbot.course.startDate,
+          firstChatbot.course.endDate,
+          courseChatbots.length,
+          activity.participantCount,
+          activity.respondingParticipantCount,
+          activity.responseCount,
+          activity.responseTrialCount,
+          activity.windowRespondingParticipantCount,
+          activity.windowResponseCount,
+          activity.windowResponseTrialCount,
+          safeDivide(activity.responseCount, activity.participantCount),
+          safeDivide(activity.windowResponseCount, activity.participantCount),
+          participantKeys.size,
+          safePercent(participantKeys.size, activity.participantCount),
+          conversationKeys.size,
+          courseMessages.length,
+          courseUserMessages.length,
+          courseAssistantMessages.length,
+          safeDivide(courseMessages.length, conversationKeys.size, 2),
+          safeDivide(courseMessages.length, participantKeys.size, 2),
+          sum(courseMessages.map((message) => toolCallCount(message.content))),
+          sum(courseMessages.map((message) => message.attachmentCount)),
+          round(sum(courseMessages.map((message) => message.creditsUsed ?? 0))),
+          round(localAdjustedCost),
+          round(localAllocatedCost),
+          costConfig.currency,
+          safeDivide(localAllocatedCost, activity.participantCount),
+          safeDivide(localAllocatedCost, participantKeys.size),
+          safeDivide(localAllocatedCost, conversationKeys.size),
+          safeDivide(localAllocatedCost, courseMessages.length),
+          formatModelMessageShares(courseMessages),
+          modelMessageShare(courseMessages, 'gpt-5.5'),
+          sum(courseMessages.map((message) => message.estimatedTextTokens)),
+          sum(
+            courseMessages.map((message) => message.estimatedReasoningTokens)
+          ),
+          dates.length > 0 ? new Date(Math.min(...dates)) : null,
+          dates.length > 0 ? new Date(Math.max(...dates)) : null,
+        ]
+      }
+    ),
+  })
+
   const messagesByChatbot = groupBy(messages, (message) => message.chatbotId)
   sheets.push({
     name: 'Chatbots',
@@ -1899,18 +2456,31 @@ function buildSheets(
       'creditResetPeriod',
       'creditResetAmount',
       'creditMaxCredits',
+      'courseParticipants',
+      'courseResponses',
+      'windowCourseResponses',
       'activeParticipants',
+      'chatbotParticipantSharePct',
       'conversations',
       'messages',
       'userMessages',
       'assistantMessages',
+      'avgMessagesPerConversation',
       'avgMessagesPerParticipant',
       'toolCalls',
       'attachments',
       'creditsUsed',
+      'adjustedCost',
+      'allocatedCost',
+      'costCurrency',
+      'costPerParticipant',
+      'costPerConversation',
+      'costPerMessage',
       'estimatedVisibleTextTokens',
       'estimatedReasoningTokens',
       'modelsUsed',
+      'assistantModelMessageShare',
+      'gpt55AssistantMessageSharePct',
       'chatModes',
       'firstActivityAt',
       'lastActivityAt',
@@ -1931,6 +2501,15 @@ function buildSheets(
       const dates = chatbotMessages.map((message) =>
         message.messageCreatedAt.getTime()
       )
+      const activity =
+        courseActivityById.get(chatbot.course.id) ??
+        emptyCourseActivityMetrics()
+      const localAdjustedCost = adjustedCost(chatbotMessages, costConfig)
+      const localAllocatedCost = allocateCost(
+        localAdjustedCost,
+        totalAdjustedCost,
+        costConfig
+      )
       return [
         chatbot.course.name,
         chatbot.course.displayName,
@@ -1944,23 +2523,36 @@ function buildSheets(
         chatbot.creditResetPeriod,
         chatbot.creditResetAmount,
         chatbot.creditMaxCredits,
+        activity.participantCount,
+        activity.responseCount,
+        activity.windowResponseCount,
         participantKeys.size,
+        safePercent(participantKeys.size, activity.participantCount),
         chatbotThreadKeys.size,
         chatbotMessages.length,
         chatbotMessages.filter((message) => message.role === 'user').length,
         chatbotMessages.filter((message) => message.role === 'assistant')
           .length,
+        safeDivide(chatbotMessages.length, chatbotThreadKeys.size, 2),
         participantKeys.size > 0
           ? round(chatbotMessages.length / participantKeys.size, 2)
           : 0,
         sum(chatbotMessages.map((message) => toolCallCount(message.content))),
         sum(chatbotMessages.map((message) => message.attachmentCount)),
         round(sum(chatbotMessages.map((message) => message.creditsUsed ?? 0))),
+        round(localAdjustedCost),
+        round(localAllocatedCost),
+        costConfig.currency,
+        safeDivide(localAllocatedCost, participantKeys.size),
+        safeDivide(localAllocatedCost, chatbotThreadKeys.size),
+        safeDivide(localAllocatedCost, chatbotMessages.length),
         sum(chatbotMessages.map((message) => message.estimatedTextTokens)),
         sum(chatbotMessages.map((message) => message.estimatedReasoningTokens)),
         uniqueSorted(chatbotMessages.map((message) => message.modelId)).join(
           '|'
         ),
+        formatModelMessageShares(chatbotMessages),
+        modelMessageShare(chatbotMessages, 'gpt-5.5'),
         uniqueSorted(chatbotMessages.map((message) => message.chatMode)).join(
           '|'
         ),
@@ -2113,6 +2705,43 @@ function buildSheets(
         ]
       }
     ),
+  })
+
+  sheets.push({
+    name: 'Credits',
+    headers: [
+      'courseName',
+      'chatbotKey',
+      'chatbotName',
+      'participantKey',
+      'current',
+      'total',
+      'resetCount',
+      'periodStartedAt',
+      'lastResetAt',
+      'disclaimerAcceptedAt',
+      'disclaimerDeclined',
+      'createdAt',
+      'updatedAt',
+    ],
+    rows: creditRows.map((credit) => {
+      const chatbot = chatbotById.get(credit.chatbotId)
+      return [
+        chatbot?.course.name,
+        chatbot ? chatbotKeyById.get(chatbot.id) : null,
+        chatbot?.name,
+        participantKeyById.get(credit.participantId),
+        credit.current.toNumber(),
+        credit.total.toNumber(),
+        credit.resetCount,
+        credit.periodStartedAt,
+        credit.lastResetAt,
+        credit.disclaimerAcceptedAt,
+        credit.disclaimerDeclined,
+        credit.createdAt,
+        credit.updatedAt,
+      ]
+    }),
   })
 
   const dailyGroups = groupBy(
@@ -2307,6 +2936,23 @@ function buildSheets(
   })
 
   sheets.push({
+    name: 'Tool Call Details',
+    headers: [
+      'courseName',
+      'chatbotKey',
+      'chatbotName',
+      'threadKey',
+      'messageKey',
+      'participantKey',
+      'messageCreatedAt',
+      'toolName',
+      'toolCallId',
+      'isError',
+    ],
+    rows: messages.flatMap(toolCallDetailRows),
+  })
+
+  sheets.push({
     name: 'Topic Clusters',
     headers: [
       'courseName',
@@ -2417,34 +3063,43 @@ function buildSheets(
     }),
   })
 
+  const messageMetadataHeaders = [
+    'courseName',
+    'chatbotKey',
+    'chatbotName',
+    'threadKey',
+    'participantKey',
+    'messageKey',
+    'role',
+    'messageCreatedAt',
+    'chatMode',
+    'modelId',
+    'reasoningEffort',
+    'creditsUsed',
+    'contentTypes',
+    'textCharCount',
+    'textWordCount',
+    'estimatedTextTokens',
+    'reasoningCharCount',
+    'estimatedReasoningTokens',
+    'toolCallCount',
+    'attachmentCount',
+    'topicClusterId',
+  ]
+  if (options.includeMessageContent) {
+    messageMetadataHeaders.push(
+      'messageTextPreview',
+      'messageContentJsonPreview',
+      'reasoningContentPreview'
+    )
+  }
+
   sheets.push({
     name: 'Message Metadata',
-    headers: [
-      'courseName',
-      'chatbotKey',
-      'chatbotName',
-      'threadKey',
-      'participantKey',
-      'messageKey',
-      'role',
-      'messageCreatedAt',
-      'chatMode',
-      'modelId',
-      'reasoningEffort',
-      'creditsUsed',
-      'contentTypes',
-      'textCharCount',
-      'textWordCount',
-      'estimatedTextTokens',
-      'reasoningCharCount',
-      'estimatedReasoningTokens',
-      'toolCallCount',
-      'attachmentCount',
-      'topicClusterId',
-    ],
+    headers: messageMetadataHeaders,
     rows: messages.map((message) => {
       const assignment = topicAssignmentByMessageKey.get(message.messageKey)
-      return [
+      const row = [
         message.courseName,
         message.chatbotKey,
         message.chatbotName,
@@ -2467,27 +3122,94 @@ function buildSheets(
         message.attachmentCount,
         assignment?.clusterId ?? null,
       ]
+
+      if (options.includeMessageContent) {
+        row.push(
+          truncateForWorkbookCell(
+            message.text,
+            WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT
+          ),
+          truncateForWorkbookCell(
+            JSON.stringify(message.content) ?? '',
+            WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT
+          ),
+          truncateForWorkbookCell(
+            message.reasoningContent ?? '',
+            WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT
+          )
+        )
+      }
+
+      return row
     }),
   })
 
   return sheets
 }
 
+async function writeMessageContentJsonl(
+  outDir: string,
+  filePrefix: string,
+  messages: MessageRecord[]
+) {
+  const filename = `${sanitizeFilename(filePrefix)}_message_content.jsonl`
+  const path = resolve(outDir, filename)
+  const file = await open(path, 'w')
+
+  try {
+    for (const message of messages) {
+      await file.write(
+        `${JSON.stringify({
+          courseName: message.courseName,
+          courseDisplayName: message.courseDisplayName,
+          chatbotKey: message.chatbotKey,
+          chatbotName: message.chatbotName,
+          threadKey: message.threadKey,
+          participantKey: message.participantKey,
+          messageKey: message.messageKey,
+          role: message.role,
+          messageCreatedAt: message.messageCreatedAt.toISOString(),
+          chatMode: message.chatMode,
+          modelId: message.modelId,
+          reasoningEffort: message.reasoningEffort,
+          creditsUsed: message.creditsUsed,
+          toolCallCount: toolCallCount(message.content),
+          attachmentCount: message.attachmentCount,
+          text: message.text,
+          content: message.content,
+          reasoningContent: message.reasoningContent,
+        })}\n`,
+        undefined,
+        'utf8'
+      )
+    }
+  } finally {
+    await file.close()
+  }
+
+  return path
+}
+
 async function main() {
   const options = parseArgs()
   const modelRegistry = parseModelRegistry()
+  const costConfig = parseCostAnalysisConfig()
   const chatbots = await loadChatbots(options)
 
   if (chatbots.length === 0) {
     throw new Error(
-      `No chatbot activity found for the selected scope between ${formatDate(options.from)} and ${formatDate(options.to)}.`
+      options.all
+        ? `No chatbot activity found between ${formatDate(options.from)} and ${formatDate(options.to)}.`
+        : `No chatbot/course found for ${options.scopeLabel}.`
     )
   }
 
   const chatbotIds = chatbots.map((chatbot) => chatbot.id)
-  const [threads, creditRows] = await Promise.all([
+  const courseIds = chatbots.map((chatbot) => chatbot.course.id)
+  const [threads, creditRows, courseActivityById] = await Promise.all([
     loadThreads(chatbotIds, options),
     loadCreditRows(chatbotIds),
+    loadCourseActivity(courseIds, options),
   ])
   const participantKeyById = createKeyMap(
     [
@@ -2522,11 +3244,20 @@ async function main() {
     chatbotKeyById,
     messages,
     creditRows,
+    courseActivityById,
     topicAnalysis,
-    modelRegistry
+    modelRegistry,
+    costConfig
   )
   const filename = `${sanitizeFilename(options.filePrefix)}.xlsx`
   const path = await writeWorkbookFile(options.outDir, filename, sheets)
+  const messageContentPath = options.includeMessageContent
+    ? await writeMessageContentJsonl(
+        options.outDir,
+        options.filePrefix,
+        messages
+      )
+    : null
 
   console.log(
     `Window: ${formatDate(options.from)} to ${formatDate(options.to)}`
@@ -2544,11 +3275,28 @@ async function main() {
   console.log(
     `Credits used: ${round(sum(messages.map((message) => message.creditsUsed ?? 0)))}`
   )
+  console.log(
+    `Adjusted cost: ${round(adjustedCost(messages, costConfig))} ${costConfig.currency}`
+  )
+  if (costConfig.calibratedTotalCost !== null) {
+    console.log(
+      `Allocated cost: ${round(costConfig.calibratedTotalCost)} ${costConfig.currency}`
+    )
+  }
   console.log(`Output: ${path}`)
+  if (messageContentPath) {
+    console.log(`Message content output: ${messageContentPath}`)
+  }
 }
 
 try {
   await main()
+} catch (error) {
+  console.error(
+    `ERROR: ${error instanceof Error ? error.message : String(error)}`
+  )
+  console.error('Run with --help to see valid selectors and options.')
+  process.exitCode = 1
 } finally {
   await prisma.$disconnect()
 }
