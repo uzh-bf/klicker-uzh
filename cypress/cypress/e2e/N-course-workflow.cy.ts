@@ -992,6 +992,7 @@ describe('Test course creation and editing functionalities', function () {
     practiceQuizzes,
     microLearnings,
     groupActivities,
+    directPermissions = 0,
   }: {
     courseName: string
     ownerId?: string
@@ -999,6 +1000,7 @@ describe('Test course creation and editing functionalities', function () {
     practiceQuizzes: number
     microLearnings: number
     groupActivities: number
+    directPermissions?: number
   }) {
     cy.task('getCourseDuplicationSummary', { courseName, ownerId }).then(
       (summary: any) => {
@@ -1012,7 +1014,7 @@ describe('Test course creation and editing functionalities', function () {
           participantGroups: 0,
           participantInvitations: 0,
           groupAssignmentPoolEntries: 0,
-          directPermissions: 0,
+          directPermissions,
           questionResponses: 0,
           questionResponseDetails: 0,
           liveQuizResponses: 0,
@@ -1087,6 +1089,7 @@ describe('Test course creation and editing functionalities', function () {
       'contain',
       messages.manage.courseList.courseDuplicationCopyInfo
     )
+    cy.get('[data-cy="course-gamification"]').should('not.exist')
 
     cy.wrap([
       'course-live-quizzes',
@@ -1191,6 +1194,212 @@ describe('Test course creation and editing functionalities', function () {
     })
   }
 
+  function expectPermissionDetail({
+    summary,
+    detailsKey,
+    objectType,
+    objectId,
+    userShortname,
+    userGroupName,
+    permissionLevel,
+    propagation,
+    derived,
+  }: {
+    summary: any
+    detailsKey: 'directPermissionDetails' | 'derivedPermissionDetails'
+    objectType: string
+    objectId: string
+    userShortname?: string
+    userGroupName?: string
+    permissionLevel: string
+    propagation?: boolean
+    derived?: boolean
+  }) {
+    const permission = summary[detailsKey].find((entry: any) => {
+      return (
+        entry.objectType === objectType &&
+        entry.objectId === objectId &&
+        entry.permissionLevel === permissionLevel &&
+        (typeof userShortname === 'undefined' ||
+          entry.userShortname === userShortname) &&
+        (typeof userGroupName === 'undefined' ||
+          entry.userGroupName === userGroupName)
+      )
+    })
+
+    expect(
+      permission,
+      `${detailsKey} ${objectType} ${objectId} ${userShortname ?? userGroupName}`
+    ).to.exist
+
+    if (typeof propagation !== 'undefined') {
+      expect(permission.propagation).to.equal(propagation)
+    }
+    if (typeof derived !== 'undefined') {
+      expect(permission.derived).to.equal(derived)
+    }
+  }
+
+  function expectCopiedIndividualPermissions({
+    summary,
+    data,
+  }: {
+    summary: any
+    data: any
+  }) {
+    const copiedLiveQuiz = getActivityReference({
+      summary,
+      collection: 'liveQuizzes',
+      activityName: data.sharing.liveQuiz,
+    })
+
+    if (!copiedLiveQuiz) {
+      throw new Error(`Missing live quiz ${data.sharing.liveQuiz}`)
+    }
+
+    const courseDirectPermissions = [
+      {
+        userShortname: Cypress.env('LECTURER_IND_SHORTNAME'),
+        permissionLevel: 'READ',
+        propagation: false,
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST_SHORTNAME'),
+        permissionLevel: 'EXECUTE',
+        propagation: false,
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST2_SHORTNAME'),
+        permissionLevel: 'WRITE',
+        propagation: false,
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST3_SHORTNAME'),
+        permissionLevel: 'WRITE',
+        propagation: true,
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST4_SHORTNAME'),
+        permissionLevel: 'ADMIN',
+        propagation: false,
+      },
+    ]
+
+    courseDirectPermissions.forEach((permission) => {
+      expectPermissionDetail({
+        summary,
+        detailsKey: 'directPermissionDetails',
+        objectType: 'COURSE',
+        objectId: summary.courseId,
+        ...permission,
+      })
+    })
+
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'directPermissionDetails',
+      objectType: 'LIVE_QUIZ',
+      objectId: copiedLiveQuiz.id,
+      userShortname: Cypress.env('LECTURER_INST_SHORTNAME'),
+      permissionLevel: 'ADMIN',
+      propagation: false,
+    })
+
+    const derivedChecks = [
+      {
+        userShortname: Cypress.env('LECTURER_IND_SHORTNAME'),
+        coursePermissionLevel: 'READ',
+        liveQuizPermissionLevel: 'READ',
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST_SHORTNAME'),
+        coursePermissionLevel: 'EXECUTE',
+        liveQuizPermissionLevel: 'ADMIN',
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST2_SHORTNAME'),
+        coursePermissionLevel: 'WRITE',
+        liveQuizPermissionLevel: 'EXECUTE',
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST3_SHORTNAME'),
+        coursePermissionLevel: 'WRITE',
+        liveQuizPermissionLevel: 'WRITE',
+      },
+      {
+        userShortname: Cypress.env('LECTURER_INST4_SHORTNAME'),
+        coursePermissionLevel: 'ADMIN',
+        liveQuizPermissionLevel: 'ADMIN',
+      },
+    ]
+
+    derivedChecks.forEach((permission) => {
+      expectPermissionDetail({
+        summary,
+        detailsKey: 'derivedPermissionDetails',
+        objectType: 'COURSE',
+        objectId: summary.courseId,
+        userShortname: permission.userShortname,
+        permissionLevel: permission.coursePermissionLevel,
+        derived: false,
+      })
+      expectPermissionDetail({
+        summary,
+        detailsKey: 'derivedPermissionDetails',
+        objectType: 'LIVE_QUIZ',
+        objectId: copiedLiveQuiz.id,
+        userShortname: permission.userShortname,
+        permissionLevel: permission.liveQuizPermissionLevel,
+      })
+    })
+  }
+
+  function expectCopiedUserGroupPermissions({
+    summary,
+    data,
+  }: {
+    summary: any
+    data: any
+  }) {
+    const groupDirectPermissions = [
+      {
+        userGroupName: data.sharing.group1,
+        permissionLevel: 'READ',
+        propagation: false,
+      },
+      {
+        userGroupName: data.sharing.group2,
+        permissionLevel: 'EXECUTE',
+        propagation: false,
+      },
+      {
+        userGroupName: data.sharing.group3,
+        permissionLevel: 'WRITE',
+        propagation: false,
+      },
+      {
+        userGroupName: data.sharing.group4,
+        permissionLevel: 'WRITE',
+        propagation: true,
+      },
+      {
+        userGroupName: data.sharing.group5,
+        permissionLevel: 'ADMIN',
+        propagation: false,
+      },
+    ]
+
+    groupDirectPermissions.forEach((permission) => {
+      expectPermissionDetail({
+        summary,
+        detailsKey: 'directPermissionDetails',
+        objectType: 'COURSE',
+        objectId: summary.courseId,
+        ...permission,
+      })
+    })
+  }
+
   function updateElementContentAndLinkedInstances({
     elementName,
     content,
@@ -1263,6 +1472,82 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${courseName}"]`).click()
     cy.get('[data-cy="tab-liveQuizzes"]', { timeout: 30000 }).should('exist')
+  }
+
+  function verifyCopiedCourseAdminReview({
+    data,
+    courseName,
+  }: {
+    data: any
+    courseName: string
+  }) {
+    cy.loginInstitutionalCatalyst4()
+    openCourseInManage(courseName)
+    cy.get('[data-cy="tab-liveQuizzes"]').click()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).click()
+    cy.get(`[data-cy="activity-information-${data.sharing.liveQuiz}"]`).click()
+    cy.get('[data-cy="activity-review-button"]').should(
+      'contain',
+      messages.manage.activities.reviewCompleted
+    )
+    cy.get('[data-cy="activity-review-button"]').click()
+    cy.get('[data-cy="activity-review-button"]').should(
+      'contain',
+      messages.manage.activities.resetReview
+    )
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+    cy.logoutUser()
+  }
+
+  function verifyCopiedCoursePermissionBadges({
+    data,
+    courseName,
+    coursePermissionLevel,
+    liveQuizPermissionLevel,
+  }: {
+    data: any
+    courseName: string
+    coursePermissionLevel: string
+    liveQuizPermissionLevel: string
+  }) {
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${courseName}"]`)
+      .get(
+        `[data-cy="permission-level-${courseName}-${coursePermissionLevel}"]`
+      )
+      .should('exist')
+    cy.get(`[data-cy="course-list-button-${courseName}"]`).click()
+    cy.get('[data-cy="tab-liveQuizzes"]').click()
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`)
+      .get(
+        `[data-cy="permission-level-${data.sharing.liveQuiz}-${liveQuizPermissionLevel}"]`
+      )
+      .should('exist')
+    cy.logoutUser()
+  }
+
+  function revokeCopiedPermissionAndVerifySourceUnaffected({
+    data,
+    copiedCourseName,
+    shortname,
+  }: {
+    data: any
+    copiedCourseName: string
+    shortname: string
+  }) {
+    cy.loginLecturer()
+    openCourseInManage(copiedCourseName)
+    cy.get('[data-cy="course-share-button"]').click()
+    cy.get(`[data-cy="permission-${shortname}"]`).should('exist')
+    cy.get(`[data-cy="revoke-permission-${shortname}"]`).click()
+    cy.get('[data-cy="confirm-revocation"]').click()
+    cy.get(`[data-cy="permission-${shortname}"]`).should('not.exist')
+    cy.get('[data-cy="close-share-object"]').click()
+
+    openCourseInManage(data.sharing.course)
+    cy.get('[data-cy="course-share-button"]').click()
+    cy.get(`[data-cy="permission-${shortname}"]`).should('exist')
+    cy.get('[data-cy="close-share-object"]').click()
   }
 
   function ensureStudentCourseParticipation(
@@ -2012,6 +2297,7 @@ describe('Test course creation and editing functionalities', function () {
 
   it('Duplicate the course as owner and verify copied activities, clean state, and isolated same-name live quiz results', function () {
     const copyName = `${this.data.sharing.course} Copy`
+    const competencyTreeName = `${this.data.sharing.course} Competency Tree`
 
     cy.task('deleteCourseByName', {
       courseName: copyName,
@@ -2023,6 +2309,11 @@ describe('Test course creation and editing functionalities', function () {
     })
     cy.task('createDeletedCourseActivities', {
       courseName: this.data.sharing.course,
+    })
+    cy.task('attachCourseCompetencyTree', {
+      courseName: this.data.sharing.course,
+      ownerId: Cypress.env('LECTURER_ID'),
+      treeName: competencyTreeName,
     })
 
     cy.loginLecturer()
@@ -2053,6 +2344,14 @@ describe('Test course creation and editing functionalities', function () {
         courseName: copyName,
         ownerId: Cypress.env('LECTURER_ID'),
       }).then((copiedSummary: any) => {
+        expect(copiedSummary.isGamificationEnabled).to.equal(
+          sourceSummary.isGamificationEnabled
+        )
+        expect(sourceSummary.competencyTreeName).to.equal(competencyTreeName)
+        expect(copiedSummary.competencyTreeId).to.equal(
+          sourceSummary.competencyTreeId
+        )
+        expect(copiedSummary.competencyTreeName).to.equal(competencyTreeName)
         expectCopiedActivityReferences({
           sourceSummary,
           copiedSummary,
@@ -2366,6 +2665,116 @@ describe('Test course creation and editing functionalities', function () {
     ).should('have.attr', 'data-state', 'unchecked')
   })
 
+  // Generated by Cypress Author on 2026-06-29: verifies copied direct permissions and recomputed access.
+  it('Duplicate the shared course as owner and preserve direct individual permissions', function () {
+    const copyName = `${this.data.sharing.course} Shared Copy`
+
+    cy.task('deleteCourseWithActivitiesByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+    cy.task('deleteLiveQuizDirectPermission', {
+      courseName: this.data.sharing.course,
+      liveQuizName: this.data.sharing.liveQuiz,
+      ownerId: Cypress.env('LECTURER_ID'),
+      userId: Cypress.env('LECTURER_INST_ID'),
+    })
+    cy.task('grantLiveQuizDirectPermission', {
+      courseName: this.data.sharing.course,
+      liveQuizName: this.data.sharing.liveQuiz,
+      ownerId: Cypress.env('LECTURER_ID'),
+      userId: Cypress.env('LECTURER_INST_ID'),
+      permissionLevel: 'ADMIN',
+      propagation: false,
+    })
+
+    cy.loginLecturer()
+    openCourseInManage(this.data.sharing.course)
+    cy.get('[data-cy="course-duplicate-button"]').should('exist').click()
+    cy.get('[data-cy="course-name"]').clear().type(copyName)
+    cy.get('[data-cy="course-display-name"]').clear().type(copyName)
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+
+    cy.task('deleteLiveQuizDirectPermission', {
+      courseName: this.data.sharing.course,
+      liveQuizName: this.data.sharing.liveQuiz,
+      ownerId: Cypress.env('LECTURER_ID'),
+      userId: Cypress.env('LECTURER_INST_ID'),
+    })
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${copyName}"]`).should('exist')
+
+    expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 1,
+      directPermissions: 6,
+    })
+
+    cy.task('getCourseDuplicationSummary', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    }).then((summary: any) => {
+      expectCopiedIndividualPermissions({
+        summary,
+        data: this.data,
+      })
+    })
+
+    cy.logoutUser()
+    cy.loginIndividualCatalyst()
+    verifyCopiedCoursePermissionBadges({
+      data: this.data,
+      courseName: copyName,
+      coursePermissionLevel: 'READ',
+      liveQuizPermissionLevel: 'READ',
+    })
+
+    cy.loginInstitutionalCatalyst()
+    verifyCopiedCoursePermissionBadges({
+      data: this.data,
+      courseName: copyName,
+      coursePermissionLevel: 'EXECUTE',
+      liveQuizPermissionLevel: 'ADMIN',
+    })
+
+    cy.loginInstitutionalCatalyst2()
+    verifyCopiedCoursePermissionBadges({
+      data: this.data,
+      courseName: copyName,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'EXECUTE',
+    })
+
+    cy.loginInstitutionalCatalyst3()
+    verifyCopiedCoursePermissionBadges({
+      data: this.data,
+      courseName: copyName,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'WRITE',
+    })
+
+    verifyCopiedCourseAdminReview({
+      data: this.data,
+      courseName: copyName,
+    })
+
+    revokeCopiedPermissionAndVerifySourceUnaffected({
+      data: this.data,
+      copiedCourseName: copyName,
+      shortname: Cypress.env('LECTURER_IND_SHORTNAME'),
+    })
+
+    cy.task('deleteCourseWithActivitiesByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+  })
+
   it('Verify that the user with individual READ permissions can only see course & activities with READ permissions', function () {
     cy.loginIndividualCatalyst()
     verifyCourseReadPermissions({ data: this.data })
@@ -2439,6 +2848,21 @@ describe('Test course creation and editing functionalities', function () {
       practiceQuizzes: 0,
       microLearnings: 0,
       groupActivities: 0,
+      directPermissions: 5,
+    })
+    cy.task('getCourseDuplicationSummary', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_INST4_ID'),
+    }).then((summary: any) => {
+      expectPermissionDetail({
+        summary,
+        detailsKey: 'directPermissionDetails',
+        objectType: 'COURSE',
+        objectId: summary.courseId,
+        userShortname: Cypress.env('LECTURER_SHORTNAME'),
+        permissionLevel: 'ADMIN',
+        propagation: false,
+      })
     })
     cleanupAdminDuplicatedCourse({ data: this.data })
   })
@@ -2795,6 +3219,51 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-propagation-${this.data.sharing.group5}"]`
     ).should('have.attr', 'data-state', 'unchecked')
+  })
+
+  // Generated by Cypress Author on 2026-06-29: verifies copied direct user-group permissions.
+  it('Duplicate the shared course as owner and preserve direct user group permissions', function () {
+    const copyName = `${this.data.sharing.course} Group Shared Copy`
+
+    cy.task('deleteCourseWithActivitiesByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
+
+    cy.loginLecturer()
+    openCourseInManage(this.data.sharing.course)
+    cy.get('[data-cy="course-duplicate-button"]').should('exist').click()
+    cy.get('[data-cy="course-name"]').clear().type(copyName)
+    cy.get('[data-cy="course-display-name"]').clear().type(copyName)
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${copyName}"]`).should('exist')
+
+    expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 1,
+      directPermissions: 5,
+    })
+
+    cy.task('getCourseDuplicationSummary', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    }).then((summary: any) => {
+      expectCopiedUserGroupPermissions({
+        summary,
+        data: this.data,
+      })
+    })
+
+    cy.task('deleteCourseWithActivitiesByName', {
+      courseName: copyName,
+      ownerId: Cypress.env('LECTURER_ID'),
+    })
   })
 
   it('Verify that the user in group 1 can see the objects according to course READ permissions', function () {

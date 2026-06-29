@@ -260,7 +260,7 @@ function CourseOverviewHeader({
                   startDate: startDateUTC,
                   endDate: endDateUTC,
                   notificationEmail: values.notificationEmail,
-                  isGamificationEnabled: values.isGamificationEnabled,
+                  isGamificationEnabled: course.isGamificationEnabled,
                   isGroupCreationEnabled: values.isGroupCreationEnabled,
                   groupDeadlineDate: groupDeadlineDateUTC,
                   maxGroupSize: parseInt(String(values.maxGroupSize)),

@@ -6,16 +6,24 @@
  * course editing/archiving, deletion, and course sharing permissions.
  */
 
+import { PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
+import { chooseActivityAction } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
+  LECTURER_EMAIL,
   LECTURER_ID,
   LECTURER_IND_EMAIL,
+  LECTURER_IND_ID,
   LECTURER_IND_SHORTNAME,
+  LECTURER_INST2_ID,
   LECTURER_INST2_SHORTNAME,
+  LECTURER_INST3_ID,
   LECTURER_INST3_SHORTNAME,
+  LECTURER_INST4_ID,
   LECTURER_INST4_SHORTNAME,
   LECTURER_INST_EMAIL,
+  LECTURER_INST_ID,
   LECTURER_INST_SHORTNAME,
   LECTURER_SHORTNAME,
   STUDENT_PASSWORD,
@@ -35,11 +43,29 @@ import {
 } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
+  createGroupActivity as createGroupActivityActivity,
   createLiveQuiz as createLiveQuizActivity,
   createMicroLearning as createMicroLearningActivity,
   createPracticeQuiz as createPracticeQuizActivity,
 } from '../util/fixtures/activities.js'
-import { getCoursePin } from '../util/fixtures/courses.js'
+import {
+  attachCourseCompetencyTree,
+  createCourseDuplicationFailureFixture,
+  createCourseRecord,
+  createDeletedCourseActivities,
+  deleteCourseWithActivitiesByName,
+  deleteLiveQuizDirectPermission,
+  ensureCourseParticipation,
+  getCourseDuplicationSummary,
+  getCourseLiveQuizResponseSummary,
+  getCoursePin,
+  grantLiveQuizDirectPermission,
+  resetCourseLiveQuiz,
+  submitCourseLiveQuizStudentResponse,
+  updateElementContentAndInstances,
+  type CourseDuplicationSummary,
+  type CourseLiveQuizResponseSummary,
+} from '../util/fixtures/courses.js'
 import {
   createAnswerCollection as createAnswerCollectionDirect,
   createQuestionSC,
@@ -47,6 +73,8 @@ import {
   deleteElement,
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
+import { enMessages as messages } from '../util/messages.js'
+import { createQuestionCS as createQuestionCSWorkflow } from '../util/workflow.js'
 
 // ---------------------------------------------------------------------------
 // Fixture data (from cypress/fixtures/N-course.json)
@@ -139,7 +167,105 @@ const SEML = {
 const CSML = {
   title: 'CS Title Test 1 (Version 1)',
   content: 'CS Question Test 1',
+  explanation: 'CS Explanation Test 1',
   selectedItems: [0, 2, 4],
+  criteria: [
+    {
+      id: '90OfR7GSUB',
+      mode: 'range',
+      name: 'Criterion 1 with range 0-100',
+      min: 0,
+      max: 100,
+      step: 0.2,
+      unit: '%',
+    },
+    {
+      id: 'cAJKuQKzm5',
+      mode: 'range',
+      name: 'Criterion 2 with range -500 to 1000',
+      min: -500,
+      max: 1000,
+      step: 10,
+    },
+  ],
+  cases: [
+    {
+      id: 'SrrZEpetE2',
+      title: 'Case 1',
+      description: 'Case 1 Description',
+    },
+    {
+      id: 'KELATtvxs_',
+      title: 'Case 2',
+      description: 'Case 2 Description',
+    },
+  ],
+  solutions: {
+    0: {
+      0: {
+        0: {
+          lower: 23.4,
+          upper: 87.9,
+        },
+        1: {
+          lower: -234.5,
+          upper: 456.7,
+        },
+      },
+      1: {
+        0: {
+          lower: 0,
+          upper: 100,
+        },
+        1: {
+          lower: -500,
+          upper: 789.3,
+        },
+      },
+      2: {
+        0: {
+          lower: 45.6,
+          upper: 92.1,
+        },
+        1: {
+          lower: -123.4,
+          upper: 1000,
+        },
+      },
+    },
+    1: {
+      0: {
+        0: {
+          lower: 12.8,
+          upper: 67.3,
+        },
+        1: {
+          lower: -432.1,
+          upper: 567.8,
+        },
+      },
+      1: {
+        0: {
+          lower: 34.5,
+          upper: 89.2,
+        },
+        1: {
+          lower: -345.6,
+          upper: 890.1,
+        },
+      },
+      2: {
+        0: {
+          lower: 56.7,
+          upper: 78.9,
+        },
+        1: {
+          lower: -289.3,
+          upper: 678.2,
+        },
+      },
+    },
+  },
 }
 
 // i18n string equivalents
@@ -510,25 +636,42 @@ async function verifyCourseReadPermissions(page: Page) {
 
   // activities visible with READ badge
   await page.getByTestId('activities').click()
-  await expect(
-    page.getByTestId(`activity-LIVE_QUIZ-${SHARING.liveQuiz}`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.liveQuiz}-READ`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(`activity-PRACTICE_QUIZ-${SHARING.practiceQuiz}`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(`activity-MICRO_LEARNING-${SHARING.microLearning}`)
-  ).toBeVisible()
+  await expectActivityOverviewPermission(
+    page,
+    'LIVE_QUIZ',
+    SHARING.liveQuiz,
+    'READ'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'PRACTICE_QUIZ',
+    SHARING.practiceQuiz,
+    'READ'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'MICRO_LEARNING',
+    SHARING.microLearning,
+    'READ'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'GROUP_ACTIVITY',
+    SHARING.groupActivity,
+    'READ'
+  )
   // course with READ badge
   await page.getByTestId('courses').click()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.course}-READ`)
-  ).toBeVisible()
+  await expectCourseCardPermission(page, SHARING.course, 'READ')
   await page.getByTestId(`course-list-button-${SHARING.course}`).click()
   await expect(page.getByTestId('course-share-button')).not.toBeVisible()
+  await expect(page.getByTestId('course-duplicate-button')).not.toBeVisible()
+  await expectCourseActivityPermissionTabs(page, {
+    liveQuiz: 'READ',
+    practiceQuiz: 'READ',
+    microLearning: 'READ',
+    groupActivity: 'READ',
+  })
 }
 
 /**
@@ -544,19 +687,41 @@ async function verifyCourseExecutePermissions(page: Page) {
   }
 
   await page.getByTestId('activities').click()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.liveQuiz}-EXECUTE`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.practiceQuiz}-EXECUTE`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.microLearning}-EXECUTE`)
-  ).toBeVisible()
+  await expectActivityOverviewPermission(
+    page,
+    'LIVE_QUIZ',
+    SHARING.liveQuiz,
+    'EXECUTE'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'PRACTICE_QUIZ',
+    SHARING.practiceQuiz,
+    'EXECUTE'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'MICRO_LEARNING',
+    SHARING.microLearning,
+    'EXECUTE'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'GROUP_ACTIVITY',
+    SHARING.groupActivity,
+    'EXECUTE'
+  )
   await page.getByTestId('courses').click()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.course}-EXECUTE`)
-  ).toBeVisible()
+  await expectCourseCardPermission(page, SHARING.course, 'EXECUTE')
+  await page.getByTestId(`course-list-button-${SHARING.course}`).click()
+  await expect(page.getByTestId('course-share-button')).not.toBeVisible()
+  await expect(page.getByTestId('course-duplicate-button')).not.toBeVisible()
+  await expectCourseActivityPermissionTabs(page, {
+    liveQuiz: 'EXECUTE',
+    practiceQuiz: 'EXECUTE',
+    microLearning: 'EXECUTE',
+    groupActivity: 'EXECUTE',
+  })
 }
 
 /**
@@ -568,23 +733,41 @@ async function verifyCourseWritePermissions(page: Page, propagation: boolean) {
   const activityBadge = propagation ? 'WRITE' : 'EXECUTE'
 
   await page.getByTestId('activities').click()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.liveQuiz}-${activityBadge}`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(
-      `permission-level-${SHARING.practiceQuiz}-${activityBadge}`
-    )
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(
-      `permission-level-${SHARING.microLearning}-${activityBadge}`
-    )
-  ).toBeVisible()
+  await expectActivityOverviewPermission(
+    page,
+    'LIVE_QUIZ',
+    SHARING.liveQuiz,
+    activityBadge
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'PRACTICE_QUIZ',
+    SHARING.practiceQuiz,
+    activityBadge
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'MICRO_LEARNING',
+    SHARING.microLearning,
+    activityBadge
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'GROUP_ACTIVITY',
+    SHARING.groupActivity,
+    activityBadge
+  )
   await page.getByTestId('courses').click()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.course}-WRITE`)
-  ).toBeVisible()
+  await expectCourseCardPermission(page, SHARING.course, 'WRITE')
+  await page.getByTestId(`course-list-button-${SHARING.course}`).click()
+  await expect(page.getByTestId('course-share-button')).not.toBeVisible()
+  await expect(page.getByTestId('course-duplicate-button')).not.toBeVisible()
+  await expectCourseActivityPermissionTabs(page, {
+    liveQuiz: activityBadge,
+    practiceQuiz: activityBadge,
+    microLearning: activityBadge,
+    groupActivity: activityBadge,
+  })
 }
 
 /**
@@ -592,23 +775,43 @@ async function verifyCourseWritePermissions(page: Page, propagation: boolean) {
  */
 async function verifyCourseAdminPermissions(page: Page, checkBadge: boolean) {
   await page.getByTestId('activities').click()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.liveQuiz}-ADMIN`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.practiceQuiz}-ADMIN`)
-  ).toBeVisible()
-  await expect(
-    page.getByTestId(`permission-level-${SHARING.microLearning}-ADMIN`)
-  ).toBeVisible()
+  await expectActivityOverviewPermission(
+    page,
+    'LIVE_QUIZ',
+    SHARING.liveQuiz,
+    'ADMIN'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'PRACTICE_QUIZ',
+    SHARING.practiceQuiz,
+    'ADMIN'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'MICRO_LEARNING',
+    SHARING.microLearning,
+    'ADMIN'
+  )
+  await expectActivityOverviewPermission(
+    page,
+    'GROUP_ACTIVITY',
+    SHARING.groupActivity,
+    'ADMIN'
+  )
   await page.getByTestId('courses').click()
   if (checkBadge) {
-    await expect(
-      page.getByTestId(`permission-level-${SHARING.course}-ADMIN`)
-    ).toBeVisible()
+    await expectCourseCardPermission(page, SHARING.course, 'ADMIN')
   }
   await page.getByTestId(`course-list-button-${SHARING.course}`).click()
   await expect(page.getByTestId('course-share-button')).toBeVisible()
+  await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
+  await expectCourseActivityPermissionTabs(page, {
+    liveQuiz: 'ADMIN',
+    practiceQuiz: 'ADMIN',
+    microLearning: 'ADMIN',
+    groupActivity: 'ADMIN',
+  })
 }
 
 /**
@@ -699,6 +902,637 @@ async function confirmCourseDeletion(page: Page) {
 
   await expect(finalConfirm).toBeEnabled()
   await finalConfirm.click()
+}
+
+async function openCourseInManage(page: Page, courseName: string) {
+  await page.getByTestId('courses').click()
+  await page.getByTestId(`course-list-button-${courseName}`).click()
+  await expect(page.getByTestId('tab-liveQuizzes')).toBeVisible({
+    timeout: 30_000,
+  })
+}
+
+async function submitCourseDuplication(page: Page, copyName?: string) {
+  await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
+  await page.getByTestId('course-duplicate-button').click()
+
+  if (copyName) {
+    await page.getByTestId('course-name').fill(copyName)
+    await page.getByTestId('course-display-name').fill(copyName)
+  }
+
+  await page.getByTestId('manipulate-course-submit').click()
+  await expect(page.getByTestId('course-name')).not.toBeVisible({
+    timeout: 30_000,
+  })
+}
+
+async function expectCourseCardPermission(
+  page: Page,
+  courseName: string,
+  permissionLevel: string
+) {
+  const courseCard = page.getByTestId(`course-list-button-${courseName}`)
+  await expect(
+    courseCard.getByTestId(`permission-level-${courseName}-${permissionLevel}`)
+  ).toBeVisible()
+}
+
+async function expectActivityOverviewPermission(
+  page: Page,
+  type: 'LIVE_QUIZ' | 'PRACTICE_QUIZ' | 'MICRO_LEARNING' | 'GROUP_ACTIVITY',
+  activityName: string,
+  permissionLevel: string
+) {
+  const activityRow = page.getByTestId(`activity-${type}-${activityName}`)
+  await expect(activityRow).toBeVisible()
+  await expect(
+    activityRow.getByTestId(
+      `permission-level-${activityName}-${permissionLevel}`
+    )
+  ).toBeVisible()
+}
+
+async function expectCourseActivityPermissionTabs(
+  page: Page,
+  permissionLevelByActivity: {
+    liveQuiz: string
+    practiceQuiz: string
+    microLearning: string
+    groupActivity: string
+  }
+) {
+  await page.getByTestId('tab-liveQuizzes').click()
+  await expectActivityOverviewPermission(
+    page,
+    'LIVE_QUIZ',
+    SHARING.liveQuiz,
+    permissionLevelByActivity.liveQuiz
+  )
+
+  await page.getByTestId('tab-practiceQuizzes').click()
+  await expectActivityOverviewPermission(
+    page,
+    'PRACTICE_QUIZ',
+    SHARING.practiceQuiz,
+    permissionLevelByActivity.practiceQuiz
+  )
+
+  await page.getByTestId('tab-microLearnings').click()
+  await expectActivityOverviewPermission(
+    page,
+    'MICRO_LEARNING',
+    SHARING.microLearning,
+    permissionLevelByActivity.microLearning
+  )
+
+  await page.getByTestId('tab-groupActivities').click()
+  await expectActivityOverviewPermission(
+    page,
+    'GROUP_ACTIVITY',
+    SHARING.groupActivity,
+    permissionLevelByActivity.groupActivity
+  )
+}
+
+async function expectDuplicatedCourseSummary({
+  courseName,
+  ownerId,
+  liveQuizzes,
+  practiceQuizzes,
+  microLearnings,
+  groupActivities,
+  directPermissions = 0,
+}: {
+  courseName: string
+  ownerId?: string
+  liveQuizzes: number
+  practiceQuizzes: number
+  microLearnings: number
+  groupActivities: number
+  directPermissions?: number
+}) {
+  const summary = await getCourseDuplicationSummary({ courseName, ownerId })
+
+  expect(summary).not.toBeNull()
+  expect(summary).toMatchObject({
+    liveQuizzes,
+    practiceQuizzes,
+    microLearnings,
+    groupActivities,
+    participations: 0,
+    participantGroups: 0,
+    participantInvitations: 0,
+    groupAssignmentPoolEntries: 0,
+    directPermissions,
+    questionResponses: 0,
+    questionResponseDetails: 0,
+    liveQuizResponses: 0,
+    pointCorrections: 0,
+    groupActivityInstances: 0,
+    activityPerformances: 0,
+    activityProgresses: 0,
+    participantPerformances: 0,
+    participantActivityPerformances: 0,
+    aggregatedAnalytics: 0,
+    aggregatedCourseAnalytics: 0,
+    participantCourseAnalytics: 0,
+  })
+  expect(summary!.liveQuizStatuses).toEqual(Array(liveQuizzes).fill('DRAFT'))
+  expect(summary!.practiceQuizStatuses).toEqual(
+    Array(practiceQuizzes).fill('DRAFT')
+  )
+  expect(summary!.microLearningStatuses).toEqual(
+    Array(microLearnings).fill('DRAFT')
+  )
+  expect(summary!.groupActivityStatuses).toEqual(
+    Array(groupActivities).fill('DRAFT')
+  )
+
+  return summary!
+}
+
+async function verifyCourseDuplicationModalUi(page: Page) {
+  await expect(page.getByTestId('course-name')).toHaveValue(
+    `${SHARING.course} Copy`
+  )
+  await expect(page.getByTestId('course-display-name')).toHaveValue(
+    `${SHARING.courseDisplayName} Copy`
+  )
+  await expect(page.getByTestId('course-duplication-copy-info')).toContainText(
+    messages.manage.courseList.courseDuplicationCopyInfo
+  )
+  await expect(page.getByTestId('course-gamification')).not.toBeVisible()
+
+  for (const testId of [
+    'course-live-quizzes',
+    'course-practice-quizzes',
+    'course-microlearnings',
+    'course-group-activities',
+  ]) {
+    await expect(page.getByTestId(testId)).toHaveAttribute(
+      'data-state',
+      'checked'
+    )
+    await page.getByTestId(testId).click()
+    await expect(page.getByTestId(testId)).toHaveAttribute(
+      'data-state',
+      'unchecked'
+    )
+    await page.getByTestId(testId).click()
+    await expect(page.getByTestId(testId)).toHaveAttribute(
+      'data-state',
+      'checked'
+    )
+  }
+}
+
+async function verifyCopiedCourseActivities(page: Page) {
+  await page.getByTestId('tab-liveQuizzes').click()
+  await expect(
+    page.getByTestId(`activity-LIVE_QUIZ-${SHARING.liveQuiz}`)
+  ).toBeVisible()
+  await expect(
+    page.getByTestId(`status-${SHARING.liveQuiz}-DRAFT`)
+  ).toBeVisible()
+
+  await page.getByTestId('tab-practiceQuizzes').click()
+  await expect(
+    page.getByTestId(`activity-PRACTICE_QUIZ-${SHARING.practiceQuiz}`)
+  ).toBeVisible()
+  await expect(
+    page.getByTestId(`status-${SHARING.practiceQuiz}-DRAFT`)
+  ).toBeVisible()
+
+  await page.getByTestId('tab-microLearnings').click()
+  await expect(
+    page.getByTestId(`activity-MICRO_LEARNING-${SHARING.microLearning}`)
+  ).toBeVisible()
+  await expect(
+    page.getByTestId(`status-${SHARING.microLearning}-DRAFT`)
+  ).toBeVisible()
+
+  await page.getByTestId('tab-groupActivities').click()
+  await expect(
+    page.getByTestId(`activity-GROUP_ACTIVITY-${SHARING.groupActivity}`)
+  ).toBeVisible()
+  await expect(
+    page.getByTestId(`status-${SHARING.groupActivity}-DRAFT`)
+  ).toBeVisible()
+}
+
+function getActivityReference({
+  summary,
+  collection,
+  activityName,
+}: {
+  summary: CourseDuplicationSummary
+  collection:
+    | 'liveQuizzes'
+    | 'practiceQuizzes'
+    | 'microLearnings'
+    | 'groupActivities'
+  activityName: string
+}) {
+  return summary.activityReferences[collection].find(
+    (activity) => activity.name === activityName
+  )
+}
+
+function expectCopiedActivityReferences({
+  sourceSummary,
+  copiedSummary,
+}: {
+  sourceSummary: CourseDuplicationSummary
+  copiedSummary: CourseDuplicationSummary
+}) {
+  const activityRows = [
+    {
+      collection: 'liveQuizzes' as const,
+      name: SHARING.liveQuiz,
+    },
+    {
+      collection: 'practiceQuizzes' as const,
+      name: SHARING.practiceQuiz,
+    },
+    {
+      collection: 'microLearnings' as const,
+      name: SHARING.microLearning,
+    },
+    {
+      collection: 'groupActivities' as const,
+      name: SHARING.groupActivity,
+    },
+  ]
+
+  for (const activityRow of activityRows) {
+    const sourceActivity = getActivityReference({
+      summary: sourceSummary,
+      collection: activityRow.collection,
+      activityName: activityRow.name,
+    })
+    const copiedActivity = getActivityReference({
+      summary: copiedSummary,
+      collection: activityRow.collection,
+      activityName: activityRow.name,
+    })
+
+    expect(sourceActivity, `source ${activityRow.name}`).toBeTruthy()
+    expect(copiedActivity, `copied ${activityRow.name}`).toBeTruthy()
+    expect(copiedActivity!.id).not.toEqual(sourceActivity!.id)
+    expect(copiedActivity!.instances).toHaveLength(
+      sourceActivity!.instances.length
+    )
+
+    sourceActivity!.instances.forEach((sourceInstance, ix) => {
+      const copiedInstance = copiedActivity!.instances[ix]
+
+      expect(copiedInstance.instanceId).not.toEqual(sourceInstance.instanceId)
+      expect(copiedInstance.elementId).toEqual(sourceInstance.elementId)
+    })
+  }
+}
+
+function expectPermissionDetail({
+  summary,
+  detailsKey,
+  objectType,
+  objectId,
+  userShortname,
+  userGroupName,
+  permissionLevel,
+  propagation,
+  derived,
+}: {
+  summary: CourseDuplicationSummary
+  detailsKey: 'directPermissionDetails' | 'derivedPermissionDetails'
+  objectType: string
+  objectId: string
+  userShortname?: string
+  userGroupName?: string
+  permissionLevel: string
+  propagation?: boolean
+  derived?: boolean
+}) {
+  const permission = summary[detailsKey].find((entry) => {
+    return (
+      entry.objectType === objectType &&
+      entry.objectId === objectId &&
+      entry.permissionLevel === permissionLevel &&
+      (typeof userShortname === 'undefined' ||
+        entry.userShortname === userShortname) &&
+      (typeof userGroupName === 'undefined' ||
+        entry.userGroupName === userGroupName)
+    )
+  })
+
+  expect(
+    permission,
+    `${detailsKey} ${objectType} ${objectId} ${userShortname ?? userGroupName}`
+  ).toBeTruthy()
+
+  if (typeof propagation !== 'undefined') {
+    expect(permission!.propagation).toEqual(propagation)
+  }
+  if (typeof derived !== 'undefined') {
+    expect(permission!.derived).toEqual(derived)
+  }
+}
+
+function expectCopiedIndividualPermissions(summary: CourseDuplicationSummary) {
+  const copiedLiveQuiz = getActivityReference({
+    summary,
+    collection: 'liveQuizzes',
+    activityName: SHARING.liveQuiz,
+  })
+
+  expect(copiedLiveQuiz).toBeTruthy()
+
+  const courseDirectPermissions = [
+    {
+      userShortname: LECTURER_IND_SHORTNAME,
+      permissionLevel: 'READ',
+      propagation: false,
+    },
+    {
+      userShortname: LECTURER_INST_SHORTNAME,
+      permissionLevel: 'EXECUTE',
+      propagation: false,
+    },
+    {
+      userShortname: LECTURER_INST2_SHORTNAME,
+      permissionLevel: 'WRITE',
+      propagation: false,
+    },
+    {
+      userShortname: LECTURER_INST3_SHORTNAME,
+      permissionLevel: 'WRITE',
+      propagation: true,
+    },
+    {
+      userShortname: LECTURER_INST4_SHORTNAME,
+      permissionLevel: 'ADMIN',
+      propagation: false,
+    },
+  ]
+
+  courseDirectPermissions.forEach((permission) => {
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'directPermissionDetails',
+      objectType: 'COURSE',
+      objectId: summary.courseId,
+      ...permission,
+    })
+  })
+
+  expectPermissionDetail({
+    summary,
+    detailsKey: 'directPermissionDetails',
+    objectType: 'LIVE_QUIZ',
+    objectId: copiedLiveQuiz!.id,
+    userShortname: LECTURER_INST_SHORTNAME,
+    permissionLevel: 'ADMIN',
+    propagation: false,
+  })
+
+  const derivedChecks = [
+    {
+      userShortname: LECTURER_IND_SHORTNAME,
+      coursePermissionLevel: 'READ',
+      liveQuizPermissionLevel: 'READ',
+    },
+    {
+      userShortname: LECTURER_INST_SHORTNAME,
+      coursePermissionLevel: 'EXECUTE',
+      liveQuizPermissionLevel: 'ADMIN',
+    },
+    {
+      userShortname: LECTURER_INST2_SHORTNAME,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'EXECUTE',
+    },
+    {
+      userShortname: LECTURER_INST3_SHORTNAME,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'WRITE',
+    },
+    {
+      userShortname: LECTURER_INST4_SHORTNAME,
+      coursePermissionLevel: 'ADMIN',
+      liveQuizPermissionLevel: 'ADMIN',
+    },
+  ]
+
+  derivedChecks.forEach((permission) => {
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'derivedPermissionDetails',
+      objectType: 'COURSE',
+      objectId: summary.courseId,
+      userShortname: permission.userShortname,
+      permissionLevel: permission.coursePermissionLevel,
+      derived: false,
+    })
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'derivedPermissionDetails',
+      objectType: 'LIVE_QUIZ',
+      objectId: copiedLiveQuiz!.id,
+      userShortname: permission.userShortname,
+      permissionLevel: permission.liveQuizPermissionLevel,
+    })
+  })
+}
+
+function expectCopiedUserGroupPermissions(summary: CourseDuplicationSummary) {
+  const groupDirectPermissions = [
+    {
+      userGroupName: SHARING.group1,
+      permissionLevel: 'READ',
+      propagation: false,
+    },
+    {
+      userGroupName: SHARING.group2,
+      permissionLevel: 'EXECUTE',
+      propagation: false,
+    },
+    {
+      userGroupName: SHARING.group3,
+      permissionLevel: 'WRITE',
+      propagation: false,
+    },
+    {
+      userGroupName: SHARING.group4,
+      permissionLevel: 'WRITE',
+      propagation: true,
+    },
+    {
+      userGroupName: SHARING.group5,
+      permissionLevel: 'ADMIN',
+      propagation: false,
+    },
+  ]
+
+  groupDirectPermissions.forEach((permission) => {
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'directPermissionDetails',
+      objectType: 'COURSE',
+      objectId: summary.courseId,
+      ...permission,
+    })
+  })
+}
+
+async function verifyCopiedCoursePermissionBadges({
+  page,
+  courseName,
+  coursePermissionLevel,
+  liveQuizPermissionLevel,
+}: {
+  page: Page
+  courseName: string
+  coursePermissionLevel: string
+  liveQuizPermissionLevel: string
+}) {
+  await page.getByTestId('courses').click()
+  const courseCard = page.getByTestId(`course-list-button-${courseName}`)
+  await expect(
+    courseCard.getByTestId(
+      `permission-level-${courseName}-${coursePermissionLevel}`
+    )
+  ).toBeVisible()
+  await courseCard.click()
+  await page.getByTestId('tab-liveQuizzes').click()
+  const liveQuizRow = page.getByTestId(`activity-LIVE_QUIZ-${SHARING.liveQuiz}`)
+  await expect(
+    liveQuizRow.getByTestId(
+      `permission-level-${SHARING.liveQuiz}-${liveQuizPermissionLevel}`
+    )
+  ).toBeVisible()
+}
+
+async function verifyCopiedCourseAdminReview(page: Page, courseName: string) {
+  await openCourseInManage(page, courseName)
+  await page.getByTestId('tab-liveQuizzes').click()
+  await chooseActivityAction(
+    page,
+    'LIVE_QUIZ',
+    SHARING.liveQuiz,
+    `activity-information-${SHARING.liveQuiz}`
+  )
+  await expect(page.getByTestId('activity-review-button')).toContainText(
+    messages.manage.activities.reviewCompleted
+  )
+  await page.getByTestId('activity-review-button').click()
+  await expect(page.getByTestId('activity-review-button')).toContainText(
+    messages.manage.activities.resetReview
+  )
+  await page.getByTestId('close-activity-details-modal').click()
+}
+
+async function revokeCopiedPermissionAndVerifySourceUnaffected({
+  page,
+  copiedCourseName,
+  shortname,
+}: {
+  page: Page
+  copiedCourseName: string
+  shortname: string
+}) {
+  await openCourseInManage(page, copiedCourseName)
+  await page.getByTestId('course-share-button').click()
+  await expect(page.getByTestId(`permission-${shortname}`)).toBeVisible()
+  await page.getByTestId(`revoke-permission-${shortname}`).click()
+  await page.getByTestId('confirm-revocation').click()
+  await expect(page.getByTestId(`permission-${shortname}`)).not.toBeVisible()
+  await page.getByTestId('close-share-object').click()
+
+  await openCourseInManage(page, SHARING.course)
+  await page.getByTestId('course-share-button').click()
+  await expect(page.getByTestId(`permission-${shortname}`)).toBeVisible()
+  await page.getByTestId('close-share-object').click()
+}
+
+async function expectLiveQuizElementInstanceContent({
+  courseName,
+  liveQuizName,
+  content,
+}: {
+  courseName: string
+  liveQuizName: string
+  content: string
+}) {
+  await expect(async () => {
+    const summary = await getCourseDuplicationSummary({
+      courseName,
+      ownerId: LECTURER_ID,
+    })
+
+    expect(summary).not.toBeNull()
+
+    const activity = getActivityReference({
+      summary: summary!,
+      collection: 'liveQuizzes',
+      activityName: liveQuizName,
+    })
+
+    expect(activity).toBeTruthy()
+    expect(
+      activity!.instances.map((instance) => instance.elementContent)
+    ).toContain(content)
+    expect(
+      activity!.instances.map((instance) => instance.elementDataContent)
+    ).toContain(content)
+  }).toPass({ timeout: 10_000 })
+}
+
+async function startLiveQuizInCourse({
+  page,
+  courseName,
+  liveQuizName,
+}: {
+  page: Page
+  courseName: string
+  liveQuizName: string
+}) {
+  await openCourseInManage(page, courseName)
+  await page.getByTestId('tab-liveQuizzes').click()
+  await expect(
+    page.getByTestId(`start-live-quiz-${liveQuizName}`)
+  ).toBeVisible()
+  await page.getByTestId(`start-live-quiz-${liveQuizName}`).click()
+  await expect(page).toHaveURL(/\/quizzes\//, { timeout: 60_000 })
+  await expect(page.getByTestId('next-block-timeline')).toBeVisible({
+    timeout: 60_000,
+  })
+  await page.getByTestId('next-block-timeline').click()
+  await page.waitForTimeout(500)
+}
+
+async function expectCourseLiveQuizResponseSummary({
+  courseName,
+  liveQuizName,
+}: {
+  courseName: string
+  liveQuizName: string
+}) {
+  let latestSummary: CourseLiveQuizResponseSummary | null = null
+
+  await expect(async () => {
+    latestSummary = await getCourseLiveQuizResponseSummary({
+      courseName,
+      liveQuizName,
+      participantUsername: STUDENT_USERNAME,
+    })
+
+    expect(latestSummary.responseCount).toEqual(1)
+    expect(latestSummary.correctnesses).toContain('CORRECT')
+    expect(latestSummary.resultTotals).toContain(1)
+  }).toPass({ timeout: 10_000 })
+
+  return latestSummary!
 }
 
 // ===========================================================================
@@ -1354,6 +2188,19 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       ),
       userId: LECTURER_ID,
     })
+    await createQuestionCSWorkflow(page, {
+      name: CSML.title,
+      content: CSML.content,
+      explanation: CSML.explanation,
+      collectionName: COLLECTION.name,
+      selectedItems: COLLECTION.options.filter((_, ix) =>
+        CSML.selectedItems.includes(ix)
+      ),
+      criteria: CSML.criteria,
+      cases: CSML.cases,
+      solutions: CSML.solutions,
+      userId: LECTURER_ID,
+    })
     await page.reload()
     await expect(page.getByTestId('elements-search-input')).toBeVisible()
 
@@ -1396,6 +2243,44 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     })
     await goToCreateNewActivity(page)
 
+    await createGroupActivityActivity(page, {
+      name: SHARING.groupActivity,
+      displayName: SHARING.groupActivity,
+      task: 'Task Description',
+      courseName: SHARING.course,
+      scheduledStartDate: {
+        monthDelta: 1,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: `${getDatetimeValidationString(1, '16')}, 02:00`,
+      },
+      scheduledEndDate: {
+        monthDelta: 4,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: `${getDatetimeValidationString(4, '14')}, 18:00`,
+      },
+      clues: [
+        {
+          type: 'text',
+          name: 'Clue 1',
+          displayName: 'First Hint',
+          content: 'Lorem ipsum dolor sit amet',
+        },
+        {
+          type: 'text',
+          name: 'Clue 2',
+          displayName: 'Second Hint',
+          content: 'Consectetur adipiscing elit',
+        },
+      ],
+      stack: {
+        elements: [CSML.title],
+      },
+    })
+
     // Verify activities in course
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
@@ -1414,6 +2299,294 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(
       page.getByTestId(`activity-MICRO_LEARNING-${SHARING.microLearning}`)
     ).toBeVisible()
+
+    await page.getByTestId('tab-groupActivities').click()
+    await expect(
+      page.getByTestId(`activity-GROUP_ACTIVITY-${SHARING.groupActivity}`)
+    ).toBeVisible()
+  })
+
+  test('Duplicate the course as owner and verify copied activities, clean state, and shared element references', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const copyName = `${SHARING.course} Copy`
+    const competencyTreeName = `${SHARING.course} Competency Tree`
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
+    await resetCourseLiveQuiz({
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+    })
+    await createDeletedCourseActivities(SHARING.course)
+    await attachCourseCompetencyTree({
+      courseName: SHARING.course,
+      ownerId: LECTURER_ID,
+      treeName: competencyTreeName,
+    })
+
+    await loginLecturer()
+    await openCourseInManage(page, SHARING.course)
+    await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
+    await page.getByTestId('course-duplicate-button').click()
+    await verifyCourseDuplicationModalUi(page)
+    await page.getByTestId('manipulate-course-submit').click()
+    await expect(page.getByTestId('course-name')).not.toBeVisible({
+      timeout: 30_000,
+    })
+
+    await page.getByTestId('courses').click()
+    await expect(
+      page.getByTestId(`course-list-button-${copyName}`)
+    ).toBeVisible()
+    await openCourseInManage(page, copyName)
+    await verifyCopiedCourseActivities(page)
+
+    const copiedSummary = await expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 1,
+    })
+    const sourceSummary = await getCourseDuplicationSummary({
+      courseName: SHARING.course,
+      ownerId: LECTURER_ID,
+    })
+
+    expect(sourceSummary).not.toBeNull()
+    expect(copiedSummary.isGamificationEnabled).toEqual(
+      sourceSummary!.isGamificationEnabled
+    )
+    expect(sourceSummary!.competencyTreeName).toEqual(competencyTreeName)
+    expect(copiedSummary.competencyTreeId).toEqual(
+      sourceSummary!.competencyTreeId
+    )
+    expect(copiedSummary.competencyTreeName).toEqual(competencyTreeName)
+    expectCopiedActivityReferences({
+      sourceSummary: sourceSummary!,
+      copiedSummary,
+    })
+
+    await expect(
+      ensureCourseParticipation({
+        courseName: SHARING.course,
+        participantUsername: STUDENT_USERNAME,
+      })
+    ).resolves.toEqual(expect.any(String))
+    await expect(
+      ensureCourseParticipation({
+        courseName: copyName,
+        participantUsername: STUDENT_USERNAME,
+      })
+    ).resolves.toEqual(expect.any(String))
+
+    await startLiveQuizInCourse({
+      page,
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+    })
+    await startLiveQuizInCourse({
+      page,
+      courseName: copyName,
+      liveQuizName: SHARING.liveQuiz,
+    })
+
+    await expect(
+      submitCourseLiveQuizStudentResponse({
+        courseName: SHARING.course,
+        liveQuizName: SHARING.liveQuiz,
+        participantUsername: STUDENT_USERNAME,
+      })
+    ).resolves.toMatchObject({
+      courseId: sourceSummary!.courseId,
+      liveQuizId: getActivityReference({
+        summary: sourceSummary!,
+        collection: 'liveQuizzes',
+        activityName: SHARING.liveQuiz,
+      })!.id,
+    })
+    await expect(
+      submitCourseLiveQuizStudentResponse({
+        courseName: copyName,
+        liveQuizName: SHARING.liveQuiz,
+        participantUsername: STUDENT_USERNAME,
+      })
+    ).resolves.toMatchObject({
+      courseId: copiedSummary.courseId,
+      liveQuizId: getActivityReference({
+        summary: copiedSummary,
+        collection: 'liveQuizzes',
+        activityName: SHARING.liveQuiz,
+      })!.id,
+    })
+
+    const sourceResponseSummary = await expectCourseLiveQuizResponseSummary({
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+    })
+    const copiedResponseSummary = await expectCourseLiveQuizResponseSummary({
+      courseName: copyName,
+      liveQuizName: SHARING.liveQuiz,
+    })
+
+    expect(copiedResponseSummary.courseId).not.toEqual(
+      sourceResponseSummary.courseId
+    )
+    expect(copiedResponseSummary.liveQuizId).not.toEqual(
+      sourceResponseSummary.liveQuizId
+    )
+    expect(copiedResponseSummary.instanceIds[0]).not.toEqual(
+      sourceResponseSummary.instanceIds[0]
+    )
+  })
+
+  test('Duplicate the course without group creation and verify group activities are not copied', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const copyName = `${SHARING.course} Copy Without Groups`
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
+
+    await loginLecturer()
+    await openCourseInManage(page, SHARING.course)
+    await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
+    await page.getByTestId('course-duplicate-button').click()
+    await page.getByTestId('course-name').fill(copyName)
+    await page.getByTestId('course-display-name').fill(copyName)
+    await expect(page.getByTestId('course-group-creation')).toHaveAttribute(
+      'data-state',
+      'checked'
+    )
+    await page.getByTestId('course-group-creation').click()
+    await expect(page.getByTestId('course-group-creation')).toHaveAttribute(
+      'data-state',
+      'unchecked'
+    )
+    await expect(page.getByTestId('course-group-activities')).toHaveAttribute(
+      'data-state',
+      'unchecked'
+    )
+    await expect(page.getByTestId('course-group-activities')).toBeDisabled()
+    await page.getByTestId('manipulate-course-submit').click()
+    await expect(page.getByTestId('course-name')).not.toBeVisible({
+      timeout: 30_000,
+    })
+
+    await page.getByTestId('courses').click()
+    await expect(
+      page.getByTestId(`course-list-button-${copyName}`)
+    ).toBeVisible()
+
+    await expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 0,
+    })
+  })
+
+  test('Does not leave a partial course when activity duplication fails', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const sourceName = `${SHARING.course} Invalid Duplication Source`
+    const copyName = `${sourceName} Copy`
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
+    await createCourseDuplicationFailureFixture(sourceName)
+
+    await loginLecturer()
+    await openCourseInManage(page, sourceName)
+    await page.getByTestId('course-duplicate-button').click()
+    await page.getByTestId('manipulate-course-submit').click()
+    await expect(
+      page.getByText(messages.manage.courseList.courseCreationFailed)
+    ).toBeVisible()
+    await expect(async () => {
+      const summary = await getCourseDuplicationSummary({
+        courseName: copyName,
+        ownerId: LECTURER_ID,
+      })
+      expect(summary).toBeNull()
+    }).toPass()
+    await deleteCourseWithActivitiesByName({
+      courseName: sourceName,
+      ownerId: LECTURER_ID,
+    })
+  })
+
+  test('Allows assessment courses to be duplicated as assessment courses', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const assessmentCourseName = `${SHARING.course} Assessment`
+    const assessmentCopyName = `${assessmentCourseName} Copy`
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    await deleteCourseWithActivitiesByName({
+      courseName: assessmentCopyName,
+      ownerId: LECTURER_ID,
+    })
+    await deleteCourseWithActivitiesByName({
+      courseName: assessmentCourseName,
+      ownerId: LECTURER_ID,
+    })
+    await createCourseRecord({
+      name: assessmentCourseName,
+      displayName: assessmentCourseName,
+      notificationEmail: LECTURER_EMAIL,
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: false,
+    })
+
+    await loginLecturer()
+    await openCourseInManage(page, assessmentCourseName)
+    await submitCourseDuplication(page)
+    await page.getByTestId('courses').click()
+    await expect(
+      page.getByTestId(`course-list-button-${assessmentCopyName}`)
+    ).toBeVisible()
+
+    const summary = await getCourseDuplicationSummary({
+      courseName: assessmentCopyName,
+      ownerId: LECTURER_ID,
+    })
+    expect(summary).toMatchObject({
+      isAssessmentEnabled: true,
+      authType: 'SSO',
+      pinCode: null,
+      liveQuizzes: 0,
+      practiceQuizzes: 0,
+      microLearnings: 0,
+      groupActivities: 0,
+    })
+
+    await deleteCourseWithActivitiesByName({
+      courseName: assessmentCopyName,
+      ownerId: LECTURER_ID,
+    })
+    await deleteCourseWithActivitiesByName({
+      courseName: assessmentCourseName,
+      ownerId: LECTURER_ID,
+    })
   })
 
   test('Share the course directly with other users with READ, EXECUTE, WRITE and ADMIN permissions', async ({
@@ -1488,6 +2661,117 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     ).toContainText(PERM_ADMIN)
   })
 
+  test('Duplicate the shared course as owner and preserve direct individual permissions', async ({
+    loginLecturer,
+    loginIndividualCatalyst,
+    loginInstitutionalCatalyst,
+    loginInstitutionalCatalyst2,
+    loginInstitutionalCatalyst3,
+    loginInstitutionalCatalyst4,
+    logoutUser,
+    page,
+  }) => {
+    const copyName = `${SHARING.course} Shared Copy`
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
+    await deleteLiveQuizDirectPermission({
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+      ownerId: LECTURER_ID,
+      userId: LECTURER_INST_ID,
+    })
+    await grantLiveQuizDirectPermission({
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+      ownerId: LECTURER_ID,
+      userId: LECTURER_INST_ID,
+      permissionLevel: PermissionLevel.ADMIN,
+      propagation: false,
+    })
+
+    await loginLecturer()
+    await openCourseInManage(page, SHARING.course)
+    await submitCourseDuplication(page, copyName)
+    await deleteLiveQuizDirectPermission({
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+      ownerId: LECTURER_ID,
+      userId: LECTURER_INST_ID,
+    })
+
+    await page.getByTestId('courses').click()
+    await expect(
+      page.getByTestId(`course-list-button-${copyName}`)
+    ).toBeVisible()
+
+    const summary = await expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 1,
+      directPermissions: 6,
+    })
+    expectCopiedIndividualPermissions(summary)
+    await logoutUser()
+
+    await loginIndividualCatalyst()
+    await verifyCopiedCoursePermissionBadges({
+      page,
+      courseName: copyName,
+      coursePermissionLevel: 'READ',
+      liveQuizPermissionLevel: 'READ',
+    })
+    await logoutUser()
+
+    await loginInstitutionalCatalyst()
+    await verifyCopiedCoursePermissionBadges({
+      page,
+      courseName: copyName,
+      coursePermissionLevel: 'EXECUTE',
+      liveQuizPermissionLevel: 'ADMIN',
+    })
+    await logoutUser()
+
+    await loginInstitutionalCatalyst2()
+    await verifyCopiedCoursePermissionBadges({
+      page,
+      courseName: copyName,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'EXECUTE',
+    })
+    await logoutUser()
+
+    await loginInstitutionalCatalyst3()
+    await verifyCopiedCoursePermissionBadges({
+      page,
+      courseName: copyName,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'WRITE',
+    })
+    await logoutUser()
+
+    await loginInstitutionalCatalyst4()
+    await verifyCopiedCourseAdminReview(page, copyName)
+    await logoutUser()
+
+    await loginLecturer()
+    await revokeCopiedPermissionAndVerifySourceUnaffected({
+      page,
+      copiedCourseName: copyName,
+      shortname: LECTURER_IND_SHORTNAME,
+    })
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
+  })
+
   test('Verify that the user with individual READ permissions can only see course & activities with READ permissions', async ({
     loginIndividualCatalyst,
     page,
@@ -1495,6 +2779,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginIndividualCatalyst()
     await page.getByTestId('library').click()
     await verifyCourseReadPermissions(page)
+    await expect(
+      getCourseDuplicationSummary({
+        courseName: `${SHARING.course} Copy`,
+        ownerId: LECTURER_IND_ID,
+      })
+    ).resolves.toBeNull()
   })
 
   test('Verify that the user with individual EXECUTE permissions can only see course & activities with EXECUTE permissions', async ({
@@ -1504,6 +2794,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginInstitutionalCatalyst()
     await page.getByTestId('library').click()
     await verifyCourseExecutePermissions(page)
+    await expect(
+      getCourseDuplicationSummary({
+        courseName: `${SHARING.course} Copy`,
+        ownerId: LECTURER_INST_ID,
+      })
+    ).resolves.toBeNull()
   })
 
   test('Verify that the user with individual WRITE permissions (no propagation) can only see course & activities with EXECUTE permissions', async ({
@@ -1513,6 +2809,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginInstitutionalCatalyst2()
     await page.getByTestId('library').click()
     await verifyCourseWritePermissions(page, false)
+    await expect(
+      getCourseDuplicationSummary({
+        courseName: `${SHARING.course} Copy`,
+        ownerId: LECTURER_INST2_ID,
+      })
+    ).resolves.toBeNull()
   })
 
   test('Verify that the user with individual WRITE permissions (with propagation) can only see course & activities with WRITE permissions', async ({
@@ -1522,6 +2824,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginInstitutionalCatalyst3()
     await page.getByTestId('library').click()
     await verifyCourseWritePermissions(page, true)
+    await expect(
+      getCourseDuplicationSummary({
+        courseName: `${SHARING.course} Copy`,
+        ownerId: LECTURER_INST3_ID,
+      })
+    ).resolves.toBeNull()
   })
 
   test('Verify that the user with individual ADMIN permissions can see course, activities, elements, and the answer collection', async ({
@@ -1531,6 +2839,73 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginInstitutionalCatalyst4()
     await page.getByTestId('library').click()
     await verifyCourseAdminPermissions(page, true)
+  })
+
+  test('Verify that an ADMIN user can duplicate selected course activities', async ({
+    loginInstitutionalCatalyst4,
+    page,
+  }) => {
+    const copyName = `${SHARING.course} Admin Copy`
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_INST4_ID,
+    })
+
+    await loginInstitutionalCatalyst4()
+    await openCourseInManage(page, SHARING.course)
+    await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
+    await page.getByTestId('course-duplicate-button').click()
+    await page.getByTestId('course-name').fill(copyName)
+    await page.getByTestId('course-display-name').fill(copyName)
+    for (const testId of [
+      'course-practice-quizzes',
+      'course-microlearnings',
+      'course-group-activities',
+    ]) {
+      await expect(page.getByTestId(testId)).toHaveAttribute(
+        'data-state',
+        'checked'
+      )
+      await page.getByTestId(testId).click()
+      await expect(page.getByTestId(testId)).toHaveAttribute(
+        'data-state',
+        'unchecked'
+      )
+    }
+    await page.getByTestId('manipulate-course-submit').click()
+    await expect(page.getByTestId('course-name')).not.toBeVisible({
+      timeout: 30_000,
+    })
+
+    await page.getByTestId('courses').click()
+    await expect(
+      page.getByTestId(`course-list-button-${copyName}`)
+    ).toBeVisible()
+
+    const summary = await expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: LECTURER_INST4_ID,
+      liveQuizzes: 1,
+      practiceQuizzes: 0,
+      microLearnings: 0,
+      groupActivities: 0,
+      directPermissions: 5,
+    })
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'directPermissionDetails',
+      objectType: 'COURSE',
+      objectId: summary.courseId,
+      userShortname: LECTURER_SHORTNAME,
+      permissionLevel: 'ADMIN',
+      propagation: false,
+    })
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_INST4_ID,
+    })
   })
 
   test('Change the course ADMIN permission to WRITE level for user pro5 (without propagation)', async ({
@@ -1758,6 +3133,43 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await expect(
       page.getByTestId(`permission-${SHARING.group5}`)
     ).toContainText(PERM_ADMIN)
+  })
+
+  test('Duplicate the shared course as owner and preserve direct user group permissions', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const copyName = `${SHARING.course} Group Shared Copy`
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
+
+    await loginLecturer()
+    await openCourseInManage(page, SHARING.course)
+    await submitCourseDuplication(page, copyName)
+
+    await page.getByTestId('courses').click()
+    await expect(
+      page.getByTestId(`course-list-button-${copyName}`)
+    ).toBeVisible()
+
+    const summary = await expectDuplicatedCourseSummary({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+      liveQuizzes: 1,
+      practiceQuizzes: 1,
+      microLearnings: 1,
+      groupActivities: 1,
+      directPermissions: 5,
+    })
+    expectCopiedUserGroupPermissions(summary)
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
   })
 
   test('Verify that the user in group 1 can see the objects according to course READ permissions', async ({
@@ -2016,5 +3428,29 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await expect(
       page.getByTestId(`owner-permission-${LECTURER_SHORTNAME}`)
     ).toContainText(PERM_OWNER)
+  })
+
+  test('Modify one referenced element and verify it updates both same-name live quizzes', async () => {
+    const copyName = `${SHARING.course} Copy`
+    const updatedLiveQuizElementContent = `Updated sharing live quiz question content ${Date.now()}`
+
+    const result = await updateElementContentAndInstances({
+      elementName: SCML.title,
+      ownerId: LECTURER_ID,
+      content: updatedLiveQuizElementContent,
+    })
+    expect(result.elementId).toEqual(expect.any(Number))
+    expect(result.updatedInstances).toBeGreaterThan(1)
+
+    await expectLiveQuizElementInstanceContent({
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+      content: updatedLiveQuizElementContent,
+    })
+    await expectLiveQuizElementInstanceContent({
+      courseName: copyName,
+      liveQuizName: SHARING.liveQuiz,
+      content: updatedLiveQuizElementContent,
+    })
   })
 })

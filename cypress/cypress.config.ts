@@ -2829,8 +2829,15 @@ export default defineConfig({
                 id: true,
                 ownerId: true,
                 authType: true,
+                isGamificationEnabled: true,
                 isAssessmentEnabled: true,
                 pinCode: true,
+                competencyTree: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             })
 
@@ -2939,6 +2946,15 @@ export default defineConfig({
             const groupActivityIds = groupActivities.map(
               (activity) => activity.id
             )
+            const permissionObjectWhere = {
+              OR: [
+                { courseId: course.id },
+                { liveQuizId: { in: liveQuizIds } },
+                { practiceQuizId: { in: practiceQuizIds } },
+                { microLearningId: { in: microLearningIds } },
+                { groupActivityId: { in: groupActivityIds } },
+              ],
+            }
 
             const [
               participations,
@@ -2968,15 +2984,7 @@ export default defineConfig({
                 where: { courseId: course.id },
               }),
               prisma.permission.count({
-                where: {
-                  OR: [
-                    { courseId: course.id },
-                    { liveQuizId: { in: liveQuizIds } },
-                    { practiceQuizId: { in: practiceQuizIds } },
-                    { microLearningId: { in: microLearningIds } },
-                    { groupActivityId: { in: groupActivityIds } },
-                  ],
-                },
+                where: permissionObjectWhere,
               }),
               prisma.questionResponse.count({
                 where: { courseId: course.id },
@@ -3059,13 +3067,59 @@ export default defineConfig({
                 stack.elements.map(mapInstance)
               ),
             })
+            const mapPermissionObject = (permission: any) => ({
+              objectType: permission.courseId
+                ? 'COURSE'
+                : permission.liveQuizId
+                  ? 'LIVE_QUIZ'
+                  : permission.practiceQuizId
+                    ? 'PRACTICE_QUIZ'
+                    : permission.microLearningId
+                      ? 'MICRO_LEARNING'
+                      : 'GROUP_ACTIVITY',
+              objectId:
+                permission.courseId ??
+                permission.liveQuizId ??
+                permission.practiceQuizId ??
+                permission.microLearningId ??
+                permission.groupActivityId,
+              permissionLevel: permission.permissionLevel,
+              propagation: permission.propagation ?? null,
+              derived: permission.derived ?? null,
+              directPermissionId: permission.directPermissionId ?? null,
+              userId: permission.userId,
+              userShortname: permission.user?.shortname ?? null,
+              userGroupId: permission.userGroupId ?? null,
+              userGroupName: permission.userGroup?.name ?? null,
+            })
+            const [directPermissionDetails, derivedPermissionDetails] =
+              await Promise.all([
+                prisma.permission.findMany({
+                  where: permissionObjectWhere,
+                  orderBy: { id: 'asc' },
+                  include: {
+                    user: { select: { shortname: true } },
+                    userGroup: { select: { name: true } },
+                  },
+                }),
+                prisma.derivedPermission.findMany({
+                  where: permissionObjectWhere,
+                  orderBy: { id: 'asc' },
+                  include: {
+                    user: { select: { shortname: true } },
+                  },
+                }),
+              ])
 
             return {
               courseId: course.id,
               ownerId: course.ownerId,
               authType: course.authType,
+              isGamificationEnabled: course.isGamificationEnabled,
               isAssessmentEnabled: course.isAssessmentEnabled,
               pinCode: course.pinCode,
+              competencyTreeId: course.competencyTree?.id ?? null,
+              competencyTreeName: course.competencyTree?.name ?? null,
               liveQuizzes: liveQuizzes.length,
               practiceQuizzes: practiceQuizzes.length,
               microLearnings: microLearnings.length,
@@ -3084,6 +3138,10 @@ export default defineConfig({
                 microLearnings: microLearnings.map(mapStackActivity),
                 groupActivities: groupActivities.map(mapStackActivity),
               },
+              directPermissionDetails:
+                directPermissionDetails.map(mapPermissionObject),
+              derivedPermissionDetails:
+                derivedPermissionDetails.map(mapPermissionObject),
               participations,
               participantGroups,
               participantInvitations,
@@ -3102,6 +3160,150 @@ export default defineConfig({
               aggregatedCourseAnalytics,
               participantCourseAnalytics,
             }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async attachCourseCompetencyTree({
+          courseName,
+          ownerId,
+          treeName,
+        }: {
+          courseName: string
+          ownerId?: string
+          treeName: string
+        }) {
+          try {
+            const courseOwnerId = ownerId ?? USER_ID_TEST
+            const course = await prisma.course.findFirst({
+              where: { name: courseName, ownerId: courseOwnerId },
+              orderBy: { createdAt: 'desc' },
+              select: { id: true },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found.`)
+            }
+
+            const competencyTree = await prisma.competencyTree.upsert({
+              where: {
+                ownerId_name: {
+                  ownerId: courseOwnerId,
+                  name: treeName,
+                },
+              },
+              create: {
+                name: treeName,
+                description: `${treeName} description`,
+                ownerId: courseOwnerId,
+              },
+              update: {},
+            })
+
+            await prisma.course.update({
+              where: { id: course.id },
+              data: { competencyTreeId: competencyTree.id },
+            })
+
+            return {
+              courseId: course.id,
+              competencyTreeId: competencyTree.id,
+              competencyTreeName: competencyTree.name,
+            }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async grantLiveQuizDirectPermission({
+          courseName,
+          liveQuizName,
+          ownerId,
+          userId,
+          permissionLevel,
+          propagation,
+        }: {
+          courseName: string
+          liveQuizName: string
+          ownerId?: string
+          userId: string
+          permissionLevel: PermissionLevel
+          propagation: boolean
+        }) {
+          try {
+            const liveQuiz = await prisma.liveQuiz.findFirst({
+              where: {
+                name: liveQuizName,
+                course: {
+                  name: courseName,
+                  ownerId,
+                },
+              },
+              select: { id: true },
+            })
+
+            if (!liveQuiz) {
+              throw new Error(
+                `Live quiz "${liveQuizName}" in course "${courseName}" not found.`
+              )
+            }
+
+            const permission = await prisma.permission.upsert({
+              where: {
+                liveQuizId_userId: {
+                  liveQuizId: liveQuiz.id,
+                  userId,
+                },
+              },
+              create: {
+                liveQuizId: liveQuiz.id,
+                userId,
+                permissionLevel,
+                propagation,
+              },
+              update: {
+                permissionLevel,
+                propagation,
+              },
+            })
+
+            return permission.id
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async deleteLiveQuizDirectPermission({
+          courseName,
+          liveQuizName,
+          ownerId,
+          userId,
+        }: {
+          courseName: string
+          liveQuizName: string
+          ownerId?: string
+          userId: string
+        }) {
+          try {
+            const liveQuiz = await prisma.liveQuiz.findFirst({
+              where: {
+                name: liveQuizName,
+                course: {
+                  name: courseName,
+                  ownerId,
+                },
+              },
+              select: { id: true },
+            })
+
+            if (!liveQuiz) return 0
+
+            const result = await prisma.permission.deleteMany({
+              where: {
+                liveQuizId: liveQuiz.id,
+                userId,
+              },
+            })
+
+            return result.count
           } finally {
             await prisma.$disconnect()
           }
