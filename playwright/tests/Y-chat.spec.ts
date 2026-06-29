@@ -12,6 +12,8 @@ import {
   setDisclaimerState,
   setModelSelection,
   setParticipantToken,
+  TEST_PNG_DATA_URL,
+  testImageUpload,
 } from '../util/chat.js'
 import { selectOption } from '../util/workflow.js'
 
@@ -680,6 +682,182 @@ test.describe('Chatbot Message Actions & Branching', () => {
   //     page.getByTestId('chat-branch-indicator').first()
   //   ).toContainText('/ 2')
   // })
+})
+
+// ===========================================================================
+// Image Attachments
+// ===========================================================================
+test.describe('Chatbot Image Attachments', () => {
+  let participantId: string
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+    await mockChatStream(page)
+  })
+
+  test('Attaching an image shows a composer preview that can be removed', async ({
+    page,
+  }) => {
+    await visitChat(page)
+    await expect(page.getByTestId('chat-composer')).toBeVisible()
+
+    await page
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles(testImageUpload())
+
+    const preview = page.getByTestId('chat-composer-attachment')
+    await expect(preview).toBeVisible()
+
+    await preview.hover()
+    await page.getByTestId('chat-attachment-remove').click()
+    await expect(page.getByTestId('chat-composer-attachment')).toHaveCount(0)
+  })
+
+  test('Sending a message with an attachment shows it on the user message', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    await page
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles(testImageUpload())
+    await expect(page.getByTestId('chat-composer-attachment')).toBeVisible()
+
+    await typeMessage(page, 'Here is an image')
+    await page.getByTestId('chat-send-button').click()
+
+    await expect(page.getByTestId('chat-user-message-content')).toContainText(
+      'Here is an image'
+    )
+    await expect(
+      page.getByTestId('chat-message-attachments').first()
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('chat-message-attachment').first()
+    ).toBeVisible()
+  })
+
+  test('A stored message attachment renders and opens in the image viewer', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Image thread',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Look at this' }],
+          attachments: [
+            {
+              imageBase64: TEST_PNG_DATA_URL,
+              imagePreviewBase64: TEST_PNG_DATA_URL,
+              imageDescription: 'A tiny test image',
+            },
+          ],
+        },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Nice image' }],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const tile = page.getByTestId('chat-message-attachment').first()
+    await expect(tile).toBeVisible()
+    await tile.click()
+
+    await expect(page.getByTestId('chat-image-viewer-image')).toBeVisible()
+  })
+
+  test('Attaching more than 3 images in composer is prevented', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    const composer = page.getByTestId('chat-composer')
+
+    await composer
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles([
+        testImageUpload('image-1.png'),
+        testImageUpload('image-2.png'),
+        testImageUpload('image-3.png'),
+        testImageUpload('image-4.png'),
+      ])
+
+    await expect(
+      page.getByText('You can only attach up to 3 images.')
+    ).toBeVisible()
+    await expect(
+      composer.getByTestId('chat-composer-attach-button')
+    ).toHaveCount(0)
+    await expect(composer.getByTestId('chat-composer-attachment')).toHaveCount(
+      3
+    )
+  })
+
+  test('Edit message attachment limit (3) is independent from new message limit', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Edit attachment test',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Message to edit' }] },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Response' }],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    // Edit the user message and attach 3 images
+    const userMsg = page.getByTestId('chat-user-message').first()
+    await userMsg.hover()
+    await userMsg.getByTestId('chat-edit-message-button').click()
+
+    const editComposer = page.getByTestId('chat-edit-composer')
+
+    await editComposer
+      .getByTestId('chat-edit-composer-attach-input')
+      .setInputFiles([
+        testImageUpload('edit-image-1.png'),
+        testImageUpload('edit-image-2.png'),
+        testImageUpload('edit-image-3.png'),
+        testImageUpload('edit-image-4.png'),
+      ])
+
+    await expect(
+      page.getByText('You can only attach up to 3 images.')
+    ).toBeVisible()
+    await expect(
+      editComposer.getByTestId('chat-edit-composer-attach-button')
+    ).toHaveCount(0)
+    await expect(page.getByTestId('chat-composer-attach-button')).toHaveCount(1)
+    await expect(
+      editComposer.getByTestId('chat-composer-attachment')
+    ).toHaveCount(3)
+
+    // verify that the new message composer still allows 3 attachments
+    await page
+      .getByTestId('chat-composer')
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles([
+        testImageUpload('new-image-1.png'),
+        testImageUpload('new-image-2.png'),
+        testImageUpload('new-image-3.png'),
+      ])
+    await expect(
+      page.getByTestId('chat-composer').getByTestId('chat-composer-attachment')
+    ).toHaveCount(3)
+    await expect(page.getByTestId('chat-composer-attach-button')).toHaveCount(0)
+  })
 })
 
 // ===========================================================================

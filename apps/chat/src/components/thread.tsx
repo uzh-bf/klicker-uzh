@@ -372,7 +372,10 @@ const Composer: FC = () => {
         />
 
         <div className="flex w-full items-center">
-          <ComposerAttachButton setError={setAttachmentError} />
+          <ComposerAttachButton
+            setError={setAttachmentError}
+            dataCy="chat-composer"
+          />
           <ComposerPrimitive.Input
             data-cy="chat-composer-input"
             rows={1}
@@ -580,6 +583,7 @@ const AttachmentTile: FC<{
 const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => (
   <button
     type="button"
+    data-cy="chat-attachment-remove"
     onClick={onClick}
     className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
     aria-label="Remove attachment"
@@ -601,7 +605,10 @@ const ComposerAttachmentView: FC<{
       : twMerge('size-14', embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28')
 
   return (
-    <AttachmentPrimitive.Root className="relative">
+    <AttachmentPrimitive.Root
+      data-cy="chat-composer-attachment"
+      className="relative"
+    >
       <AttachmentTile
         imageSrc={imageSrc}
         label={attachmentName}
@@ -618,7 +625,8 @@ const ComposerAttachmentView: FC<{
 const ComposerAttachButton: FC<{
   setError: (msg: string | null) => void
   currentCount?: number
-}> = ({ setError, currentCount }) => {
+  dataCy?: string
+}> = ({ setError, currentCount, dataCy }) => {
   const { embedded } = useChatUi()
   const composerRuntime = useComposerRuntime()
   const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
@@ -656,6 +664,7 @@ const ComposerAttachButton: FC<{
     <>
       <input
         ref={inputRef}
+        data-cy={dataCy + '-attach-input' || 'chat-attach-input'}
         type="file"
         accept={imageAttachmentAdapter.accept}
         multiple
@@ -669,6 +678,7 @@ const ComposerAttachButton: FC<{
       />
       <button
         type="button"
+        data-cy={dataCy + '-attach-button' || 'chat-attach-button'}
         onClick={() => inputRef.current?.click()}
         className={twMerge(
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
@@ -985,6 +995,7 @@ const EditComposer: FC = () => {
           <ComposerAttachButton
             setError={setAttachmentError}
             currentCount={totalAttachmentCount}
+            dataCy="chat-edit-composer"
           />
           <div className="ml-auto flex items-center justify-center gap-2">
             <Button

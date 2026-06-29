@@ -217,11 +217,32 @@ export async function setModelSelection(
   })
 }
 
+export type SeedAttachment = {
+  imageBase64: string
+  imagePreviewBase64?: string
+  imageDescription?: string
+}
+
 export type SeedMessage = {
   id?: string
   role: 'user' | 'assistant'
   content: { type: string; text: string }[]
   parentId?: string | null
+  attachments?: SeedAttachment[]
+}
+
+// 1x1 PNG as a test image
+const TEST_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+export const TEST_PNG_DATA_URL = `data:image/png;base64,${TEST_PNG_BASE64}`
+
+/** file payload for page.setInputFiles / file_chooser */
+export function testImageUpload(name = 'attachment.png') {
+  return {
+    name,
+    mimeType: 'image/png',
+    buffer: Buffer.from(TEST_PNG_BASE64, 'base64'),
+  }
 }
 
 /**
@@ -257,6 +278,18 @@ export async function seedThread(
         parentId: m.parentId !== undefined ? m.parentId : previousId,
       },
     })
+    if (m.attachments?.length) {
+      await prisma.chatAttachment.createMany({
+        data: m.attachments.map((a, ix) => ({
+          messageId,
+          type: 'IMAGE' as const,
+          position: ix,
+          imageBase64: a.imageBase64,
+          imagePreviewBase64: a.imagePreviewBase64 ?? a.imageBase64,
+          imageDescription: a.imageDescription ?? null,
+        })),
+      })
+    }
     previousId = messageId
   }
 
