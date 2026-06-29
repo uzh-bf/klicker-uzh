@@ -3010,7 +3010,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       copyGroupActivitiesTooltip:
         'Wenn Sie diese Einstellung aktivieren, werden alle Gruppenaktivitäten im Kurs in den neuen Kurs kopiert. Wenn die Gruppenbildung-Einstellung deaktiviert wird, wird diese Einstellung deaktiviert.',
       courseDuplicationCopyInfo:
-        'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente.',
+        'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt und direkte Freigabeberechtigungen beibehalten. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente.',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',

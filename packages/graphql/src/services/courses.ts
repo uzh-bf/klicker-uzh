@@ -14,7 +14,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   levelFromXp,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
@@ -36,6 +36,9 @@ import { checkAccess, type PermissionCheck } from './sharing.js'
 
 // custom date parser
 dayjs.extend(customParseFormat)
+
+const CREATE_COURSE_TRANSACTION_TIMEOUT = 60000
+const DUPLICATE_COURSE_TRANSACTION_TIMEOUT = 120000
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -2588,7 +2591,8 @@ export async function createCourse(
     isGamificationEnabled,
     isAssessmentEnabled,
   }: CreateCourseArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  transactionPrisma?: PrismaTransactionClient
 ) {
   // TODO: ensure that PINs are unique
   // Assessment courses don't get PINs - they use invitations instead
@@ -2602,60 +2606,192 @@ export async function createCourse(
 
   const defaultMaxGroupSize = 5
   const defaultPreferredGroupSize = 3
-  const course = await ctx.prisma.$transaction(
-    async (prisma) => {
-      const newCourse = await prisma.course.create({
-        data: {
-          name: name.trim(),
-          displayName: displayName.trim(),
-          description,
-          language,
-          color: color ?? '#CCD5ED',
-          startDate: startDate,
-          endDate: endDate,
-          isGroupCreationEnabled: isGroupCreationEnabled ?? true,
-          groupDeadlineDate: groupDeadlineDate ?? endDate,
-          maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
-          preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
-          notificationEmail: notificationEmail,
-          isGamificationEnabled: isGamificationEnabled,
-          isAssessmentEnabled: isAssessmentEnabled ?? false,
-          pinCode: randomPin,
-          authType: isAssessmentEnabled
-            ? DB.CourseAuthType.SSO
-            : DB.CourseAuthType.PIN,
-          owner: {
-            connect: {
-              id: ctx.user.sub,
-            },
+
+  const persistCourse = async (prisma: PrismaTransactionClient) => {
+    const newCourse = await prisma.course.create({
+      data: {
+        name: name.trim(),
+        displayName: displayName.trim(),
+        description,
+        language,
+        color: color ?? '#CCD5ED',
+        startDate: startDate,
+        endDate: endDate,
+        isGroupCreationEnabled: isGroupCreationEnabled ?? true,
+        groupDeadlineDate: groupDeadlineDate ?? endDate,
+        maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+        preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
+        notificationEmail: notificationEmail,
+        isGamificationEnabled: isGamificationEnabled,
+        isAssessmentEnabled: isAssessmentEnabled ?? false,
+        pinCode: randomPin,
+        authType: isAssessmentEnabled
+          ? DB.CourseAuthType.SSO
+          : DB.CourseAuthType.PIN,
+        owner: {
+          connect: {
+            id: ctx.user.sub,
           },
         },
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      {
+        courseId: newCourse.id,
+        userId: ctx.user.sub,
+      },
+      prisma
+    )
+
+    return {
+      ...newCourse,
+      derivedAccess: false,
+      numSharedUsers: 0,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      isOwner: true,
+      isManager: true,
+      isEditor: true,
+      isShared: false,
+      isRemovable: false,
+    }
+  }
+
+  const course = transactionPrisma
+    ? await persistCourse(transactionPrisma)
+    : await ctx.prisma.$transaction(persistCourse, {
+        timeout: CREATE_COURSE_TRANSACTION_TIMEOUT,
       })
 
-      await recomputeDerivedPermissions(
-        {
-          courseId: newCourse.id,
-          userId: ctx.user.sub,
-        },
-        prisma
-      )
-
-      return {
-        ...newCourse,
-        derivedAccess: false,
-        numSharedUsers: 0,
-        permissionLevel: DB.PermissionLevel.OWNER,
-        isOwner: true,
-        isManager: true,
-        isEditor: true,
-        isShared: false,
-        isRemovable: false,
-      }
-    },
-    { timeout: 60000 }
-  )
-
   return course
+}
+
+type CourseDuplicationPermissionTarget =
+  | { courseId: string }
+  | { liveQuizId: string }
+  | { practiceQuizId: string }
+  | { microLearningId: string }
+  | { groupActivityId: string }
+
+function getPermissionTargetObjectId(
+  target: CourseDuplicationPermissionTarget
+) {
+  return 'courseId' in target
+    ? target.courseId
+    : 'liveQuizId' in target
+      ? target.liveQuizId
+      : 'practiceQuizId' in target
+        ? target.practiceQuizId
+        : 'microLearningId' in target
+          ? target.microLearningId
+          : target.groupActivityId
+}
+
+async function copyCourseDuplicationDirectPermissions({
+  sourcePermissions,
+  sourceObjectType,
+  sourceObjectId,
+  targetObjectType,
+  target,
+  ctx,
+  prisma,
+}: {
+  sourcePermissions: DB.Permission[]
+  sourceObjectType: DB.ObjectType
+  sourceObjectId: string
+  targetObjectType: DB.ObjectType
+  target: CourseDuplicationPermissionTarget
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  const targetObjectId = getPermissionTargetObjectId(target)
+
+  for (const permission of sourcePermissions) {
+    if (
+      permission.userId === ctx.user.sub ||
+      (!permission.userId && !permission.userGroupId)
+    ) {
+      continue
+    }
+
+    const copiedPermission = await prisma.permission.create({
+      data: {
+        permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
+        userId: permission.userId,
+        userGroupId: permission.userGroupId,
+        ...target,
+      },
+    })
+
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.PERMISSION_GRANTED,
+        objectType: targetObjectType,
+        objectId: targetObjectId,
+        sourceUserId: ctx.user.sub,
+        targetUserId: permission.userId,
+        targetUserGroupId: permission.userGroupId,
+        message: `Direct permission with level ${permission.permissionLevel} copied during course duplication from ${sourceObjectType} (ID ${sourceObjectId}) to ${targetObjectType} (ID ${targetObjectId}) by user ${ctx.user.sub}.`,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'Permission',
+      id: copiedPermission.id,
+    })
+  }
+}
+
+async function grantDuplicatedCourseAccessToSourceOwner({
+  sourceCourseId,
+  sourceOwnerId,
+  targetCourseId,
+  ctx,
+  prisma,
+}: {
+  sourceCourseId: string
+  sourceOwnerId: string
+  targetCourseId: string
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  if (sourceOwnerId === ctx.user.sub) return
+
+  const copiedPermission = await prisma.permission.upsert({
+    where: {
+      courseId_userId: {
+        courseId: targetCourseId,
+        userId: sourceOwnerId,
+      },
+    },
+    create: {
+      permissionLevel: DB.PermissionLevel.ADMIN,
+      propagation: false,
+      courseId: targetCourseId,
+      userId: sourceOwnerId,
+    },
+    update: {
+      permissionLevel: DB.PermissionLevel.ADMIN,
+      propagation: false,
+    },
+  })
+
+  await prisma.auditLogEntry.create({
+    data: {
+      type: DB.AuditLogType.PERMISSION_GRANTED,
+      objectType: DB.ObjectType.COURSE,
+      objectId: targetCourseId,
+      sourceUserId: ctx.user.sub,
+      targetUserId: sourceOwnerId,
+      message: `Source course owner ${sourceOwnerId} kept ADMIN access during course duplication from COURSE (ID ${sourceCourseId}) to COURSE (ID ${targetCourseId}) by user ${ctx.user.sub}.`,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: copiedPermission.id,
+  })
 }
 
 export async function duplicateCourse(
@@ -2672,7 +2808,6 @@ export async function duplicateCourse(
     preferredGroupSize,
     language,
     notificationEmail,
-    isGamificationEnabled,
     id,
     duplicateLiveQuizzes,
     duplicatePracticeQuizzes,
@@ -2694,9 +2829,11 @@ export async function duplicateCourse(
   const oldCourse = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
+      directPermissions: true,
       practiceQuizzes: {
         where: { isDeleted: false },
         include: {
+          directPermissions: true,
           stacks: {
             include: {
               elements: true,
@@ -2707,6 +2844,7 @@ export async function duplicateCourse(
       liveQuizzes: {
         where: { isDeleted: false },
         include: {
+          directPermissions: true,
           blocks: {
             include: {
               elements: true,
@@ -2717,6 +2855,7 @@ export async function duplicateCourse(
       microLearnings: {
         where: { isDeleted: false },
         include: {
+          directPermissions: true,
           stacks: {
             include: {
               elements: true,
@@ -2727,6 +2866,7 @@ export async function duplicateCourse(
       groupActivities: {
         where: { isDeleted: false },
         include: {
+          directPermissions: true,
           stacks: {
             include: {
               elements: true,
@@ -2839,222 +2979,344 @@ export async function duplicateCourse(
     }
   }
 
-  let newCourse: Awaited<ReturnType<typeof createCourse>> | null = null
-  const copiedLiveQuizIds: string[] = []
-  const copiedPracticeQuizIds: string[] = []
-  const copiedMicroLearningIds: string[] = []
-  const copiedGroupActivityIds: string[] = []
+  return await ctx.prisma.$transaction(
+    async (prisma) => {
+      const newCourse = await createCourse(
+        {
+          name,
+          displayName,
+          description,
+          color,
+          startDate,
+          endDate,
+          isGroupCreationEnabled,
+          groupDeadlineDate,
+          maxGroupSize,
+          preferredGroupSize,
+          language,
+          notificationEmail,
+          isGamificationEnabled: oldCourse.isGamificationEnabled,
+          isAssessmentEnabled: oldCourse.isAssessmentEnabled,
+        },
+        ctx,
+        prisma
+      )
 
-  try {
-    newCourse = await createCourse(
-      {
-        name,
-        displayName,
-        description,
-        color,
-        startDate,
-        endDate,
-        isGroupCreationEnabled,
-        groupDeadlineDate,
-        maxGroupSize,
-        preferredGroupSize,
-        language,
-        notificationEmail,
-        isGamificationEnabled,
-        isAssessmentEnabled: oldCourse.isAssessmentEnabled,
-      },
-      ctx
-    )
+      const copiedLiveQuizIdBySourceId = new Map<string, string>()
+      const copiedPracticeQuizIdBySourceId = new Map<string, string>()
+      const copiedMicroLearningIdBySourceId = new Map<string, string>()
+      const copiedGroupActivityIdBySourceId = new Map<string, string>()
 
-    // date computation for micro learnings and group activities
-    const startDateOldCourse = oldCourse.startDate
-    const startDateNewCourse = startDate
-    const deltaCourseStart = dayjs(startDateNewCourse).diff(
-      dayjs(startDateOldCourse),
-      'day'
-    )
+      // date computation for micro learnings and group activities
+      const startDateOldCourse = oldCourse.startDate
+      const startDateNewCourse = startDate
+      const deltaCourseStart = dayjs(startDateNewCourse).diff(
+        dayjs(startDateOldCourse),
+        'day'
+      )
 
-    if (duplicateLiveQuizzes) {
-      for (const oldLiveQuiz of oldCourse.liveQuizzes) {
-        const copiedLiveQuiz = await manipulateLiveQuiz(
-          {
-            name: oldLiveQuiz.name,
-            displayName: oldLiveQuiz.displayName,
-            description: oldLiveQuiz.description,
-            blocks: oldLiveQuiz.blocks.map((block) => {
-              return {
-                order: block.order,
-                timeLimit: block.timeLimit,
-                elements: block.elements.map((element) => {
-                  return {
-                    elementId: element.elementId,
-                    order: element.order,
-                    existingInstanceId: element.id,
-                    duplicateInstance: true,
-                  }
-                }),
-              }
-            }),
-            courseId: newCourse.id,
-            multiplier: oldLiveQuiz.pointsMultiplier,
-            defaultPoints: oldLiveQuiz.defaultPoints,
-            defaultCorrectPoints: oldLiveQuiz.defaultCorrectPoints,
-            maxBonusPoints: oldLiveQuiz.maxBonusPoints,
-            timeToZeroBonus: oldLiveQuiz.timeToZeroBonus,
-            isGamificationEnabled: oldLiveQuiz.isGamificationEnabled,
-            isPinProtected: !!oldLiveQuiz.pinCode,
-            isConfusionFeedbackEnabled: oldLiveQuiz.isConfusionFeedbackEnabled,
-            isLiveQAEnabled: oldLiveQuiz.isLiveQAEnabled,
-            isModerationEnabled: oldLiveQuiz.isModerationEnabled,
-          },
-          ctx
-        )
-        copiedLiveQuizIds.push(copiedLiveQuiz.id)
-      }
-    }
-    if (duplicatePracticeQuizzes) {
-      for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
-        const copiedPracticeQuiz = await manipulatePracticeQuiz(
-          {
-            name: oldPracticeQuiz.name,
-            displayName: oldPracticeQuiz.displayName,
-            description: oldPracticeQuiz.description,
-            stacks: oldPracticeQuiz.stacks.map((stack) => {
-              return {
-                order: stack.order,
-                elements: stack.elements.map((element) => {
-                  return {
-                    elementId: element.elementId,
-                    order: element.order,
-                    existingInstanceId: element.id,
-                    duplicateInstance: true,
-                  }
-                }),
-              }
-            }),
-            courseId: newCourse.id,
-            multiplier: oldPracticeQuiz.pointsMultiplier,
-            order: oldPracticeQuiz.orderType,
-            resetTimeDays: oldPracticeQuiz.resetTimeDays,
-          },
-          ctx
-        )
-        copiedPracticeQuizIds.push(copiedPracticeQuiz.id)
-      }
-    }
-    if (duplicateMicrolearnings) {
-      for (const oldMicroLearning of oldCourse.microLearnings) {
-        // compute delta
-        const startDateNewMicroLearning = dayjs(
-          oldMicroLearning.scheduledStartAt
-        )
-          .add(deltaCourseStart, 'day')
-          .toDate()
-        const endDateNewMicroLearning = dayjs(oldMicroLearning.scheduledEndAt)
-          .add(deltaCourseStart, 'day')
-          .toDate()
-
-        const copiedMicroLearning = await manipulateMicroLearning(
-          {
-            name: oldMicroLearning.name,
-            displayName: oldMicroLearning.displayName,
-            description: oldMicroLearning.description,
-            stacks: oldMicroLearning.stacks.map((stack) => {
-              return {
-                order: stack.order,
-                elements: stack.elements.map((element) => {
-                  return {
-                    elementId: element.elementId,
-                    order: element.order,
-                    existingInstanceId: element.id,
-                    duplicateInstance: true,
-                  }
-                }),
-              }
-            }),
-            courseId: newCourse.id,
-            multiplier: oldMicroLearning.pointsMultiplier,
-            startDate: startDateNewMicroLearning,
-            endDate: endDateNewMicroLearning,
-          },
-          ctx
-        )
-        copiedMicroLearningIds.push(copiedMicroLearning.id)
-      }
-    }
-    if (shouldDuplicateGroupActivities) {
-      for (const oldGroupActivity of oldCourse.groupActivities) {
-        const stack = oldGroupActivity.stacks[0]!
-
-        // compute delta
-        const startDateNewGroupActivity = dayjs(
-          oldGroupActivity.scheduledStartAt
-        )
-          .add(deltaCourseStart, 'day')
-          .toDate()
-        const endDateNewGroupActivity = dayjs(oldGroupActivity.scheduledEndAt)
-          .add(deltaCourseStart, 'day')
-          .toDate()
-
-        const copiedGroupActivity = await manipulateGroupActivity(
-          {
-            name: oldGroupActivity.name,
-            displayName: oldGroupActivity.displayName,
-            description: oldGroupActivity.description,
-            stack: {
-              order: stack.order,
-              elements: stack.elements.map((element) => {
+      if (duplicateLiveQuizzes) {
+        for (const oldLiveQuiz of oldCourse.liveQuizzes) {
+          const copiedLiveQuiz = await manipulateLiveQuiz(
+            {
+              name: oldLiveQuiz.name,
+              displayName: oldLiveQuiz.displayName,
+              description: oldLiveQuiz.description,
+              blocks: oldLiveQuiz.blocks.map((block) => {
                 return {
-                  elementId: element.elementId,
-                  order: element.order,
-                  existingInstanceId: element.id,
-                  duplicateInstance: true,
+                  order: block.order,
+                  timeLimit: block.timeLimit,
+                  elements: block.elements.map((element) => {
+                    return {
+                      elementId: element.elementId,
+                      order: element.order,
+                      existingInstanceId: element.id,
+                      duplicateInstance: true,
+                    }
+                  }),
                 }
               }),
+              courseId: newCourse.id,
+              multiplier: oldLiveQuiz.pointsMultiplier,
+              defaultPoints: oldLiveQuiz.defaultPoints,
+              defaultCorrectPoints: oldLiveQuiz.defaultCorrectPoints,
+              maxBonusPoints: oldLiveQuiz.maxBonusPoints,
+              timeToZeroBonus: oldLiveQuiz.timeToZeroBonus,
+              isGamificationEnabled: oldLiveQuiz.isGamificationEnabled,
+              isPinProtected: !!oldLiveQuiz.pinCode,
+              isConfusionFeedbackEnabled:
+                oldLiveQuiz.isConfusionFeedbackEnabled,
+              isLiveQAEnabled: oldLiveQuiz.isLiveQAEnabled,
+              isModerationEnabled: oldLiveQuiz.isModerationEnabled,
             },
-            courseId: newCourse.id,
-            multiplier: oldGroupActivity.pointsMultiplier,
-            clues: oldGroupActivity.clues,
-            startDate: startDateNewGroupActivity,
-            endDate: endDateNewGroupActivity,
-          },
-          ctx
-        )
-        copiedGroupActivityIds.push(copiedGroupActivity.id)
-      }
-    }
+            ctx,
+            prisma
+          )
+          copiedLiveQuizIdBySourceId.set(oldLiveQuiz.id, copiedLiveQuiz.id)
 
-    return newCourse
-  } catch (error) {
-    try {
-      await ctx.prisma.$transaction(async (prisma) => {
-        await prisma.groupActivity.deleteMany({
-          where: { id: { in: copiedGroupActivityIds } },
-        })
-        await prisma.microLearning.deleteMany({
-          where: { id: { in: copiedMicroLearningIds } },
-        })
-        await prisma.practiceQuiz.deleteMany({
-          where: { id: { in: copiedPracticeQuizIds } },
-        })
-        await prisma.liveQuiz.deleteMany({
-          where: { id: { in: copiedLiveQuizIds } },
-        })
-        if (newCourse?.id) {
-          await prisma.course.deleteMany({
-            where: { id: newCourse.id },
+          await prisma.liveQuiz.update({
+            where: { id: copiedLiveQuiz.id },
+            data: { accessMode: oldLiveQuiz.accessMode },
           })
         }
-      })
-    } catch (cleanupError) {
-      console.error(
-        'Failed to clean up failed course duplication',
-        cleanupError
-      )
-    }
+      }
+      if (duplicatePracticeQuizzes) {
+        for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
+          const copiedPracticeQuiz = await manipulatePracticeQuiz(
+            {
+              name: oldPracticeQuiz.name,
+              displayName: oldPracticeQuiz.displayName,
+              description: oldPracticeQuiz.description,
+              stacks: oldPracticeQuiz.stacks.map((stack) => {
+                return {
+                  order: stack.order,
+                  elements: stack.elements.map((element) => {
+                    return {
+                      elementId: element.elementId,
+                      order: element.order,
+                      existingInstanceId: element.id,
+                      duplicateInstance: true,
+                    }
+                  }),
+                }
+              }),
+              courseId: newCourse.id,
+              multiplier: oldPracticeQuiz.pointsMultiplier,
+              order: oldPracticeQuiz.orderType,
+              resetTimeDays: oldPracticeQuiz.resetTimeDays,
+            },
+            ctx,
+            prisma
+          )
+          copiedPracticeQuizIdBySourceId.set(
+            oldPracticeQuiz.id,
+            copiedPracticeQuiz.id
+          )
+        }
+      }
+      if (duplicateMicrolearnings) {
+        for (const oldMicroLearning of oldCourse.microLearnings) {
+          // compute delta
+          const startDateNewMicroLearning = dayjs(
+            oldMicroLearning.scheduledStartAt
+          )
+            .add(deltaCourseStart, 'day')
+            .toDate()
+          const endDateNewMicroLearning = dayjs(oldMicroLearning.scheduledEndAt)
+            .add(deltaCourseStart, 'day')
+            .toDate()
 
-    throw error
-  }
+          const copiedMicroLearning = await manipulateMicroLearning(
+            {
+              name: oldMicroLearning.name,
+              displayName: oldMicroLearning.displayName,
+              description: oldMicroLearning.description,
+              stacks: oldMicroLearning.stacks.map((stack) => {
+                return {
+                  order: stack.order,
+                  elements: stack.elements.map((element) => {
+                    return {
+                      elementId: element.elementId,
+                      order: element.order,
+                      existingInstanceId: element.id,
+                      duplicateInstance: true,
+                    }
+                  }),
+                }
+              }),
+              courseId: newCourse.id,
+              multiplier: oldMicroLearning.pointsMultiplier,
+              startDate: startDateNewMicroLearning,
+              endDate: endDateNewMicroLearning,
+            },
+            ctx,
+            prisma
+          )
+          copiedMicroLearningIdBySourceId.set(
+            oldMicroLearning.id,
+            copiedMicroLearning.id
+          )
+        }
+      }
+      if (shouldDuplicateGroupActivities) {
+        for (const oldGroupActivity of oldCourse.groupActivities) {
+          const stack = oldGroupActivity.stacks[0]!
+
+          // compute delta
+          const startDateNewGroupActivity = dayjs(
+            oldGroupActivity.scheduledStartAt
+          )
+            .add(deltaCourseStart, 'day')
+            .toDate()
+          const endDateNewGroupActivity = dayjs(oldGroupActivity.scheduledEndAt)
+            .add(deltaCourseStart, 'day')
+            .toDate()
+
+          const copiedGroupActivity = await manipulateGroupActivity(
+            {
+              name: oldGroupActivity.name,
+              displayName: oldGroupActivity.displayName,
+              description: oldGroupActivity.description,
+              stack: {
+                order: stack.order,
+                elements: stack.elements.map((element) => {
+                  return {
+                    elementId: element.elementId,
+                    order: element.order,
+                    existingInstanceId: element.id,
+                    duplicateInstance: true,
+                  }
+                }),
+              },
+              courseId: newCourse.id,
+              multiplier: oldGroupActivity.pointsMultiplier,
+              clues: oldGroupActivity.clues,
+              startDate: startDateNewGroupActivity,
+              endDate: endDateNewGroupActivity,
+            },
+            ctx,
+            prisma
+          )
+          copiedGroupActivityIdBySourceId.set(
+            oldGroupActivity.id,
+            copiedGroupActivity.id
+          )
+        }
+      }
+
+      await prisma.course.update({
+        where: { id: newCourse.id },
+        data: {
+          competencyTreeId: oldCourse.competencyTreeId,
+          authType: oldCourse.authType,
+          pinCode:
+            oldCourse.authType === DB.CourseAuthType.SSO ? null : undefined,
+        },
+      })
+
+      await copyCourseDuplicationDirectPermissions({
+        sourcePermissions: oldCourse.directPermissions,
+        sourceObjectType: DB.ObjectType.COURSE,
+        sourceObjectId: oldCourse.id,
+        targetObjectType: DB.ObjectType.COURSE,
+        target: {
+          courseId: newCourse.id,
+        },
+        ctx,
+        prisma,
+      })
+
+      await grantDuplicatedCourseAccessToSourceOwner({
+        sourceCourseId: oldCourse.id,
+        sourceOwnerId: oldCourse.ownerId,
+        targetCourseId: newCourse.id,
+        ctx,
+        prisma,
+      })
+
+      for (const oldLiveQuiz of oldCourse.liveQuizzes) {
+        const copiedLiveQuizId = copiedLiveQuizIdBySourceId.get(oldLiveQuiz.id)
+        if (!copiedLiveQuizId) continue
+
+        await copyCourseDuplicationDirectPermissions({
+          sourcePermissions: oldLiveQuiz.directPermissions,
+          sourceObjectType: DB.ObjectType.LIVE_QUIZ,
+          sourceObjectId: oldLiveQuiz.id,
+          targetObjectType: DB.ObjectType.LIVE_QUIZ,
+          target: {
+            liveQuizId: copiedLiveQuizId,
+          },
+          ctx,
+          prisma,
+        })
+      }
+
+      for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
+        const copiedPracticeQuizId = copiedPracticeQuizIdBySourceId.get(
+          oldPracticeQuiz.id
+        )
+        if (!copiedPracticeQuizId) continue
+
+        await copyCourseDuplicationDirectPermissions({
+          sourcePermissions: oldPracticeQuiz.directPermissions,
+          sourceObjectType: DB.ObjectType.PRACTICE_QUIZ,
+          sourceObjectId: oldPracticeQuiz.id,
+          targetObjectType: DB.ObjectType.PRACTICE_QUIZ,
+          target: {
+            practiceQuizId: copiedPracticeQuizId,
+          },
+          ctx,
+          prisma,
+        })
+      }
+
+      for (const oldMicroLearning of oldCourse.microLearnings) {
+        const copiedMicroLearningId = copiedMicroLearningIdBySourceId.get(
+          oldMicroLearning.id
+        )
+        if (!copiedMicroLearningId) continue
+
+        await copyCourseDuplicationDirectPermissions({
+          sourcePermissions: oldMicroLearning.directPermissions,
+          sourceObjectType: DB.ObjectType.MICRO_LEARNING,
+          sourceObjectId: oldMicroLearning.id,
+          targetObjectType: DB.ObjectType.MICRO_LEARNING,
+          target: {
+            microLearningId: copiedMicroLearningId,
+          },
+          ctx,
+          prisma,
+        })
+      }
+
+      for (const oldGroupActivity of oldCourse.groupActivities) {
+        const copiedGroupActivityId = copiedGroupActivityIdBySourceId.get(
+          oldGroupActivity.id
+        )
+        if (!copiedGroupActivityId) continue
+
+        await copyCourseDuplicationDirectPermissions({
+          sourcePermissions: oldGroupActivity.directPermissions,
+          sourceObjectType: DB.ObjectType.GROUP_ACTIVITY,
+          sourceObjectId: oldGroupActivity.id,
+          targetObjectType: DB.ObjectType.GROUP_ACTIVITY,
+          target: {
+            groupActivityId: copiedGroupActivityId,
+          },
+          ctx,
+          prisma,
+        })
+      }
+
+      await recomputeDerivedPermissions({ courseId: newCourse.id }, prisma)
+
+      const refreshedCourse = await prisma.course.findUnique({
+        where: { id: newCourse.id },
+        include: {
+          _count: {
+            select: { permissions: true },
+          },
+        },
+      })
+
+      if (!refreshedCourse) return newCourse
+
+      const { _count, ...course } = refreshedCourse
+
+      return {
+        ...course,
+        derivedAccess: false,
+        numSharedUsers: Math.max(_count.permissions - 1, 0),
+        permissionLevel: DB.PermissionLevel.OWNER,
+        isOwner: true,
+        isManager: true,
+        isEditor: true,
+        isShared: false,
+        isRemovable: false,
+      }
+    },
+    { timeout: DUPLICATE_COURSE_TRANSACTION_TIMEOUT }
+  )
 }
 
 export async function toggleArchiveCourse(

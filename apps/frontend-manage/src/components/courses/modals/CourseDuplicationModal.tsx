@@ -221,7 +221,7 @@ function CourseDuplicationModal({
       .string()
       .email(t('manage.courseList.notificationEmailInvalid'))
       .required(t('manage.courseList.notificationEmailReq')),
-    // gamification settings
+    // gamification is copied from the source course and not exposed as a duplication option
     isGamificationEnabled: yup.boolean(),
     isGroupCreationEnabled: yup.boolean(),
     groupCreationDeadline: initialValues?.groupDeadlineDate
@@ -534,22 +534,12 @@ function CourseDuplicationModal({
                 </div>
 
                 <div>
-                  <H3>{`${t('shared.generic.gamification')} & ${t('shared.generic.groups')}`}</H3>
+                  <H3>{t('shared.generic.groups')}</H3>
                   <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
                     <FormikSwitchField
                       required
                       labelLeft
-                      name="isGamificationEnabled"
-                      label={t('shared.generic.gamification')}
-                      tooltip={t('manage.courseList.gamificationTooltip')}
-                      className={{
-                        label: 'font-bold text-gray-600',
-                      }}
-                      data={{ cy: 'course-gamification' }}
-                    />
-                    <FormikSwitchField
-                      required
-                      labelLeft
+                      disabled={!values.isGamificationEnabled}
                       name="isGroupCreationEnabled"
                       label={t('manage.courseList.groupCreationEnabled')}
                       tooltip={
