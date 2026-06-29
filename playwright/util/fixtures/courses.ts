@@ -248,6 +248,23 @@ export async function createCourseRecord({
   return course
 }
 
+export async function updateCourseGroupDeadlineDate({
+  courseName,
+  groupDeadlineDate,
+  ownerId = USER_ID_TEST,
+}: {
+  courseName: string
+  groupDeadlineDate: Date
+  ownerId?: string
+}) {
+  const prisma = await getPrisma()
+
+  await prisma.course.updateMany({
+    where: { name: courseName, ownerId },
+    data: { groupDeadlineDate },
+  })
+}
+
 export async function ensureCourseParticipation({
   courseName,
   participantUsername,
@@ -911,17 +928,37 @@ export async function resetCourseLiveQuiz({
   })
 }
 
-function resetElementResults(results: Prisma.JsonValue) {
-  if (!results || typeof results !== 'object' || Array.isArray(results)) {
-    return results
+function resetResultCounts(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(resetResultCounts)
   }
 
-  const resetResults = { ...results } as Record<string, unknown>
-  for (const key of Object.keys(resetResults)) {
-    resetResults[key] = 0
+  if (value && typeof value === 'object') {
+    return Object.entries(value).reduce<Record<string, unknown>>(
+      (acc, [key, entry]) => {
+        acc[key] = typeof entry === 'number' ? 0 : resetResultCounts(entry)
+        return acc
+      },
+      {}
+    )
   }
 
-  return resetResults
+  return value
+}
+
+function resetElementResults(
+  results: Prisma.JsonValue
+): Record<string, unknown> {
+  const resetResults = resetResultCounts(results)
+
+  return {
+    ...(resetResults &&
+    typeof resetResults === 'object' &&
+    !Array.isArray(resetResults)
+      ? resetResults
+      : {}),
+    total: 0,
+  }
 }
 
 function incrementChoicesElementResults(results: Prisma.JsonValue): {

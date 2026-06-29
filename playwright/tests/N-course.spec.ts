@@ -62,6 +62,7 @@ import {
   grantLiveQuizDirectPermission,
   resetCourseLiveQuiz,
   submitCourseLiveQuizStudentResponse,
+  updateCourseGroupDeadlineDate,
   updateElementContentAndInstances,
   type CourseDuplicationSummary,
   type CourseLiveQuizResponseSummary,
@@ -274,6 +275,14 @@ const PERM_WRITE = 'Write'
 const PERM_EXECUTE = 'Execution'
 const PERM_ADMIN = 'Admin'
 const PERM_OWNER = 'Owner'
+const COURSE_DUPLICATION_RESPONSE_TIMEOUT = 120_000
+const COURSE_DUPLICATION_TEST_TIMEOUT = 180_000
+const SHARING_COURSE_GROUP_DEADLINE = new Date(
+  new Date().getFullYear(),
+  new Date().getMonth() + 1,
+  2,
+  12
+)
 
 const permissionTestIds: Record<string, string> = {
   [PERM_READ]: 'READ',
@@ -921,10 +930,42 @@ async function submitCourseDuplication(page: Page, copyName?: string) {
     await page.getByTestId('course-display-name').fill(copyName)
   }
 
+  await submitCourseFormAndWaitForCreateCourse(page)
+}
+
+async function submitCourseFormAndWaitForCreateCourse(
+  page: Page,
+  { expectSuccess = true }: { expectSuccess?: boolean } = {}
+) {
+  const createCourseResponse = page.waitForResponse(
+    (response) => {
+      const request = response.request()
+      const postData = request.postData() ?? ''
+
+      return (
+        request.method() === 'POST' &&
+        postData.includes('CreateCourse') &&
+        response.status() < 500
+      )
+    },
+    { timeout: COURSE_DUPLICATION_RESPONSE_TIMEOUT }
+  )
+
   await page.getByTestId('manipulate-course-submit').click()
-  await expect(page.getByTestId('course-name')).not.toBeVisible({
-    timeout: 30_000,
-  })
+  const response = await createCourseResponse
+  const body = (await response.json().catch(() => null)) as {
+    errors?: unknown[]
+  } | null
+
+  if (expectSuccess) {
+    expect(response.ok()).toBeTruthy()
+    expect(body?.errors ?? []).toEqual([])
+    await expect(page.getByTestId('course-name')).not.toBeVisible({
+      timeout: 30_000,
+    })
+  } else {
+    expect(body?.errors?.length ?? 0).toBeGreaterThan(0)
+  }
 }
 
 async function expectCourseCardPermission(
@@ -2153,6 +2194,10 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await page.getByTestId('manipulate-course-submit').click()
     await page.getByTestId('courses').click()
     await expect(page.getByText(SHARING.course)).toBeVisible()
+    await updateCourseGroupDeadlineDate({
+      courseName: SHARING.course,
+      groupDeadlineDate: SHARING_COURSE_GROUP_DEADLINE,
+    })
     await page.reload()
 
     // Create questions
@@ -2310,6 +2355,8 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     loginLecturer,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const copyName = `${SHARING.course} Copy`
     const competencyTreeName = `${SHARING.course} Competency Tree`
 
@@ -2333,10 +2380,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
     await page.getByTestId('course-duplicate-button').click()
     await verifyCourseDuplicationModalUi(page)
-    await page.getByTestId('manipulate-course-submit').click()
-    await expect(page.getByTestId('course-name')).not.toBeVisible({
-      timeout: 30_000,
-    })
+    await submitCourseFormAndWaitForCreateCourse(page)
 
     await page.getByTestId('courses').click()
     await expect(
@@ -2449,6 +2493,8 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     loginLecturer,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const copyName = `${SHARING.course} Copy Without Groups`
 
     await deleteCourseWithActivitiesByName({
@@ -2476,10 +2522,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       'unchecked'
     )
     await expect(page.getByTestId('course-group-activities')).toBeDisabled()
-    await page.getByTestId('manipulate-course-submit').click()
-    await expect(page.getByTestId('course-name')).not.toBeVisible({
-      timeout: 30_000,
-    })
+    await submitCourseFormAndWaitForCreateCourse(page)
 
     await page.getByTestId('courses').click()
     await expect(
@@ -2500,6 +2543,8 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     loginLecturer,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const sourceName = `${SHARING.course} Invalid Duplication Source`
     const copyName = `${sourceName} Copy`
 
@@ -2512,7 +2557,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginLecturer()
     await openCourseInManage(page, sourceName)
     await page.getByTestId('course-duplicate-button').click()
-    await page.getByTestId('manipulate-course-submit').click()
+    await submitCourseFormAndWaitForCreateCourse(page, { expectSuccess: false })
     await expect(
       page.getByText(messages.manage.courseList.courseCreationFailed)
     ).toBeVisible()
@@ -2533,6 +2578,8 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     loginLecturer,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const assessmentCourseName = `${SHARING.course} Assessment`
     const assessmentCopyName = `${assessmentCourseName} Copy`
     const startDate = new Date()
@@ -2671,6 +2718,8 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     logoutUser,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const copyName = `${SHARING.course} Shared Copy`
 
     await deleteCourseWithActivitiesByName({
@@ -2845,6 +2894,8 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     loginInstitutionalCatalyst4,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const copyName = `${SHARING.course} Admin Copy`
 
     await deleteCourseWithActivitiesByName({
@@ -2873,10 +2924,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         'unchecked'
       )
     }
-    await page.getByTestId('manipulate-course-submit').click()
-    await expect(page.getByTestId('course-name')).not.toBeVisible({
-      timeout: 30_000,
-    })
+    await submitCourseFormAndWaitForCreateCourse(page)
 
     await page.getByTestId('courses').click()
     await expect(
@@ -3139,6 +3187,8 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     loginLecturer,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const copyName = `${SHARING.course} Group Shared Copy`
 
     await deleteCourseWithActivitiesByName({
