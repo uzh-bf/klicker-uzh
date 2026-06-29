@@ -279,13 +279,19 @@ function makeStreamBody(text: string) {
   ].join('\n')
 }
 
-export async function mockChatStream(page: Page, text: string) {
+/**
+ * Mock LLM endpoint (POST /chat)
+ * Returns distinguishable streamed reply per call (`assistant reply #1`, `#2`, …)
+ */
+export async function mockChatStream(page: Page) {
+  let counter = 0
   await page.route(`**/api/chatbots/${CHATBOT_ID}/chat`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
+    counter += 1
     return route.fulfill({
       status: 200,
       headers: { 'content-type': 'text/event-stream' },
-      body: makeStreamBody(text),
+      body: makeStreamBody(`assistant reply #${counter}`),
     })
   })
 }

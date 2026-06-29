@@ -75,7 +75,7 @@ export function SettingsPanel() {
             <div data-cy="chat-mode-selection" className="space-y-1">
               <label className="text-sm font-bold">Chat Mode</label>
               <Select
-                data-cy="chat-mode-select"
+                data={{ cy: 'chat-mode-select' }}
                 placeholder="Select Chat Mode"
                 items={
                   Object.keys(modeOptions).length > 0
@@ -98,7 +98,7 @@ export function SettingsPanel() {
               {modelSelectionEnabled ? (
                 <>
                   <Select
-                    data-cy="chat-model-select"
+                    data={{ cy: 'chat-model-select' }}
                     placeholder="Select AI Model"
                     items={modelOptions.map((option) => ({
                       value: option.id,
@@ -142,7 +142,7 @@ export function SettingsPanel() {
               >
                 <label className="text-sm font-bold">Reasoning Effort</label>
                 <Select
-                  data-cy="chat-reasoning-effort-select"
+                  data={{ cy: 'chat-reasoning-effort-select' }}
                   placeholder="Select reasoning effort"
                   items={availableReasoningEfforts.map((value) => ({
                     value,

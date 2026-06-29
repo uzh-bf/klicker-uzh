@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import {
   CHATBOT_ID,
   chatUrl,
@@ -13,6 +13,7 @@ import {
   setModelSelection,
   setParticipantToken,
 } from '../util/chat.js'
+import { selectOption } from '../util/workflow.js'
 
 /**
  * Chatbot (apps/chat) E2E
@@ -23,10 +24,22 @@ import {
  * - POST /chat is mocked.
  */
 
-async function visitChat(page: import('@playwright/test').Page) {
+async function visitChat(page: Page) {
   await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
     waitUntil: 'domcontentloaded',
   })
+}
+
+async function typeMessage(page: Page, text: string) {
+  const input = page.getByTestId('chat-composer-input')
+  await input.click()
+  await input.pressSequentially(text)
+}
+
+/** Type message and send via send button */
+async function sendMessage(page: Page, text: string) {
+  await typeMessage(page, text)
+  await page.getByTestId('chat-send-button').click()
 }
 
 // ===========================================================================
@@ -319,17 +332,8 @@ test.describe('Chatbot Messaging Interface', () => {
     await setParticipantToken(page, participantId)
     await resetChatState(participantId)
     await setDisclaimerState(participantId, 'accepted')
-    await mockChatStream(page, 'This is a test response from the AI assistant.')
+    await mockChatStream(page)
   })
-
-  async function typeMessage(
-    page: import('@playwright/test').Page,
-    text: string
-  ) {
-    const input = page.getByTestId('chat-composer-input')
-    await input.click()
-    await input.pressSequentially(text)
-  }
 
   test('Empty chat shows welcome message', async ({ page }) => {
     await visitChat(page)
@@ -434,6 +438,248 @@ test.describe('Chatbot Messaging Interface', () => {
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('Photosynthesis is the process')
   })
+
+  test('Sending a message via the Enter key works', async ({ page }) => {
+    await visitChat(page)
+
+    const input = page.getByTestId('chat-composer-input')
+    await input.click()
+    await input.pressSequentially('Sent with Enter')
+    await input.press('Enter')
+
+    await expect(page.getByTestId('chat-user-message-content')).toContainText(
+      'Sent with Enter'
+    )
+    await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+      timeout: 15_000,
+    })
+  })
+
+  test('Multi-turn conversation keeps prior messages', async ({ page }) => {
+    await visitChat(page)
+
+    await sendMessage(page, 'First question')
+    await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+      timeout: 15_000,
+    })
+
+    await sendMessage(page, 'Second question')
+
+    // both user turns remain in the thread, plus an assistant reply each
+    await expect(page.getByTestId('chat-user-message')).toHaveCount(2)
+    await expect(
+      page
+        .getByTestId('chat-user-message-content')
+        .filter({ hasText: 'First question' })
+    ).toHaveCount(1)
+    await expect(
+      page
+        .getByTestId('chat-user-message-content')
+        .filter({ hasText: 'Second question' })
+    ).toHaveCount(1)
+    await expect(page.getByTestId('chat-assistant-message')).toHaveCount(2)
+  })
+})
+
+// ===========================================================================
+// Message Actions & Branching
+// ===========================================================================
+test.describe('Chatbot Message Actions & Branching', () => {
+  let participantId: string
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+    await mockChatStream(page)
+  })
+
+  test('Copy button copies the assistant message to the clipboard', async ({
+    page,
+  }) => {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+    await seedThread(participantId, {
+      title: 'Copy test',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'A question' }] },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'A copyable answer' }],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    await expect(assistant).toBeVisible()
+    await assistant.hover()
+    await page.getByTestId('chat-copy-message-button').click()
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText())
+    expect(clipboard).toContain('A copyable answer')
+  })
+
+  test('Regenerating a response replaces it with a new one', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Regenerate test',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Explain X' }] },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Seeded original answer' }],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content).toContainText('Seeded original answer')
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    await assistant.hover()
+    await page.getByTestId('chat-reload-message-button').click()
+
+    await expect(content).toContainText('assistant reply #1', {
+      timeout: 15_000,
+    })
+    await expect(content).not.toContainText('Seeded original answer')
+  })
+
+  test('Editing a non-root user message creates a new branch', async ({
+    page,
+  }) => {
+    await visitChat(page)
+    await sendMessage(page, 'First message')
+    await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+      timeout: 15_000,
+    })
+    await sendMessage(page, 'Second message')
+    await expect(page.getByTestId('chat-assistant-message')).toHaveCount(2)
+
+    const second = page
+      .getByTestId('chat-user-message')
+      .filter({ hasText: 'Second message' })
+    await second.hover()
+    await second.getByTestId('chat-edit-message-button').click()
+
+    const editInput = page.getByTestId('chat-edit-composer-input')
+    await expect(editInput).toBeVisible()
+    await editInput.fill('Second edited')
+    await page.getByTestId('chat-edit-send-button').click()
+
+    await expect(
+      page
+        .getByTestId('chat-user-message-content')
+        .filter({ hasText: 'Second edited' })
+    ).toBeVisible()
+
+    await page
+      .getByTestId('chat-user-message')
+      .filter({ hasText: 'Second edited' })
+      .hover()
+    await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
+    await expect(
+      page.getByTestId('chat-branch-indicator').first()
+    ).toContainText('/ 2')
+  })
+
+  test('Message tree: branches keep independent continuations and navigation restores them', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    // Turn 1, then turn 2
+    await sendMessage(page, 'root message')
+    await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+      timeout: 15_000,
+    })
+    await sendMessage(page, 'branch point')
+    await expect(page.getByTestId('chat-assistant-message')).toHaveCount(2)
+
+    const content = (text: string) =>
+      page.getByTestId('chat-user-message-content').filter({ hasText: text })
+    const branchPointMessage = () =>
+      page
+        .getByTestId('chat-user-message')
+        .filter({ hasText: /branch point|branch B/ })
+
+    // Edit turn 2 -> creates branch B (now active, 2/2)
+    let msg = branchPointMessage()
+    await msg.hover()
+    await msg.getByTestId('chat-edit-message-button').click()
+    await page.getByTestId('chat-edit-composer-input').fill('branch B')
+    await page.getByTestId('chat-edit-send-button').click()
+    await expect(content('branch B')).toBeVisible()
+
+    // Continuation that exists ONLY in branch B
+    await sendMessage(page, 'only in B')
+    await expect(content('only in B')).toHaveCount(1)
+
+    // Navigate the branch point back to branch A (1/2)
+    msg = branchPointMessage()
+    await msg.hover()
+    await page.getByTestId('chat-branch-previous').first().click()
+
+    // Branch A is active: original message shown, branch-B continuation gone
+    await expect(content('branch point')).toBeVisible()
+    await expect(content('only in B')).toHaveCount(0)
+
+    // Continuation that exists ONLY in branch A
+    await sendMessage(page, 'only in A')
+    await expect(content('only in A')).toHaveCount(1)
+
+    // Navigate back to branch B (2/2): its continuation returns, A's is gone
+    msg = branchPointMessage()
+    await msg.hover()
+    await page.getByTestId('chat-branch-next').first().click()
+
+    await expect(content('branch B')).toBeVisible()
+    await expect(content('only in B')).toHaveCount(1)
+    await expect(content('only in A')).toHaveCount(0)
+  })
+
+  // KNOWN BUG: editing the ROOT user message does not create a branch (the
+  // branch picker never appears), unlike editing a non-root message above.
+  //
+  // test('Editing the ROOT user message creates a new branch', async ({
+  //   page,
+  // }) => {
+  //   await visitChat(page)
+  //   await sendMessage(page, 'Root prompt')
+  //   await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+  //     timeout: 15_000,
+  //   })
+  //
+  //   const rootMessage = page.getByTestId('chat-user-message').first()
+  //   await rootMessage.hover()
+  //   await rootMessage.getByTestId('chat-edit-message-button').click()
+  //
+  //   const editInput = page.getByTestId('chat-edit-composer-input')
+  //   await expect(editInput).toBeVisible()
+  //   await editInput.fill('Root edited')
+  //   await page.getByTestId('chat-edit-send-button').click()
+  //
+  //   await expect(
+  //     page
+  //       .getByTestId('chat-user-message-content')
+  //       .filter({ hasText: 'Root edited' })
+  //   ).toBeVisible()
+  //
+  //   await page
+  //     .getByTestId('chat-user-message')
+  //     .filter({ hasText: 'Root edited' })
+  //     .hover()
+  //   await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
+  //   await expect(
+  //     page.getByTestId('chat-branch-indicator').first()
+  //   ).toContainText('/ 2')
+  // })
 })
 
 // ===========================================================================
@@ -486,6 +732,18 @@ test.describe('Chatbot Settings Panel', () => {
     const modeSection = page.getByTestId('chat-mode-selection')
     await expect(modeSection).toBeVisible()
     await expect(modeSection).toContainText('Chat Mode')
+  })
+
+  test('Selecting a different chat mode updates the selection', async ({
+    page,
+  }) => {
+    await visitChat(page)
+    await openSettings(page)
+
+    await selectOption(page, '[data-cy="chat-mode-select"]', 'Explainer')
+    await expect(page.getByTestId('chat-mode-selection')).toContainText(
+      'Explainer'
+    )
   })
 
   test('AI model section displays current model (automatic mode)', async ({
