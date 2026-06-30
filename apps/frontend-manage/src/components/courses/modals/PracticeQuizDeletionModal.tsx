@@ -65,6 +65,9 @@ function PracticeQuizDeletionModal({
     )
   }
 
+  const confirmationData = (count: number, cy: string) =>
+    count > 0 ? { cy } : undefined
+
   return (
     <ActivityConfirmationModal
       onClose={onClose}
@@ -107,7 +110,10 @@ function PracticeQuizDeletionModal({
           confirmed={confirmations.deleteResponses}
           notApplicable={summary.numOfResponses === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-responses' }}
+          data={confirmationData(
+            summary.numOfResponses,
+            'confirm-deletion-responses'
+          )}
         />
         <ConfirmationItem
           label={
@@ -126,7 +132,10 @@ function PracticeQuizDeletionModal({
           confirmed={confirmations.deleteAnonymousResponses}
           notApplicable={summary.numOfAnonymousResponses === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-anonymous-responses' }}
+          data={confirmationData(
+            summary.numOfAnonymousResponses,
+            'confirm-deletion-anonymous-responses'
+          )}
         />
       </div>
     </ActivityConfirmationModal>

@@ -22,7 +22,8 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
   ActivityType,
   type ActivityInfo,
@@ -71,8 +72,20 @@ function useLiveQuizActions({
   const unpublishLiveQuiz = trpc.activity.unpublish.useMutation()
   const [startRouting, setStartRouting] = useState(false)
   const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const [deleteSummaryPreparing, setDeleteSummaryPreparing] = useState(false)
   const startPending = starting || startRouting
   const unpublishing = unpublishLiveQuiz.isLoading || unpublishRefreshing
+  const prepareDeletionSummary = useCallback(() => {
+    const input = { activityId: quiz.id }
+
+    if (utils.activity.liveQuizSummary.getData(input)?.liveQuizSummary) return
+
+    flushSync(() => setDeleteSummaryPreparing(true))
+    void utils.activity.liveQuizSummary
+      .fetch(input)
+      .catch(console.error)
+      .finally(() => setDeleteSummaryPreparing(false))
+  }, [quiz.id, utils])
 
   const actions = useMemo(
     () => [
@@ -287,7 +300,11 @@ function useLiveQuizActions({
         id: 'deleteLiveQuiz',
         label: t('manage.liveQuizzes.deleteLiveQuiz'),
         icon: faTrashCan,
-        onClick: () => setDeletionModal(true),
+        onClick: () => {
+          flushSync(() => setDeletionModal(true))
+        },
+        onMenuOpen: prepareDeletionSummary,
+        disabled: deleteSummaryPreparing,
         data: { cy: `delete-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -311,6 +328,8 @@ function useLiveQuizActions({
       unpublishing,
       utils,
       refetchActivities,
+      deleteSummaryPreparing,
+      prepareDeletionSummary,
       setEmbeddingModal,
       setQRModal,
       setTemplateEditingModal,

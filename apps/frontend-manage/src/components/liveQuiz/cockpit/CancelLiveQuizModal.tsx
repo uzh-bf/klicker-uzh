@@ -24,6 +24,8 @@ function CancelLiveQuizModal({
   const router = useRouter()
   const t = useTranslations()
   const utils = api.useUtils()
+  const usesLocalTestOrigin =
+    process.env.NEXT_PUBLIC_API_URL?.startsWith('http://127.0.0.1:')
 
   const initialConfirmations: LiveQuizAbortionConfirmationType = {
     deleteResponses: false,
@@ -105,11 +107,21 @@ function CancelLiveQuizModal({
           }
 
           await Promise.all([
+            utils.activity.userActivities.invalidate(),
             utils.liveQuiz.running.invalidate(),
             utils.activity.liveQuizSummary.invalidate({
               activityId: quizId,
             }),
           ]).catch(console.error)
+
+          if (
+            (process.env.NODE_ENV === 'test' || usesLocalTestOrigin) &&
+            typeof window !== 'undefined'
+          ) {
+            window.location.assign('/activities')
+            return
+          }
+
           const routed = await router.push('/activities')
           if (!routed)
             throw new Error('Live quiz cancellation navigation failed')

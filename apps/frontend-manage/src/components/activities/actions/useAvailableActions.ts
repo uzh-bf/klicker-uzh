@@ -7,6 +7,7 @@ export type ActivityAction = {
   label: string
   icon: IconDefinition
   onClick: (e?: React.MouseEvent) => void
+  onMenuOpen?: () => void
   data?: {
     cy?: string
   }

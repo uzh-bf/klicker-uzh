@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import { faKeyboard } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -7,6 +8,7 @@ import {
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { LoginTemporaryParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import { trpc } from '@lib/trpc'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import {
@@ -67,8 +69,9 @@ function AccountSelector({
   const [api, setApi] = useState<CarouselApi>()
   const selfQueryErrorToastShown = useRef(false)
 
-  const loginTemporaryParticipant =
-    trpc.participant.loginTemporary.useMutation()
+  const [loginTemporaryParticipant, { loading: loggingIn }] = useMutation(
+    LoginTemporaryParticipantDocument
+  )
   const utils = trpc.useUtils()
 
   // check if the user is already logged in as a participant or temporary participant of this quiz
@@ -209,13 +212,15 @@ function AccountSelector({
         })}
         onSubmit={async (values) => {
           try {
-            const token = await loginTemporaryParticipant.mutateAsync({
-              liveQuizId: quizId,
-              pseudonym: values.pseudonym,
-              avatar: values.avatar !== '' ? values.avatar : undefined,
+            const { data } = await loginTemporaryParticipant({
+              variables: {
+                liveQuizId: quizId,
+                pseudonym: values.pseudonym,
+                avatar: values.avatar !== '' ? values.avatar : undefined,
+              },
             })
 
-            if (token) {
+            if (data?.loginTemporaryParticipant) {
               const refreshedSelf = await utils.participant.self.fetch({
                 liveQuizId: quizId,
               })
@@ -263,7 +268,7 @@ function AccountSelector({
                   basic
                   className={{ root: 'w-max px-2 py-1 text-sm' }}
                   onClick={() => setStep('choice')}
-                  disabled={isSubmitting || loginTemporaryParticipant.isLoading}
+                  disabled={isSubmitting || loggingIn}
                   data={{ cy: 'cancel-define-pseudonym' }}
                 >
                   <Button.Icon icon={faArrowLeft} />
@@ -289,7 +294,7 @@ function AccountSelector({
                   type="button"
                   disabled={
                     isSubmitting ||
-                    loginTemporaryParticipant.isLoading ||
+                    loggingIn ||
                     !values.pseudonym ||
                     values.pseudonym.length < 5 ||
                     values.pseudonym.length > 15
@@ -309,7 +314,7 @@ function AccountSelector({
                   basic
                   className={{ root: 'w-max px-2 py-1 text-sm' }}
                   onClick={() => setStep('pseudonym')}
-                  disabled={isSubmitting || loginTemporaryParticipant.isLoading}
+                  disabled={isSubmitting || loggingIn}
                   data={{ cy: 'cancel-choose-avatar' }}
                 >
                   <Button.Icon icon={faArrowLeft} />
@@ -389,8 +394,8 @@ function AccountSelector({
                 <Button
                   primary
                   type="submit"
-                  disabled={isSubmitting || loginTemporaryParticipant.isLoading}
-                  loading={isSubmitting || loginTemporaryParticipant.isLoading}
+                  disabled={isSubmitting || loggingIn}
+                  loading={isSubmitting || loggingIn}
                   className={{ root: 'mt-2 self-end' }}
                   data={{ cy: 'submit-pseudonym-and-avatar' }}
                 >

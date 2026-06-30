@@ -23,6 +23,8 @@ function LiveQuizAbortionConfirmations({
   setConfirmations,
 }: LiveQuizAbortionConfirmationsProps) {
   const t = useTranslations()
+  const confirmationData = (count: number, cy: string) =>
+    count > 0 ? { cy } : undefined
 
   return (
     <div className="flex flex-col gap-2">
@@ -48,7 +50,10 @@ function LiveQuizAbortionConfirmations({
         confirmed={confirmations.deleteResponses}
         notApplicable={summary.numOfResponses === 0}
         confirmationType="delete"
-        data={{ cy: 'lq-deletion-responses-confirm' }}
+        data={confirmationData(
+          summary.numOfResponses,
+          'lq-deletion-responses-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -67,7 +72,10 @@ function LiveQuizAbortionConfirmations({
         confirmed={confirmations.deleteFeedbacks}
         notApplicable={summary.numOfFeedbacks === 0}
         confirmationType="delete"
-        data={{ cy: 'lq-deletion-feedbacks-confirm' }}
+        data={confirmationData(
+          summary.numOfFeedbacks,
+          'lq-deletion-feedbacks-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -86,7 +94,10 @@ function LiveQuizAbortionConfirmations({
         confirmed={confirmations.deleteConfusionFeedbacks}
         notApplicable={summary.numOfConfusionFeedbacks === 0}
         confirmationType="delete"
-        data={{ cy: 'lq-deletion-confusion-feedbacks-confirm' }}
+        data={confirmationData(
+          summary.numOfConfusionFeedbacks,
+          'lq-deletion-confusion-feedbacks-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -105,7 +116,10 @@ function LiveQuizAbortionConfirmations({
         confirmed={confirmations.deleteLeaderboardEntries}
         notApplicable={summary.numOfLeaderboardEntries === 0}
         confirmationType="delete"
-        data={{ cy: 'lq-deletion-leaderboard-entries-confirm' }}
+        data={confirmationData(
+          summary.numOfLeaderboardEntries,
+          'lq-deletion-leaderboard-entries-confirm'
+        )}
       />
     </div>
   )

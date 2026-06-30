@@ -25208,6 +25208,56 @@ rg -n 'participantToken=|router\\.push\\(`|router\\.replace\\(`' apps/frontend-p
 # remaining participantToken hits are encoded; other dynamic route pushes are internal object IDs or auth URLs.
 ```
 
+### 2026-06-30 Local Playwright Stabilization For Migrated tRPC Client Surfaces
+
+Status:
+
+- Complete locally. Scope stayed inside changed tRPC/frontend code; no
+  Playwright or Cypress tests were modified.
+- Full local Playwright Chromium suite now passes against the tRPC branch and
+  local Playwright app stack.
+- GraphQL and tRPC remain mounted side by side; this did not start S05/S06.
+
+Changes:
+
+- Stabilized tRPC client auth redirects for manage, control, and PWA by
+  duck-typing tRPC error shape, stopping retries on auth redirects, delaying
+  redirects until batched responses settle, and keeping PWA redirect behavior
+  compatible with unauthenticated root requests.
+- Split tRPC client links so mutations are sent unbatched while ordinary query
+  traffic can still use batching.
+- Fixed Slate rich-text deletion for expanded DOM selections in shared
+  `ContentInput`.
+- Kept only Resources dropdown navigation on hard document navigation in local
+  test mode to avoid first-hit Next route compilation timeouts, while preserving
+  normal router navigation for main nav/course/activity flows.
+- Awaited required live-quiz cancellation invalidations before navigating back
+  to the activity list in local test mode.
+- Added transfer ownership input autofocus to make modal interaction
+  deterministic across activity/resource workflows.
+
+Verification evidence:
+
+```bash
+bash util/_with_local_test_origins.sh volta run -- pnpm --filter @klicker-uzh/playwright test:run:raw --project=chromium
+# pass: 761 passed (2.2h)
+
+volta run -- pnpm exec prettier --check apps/frontend-manage/src/components/liveQuiz/cockpit/CancelLiveQuizModal.tsx apps/frontend-manage/src/components/common/Header.tsx apps/frontend-manage/src/components/common/ContentInput.tsx apps/frontend-manage/src/lib/trpc.tsx apps/frontend-pwa/src/lib/trpc.tsx apps/frontend-control/src/lib/trpc.tsx
+# pass
+
+volta run -- pnpm --filter @klicker-uzh/frontend-manage check
+# pass
+
+volta run -- pnpm --filter @klicker-uzh/frontend-pwa check
+# pass
+
+volta run -- pnpm --filter @klicker-uzh/frontend-control check
+# pass
+
+git diff --check
+# pass
+```
+
 ## Remaining Implementation Plan
 
 ### S04E PWA Participant Shell and Course Reads

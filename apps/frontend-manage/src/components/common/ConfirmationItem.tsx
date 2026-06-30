@@ -15,6 +15,7 @@ interface ConfirmationItemProps {
   onClick: () => void
   confirmationType?: 'confirm' | 'delete'
   data?: { cy?: string; test?: string }
+  disabled?: boolean
 }
 
 function ConfirmationItem({
@@ -24,10 +25,12 @@ function ConfirmationItem({
   onClick,
   confirmationType = 'confirm',
   data,
+  disabled = false,
 }: ConfirmationItemProps) {
   const t = useTranslations()
-  const isConfirmed = confirmed || notApplicable
-  const canConfirm = !isConfirmed
+  const canConfirm = !confirmed && !disabled
+  const keepConfirmedData =
+    confirmed && notApplicable && confirmationType === 'delete'
   const handleConfirm = () => {
     if (canConfirm) {
       onClick()
@@ -41,8 +44,9 @@ function ConfirmationItem({
         canConfirm && 'cursor-pointer'
       )}
       data-confirmation-active={canConfirm ? 'true' : 'false'}
-      data-cy={data?.cy}
-      data-test={data?.test}
+      data-cy={keepConfirmedData ? data?.cy : undefined}
+      data-test={keepConfirmedData ? data?.test : undefined}
+      aria-disabled={disabled ? 'true' : undefined}
       role={canConfirm ? 'button' : undefined}
       tabIndex={canConfirm ? 0 : undefined}
       onClick={handleConfirm}
@@ -74,14 +78,18 @@ function ConfirmationItem({
           {label}
         </div>
       </div>
-      {isConfirmed ? (
+      {confirmed ? (
         <FontAwesomeIcon icon={faCheck} className="text-green-700" />
       ) : (
         <Button
           onClick={(event) => {
             event?.stopPropagation()
-            onClick()
+            if (!disabled) {
+              onClick()
+            }
           }}
+          disabled={disabled}
+          data={data}
           className={{
             root: twMerge(
               'border-primary-100 h-7 py-0',

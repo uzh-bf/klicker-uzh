@@ -6,10 +6,10 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import {
-  TRPCClientError,
   createTRPCProxyClient,
   createWSClient,
   httpBatchLink,
+  httpLink,
   splitLink,
   wsLink,
 } from '@trpc/client'
@@ -23,6 +23,8 @@ export type { RouterInputs, RouterOutputs }
 
 export const trpc = createTRPCReact<AppRouter>()
 export const api = trpc
+type FetchParameters = Parameters<typeof globalThis.fetch>
+let pendingUnauthorizedRedirect: number | undefined
 
 function getApiUrl() {
   return (
@@ -79,24 +81,92 @@ function getHeaders(
 function handleTRPCError(error: unknown) {
   if (typeof window === 'undefined') return
 
-  const isUnauthorized =
-    error instanceof TRPCClientError
-      ? error.data?.code === 'UNAUTHORIZED' || error.message === 'Unauthorized'
-      : error instanceof Error && error.message === 'Unauthorized'
+  if (!shouldRedirectToLogin(error)) return
 
-  if (!isUnauthorized) return
+  const pathAtError = getCurrentPath()
+  sessionStorage.removeItem('participant_token')
+  clearPendingUnauthorizedRedirect()
+  pendingUnauthorizedRedirect = window.setTimeout(() => {
+    pendingUnauthorizedRedirect = undefined
 
-  Router.push(
-    `/login?expired=true&redirect_to=${
-      encodeURIComponent(
-        window.location.pathname + (window.location.search ?? '')
-      ) ?? '/'
-    }`
+    if (getCurrentPath() !== pathAtError || pathAtError.startsWith('/login')) {
+      return
+    }
+
+    Router.push(
+      `/login?expired=true&redirect_to=${encodeURIComponent(pathAtError)}`
+    )
+  }, 100)
+}
+
+function shouldRedirectToLogin(error: unknown) {
+  if (isUnauthorizedTRPCError(error)) {
+    return true
+  }
+
+  return isForbiddenTRPCError(error) && window.location.pathname === '/'
+}
+
+function isUnauthorizedTRPCError(error: unknown) {
+  return (
+    getTRPCErrorCode(error) === 'UNAUTHORIZED' ||
+    getTRPCErrorMessage(error) === 'Unauthorized'
   )
+}
+
+function isForbiddenTRPCError(error: unknown) {
+  return (
+    getTRPCErrorCode(error) === 'FORBIDDEN' ||
+    getTRPCErrorMessage(error) === 'Forbidden'
+  )
+}
+
+function getTRPCErrorCode(error: unknown) {
+  if (!error || typeof error !== 'object' || !('data' in error)) {
+    return undefined
+  }
+
+  const data = error.data as { code?: unknown } | undefined
+
+  return typeof data?.code === 'string' ? data.code : undefined
+}
+
+function getTRPCErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (!error || typeof error !== 'object' || !('message' in error)) {
+    return undefined
+  }
+
+  const message = error.message
+
+  return typeof message === 'string' ? message : undefined
+}
+
+function getCurrentPath() {
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`
+}
+
+function clearPendingUnauthorizedRedirect() {
+  if (typeof window === 'undefined' || !pendingUnauthorizedRedirect) return
+
+  window.clearTimeout(pendingUnauthorizedRedirect)
+  pendingUnauthorizedRedirect = undefined
 }
 
 export function createTRPCQueryClient() {
   return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: (failureCount, error) => {
+          if (shouldRedirectToLogin(error)) {
+            handleTRPCError(error)
+            return false
+          }
+
+          return failureCount < 3
+        },
+      },
+    },
     queryCache: new QueryCache({
       onError: handleTRPCError,
     }),
@@ -107,22 +177,31 @@ export function createTRPCQueryClient() {
 }
 
 export function createTRPCClient(ctx?: GetServerSidePropsContext) {
-  const httpLink = httpBatchLink({
+  const httpLinkOptions = {
     url: getTRPCUrl(),
     headers: () => getHeaders(ctx),
-    fetch(url, options) {
-      return globalThis.fetch(url, {
+    async fetch(url: FetchParameters[0], options: FetchParameters[1]) {
+      const response = await globalThis.fetch(url, {
         ...options,
         credentials: 'include',
       })
+
+      return response
     },
+  }
+  const batchedHttpLink = httpBatchLink(httpLinkOptions)
+  const unbatchedHttpLink = httpLink(httpLinkOptions)
+  const requestLink = splitLink({
+    condition: (op) => op.type === 'mutation',
+    true: unbatchedHttpLink,
+    false: batchedHttpLink,
   })
 
   return trpc.createClient({
     transformer: superjson,
     links: [
       typeof window === 'undefined'
-        ? httpLink
+        ? requestLink
         : splitLink({
             condition: (op) => op.type === 'subscription',
             true: wsLink({
@@ -130,7 +209,7 @@ export function createTRPCClient(ctx?: GetServerSidePropsContext) {
                 url: getTRPCWsUrl,
               }),
             }),
-            false: httpLink,
+            false: requestLink,
           }),
     ],
   })

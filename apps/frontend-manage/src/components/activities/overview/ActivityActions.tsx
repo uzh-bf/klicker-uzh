@@ -2,6 +2,7 @@ import { faEllipsis, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useCallback } from 'react'
 import type { ActivityType } from '../../../lib/constants/activityEnums'
 import { ActivityAction } from '../actions/useAvailableActions'
 
@@ -19,6 +20,9 @@ function ActivityActions({
   openActivityDetailsModal: () => void
 }) {
   const t = useTranslations()
+  const prepareMenuActions = useCallback(() => {
+    availableActions.forEach((action) => action.onMenuOpen?.())
+  }, [availableActions])
 
   return (
     <div className="-mr-1 flex flex-row items-end gap-1">
@@ -65,7 +69,16 @@ function ActivityActions({
           onClick: action.onClick,
           data: action.data,
         }))}
-        trigger={<FontAwesomeIcon icon={faEllipsis} />}
+        trigger={
+          <span
+            className="flex"
+            onFocus={prepareMenuActions}
+            onMouseEnter={prepareMenuActions}
+            onPointerDown={prepareMenuActions}
+          >
+            <FontAwesomeIcon icon={faEllipsis} />
+          </span>
+        }
         data={{ cy: `actions-${activityType}-${activityName}` }}
         className={{
           viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview

@@ -30,13 +30,26 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
 
   const quizzes = liveQuizData?.liveQuizzes
   const courses = courseData?.userCourses
+  const usesLocalTestOrigin =
+    process.env.NEXT_PUBLIC_API_URL?.startsWith('http://127.0.0.1:')
+  const navigateToResource = (href: string) => {
+    if (
+      (process.env.NODE_ENV === 'test' || usesLocalTestOrigin) &&
+      typeof window !== 'undefined'
+    ) {
+      window.location.assign(href)
+      return
+    }
+
+    void router.push(href)
+  }
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),
-      onClick: () => router.push('/resources/answerCollections'),
+      onClick: () => navigateToResource('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
     ...(user?.privatePreview
@@ -45,7 +58,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
             key: 'chatbots-item',
             type: 'link' as const,
             label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
+            onClick: () => navigateToResource('/resources/chatbots'),
             data: { cy: 'chatbots' },
           },
         ]
@@ -55,7 +68,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
       type: 'link' as const,
       disabled: !user?.privatePreview,
       label: t('manage.general.catalog'),
-      onClick: () => router.push('/resources/catalog'),
+      onClick: () => navigateToResource('/resources/catalog'),
       badge: !user?.privatePreview ? t('shared.generic.comingSoon') : undefined,
       notification: pendingRequestData && pendingRequestData.count !== 0,
       data: { cy: 'catalog' },
@@ -70,7 +83,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
       type: 'link' as const,
       disabled: !user?.privatePreview,
       label: t('manage.general.userGroups'),
-      onClick: () => router.push('/resources/userGroups'),
+      onClick: () => navigateToResource('/resources/userGroups'),
       badge: !user?.privatePreview ? t('shared.generic.comingSoon') : undefined,
       data: { cy: 'user-groups' },
       className: {
@@ -84,7 +97,7 @@ function Header({ user }: { user?: UserProfile }): React.ReactElement {
       type: 'link' as const,
       disabled: true,
       label: t('manage.general.mediaLibrary'),
-      onClick: () => router.push('/resources/mediaLibrary'),
+      onClick: () => navigateToResource('/resources/mediaLibrary'),
       badge: t('shared.generic.comingSoon'),
       data: { cy: 'media-library' },
       className: {

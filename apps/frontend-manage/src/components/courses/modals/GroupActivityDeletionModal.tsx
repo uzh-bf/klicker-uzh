@@ -66,6 +66,9 @@ function GroupActivityDeletionModal({
     )
   }
 
+  const confirmationData = (count: number, cy: string) =>
+    count > 0 ? { cy } : undefined
+
   return (
     <ActivityConfirmationModal
       onClose={onClose}
@@ -108,7 +111,10 @@ function GroupActivityDeletionModal({
           confirmed={confirmations.deleteStartedInstances}
           notApplicable={summary.numOfStartedInstances === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-started-instances' }}
+          data={confirmationData(
+            summary.numOfStartedInstances,
+            'confirm-deletion-started-instances'
+          )}
         />
         <ConfirmationItem
           label={
@@ -127,7 +133,10 @@ function GroupActivityDeletionModal({
           confirmed={confirmations.deleteSubmissions}
           notApplicable={summary.numOfSubmissions === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-submissions' }}
+          data={confirmationData(
+            summary.numOfSubmissions,
+            'confirm-deletion-submissions'
+          )}
         />
       </div>
     </ActivityConfirmationModal>

@@ -1,6 +1,6 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification, toast } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -185,18 +185,42 @@ function Cockpit() {
   )
 }
 
-export async function getStaticProps({ locale }: GetStaticPropsContext) {
-  return {
-    props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
-    },
-  }
+function hasLecturerSession(ctx: GetServerSidePropsContext) {
+  return Boolean(
+    ctx.req.cookies['next-auth.session-token'] ||
+      ctx.req.cookies['__Secure-next-auth.session-token']
+  )
 }
 
-export function getStaticPaths() {
+function getRequestOrigin(ctx: GetServerSidePropsContext) {
+  const proto = (ctx.req.headers['x-forwarded-proto'] || 'http') as string
+  return `${proto}://${ctx.req.headers.host}`
+}
+
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  if (!hasLecturerSession(ctx)) {
+    const manageUrl =
+      process.env.NEXT_PUBLIC_MANAGE_URL ?? getRequestOrigin(ctx)
+    const authUrl =
+      process.env.NEXT_PUBLIC_AUTH_URL ?? `${getRequestOrigin(ctx)}/login`
+    const redirectTo = new URL(ctx.resolvedUrl, manageUrl).toString()
+
+    return {
+      redirect: {
+        destination: `${authUrl}?redirectTo=${encodeURIComponent(redirectTo)}`,
+        permanent: false,
+      },
+    }
+  }
+
   return {
-    paths: [],
-    fallback: 'blocking',
+    props: {
+      messages: (
+        await import(
+          `@klicker-uzh/i18n/messages/${ctx.locale ?? ctx.defaultLocale ?? 'en'}`
+        )
+      ).default,
+    },
   }
 }
 

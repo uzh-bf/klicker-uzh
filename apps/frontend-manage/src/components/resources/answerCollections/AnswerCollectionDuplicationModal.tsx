@@ -63,7 +63,20 @@ function AnswerCollectionDuplicationModal({
           })
 
           if (result.answerCollection) {
-            await utils.resources.answerCollectionsInfo.invalidate()
+            const duplicatedCollection = result.answerCollection
+            utils.resources.answerCollectionsInfo.setData(undefined, (data) =>
+              data?.answerCollections
+                ? {
+                    answerCollections: [
+                      ...data.answerCollections.filter(
+                        (collection) =>
+                          collection.id !== duplicatedCollection.id
+                      ),
+                      duplicatedCollection,
+                    ],
+                  }
+                : data
+            )
             onClose()
             onSuccess()
             return

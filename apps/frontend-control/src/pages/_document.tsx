@@ -1,6 +1,11 @@
 import { Head, Html, Main, NextScript } from 'next/document'
 
 export default function Document() {
+  const usesLocalTestOrigin =
+    process.env.NEXT_PUBLIC_API_URL?.startsWith('http://127.0.0.1:')
+  const loadExternalStylesheets =
+    process.env.NODE_ENV !== 'test' && !usesLocalTestOrigin
+
   return (
     <Html>
       <Head>
@@ -225,12 +230,14 @@ export default function Document() {
           href="/apple-splash-1136-640.jpg"
           media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
         />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
-          integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0"
-          crossOrigin="anonymous"
-        />
+        {loadExternalStylesheets ? (
+          <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
+            integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0"
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </Head>
       <body>
         <Main />

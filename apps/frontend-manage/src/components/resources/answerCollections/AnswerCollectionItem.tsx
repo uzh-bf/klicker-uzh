@@ -146,6 +146,8 @@ function AnswerCollectionItem({
                 item: 'py-0.5 text-sm',
                 trigger:
                   'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+                viewport:
+                  'data-[state=closed]:animate-none! data-[state=open]:animate-none!',
               }}
               data={{ cy: `answer-collection-actions-${collection.name}` }}
             />

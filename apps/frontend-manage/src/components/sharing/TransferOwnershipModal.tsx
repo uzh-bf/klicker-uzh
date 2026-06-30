@@ -117,6 +117,7 @@ function TransferOwnershipModal({
             <Form className="space-y-2">
               <div>
                 <FormikTextField
+                  autoFocus
                   id="shortnameOrEmail"
                   name="shortnameOrEmail"
                   label={

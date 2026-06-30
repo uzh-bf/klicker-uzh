@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -7,6 +8,7 @@ import {
   faRankingStar,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { SetLiveQuizPinDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import {
@@ -167,7 +169,7 @@ function Index({ id }: { id: string }) {
   )
   const [isDesktop, setIsDesktop] = useState<boolean>(false)
 
-  const setLiveQuizPin = trpc.participant.setLiveQuizPin.useMutation()
+  const [setLiveQuizPin] = useMutation(SetLiveQuizPinDocument)
   const {
     data,
     isLoading: loading,
@@ -315,9 +317,11 @@ function Index({ id }: { id: string }) {
             })}
             onSubmit={async (values, { setSubmitting }) => {
               try {
-                await setLiveQuizPin.mutateAsync({
-                  liveQuizId: id,
-                  pin: values.pin,
+                await setLiveQuizPin({
+                  variables: {
+                    liveQuizId: id,
+                    pin: values.pin,
+                  },
                 })
 
                 try {

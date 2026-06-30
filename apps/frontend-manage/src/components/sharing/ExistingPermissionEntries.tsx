@@ -1,6 +1,7 @@
 import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
 import PermissionListEntry from './PermissionListEntry'
@@ -125,6 +126,34 @@ function ExistingPermissionEntries({
     return onPermissionRemoval(revocationModal.permissionId!, false)
   }
 
+  const modals = (
+    <>
+      {modifyOwnPermissionsModal.open && (
+        <ModifyOwnPermissionsModal
+          onClose={() =>
+            setModifyOwnPermissionsModal({
+              ...modifyOwnPermissionsModal,
+              open: false,
+            })
+          }
+          onConfirm={confirmModifyOwnPermissions}
+          action={modifyOwnPermissionsModal.action}
+          newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
+        />
+      )}
+      {revocationModal.open && (
+        <PermissionRevocationModal
+          onClose={() =>
+            setRevocationModal({ ...revocationModal, open: false })
+          }
+          onRevocation={confirmRevocation}
+          username={revocationModal.username}
+          userGroup={revocationModal.userGroup}
+        />
+      )}
+    </>
+  )
+
   return (
     <>
       {ownerPermission && (
@@ -158,29 +187,9 @@ function ExistingPermissionEntries({
           />
         ))}
 
-      {modifyOwnPermissionsModal.open && (
-        <ModifyOwnPermissionsModal
-          onClose={() =>
-            setModifyOwnPermissionsModal({
-              ...modifyOwnPermissionsModal,
-              open: false,
-            })
-          }
-          onConfirm={confirmModifyOwnPermissions}
-          action={modifyOwnPermissionsModal.action}
-          newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
-        />
-      )}
-      {revocationModal.open && (
-        <PermissionRevocationModal
-          onClose={() =>
-            setRevocationModal({ ...revocationModal, open: false })
-          }
-          onRevocation={confirmRevocation}
-          username={revocationModal.username}
-          userGroup={revocationModal.userGroup}
-        />
-      )}
+      {typeof document !== 'undefined'
+        ? createPortal(modals, document.body)
+        : null}
     </>
   )
 }
