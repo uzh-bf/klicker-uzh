@@ -171,7 +171,9 @@ async function openNextBlockFromCockpit(page: Page) {
   await expect(nextBlock).toBeVisible({ timeout: 30000 })
   await expect(nextBlock).toBeEnabled()
   await nextBlock.click()
-  await expect(nextBlock).toBeVisible({ timeout: 30000 })
+  await expect(page.getByTestId('evaluation-results-cockpit')).toBeVisible({
+    timeout: 30000,
+  })
 }
 
 async function visitEvaluationFromCockpit(page: Page) {
