@@ -18,6 +18,7 @@ interface DisclaimerModalProps {
   isOpen: boolean
   onAccept: () => void
   onDecline: () => void
+  stacked?: boolean
 }
 
 export const DisclaimerModal = ({
@@ -25,6 +26,7 @@ export const DisclaimerModal = ({
   isOpen,
   onAccept,
   onDecline,
+  stacked = false,
 }: DisclaimerModalProps) => {
   const [isLoading, setIsLoading] = useState(false)
 
@@ -89,7 +91,9 @@ export const DisclaimerModal = ({
       onClose={() => {}} // Prevent closing the modal
     >
       <div className="space-y-6">
-        <div className="flex flex-row space-x-12">
+        <div
+          className={`flex ${stacked ? 'flex-col space-y-6' : 'flex-row space-x-12'}`}
+        >
           {/* Custom Introduction */}
           {disclaimer.introText && (
             <Markdown

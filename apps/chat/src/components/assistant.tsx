@@ -281,6 +281,7 @@ export const Assistant = ({
             isOpen={showDisclaimerModal}
             onAccept={handleAcceptDisclaimer}
             onDecline={handleDeclineDisclaimer}
+            stacked={embedded}
           />
         )}
       </>
@@ -302,6 +303,7 @@ export const Assistant = ({
           isOpen={showDisclaimerModal}
           onAccept={handleAcceptDisclaimer}
           onDecline={handleDeclineDisclaimer}
+          stacked={embedded}
         />
       )}
     </>
