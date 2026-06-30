@@ -215,7 +215,8 @@ jobs:
           URL_MANAGE: http://127.0.0.1:3002
           URL_STUDENT: http://127.0.0.1:3001
           URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          URL_CHAT: http://127.0.0.1:3004
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3004 http://127.0.0.1:3010'
           SERVICE_START_SCRIPT: start:playwright:ci
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
