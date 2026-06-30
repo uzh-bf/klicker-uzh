@@ -1,53 +1,39 @@
-import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  AnswerCollection,
-  DeleteAnswerCollectionDocument,
-  GetAnswerCollectionsInfoDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
+
+type DeletableAnswerCollection = {
+  id: number
+  name: string
+}
 
 function CollectionDeletionModal({
   collection,
   setDeletionModal,
 }: {
-  collection: AnswerCollection
+  collection: DeletableAnswerCollection
   setDeletionModal: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
-  const [deleteAnswerCollection, { loading }] = useMutation(
-    DeleteAnswerCollectionDocument,
-    {
-      variables: { collectionId: collection.id },
-      update: (cache, { data }) => {
-        // check if the removal was successful
-        if (!data?.deleteAnswerCollection) return
-
-        // update the cache to remove the deleted collection
-        cache.updateQuery(
-          { query: GetAnswerCollectionsInfoDocument },
-          (qData) => {
-            if (!qData?.getAnswerCollectionsInfo) return qData
-
-            return {
-              getAnswerCollectionsInfo: qData.getAnswerCollectionsInfo.filter(
-                (collection) => collection.id !== data.deleteAnswerCollection
-              ),
-            }
-          }
-        )
-      },
+  const utils = trpc.useUtils()
+  const deleteAnswerCollection =
+    trpc.resources.deleteAnswerCollection.useMutation()
+  const [deletionPending, setDeletionPending] = useState(false)
+  const loading = deleteAnswerCollection.isLoading || deletionPending
+  const handleClose = () => {
+    if (!loading) {
+      setDeletionModal(false)
     }
-  )
+  }
 
   return (
     <Modal
       open
       title={t('manage.resources.deleteAnswerCollection')}
-      onClose={() => setDeletionModal(false)}
+      onClose={handleClose}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
           {!loading && <FontAwesomeIcon icon={faTrashCan} />}
@@ -58,27 +44,53 @@ function CollectionDeletionModal({
       }
       primaryButtonStyle="destructive"
       primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
-        const { data, errors } = await deleteAnswerCollection()
-
-        if (
-          typeof data?.deleteAnswerCollection !== 'undefined' &&
-          data?.deleteAnswerCollection !== null &&
-          !errors
-        ) {
-          toast({
-            type: 'success',
-            message: t('manage.resources.deletionSuccessful'),
-            options: { duration: 3000 },
+        setDeletionPending(true)
+        try {
+          const res = await deleteAnswerCollection.mutateAsync({
+            collectionId: collection.id,
           })
-          setDeletionModal(false)
-        } else {
+
+          if (res.deletedAnswerCollectionId) {
+            try {
+              await utils.resources.answerCollectionsInfo.invalidate()
+            } catch (error) {
+              console.error(
+                'Error refreshing answer collections after deletion:',
+                error
+              )
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 3000 },
+              })
+              setDeletionPending(false)
+              return
+            }
+            toast({
+              type: 'success',
+              message: t('manage.resources.deletionSuccessful'),
+              options: { duration: 3000 },
+            })
+            setDeletionModal(false)
+            return
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.resources.deletionFailed'),
+              options: { duration: 3000 },
+            })
+          }
+        } catch (error) {
+          console.error('Error deleting answer collection:', error)
           toast({
             type: 'error',
             message: t('manage.resources.deletionFailed'),
             options: { duration: 3000 },
           })
         }
+        setDeletionPending(false)
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-answer-collection' }}
       dataCloseButton={{ cy: 'close-delete-answer-collection' }}

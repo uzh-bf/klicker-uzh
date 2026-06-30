@@ -1,5 +1,5 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { ElementType } from '../../../lib/constants/elementTypes'
 
 function useElementTypeOptions() {
   const t = useTranslations()

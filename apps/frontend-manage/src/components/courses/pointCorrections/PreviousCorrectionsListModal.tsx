@@ -1,8 +1,6 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetPreviousPointCorrectionsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Suspense } from 'react'
+import { trpc } from '../../../lib/trpc'
 import PreviousPointCorrectionList from './PreviousPointCorrectionList'
 
 function PreviousCorrectionsListModal({
@@ -23,51 +21,61 @@ function PreviousCorrectionsListModal({
     instanceId && instanceId.trim() !== ''
       ? parseInt(instanceId, 10)
       : undefined
-  const { data: previousCorrectionsData } = useSuspenseQuery(
-    GetPreviousPointCorrectionsDocument,
+  const validInstanceId =
+    typeof parsedInstanceId === 'number' && !Number.isNaN(parsedInstanceId)
+  const {
+    data: previousCorrectionsData,
+    error,
+    isLoading,
+  } = trpc.activity.previousPointCorrections.useQuery(
     {
-      variables: {
-        courseId,
-        liveQuizId,
-        instanceId: !Number.isNaN(parsedInstanceId)
-          ? parsedInstanceId
-          : undefined,
-      },
-      fetchPolicy: 'network-only',
-      skip:
-        (!liveQuizId || liveQuizId === '') && (!courseId || courseId === ''),
+      courseId,
+      liveQuizId,
+      instanceId: validInstanceId ? parsedInstanceId : undefined,
+    },
+    {
+      enabled: Boolean(liveQuizId || courseId || validInstanceId),
     }
   )
+  const corrections = previousCorrectionsData?.previousPointCorrections
+  const initialLoading = isLoading && !corrections
+  const correctionsUnavailable = Boolean(error && !corrections)
+  const staleCorrectionsError = Boolean(error && previousCorrectionsData)
 
   return (
-    <Suspense
-      fallback={
-        <Modal open loading onClose={() => {}}>
-          {' '}
-        </Modal>
-      }
+    <Modal
+      open
+      loading={initialLoading}
+      onClose={onClose}
+      title={t('manage.course.appliedCorrections')}
+      className={{ content: 'max-w-3xl' }}
     >
-      <Modal
-        open
-        onClose={onClose}
-        title={t('manage.course.appliedCorrections')}
-        className={{ content: 'max-w-3xl' }}
-      >
-        {previousCorrectionsData?.previousPointCorrections ? (
-          <PreviousPointCorrectionList
-            corrections={
-              previousCorrectionsData?.previousPointCorrections ?? []
-            }
-          />
-        ) : (
-          <div className="text-sm text-gray-600">
-            {!!instanceId
-              ? t('manage.pointCorrections.historyPlaceholderInstance')
-              : t('manage.pointCorrections.historyPlaceholder')}
-          </div>
-        )}
-      </Modal>
-    </Suspense>
+      {correctionsUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : (
+        <>
+          {staleCorrectionsError ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'mb-3' }}
+            />
+          ) : null}
+          {corrections && corrections.length > 0 ? (
+            <PreviousPointCorrectionList corrections={corrections} />
+          ) : (
+            <div className="text-sm text-gray-600">
+              {!!instanceId
+                ? t('manage.pointCorrections.historyPlaceholderInstance')
+                : t('manage.pointCorrections.historyPlaceholder')}
+            </div>
+          )}
+        </>
+      )}
+    </Modal>
   )
 }
 

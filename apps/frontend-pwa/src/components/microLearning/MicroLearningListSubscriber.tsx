@@ -1,79 +1,43 @@
-import { SubscribeToMoreOptions } from '@apollo/client'
-import {
-  Course,
-  MicroLearning,
-  MicroLearningEndedDocument,
-  Participation,
-} from '@klicker-uzh/graphql/dist/ops'
+import { api } from '@lib/trpc'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 function MicroLearningListSubscriber({
   activityId,
-  subscribeToMore,
+  onEnded,
 }: {
   activityId: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onEnded?: () => void | Promise<void>
 }) {
   const t = useTranslations()
+  const onEndedRef = useRef(onEnded)
+  const handledActivityIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    subscribeToMore({
-      document: MicroLearningEndedDocument,
-      variables: { activityId },
-      updateQuery: (
-        prev: { participations: Participation[] },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: {
-            data: { microLearningEnded: MicroLearning }
-          }
-        }
-      ): { participations: Participation[] } => {
-        if (!subscriptionData.data) return prev
+    onEndedRef.current = onEnded
+  }, [onEnded])
 
-        // trigger toast for ended microlearning
+  api.realtime.microLearningEnded.useSubscription(
+    { activityId },
+    {
+      onData(microLearning) {
+        if (handledActivityIdRef.current === microLearning.id) return
+
+        handledActivityIdRef.current = microLearning.id
+
         toast({
           type: 'success',
           message: t('pwa.courses.microLearningEndedToast', {
-            activityName: subscriptionData.data.microLearningEnded.displayName,
+            activityName: microLearning.displayName,
           }),
           options: { duration: 10000 },
         })
 
-        // update the values returned by the course overview data query
-        const updatedParticipations: Participation[] = prev.participations.map(
-          (participation) => {
-            const microLearningIds = participation.course?.microLearnings?.map(
-              (ml) => ml.id
-            )
-            if (microLearningIds?.includes(activityId)) {
-              return {
-                ...participation,
-                course: {
-                  ...participation.course,
-                  microLearnings:
-                    participation.course?.microLearnings
-                      ?.map((ml) => {
-                        if (ml.id === activityId) {
-                          return undefined
-                        }
-                        return ml
-                      })
-                      .filter((ml) => typeof ml !== 'undefined') ?? [],
-                } as Course,
-              }
-            }
-            return participation
-          }
-        )
-
-        return { participations: updatedParticipations }
+        void Promise.resolve(onEndedRef.current?.()).catch(console.error)
       },
-    })
-  }, [activityId, subscribeToMore])
+    }
+  )
 
   return null
 }

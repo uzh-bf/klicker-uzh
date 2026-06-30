@@ -1,8 +1,5 @@
-import {
-  ChoicesActivityEvaluationData,
-  LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import { ChoicesActivityEvaluationData, LocaleType } from '@lib/evaluationTypes'
 import {
   ResizableHandle,
   ResizablePanel,

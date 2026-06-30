@@ -1,26 +1,28 @@
-import { useMutation } from '@apollo/client'
-import {
-  CatalogObject,
-  GetCatalogObjectsDocument,
-  ObjectType,
-  RemoveCatalogObjectAssignmentDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
+import type { CatalogBrowserObject } from '../catalogBrowserTypes'
 
 function CatalogObjectRemovalModal({
   object,
   catalogCollectionId,
   onClose,
 }: {
-  object: CatalogObject
+  object: CatalogBrowserObject
   catalogCollectionId?: string
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [removeCatalogObjectAssignment, { loading }] = useMutation(
-    RemoveCatalogObjectAssignmentDocument
-  )
+  const utils = trpc.useUtils()
+  const removeCatalogObjectAssignment =
+    trpc.sharing.removeCatalogObjectAssignment.useMutation()
+  const removing = removeCatalogObjectAssignment.isLoading
+  const handleClose = () => {
+    if (!removing) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
@@ -34,9 +36,9 @@ function CatalogObjectRemovalModal({
           ? t(`manage.catalog.remove${object.objectType}_TEMPLATEtitle`)
           : t(`manage.catalog.remove${object.objectType}title`)
       }
-      onClose={onClose}
+      onClose={handleClose}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-removal' }}
       primaryLabel={
         (object.objectType === ObjectType.LiveQuiz ||
@@ -47,44 +49,45 @@ function CatalogObjectRemovalModal({
           ? t(`manage.catalog.remove${object.objectType}_TEMPLATE`)
           : t(`manage.catalog.remove${object.objectType}`)
       }
-      primaryLoading={loading}
+      primaryLoading={removing}
+      primaryDisabled={removing}
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
-        const { data: res } = await removeCatalogObjectAssignment({
-          variables: {
+        try {
+          const res = await removeCatalogObjectAssignment.mutateAsync({
             assignmentId: object.id,
-          },
-          update: (cache, { data }) => {
-            // check if request was successful
-            const success = data?.removeCatalogObjectAssignment
-            if (!success) return
+          })
 
-            cache.updateQuery(
-              {
-                query: GetCatalogObjectsDocument,
-                variables: { catalogCollectionId },
-              },
+          const success = res.removed
+          if (success) {
+            utils.sharing.catalogObjects.setData(
+              { catalogCollectionId },
               (data) => {
-                if (!data?.getCatalogObjects) return data
+                if (!data?.catalogObjects) return data
+
                 return {
-                  ...data,
-                  getCatalogObjects: data.getCatalogObjects.filter(
+                  catalogObjects: data.catalogObjects.filter(
                     (obj) => obj.id !== object.id
                   ),
                 }
               }
             )
-          },
-        })
-
-        const success = res?.removeCatalogObjectAssignment ?? false
-        if (success) {
-          toast({
-            type: 'success',
-            message: t('manage.catalog.objectRemovalSuccess'),
-          })
-          onClose()
-        } else {
+            void utils.sharing.catalogCollections
+              .invalidate()
+              .catch(console.error)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.objectRemovalSuccess'),
+            })
+            onClose()
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.catalog.objectRemovalFailed'),
+            })
+          }
+        } catch (error) {
+          console.error(error)
           toast({
             type: 'error',
             message: t('manage.catalog.objectRemovalFailed'),

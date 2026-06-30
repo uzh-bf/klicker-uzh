@@ -1,15 +1,14 @@
-import { useQuery } from '@apollo/client'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SelfDocument, UserRole } from '@klicker-uzh/graphql/dist/ops'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import Layout from '../components/Layout'
+import { trpc } from '../lib/trpc'
 
 function MissingPage() {
   const t = useTranslations()
-  const { data: dataParticipant } = useQuery(SelfDocument)
+  const { data: dataParticipant } = trpc.participant.self.useQuery()
 
   return (
     <Layout className={{ body: 'h-full' }}>
@@ -19,7 +18,7 @@ function MissingPage() {
           <div>{t('shared.error.404')}</div>
         </div>
         {!dataParticipant?.self ||
-        dataParticipant.self.role !== UserRole.Participant ? (
+        dataParticipant.self.role !== 'PARTICIPANT' ? (
           <div className="md:max-w-140 max-w-[90%] sm:max-w-[70%]">
             {t.rich('shared.error.pwaWithoutUser', {
               login: (text) => (

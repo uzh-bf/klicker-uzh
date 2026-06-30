@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faCalendar, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faFlagCheckered,
@@ -11,15 +10,15 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  GetSingleCourseDocument,
-  UnpublishGroupActivityDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import {
+  ActivityType,
+  type ActivityInfo,
+} from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function useGroupActivityActions({
@@ -47,9 +46,10 @@ function useGroupActivityActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
-  const [unpublishGroupActivity, { loading: unpublishing }] = useMutation(
-    UnpublishGroupActivityDocument
-  )
+  const utils = trpc.useUtils()
+  const unpublishGroupActivity = trpc.activity.unpublish.useMutation()
+  const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const unpublishing = unpublishGroupActivity.isLoading || unpublishRefreshing
 
   const actions = useMemo(
     () => [
@@ -79,40 +79,37 @@ function useGroupActivityActions({
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
         onClick: async () => {
-          await unpublishGroupActivity({
-            variables: { id: groupActivity.id! },
-            update: (cache, { data: res }) => {
-              // if the mutation was not successful, return early
-              if (!res?.unpublishGroupActivity?.id) return
-
-              // change the status of the practice quiz on the course overview back to draft
-              cache.updateQuery(
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: groupActivity.courseId! },
-                },
-                (data) => {
-                  if (!data?.course) return data
-
-                  return {
-                    course: {
-                      ...data.course,
-                      groupActivitiesInfo: data.course.groupActivitiesInfo?.map(
-                        (quiz) =>
-                          quiz.id === res.unpublishGroupActivity?.id
-                            ? {
-                                ...quiz,
-                                status: res.unpublishGroupActivity?.status,
-                              }
-                            : quiz
-                      ),
-                    },
-                  }
-                }
-              )
-            },
-          })
-          await refetchActivities?.()
+          setUnpublishRefreshing(true)
+          try {
+            const result = await unpublishGroupActivity.mutateAsync({
+              activityId: groupActivity.id,
+              activityType:
+                ActivityType.GroupActivity as RouterInputs['activity']['unpublish']['activityType'],
+            })
+            if (result.unpublishActivity?.id) {
+              await Promise.all([
+                groupActivity.courseId
+                  ? utils.course.detail.invalidate({
+                      courseId: groupActivity.courseId,
+                    })
+                  : undefined,
+                refetchActivities?.(),
+              ]).catch(console.error)
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+            })
+          } finally {
+            setUnpublishRefreshing(false)
+          }
         },
         disabled: unpublishing,
         data: { cy: `unpublish-group-activity-${groupActivity.name}` },
@@ -185,8 +182,11 @@ function useGroupActivityActions({
       router,
       groupActivity.id,
       groupActivity.name,
+      groupActivity.courseId,
       unpublishGroupActivity,
       unpublishing,
+      utils,
+      refetchActivities,
       setRemovalModal,
       setDeletionModal,
       setEndingModal,

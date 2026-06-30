@@ -1,13 +1,13 @@
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import Leaderboard, {
+  LeaderboardCombinedEntry,
+} from '@klicker-uzh/shared-components/src/Leaderboard'
 import {
   ConfusionTimestep,
   Feedback,
   LocaleType,
   StackEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
-import Leaderboard, {
-  LeaderboardCombinedEntry,
-} from '@klicker-uzh/shared-components/src/Leaderboard'
+} from '@lib/evaluationTypes'
 import { useSessionStorage } from '@uidotdev/usehooks'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -85,12 +85,20 @@ function ActivityEvaluation({
       stackIx,
     }))
   )
+  const questionIxParam =
+    typeof router.query.questionIx === 'string' ? router.query.questionIx : null
+  const questionIxNumber =
+    questionIxParam !== null ? Number(questionIxParam) : NaN
+  const validQuestionIx =
+    Number.isInteger(questionIxNumber) && questionIxNumber >= 0
+      ? questionIxNumber
+      : null
 
   // automatically switch to correct instance
   useEvaluationInitialization({
     setActiveInstance,
     setActiveStack,
-    questionIx: router.query.questionIx as string | null,
+    questionIx: validQuestionIx !== null ? String(validQuestionIx) : null,
     results: instanceResults,
     showLeaderboard: router.query.leaderboard === 'true',
     missingInstanceResults: instanceResults.length === 0,
@@ -102,8 +110,7 @@ function ActivityEvaluation({
     setShowSolution,
     setShowExplanation,
     paramsLoaded:
-      typeof router.query.questionIx !== 'undefined' &&
-      parseInt(router.query.questionIx as string) === activeInstance,
+      validQuestionIx !== null && validQuestionIx === activeInstance,
     showSolution: router.query.showSolution === 'true',
     showExplanation: router.query.showExplanation === 'true',
     activeInstance,

@@ -1,15 +1,4 @@
-import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateLiveQuizDocument,
-  EditLiveQuizDocument,
-  Element,
-  ElementType,
-  GetUserRunningLiveQuizzesDocument,
-  LiveQuiz,
-  PublicationStatus,
-  StartLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -24,6 +13,12 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import {
+  Element,
+  ElementType,
+  LiveQuiz,
+} from '../../../../lib/constants/activityEnums'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
@@ -108,6 +103,7 @@ function LiveQuizWizard({
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
+  const [quickStartRouting, setQuickStartRouting] = useState(false)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
@@ -238,7 +234,8 @@ function LiveQuizWizard({
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
-                'options' in instance.elementData
+                'options' in instance.elementData &&
+                instance.elementData.options != null
                   ? (instance.elementData.options.hasSampleSolution ?? false)
                   : true,
               existingInstanceId: instance.id,
@@ -277,22 +274,46 @@ function LiveQuizWizard({
       formDefaultValues.isModerationEnabled,
   })
 
-  const [editLiveQuiz, { data: editingData }] =
-    useMutation(EditLiveQuizDocument)
-  const [createLiveQuiz, { data: creationData }] = useMutation(
-    CreateLiveQuizDocument
+  const createLiveQuiz = trpc.activity.createLiveQuiz.useMutation()
+  const editLiveQuiz = trpc.activity.editLiveQuiz.useMutation()
+  const utils = trpc.useUtils()
+  const startLiveQuiz = trpc.liveQuiz.start.useMutation({
+    onSuccess: async (result) => {
+      if (!result.liveQuiz) return
+      await utils.liveQuiz.running.invalidate()
+    },
+  })
+  const quickStarting = startLiveQuiz.isLoading || quickStartRouting
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
   )
-  const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringLiveQuiz.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
 
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
-      submitLiveQuizForm({
+      await submitLiveQuizForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         editMode,
         values,
-        createLiveQuiz,
-        editLiveQuiz,
+        createLiveQuiz: createLiveQuiz.mutateAsync,
+        editLiveQuiz: editLiveQuiz.mutateAsync,
+        invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -311,15 +332,26 @@ function LiveQuizWizard({
           }),
       })
     },
-    [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
+    [
+      createLiveQuiz.mutateAsync,
+      editMode,
+      editLiveQuiz.mutateAsync,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateActivities,
+      invalidateCourseDetail,
+    ]
   )
 
   const isActivityReviewer =
-    creationData?.createLiveQuiz?.isActivityReviewer ??
-    editingData?.editLiveQuiz?.isActivityReviewer
+    createLiveQuiz.data?.createLiveQuiz?.isActivityReviewer ??
+    editLiveQuiz.data?.editLiveQuiz?.isActivityReviewer
   const selectedCourseId =
-    creationData?.createLiveQuiz?.courseId ??
-    editingData?.editLiveQuiz?.courseId
+    createLiveQuiz.data?.createLiveQuiz?.courseId ??
+    editLiveQuiz.data?.editLiveQuiz?.courseId
+  const liveQuizId =
+    createLiveQuiz.data?.createLiveQuiz?.id ??
+    editLiveQuiz.data?.editLiveQuiz?.id
 
   return (
     <WizardLayout
@@ -360,58 +392,47 @@ function LiveQuizWizard({
           setStepNumber={setActiveStep}
           onCloseWizard={closeWizard}
         >
-          {creationData?.createLiveQuiz?.id || editingData?.editLiveQuiz?.id ? (
+          {liveQuizId ? (
             <Button
               data={{ cy: 'quick-start' }}
               onClick={async () => {
-                await startLiveQuiz({
-                  variables: {
-                    id:
-                      creationData?.createLiveQuiz?.id ??
-                      editingData!.editLiveQuiz!.id,
-                  },
-                  update(cache, { data: res }) {
-                    // return early if the mutation failed
-                    if (!res?.startLiveQuiz) return
+                if (quickStarting) return
 
-                    cache.updateQuery(
-                      { query: GetUserRunningLiveQuizzesDocument },
-                      (data) => {
-                        // if no data is present, return early
-                        if (!data?.userRunningLiveQuizzes) return data
+                setQuickStartRouting(true)
 
-                        // add the new live quiz to the existing list
-                        return {
-                          userRunningLiveQuizzes: [
-                            ...data.userRunningLiveQuizzes,
-                            {
-                              id: res.startLiveQuiz!.id,
-                              name: res.startLiveQuiz!.name,
-                            },
-                          ],
-                        }
-                      }
-                    )
-                  },
-                  optimisticResponse: {
-                    startLiveQuiz: {
-                      __typename: 'LiveQuizMeta',
-                      id:
-                        creationData?.createLiveQuiz?.id ??
-                        editingData!.editLiveQuiz!.id,
-                      name:
-                        creationData?.createLiveQuiz?.name ??
-                        editingData!.editLiveQuiz!.name,
-                      status: PublicationStatus.Published,
-                    },
-                  },
-                })
-                router.push(
-                  `/quizzes/${creationData?.createLiveQuiz?.id ?? editingData?.editLiveQuiz?.id}/cockpit`
-                )
+                try {
+                  const result = await startLiveQuiz.mutateAsync({
+                    id: liveQuizId,
+                  })
+                  if (!result.liveQuiz) {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
+                    return
+                  }
+
+                  const routed = await router.push(
+                    `/quizzes/${liveQuizId}/cockpit`
+                  )
+                  if (!routed)
+                    throw new Error('Live quiz quick-start navigation failed')
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                } finally {
+                  setQuickStartRouting(false)
+                }
               }}
+              disabled={quickStarting}
+              loading={quickStarting}
             >
-              <Button.Icon icon={faPlay} />
+              <Button.Icon icon={faPlay} loading={quickStarting} />
               <Button.Label>
                 {t('manage.activityWizard.liveQuizStartNow')}
               </Button.Label>

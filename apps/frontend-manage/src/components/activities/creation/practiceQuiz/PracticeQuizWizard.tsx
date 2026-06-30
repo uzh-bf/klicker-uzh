@@ -1,13 +1,3 @@
-import { useMutation } from '@apollo/client'
-import {
-  CreatePracticeQuizDocument,
-  EditPracticeQuizDocument,
-  Element,
-  ElementOrderType,
-  ElementType,
-  PracticeQuiz,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { toast } from '@uzh-bf/design-system'
 import { FormikProps } from 'formik'
@@ -15,6 +5,14 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import {
+  Element,
+  ElementOrderType,
+  ElementType,
+  PracticeQuiz,
+  PublicationStatus,
+} from '../../../../lib/constants/activityEnums'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
@@ -226,7 +224,8 @@ function PracticeQuizWizard({
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
-                'options' in instance.elementData
+                'options' in instance.elementData &&
+                instance.elementData.options != null
                   ? (instance.elementData.options.hasSampleSolution ?? false)
                   : true,
               existingInstanceId: instance.id,
@@ -248,12 +247,28 @@ function PracticeQuizWizard({
         : formDefaultValues.resetTimeDays,
   })
 
-  const [createPracticeQuiz, { data: creationData }] = useMutation(
-    CreatePracticeQuizDocument
+  const createPracticeQuiz = trpc.activity.createPracticeQuiz.useMutation()
+  const editPracticeQuiz = trpc.activity.editPracticeQuiz.useMutation()
+  const utils = trpc.useUtils()
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
   )
-  const [editPracticeQuiz, { data: editingData }] = useMutation(
-    EditPracticeQuizDocument
-  )
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringPracticeQuiz.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
+
   const handleSubmit = useCallback(
     async (values: PracticeQuizFormValues) => {
       submitPracticeQuizForm({
@@ -261,8 +276,10 @@ function PracticeQuizWizard({
         previousCourseId: initialValues?.course?.id,
         values,
         editMode,
-        createPracticeQuiz,
-        editPracticeQuiz,
+        createPracticeQuiz: createPracticeQuiz.mutateAsync,
+        editPracticeQuiz: editPracticeQuiz.mutateAsync,
+        invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -281,17 +298,26 @@ function PracticeQuizWizard({
           }),
       })
     },
-    [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
+    [
+      createPracticeQuiz.mutateAsync,
+      editMode,
+      editPracticeQuiz.mutateAsync,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateActivities,
+      invalidateCourseDetail,
+    ]
   )
 
   const activityId =
-    creationData?.createPracticeQuiz?.id ?? editingData?.editPracticeQuiz?.id
+    createPracticeQuiz.data?.createPracticeQuiz?.id ??
+    editPracticeQuiz.data?.editPracticeQuiz?.id
   const selectedCourseId =
-    creationData?.createPracticeQuiz?.courseId ??
-    editingData?.editPracticeQuiz?.courseId
+    createPracticeQuiz.data?.createPracticeQuiz?.courseId ??
+    editPracticeQuiz.data?.editPracticeQuiz?.courseId
   const isActivityReviewer =
-    creationData?.createPracticeQuiz?.isActivityReviewer ??
-    editingData?.editPracticeQuiz?.isActivityReviewer
+    createPracticeQuiz.data?.createPracticeQuiz?.isActivityReviewer ??
+    editPracticeQuiz.data?.editPracticeQuiz?.isActivityReviewer
 
   return (
     <WizardLayout

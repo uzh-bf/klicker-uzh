@@ -2,9 +2,14 @@
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
+import { appRouter, type TRPCContext } from '@klicker-uzh/api'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
+import {
+  createExpressMiddleware,
+  type CreateExpressContextOptions,
+} from '@trpc/server/adapters/express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
@@ -118,6 +123,28 @@ function prepareApp({
     next()
   }
 
+  function createTRPCContext({
+    req,
+    res,
+  }: CreateExpressContextOptions): TRPCContext {
+    const reqWithLocals = req as typeof req & {
+      locals?: { user?: TRPCContext['user'] }
+    }
+    return {
+      req,
+      res,
+      prisma,
+      redisExec,
+      redisAssessmentExec,
+      pubSub,
+      cache,
+      emitter,
+      user: reqWithLocals.locals?.user ?? null,
+      hatchet,
+      tasks,
+    }
+  }
+
   app.use(cookieParser())
   app.use(jwtMiddleware)
 
@@ -190,6 +217,14 @@ function prepareApp({
   app.use('/healthz', function (req, res) {
     res.send('OK')
   })
+
+  app.use(
+    '/api/trpc',
+    createExpressMiddleware({
+      router: appRouter,
+      createContext: createTRPCContext,
+    })
+  )
 
   app.use('/api/graphql', yogaApp as any)
 

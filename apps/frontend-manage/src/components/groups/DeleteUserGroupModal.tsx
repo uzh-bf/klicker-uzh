@@ -1,13 +1,9 @@
-import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
-import {
-  DeleteUserGroupDocument,
-  GetUserGroupsUserDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import ConfirmationItem from '../common/ConfirmationItem'
 
 function DeleteUserGroupModal({
@@ -22,7 +18,18 @@ function DeleteUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  const [deleteUserGroup, { loading }] = useMutation(DeleteUserGroupDocument)
+  const utils = trpc.useUtils()
+  const deleteUserGroup = trpc.sharing.deleteUserGroup.useMutation()
+  const [deletePending, setDeletePending] = useState(false)
+  const loading = deleteUserGroup.isLoading || deletePending
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
+  const refreshUserGroups = () => {
+    return utils.sharing.userGroups.invalidate()
+  }
 
   const [confirmations, setConfirmations] = useState({
     resolveGroup: false,
@@ -49,7 +56,7 @@ function DeleteUserGroupModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.userGroups.deleteGroup')}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -59,31 +66,20 @@ function DeleteUserGroupModal({
       }
       primaryButtonStyle="destructive"
       primaryLoading={loading}
-      primaryDisabled={Object.values(confirmations).some((value) => !value)}
+      primaryDisabled={
+        loading || Object.values(confirmations).some((value) => !value)
+      }
       onPrimaryAction={async () => {
+        if (loading) return
+
+        let releasePending = true
+        setDeletePending(true)
+
         try {
-          const { data: success } = await deleteUserGroup({
-            variables: { groupId },
-            update: (cache, { data }) => {
-              // check if request was successful
-              if (!data?.deleteUserGroup) return
-
-              // update list of user groups
-              cache.updateQuery(
-                { query: GetUserGroupsUserDocument },
-                (qData) => {
-                  if (!qData?.getUserGroupsUser) return qData
-
-                  return {
-                    getUserGroupsUser: qData.getUserGroupsUser.filter(
-                      (group) => group.id !== groupId
-                    ),
-                  }
-                }
-              )
-            },
-          })
-          if (success?.deleteUserGroup) {
+          const success = await deleteUserGroup.mutateAsync({ groupId })
+          if (success.deleted) {
+            await refreshUserGroups()
+            releasePending = false
             onSuccess()
           } else {
             onErrorToast()
@@ -91,6 +87,10 @@ function DeleteUserGroupModal({
         } catch (error) {
           console.error('Error deleting user group:', error)
           onErrorToast()
+        } finally {
+          if (releasePending) {
+            setDeletePending(false)
+          }
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-group' }}
@@ -100,7 +100,7 @@ function DeleteUserGroupModal({
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-delete-group' }}
       className={{ content: 'max-w-2xl' }}
     >

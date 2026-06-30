@@ -1,14 +1,10 @@
-import { useMutation } from '@apollo/client'
-import {
-  AddObjectToCatalogDocument,
-  GetCatalogObjectsDocument,
-  ObjectAccess,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Button, H4, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as Yup from 'yup'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import ObjectTypeSelection from './ObjectTypeSelection'
 import SelectObjectForCatalog from './SelectObjectForCatalog'
 
@@ -33,13 +29,22 @@ function AddObjectToCatalogModal({
   onError,
 }: AddObjectToCatalogModalProps) {
   const t = useTranslations()
-  const [addObjectToCatalog] = useMutation(AddObjectToCatalogDocument)
+  const utils = trpc.useUtils()
+  const addObjectToCatalog = trpc.sharing.addObjectToCatalog.useMutation()
+  const [addPending, setAddPending] = useState(false)
+  const adding = addObjectToCatalog.isLoading || addPending
+  const handleClose = () => {
+    if (!adding) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.catalog.addObjectToCatalogTitle')}
-      onClose={onClose}
+      onClose={handleClose}
+      escapeDisabled={adding}
       className={{ content: 'max-w-2xl pb-2' }}
       dataCloseButton={{ cy: 'close-add-object-modal' }}
     >
@@ -64,7 +69,10 @@ function AddObjectToCatalogModal({
           }),
         })}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
+          if (addPending) return
+
           setSubmitting(true)
+          setAddPending(true)
 
           // check that values are valid
           if (
@@ -73,60 +81,57 @@ function AddObjectToCatalogModal({
             typeof values.access === 'undefined'
           ) {
             setSubmitting(false)
+            setAddPending(false)
             onError()
             return
           }
 
           try {
-            const res = await addObjectToCatalog({
-              variables: {
-                objectId: values.objectId,
-                objectType: values.objectType,
-                access: values.access,
-                catalogCollectionId,
-              },
-              update: (cache, { data }) => {
-                // check if the mutation was successful
-                if (!data?.addObjectToCatalog) return
-
-                // update the displayed catalog items
-                cache.updateQuery(
-                  {
-                    query: GetCatalogObjectsDocument,
-                    variables: { catalogCollectionId },
-                  },
-                  (qData) => {
-                    if (!qData?.getCatalogObjects) return qData
-
-                    const newObject = data.addObjectToCatalog!
-                    return {
-                      getCatalogObjects: qData.getCatalogObjects
-                        .filter((obj) =>
-                          typeof obj.objectId !== 'undefined' &&
-                          obj.objectId !== null
-                            ? obj.objectId !== newObject.objectId
-                            : obj.objectUuid !== newObject.objectUuid
-                        )
-                        .concat(newObject),
-                    }
-                  }
-                )
-              },
-            })
-            const success = !!res.data?.addObjectToCatalog
+            const input: RouterInputs['sharing']['addObjectToCatalog'] = {
+              objectId: values.objectId,
+              objectType:
+                values.objectType as unknown as RouterInputs['sharing']['addObjectToCatalog']['objectType'],
+              access:
+                values.access as unknown as RouterInputs['sharing']['addObjectToCatalog']['access'],
+              catalogCollectionId,
+            }
+            const res = await addObjectToCatalog.mutateAsync(input)
+            const success = !!res.catalogObject
 
             if (success) {
+              utils.sharing.catalogObjects.setData(
+                { catalogCollectionId },
+                (data) => {
+                  if (!data?.catalogObjects) return data
+
+                  const newObject = res.catalogObject!
+
+                  return {
+                    catalogObjects: data.catalogObjects
+                      .filter((obj) =>
+                        typeof obj.objectId !== 'undefined' &&
+                        obj.objectId !== null
+                          ? obj.objectId !== newObject.objectId
+                          : obj.objectUuid !== newObject.objectUuid
+                      )
+                      .concat(newObject),
+                  }
+                }
+              )
+              void utils.sharing.catalogCollections
+                .invalidate()
+                .catch(console.error)
               resetForm()
-              setSubmitting(false)
               onSuccess()
             } else {
-              setSubmitting(false)
               onError()
             }
           } catch (error) {
             console.error('Error submitting form:', error)
-            setSubmitting(false)
             onError()
+          } finally {
+            setSubmitting(false)
+            setAddPending(false)
           }
         }}
       >
@@ -170,9 +175,15 @@ function AddObjectToCatalogModal({
               <Button
                 primary
                 type="submit"
-                disabled={!isValid || !dirty || !values.objectId}
+                disabled={
+                  !isValid ||
+                  !dirty ||
+                  !values.objectId ||
+                  isSubmitting ||
+                  adding
+                }
                 data={{ cy: 'submit-add-object-button' }}
-                loading={isSubmitting}
+                loading={isSubmitting || adding}
               >
                 <Button.Label>{t('shared.generic.save')}</Button.Label>
               </Button>

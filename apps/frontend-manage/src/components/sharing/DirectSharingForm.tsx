@@ -1,17 +1,12 @@
-import { useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  GetUserGroupsUserDocument,
-  ObjectType,
-  PermissionLevel,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import {
   Button,
   FormikSelectField,
   FormikSwitchField,
   SelectField,
   TextField,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
@@ -20,6 +15,7 @@ import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
+import { trpc } from '../../lib/trpc'
 
 function DirectSharingForm({
   type,
@@ -42,14 +38,19 @@ function DirectSharingForm({
 }) {
   const t = useTranslations()
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
-  const { data, loading } = useQuery(GetUserGroupsUserDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data, error, isLoading } = trpc.sharing.userGroups.useQuery(
+    undefined,
+    {
+      refetchOnMount: 'always',
+    }
+  )
+  const userGroupData = data?.userGroups
+  const userGroups = userGroupData ?? []
+  const userGroupsError = Boolean(error)
+  const userGroupsUnavailable = userGroupsError && !userGroupData
 
   // fetch own user to disable sharing with self
-  const { data: user } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
+  const { data: user } = trpc.user.profile.useQuery()
 
   const onFailure = () =>
     toast({
@@ -76,22 +77,27 @@ function DirectSharingForm({
           (typeof values.shortnameOrEmail !== 'undefined' &&
             values.shortnameOrEmail !== '')
         ) {
-          const success = await shareObjectCallback({
-            shortnameOrEmail:
-              typeof values.shortnameOrEmail !== 'undefined' &&
-              values.shortnameOrEmail !== ''
-                ? values.shortnameOrEmail
-                : undefined,
-            userGroupId:
-              typeof values.userGroupId !== 'undefined'
-                ? parseInt(values.userGroupId)
-                : undefined,
-            permissionLevel: values.permissionLevel,
-            propagation: values.propagation,
-          })
+          try {
+            const success = await shareObjectCallback({
+              shortnameOrEmail:
+                typeof values.shortnameOrEmail !== 'undefined' &&
+                values.shortnameOrEmail !== ''
+                  ? values.shortnameOrEmail
+                  : undefined,
+              userGroupId:
+                typeof values.userGroupId !== 'undefined'
+                  ? parseInt(values.userGroupId)
+                  : undefined,
+              permissionLevel: values.permissionLevel,
+              propagation: values.propagation,
+            })
 
-          if (success) {
-            resetForm()
+            if (success) {
+              resetForm()
+            }
+          } catch {
+            onFailure()
+          } finally {
             setSubmitting(false)
           }
         } else {
@@ -114,11 +120,8 @@ function DirectSharingForm({
             t('manage.sharing.noSelfSharing'),
             function (value) {
               // check if the user is trying to share with themselves
-              if (value && user?.userProfile) {
-                return (
-                  value.toLowerCase() !==
-                  user.userProfile.shortname.toLowerCase()
-                )
+              if (value && user?.shortname) {
+                return value.toLowerCase() !== user.shortname.toLowerCase()
               }
               return true
             }
@@ -181,11 +184,15 @@ function DirectSharingForm({
           <td className="px-4 py-3 text-sm text-gray-900">
             <SelectField
               key={`userGroupId-${values.userGroupId}`}
-              disabled={isSubmitting || data?.getUserGroupsUser?.length === 0}
+              disabled={
+                isSubmitting || userGroups.length === 0 || userGroupsUnavailable
+              }
               placeholder={
-                data?.getUserGroupsUser?.length === 0
-                  ? t('manage.sharing.noUserGroupsAvailable')
-                  : t('manage.sharing.noUserGroupSelected')
+                userGroupsUnavailable
+                  ? t('shared.generic.systemError')
+                  : userGroups.length === 0
+                    ? t('manage.sharing.noUserGroupsAvailable')
+                    : t('manage.sharing.noUserGroupSelected')
               }
               value={values.userGroupId}
               onChange={(newValue) => {
@@ -198,10 +205,10 @@ function DirectSharingForm({
                 }, 0)
               }}
               items={
-                loading || !data?.getUserGroupsUser
+                isLoading || userGroupsUnavailable
                   ? []
                   : sortBy(
-                      data.getUserGroupsUser.map((group) => ({
+                      userGroups.map((group) => ({
                         value: String(group.id),
                         labelString: group.name,
                         label: (
@@ -222,6 +229,13 @@ function DirectSharingForm({
               }}
               data={{ cy: 'new-permission-user-group' }}
             />
+            {userGroupsError ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+                className={{ root: 'mt-2 text-sm' }}
+              />
+            ) : null}
           </td>
           <td className="w-40 px-4 py-1.5 text-sm text-gray-900">
             <FormikSelectField
@@ -253,8 +267,12 @@ function DirectSharingForm({
             <Button
               basic
               type="button"
-              onClick={() => submitForm()}
-              disabled={!isValid}
+              onClick={() => {
+                if (!isSubmitting) {
+                  void submitForm()
+                }
+              }}
+              disabled={isSubmitting || !isValid}
               className={{
                 root: twMerge(
                   'mr-2 p-1.5',
@@ -265,7 +283,7 @@ function DirectSharingForm({
               }}
               data={{ cy: 'new-permission-submit' }}
             >
-              <Button.Icon withoutLabel icon={faSave} />
+              <Button.Icon withoutLabel icon={faSave} loading={isSubmitting} />
             </Button>
           </td>
         </tr>

@@ -1,9 +1,9 @@
+import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
+import { useMemo } from 'react'
 import type {
   CaseStudyElementOptions,
   CaseStudyInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
-import { useMemo } from 'react'
+} from '../elementTypes'
 
 export type CaseStudyOtherAnswersWithSolution = {
   [caseId: string]: {

@@ -1,14 +1,14 @@
 import { faBookOpen, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { ContentElementInstance } from './elementTypes'
 import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
 interface ContentelementProps {
-  element: ElementInstance
+  element: ContentElementInstance
   read: boolean
   onRead: () => void
   elementIx: number

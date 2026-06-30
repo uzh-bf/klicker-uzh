@@ -3,7 +3,7 @@ import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
   LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '@lib/evaluationTypes'
 import { Button, H3, SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'

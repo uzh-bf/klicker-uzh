@@ -2,11 +2,11 @@ import type { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { FlashcardCorrectness } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { FlashcardCorrectness } from './elementTypes'
 import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
 interface FlashcardProps {

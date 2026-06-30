@@ -1,12 +1,14 @@
-import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { RouterOutputs } from '../../lib/trpc'
 import GroupsLeaderboard from './GroupsLeaderboard'
 import GroupsList from './GroupsList'
 import IndividualLeaderboard from './IndividualLeaderboard'
 
+type CourseDetail = NonNullable<RouterOutputs['course']['detail']['course']>
+
 interface CourseGamificationInfosProps {
-  course: Omit<Course, 'liveQuizzes'>
+  course: CourseDetail
   tabValue: string
   setTabValue: (newValue: string) => void
 }
@@ -17,6 +19,8 @@ function CourseGamificationInfos({
   setTabValue,
 }: CourseGamificationInfosProps) {
   const t = useTranslations()
+  const courseStart = course.startDate.toISOString()
+  const courseEnd = course.endDate.toISOString()
 
   return (
     <Tabs
@@ -50,8 +54,8 @@ function CourseGamificationInfos({
       <IndividualLeaderboard
         courseName={course.name}
         courseId={course.id}
-        courseStart={course.startDate}
-        courseEnd={course.endDate}
+        courseStart={courseStart}
+        courseEnd={courseEnd}
         numOfParticipants={course.numOfParticipants}
       />
       <GroupsLeaderboard />

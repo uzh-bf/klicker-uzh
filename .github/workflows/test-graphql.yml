@@ -4,11 +4,13 @@ on:
   push:
     branches: ['v3', 'v3*']
     paths:
+      - 'packages/api/**'
       - 'packages/graphql/**'
       - '.github/workflows/test-graphql.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
+      - 'packages/api/**'
       - 'packages/graphql/**'
       - '.github/workflows/test-graphql.yml'
 
@@ -18,6 +20,7 @@ concurrency:
 
 jobs:
   test:
+    name: packages/graphql Vitest
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -126,6 +129,8 @@ jobs:
           cd ../grading
           pnpm run build
           cd ../util
+          pnpm run build
+          cd ../api
           pnpm run build
           cd ../graphql
           pnpm run build

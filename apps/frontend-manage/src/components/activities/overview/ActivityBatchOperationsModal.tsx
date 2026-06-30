@@ -1,24 +1,17 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityInfo,
-  ActivityType,
-  ApplyActivityBatchOperationsDocument,
-  GetActiveUserCoursesDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
-//           : null,
-//       course: selectedActions.course ?? undefined,
-//       liveQuizPoints: selectedActions.liveQuizPoints ?? undefined,
-//     },
-//   })ops'
-import { useMutation, useQuery } from '@apollo/client'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { isShallowEqual } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import {
+  ActivityInfo,
+  ActivityType,
+  PublicationStatus,
+} from '../../../lib/constants/activityEnums'
+import { trpc } from '../../../lib/trpc'
 import ActivityBatchOperationsInfo from './batchOperations/ActivityBatchOperationsInfo'
 import ActivityCourseCard from './batchOperations/ActivityCourseCard'
 import ActivityLiveQuizPointsCard from './batchOperations/ActivityLiveQuizPointsCard'
@@ -50,16 +43,26 @@ function ActivityBatchOperationsModal({
   )
   const [selectedActions, setSelectedActions] =
     useState<ActivityBatchOperationActions>(INITIAL_ACTIVITY_BATCH_OPERATIONS)
+  const [batchOperationPending, setBatchOperationPending] = useState(false)
 
-  // database mutation to execute activity batch operations
-  const [applyActivityBatchOperations, { loading: applying }] = useMutation(
-    ApplyActivityBatchOperationsDocument
-  )
+  const applyActivityBatchOperations =
+    trpc.activity.applyBatchOperations.useMutation()
 
-  const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetActiveUserCoursesDocument,
-    { fetchPolicy: 'network-only' }
-  )
+  const {
+    isLoading: loadingCourses,
+    data: dataCourses,
+    error: coursesError,
+  } = trpc.course.activeUserCourses.useQuery()
+  const courses = dataCourses?.activeUserCourses
+  const initialCoursesLoading = loadingCourses && !courses
+  const coursesUnavailable = Boolean(coursesError && !courses)
+  const applyingBatchOperations =
+    applyActivityBatchOperations.isLoading || batchOperationPending
+  const handleClose = () => {
+    if (!applyingBatchOperations) {
+      onClose()
+    }
+  }
 
   // whenever the applied filters change, update the affected activities
   useEffect(() => {
@@ -235,8 +238,8 @@ function ActivityBatchOperationsModal({
   return (
     <Modal
       open
-      onClose={onClose}
-      loading={loadingCourses}
+      onClose={handleClose}
+      loading={initialCoursesLoading}
       title={t('manage.activities.batchOperationsActivities')}
       className={{
         content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
@@ -272,7 +275,8 @@ function ActivityBatchOperationsModal({
               <ActivityCourseCard
                 selectedActions={selectedActions}
                 setSelectedActions={setSelectedActions}
-                courses={dataCourses?.getActiveUserCourses ?? []}
+                courses={courses ?? []}
+                coursesUnavailable={coursesUnavailable}
               />
               <ActivityLiveQuizPointsCard
                 selectedActions={selectedActions}
@@ -303,7 +307,7 @@ function ActivityBatchOperationsModal({
               <Button
                 primary
                 disabled={
-                  applying ||
+                  applyingBatchOperations ||
                   numOfUpdatedActivities === 0 ||
                   isShallowEqual(
                     selectedActions,
@@ -312,51 +316,65 @@ function ActivityBatchOperationsModal({
                   (selectedActions.course && !selectedActions.course.id)
                 }
                 onClick={async () => {
+                  if (applyingBatchOperations) return
+
+                  let shouldClose = false
+                  setBatchOperationPending(true)
                   try {
-                    const { data: res } = await applyActivityBatchOperations({
-                      variables: {
-                        activityIds: selectedActivities.map(
-                          (activity) => activity.id
-                        ),
-                        multiplier:
-                          typeof selectedActions.multiplier !== 'undefined' &&
-                          selectedActions.multiplier !== ''
-                            ? parseInt(selectedActions.multiplier, 10)
-                            : null,
-                        courseId: selectedActions.course?.id,
-                        basePoints: selectedActions.liveQuizPoints?.basePoints,
-                        correctnessPoints:
-                          selectedActions.liveQuizPoints?.correctnessPoints,
-                        bonusPoints:
-                          selectedActions.liveQuizPoints?.bonusPoints,
-                        timeToZeroBonus:
-                          selectedActions.liveQuizPoints?.bonusTime,
-                      },
+                    const res = await applyActivityBatchOperations.mutateAsync({
+                      activityIds: selectedActivities.map(
+                        (activity) => activity.id
+                      ),
+                      multiplier:
+                        typeof selectedActions.multiplier !== 'undefined' &&
+                        selectedActions.multiplier !== ''
+                          ? parseInt(selectedActions.multiplier, 10)
+                          : null,
+                      courseId: selectedActions.course?.id,
+                      basePoints: selectedActions.liveQuizPoints?.basePoints,
+                      correctnessPoints:
+                        selectedActions.liveQuizPoints?.correctnessPoints,
+                      bonusPoints: selectedActions.liveQuizPoints?.bonusPoints,
+                      timeToZeroBonus:
+                        selectedActions.liveQuizPoints?.bonusTime,
                     })
 
-                    if (
-                      res?.applyActivityBatchOperations ===
-                      numOfUpdatedActivities
-                    ) {
+                    if (res.appliedCount !== 0) {
+                      try {
+                        await refetchActivities()
+                      } catch (error) {
+                        console.error(
+                          'Error refreshing activities after batch operation:',
+                          error
+                        )
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                        return
+                      }
+
                       resetSelectedActivities()
-                      await refetchActivities()
                       toast({
-                        type: 'success',
-                        message: t('manage.activities.batchOperationSuccess'),
-                        options: { duration: 3000 },
+                        type:
+                          res.appliedCount === numOfUpdatedActivities
+                            ? 'success'
+                            : 'warning',
+                        message:
+                          res.appliedCount === numOfUpdatedActivities
+                            ? t('manage.activities.batchOperationSuccess')
+                            : t(
+                                'manage.activities.batchOperationPartialSuccess'
+                              ),
+                        options: {
+                          duration:
+                            res.appliedCount === numOfUpdatedActivities
+                              ? 3000
+                              : 4500,
+                        },
                       })
-                      onClose()
-                    } else if (res?.applyActivityBatchOperations !== 0) {
-                      resetSelectedActivities()
-                      await refetchActivities()
-                      toast({
-                        type: 'warning',
-                        message: t(
-                          'manage.activities.batchOperationPartialSuccess'
-                        ),
-                        options: { duration: 4500 },
-                      })
-                      onClose()
+                      shouldClose = true
                     } else {
                       toast({
                         type: 'error',
@@ -371,8 +389,14 @@ function ActivityBatchOperationsModal({
                       message: t('manage.activities.batchOperationFailed'),
                       options: { duration: 5000 },
                     })
+                  } finally {
+                    setBatchOperationPending(false)
+                    if (shouldClose) {
+                      onClose()
+                    }
                   }
                 }}
+                loading={applyingBatchOperations}
                 className={{ root: 'h-9' }}
                 data={{ cy: 'apply-batch-operations' }}
               >

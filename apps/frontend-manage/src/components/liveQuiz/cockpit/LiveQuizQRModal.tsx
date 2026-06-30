@@ -1,15 +1,16 @@
-import { useQuery } from '@apollo/client'
 import {
   faCheck,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { LocaleType, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import QR from '@pages/qr/[...args]'
 import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React from 'react'
+import { api } from '../../../lib/trpc'
+
+type LocaleType = 'de' | 'en'
 
 function LiveQuizQRModal({
   quizId,
@@ -25,11 +26,9 @@ function LiveQuizQRModal({
   onClose: () => void
 }): React.ReactElement {
   const t = useTranslations()
-  const { data } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
+  const { data } = api.user.profile.useQuery()
 
-  const shortname = data?.userProfile?.shortname
+  const shortname = data?.shortname
   const accountRelativeLink = `${language ? `/${language}` : ''}/join/${shortname}`
   const quizRelativeLink = `${language ? `/${language}` : ''}/session/${quizId}${
     quizPin ? `?pin=${encodeURIComponent(quizPin)}` : ''

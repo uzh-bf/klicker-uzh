@@ -1,7 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import { GetAssessmentResultsLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -15,6 +13,7 @@ import AssessmentStudentResultsTable, {
   PageSizeOption,
 } from '../../../../../components/liveQuiz/results/AssessmentStudentResultsTable'
 import LiveQuizSingleStudentResults from '../../../../../components/liveQuiz/results/LiveQuizSingleStudentResults'
+import { trpc } from '../../../../../lib/trpc'
 
 function AssessmentLiveQuiz() {
   const t = useTranslations()
@@ -29,24 +28,28 @@ function AssessmentLiveQuiz() {
     email: string
   } | null>(null)
 
+  const courseId = typeof router.query.id === 'string' ? router.query.id : ''
+  const liveQuizId =
+    typeof router.query.quizId === 'string' ? router.query.quizId : ''
+  const participantIdParam =
+    typeof router.query.participantId === 'string'
+      ? router.query.participantId
+      : undefined
+
   // load the quiz results
-  const { data, loading, error } = useQuery(
-    GetAssessmentResultsLiveQuizDocument,
-    {
-      variables: { liveQuizId: router.query.quizId as string },
-      skip: !router.query.quizId,
-      fetchPolicy: 'network-only',
-    }
-  )
+  const { data, isLoading, error } =
+    trpc.activity.assessmentResultsLiveQuiz.useQuery(
+      { liveQuizId },
+      { enabled: Boolean(liveQuizId) }
+    )
 
   // if a specific participant is selected through a query parameter, display all students and select them in the table
   useEffect(() => {
     if (!router.isReady) return
 
-    const participantId = router.query.participantId as string | undefined
-    if (participantId && data?.assessmentResultsLiveQuiz) {
+    if (participantIdParam && data?.assessmentResultsLiveQuiz) {
       const participant = data.assessmentResultsLiveQuiz.studentResults.find(
-        (result) => result.participantId === participantId
+        (result) => result.participantId === participantIdParam
       )
       if (participant) {
         setPageSizeOption('all') // show all students if a specific one is selected
@@ -56,9 +59,11 @@ function AssessmentLiveQuiz() {
         })
       }
     }
-  }, [router.isReady, router.query.participantId, data])
+  }, [router.isReady, participantIdParam, data])
 
-  if (loading) {
+  const quiz = data?.assessmentResultsLiveQuiz
+
+  if ((isLoading && !quiz) || !liveQuizId) {
     return (
       <Layout>
         <Loader />
@@ -66,13 +71,25 @@ function AssessmentLiveQuiz() {
     )
   }
 
-  const quiz = data?.assessmentResultsLiveQuiz
-  if (error || !quiz) {
+  if (error && !quiz) {
     return (
-      <UserNotification
-        type="error"
-        message={t('manage.assessment.errorLoadingLiveQuizResults')}
-      />
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingLiveQuizResults')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!quiz) {
+    return (
+      <Layout>
+        <UserNotification
+          type="warning"
+          message={t('manage.assessment.errorLoadingLiveQuizResults')}
+        />
+      </Layout>
     )
   }
 
@@ -80,6 +97,13 @@ function AssessmentLiveQuiz() {
 
   return (
     <Layout>
+      {error && quiz ? (
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingLiveQuizResults')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div className="mb-2 flex flex-row justify-between">
         <H2>{`${t('manage.assessment.assessmentResults')} - ${t('shared.generic.liveQuiz')}: ${quiz.name}`}</H2>
 
@@ -124,7 +148,8 @@ function AssessmentLiveQuiz() {
           {!!selectedParticipant ? (
             <Suspense>
               <LiveQuizSingleStudentResults
-                liveQuizId={router.query.quizId as string}
+                courseId={courseId}
+                liveQuizId={liveQuizId}
                 participantId={selectedParticipant.id}
                 participantEmail={selectedParticipant.email}
                 quizBasePoints={quiz.quizBasePoints}
@@ -141,19 +166,17 @@ function AssessmentLiveQuiz() {
         </div>
       </div>
 
-      {correctionsModal && router.query.id ? (
+      {correctionsModal && courseId ? (
         <PointCorrectionsModal
-          courseId={router.query.id as string}
+          courseId={courseId}
           onClose={() => setCorrectionsModal(false)}
-          preselectedLiveQuizId={router.query.quizId as string}
+          preselectedLiveQuizId={liveQuizId}
         />
       ) : null}
 
-      {quiz.numberOfCorrections > 0 &&
-      previousCorrectionsModal &&
-      router.query.id ? (
+      {quiz.numberOfCorrections > 0 && previousCorrectionsModal && courseId ? (
         <PreviousCorrectionsListModal
-          liveQuizId={router.query.quizId as string}
+          liveQuizId={liveQuizId}
           instanceId={undefined}
           onClose={() => setPreviousCorrectionsModal(false)}
         />

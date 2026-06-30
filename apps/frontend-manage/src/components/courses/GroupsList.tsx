@@ -1,9 +1,9 @@
-import { useQuery } from '@apollo/client'
 import { faShuffle } from '@fortawesome/free-solid-svg-icons'
-import { GetCourseGroupsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, TabContent, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import ParticipantListEntry from './ParticipantListEntry'
 import AssignmentConfirmationModal from './groups/AssignmentConfirmationModal'
 
@@ -18,13 +18,22 @@ function GroupsList({
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
+  const [isGroupCreationFinalized, setIsGroupCreationFinalized] = useState(
+    groupCreationFinalized
+  )
 
-  const { data } = useQuery(GetCourseGroupsDocument, {
-    variables: { courseId: courseId },
-  })
+  useEffect(() => {
+    setIsGroupCreationFinalized(groupCreationFinalized)
+  }, [groupCreationFinalized])
 
-  const pool = data?.getCourseGroups?.groupAssignmentPoolEntries ?? []
-  const groups = data?.getCourseGroups?.participantGroups ?? []
+  const { data, error, isLoading } = trpc.course.groups.useQuery({ courseId })
+
+  const courseGroups = data?.courseGroups
+  const pool = courseGroups?.groupAssignmentPoolEntries ?? []
+  const groups = courseGroups?.participantGroups ?? []
+  const initialGroupsLoading = isLoading && !courseGroups
+  const groupsUnavailable = Boolean((error || !isLoading) && !courseGroups)
+  const backgroundGroupsError = Boolean(error && courseGroups)
 
   // count the number of groups with only one participant
   const groupsOfOne = groups.filter(
@@ -45,34 +54,55 @@ function GroupsList({
           {t('manage.course.poolForRandomAssignment')}
         </div>
 
-        {pool.length > 0 && (
+        {initialGroupsLoading ? <Loader /> : null}
+
+        {groupsUnavailable ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
+        {backgroundGroupsError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'py-1' }}
+          />
+        ) : null}
+
+        {pool.length > 0 ? (
           <div
             className="@xl:grid-cols-2 grid"
             data-cy="random-group-assignment-pool"
           >
-            {pool.map((entry) => (
-              <ParticipantListEntry
-                participant={entry.participant!}
-                key={entry.id}
-              />
-            ))}
+            {pool.map((entry) =>
+              entry.participant ? (
+                <ParticipantListEntry
+                  participant={entry.participant}
+                  key={entry.id}
+                />
+              ) : null
+            )}
           </div>
-        )}
+        ) : null}
 
-        {!groupCreationFinalized && randomAssignmentNotPossible && (
-          <UserNotification
-            type="warning"
-            message={t('manage.course.randomGroupsNotPossible')}
-          />
-        )}
-        {groupCreationFinalized && (
+        {courseGroups &&
+          !isGroupCreationFinalized &&
+          randomAssignmentNotPossible && (
+            <UserNotification
+              type="warning"
+              message={t('manage.course.randomGroupsNotPossible')}
+            />
+          )}
+        {isGroupCreationFinalized && (
           <UserNotification
             type="warning"
             message={t('manage.course.groupAssignmentFinalizedMessage')}
           />
         )}
 
-        {!groupCreationFinalized && !actionsDisabled && (
+        {courseGroups && !isGroupCreationFinalized && !actionsDisabled && (
           <Button
             primary
             className={{ root: 'my-1 h-8 w-max self-end' }}
@@ -105,6 +135,7 @@ function GroupsList({
       {open && (
         <AssignmentConfirmationModal
           courseId={courseId}
+          onAssigned={() => setIsGroupCreationFinalized(true)}
           onClose={() => setOpen(false)}
         />
       )}

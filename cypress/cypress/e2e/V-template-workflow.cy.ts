@@ -1,5 +1,13 @@
 import messages from '../../../packages/i18n/messages/en'
 
+function getLiveQuizIdFromPath(pathname: string) {
+  const quizId = pathname.match(/\/quizzes\/([^/]+)/)?.[1]
+
+  expect(quizId).to.be.a('string')
+
+  return quizId!
+}
+
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
@@ -526,15 +534,31 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="copy-option-template"]').click()
 
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
-    cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
+    cy.get('[data-cy="confirm-activity-unavailability"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="confirm-content-visibility"]').click()
-    cy.get('[data-cy="confirm-content-visibility"]').should('not.exist')
+    cy.get('[data-cy="confirm-content-visibility"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-question-access"]').click()
-    cy.get('[data-cy="confirm-question-access"]').should('not.exist')
+    cy.get('[data-cy="confirm-question-access"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-resource-access"]').click()
-    cy.get('[data-cy="confirm-resource-access"]').should('not.exist')
+    cy.get('[data-cy="confirm-resource-access"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="template-next-step"]').should('not.be.disabled')
     cy.get('[data-cy="close-template-conversion-modal"]').click()
 
@@ -613,7 +637,11 @@ describe('Test all functionalities related to the creation, management, sharing 
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
     cy.get('[data-cy="copy-option-template"]').click()
-    cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
+    cy.get('[data-cy="confirm-activity-unavailability"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="convert-option-template"]').click()
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-activity-unavailability"]').click()
@@ -2137,95 +2165,97 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.wait(1000)
 
-    // extract the quiz id from the URL and visit the evaluation view
-    cy.location('href').then((href) => {
-      const quizId = href.split('/')[4]
-      cy.wrap(quizId).as('quizId')
-    })
+    // extract the quiz id from the URL and visit the student session view
+    cy.location('pathname')
+      .should('match', /\/quizzes\/[^/]+/)
+      .then((pathname) => {
+        const quizId = getLiveQuizIdFromPath(pathname)
 
-    // student 11 joins course and creates a group by himself
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('@quizId').then((quizId) => {
-      cy.origin(
-        Cypress.env('URL_STUDENT'),
-        {
-          args: {
-            username: Cypress.env('STUDENT_USERNAME'),
-            password: Cypress.env('STUDENT_PASSWORD'),
-            quizId: String(quizId),
-            data: this.data,
+        cy.origin(
+          Cypress.env('URL_STUDENT'),
+          {
+            args: {
+              loginUrl: Cypress.env('URL_STUDENT_LOGIN'),
+              password: Cypress.env('STUDENT_PASSWORD'),
+              quizId: String(quizId),
+              studentUrl: Cypress.env('URL_STUDENT'),
+              username: Cypress.env('STUDENT_USERNAME'),
+              content: {
+                cs: this.data.CS.content,
+                ft: this.data.FT.content,
+                ftAnswer: this.data.FT.answer,
+                kp: this.data.KP.content,
+                mc: this.data.MC.content,
+                nr: this.data.NR.content,
+                nrAnswer: this.data.NR.answer,
+                sc: this.data.SC.content,
+                se: this.data.SE.content,
+              },
+            },
           },
-        },
-        ({ username, password, quizId, data }) => {
-          cy.get('[data-cy="username-field"]').click().type(username)
-          cy.get('[data-cy="password-field"]').click().type(password)
-          cy.get('[data-cy="submit-login"]').click()
+          ({ content, loginUrl, password, quizId, studentUrl, username }) => {
+            cy.clearAllCookies()
+            cy.clearAllLocalStorage()
+            cy.clearAllSessionStorage()
+            cy.visit(loginUrl)
+            cy.get('[data-cy="username-field"]').click().type(username)
+            cy.get('[data-cy="password-field"]').click().type(password)
+            cy.get('[data-cy="submit-login"]').click()
+            cy.location('pathname', { timeout: 10000 }).should(
+              'not.eq',
+              '/login'
+            )
 
-          // directly access the live quiz through the URL
-          cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
+            // directly access the live quiz through the URL
+            cy.visit(`${studentUrl}/session/${quizId}`)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.SC.content
-          )
-          cy.get('[data-cy="sc-0-answer-option-0"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.sc)
+            cy.get('[data-cy="sc-0-answer-option-0"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.MC.content
-          )
-          cy.get('[data-cy="mc-1-answer-option-0"]').click()
-          cy.get('[data-cy="mc-1-answer-option-1"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.mc)
+            cy.get('[data-cy="mc-1-answer-option-0"]').click()
+            cy.get('[data-cy="mc-1-answer-option-1"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.KP.content
-          )
-          cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.kp)
+            cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.NR.content
-          )
-          cy.get('[data-cy="input-numerical-3"]').clear().type(data.NR.answer)
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.nr)
+            cy.get('[data-cy="input-numerical-3"]')
+              .clear()
+              .type(content.nrAnswer)
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.FT.content
-          )
-          cy.get('[data-cy="free-text-input-4"]').type(data.FT.answer)
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.ft)
+            cy.get('[data-cy="free-text-input-4"]').type(content.ftAnswer)
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.SE.content
-          )
-          cy.get('[id="selection-5-field-0"]').click()
-          cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.se)
+            cy.get('[id="selection-5-field-0"]').click()
+            cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          // answering case study question with corresponding function inside an origin wrapper does not work
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.CS.content
-          )
-        }
-      )
-    })
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.cs)
+          }
+        )
+      })
 
     // dummy action
     cy.visit(Cypress.env('URL_MANAGE'))
@@ -2246,99 +2276,97 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.wait(1000)
 
-    // extract the quiz id from the URL and visit the evaluation view
-    cy.location('href').then((href) => {
-      const quizId = href.split('/')[4]
-      cy.wrap(quizId).as('quizId')
-    })
+    // extract the quiz id from the URL and visit the student session view
+    cy.location('pathname')
+      .should('match', /\/quizzes\/[^/]+/)
+      .then((pathname) => {
+        const quizId = getLiveQuizIdFromPath(pathname)
 
-    // student 11 joins course and creates a group by himself
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('@quizId').then((quizId) => {
-      cy.origin(
-        Cypress.env('URL_STUDENT'),
-        {
-          args: {
-            username: Cypress.env('STUDENT_USERNAME'),
-            password: Cypress.env('STUDENT_PASSWORD'),
-            quizId: String(quizId),
-            data: this.data,
+        cy.origin(
+          Cypress.env('URL_STUDENT'),
+          {
+            args: {
+              loginUrl: Cypress.env('URL_STUDENT_LOGIN'),
+              password: Cypress.env('STUDENT_PASSWORD'),
+              quizId: String(quizId),
+              studentUrl: Cypress.env('URL_STUDENT'),
+              username: Cypress.env('STUDENT_USERNAME'),
+              content: {
+                cs: this.data.activity2.newElements.CS.content,
+                ft: this.data.activity2.newElements.FT.content,
+                ftAnswer: this.data.activity2.newElements.FT.answer,
+                kp: this.data.activity2.newElements.KP.content,
+                mc: this.data.activity2.newElements.MC.content,
+                nr: this.data.activity2.newElements.NR.content,
+                nrAnswer: this.data.activity2.newElements.NR.answer,
+                sc: this.data.activity2.newElements.SC.content,
+                se: this.data.activity2.newElements.SE.content,
+              },
+            },
           },
-        },
-        ({ username, password, quizId, data }) => {
-          cy.get('[data-cy="username-field"]').click().type(username)
-          cy.get('[data-cy="password-field"]').click().type(password)
-          cy.get('[data-cy="submit-login"]').click()
+          ({ content, loginUrl, password, quizId, studentUrl, username }) => {
+            cy.clearAllCookies()
+            cy.clearAllLocalStorage()
+            cy.clearAllSessionStorage()
+            cy.visit(loginUrl)
+            cy.get('[data-cy="username-field"]').click().type(username)
+            cy.get('[data-cy="password-field"]').click().type(password)
+            cy.get('[data-cy="submit-login"]').click()
+            cy.location('pathname', { timeout: 10000 }).should(
+              'not.eq',
+              '/login'
+            )
 
-          // directly access the live quiz through the URL
-          cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
+            // directly access the live quiz through the URL
+            cy.visit(`${studentUrl}/session/${quizId}`)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.activity2.newElements.SC.content
-          )
-          cy.get('[data-cy="sc-0-answer-option-0"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.sc)
+            cy.get('[data-cy="sc-0-answer-option-0"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.activity2.newElements.MC.content
-          )
-          cy.get('[data-cy="mc-1-answer-option-0"]').click()
-          cy.get('[data-cy="mc-1-answer-option-1"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.mc)
+            cy.get('[data-cy="mc-1-answer-option-0"]').click()
+            cy.get('[data-cy="mc-1-answer-option-1"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.activity2.newElements.KP.content
-          )
-          cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.kp)
+            cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.activity2.newElements.NR.content
-          )
-          cy.get('[data-cy="input-numerical-3"]')
-            .clear()
-            .type(data.activity2.newElements.NR.answer)
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.nr)
+            cy.get('[data-cy="input-numerical-3"]')
+              .clear()
+              .type(content.nrAnswer)
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.activity2.newElements.FT.content
-          )
-          cy.get('[data-cy="free-text-input-4"]').type(
-            data.activity2.newElements.FT.answer
-          )
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.ft)
+            cy.get('[data-cy="free-text-input-4"]').type(content.ftAnswer)
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.activity2.newElements.SE.content
-          )
-          cy.get('[id="selection-5-field-0"]').click()
-          cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.se)
+            cy.get('[id="selection-5-field-0"]').click()
+            cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          // answering case study question with corresponding function inside an origin wrapper does not work
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.activity2.newElements.CS.content
-          )
-        }
-      )
-    })
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.cs)
+          }
+        )
+      })
 
     // dummy action
     cy.visit(Cypress.env('URL_MANAGE'))
@@ -2359,64 +2387,67 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.wait(1000)
 
-    // extract the quiz id from the URL and visit the evaluation view
-    cy.location('href').then((href) => {
-      const quizId = href.split('/')[4]
-      cy.wrap(quizId).as('quizId')
-    })
+    // extract the quiz id from the URL and visit the student session view
+    cy.location('pathname')
+      .should('match', /\/quizzes\/[^/]+/)
+      .then((pathname) => {
+        const quizId = getLiveQuizIdFromPath(pathname)
 
-    // student 11 joins course and creates a group by himself
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('@quizId').then((quizId) => {
-      cy.origin(
-        Cypress.env('URL_STUDENT'),
-        {
-          args: {
-            username: Cypress.env('STUDENT_USERNAME'),
-            password: Cypress.env('STUDENT_PASSWORD'),
-            quizId: String(quizId),
-            data: this.data,
+        cy.origin(
+          Cypress.env('URL_STUDENT'),
+          {
+            args: {
+              loginUrl: Cypress.env('URL_STUDENT_LOGIN'),
+              password: Cypress.env('STUDENT_PASSWORD'),
+              quizId: String(quizId),
+              studentUrl: Cypress.env('URL_STUDENT'),
+              username: Cypress.env('STUDENT_USERNAME'),
+              content: {
+                kp: this.data.KPMLAF3.content,
+                mc: this.data.MCMLAF3.content,
+                sc: this.data.SCMLAF3.content,
+              },
+            },
           },
-        },
-        ({ username, password, quizId, data }) => {
-          cy.get('[data-cy="username-field"]').click().type(username)
-          cy.get('[data-cy="password-field"]').click().type(password)
-          cy.get('[data-cy="submit-login"]').click()
+          ({ content, loginUrl, password, quizId, studentUrl, username }) => {
+            cy.clearAllCookies()
+            cy.clearAllLocalStorage()
+            cy.clearAllSessionStorage()
+            cy.visit(loginUrl)
+            cy.get('[data-cy="username-field"]').click().type(username)
+            cy.get('[data-cy="password-field"]').click().type(password)
+            cy.get('[data-cy="submit-login"]').click()
+            cy.location('pathname', { timeout: 10000 }).should(
+              'not.eq',
+              '/login'
+            )
 
-          // directly access the live quiz through the URL
-          cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
+            // directly access the live quiz through the URL
+            cy.visit(`${studentUrl}/session/${quizId}`)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.SCMLAF3.content
-          )
-          cy.get('[data-cy="sc-0-answer-option-0"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.sc)
+            cy.get('[data-cy="sc-0-answer-option-0"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.MCMLAF3.content
-          )
-          cy.get('[data-cy="mc-1-answer-option-0"]').click()
-          cy.get('[data-cy="mc-1-answer-option-1"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-          cy.wait(500)
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.mc)
+            cy.get('[data-cy="mc-1-answer-option-0"]').click()
+            cy.get('[data-cy="mc-1-answer-option-1"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+            cy.wait(500)
 
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="instance-question-content"]').contains(
-            data.KPMLAF3.content
-          )
-          cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
-          cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
-          cy.get('[data-cy="student-submit-answer"]').click()
-        }
-      )
-    })
+            cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+            cy.get('[data-cy="instance-question-content"]').contains(content.kp)
+            cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+            cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+            cy.get('[data-cy="student-submit-answer"]').click()
+          }
+        )
+      })
 
     // dummy action
     cy.visit(Cypress.env('URL_MANAGE'))

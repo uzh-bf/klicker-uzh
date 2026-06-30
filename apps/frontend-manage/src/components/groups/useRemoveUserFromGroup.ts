@@ -1,13 +1,19 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetUserGroupsUserDocument,
-  RemoveUserFromGroupDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function useRemoveUserFromGroup() {
-  const [removeUserFromGroup, { loading }] = useMutation(
-    RemoveUserFromGroupDocument
-  )
+  const t = useTranslations()
+  const utils = trpc.useUtils()
+  const removeUserFromGroup = trpc.sharing.removeUserFromGroup.useMutation()
+  const [removalPending, setRemovalPending] = useState(false)
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   const onRemove = async ({
     groupId,
@@ -16,43 +22,32 @@ function useRemoveUserFromGroup() {
     groupId: number
     userId: string
   }) => {
-    await removeUserFromGroup({
-      variables: {
-        groupId: groupId,
-        userId: userId!,
-      },
-      optimisticResponse: {
-        removeUserFromGroup: true,
-      },
-      update: (cache, { data }) => {
-        // check if request was successful
-        if (!data?.removeUserFromGroup) return
+    if (removalPending) return
 
-        // update members and admins of user group
-        cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
-          if (!qData?.getUserGroupsUser) return qData
-          return {
-            getUserGroupsUser: qData.getUserGroupsUser.map((group) =>
-              group.id === groupId
-                ? {
-                    ...group,
-                    numOfMembers: Math.max((group.numOfMembers ?? 1) - 1, 0),
-                    members: group.members?.filter(
-                      (member) => member.id !== userId
-                    ),
-                    admins: group.admins?.filter(
-                      (admin) => admin.id !== userId
-                    ),
-                  }
-                : group
-            ),
-          }
-        })
-      },
-    })
+    setRemovalPending(true)
+
+    try {
+      const result = await removeUserFromGroup.mutateAsync({
+        groupId,
+        userId,
+      })
+      if (result.removed) {
+        await utils.sharing.userGroups.invalidate()
+      } else {
+        onErrorToast()
+      }
+    } catch (error) {
+      console.error(error)
+      onErrorToast()
+    } finally {
+      setRemovalPending(false)
+    }
   }
 
-  return { onRemove, removing: loading }
+  return {
+    onRemove,
+    removing: removeUserFromGroup.isLoading || removalPending,
+  }
 }
 
 export default useRemoveUserFromGroup

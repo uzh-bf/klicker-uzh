@@ -1,14 +1,22 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetUserGroupsUserDocument,
-  TransferGroupOwnershipDocument,
-  UserGroup,
-} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
+import type { UserGroup } from './types'
 
 function useTransferGroupOwnership() {
-  const [transferGroupOwnership, { loading }] = useMutation(
-    TransferGroupOwnershipDocument
-  )
+  const t = useTranslations()
+  const utils = trpc.useUtils()
+  const transferGroupOwnership =
+    trpc.sharing.transferGroupOwnership.useMutation()
+  const [ownershipTransferPending, setOwnershipTransferPending] =
+    useState(false)
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   const onOwnershipTransfer = async ({
     group,
@@ -17,56 +25,33 @@ function useTransferGroupOwnership() {
     group: UserGroup
     newOwnerId: string
   }) => {
+    if (ownershipTransferPending) return
+
+    setOwnershipTransferPending(true)
+
     try {
-      await transferGroupOwnership({
-        variables: {
-          id: group.id,
-          newOwnerId,
-        },
-        optimisticResponse: {
-          transferGroupOwnership: true,
-        },
-        update: (cache, { data }) => {
-          // check if request was successful
-          if (!data?.transferGroupOwnership) return
-
-          // update admins and owner of the group
-          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
-            if (!qData?.getUserGroupsUser) return qData
-
-            return {
-              getUserGroupsUser: qData.getUserGroupsUser.map(
-                (existingGroup) => {
-                  const newOwner = existingGroup.admins?.find(
-                    (existingAdmin) => existingAdmin.id === newOwnerId
-                  )
-                  const newAdmin = existingGroup.owner
-
-                  if (!newOwner || !newAdmin) return existingGroup
-                  if (existingGroup.id === group.id) {
-                    return {
-                      ...existingGroup,
-                      admins: existingGroup.admins
-                        ?.filter((admin) => admin.id !== newOwnerId)
-                        .concat(newAdmin),
-                      owner: newOwner,
-                      isOwner: false,
-                      isAdmin: true,
-                    }
-                  }
-                  return existingGroup
-                }
-              ),
-            }
-          })
-        },
+      const result = await transferGroupOwnership.mutateAsync({
+        id: group.id,
+        newOwnerId,
       })
+      if (result.transferred) {
+        await utils.sharing.userGroups.invalidate()
+      } else {
+        onErrorToast()
+      }
     } catch (error) {
       console.error(error)
+      onErrorToast()
+    } finally {
+      setOwnershipTransferPending(false)
     }
   }
 
-  return { onOwnershipTransfer, transferringOwnership: loading }
+  return {
+    onOwnershipTransfer,
+    transferringOwnership:
+      transferGroupOwnership.isLoading || ownershipTransferPending,
+  }
 }
 
 export default useTransferGroupOwnership

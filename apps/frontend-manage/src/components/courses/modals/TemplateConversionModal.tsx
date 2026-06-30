@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faCopy, faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -6,11 +5,6 @@ import {
   faArrowsRotate,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityType,
-  CheckTemplateInfoAvailableDocument,
-  CreateActivityTemplateDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormLabel,
@@ -21,6 +15,8 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
+import { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ConversionTypeMonitor from './ConversionTypeMonitor'
 import TemplateFormFields from './TemplateFormFields'
@@ -52,18 +48,20 @@ function TemplateConversionModal({
   })
 
   // query if any question in the activity requires additional resources and if these exist
-  const { data, loading } = useQuery(CheckTemplateInfoAvailableDocument, {
-    variables: {
+  const { data, isLoading: loading } =
+    trpc.activity.checkTemplateInfoAvailable.useQuery({
       activityId,
-      activityType,
-    },
-    skip: !open,
-    fetchPolicy: 'cache-and-network',
-  })
+      activityType:
+        activityType as RouterInputs['activity']['checkTemplateInfoAvailable']['activityType'],
+    })
   const templateInfo = data?.checkTemplateInfoAvailable
 
   // mutation for template creation
-  const [createActivityTemplate] = useMutation(CreateActivityTemplateDocument)
+  const createActivityTemplate =
+    trpc.activity.createActivityTemplate.useMutation()
+  const [templateSubmitting, setTemplateSubmitting] = useState(false)
+  const creatingTemplate =
+    createActivityTemplate.isLoading || templateSubmitting
 
   // set corresponding confirmation to true if no resources are required
   useEffect(() => {
@@ -76,7 +74,7 @@ function TemplateConversionModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateInfo])
 
-  const handleModalClose = () => {
+  const closeModal = () => {
     onClose()
     setCurrentStep(0)
     setConfirmations({
@@ -85,6 +83,11 @@ function TemplateConversionModal({
       questionAccess: false,
       resourceAccess: false,
     })
+  }
+  const handleModalClose = () => {
+    if (!creatingTemplate) {
+      closeModal()
+    }
   }
 
   return (
@@ -126,28 +129,30 @@ function TemplateConversionModal({
           conversionType: Yup.mixed().oneOf(['convert', 'copy']).required(),
         })}
         onSubmit={async (values) => {
+          setTemplateSubmitting(true)
           try {
-            const result = await createActivityTemplate({
-              variables: {
-                activityId,
-                activityType,
-                templateName: values.name,
-                templateDescription: values.description,
-                templateInstructions: values.instructions,
-                copyBeforeConversion: values.conversionType === 'copy',
-              },
+            const result = await createActivityTemplate.mutateAsync({
+              activityId,
+              activityType:
+                activityType as RouterInputs['activity']['createActivityTemplate']['activityType'],
+              templateName: values.name,
+              templateDescription: values.description,
+              templateInstructions: values.instructions,
+              copyBeforeConversion: values.conversionType === 'copy',
             })
 
-            if (result.data?.createActivityTemplate) {
+            if (result.createActivityTemplate) {
               await refetchActivities?.()
               onSuccess()
-              handleModalClose()
+              closeModal()
             } else {
               onError()
             }
           } catch (error) {
             console.error(error)
             onError()
+          } finally {
+            setTemplateSubmitting(false)
           }
         }}
       >
@@ -324,8 +329,8 @@ function TemplateConversionModal({
                     <Button
                       primary
                       type="submit"
-                      disabled={!isValid}
-                      loading={isSubmitting}
+                      disabled={!isValid || isSubmitting || creatingTemplate}
+                      loading={isSubmitting || creatingTemplate}
                       data={{ cy: 'submit-template-creation' }}
                     >
                       <Button.Icon icon={faSave} loading={isSubmitting} />

@@ -1,7 +1,7 @@
 import type {
   FreeTextElementOptions,
   NumericalElementOptions,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '../elementTypes'
 import type {
   CaseStudyStudentResponseType,
   ChoicesStudentResponseType,

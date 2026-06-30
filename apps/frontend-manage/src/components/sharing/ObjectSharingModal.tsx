@@ -1,5 +1,5 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -72,19 +72,24 @@ function ObjectSharingModal({
     ownerPermission,
     isOwner,
     loading: permissionsLoading,
+    error: permissionsError,
+    unavailable: permissionsUnavailable,
   } = useObjectPermissions({
     objectId,
     objectType,
-    skip: !open,
+    skip: false,
   })
 
   // get all permissions that have already been granted for this object
-  const { derivedPermissions, loading: derivedPermissionsLoading } =
-    useDerivedObjectPermissions({
-      objectId,
-      objectType,
-      skip: !open || !derivedPermissionsAvailable || !showDerivedPermissions,
-    })
+  const {
+    derivedPermissions,
+    loading: derivedPermissionsLoading,
+    error: derivedPermissionsError,
+  } = useDerivedObjectPermissions({
+    objectId,
+    objectType,
+    skip: !derivedPermissionsAvailable || !showDerivedPermissions,
+  })
 
   // mutation to change the access level of a certain permission
   const { onPermissionLevelChange, permissionChanging } =
@@ -99,7 +104,6 @@ function ObjectSharingModal({
     objectId,
     objectType,
     catalogCollectionId,
-    onError: () => onRemovalFailure(),
     refetchElements,
     refetchActivities,
   })
@@ -143,6 +147,8 @@ function ObjectSharingModal({
           permissions={permissions ?? []}
           ownerPermission={ownerPermission}
           permissionsLoading={permissionsLoading}
+          permissionsError={permissionsError}
+          permissionsUnavailable={permissionsUnavailable}
           changeLoading={permissionChanging}
           isOwner={isOwner}
           showPropagationSetting={showPropagationSetting}
@@ -151,7 +157,7 @@ function ObjectSharingModal({
             newPermissionLevel,
             newPropagation,
           }) => {
-            await onPermissionLevelChange({
+            return onPermissionLevelChange({
               permissionId,
               newPermissionLevel,
               newPropagation,
@@ -172,8 +178,10 @@ function ObjectSharingModal({
               } else {
                 onRemovalFailure()
               }
+              return success
             } catch (error) {
               onRemovalFailure()
+              return false
             }
           }}
           shareObjectCallback={async (values) => await onShareObject(values)}
@@ -187,6 +195,7 @@ function ObjectSharingModal({
               <DerivedPermissionsTable
                 derivedPermissions={derivedPermissions ?? []}
                 derivedPermissionsLoading={derivedPermissionsLoading}
+                derivedPermissionsError={derivedPermissionsError}
                 setShowDerivedPermissions={setShowDerivedPermissions}
               />
             </div>

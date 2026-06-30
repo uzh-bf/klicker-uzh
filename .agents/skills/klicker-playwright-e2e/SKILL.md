@@ -41,9 +41,11 @@ Run from repo root. Use Volta when Node/pnpm versions are confusing.
 
 ```bash
 docker compose down -v
-./_run_app_dependencies.sh
-pnpm run dev:playwright
+KLICKER_NONINTERACTIVE=1 KLICKER_DEPENDENCIES_DETACH=1 ./_run_app_dependencies.sh playwright
+volta run pnpm run dev:playwright:raw
 ```
+
+`dev:playwright:raw` avoids Infisical and runs `build:test` before serving. This matters because backend test mode builds from `apps/backend-docker/instrumented`; if instrumentation is stale, `/api/trpc` can be missing from the running backend even when `src/app.ts` is correct.
 
 Run Playwright:
 
@@ -52,11 +54,29 @@ Run Playwright:
 volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
 
 # focused specs
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium tests/O-live-quiz.spec.ts
+volta run pnpm --filter @klicker-uzh/playwright test:run -- --project=chromium tests/O-live-quiz.spec.ts
 
 # full active Chromium suite
-volta run pnpm --filter @klicker-uzh/playwright test -- --project=chromium
+volta run pnpm --filter @klicker-uzh/playwright test:run -- --project=chromium
 ```
+
+Stop dependencies with `./_down.sh`. Omit `KLICKER_DEPENDENCIES_DETACH=1` when you want the dependency terminal to stream Docker logs until interrupted.
+
+## Agentic Local Loop
+
+1. Confirm discovery before runtime debugging:
+   `volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium`
+2. Start dependencies non-interactively:
+   `KLICKER_NONINTERACTIVE=1 KLICKER_DEPENDENCIES_DETACH=1 ./_run_app_dependencies.sh playwright`
+3. Start apps in a long-running session:
+   `volta run pnpm run dev:playwright:raw`
+4. Probe app health before running specs:
+   `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3010`
+5. Run one focused Chromium spec with trace on failures:
+   `volta run pnpm --filter @klicker-uzh/playwright test:run:raw -- --project=chromium tests/<spec>.spec.ts`
+6. If it fails, inspect the first failing assertion, Playwright trace/report, app logs, and endpoint probes. Fix the smallest cause, then rerun the focused spec before broadening.
+7. After focused pass, run the relevant shard or full active Chromium suite.
+8. Stop app sessions and run `./_down.sh`.
 
 For live quiz answer submission, response processing, scheduled microlearnings, or Hatchet workflow failures, start the missing services explicitly:
 
@@ -70,7 +90,7 @@ Ensure the response processor is not running with `ASSESSMENT_MODE=true` when va
 
 ## Fast Failure Triage
 
-- `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.
+- `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `volta run pnpm run dev:playwright:raw` and service readiness first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.

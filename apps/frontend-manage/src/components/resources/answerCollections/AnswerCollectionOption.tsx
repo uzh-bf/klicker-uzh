@@ -1,20 +1,17 @@
-import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faPencil, faSave, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  AnswerCollectionEntry,
-  DeleteAnswerCollectionEntryDocument,
-  EditAnswerCollectionEntryDocument,
-  GetAnswerCollectionsInfoDocument,
-  GetSingleAnswerCollectionDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikTextField } from '@uzh-bf/design-system'
+import { Button, FormikTextField, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc, type RouterOutputs } from '../../../lib/trpc'
+
+type AnswerCollectionEntry = NonNullable<
+  RouterOutputs['resources']['singleAnswerCollection']['answerCollection']
+>['entries'][number]
 
 function AnswerCollectionOption({
   entry,
@@ -42,15 +39,32 @@ function AnswerCollectionOption({
   refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
   const [editMode, setEditMode] = useState(false)
-  const [editAnswerCollectionEntry] = useMutation(
-    EditAnswerCollectionEntryDocument
-  )
-  const [deleteAnswerCollectionEntry] = useMutation(
-    DeleteAnswerCollectionEntryDocument
-  )
+  const editAnswerCollectionEntry =
+    trpc.resources.editAnswerCollectionEntry.useMutation()
+  const deleteAnswerCollectionEntry =
+    trpc.resources.deleteAnswerCollectionEntry.useMutation()
   const deletionNotAllowed =
     deletionDisabled || (entry.numSolutionUsages ?? 0) > 0
+  const deleting = deleteAnswerCollectionEntry.isLoading
+  const refreshInlineAnswerCollections = async () => {
+    if (inlineEditing && refetchAnswerCollections) {
+      await refetchAnswerCollections()
+    }
+  }
+  const invalidateAnswerCollection = async () => {
+    await Promise.all([
+      utils.resources.answerCollectionsInfo.invalidate(),
+      utils.resources.singleAnswerCollection.invalidate({ id: collectionId }),
+    ])
+  }
+  const showErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   return (
     <div
@@ -65,67 +79,27 @@ function AnswerCollectionOption({
             'h-8 w-8 items-center justify-center border border-red-600'
           ),
         }}
-        disabled={deletionNotAllowed}
+        disabled={deletionNotAllowed || deleting}
         data={{ cy: `delete-answer-option-${entry.value}` }}
         onClick={async () => {
-          await deleteAnswerCollectionEntry({
-            variables: { id: entry.id, collectionId },
-            update: (cache, { data }) => {
-              // check if deletion was successful
-              if (!data?.deleteAnswerCollectionEntry) return
+          try {
+            await deleteAnswerCollectionEntry.mutateAsync({
+              id: entry.id,
+              collectionId,
+            })
 
-              // update the cache for the answer collection that was edited
-              cache.updateQuery(
-                {
-                  query: GetSingleAnswerCollectionDocument,
-                  variables: { id: collectionId },
-                },
-                (qData) => {
-                  if (!qData?.getSingleAnswerCollection) return qData
-                  return {
-                    getSingleAnswerCollection: {
-                      ...qData.getSingleAnswerCollection,
-                      entries: qData.getSingleAnswerCollection.entries?.filter(
-                        (e) => e.id !== data.deleteAnswerCollectionEntry
-                      ),
-                    },
-                  }
-                }
-              )
-
-              // decrease the count of entries on the overview
-              cache.updateQuery(
-                { query: GetAnswerCollectionsInfoDocument },
-                (qData) => {
-                  if (!qData?.getAnswerCollectionsInfo) return qData
-                  return {
-                    getAnswerCollectionsInfo:
-                      qData.getAnswerCollectionsInfo.map((collection) =>
-                        collection.id === collectionId
-                          ? {
-                              ...collection,
-                              numOfEntries: Math.max(
-                                (collection.numOfEntries ?? 0) - 1,
-                                0
-                              ),
-                            }
-                          : collection
-                      ),
-                  }
-                }
-              )
-            },
-          })
-
-          // if the answer collection is edited inline (in a question context), refetch the selection
-          if (inlineEditing) {
-            await refetchAnswerCollections?.()
+            await Promise.all([
+              refreshInlineAnswerCollections(),
+              invalidateAnswerCollection(),
+            ])
+            onSuccess()
+          } catch (error) {
+            console.error('Error deleting answer collection option:', error)
+            showErrorToast()
           }
-
-          onSuccess()
         }}
       >
-        <Button.Icon withoutLabel icon={faTrashCan} />
+        <Button.Icon withoutLabel icon={faTrashCan} loading={deleting} />
       </Button>
       {!editMode ? (
         <Button
@@ -163,53 +137,28 @@ function AnswerCollectionOption({
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
 
-              if (entry.value !== values.value) {
-                await editAnswerCollectionEntry({
-                  variables: {
+              try {
+                if (entry.value !== values.value) {
+                  await editAnswerCollectionEntry.mutateAsync({
                     id: entry.id,
                     value: values.value,
                     collectionId,
-                  },
-                  update: (cache, { data }) => {
-                    // check if the update of the answer collection entry was successful
-                    if (!data?.editAnswerCollectionEntry) return
+                  })
+                }
 
-                    // update the entry in the cached answer collection
-                    cache.updateQuery(
-                      {
-                        query: GetSingleAnswerCollectionDocument,
-                        variables: { id: collectionId },
-                      },
-                      (qData) => {
-                        if (!qData?.getSingleAnswerCollection) return qData
-
-                        return {
-                          getSingleAnswerCollection: {
-                            ...qData.getSingleAnswerCollection,
-                            entries:
-                              qData.getSingleAnswerCollection.entries?.map(
-                                (entry) =>
-                                  entry.id ===
-                                  data.editAnswerCollectionEntry!.id
-                                    ? {
-                                        ...entry,
-                                        value:
-                                          data.editAnswerCollectionEntry!.value,
-                                      }
-                                    : entry
-                              ),
-                          },
-                        }
-                      }
-                    )
-                  },
-                })
+                await Promise.all([
+                  refreshInlineAnswerCollections(),
+                  invalidateAnswerCollection(),
+                ])
+                setEditMode(false)
+                setEditDisabled(false)
+                onSuccess()
+              } catch (error) {
+                console.error('Error editing answer collection option:', error)
+                showErrorToast()
+              } finally {
+                setSubmitting(false)
               }
-
-              setSubmitting(false)
-              setEditMode(false)
-              setEditDisabled(false)
-              onSuccess()
             }}
           >
             {({ isSubmitting, isValid }) => (
@@ -221,7 +170,11 @@ function AnswerCollectionOption({
                   className={{ root: 'h-8 w-8' }}
                   data={{ cy: 'save-edit-answer-option' }}
                 >
-                  <Button.Icon withoutLabel icon={faSave} />
+                  <Button.Icon
+                    withoutLabel
+                    icon={faSave}
+                    loading={isSubmitting}
+                  />
                 </Button>
                 <FormikTextField
                   name="value"

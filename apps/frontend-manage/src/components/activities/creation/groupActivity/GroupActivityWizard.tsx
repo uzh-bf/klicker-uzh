@@ -1,12 +1,3 @@
-import { useMutation } from '@apollo/client'
-import {
-  CreateGroupActivityDocument,
-  EditGroupActivityDocument,
-  Element,
-  ElementType,
-  GroupActivity,
-  ParameterType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
@@ -14,7 +5,14 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import {
+  Element,
+  ElementType,
+  GroupActivity,
+  ParameterType,
+} from '../../../../lib/constants/activityEnums'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {
@@ -300,21 +298,38 @@ function GroupActivityWizard({
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
   })
 
-  const [createGroupActivity, { data: creationData }] = useMutation(
-    CreateGroupActivityDocument
+  const createGroupActivity = trpc.activity.createGroupActivity.useMutation()
+  const editGroupActivity = trpc.activity.editGroupActivity.useMutation()
+  const utils = trpc.useUtils()
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
   )
-  const [editGroupActivity, { data: editingData }] = useMutation(
-    EditGroupActivityDocument
-  )
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringGroupActivity.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
 
   const handleSubmit = useCallback(
     async (values: GroupActivityFormValues) => {
-      submitGroupActivityForm({
+      return submitGroupActivityForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,
-        createGroupActivity,
-        editGroupActivity,
+        createGroupActivity: createGroupActivity.mutateAsync,
+        editGroupActivity: editGroupActivity.mutateAsync,
+        invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -333,15 +348,22 @@ function GroupActivityWizard({
           }),
       })
     },
-    [createGroupActivity, editGroupActivity, initialValues?.id]
+    [
+      createGroupActivity.mutateAsync,
+      editGroupActivity.mutateAsync,
+      invalidateActivities,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateCourseDetail,
+    ]
   )
 
   const selectedCourseId =
-    creationData?.createGroupActivity?.courseId ??
-    editingData?.editGroupActivity?.courseId
+    createGroupActivity.data?.createGroupActivity?.courseId ??
+    editGroupActivity.data?.editGroupActivity?.courseId
   const isActivityReviewer =
-    creationData?.createGroupActivity?.isActivityReviewer ??
-    editingData?.editGroupActivity?.isActivityReviewer
+    createGroupActivity.data?.createGroupActivity?.isActivityReviewer ??
+    editGroupActivity.data?.editGroupActivity?.isActivityReviewer
 
   return (
     <WizardLayout

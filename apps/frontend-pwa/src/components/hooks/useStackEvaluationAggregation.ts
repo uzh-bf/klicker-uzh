@@ -1,12 +1,21 @@
-import { ElementType, MicroLearning } from '@klicker-uzh/graphql/dist/ops'
 import { StackStudentResponseType } from '@klicker-uzh/shared-components/src/StudentElement'
 import { useMemo } from 'react'
 
+const CONTENT_ELEMENT_TYPE = 'CONTENT'
+const FLASHCARD_ELEMENT_TYPE = 'FLASHCARD'
+
+type EvaluationMicroLearning = {
+  id: string
+  stacks?:
+    | {
+        displayName?: string | null
+        id: number
+      }[]
+    | null
+}
+
 interface UseStackEvaluationAggregationProps {
-  microlearning?: Omit<
-    MicroLearning,
-    'name' | 'status' | 'arePushNotificationsSent' | 'course'
-  > | null
+  microlearning?: EvaluationMicroLearning | null
 }
 
 function useStackEvaluationAggregation({
@@ -51,8 +60,8 @@ function useStackEvaluationAggregation({
           (acc, entry) => {
             // flashcards and content elements do not contribute to the score at the moment
             if (
-              entry.type === ElementType.Flashcard ||
-              entry.type === ElementType.Content
+              entry.type === FLASHCARD_ELEMENT_TYPE ||
+              entry.type === CONTENT_ELEMENT_TYPE
             ) {
               return acc
             }

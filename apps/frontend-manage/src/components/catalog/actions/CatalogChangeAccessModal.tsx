@@ -1,14 +1,8 @@
-import { useMutation } from '@apollo/client'
-import {
-  ChangeCatalogCollectionObjectAccessDocument,
-  ChangeCatalogObjectAccessDocument,
-  GetCatalogCollectionsListDocument,
-  GetCatalogObjectsDocument,
-  ObjectAccess,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 function CatalogChangeAccessModal({
   onClose,
@@ -26,78 +20,88 @@ function CatalogChangeAccessModal({
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
-  const [changeCatalogObjectAccess, { loading: changingCatalogObjectAccess }] =
-    useMutation(ChangeCatalogObjectAccessDocument)
-  const [
-    changeCatalogCollectionObjectAccess,
-    { loading: changingCatalogCollectionAccess },
-  ] = useMutation(ChangeCatalogCollectionObjectAccessDocument)
+  const utils = trpc.useUtils()
+  const changeCatalogObjectAccess =
+    trpc.sharing.changeCatalogObjectAccess.useMutation()
+  const changeCatalogCollectionAccess =
+    trpc.sharing.changeCatalogCollectionAccess.useMutation()
+  const [changePending, setChangePending] = useState(false)
+  const changing =
+    changePending ||
+    changeCatalogObjectAccess.isLoading ||
+    changeCatalogCollectionAccess.isLoading
+  const handleClose = () => {
+    if (!changing) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.catalog.changeAccessTitle')}
-      onClose={onClose}
+      onClose={handleClose}
+      escapeDisabled={changing}
       primaryLabel={t('manage.catalog.changeAccessConfirm')}
       onPrimaryAction={async () => {
+        if (changing) return
+
+        setChangePending(true)
         let success = false
 
         try {
           // if assignment id is defined, the access level of a catalog object is changed
           if (typeof assignmentId !== 'undefined') {
-            const res = await changeCatalogObjectAccess({
-              variables: {
+            const input: RouterInputs['sharing']['changeCatalogObjectAccess'] =
+              {
                 assignmentId,
-                access: newAccess,
-              },
-              update: (cache, { data }) => {
-                // check if request was successful
-                if (!data?.changeCatalogObjectAccess) return
+                access:
+                  newAccess as unknown as RouterInputs['sharing']['changeCatalogObjectAccess']['access'],
+              }
+            const res = await changeCatalogObjectAccess.mutateAsync(input)
 
-                // update list of catalog objects
-                cache.updateQuery(
-                  {
-                    query: GetCatalogObjectsDocument,
-                    variables: { catalogCollectionId },
-                  },
-                  (data) => ({
-                    getCatalogObjects: data?.getCatalogObjects?.map((obj) =>
+            if (res.changed) {
+              utils.sharing.catalogObjects.setData(
+                { catalogCollectionId },
+                (data) => {
+                  if (!data?.catalogObjects) return data
+
+                  return {
+                    catalogObjects: data.catalogObjects.map((obj) =>
                       obj.id === assignmentId
                         ? { ...obj, access: newAccess }
                         : obj
                     ),
-                  })
-                )
-              },
-            })
-            success = res.data?.changeCatalogObjectAccess ?? false
+                  }
+                }
+              )
+            }
+            success = res.changed
           }
           // otherwise, the access level of a catalog collection is changed
           else if (typeof catalogCollectionId !== 'undefined') {
-            const res = await changeCatalogCollectionObjectAccess({
-              variables: {
+            const input: RouterInputs['sharing']['changeCatalogCollectionAccess'] =
+              {
                 catalogCollectionId,
-                access: newAccess,
-              },
-              update: (cache, { data }) => {
-                // check if request was successful
-                if (!data?.changeCatalogCollectionObjectAccess) return
+                access:
+                  newAccess as unknown as RouterInputs['sharing']['changeCatalogCollectionAccess']['access'],
+              }
+            const res = await changeCatalogCollectionAccess.mutateAsync(input)
 
-                // update list of catalog collections using updateQuery
-                cache.updateQuery(
-                  { query: GetCatalogCollectionsListDocument },
-                  (data) => ({
-                    getCatalogCollectionsList:
-                      data?.getCatalogCollectionsList?.map((obj) =>
-                        obj.id === catalogCollectionId
-                          ? { ...obj, access: newAccess }
-                          : obj
-                      ),
-                  })
-                )
-              },
-            })
-            success = res.data?.changeCatalogCollectionObjectAccess ?? false
+            if (res.changed) {
+              utils.sharing.catalogCollections.setData(undefined, (data) => {
+                if (!data?.catalogCollections) return data
+
+                return {
+                  catalogCollections: data.catalogCollections.map((obj) =>
+                    obj.id === catalogCollectionId
+                      ? { ...obj, access: newAccess }
+                      : obj
+                  ),
+                }
+              })
+            }
+            success = res.changed
           } else {
             console.error('No assignment id or catalog collection id provided')
             success = false
@@ -105,6 +109,8 @@ function CatalogChangeAccessModal({
         } catch (e) {
           console.error('Error changing object access', e)
           success = false
+        } finally {
+          setChangePending(false)
         }
 
         if (success) {
@@ -117,12 +123,11 @@ function CatalogChangeAccessModal({
           })
         }
       }}
-      primaryLoading={
-        changingCatalogObjectAccess || changingCatalogCollectionAccess
-      }
+      primaryLoading={changing}
+      primaryDisabled={changing}
       dataPrimaryAction={{ cy: 'confirm-access-change' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-access-change' }}
       className={{ content: 'max-w-lg' }}
       data={{ cy: 'change-access-modal' }}

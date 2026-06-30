@@ -14,17 +14,17 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityInfo,
-  ActivityType,
-  ObjectType,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Badge, Checkbox, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  ActivityInfo,
+  ActivityType,
+  PublicationStatus,
+} from '../../../lib/constants/activityEnums'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
@@ -36,6 +36,12 @@ import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
 import MicrolearningActions from './MicrolearningActions'
 import PracticeQuizActions from './PracticeQuizActions'
+
+const OUTDATED_WARNING_STATUSES: PublicationStatus[] = [
+  PublicationStatus.Draft,
+  PublicationStatus.Scheduled,
+  PublicationStatus.Template,
+]
 
 function ActivityListEntry({
   activity,
@@ -306,11 +312,7 @@ function ActivityListEntry({
               ) : null}
             </div>
             {activity.areInstancesOutdated &&
-            [
-              PublicationStatus.Draft,
-              PublicationStatus.Scheduled,
-              PublicationStatus.Template,
-            ].includes(activity.status) ? (
+            OUTDATED_WARNING_STATUSES.includes(activity.status) ? (
               <Tooltip
                 delay={0}
                 tooltip={t.rich(

@@ -1,90 +1,115 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GroupActivityDetailsDocument,
-  GroupActivityGrading,
-  PublicationStatus,
-  StartGroupActivityDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { trpc } from '@lib/trpc'
+import { Button, H1, UserNotification, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
 import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
 import GroupActivitySubscriber from '../../../../components/groupActivity/GroupActivitySubscriber'
 
+const GROUP_ACTIVITY_STATUS = {
+  ENDED: 'ENDED',
+  GRADED: 'GRADED',
+  PUBLISHED: 'PUBLISHED',
+} as const
+
+type GroupActivityClueProp = Parameters<typeof GroupActivityClue>[0]['clue']
+type GroupActivityStackProp = Parameters<typeof GroupActivityStack>[0]['stack']
+type GroupActivityStackDecisionsProp = Parameters<
+  typeof GroupActivityStack
+>[0]['decisions']
+type GroupActivityStackResultsProp = Parameters<
+  typeof GroupActivityStack
+>[0]['results']
+
 function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
+  const [activityStartConfirmed, setActivityStartConfirmed] = useState(false)
+  const [activityStartRefreshing, setActivityStartRefreshing] = useState(false)
+  const [activityStartRefreshFailed, setActivityStartRefreshFailed] =
+    useState(false)
+  const groupId =
+    typeof router.query.groupId === 'string' ? router.query.groupId : ''
+  const activityId =
+    typeof router.query.activityId === 'string' ? router.query.activityId : ''
+  const routeParamsAvailable = groupId.length > 0 && activityId.length > 0
 
-  const { data, loading, error, subscribeToMore } = useQuery(
-    GroupActivityDetailsDocument,
-    {
-      variables: {
-        groupId: router.query.groupId as string,
-        activityId: router.query.activityId as string,
+  const { data, isLoading, error, refetch } =
+    trpc.participant.groupActivityDetails.useQuery(
+      {
+        groupId,
+        activityId,
       },
-    }
-  )
+      {
+        enabled: routeParamsAvailable,
+      }
+    )
+  const handleGroupActivityEnded = useCallback(() => {
+    void refetch().catch((error) => {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    })
+  }, [refetch, t])
+  const startGroupActivity = trpc.participant.startGroupActivity.useMutation()
 
-  const [startGroupActivity, { loading: startLoading }] = useMutation(
-    StartGroupActivityDocument,
-    {
-      variables: {
-        groupId: router.query.groupId as string,
-        activityId: router.query.activityId as string,
-      },
-      // after activating the group activity, the details need to be loaded
-      // to avoid code duplication, it makes sense to simply use a refetch here
-      // -> no relevant performance implications
-      refetchQueries: [
-        {
-          query: GroupActivityDetailsDocument,
-          variables: {
-            groupId: router.query.groupId,
-            activityId: router.query.activityId,
-          },
-        },
-      ],
-    }
-  )
+  useEffect(() => {
+    setActivityStartConfirmed(false)
+    setActivityStartRefreshing(false)
+    setActivityStartRefreshFailed(false)
+  }, [activityId, groupId])
 
-  if (!data || loading) {
+  if (!routeParamsAvailable || (isLoading && !data)) {
     return (
-      <Layout>
+      <GroupActivityFallback>
         <Loader />
-      </Layout>
+      </GroupActivityFallback>
     )
   }
 
-  if (!data.groupActivityDetails) {
-    return <Layout>{t('pwa.groupActivity.activityNotYetActive')}</Layout>
+  if (error && !data?.groupActivityDetails) {
+    return (
+      <GroupActivityFallback>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </GroupActivityFallback>
+    )
   }
 
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+  if (!data?.groupActivityDetails) {
+    return (
+      <GroupActivityFallback>
+        <UserNotification
+          type="info"
+          message={t('pwa.groupActivity.activityNotYetActive')}
+        />
+      </GroupActivityFallback>
+    )
   }
 
   const groupActivity = data.groupActivityDetails
   const instance = groupActivity.activityInstance
-  const maxTotalPoints = instance?.results?.grading.reduce(
-    (acc: number, grading: GroupActivityGrading) => {
-      return acc + grading.maxPoints
-    },
-    0
-  )
+  const maxTotalPoints = instance?.results?.grading.reduce((acc, grading) => {
+    return acc + grading.maxPoints
+  }, 0)
 
   return (
     <Layout
@@ -97,14 +122,37 @@ function GroupActivityDetails() {
       <GroupActivitySubscriber
         activityId={groupActivity.id}
         groupActivityName={groupActivity.displayName}
+        onEnded={handleGroupActivityEnded}
         setActivityEnded={setActivityEnded}
-        subscribeToMore={subscribeToMore}
       />
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mx-auto mb-4 w-full max-w-[1800px] text-base' }}
+        />
+      ) : null}
+      {activityStartConfirmed && activityStartRefreshFailed && !instance ? (
+        <UserNotification
+          type="error"
+          className={{ root: 'mx-auto mb-4 w-full max-w-[1800px] text-base' }}
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>{t('shared.generic.systemError')}</div>
+            <Button
+              onClick={() => router.reload()}
+              className={{ root: 'h-8 self-start md:self-auto' }}
+            >
+              <Button.Label>{t('pwa.groupActivity.refreshPage')}</Button.Label>
+            </Button>
+          </div>
+        </UserNotification>
+      ) : null}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
-            {(groupActivity.status === PublicationStatus.Ended ||
-              groupActivity.status === PublicationStatus.Graded) && (
+            {(groupActivity.status === GROUP_ACTIVITY_STATUS.ENDED ||
+              groupActivity.status === GROUP_ACTIVITY_STATUS.GRADED) && (
               <UserNotification
                 type="warning"
                 message={t('pwa.groupActivity.groupActivityEnded')}
@@ -139,7 +187,12 @@ function GroupActivityDetails() {
                 })}
               {instance &&
                 instance.clues?.map((clue) => {
-                  return <GroupActivityClue clue={clue} key={clue.id} />
+                  return (
+                    <GroupActivityClue
+                      clue={clue as GroupActivityClueProp}
+                      key={clue.id}
+                    />
+                  )
                 })}
             </div>
             <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
@@ -176,17 +229,69 @@ function GroupActivityDetails() {
                 ))}
               </div>
 
-              {groupActivity.status === PublicationStatus.Published ? (
+              {groupActivity.status === GROUP_ACTIVITY_STATUS.PUBLISHED ? (
                 <>
                   <p className="prose mt-4 max-w-none">
                     {t('pwa.groupActivity.groupCompleteQuestion')}
                   </p>
                   <Button
                     primary
-                    disabled={groupActivity.group.participants?.length === 1}
-                    loading={startLoading}
+                    disabled={
+                      groupActivity.group.participants?.length === 1 ||
+                      startGroupActivity.isLoading ||
+                      activityStartRefreshing ||
+                      activityStartConfirmed
+                    }
+                    loading={
+                      startGroupActivity.isLoading || activityStartRefreshing
+                    }
                     className={{ root: 'mt-4 self-end text-lg font-bold' }}
-                    onClick={() => startGroupActivity()}
+                    onClick={async () => {
+                      try {
+                        setActivityStartRefreshing(true)
+                        setActivityStartRefreshFailed(false)
+                        const result = await startGroupActivity.mutateAsync({
+                          activityId,
+                          groupId,
+                        })
+
+                        if (!result.groupActivity?.activityInstance?.id) {
+                          throw new Error('Failed to start group activity')
+                        }
+
+                        setActivityStartConfirmed(true)
+                        const refreshResult = await refetch().catch((error) => {
+                          console.error(error)
+                          toast({
+                            type: 'error',
+                            message: t('shared.generic.systemError'),
+                            options: { duration: 5000 },
+                          })
+                          setActivityStartRefreshFailed(true)
+                          return undefined
+                        })
+
+                        if (
+                          refreshResult?.data?.groupActivityDetails
+                            ?.activityInstance?.id
+                        ) {
+                          setActivityStartRefreshFailed(false)
+                        } else {
+                          setActivityStartRefreshFailed(true)
+                        }
+                      } catch (error) {
+                        console.error(error)
+                        setActivityStartConfirmed(false)
+                        setActivityStartRefreshFailed(false)
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                      } finally {
+                        setActivityStartRefreshing(false)
+                      }
+                    }}
                     data={{ cy: 'start-group-activity' }}
                   >
                     <Button.Label>
@@ -251,10 +356,16 @@ function GroupActivityDetails() {
               <GroupActivityStack
                 key={`group-activity-stack-ended-${activityEnded}`}
                 activityId={instance.id}
-                activityEnded={groupActivity.status === PublicationStatus.Ended}
-                stack={groupActivity.stacks[0]}
-                decisions={instance.decisions}
-                results={instance.results}
+                activityEnded={
+                  activityEnded ||
+                  groupActivity.status === GROUP_ACTIVITY_STATUS.ENDED
+                }
+                stack={groupActivity.stacks[0] as GroupActivityStackProp}
+                decisions={
+                  instance.decisions as GroupActivityStackDecisionsProp
+                }
+                onSubmitted={refetch}
+                results={instance.results as GroupActivityStackResultsProp}
                 submittedAt={dayjs(instance.decisionsSubmittedAt).format(
                   'DD.MM.YYYY HH:mm:ss'
                 )}
@@ -262,6 +373,16 @@ function GroupActivityDetails() {
             </div>
           )}
         </div>
+      </div>
+    </Layout>
+  )
+}
+
+function GroupActivityFallback({ children }: { children: ReactNode }) {
+  return (
+    <Layout>
+      <div className="mx-auto flex min-h-[40vh] w-full max-w-xl items-center justify-center">
+        {children}
       </div>
     </Layout>
   )

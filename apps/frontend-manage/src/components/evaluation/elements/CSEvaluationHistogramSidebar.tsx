@@ -1,10 +1,10 @@
+import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
   LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
+} from '@lib/evaluationTypes'
 import {
   Checkbox,
   H3,

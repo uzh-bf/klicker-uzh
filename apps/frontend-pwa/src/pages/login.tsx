@@ -1,9 +1,4 @@
-import { FetchResult, useLazyQuery, useMutation } from '@apollo/client'
-import {
-  LoginParticipantDocument,
-  SelfDocument,
-  SendMagicLinkDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
@@ -14,15 +9,31 @@ import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import LoginForm from '../components/forms/LoginForm'
 
+function getSafeRedirectPath(redirectPath: string, baseOrigin: string) {
+  try {
+    const parsed = new URL(redirectPath, baseOrigin)
+    if (parsed.origin !== baseOrigin) {
+      return '/'
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    return '/'
+  }
+}
+
+function getRedirectLiveQuizId(redirectPath: string) {
+  const match = /^\/session\/([^/?#]+)/.exec(redirectPath)
+  return match?.[1] ? decodeURIComponent(match[1]) : undefined
+}
+
 function Login() {
   const t = useTranslations()
   const router = useRouter()
+  const utils = trpc.useUtils()
 
-  const [loginParticipant] = useMutation(LoginParticipantDocument)
-  const [sendMagicLink] = useMutation(SendMagicLinkDocument)
-  const [fetchSelf] = useLazyQuery(SelfDocument, {
-    fetchPolicy: 'network-only',
-  })
+  const loginParticipant = trpc.participant.login.useMutation()
+  const sendMagicLink = trpc.participant.sendMagicLink.useMutation()
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
   const [magicLinkLogin, setMagicLinkLogin] = useState(false)
 
@@ -47,7 +58,16 @@ function Login() {
     const urlParams = new URLSearchParams(window?.location?.search)
     const redirectTo = urlParams?.get('redirect_to')
     if (redirectTo) {
-      setDecodedRedirectPath(decodeURIComponent(redirectTo))
+      try {
+        setDecodedRedirectPath(
+          getSafeRedirectPath(
+            decodeURIComponent(redirectTo),
+            window.location.origin
+          )
+        )
+      } catch {
+        setDecodedRedirectPath('/')
+      }
     }
   }, [])
 
@@ -56,14 +76,12 @@ function Login() {
     { setSubmitting, resetForm }: any
   ) => {
     try {
-      const result: FetchResult = await loginParticipant({
-        variables: {
-          usernameOrEmail: values.usernameOrEmail.trim(),
-          password: values.password.trim(),
-        },
+      const participantId = await loginParticipant.mutateAsync({
+        usernameOrEmail: values.usernameOrEmail.trim(),
+        password: values.password.trim(),
       })
 
-      if (!result.data?.loginParticipant) {
+      if (!participantId) {
         toast({
           type: 'error',
           message: t('shared.generic.studentLoginError'),
@@ -72,10 +90,40 @@ function Login() {
         setSubmitting(false)
         resetForm()
       } else {
-        await fetchSelf()
+        const safeRedirectPath = getSafeRedirectPath(
+          decodedRedirectPath,
+          window.location.origin
+        )
+        const redirectLiveQuizId = getRedirectLiveQuizId(safeRedirectPath)
+
+        try {
+          await Promise.all([
+            utils.participant.self.fetch(undefined),
+            ...(redirectLiveQuizId
+              ? [
+                  utils.participant.self.fetch({
+                    liveQuizId: redirectLiveQuizId,
+                  }),
+                ]
+              : []),
+          ])
+        } catch (error) {
+          console.error(
+            'Error refreshing participant session after login:',
+            error
+          )
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 6000 },
+          })
+          setSubmitting(false)
+          return
+        }
 
         // redirect to the specified redirect path (default: question pool)
-        router.push(decodedRedirectPath)
+        const routed = await router.replace(safeRedirectPath)
+        if (!routed) window.location.assign(safeRedirectPath)
       }
     } catch (e) {
       console.error(e)
@@ -91,20 +139,22 @@ function Login() {
 
   const sendMagicLinkEmail = async (values: any, { setSubmitting }: any) => {
     try {
-      const result = await sendMagicLink({
-        variables: {
-          usernameOrEmail: values.usernameOrEmail.trim(),
-        },
+      const result = await sendMagicLink.mutateAsync({
+        usernameOrEmail: values.usernameOrEmail.trim(),
       })
 
-      // show success message on success
-      if (result.data?.sendMagicLink) {
+      if (result) {
         toast({
           type: 'success',
           message: t('pwa.general.magicLinkSent'),
           options: { duration: 8000 },
         })
-        setSubmitting(false)
+      } else {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 6000 },
+        })
       }
     } catch (e) {
       console.error(e)
@@ -113,6 +163,7 @@ function Login() {
         message: t('shared.generic.systemError'),
         options: { duration: 6000 },
       })
+    } finally {
       setSubmitting(false)
     }
   }
@@ -165,7 +216,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const base = `${proto}://${host}`
 
     const redirectParam = (ctx.query.redirect_to as string) || '/'
-    const targetUrl = new URL(redirectParam, base).toString()
+    const targetPath = getSafeRedirectPath(redirectParam, base)
+    const targetUrl = new URL(targetPath, base).toString()
     const authBase =
       process.env.NEXT_PUBLIC_AUTH_URL || 'https://auth.klicker.uzh.ch'
 

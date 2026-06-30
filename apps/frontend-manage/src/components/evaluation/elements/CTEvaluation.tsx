@@ -1,5 +1,5 @@
-import { ContentActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { ContentActivityEvaluationData } from '@lib/evaluationTypes'
 import { twMerge } from 'tailwind-merge'
 import { TextSizeType } from '../textSizes'
 

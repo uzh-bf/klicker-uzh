@@ -1,16 +1,9 @@
-import { useLazyQuery, useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   faCircleExclamation,
   faPencil,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ChangeShortnameDocument,
-  CheckShortnameAvailableDocument,
-  User,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -18,9 +11,12 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
 import SimpleSetting from '../../components/user/SimpleSetting'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
+
+type UserProfile = NonNullable<RouterOutputs['user']['profile']>
 
 interface ShortnameSettingProps {
-  user?: User | null
+  user?: UserProfile | null
 }
 
 function ShortnameSetting({ user }: ShortnameSettingProps) {
@@ -30,10 +26,8 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
     boolean | undefined
   >(true)
 
-  const [changeShortname] = useMutation(ChangeShortnameDocument)
-  const [checkShortnameAvailable] = useLazyQuery(
-    CheckShortnameAvailableDocument
-  )
+  const utils = trpc.useUtils()
+  const changeShortname = trpc.user.changeShortname.useMutation()
 
   const [editShortname, setEditShortname] = useState(false)
 
@@ -50,42 +44,32 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
           initialValues={{ shortname: user?.shortname || '' }}
           onSubmit={async (values, { setErrors, setSubmitting }) => {
             setSubmitting(true)
-            const trimmedShortname = values.shortname.trim()
+            try {
+              const trimmedShortname = values.shortname.trim()
 
-            const result = await changeShortname({
-              variables: { shortname: trimmedShortname },
-              update: (cache, { data }) => {
-                // verify that the change was successful
-                if (!data?.changeShortname) return
+              const result = await changeShortname.mutateAsync({
+                shortname: trimmedShortname,
+              })
 
-                // update the cache with the new user data
-                cache.updateQuery({ query: UserProfileDocument }, (qData) => {
-                  if (!qData?.userProfile) return qData
-
-                  return {
-                    ...qData,
-                    userProfile: {
-                      ...qData.userProfile,
-                      shortname: data.changeShortname!.shortname,
-                    },
-                  }
+              if (!result) {
+                setErrors({
+                  shortname: t('shared.generic.systemError'),
                 })
-              },
-            })
-
-            if (!result) {
+              } else if (result.shortname !== trimmedShortname) {
+                setErrors({
+                  shortname: t('manage.settings.shortnameTaken'),
+                })
+              } else {
+                await utils.user.profile.invalidate()
+                setEditShortname(false)
+              }
+            } catch (error) {
+              console.error(error)
               setErrors({
                 shortname: t('shared.generic.systemError'),
               })
-            } else if (
-              result.data?.changeShortname?.shortname !== trimmedShortname
-            ) {
-              setErrors({
-                shortname: t('manage.settings.shortnameTaken'),
-              })
-            } else {
+            } finally {
               setSubmitting(false)
-              setEditShortname(false)
             }
           }}
           validationSchema={Yup.object().shape({
@@ -126,10 +110,9 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                   await validateField('shortname')
                 }}
                 checkUsernameAvailable={async (name: string) => {
-                  const { data: result } = await checkShortnameAvailable({
-                    variables: { shortname: name },
+                  return await utils.user.checkShortnameAvailable.fetch({
+                    shortname: name,
                   })
-                  return result?.checkShortnameAvailable ?? false
                 }}
                 unavailableMessage={t('shared.generic.usernameAvailability')}
                 className={{

@@ -5,12 +5,12 @@ import {
   faPersonWalkingArrowRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import DeleteUserGroupModal from './DeleteUserGroupModal'
 import LeaveUserGroupModal from './LeaveUserGroupModal'
+import type { UserGroup } from './types'
 import UserGroupBadge from './UserGroupBadge'
 import UserGroupEditModal from './UserGroupEditModal'
 

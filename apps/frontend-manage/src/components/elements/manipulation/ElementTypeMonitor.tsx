@@ -1,6 +1,6 @@
-import { ElementData, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FormikErrors } from 'formik'
 import { useEffect } from 'react'
+import { ElementData, ElementType } from '../../../lib/constants/elementTypes'
 import { ElementFormTypes } from './types'
 
 interface ElementTypeMonitorProps {

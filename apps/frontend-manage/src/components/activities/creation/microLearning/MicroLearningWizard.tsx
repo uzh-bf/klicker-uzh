@@ -1,11 +1,3 @@
-import { useMutation } from '@apollo/client'
-import {
-  CreateMicroLearningDocument,
-  EditMicroLearningDocument,
-  Element,
-  ElementType,
-  MicroLearning,
-} from '@klicker-uzh/graphql/dist/ops'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -14,6 +6,12 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import {
+  Element,
+  ElementType,
+  MicroLearning,
+} from '../../../../lib/constants/activityEnums'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
@@ -243,7 +241,8 @@ function MicroLearningWizard({
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
-                'options' in instance.elementData
+                'options' in instance.elementData &&
+                instance.elementData.options != null
                   ? (instance.elementData.options.hasSampleSolution ?? false)
                   : true,
               existingInstanceId: instance.id,
@@ -266,12 +265,28 @@ function MicroLearningWizard({
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
   })
 
-  const [createMicroLearning, { data: creationData }] = useMutation(
-    CreateMicroLearningDocument
+  const createMicroLearning = trpc.activity.createMicroLearning.useMutation()
+  const editMicroLearning = trpc.activity.editMicroLearning.useMutation()
+  const utils = trpc.useUtils()
+  const invalidateCourseDetail = useCallback(
+    async (courseId: string) => {
+      await utils.course.detail.invalidate({ courseId })
+    },
+    [utils]
   )
-  const [editMicroLearning, { data: editingData }] = useMutation(
-    EditMicroLearningDocument
-  )
+  const invalidateActivities = useCallback(async () => {
+    await Promise.all([
+      utils.activity.userActivities.invalidate(),
+      ...(initialValues?.id
+        ? [
+            utils.activity.authoringMicroLearning.invalidate({
+              activityId: initialValues.id,
+            }),
+          ]
+        : []),
+    ])
+  }, [initialValues?.id, utils])
+
   const handleSubmit = useCallback(
     async (values: MicroLearningFormValues) => {
       submitMicrolearningForm({
@@ -279,8 +294,10 @@ function MicroLearningWizard({
         previousCourseId: initialValues?.course?.id,
         values,
         editMode,
-        createMicroLearning,
-        editMicroLearning,
+        createMicroLearning: createMicroLearning.mutateAsync,
+        editMicroLearning: editMicroLearning.mutateAsync,
+        invalidateCourseDetail,
+        invalidateActivities,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -299,17 +316,26 @@ function MicroLearningWizard({
           }),
       })
     },
-    [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
+    [
+      createMicroLearning.mutateAsync,
+      editMicroLearning.mutateAsync,
+      editMode,
+      initialValues?.course?.id,
+      initialValues?.id,
+      invalidateActivities,
+      invalidateCourseDetail,
+    ]
   )
 
   const activityId =
-    creationData?.createMicroLearning?.id ?? editingData?.editMicroLearning?.id
+    createMicroLearning.data?.createMicroLearning?.id ??
+    editMicroLearning.data?.editMicroLearning?.id
   const selectedCourseId =
-    creationData?.createMicroLearning?.courseId ??
-    editingData?.editMicroLearning?.courseId
+    createMicroLearning.data?.createMicroLearning?.courseId ??
+    editMicroLearning.data?.editMicroLearning?.courseId
   const isActivityReviewer =
-    creationData?.createMicroLearning?.isActivityReviewer ??
-    editingData?.editMicroLearning?.isActivityReviewer
+    createMicroLearning.data?.createMicroLearning?.isActivityReviewer ??
+    editMicroLearning.data?.editMicroLearning?.isActivityReviewer
 
   return (
     <WizardLayout
@@ -325,11 +351,11 @@ function MicroLearningWizard({
           completionSuccessMessage={(elementName) => (
             <div>
               {editMode
-                ? t.rich('manage.activityWizard.microlearningCreated', {
+                ? t.rich('manage.activityWizard.microlearningEdited', {
                     b: (text) => <strong>{text}</strong>,
                     name: elementName,
                   })
-                : t.rich('manage.activityWizard.microlearningEdited', {
+                : t.rich('manage.activityWizard.microlearningCreated', {
                     b: (text) => <strong>{text}</strong>,
                     name: elementName,
                   })}

@@ -1,9 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  ActivityType,
-  GetActivityTemplateDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { ActivityType } from '@klicker-uzh/types'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -12,15 +8,20 @@ import GroupActivityTemplate from '../../components/activities/templates/GroupAc
 import LiveQuizTemplate from '../../components/activities/templates/LiveQuizTemplate'
 import MicroLearningTemplate from '../../components/activities/templates/MicroLearningTemplate'
 import PracticeQuizTemplate from '../../components/activities/templates/PracticeQuizTemplate'
+import type { ActivityTemplate } from '../../lib/constants/elementTypes'
+import { trpc } from '../../lib/trpc'
 
 function Template({ templateId }: { templateId: string }) {
   const t = useTranslations()
 
-  const { data, loading } = useQuery(GetActivityTemplateDocument, {
-    variables: { templateId },
-  })
+  const { data, error, isLoading } = trpc.activity.template.useQuery(
+    { templateId },
+    { enabled: Boolean(templateId) }
+  )
 
-  if (loading) {
+  const template = data?.activityTemplate
+
+  if (isLoading && !template) {
     return (
       <Layout displayName={t('manage.template.activityFromTemplate')}>
         <H2>{t('manage.template.activityFromTemplate')}</H2>
@@ -29,7 +30,19 @@ function Template({ templateId }: { templateId: string }) {
     )
   }
 
-  if (!data?.getActivityTemplate) {
+  if (error && !template) {
+    return (
+      <Layout displayName={t('manage.template.activityFromTemplate')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'text-base' }}
+        />
+      </Layout>
+    )
+  }
+
+  if (!template) {
     return (
       <Layout displayName={t('manage.template.activityFromTemplate')}>
         <UserNotification
@@ -41,21 +54,33 @@ function Template({ templateId }: { templateId: string }) {
     )
   }
 
-  const template = data?.getActivityTemplate
   return (
     <Layout displayName={t('manage.template.activityFromTemplate')}>
       <H2>{t('manage.template.activityFromTemplate')}</H2>
-      {template?.activityType === ActivityType.LiveQuiz ? (
-        <LiveQuizTemplate template={template} />
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-3 text-base' }}
+        />
       ) : null}
-      {template?.activityType === ActivityType.PracticeQuiz ? (
-        <PracticeQuizTemplate template={template} />
+      {template.activityType === ActivityType.LIVE_QUIZ ? (
+        <LiveQuizTemplate template={template as unknown as ActivityTemplate} />
       ) : null}
-      {template?.activityType === ActivityType.MicroLearning ? (
-        <MicroLearningTemplate template={template} />
+      {template.activityType === ActivityType.PRACTICE_QUIZ ? (
+        <PracticeQuizTemplate
+          template={template as unknown as ActivityTemplate}
+        />
       ) : null}
-      {template?.activityType === ActivityType.GroupActivity ? (
-        <GroupActivityTemplate template={template} />
+      {template.activityType === ActivityType.MICRO_LEARNING ? (
+        <MicroLearningTemplate
+          template={template as unknown as ActivityTemplate}
+        />
+      ) : null}
+      {template.activityType === ActivityType.GROUP_ACTIVITY ? (
+        <GroupActivityTemplate
+          template={template as unknown as ActivityTemplate}
+        />
       ) : null}
     </Layout>
   )

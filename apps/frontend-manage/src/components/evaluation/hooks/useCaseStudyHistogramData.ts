@@ -2,7 +2,7 @@ import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterion,
   CaseStudyElementResultItemInfo,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '@lib/evaluationTypes'
 import { useMemo } from 'react'
 import { round, sumBy } from 'remeda'
 import { CSResultsEvaluationObject } from '../elements/CSEvaluation'

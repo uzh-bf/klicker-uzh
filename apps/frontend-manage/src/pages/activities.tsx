@@ -1,15 +1,6 @@
-import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  GetUserActivitiesCoursesDocument,
-  GetUserActivitiesDocument,
-  PublicationStatus,
-  SharingType,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -23,19 +14,45 @@ import ActivityOverviewFilters from '../components/activities/overview/ActivityO
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
 import Pagination from '../components/common/Pagination'
 import Layout from '../components/Layout'
+import {
+  ActivityType,
+  PublicationStatus,
+  type ActivityInfo,
+} from '../lib/constants/activityEnums'
+import { SharingType } from '../lib/constants/sharingEnums'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useActivitySortingAndFiltering'
+import { trpc, type RouterInputs } from '../lib/trpc'
 
 type ActivityModeFilterVariables = {
   isGamificationEnabled?: boolean
   isAssessmentEnabled?: boolean
   pinProtected?: boolean
 }
+const activityTypes = Object.values(ActivityType)
+
+function getQueryString(value: string | string[] | undefined) {
+  return typeof value === 'string' ? value : undefined
+}
+
+function getActivityTypeQuery(value: string | string[] | undefined) {
+  const stringValue = getQueryString(value)
+
+  return activityTypes.includes(stringValue as ActivityType)
+    ? (stringValue as ActivityType)
+    : undefined
+}
 
 function Activities() {
   const t = useTranslations()
   const router = useRouter()
+  const openActivityDetailsId = getQueryString(
+    router.query.openActivityDetailsId
+  )
+  const openActivityDetailsType = getActivityTypeQuery(
+    router.query.openActivityDetailsType
+  )
 
   const [searchString, setSearchString] = useState('')
 
@@ -98,40 +115,48 @@ function Activities() {
     toggleModeFilter,
   } = useActivitySortingAndFiltering(storedFiltering)
 
+  const activityFiltersInput: RouterInputs['activity']['userActivities'] = {
+    statusFilter:
+      filters.status as unknown as RouterInputs['activity']['userActivities']['statusFilter'],
+    activityTypeFilter:
+      filters.type as unknown as RouterInputs['activity']['userActivities']['activityTypeFilter'],
+    courseId: filters.course !== null ? filters.course : undefined,
+    withoutCourse: filters.course === null ? true : undefined,
+    searchString: searchString.trim() || undefined,
+    showOwned: filters.sharingType.includes(SharingType.Owned),
+    showShared: filters.sharingType.includes(SharingType.Shared),
+    showDependencies: filters.sharingType.includes(SharingType.Dependency),
+    multiplier: filters.multiplier ?? undefined,
+    reviewStatus:
+      filters.reviewStatus as unknown as RouterInputs['activity']['userActivities']['reviewStatus'],
+    isGamificationEnabled: filters.mode.gamified ? true : undefined,
+    isAssessmentEnabled: filters.mode.assessment ? true : undefined,
+    isPinProtected: filters.mode.pinProtected ? true : undefined,
+    sortByType:
+      sort.by as unknown as RouterInputs['activity']['userActivities']['sortByType'],
+    sortByAsc: sort.asc,
+    numEntries: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  }
+
   // get available courses
-  const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const {
+    data: dataCourses,
+    error: coursesError,
+    isLoading: loadingCourses,
+  } = trpc.activity.userActivitiesCourses.useQuery()
 
   // get user activities while respecting the corresponding filters and pagination
   const {
-    loading: loadingActivities,
+    isLoading: loadingActivities,
     data: dataActivities,
+    error: activitiesError,
     refetch: refetchActivities,
-  } = useQuery(GetUserActivitiesDocument, {
-    variables: {
-      statusFilter: filters.status,
-      activityTypeFilter: filters.type,
-      courseId: filters.course !== null ? filters.course : undefined,
-      withoutCourse: filters.course === null ? true : undefined,
-      searchString: searchString.trim() || undefined,
-      showOwned: filters.sharingType.includes(SharingType.Owned),
-      showShared: filters.sharingType.includes(SharingType.Shared),
-      showDependencies: filters.sharingType.includes(SharingType.Dependency),
-      multiplier: filters.multiplier ?? undefined,
-      reviewStatus: filters.reviewStatus ?? undefined,
-      isGamificationEnabled: filters.mode.gamified ? true : undefined,
-      isAssessmentEnabled: filters.mode.assessment ? true : undefined,
-      isPinProtected: filters.mode.pinProtected ? true : undefined,
-      sortByType: sort.by,
-      sortByAsc: sort.asc,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
-    },
-    fetchPolicy: 'network-only',
+  } = trpc.activity.userActivities.useQuery(activityFiltersInput, {
+    refetchOnMount: 'always',
   })
-  const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
-  const activities = dataActivities?.userActivities?.activities || []
+  const numOfActivities = dataActivities?.userActivities.numOfActivities || 0
+  const activities = dataActivities?.userActivities.activities ?? []
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -203,13 +228,10 @@ function Activities() {
 
   // if passed through the query arguments, open the activity details dialog
   useEffect(() => {
-    if (
-      router.query.openActivityDetailsId &&
-      router.query.openActivityDetailsType
-    ) {
+    if (openActivityDetailsId && openActivityDetailsType) {
       setShowDetails(true)
     }
-  }, [router.query.openActivityDetailsId, router.query.openActivityDetailsType])
+  }, [openActivityDetailsId, openActivityDetailsType])
 
   const filtersActive =
     filters.status.length > 0 ||
@@ -220,6 +242,7 @@ function Activities() {
     typeof filters.multiplier !== 'undefined' ||
     typeof filters.reviewStatus !== 'undefined' ||
     Object.values(filters.mode).some((value) => value)
+  const searchActive = searchString.trim().length > 0
 
   // compute the number of total pagination pages
   const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
@@ -242,7 +265,9 @@ function Activities() {
             toggleReviewStatusFilter={toggleReviewStatusFilter}
             toggleModeFilter={toggleModeFilter}
             handleReset={handleReset}
-            availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
+            availableCourses={dataCourses?.userActivitiesCourses ?? []}
+            availableCoursesError={Boolean(coursesError)}
+            availableCoursesLoading={loadingCourses && !dataCourses}
             filtersActive={filtersActive}
           />
         </div>
@@ -281,14 +306,23 @@ function Activities() {
             </div>
 
             <div className="h-full overflow-y-auto">
-              {loadingActivities ? (
+              {loadingActivities && !dataActivities ? (
                 <Loader />
+              ) : activitiesError && !dataActivities ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                  className={{ root: 'm-4' }}
+                />
               ) : (
                 <>
                   <ActivityList
                     filtersActive={filtersActive}
+                    searchActive={searchActive}
                     activities={activities}
-                    noActivities={!filtersActive && numOfActivities === 0}
+                    noActivities={
+                      !filtersActive && !searchActive && numOfActivities === 0
+                    }
                     highlightedActivity={null}
                     selectedActivities={selectedActivities}
                     setSelectedActivities={setSelectedActivities}
@@ -316,12 +350,10 @@ function Activities() {
         </div>
       </div>
 
-      {showDetails &&
-      router.query.openActivityDetailsId &&
-      router.query.openActivityDetailsType ? (
+      {showDetails && openActivityDetailsId && openActivityDetailsType ? (
         <ActivityDetailsModal
-          activityId={router.query.openActivityDetailsId as string}
-          activityType={router.query.openActivityDetailsType as ActivityType}
+          activityId={openActivityDetailsId}
+          activityType={openActivityDetailsType}
           onClose={() => {
             // close the modal
             setShowDetails(false)

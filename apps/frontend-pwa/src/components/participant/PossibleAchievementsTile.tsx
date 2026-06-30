@@ -1,11 +1,15 @@
-import { Achievement } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+
+export interface PossibleAchievement {
+  id: number
+  icon: string
+}
 
 function PossibleAchievementsTile({
   achievement,
 }: {
-  achievement: Achievement
+  achievement: PossibleAchievement
 }) {
   const t = useTranslations()
 

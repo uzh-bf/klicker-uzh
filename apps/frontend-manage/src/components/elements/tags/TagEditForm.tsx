@@ -1,20 +1,21 @@
-import { useMutation } from '@apollo/client'
-import { EditTagDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
+import type { UserTagData } from './types'
 
 function TagEditForm({
   tag,
   closeEditMode,
 }: {
-  tag: Tag
+  tag: UserTagData
   closeEditMode: () => void
 }) {
   const t = useTranslations()
-  const [editTag, { loading }] = useMutation(EditTagDocument)
+  const utils = trpc.useUtils()
+  const editTag = trpc.element.editTag.useMutation()
 
   const TagModifierSchema = Yup.object().shape({
     tag: Yup.string().required(t('manage.tags.validName')),
@@ -25,28 +26,55 @@ function TagEditForm({
       <Formik
         initialValues={{ tag: tag.name }}
         validationSchema={TagModifierSchema}
-        onSubmit={async (values, { resetForm }) => {
+        onSubmit={async (values, { resetForm, setSubmitting }) => {
           if (values.tag !== tag.name) {
-            const result = await editTag({
-              variables: { id: tag.id, name: values.tag },
-            })
-
-            if (result.data?.editTag) {
-              toast({
-                type: 'success',
-                message: t('manage.tags.tagNameUpdatedSuccessfully'),
+            try {
+              const result = await editTag.mutateAsync({
+                id: tag.id,
+                name: values.tag,
               })
-              closeEditMode()
-            } else {
-              toast({ type: 'error', message: t('manage.tags.uniqueTagName') })
-              resetForm()
+
+              if (result.tag) {
+                utils.element.tags.setData(undefined, (data) =>
+                  data
+                    ? {
+                        tags: data.tags.map((existingTag) =>
+                          existingTag.id === result.tag!.id
+                            ? result.tag!
+                            : existingTag
+                        ),
+                      }
+                    : data
+                )
+                toast({
+                  type: 'success',
+                  message: t('manage.tags.tagNameUpdatedSuccessfully'),
+                })
+                closeEditMode()
+              } else {
+                toast({
+                  type: 'error',
+                  message: t('manage.tags.uniqueTagName'),
+                })
+                resetForm()
+              }
+            } catch (error) {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 6000 },
+              })
+            } finally {
+              setSubmitting(false)
             }
           } else {
             closeEditMode()
+            setSubmitting(false)
           }
         }}
       >
-        {({ errors, touched, isValid }) => {
+        {({ errors, touched, isSubmitting, isValid }) => {
           return (
             <Form className="w-full">
               <div className="flex w-full flex-row justify-between gap-2">
@@ -62,7 +90,8 @@ function TagEditForm({
 
                 <Button
                   type="submit"
-                  disabled={loading || !isValid}
+                  disabled={isSubmitting || editTag.isLoading || !isValid}
+                  loading={isSubmitting || editTag.isLoading}
                   className={{
                     root: twMerge('mr-0 h-7 rounded border border-solid px-2'),
                   }}

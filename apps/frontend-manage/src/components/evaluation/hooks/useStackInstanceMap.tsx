@@ -1,4 +1,4 @@
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { StackEvaluation } from '@lib/evaluationTypes'
 import { useMemo } from 'react'
 
 interface UseStackInstanceMapProps {

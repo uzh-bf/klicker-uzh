@@ -1,10 +1,5 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateCourseDocument,
-  GetUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
+import { H3, Switch, UserNotification, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -21,11 +16,13 @@ import CourseManipulationModal, {
 } from '../../components/courses/modals/CourseManipulationModal'
 import CourseRemovalModal from '../../components/courses/modals/CourseRemovalModal'
 import Layout from '../../components/Layout'
+import { trpc } from '../../lib/trpc'
 
 function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
-  const [createCourse] = useMutation(CreateCourseDocument)
+  const utils = trpc.useUtils()
+  const createCourse = trpc.course.create.useMutation()
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
@@ -44,12 +41,18 @@ function CourseSelectionPage() {
     courseName: string | null
   }>({ open: false, courseId: null, courseName: null })
 
-  const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetUserCoursesDocument,
-    { fetchPolicy: 'cache-and-network' }
-  )
+  const {
+    isLoading: loadingCourses,
+    data: dataCourses,
+    error: coursesError,
+  } = trpc.course.userCourses.useQuery(undefined, {
+    refetchOnMount: 'always',
+    staleTime: 0,
+  })
+  const courseList = dataCourses?.userCourses
+  const hasCourseListData = typeof courseList !== 'undefined'
 
-  if (loadingCourses) {
+  if (loadingCourses && !hasCourseListData) {
     return (
       <Layout>
         <Loader />
@@ -57,7 +60,18 @@ function CourseSelectionPage() {
     )
   }
 
-  const courses = dataCourses?.userCourses?.filter((course) =>
+  if (!hasCourseListData) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  const courses = courseList.filter((course) =>
     showArchive ? true : !course.isArchived
   )
 
@@ -67,7 +81,7 @@ function CourseSelectionPage() {
         <div className="md:w-180 flex w-full flex-col">
           <div className="mb-1 flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
-            {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
+            {courseList.length > 0 ? (
               <Switch
                 checked={showArchive}
                 onCheckedChange={(newValue) => setShowArchive(newValue)}
@@ -81,7 +95,14 @@ function CourseSelectionPage() {
               />
             ) : null}
           </div>
-          {courses && courses.length > 0 ? (
+          {coursesError ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'mb-3 text-sm' }}
+            />
+          ) : null}
+          {courses.length > 0 ? (
             <div className="w-full">
               <div className="flex flex-col gap-2">
                 {courses.map((course) => {
@@ -113,10 +134,7 @@ function CourseSelectionPage() {
             </div>
           ) : (
             <div
-              className={twMerge(
-                'w-full',
-                (dataCourses?.userCourses?.length ?? 0) > 0 && 'md:pr-24'
-              )}
+              className={twMerge('w-full', courseList.length > 0 && 'md:pr-24')}
             >
               <UserNotification className={{ root: 'mb-3 text-base' }}>
                 {t('manage.courseList.noCoursesFound')}
@@ -151,6 +169,7 @@ function CourseSelectionPage() {
           {createCourseModal && (
             <CourseManipulationModal
               onModalClose={() => showCreateCourseModal(false)}
+              submitting={createCourse.isLoading}
               onSubmit={async (
                 values: CourseManipulationFormData,
                 setSubmitting,
@@ -158,70 +177,73 @@ function CourseSelectionPage() {
               ) => {
                 try {
                   // convert dates to UTC
-                  const startDateUTC = dayjs(values.startDate)
-                    .utc()
-                    .toISOString()
-                  const endDateUTC = dayjs(values.endDate).utc().toISOString()
+                  const startDateUTC = dayjs(values.startDate).utc().toDate()
+                  const endDateUTC = dayjs(values.endDate).utc().toDate()
                   const groupDeadlineDateUTC = dayjs(
                     values.groupCreationDeadline
                   )
                     .utc()
-                    .toISOString()
+                    .toDate()
 
-                  const result = await createCourse({
-                    variables: {
-                      name: values.name,
-                      displayName: values.displayName,
-                      description:
-                        !values.description?.match(/^(<br>(\n)*)$/g) &&
-                        values.description !== ''
-                          ? values.description
-                          : null,
-                      language: values.language,
-                      color: values.color,
-                      startDate: startDateUTC,
-                      endDate: endDateUTC,
-                      notificationEmail: values.notificationEmail,
-                      isGamificationEnabled: values.isGamificationEnabled,
-                      isGroupCreationEnabled: values.isGroupCreationEnabled,
-                      groupDeadlineDate: groupDeadlineDateUTC,
-                      maxGroupSize: parseInt(String(values.maxGroupSize)),
-                      preferredGroupSize: parseInt(
-                        String(values.preferredGroupSize)
-                      ),
-                    },
-                    update: (cache, { data }) => {
-                      // verify that the course creation was successful
-                      if (!data?.createCourse) return
-
-                      // add the new course to the course list
-                      cache.updateQuery(
-                        { query: GetUserCoursesDocument },
-                        (qData) => {
-                          if (!qData?.userCourses) return qData
-
-                          return {
-                            userCourses: [
-                              ...qData.userCourses,
-                              data.createCourse!,
-                            ],
-                          }
-                        }
-                      )
-                    },
+                  const result = await createCourse.mutateAsync({
+                    name: values.name,
+                    displayName: values.displayName,
+                    description:
+                      !values.description?.match(/^(<br>(\n)*)$/g) &&
+                      values.description !== ''
+                        ? values.description
+                        : null,
+                    language: values.language,
+                    color: values.color,
+                    startDate: startDateUTC,
+                    endDate: endDateUTC,
+                    notificationEmail: values.notificationEmail,
+                    isGamificationEnabled: values.isGamificationEnabled,
+                    isGroupCreationEnabled: values.isGroupCreationEnabled,
+                    groupDeadlineDate: groupDeadlineDateUTC,
+                    maxGroupSize: parseInt(String(values.maxGroupSize)),
+                    preferredGroupSize: parseInt(
+                      String(values.preferredGroupSize)
+                    ),
                   })
 
-                  if (result.data?.createCourse) {
-                    showCreateCourseModal(false)
-                    router.push(`/courses/${result.data.createCourse.id}`)
-                  } else {
+                  if (!result.course) {
                     onError()
                     setSubmitting(false)
+                    return
                   }
+
+                  const createdCourse = result.course
+                  utils.course.userCourses.setData(undefined, (data) =>
+                    data?.userCourses
+                      ? {
+                          userCourses: [
+                            createdCourse,
+                            ...data.userCourses.filter(
+                              (course) => course.id !== createdCourse.id
+                            ),
+                          ],
+                        }
+                      : data
+                  )
+                  showCreateCourseModal(false)
+                  void utils.course.userCourses
+                    .invalidate()
+                    .catch((refreshError) => {
+                      console.error(refreshError)
+                      toast({
+                        type: 'error',
+                        message: t('shared.generic.systemError'),
+                        options: { duration: 5000 },
+                      })
+                    })
+                  void router
+                    .push(`/courses/${createdCourse.id}`)
+                    .catch(console.error)
                 } catch (error) {
                   onError()
                   setSubmitting(false)
-                  console.log(error)
+                  console.error(error)
                 }
               }}
             />

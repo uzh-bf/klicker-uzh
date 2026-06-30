@@ -1,16 +1,12 @@
-import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ApplyElementBatchOperationsDocument,
-  Element,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { isShallowEqual, omit } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import { ElementType, type Element } from '../../../lib/constants/elementTypes'
+import { trpc } from '../../../lib/trpc'
 import ElementArchiveCard from './batchOperations/ElementArchiveCard'
 import ElementBasePointsCard from './batchOperations/ElementBasePointsCard'
 import ElementBatchOperationsInfo from './batchOperations/ElementBatchOperationsInfo'
@@ -44,11 +40,56 @@ function ElementBatchOperationsModal({
   )
   const [selectedActions, setSelectedActions] =
     useState<ElementBatchOperationActions>(INITIAL_ELEMENT_BATCH_OPERATIONS)
+  const [batchOperationPending, setBatchOperationPending] = useState(false)
 
-  // application function for element list batch operations
-  const [applyElementBatchOperations, { loading: applying }] = useMutation(
-    ApplyElementBatchOperationsDocument
-  )
+  const utils = trpc.useUtils()
+  const applyElementBatchOperations =
+    trpc.element.applyBatchOperations.useMutation()
+
+  const refreshAffectedElementDetails = async () => {
+    const affectedElementIds = affectedElements
+      .filter((element) => element.actionsApplied)
+      .map((element) => element.id)
+
+    if (typeof window !== 'undefined') {
+      affectedElementIds.forEach((id) => {
+        window.localStorage.removeItem(`autosave-element-${id}`)
+      })
+    }
+
+    affectedElementIds.forEach((id) => {
+      utils.element.single.setData({ id }, (data) => {
+        if (!data?.element) {
+          return data
+        }
+
+        return {
+          ...data,
+          element: {
+            ...data.element,
+            status: selectedActions.status ?? data.element.status,
+            pointsMultiplier:
+              typeof selectedActions.multiplier !== 'undefined' &&
+              selectedActions.multiplier !== ''
+                ? parseInt(selectedActions.multiplier, 10)
+                : data.element.pointsMultiplier,
+            basePoints:
+              typeof selectedActions.basePoints !== 'undefined'
+                ? selectedActions.basePoints
+                : data.element.basePoints,
+          },
+        }
+      })
+    })
+
+    await Promise.all(
+      affectedElementIds.map((id) =>
+        utils.element.single.invalidate({
+          id,
+        })
+      )
+    ).catch(console.error)
+  }
 
   // whenever the applied filters change, update the affected elements
   useEffect(() => {
@@ -129,11 +170,18 @@ function ElementBatchOperationsModal({
   const numOfUpdatedElements = useMemo(() => {
     return affectedElements.filter((element) => element.actionsApplied).length
   }, [affectedElements])
+  const applyingBatchOperations =
+    applyElementBatchOperations.isLoading || batchOperationPending
+  const handleClose = () => {
+    if (!applyingBatchOperations) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.questionPool.batchOperationsElements')}
       className={{
         content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
@@ -206,7 +254,7 @@ function ElementBatchOperationsModal({
               <Button
                 primary
                 disabled={
-                  applying ||
+                  applyingBatchOperations ||
                   numOfUpdatedElements === 0 ||
                   isShallowEqual(
                     omit(selectedActions, [
@@ -220,51 +268,72 @@ function ElementBatchOperationsModal({
                   )
                 }
                 onClick={async () => {
+                  if (applyingBatchOperations) return
+
+                  let shouldClose = false
+                  setBatchOperationPending(true)
                   try {
                     // submit the batch operations
-                    const { data: res } = await applyElementBatchOperations({
-                      variables: {
-                        elementIds: affectedElements
-                          .filter((element) => element.actionsApplied)
-                          .map((element) => element.id),
-                        archive: selectedActions.archive,
-                        unarchive: selectedActions.unarchive,
-                        status: selectedActions.status ?? undefined,
-                        multiplier:
-                          typeof selectedActions.multiplier !== 'undefined' &&
-                          selectedActions.multiplier !== ''
-                            ? parseInt(selectedActions.multiplier, 10)
-                            : null,
-                        basePoints: selectedActions.basePoints ?? undefined,
-                        updateInstances: selectedActions.updateInstances,
-                        updateTemplateInstances:
-                          selectedActions.updateTemplateInstances,
-                      },
+                    const res = await applyElementBatchOperations.mutateAsync({
+                      elementIds: affectedElements
+                        .filter((element) => element.actionsApplied)
+                        .map((element) => element.id),
+                      archive: selectedActions.archive,
+                      unarchive: selectedActions.unarchive,
+                      status: selectedActions.status ?? undefined,
+                      multiplier:
+                        typeof selectedActions.multiplier !== 'undefined' &&
+                        selectedActions.multiplier !== ''
+                          ? parseInt(selectedActions.multiplier, 10)
+                          : null,
+                      basePoints:
+                        typeof selectedActions.basePoints !== 'undefined'
+                          ? selectedActions.basePoints
+                          : undefined,
+                      updateInstances: selectedActions.updateInstances,
+                      updateTemplateInstances:
+                        selectedActions.updateTemplateInstances,
                     })
 
-                    // in case of success, reset the selected elements and refetch the elements
-                    if (
-                      res?.applyElementBatchOperations === numOfUpdatedElements
-                    ) {
+                    if (res.updatedCount !== 0) {
+                      try {
+                        await Promise.all([
+                          refreshAffectedElementDetails(),
+                          refetchElements(),
+                        ])
+                      } catch (error) {
+                        console.error(
+                          'Error refreshing elements after batch operation:',
+                          error
+                        )
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                        return
+                      }
+
                       resetSelectedElements()
-                      await refetchElements()
                       toast({
-                        type: 'success',
-                        message: t('manage.questionPool.batchOperationSuccess'),
-                        options: { duration: 3000 },
+                        type:
+                          res.updatedCount === numOfUpdatedElements
+                            ? 'success'
+                            : 'warning',
+                        message:
+                          res.updatedCount === numOfUpdatedElements
+                            ? t('manage.questionPool.batchOperationSuccess')
+                            : t(
+                                'manage.questionPool.batchOperationPartialSuccess'
+                              ),
+                        options: {
+                          duration:
+                            res.updatedCount === numOfUpdatedElements
+                              ? 3000
+                              : 4500,
+                        },
                       })
-                      onClose()
-                    } else if (res?.applyElementBatchOperations !== 0) {
-                      resetSelectedElements()
-                      await refetchElements()
-                      toast({
-                        type: 'warning',
-                        message: t(
-                          'manage.questionPool.batchOperationPartialSuccess'
-                        ),
-                        options: { duration: 4500 },
-                      })
-                      onClose()
+                      shouldClose = true
                     } else {
                       toast({
                         type: 'error',
@@ -279,8 +348,14 @@ function ElementBatchOperationsModal({
                       message: t('manage.questionPool.batchOperationFailed'),
                       options: { duration: 5000 },
                     })
+                  } finally {
+                    setBatchOperationPending(false)
+                    if (shouldClose) {
+                      onClose()
+                    }
                   }
                 }}
+                loading={applyingBatchOperations}
                 className={{ root: 'h-9' }}
                 data={{ cy: 'apply-batch-operations' }}
               >

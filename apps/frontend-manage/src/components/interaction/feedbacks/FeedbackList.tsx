@@ -1,18 +1,27 @@
-import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { AudienceFeedback } from '../types'
 import FeedbackListEntry from './FeedbackListEntry'
 
 interface FeedbackListProps {
-  feedbacks: FeedbackType[]
+  feedbacks: AudienceFeedback[]
   noFeedbacks: boolean
   isPublic?: boolean
-  handleDeleteFeedback: (feedbackId: number) => void
-  handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
-  handlePublishFeedback?: (feedbackId: number, isPublished: boolean) => void
-  handleResolveFeedback: (feedbackId: number, resolvedState: boolean) => void
-  handleRespondToFeedback: (feedbackId: number, response: string) => void
-  handleDeleteFeedbackResponse: (responseId: number) => void
+  handleDeleteFeedback: (feedbackId: number) => Promise<boolean>
+  handlePinFeedback: (feedbackId: number, isPinned: boolean) => Promise<boolean>
+  handlePublishFeedback?: (
+    feedbackId: number,
+    isPublished: boolean
+  ) => Promise<boolean>
+  handleResolveFeedback: (
+    feedbackId: number,
+    resolvedState: boolean
+  ) => Promise<boolean>
+  handleRespondToFeedback: (
+    feedbackId: number,
+    response: string
+  ) => Promise<boolean>
+  handleDeleteFeedbackResponse: (responseId: number) => Promise<boolean>
 }
 
 function FeedbackList({

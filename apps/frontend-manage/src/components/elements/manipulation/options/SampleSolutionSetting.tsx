@@ -1,7 +1,6 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { FormikSwitchField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ElementType } from '../../../../lib/constants/elementTypes'
 
 function SampleSolutionSetting({
   disabled = false,
@@ -11,8 +10,10 @@ function SampleSolutionSetting({
   type: ElementType
 }) {
   const t = useTranslations()
+  const supportsSampleSolution =
+    type !== ElementType.Content && type !== ElementType.Flashcard
 
-  return QUESTION_GROUPS.ALL.includes(type) ? (
+  return supportsSampleSolution ? (
     <FormikSwitchField
       size="sm"
       disabled={disabled}

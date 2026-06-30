@@ -1,6 +1,9 @@
-import { CourseStudentTimeline } from '@klicker-uzh/graphql/dist/ops'
+import type { RouterOutputs } from '@lib/trpc'
 import TimelineCourseChart from './TimelineCourseChart'
 import TimelineCourseInformation from './TimelineCourseInformation'
+
+type CourseStudentTimeline =
+  RouterOutputs['participant']['courseStudentTimelines']['courseStudentTimelines'][number]
 
 function TimelineCourse({ course }: { course: CourseStudentTimeline }) {
   const totalPoints =

@@ -1,4 +1,5 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { appRouter, type TRPCContext } from '@klicker-uzh/api'
 import { enhanceContext, handlers, schema } from '@klicker-uzh/graphql'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
 // import * as Sentry from '@sentry/node'
@@ -6,6 +7,10 @@ import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import {
+  applyWSSHandler,
+  type CreateWSSContextFnOptions,
+} from '@trpc/server/adapters/ws'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -134,12 +139,35 @@ migrate(prisma).then(() => {
     process.exit(1)
   }
 
-  const server = app.listen(3000, () => {
-    console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+  const port = Number(process.env.PORT ?? 3000)
+  const server = app.listen(port, () => {
+    console.log(
+      `GraphQL API located at 0.0.0.0:${port}${yogaApp.graphqlEndpoint}`
+    )
 
-    const wsServer = new WebSocket.WebSocketServer({
-      server,
-      path: yogaApp.graphqlEndpoint,
+    const wsServer = new WebSocket.WebSocketServer({ noServer: true })
+    const trpcWsServer = new WebSocket.WebSocketServer({ noServer: true })
+
+    applyWSSHandler({
+      wss: trpcWsServer as Parameters<
+        typeof applyWSSHandler<typeof appRouter>
+      >[0]['wss'],
+      router: appRouter,
+      createContext({ req, res }: CreateWSSContextFnOptions): TRPCContext {
+        return {
+          req: req as TRPCContext['req'],
+          res,
+          prisma,
+          redisExec,
+          redisAssessmentExec,
+          pubSub,
+          cache,
+          emitter,
+          user: null,
+          hatchet: hatchetClient,
+          tasks,
+        }
+      },
     })
 
     useServer(
@@ -189,6 +217,31 @@ migrate(prisma).then(() => {
       },
       wsServer as Parameters<typeof useServer>[1]
     )
+
+    // Route upgrades manually: multiple ws servers with `server`/`path`
+    // reject each other's unmatched paths before the right listener can handle them.
+    server.on('upgrade', (req, socket, head) => {
+      const pathname = new URL(
+        req.url ?? '/',
+        `http://${req.headers.host ?? 'localhost'}`
+      ).pathname
+
+      if (pathname === yogaApp.graphqlEndpoint) {
+        wsServer.handleUpgrade(req, socket, head, (ws) => {
+          wsServer.emit('connection', ws, req)
+        })
+        return
+      }
+
+      if (pathname === '/api/trpc') {
+        trpcWsServer.handleUpgrade(req, socket, head, (ws) => {
+          trpcWsServer.emit('connection', ws, req)
+        })
+        return
+      }
+
+      socket.destroy()
+    })
   })
 })
 // #endregion

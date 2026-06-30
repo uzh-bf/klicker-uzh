@@ -1,24 +1,25 @@
-import { useQuery } from '@apollo/client'
-import { GetPracticeQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import Layout from '../../../components/Layout'
+import { trpc } from '../../../lib/trpc'
 
 function PracticeQuizEvaluation() {
   const t = useTranslations()
   const router = useRouter()
 
   // fetch evaluation data
-  const { data, loading, error } = useQuery(GetPracticeQuizEvaluationDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-  })
+  const id = typeof router.query.id === 'string' ? router.query.id : ''
+  const { data, isLoading, error } =
+    trpc.analytics.practiceQuizEvaluation.useQuery(
+      { id },
+      { enabled: id !== '' }
+    )
 
-  if (loading) {
+  if (!id || (isLoading && !data)) {
     return (
       <Layout displayName={t('manage.evaluation.practiceQuizEvaluation')}>
         <Loader />
@@ -27,19 +28,48 @@ function PracticeQuizEvaluation() {
   }
 
   // TODO: potentially display message here that practice quiz might not be published yet?
-  if (error || !data) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+  if (error && !data) {
+    return (
+      <Layout displayName={t('manage.evaluation.practiceQuizEvaluation')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
   }
 
-  const evaluation = data?.getPracticeQuizEvaluation
+  if (!data) {
+    return (
+      <Layout displayName={t('manage.evaluation.practiceQuizEvaluation')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  const evaluation = data?.practiceQuizEvaluation
 
   return (
-    <ActivityEvaluation
-      courseId={evaluation?.courseId}
-      activityId={router.query.id as string}
-      activityName={evaluation?.displayName ?? ''}
-      stacks={evaluation?.results ?? []}
-    />
+    <>
+      {error && data ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{
+            root: 'mx-auto mb-4 max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
+          }}
+        />
+      ) : null}
+      <ActivityEvaluation
+        courseId={evaluation?.courseId}
+        activityId={id}
+        activityName={evaluation?.displayName ?? ''}
+        stacks={evaluation?.results ?? []}
+      />
+    </>
   )
 }
 

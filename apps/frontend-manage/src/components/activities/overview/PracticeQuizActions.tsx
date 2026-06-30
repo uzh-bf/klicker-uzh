@@ -1,12 +1,11 @@
-import { useQuery } from '@apollo/client'
+import { ObjectType } from '@lib/constants/sharingEnums'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityInfo,
   ActivityType,
-  ObjectType,
   PublicationStatus,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+} from '../../../lib/constants/activityEnums'
+import { trpc } from '../../../lib/trpc'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
@@ -58,6 +57,10 @@ const statusActionMap = {
   [PublicationStatus.Graded]: [],
 }
 
+function toDateString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value
+}
+
 function PracticeQuizActions({
   practiceQuiz,
   isTemplate,
@@ -78,10 +81,7 @@ function PracticeQuizActions({
   const [removalModal, setRemovalModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const { data: user } = trpc.user.profile.useQuery()
 
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(
@@ -139,13 +139,13 @@ function PracticeQuizActions({
         openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
-        {publishModal && (
+        {publishModal && practiceQuiz.courseStartDate && (
           <PracticeQuizPublishingModal
             activityId={practiceQuiz.id}
             title={practiceQuiz.name}
             onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}
-            courseStartDate={practiceQuiz.courseStartDate}
+            courseStartDate={toDateString(practiceQuiz.courseStartDate)}
             refetchActivities={refetchActivities}
           />
         )}

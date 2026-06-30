@@ -528,6 +528,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.name}"]`
+    ).should('exist')
   })
 
   it('Edit the created live quiz and check if all settings persist', function () {
@@ -699,7 +703,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     //  start editing again and check if correct values were saved
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -817,7 +821,7 @@ describe('Different live-quiz workflows', function () {
       .should('contain', this.data.SC.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
     ).should('exist')
@@ -845,10 +849,20 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
-    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course1.quiz.nameDupl).should('not.exist')
@@ -874,13 +888,25 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="abort-live-quiz-cockpit"]').click()
     cy.get('[data-cy="abort-cancel-live-quiz"]').click()
     cy.get('[data-cy="abort-live-quiz-cockpit"]').click()
-    cy.get('[data-cy="lq-deletion-responses-confirm"]').should('not.exist')
-    cy.get('[data-cy="lq-deletion-feedbacks-confirm"]').should('not.exist')
+    cy.get('[data-cy="lq-deletion-responses-confirm"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
+    cy.get('[data-cy="lq-deletion-feedbacks-confirm"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="lq-deletion-confusion-feedbacks-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="lq-deletion-leaderboard-entries-confirm"]').should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get('[data-cy="confirm-cancel-live-quiz"]')
       .should('not.be.disabled')
@@ -917,10 +943,20 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
-    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    ) // ? azure functions do not work in cypress CI actions
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course1.quiz.nameNew).should('not.exist')
@@ -1027,7 +1063,7 @@ describe('Different live-quiz workflows', function () {
       type: 'block',
     })
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
     ).should('exist')
@@ -1348,14 +1384,8 @@ describe('Different live-quiz workflows', function () {
         cy.wrap(text).as('publicLinkLeaderboard')
       })
 
-    // log out as a lecturer
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.wait(500)
-    cy.reload()
-    cy.origin(Cypress.env('URL_AUTH'), () => {
-      cy.get('button[data-cy="tos-checkbox"]').should('exist')
-    })
+    // log out as a lecturer before checking public evaluation links
+    cy.logoutUser()
 
     // check out generic evaluation
     cy.get('@publicLinkEvaluation').then((link) => {
@@ -1776,7 +1806,9 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('not.be.disabled')
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
@@ -1832,7 +1864,7 @@ describe('Different live-quiz workflows', function () {
     })
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1870,7 +1902,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1921,7 +1953,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1954,7 +1986,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // open the overview and check its content
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1979,7 +2011,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the first block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -1993,6 +2025,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(`[data-cy="live-quiz-${data.liveQuiz.displayName}"]`).click()
 
         // answer the elements in the first block
@@ -2022,7 +2055,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the second block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -2036,6 +2069,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(`[data-cy="live-quiz-${data.liveQuiz.displayName}"]`).click()
 
         // answer the elements in the second block
@@ -2102,7 +2136,7 @@ describe('Different live-quiz workflows', function () {
       .should('contain', this.data.liveQuiz.newSCTitle.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
     ).should('exist')
@@ -2132,7 +2166,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the first block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -2146,6 +2180,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(
           `[data-cy="live-quiz-${data.liveQuiz.duplicateDisplayName}"]`
         ).click()
@@ -2179,7 +2214,7 @@ describe('Different live-quiz workflows', function () {
     // switch to the student app and answer the elements in the second block
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -2193,6 +2228,7 @@ describe('Different live-quiz workflows', function () {
         cy.get('[data-cy="username-field"]').click().type(username)
         cy.get('[data-cy="password-field"]').click().type(password)
         cy.get('[data-cy="submit-login"]').click()
+        cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         cy.get(
           `[data-cy="live-quiz-${data.liveQuiz.duplicateDisplayName}"]`
         ).click()
@@ -3571,6 +3607,8 @@ describe('Different live-quiz workflows', function () {
         ({ username, password, messages, data }) => {
           cy.get('[data-cy="participate-anonymously"]').click()
           cy.get('[data-cy="participate-anonymously"]').should('not.exist') // wait for temporary account creation to finish
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3593,8 +3631,13 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="username-field"]').type(username)
           cy.get('[data-cy="password-field"]').type(password)
           cy.get('[data-cy="submit-login"]').click()
+          cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
           cy.get(`[data-cy="live-quiz-${data.modes.displayName}"]`).click()
-          cy.wait(1000)
+          cy.get('[data-cy="header-page-title"]').contains(
+            data.modes.displayName
+          )
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           cy.get('[data-cy="header-avatar"]').click()
           cy.get('[data-cy="header-logged-in-as"]')
@@ -3651,7 +3694,9 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="avatar-carousel-next"]').click().click()
           cy.get('[data-cy="avatar-carousel-prev"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
-          cy.wait(2000) // wait for toast to disappear
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3680,7 +3725,9 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym2)
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
-          cy.wait(2000) // wait for toast to disappear
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').should('not.exist')
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3724,10 +3771,12 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="username-field"]').type(username)
           cy.get('[data-cy="password-field"]').type(password)
           cy.get('[data-cy="submit-login"]').click()
-          cy.wait(1000) // wait for the live quiz to load
+          cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
 
           // verify that the participant has been automatically redirected to the live quiz
           cy.get('[data-cy="header-page-title"]').contains(quizName)
+          cy.get('body').should('not.have.attr', 'data-scroll-locked')
+          cy.get('body').should('not.have.css', 'pointer-events', 'none')
 
           // verify that the correct account actions are available
           cy.get('[data-cy="header-avatar"]').click()
@@ -3810,7 +3859,7 @@ describe('Different live-quiz workflows', function () {
         },
       ],
     })
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.details.name}"]`).should(
       'exist'
     )
@@ -3999,7 +4048,7 @@ describe('Different live-quiz workflows', function () {
         },
       ],
     })
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.details.nameNonGamified}"]`
     ).should('exist')
@@ -4130,7 +4179,7 @@ describe('Different live-quiz workflows', function () {
         },
       ],
     })
-    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="open-activity-overview"]').should('exist').click()
     cy.get('[data-cy="activities-search-input"]').type(
       `${this.data.details.nameNoCourse}{enter}`
     )
@@ -4311,8 +4360,13 @@ describe('Different live-quiz workflows', function () {
     loggedIn: boolean,
     gamified: boolean
   ) {
-    // open the live quiz link and participate in the live quiz anonymously
-    cy.visit(Cypress.env('URL_STUDENT'))
+    if (!loggedIn) {
+      cy.logoutUser()
+    }
+
+    cy.visit(
+      loggedIn ? Cypress.env('URL_STUDENT_LOGIN') : Cypress.env('URL_STUDENT')
+    )
     cy.origin(
       Cypress.env('URL_STUDENT'),
       {
@@ -4326,7 +4380,7 @@ describe('Different live-quiz workflows', function () {
           gamified,
         },
       },
-      async ({
+      ({
         username,
         password,
         scQuestion,
@@ -4340,6 +4394,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="username-field"]').click().type(username)
           cy.get('[data-cy="password-field"]').click().type(password)
           cy.get('[data-cy="submit-login"]').click()
+          cy.location('pathname', { timeout: 10000 }).should('not.eq', '/login')
         }
 
         // visit the live quiz directly through the link and verify that the PIN is already filled in
@@ -4670,6 +4725,7 @@ describe('Different live-quiz workflows', function () {
       studentAccountLinkAccess(String(link), this.data, false, true)
     })
 
+    cy.visit(Cypress.env('URL_MANAGE'))
     cy.get('@protectedQuizLink2').then(function (link) {
       studentAccountLinkAccess(String(link), this.data, false, false)
     })

@@ -1,8 +1,8 @@
 import { faCheckDouble, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ReviewStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ReviewStatus } from '../../../lib/constants/activityEnums'
 
 function ActivityReviewStatus({
   reviewStatus,

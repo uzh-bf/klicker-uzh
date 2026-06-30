@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
@@ -8,18 +7,13 @@ import {
   faPencil,
   faShare,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  Course,
-  GetSingleCourseDocument,
-  ObjectType,
-  UpdateCourseSettingsDocument,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
@@ -29,11 +23,11 @@ import CourseManipulationModal, {
 import PointCorrectionsModal from './PointCorrectionsModal'
 import QRCodePopover from './QRCodePopover'
 
+type CourseDetail = NonNullable<RouterOutputs['course']['detail']['course']>
+type UserCourse = RouterOutputs['course']['userCourses']['userCourses'][number]
+
 interface CourseOverviewHeaderProps {
-  course: Omit<
-    Course,
-    'leaderboard' | 'liveQuizzes' | 'practiceQuizzes' | 'microLearnings'
-  >
+  course: CourseDetail
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
@@ -57,11 +51,9 @@ function CourseOverviewHeader({
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
-  const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const utils = trpc.useUtils()
+  const updateCourseSettings = trpc.course.updateSettings.useMutation()
+  const { data: user } = trpc.user.profile.useQuery()
 
   const ltiDropdownItems = [
     getLTIAccessLink({
@@ -219,6 +211,7 @@ function CourseOverviewHeader({
           containsActivities={containsActivities}
           containsGroups={containsGroups}
           onModalClose={() => setCourseSettingsModal(false)}
+          submitting={updateCourseSettings.isLoading}
           onSubmit={async (
             values: CourseManipulationFormData,
             setSubmitting,
@@ -226,57 +219,63 @@ function CourseOverviewHeader({
           ) => {
             try {
               // convert dates to UTC
-              const startDateUTC = dayjs(values.startDate).utc().toISOString()
-              const endDateUTC = dayjs(values.endDate).utc().toISOString()
+              const startDateUTC = dayjs(values.startDate).utc().toDate()
+              const endDateUTC = dayjs(values.endDate).utc().toDate()
               const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
                 .utc()
-                .toISOString()
+                .toDate()
 
-              const result = await updateCourseSettings({
-                variables: {
-                  id: course.id,
-                  name: values.name,
-                  displayName: values.displayName,
-                  description:
-                    !values.description?.match(/^(<br>(\n)*)$/g) &&
-                    values.description !== ''
-                      ? values.description
-                      : null,
-                  language: values.language,
-                  color: values.color,
-                  startDate: startDateUTC,
-                  endDate: endDateUTC,
-                  notificationEmail: values.notificationEmail,
-                  isGamificationEnabled: values.isGamificationEnabled,
-                  isGroupCreationEnabled: values.isGroupCreationEnabled,
-                  groupDeadlineDate: groupDeadlineDateUTC,
-                },
-                update: (cache, { data }) => {
-                  // check if the update was successful
-                  if (!data?.updateCourseSettings) return
-
-                  // update the cached list of catalog collections
-                  cache.updateQuery(
-                    {
-                      query: GetSingleCourseDocument,
-                      variables: { courseId: course.id },
-                    },
-                    (qData) => {
-                      if (!qData?.course) return qData
-
-                      return {
-                        course: {
-                          ...qData.course,
-                          ...data.updateCourseSettings!,
-                        },
-                      }
-                    }
-                  )
-                },
+              const result = await updateCourseSettings.mutateAsync({
+                id: course.id,
+                name: values.name,
+                displayName: values.displayName,
+                description:
+                  !values.description?.match(/^(<br>(\n)*)$/g) &&
+                  values.description !== ''
+                    ? values.description
+                    : null,
+                language: values.language,
+                color: values.color,
+                startDate: startDateUTC,
+                endDate: endDateUTC,
+                notificationEmail: values.notificationEmail,
+                isGamificationEnabled: values.isGamificationEnabled,
+                isGroupCreationEnabled: values.isGroupCreationEnabled,
+                groupDeadlineDate: groupDeadlineDateUTC,
               })
 
-              if (result.data?.updateCourseSettings) {
+              const updatedCourseResult = result.course
+
+              if (updatedCourseResult) {
+                utils.course.detail.setData({ courseId: course.id }, (data) =>
+                  data?.course
+                    ? {
+                        course: {
+                          ...data.course,
+                          ...updatedCourseResult,
+                        },
+                      }
+                    : data
+                )
+                utils.course.userCourses.setData(undefined, (data) =>
+                  data?.userCourses
+                    ? {
+                        userCourses: data.userCourses.map((cachedCourse) =>
+                          cachedCourse.id === updatedCourseResult.id
+                            ? ({
+                                ...cachedCourse,
+                                ...updatedCourseResult,
+                              } satisfies UserCourse)
+                            : cachedCourse
+                        ),
+                      }
+                    : data
+                )
                 setCourseSettingsModal(false)
+                void Promise.all([
+                  utils.course.detail.invalidate({ courseId: course.id }),
+                  utils.course.userCourses.invalidate(),
+                ]).catch(console.error)
               } else {
                 onError()
                 setSubmitting(false)
@@ -284,7 +283,7 @@ function CourseOverviewHeader({
             } catch (error) {
               onError()
               setSubmitting(false)
-              console.log(error)
+              console.error(error)
             }
           }}
         />

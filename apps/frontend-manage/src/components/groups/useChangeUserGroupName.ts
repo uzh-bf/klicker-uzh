@@ -1,14 +1,19 @@
-import { useMutation } from '@apollo/client'
-import {
-  ChangeUserGroupNameDocument,
-  GetUserGroupsUserDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction } from 'react'
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { Dispatch, SetStateAction, useState } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function useChangeUserGroupName() {
-  const [changeUserGroupName, { loading }] = useMutation(
-    ChangeUserGroupNameDocument
-  )
+  const t = useTranslations()
+  const utils = trpc.useUtils()
+  const changeUserGroupName = trpc.sharing.changeUserGroupName.useMutation()
+  const [nameChangePending, setNameChangePending] = useState(false)
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   const onNameChange = async ({
     groupId,
@@ -19,33 +24,33 @@ function useChangeUserGroupName() {
     newName: string
     setTitleEditMode: Dispatch<SetStateAction<boolean>>
   }) => {
+    if (nameChangePending) return
+
+    setNameChangePending(true)
+
     try {
-      await changeUserGroupName({
-        variables: { id: groupId, name: newName },
-        optimisticResponse: { changeUserGroupName: true },
-        update: (cache, { data }) => {
-          // check if request was successful
-          if (!data?.changeUserGroupName) return
-
-          // update members and admins of user group
-          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
-            if (!qData?.getUserGroupsUser) return qData
-
-            return {
-              getUserGroupsUser: qData.getUserGroupsUser.map((group) =>
-                group.id === groupId ? { ...group, name: newName } : group
-              ),
-            }
-          })
-        },
+      const result = await changeUserGroupName.mutateAsync({
+        id: groupId,
+        name: newName,
       })
-      setTitleEditMode(false)
+      if (result.changed) {
+        await utils.sharing.userGroups.invalidate()
+        setTitleEditMode(false)
+      } else {
+        onErrorToast()
+      }
     } catch (error) {
       console.error(error)
+      onErrorToast()
+    } finally {
+      setNameChangePending(false)
     }
   }
 
-  return { onNameChange, nameChanging: loading }
+  return {
+    onNameChange,
+    nameChanging: changeUserGroupName.isLoading || nameChangePending,
+  }
 }
 
 export default useChangeUserGroupName

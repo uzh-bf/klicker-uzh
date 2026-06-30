@@ -6,14 +6,11 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  CatalogObject,
-  ObjectAccess,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import type { CatalogBrowserObject } from '../../components/catalog/catalogBrowserTypes'
 
 function useCatalogObjectActionsDropdown({
   object,
@@ -26,7 +23,7 @@ function useCatalogObjectActionsDropdown({
   setSharingModal,
   setRemovalModal,
 }: {
-  object: CatalogObject
+  object: CatalogBrowserObject
   actionsDisabled: boolean
   managedAccess: boolean
   setCopyModal: Dispatch<SetStateAction<boolean>>

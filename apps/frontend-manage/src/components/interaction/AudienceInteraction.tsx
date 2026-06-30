@@ -1,40 +1,27 @@
-import { SubscribeToMoreOptions, useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ChangeLiveQuizSettingsDocument,
-  ConfusionSummary,
-  DeleteFeedbackDocument,
-  DeleteFeedbackResponseDocument,
-  Feedback,
-  FeedbackCreatedDocument,
-  GetCockpitQuizDocument,
-  LiveQuiz,
-  PinFeedbackDocument,
-  PublishFeedbackDocument,
-  ResolveFeedbackDocument,
-  RespondToFeedbackDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
-import { H2, Switch } from '@uzh-bf/design-system'
+import { H2, Switch, toast } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useTranslations } from 'next-intl'
+import { api } from '../../lib/trpc'
 import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import ModerationChangeModal from './feedbacks/ModerationChangeModal'
+import type { AudienceFeedback, ConfusionSummary } from './types'
 
 interface Props {
   quizId: string
   liveQuizName: string
   confusionValues?: ConfusionSummary
-  feedbacks?: Feedback[]
+  feedbacks?: AudienceFeedback[]
   isLiveQAEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isModerationEnabled: boolean
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onFeedbackCreated: () => unknown | Promise<unknown>
 }
 
 function AudienceInteraction({
@@ -45,233 +32,85 @@ function AudienceInteraction({
   isLiveQAEnabled,
   isConfusionFeedbackEnabled,
   isModerationEnabled,
-  subscribeToMore,
+  onFeedbackCreated,
 }: Props) {
   const t = useTranslations()
   const [showModerationModal, setShowModerationModal] = useState(false)
   const [moderationChangeLoading, setModerationChangeLoading] = useState(false)
+  const [settingsActionPending, setSettingsActionPending] = useState(false)
+  const onFeedbackCreatedRef = useRef(onFeedbackCreated)
+  const utils = api.useUtils()
 
   useEffect(() => {
-    if (!quizId) return
+    onFeedbackCreatedRef.current = onFeedbackCreated
+  }, [onFeedbackCreated])
 
-    const feedbackAdded = subscribeToMore({
-      document: FeedbackCreatedDocument,
-      variables: { quizId },
-      updateQuery: (
-        prev: { cockpitQuiz: LiveQuiz },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackCreated: Feedback } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const newItem = subscriptionData.data.feedbackCreated
-        const updatedQuiz = {
-          ...prev.cockpitQuiz,
-          feedbacks: [newItem, ...(prev.cockpitQuiz.feedbacks ?? [])],
-        }
-
-        return {
-          cockpitQuiz: updatedQuiz,
-        }
+  api.realtime.feedbackCreated.useSubscription(
+    { quizId },
+    {
+      enabled: Boolean(quizId),
+      onData() {
+        void Promise.resolve(onFeedbackCreatedRef.current()).catch(
+          console.error
+        )
       },
-    })
-
-    return () => {
-      feedbackAdded && feedbackAdded()
     }
-  }, [subscribeToMore, quizId])
+  )
 
-  const [changeQuizSettings] = useMutation(ChangeLiveQuizSettingsDocument, {
-    update: (cache, { data }) => {
-      // verify that the mutation was successful
-      if (!data?.changeLiveQuizSettings) return
+  const changeQuizSettings = api.liveQuiz.changeSettings.useMutation()
+  const publishFeedback = api.liveQuiz.publishFeedback.useMutation()
+  const pinFeedback = api.liveQuiz.pinFeedback.useMutation()
+  const resolveFeedback = api.liveQuiz.resolveFeedback.useMutation()
+  const deleteFeedback = api.liveQuiz.deleteFeedback.useMutation()
+  const deleteFeedbackResponse =
+    api.liveQuiz.deleteFeedbackResponse.useMutation()
+  const respondToFeedback = api.liveQuiz.respondToFeedback.useMutation()
 
-      cache.updateQuery(
-        { query: GetCockpitQuizDocument, variables: { id: quizId } },
-        (qData) => {
-          if (!qData?.cockpitQuiz) return qData
-          return {
-            cockpitQuiz: {
-              ...qData.cockpitQuiz,
-              isLiveQAEnabled: data.changeLiveQuizSettings!.isLiveQAEnabled,
-              isConfusionFeedbackEnabled:
-                data.changeLiveQuizSettings!.isConfusionFeedbackEnabled,
-              isModerationEnabled:
-                data.changeLiveQuizSettings!.isModerationEnabled,
-            },
-          }
-        }
-      )
-    },
-  })
+  async function refetchAudienceInteraction() {
+    await Promise.all([
+      onFeedbackCreatedRef.current(),
+      utils.liveQuiz.cockpit.invalidate({ id: quizId }),
+      utils.liveQuiz.lecturerView.invalidate({ id: quizId }),
+    ])
+  }
 
-  const [publishFeedback] = useMutation(PublishFeedbackDocument, {
-    update: (cache, { data }) => {
-      // verify that the mutation was successful
-      if (!data?.publishFeedback) return
+  function showAudienceInteractionError() {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
 
-      // update the cached feedback with the correct flag
-      cache.updateQuery(
-        { query: GetCockpitQuizDocument, variables: { id: quizId } },
-        (qData) => {
-          if (!qData?.cockpitQuiz) return qData
-          return {
-            cockpitQuiz: {
-              ...qData.cockpitQuiz,
-              feedbacks: qData.cockpitQuiz.feedbacks?.map((feedback) =>
-                feedback.id === data.publishFeedback!.id
-                  ? {
-                      ...feedback,
-                      isPublished: data.publishFeedback!.isPublished,
-                    }
-                  : feedback
-              ),
-            },
-          }
-        }
-      )
-    },
-  })
+  async function runAudienceInteractionMutation(
+    action: () => Promise<unknown>
+  ) {
+    try {
+      await action()
+      await refetchAudienceInteraction()
+      return true
+    } catch (error) {
+      console.error(error)
+      showAudienceInteractionError()
+      return false
+    }
+  }
 
-  const [pinFeedback] = useMutation(PinFeedbackDocument, {
-    update: (cache, { data }) => {
-      // verify that the mutation was successful
-      if (!data?.pinFeedback) return
+  async function runAudienceSettingsMutation(action: () => Promise<unknown>) {
+    if (settingsActionPending) return false
 
-      // update the cached feedback with the correct flag
-      cache.updateQuery(
-        { query: GetCockpitQuizDocument, variables: { id: quizId } },
-        (qData) => {
-          if (!qData?.cockpitQuiz) return qData
-          return {
-            cockpitQuiz: {
-              ...qData.cockpitQuiz,
-              feedbacks: qData.cockpitQuiz.feedbacks?.map((feedback) =>
-                feedback.id === data.pinFeedback!.id
-                  ? {
-                      ...feedback,
-                      isPinned: data.pinFeedback!.isPinned,
-                    }
-                  : feedback
-              ),
-            },
-          }
-        }
-      )
-    },
-  })
+    setSettingsActionPending(true)
+    try {
+      return await runAudienceInteractionMutation(action)
+    } finally {
+      setSettingsActionPending(false)
+    }
+  }
 
-  const [resolveFeedback] = useMutation(ResolveFeedbackDocument, {
-    update: (cache, { data }) => {
-      // verify that the mutation was successful
-      if (!data?.resolveFeedback) return
-
-      // update the cached feedback with the correct flag
-      cache.updateQuery(
-        { query: GetCockpitQuizDocument, variables: { id: quizId } },
-        (qData) => {
-          if (!qData?.cockpitQuiz) return qData
-          return {
-            cockpitQuiz: {
-              ...qData.cockpitQuiz,
-              feedbacks: qData.cockpitQuiz.feedbacks?.map((feedback) =>
-                feedback.id === data.resolveFeedback!.id
-                  ? {
-                      ...feedback,
-                      isResolved: data.resolveFeedback!.isResolved,
-                    }
-                  : feedback
-              ),
-            },
-          }
-        }
-      )
-    },
-  })
-
-  const [deleteFeedback] = useMutation(DeleteFeedbackDocument, {
-    update(cache, { data }) {
-      // verify that the deletion of the feedback was successful
-      if (!data?.deleteFeedback) return
-
-      // update the cache to remove the deleted feedback
-      cache.updateQuery(
-        {
-          query: GetCockpitQuizDocument,
-          variables: { id: quizId },
-        },
-        (qData) => {
-          if (!qData?.cockpitQuiz) return qData
-          return {
-            cockpitQuiz: {
-              ...qData.cockpitQuiz,
-              feedbacks: qData.cockpitQuiz.feedbacks?.filter(
-                (feedback) => feedback.id !== data.deleteFeedback!.id
-              ),
-            },
-          }
-        }
-      )
-    },
-  })
-
-  const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument, {
-    update(cache, { data }) {
-      // verify that the response deletion was successful
-      if (!data?.deleteFeedbackResponse) return
-
-      // update the cache with the updated feedback (returned by mutation)
-      cache.updateQuery(
-        { query: GetCockpitQuizDocument, variables: { id: quizId } },
-        (qData) => {
-          if (!qData?.cockpitQuiz) return qData
-
-          return {
-            cockpitQuiz: {
-              ...qData.cockpitQuiz,
-              feedbacks: qData.cockpitQuiz.feedbacks?.map((feedback) =>
-                feedback.id === data.deleteFeedbackResponse!.id
-                  ? {
-                      ...feedback,
-                      responses: data.deleteFeedbackResponse!.responses,
-                    }
-                  : feedback
-              ),
-            },
-          }
-        }
-      )
-    },
-  })
-
-  const [respondToFeedback] = useMutation(RespondToFeedbackDocument, {
-    update(cache, { data }) {
-      // verify that the response addition was successful
-      if (!data?.respondToFeedback) return
-
-      // update the cache with the updated feedback (returned by mutation)
-      cache.updateQuery(
-        { query: GetCockpitQuizDocument, variables: { id: quizId } },
-        (qData) => {
-          if (!qData?.cockpitQuiz) return qData
-
-          return {
-            cockpitQuiz: {
-              ...qData.cockpitQuiz,
-              feedbacks: qData.cockpitQuiz.feedbacks?.map((feedback) =>
-                feedback.id === data.respondToFeedback!.id
-                  ? {
-                      ...feedback,
-                      responses: data.respondToFeedback!.responses,
-                    }
-                  : feedback
-              ),
-            },
-          }
-        }
-      )
-    },
-  })
+  const settingsLoading =
+    changeQuizSettings.isLoading ||
+    settingsActionPending ||
+    moderationChangeLoading
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
@@ -299,23 +138,29 @@ function AudienceInteraction({
               data={{ cy: 'toggle-qa' }}
               checked={isLiveQAEnabled}
               onCheckedChange={async () => {
-                await changeQuizSettings({
-                  variables: { id: quizId, isLiveQAEnabled: !isLiveQAEnabled },
-                })
-                push([
-                  'trackEvent',
-                  'Running Live Quiz',
-                  !isLiveQAEnabled
-                    ? 'Feedback Channel Activated'
-                    : 'Feedback Channel Deactivated',
-                ])
+                const success = await runAudienceSettingsMutation(() =>
+                  changeQuizSettings.mutateAsync({
+                    id: quizId,
+                    isLiveQAEnabled: !isLiveQAEnabled,
+                  })
+                )
+                if (success) {
+                  push([
+                    'trackEvent',
+                    'Running Live Quiz',
+                    !isLiveQAEnabled
+                      ? 'Feedback Channel Activated'
+                      : 'Feedback Channel Deactivated',
+                  ])
+                }
               }}
               label={t('manage.cockpit.activateQA')}
+              disabled={settingsLoading}
             />
             <Switch
               data={{ cy: 'toggle-moderation' }}
               checked={isModerationEnabled}
-              disabled={!isLiveQAEnabled}
+              disabled={!isLiveQAEnabled || settingsLoading}
               onCheckedChange={async () => {
                 if (isModerationEnabled === true) {
                   // count unpublished feedbacks when disabling moderation and show confirmation modal if necessary
@@ -328,19 +173,21 @@ function AudienceInteraction({
                 }
 
                 // if no unpublished feedbacks, directly toggle moderation
-                await changeQuizSettings({
-                  variables: {
+                const success = await runAudienceSettingsMutation(() =>
+                  changeQuizSettings.mutateAsync({
                     id: quizId,
                     isModerationEnabled: !isModerationEnabled,
-                  },
-                })
+                  })
+                )
 
-                push([
-                  'trackEvent',
-                  'Running Live Quiz',
-                  'Feedback Moderation Toggled',
-                  String(!isModerationEnabled),
-                ])
+                if (success) {
+                  push([
+                    'trackEvent',
+                    'Running Live Quiz',
+                    'Feedback Moderation Toggled',
+                    String(!isModerationEnabled),
+                  ])
+                }
               }}
               label={t('manage.cockpit.activateModeration')}
               className={{
@@ -363,120 +210,117 @@ function AudienceInteraction({
               liveQuizName={liveQuizName}
               feedbacks={feedbacks}
               handleDeleteFeedback={async (feedbackId: number) => {
-                await deleteFeedback({
-                  variables: { id: feedbackId, liveQuizId: quizId },
-                  optimisticResponse: {
-                    deleteFeedback: {
-                      __typename: 'Feedback',
-                      id: feedbackId,
-                    },
-                  },
-                })
-                push(['trackEvent', 'Running Live Quiz', 'Feedback Deleted'])
+                const success = await runAudienceInteractionMutation(() =>
+                  deleteFeedback.mutateAsync({
+                    id: feedbackId,
+                    liveQuizId: quizId,
+                  })
+                )
+                if (success) {
+                  push(['trackEvent', 'Running Live Quiz', 'Feedback Deleted'])
+                }
+                return success
               }}
               handleDeleteFeedbackResponse={async (responseId: number) => {
-                await deleteFeedbackResponse({
-                  variables: { id: responseId, liveQuizId: quizId },
-                })
+                const success = await runAudienceInteractionMutation(() =>
+                  deleteFeedbackResponse.mutateAsync({
+                    id: responseId,
+                    liveQuizId: quizId,
+                  })
+                )
 
-                push([
-                  'trackEvent',
-                  'Running Live Quiz',
-                  'Feedback Response Deleted',
-                ])
+                if (success) {
+                  push([
+                    'trackEvent',
+                    'Running Live Quiz',
+                    'Feedback Response Deleted',
+                  ])
+                }
+                return success
               }}
               handlePinFeedback={async (
                 feedbackId: number,
                 isPinned: boolean
               ) => {
-                await pinFeedback({
-                  variables: {
+                const success = await runAudienceInteractionMutation(() =>
+                  pinFeedback.mutateAsync({
                     id: feedbackId,
                     isPinned,
                     liveQuizId: quizId,
-                  },
-                  optimisticResponse: {
-                    pinFeedback: {
-                      __typename: 'Feedback',
-                      id: feedbackId,
-                      isPinned,
-                    },
-                  },
-                })
-                push([
-                  'trackEvent',
-                  'Running Live Quiz',
-                  'Feedback Pinned',
-                  String(isPinned),
-                ])
+                  })
+                )
+                if (success) {
+                  push([
+                    'trackEvent',
+                    'Running Live Quiz',
+                    'Feedback Pinned',
+                    String(isPinned),
+                  ])
+                }
+                return success
               }}
               handlePublishFeedback={async (
                 feedbackId: number,
                 isPublished: boolean
               ) => {
-                await publishFeedback({
-                  variables: {
+                const success = await runAudienceInteractionMutation(() =>
+                  publishFeedback.mutateAsync({
                     id: feedbackId,
                     isPublished,
                     liveQuizId: quizId,
-                  },
-                  optimisticResponse: {
-                    publishFeedback: {
-                      __typename: 'Feedback',
-                      id: feedbackId,
-                      isPublished,
-                    },
-                  },
-                })
-                push([
-                  'trackEvent',
-                  'Running Live Quiz',
-                  'Feedback Published',
-                  String(isPublished),
-                ])
+                  })
+                )
+                if (success) {
+                  push([
+                    'trackEvent',
+                    'Running Live Quiz',
+                    'Feedback Published',
+                    String(isPublished),
+                  ])
+                }
+                return success
               }}
               handleResolveFeedback={async (
                 feedbackId: number,
                 isResolved: boolean
               ) => {
-                await resolveFeedback({
-                  variables: {
+                const success = await runAudienceInteractionMutation(() =>
+                  resolveFeedback.mutateAsync({
                     id: feedbackId,
                     isResolved,
                     liveQuizId: quizId,
-                  },
-                  optimisticResponse: {
-                    resolveFeedback: {
-                      __typename: 'Feedback',
-                      id: feedbackId,
-                      isResolved,
-                    },
-                  },
-                })
-                push([
-                  'trackEvent',
-                  'Running Live Quiz',
-                  'Feedback Resolved',
-                  String(isResolved),
-                ])
+                  })
+                )
+                if (success) {
+                  push([
+                    'trackEvent',
+                    'Running Live Quiz',
+                    'Feedback Resolved',
+                    String(isResolved),
+                  ])
+                }
+                return success
               }}
               handleRespondToFeedback={async (
                 feedbackId: number,
                 response: string
               ) => {
-                await respondToFeedback({
-                  variables: {
+                const success = await runAudienceInteractionMutation(() =>
+                  respondToFeedback.mutateAsync({
                     id: feedbackId,
                     responseContent: response,
                     liveQuizId: quizId,
-                  },
-                })
-                push([
-                  'trackEvent',
-                  'Running Live Quiz',
-                  'Feedback Response Added',
-                  response.length,
-                ])
+                  })
+                )
+                if (success) {
+                  push([
+                    'trackEvent',
+                    'Running Live Quiz',
+                    'Feedback Response Added',
+                    response.length,
+                  ])
+                }
+                return success
               }}
               isActive={isLiveQAEnabled}
               isPublic={!isModerationEnabled}
@@ -492,20 +336,23 @@ function AudienceInteraction({
             data={{ cy: 'toggle-gamification' }}
             checked={isConfusionFeedbackEnabled}
             onCheckedChange={async () => {
-              await changeQuizSettings({
-                variables: {
+              const success = await runAudienceSettingsMutation(() =>
+                changeQuizSettings.mutateAsync({
                   id: quizId,
                   isConfusionFeedbackEnabled: !isConfusionFeedbackEnabled,
-                },
-              })
-              push([
-                'trackEvent',
-                'Running Live Quiz',
-                'Confusion Feedback Toggled',
-                String(!isConfusionFeedbackEnabled),
-              ])
+                })
+              )
+              if (success) {
+                push([
+                  'trackEvent',
+                  'Running Live Quiz',
+                  'Confusion Feedback Toggled',
+                  String(!isConfusionFeedbackEnabled),
+                ])
+              }
             }}
             label={t('manage.cockpit.activateFeedback')}
+            disabled={settingsLoading}
           />
         </div>
         <div className="h-max rounded border p-4">
@@ -526,18 +373,20 @@ function AudienceInteraction({
           onConfirm={async () => {
             setModerationChangeLoading(true)
             try {
-              await changeQuizSettings({
-                variables: {
+              const success = await runAudienceSettingsMutation(() =>
+                changeQuizSettings.mutateAsync({
                   id: quizId,
                   isModerationEnabled: false,
-                },
-              })
-              push([
-                'trackEvent',
-                'Running Live Quiz',
-                'Feedback Moderation Disabled With Auto-Publish',
-              ])
-              setShowModerationModal(false)
+                })
+              )
+              if (success) {
+                push([
+                  'trackEvent',
+                  'Running Live Quiz',
+                  'Feedback Moderation Disabled With Auto-Publish',
+                ])
+              }
+              return success
             } finally {
               setModerationChangeLoading(false)
             }
@@ -545,7 +394,7 @@ function AudienceInteraction({
           unpublishedCount={
             feedbacks?.filter((f) => !f.isPublished).length || 0
           }
-          loading={moderationChangeLoading}
+          loading={settingsLoading}
         />
       )}
     </div>

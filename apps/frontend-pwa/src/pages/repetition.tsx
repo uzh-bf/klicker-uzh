@@ -1,17 +1,18 @@
-import { useQuery } from '@apollo/client'
-import { GetPracticeQuizListDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import CourseCollapsible from '../components/practiceQuiz/CourseCollapsible'
+import { trpc } from '../lib/trpc'
 
 function Repetition() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetPracticeQuizListDocument)
+  const { data, error, isLoading } =
+    trpc.participant.practiceQuizList.useQuery()
+  const practiceQuizList = data?.practiceQuizList
 
-  if (loading) {
+  if (isLoading && !practiceQuizList) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -22,13 +23,41 @@ function Repetition() {
     )
   }
 
+  if (error && !practiceQuizList) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.practiceQuiz.repetitionTitle')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!practiceQuizList) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.practiceQuiz.repetitionTitle')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
   // reduce the data to a map of course names to a list of elements together with their corresponding type
-  const courses = data?.getPracticeQuizList?.map((course) => {
+  const courses = practiceQuizList.map((course) => {
     return {
       id: course.id,
       displayName: course.displayName,
       elements:
-        course.practiceQuizzes?.map((element) => {
+        course.practiceQuizzes.map((element) => {
           return {
             id: element.id,
             displayName: element.displayName,
@@ -44,6 +73,12 @@ function Repetition() {
     >
       <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H2>{t('shared.generic.practiceQuizzes')}</H2>
+        {error && practiceQuizList ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         {courses?.length
           ? courses.map((course) => (
               <CourseCollapsible

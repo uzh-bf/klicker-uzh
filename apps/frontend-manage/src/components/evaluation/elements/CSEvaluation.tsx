@@ -1,8 +1,8 @@
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import {
   CaseStudyActivityEvaluationData,
   CaseStudyElementResults,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+} from '@lib/evaluationTypes'
 import { TabContent, Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'

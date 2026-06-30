@@ -1,5 +1,5 @@
-import { ActivityTemplate } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import type { ActivityTemplate } from '../../../lib/constants/elementTypes'
 
 function MicroLearningTemplate({ template }: { template: ActivityTemplate }) {
   const t = useTranslations()

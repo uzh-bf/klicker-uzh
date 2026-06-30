@@ -1,9 +1,8 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetAnswerCollectionCatalogInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { trpc } from '../../../../lib/trpc'
 
 function CatalogInfoAnswerCollection({
   id,
@@ -14,14 +13,12 @@ function CatalogInfoAnswerCollection({
 }) {
   const t = useTranslations()
   const [showEntries, setShowEntries] = useState(false)
-  const { data } = useSuspenseQuery(GetAnswerCollectionCatalogInfoDocument, {
-    variables: {
-      collectionId: id,
-      catalogCollectionId,
-    },
+  const [data] = trpc.sharing.answerCollectionCatalogInfo.useSuspenseQuery({
+    collectionId: id,
+    catalogCollectionId,
   })
 
-  const collection = data?.getAnswerCollectionCatalogInfo
+  const collection = data?.answerCollectionCatalogInfo
   if (!collection) return null
 
   return (

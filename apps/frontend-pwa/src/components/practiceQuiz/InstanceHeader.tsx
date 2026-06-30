@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faThumbsDown, faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartBar,
@@ -9,17 +8,22 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementFeedback,
-  GetStackElementFeedbacksDocument,
-  RateElementDocument,
-  ResponseCorrectnessType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../lib/trpc'
 import FlagElementModal from '../flags/FlagElementModal'
+import type { StackElementFeedback } from '../hooks/useStackElementFeedbacks'
+
+const RESPONSE_CORRECTNESS_TYPE = {
+  Correct: 'CORRECT',
+  Incorrect: 'INCORRECT',
+  Partial: 'PARTIAL',
+} as const
+
+type ResponseCorrectnessType =
+  (typeof RESPONSE_CORRECTNESS_TYPE)[keyof typeof RESPONSE_CORRECTNESS_TYPE]
 
 interface InstanceHeaderProps {
   index: number
@@ -28,7 +32,7 @@ interface InstanceHeaderProps {
   name: string
   withParticipant: boolean
   correctness?: ResponseCorrectnessType
-  previousElementFeedback?: ElementFeedback
+  previousElementFeedback?: StackElementFeedback
   stackInstanceIds: number[]
   showSeparator?: boolean
   className?: string
@@ -51,8 +55,12 @@ function InstanceHeader({
   onToggleEvaluation,
 }: InstanceHeaderProps) {
   const t = useTranslations()
-  const [rateElement, { loading: ratingLoading }] =
-    useMutation(RateElementDocument)
+  const utils = trpc.useUtils()
+  const stackFeedbacksInput = useMemo(
+    () => ({ instanceIds: stackInstanceIds }),
+    [stackInstanceIds]
+  )
+  const rateElement = trpc.participant.rateElement.useMutation()
 
   const [vote, setVote] = useState(
     previousElementFeedback?.upvote
@@ -76,57 +84,93 @@ function InstanceHeader({
     setFeedbackValue(previousElementFeedback?.feedback ?? undefined)
   }, [previousElementFeedback])
 
+  const showRefreshFailure = useCallback(
+    (error: unknown) => {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    },
+    [t]
+  )
+
+  const reconcileStackFeedbacks = useCallback(() => {
+    void utils.participant.stackElementFeedbacks
+      .invalidate(stackFeedbacksInput)
+      .catch(showRefreshFailure)
+  }, [showRefreshFailure, stackFeedbacksInput, utils])
+
+  const handleFeedbackChanged = useCallback(
+    (feedback: StackElementFeedback) => {
+      const nextFeedback = {
+        ...feedback,
+        feedback: feedback.feedback ?? null,
+      }
+
+      utils.participant.stackElementFeedbacks.setData(
+        stackFeedbacksInput,
+        (previous) => {
+          if (!previous) return [nextFeedback]
+
+          if (
+            !previous.some(
+              (entry) =>
+                entry.elementInstanceId === nextFeedback.elementInstanceId
+            )
+          ) {
+            return [...previous, nextFeedback]
+          }
+
+          return previous.map((entry) =>
+            entry.elementInstanceId === nextFeedback.elementInstanceId
+              ? nextFeedback
+              : entry
+          )
+        }
+      )
+      reconcileStackFeedbacks()
+    },
+    [reconcileStackFeedbacks, stackFeedbacksInput, utils]
+  )
+
   const handleVote = async (upvote: boolean) => {
-    const res = await rateElement({
-      variables: {
+    const res = await rateElement
+      .mutateAsync({
         elementInstanceId: instanceId,
         elementId,
         rating: upvote ? 1 : -1,
-      },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        rateElement: {
-          __typename: 'ElementFeedback',
-          id: 0,
-          elementInstanceId: instanceId,
-          upvote,
-          downvote: !upvote,
-          feedback: feedbackValue ?? null,
-        },
-      },
-      update(cache, { data }) {
-        // verify that the rating operation was successful
-        if (!data?.rateElement) return
+      })
+      .catch((error) => {
+        console.error(error)
+        toast({
+          type: 'error',
+          message: t('pwa.practiceQuiz.errorRatingElement'),
+          options: { duration: 5000 },
+        })
+        return undefined
+      })
 
-        // add or replace the element feedback in the corresponding list
-        cache.updateQuery(
-          {
-            query: GetStackElementFeedbacksDocument,
-            variables: { instanceIds: stackInstanceIds },
-          },
-          (qData) => {
-            if (!qData?.getStackElementFeedbacks) {
-              return { getStackElementFeedbacks: [data.rateElement!] }
-            }
+    if (typeof res === 'undefined') {
+      return
+    }
 
-            return {
-              getStackElementFeedbacks: [
-                ...qData.getStackElementFeedbacks.filter(
-                  (feedback) =>
-                    feedback.elementInstanceId !==
-                    data.rateElement!.elementInstanceId
-                ),
-                data.rateElement!,
-              ],
-            }
-          }
-        )
-      },
-    })
+    if (!res) {
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.errorRatingElement'),
+        options: { duration: 5000 },
+      })
+      setVote(0)
+      return
+    }
 
-    if (res.data?.rateElement?.upvote) {
+    handleFeedbackChanged(res)
+
+    if (res.upvote) {
       setVote(1)
-    } else if (res.data?.rateElement?.downvote) {
+    } else if (res.downvote) {
       setVote(-1)
     } else {
       toast({
@@ -143,16 +187,16 @@ function InstanceHeader({
       <div className="flex flex-row justify-between">
         {typeof correctness !== 'undefined' ? (
           <div className="flex flex-row items-center gap-2">
-            {correctness === ResponseCorrectnessType.Correct && (
+            {correctness === RESPONSE_CORRECTNESS_TYPE.Correct && (
               <FontAwesomeIcon
                 icon={faCheckDouble}
                 className="text-green-700"
               />
             )}
-            {correctness === ResponseCorrectnessType.Partial && (
+            {correctness === RESPONSE_CORRECTNESS_TYPE.Partial && (
               <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />
             )}
-            {correctness === ResponseCorrectnessType.Incorrect && (
+            {correctness === RESPONSE_CORRECTNESS_TYPE.Incorrect && (
               <FontAwesomeIcon icon={faXmark} className="text-red-600" />
             )}
             <div
@@ -184,7 +228,7 @@ function InstanceHeader({
             )}
             <Button
               basic
-              disabled={ratingLoading}
+              disabled={rateElement.isLoading}
               onClick={() => handleVote(true)}
               className={{
                 root: twMerge(
@@ -201,7 +245,7 @@ function InstanceHeader({
             </Button>
             <Button
               basic
-              disabled={ratingLoading}
+              disabled={rateElement.isLoading}
               onClick={() => handleVote(false)}
               className={{
                 root: twMerge(
@@ -222,7 +266,7 @@ function InstanceHeader({
               elementId={elementId}
               feedbackValue={feedbackValue}
               setFeedbackValue={setFeedbackValue}
-              stackInstanceIds={stackInstanceIds}
+              onFeedbackChanged={handleFeedbackChanged}
             />
           </div>
         )}

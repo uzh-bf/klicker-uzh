@@ -1,10 +1,4 @@
-import { useQuery } from '@apollo/client'
-import {
-  Course,
-  SelfDocument,
-  StudentCourse,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import Head from 'next/head'
 import React, { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -14,13 +8,18 @@ import MobileMenuBar from './common/MobileMenuBar'
 
 export const LAYOUT_SCROLL_CONTAINER_ID = 'layout-scroll-container'
 
+type LayoutCourse = {
+  color?: string | null
+  displayName?: string | null
+  id?: string | null
+  name?: string | null
+}
+
 interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
   embedded?: boolean
-  course?:
-    | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
-    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
+  course?: LayoutCourse
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -46,11 +45,11 @@ function Layout({
   liveQuizId,
   className,
 }: LayoutProps) {
-  const { data: dataParticipant } = useQuery(SelfDocument, {
-    variables: { liveQuizId },
-    fetchPolicy: 'cache-and-network',
-    skip: embedded,
-  })
+  const participantSelfInput = liveQuizId ? { liveQuizId } : undefined
+  const { data: dataParticipant } = trpc.participant.self.useQuery(
+    participantSelfInput,
+    { enabled: !embedded }
+  )
 
   const pageInFrame =
     global?.window &&
@@ -80,7 +79,7 @@ function Layout({
           <Header
             participant={
               dataParticipant?.self &&
-              (dataParticipant.self.role === UserRole.Participant || liveQuizId)
+              (dataParticipant.self.role === 'PARTICIPANT' || liveQuizId)
                 ? dataParticipant.self
                 : undefined
             }
@@ -110,7 +109,7 @@ function Layout({
             onClick={(value) => setActiveMobilePage?.(value as any)}
             participantMissing={
               !dataParticipant?.self ||
-              dataParticipant.self.role === UserRole.TemporaryParticipant
+              dataParticipant.self.role === 'TEMPORARY_PARTICIPANT'
             }
           />
         </div>

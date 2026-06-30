@@ -1,8 +1,8 @@
+import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
-} from '@klicker-uzh/graphql/dist/ops'
-import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
+} from '@lib/evaluationTypes'
 import { useState } from 'react'
 import {
   CartesianGrid,

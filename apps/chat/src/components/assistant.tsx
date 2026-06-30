@@ -13,7 +13,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
+import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { authedFetch } from '../lib/client/authedFetch'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
@@ -44,6 +46,9 @@ export const Assistant = ({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) => {
+  // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
+  // sessionStorage and strip it from the URL on first render.
+  useChatGuestTokenBootstrap()
   const embedded = useEmbedded()
   const { participationRequired, participationMessage } = useChatStore()
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
@@ -56,7 +61,9 @@ export const Assistant = ({
   useEffect(() => {
     const fetchDisclaimerInfo = async () => {
       try {
-        const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`)
+        const response = await authedFetch(
+          `/api/chatbots/${chatbot.id}/disclaimer`
+        )
         if (response.ok) {
           const data = await response.json()
           setDisclaimer(data.disclaimer)
@@ -96,16 +103,19 @@ export const Assistant = ({
     if (!disclaimer) return
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'accept',
-          disclaimerId: disclaimer.id,
-        }),
-      })
+      const response = await authedFetch(
+        `/api/chatbots/${chatbot.id}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'accept',
+            disclaimerId: disclaimer.id,
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
@@ -127,15 +137,18 @@ export const Assistant = ({
 
   const handleDeclineDisclaimer = async () => {
     try {
-      const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'decline',
-        }),
-      })
+      const response = await authedFetch(
+        `/api/chatbots/${chatbot.id}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'decline',
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({

@@ -1,17 +1,16 @@
-import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  AnswerCollection,
-  GetSingleAnswerCollectionDocument,
-  ModifyAnswerCollectionDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikTextField } from '@uzh-bf/design-system'
+import { Button, FormikTextField, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import * as Yup from 'yup'
+import { trpc, type RouterOutputs } from '../../../lib/trpc'
 import EditorField from '../../activities/creation/EditorField'
 import TouchMonitor from './TouchMonitor'
+
+type AnswerCollection = NonNullable<
+  RouterOutputs['resources']['singleAnswerCollection']['answerCollection']
+>
 
 function AnswerCollectionMetaForm({
   collection,
@@ -29,32 +28,26 @@ function AnswerCollectionMetaForm({
   refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
-  const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument, {
-    update: (cache, { data }) => {
-      if (data?.modifyAnswerCollection) {
-        const updatedCollection = data.modifyAnswerCollection
-        cache.updateQuery(
-          {
-            query: GetSingleAnswerCollectionDocument,
-            variables: { id: updatedCollection.id },
-          },
-          (existingData) => {
-            if (!existingData) return null
-
-            return {
-              ...existingData,
-              getSingleAnswerCollection: {
-                ...existingData.getSingleAnswerCollection,
-                id: collection.id,
-                name: updatedCollection.name,
-                description: updatedCollection.description,
-              },
-            }
-          }
-        )
-      }
-    },
-  })
+  const utils = trpc.useUtils()
+  const modifyAnswerCollection =
+    trpc.resources.modifyAnswerCollection.useMutation()
+  const refreshInlineAnswerCollections = async () => {
+    if (inlineEditing && refetchAnswerCollections) {
+      await refetchAnswerCollections()
+    }
+  }
+  const invalidateAnswerCollection = async () => {
+    await Promise.all([
+      utils.resources.answerCollectionsInfo.invalidate(),
+      utils.resources.singleAnswerCollection.invalidate({ id: collection.id }),
+    ])
+  }
+  const showErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   return (
     <Formik
@@ -64,25 +57,30 @@ function AnswerCollectionMetaForm({
         description: collection.description,
       }}
       onSubmit={async (values, { resetForm }) => {
-        const { data } = await modifyAnswerCollection({
-          variables: {
+        try {
+          const res = await modifyAnswerCollection.mutateAsync({
             id: collection.id,
             name: values.name !== collection.name ? values.name : undefined,
             description:
               values.description !== collection.description
                 ? values.description
                 : undefined,
-          },
-        })
+          })
 
-        if (data?.modifyAnswerCollection?.id) {
-          // if the answer collection is edited inline (in a question context), refetch the selection
-          if (inlineEditing) {
-            await refetchAnswerCollections?.()
+          if (!res.answerCollection?.id) {
+            showErrorToast()
+            return
           }
 
+          await Promise.all([
+            refreshInlineAnswerCollections(),
+            invalidateAnswerCollection(),
+          ])
           onSuccess()
           resetForm()
+        } catch (error) {
+          console.error('Error updating answer collection metadata:', error)
+          showErrorToast()
         }
       }}
       validationSchema={Yup.object({
@@ -120,7 +118,7 @@ function AnswerCollectionMetaForm({
           <Button
             primary
             type="submit"
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             loading={isSubmitting}
             className={{
               root: 'self-end',

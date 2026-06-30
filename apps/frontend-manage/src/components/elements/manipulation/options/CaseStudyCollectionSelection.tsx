@@ -1,5 +1,4 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormLabel,
@@ -12,6 +11,7 @@ import Link from 'next/link'
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
+import type { AnswerCollection } from '../../../../lib/constants/elementTypes'
 import { ElementFormTypesCaseStudy } from '../types'
 import AnswerCollectionInlineEditButton from './AnswerCollectionInlineEditButton'
 import CaseStudyCollectionChangeModal from './CaseStudyCollectionChangeModal'
@@ -189,7 +189,9 @@ function CaseStudyCollectionSelection({
         />
         <Button
           disabled={disabled || loading}
-          onClick={async () => await refetchCollections()}
+          onClick={() => {
+            void refetchCollections().catch(console.error)
+          }}
           className={{ root: 'h-9 w-9' }}
           data={{ cy: 'refresh-answer-collections' }}
         >

@@ -8,6 +8,7 @@ docs/
 legacy/
 newsletter/
 **/.next/
+**/dist/
 **/node_modules/
 **/.turbo/
 util/

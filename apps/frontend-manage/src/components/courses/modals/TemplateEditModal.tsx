@@ -1,14 +1,11 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  ActivityType,
-  EditActivityTemplateDocument,
-  GetTemplateInformationDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as Yup from 'yup'
+import { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateEditModalProps {
@@ -29,28 +26,44 @@ function TemplateEditModal({
   refetchActivities,
 }: TemplateEditModalProps) {
   const t = useTranslations()
-  const [editActivityTemplate] = useMutation(EditActivityTemplateDocument)
-  const { data, loading } = useQuery(GetTemplateInformationDocument, {
-    variables: {
+  const editActivityTemplate = trpc.activity.editTemplate.useMutation()
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const editing = editActivityTemplate.isLoading || editSubmitting
+  const handleClose = () => {
+    if (!editing) {
+      onClose()
+    }
+  }
+  const { data, error, isLoading } = trpc.activity.templateInformation.useQuery(
+    {
       activityId,
-      activityType,
+      activityType:
+        activityType as RouterInputs['activity']['templateInformation']['activityType'],
     },
-    skip: !open,
-    fetchPolicy: 'cache-and-network',
-  })
-  const info = data?.getTemplateInformation
+    { enabled: Boolean(activityId) }
+  )
+  const info = data?.templateInformation
+  const initialLoading = isLoading && !info
+  const infoUnavailable = Boolean((error || !isLoading) && !info)
 
   return (
     <Modal
       open
-      loading={loading || !info}
+      loading={initialLoading}
       title={t('manage.template.editTemplate')}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'gap-2 pb-2' }}
       data={{ cy: 'edit-template-modal' }}
       dataCloseButton={{ cy: 'close-edit-template-modal' }}
     >
-      {info && (
+      {infoUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {info ? (
         <Formik
           validateOnMount
           initialValues={{
@@ -76,19 +89,19 @@ function TemplateEditModal({
               }),
           })}
           onSubmit={async (values) => {
+            setEditSubmitting(true)
             try {
-              const result = await editActivityTemplate({
-                variables: {
-                  activityId,
-                  activityType,
-                  templateId: info.templateId,
-                  name: values.name,
-                  description: values.description,
-                  instructions: values.instructions,
-                },
+              const result = await editActivityTemplate.mutateAsync({
+                activityId,
+                activityType:
+                  activityType as RouterInputs['activity']['editTemplate']['activityType'],
+                templateId: info.templateId,
+                name: values.name,
+                description: values.description,
+                instructions: values.instructions,
               })
 
-              if (result.data?.editActivityTemplate) {
+              if (result.editActivityTemplate) {
                 await refetchActivities?.()
                 onSuccess()
                 onClose()
@@ -98,6 +111,8 @@ function TemplateEditModal({
             } catch (error) {
               console.error(error)
               onError()
+            } finally {
+              setEditSubmitting(false)
             }
           }}
         >
@@ -112,11 +127,14 @@ function TemplateEditModal({
                   <Button
                     primary
                     type="submit"
-                    disabled={!isValid}
-                    loading={isSubmitting}
+                    disabled={!isValid || isSubmitting || editing}
+                    loading={isSubmitting || editing}
                     data={{ cy: 'submit-template-edit' }}
                   >
-                    <Button.Icon icon={faSave} loading={isSubmitting} />
+                    <Button.Icon
+                      icon={faSave}
+                      loading={isSubmitting || editing}
+                    />
                     <Button.Label>
                       {t('manage.template.saveChanges')}
                     </Button.Label>
@@ -126,7 +144,7 @@ function TemplateEditModal({
             </Form>
           )}
         </Formik>
-      )}
+      ) : null}
     </Modal>
   )
 }

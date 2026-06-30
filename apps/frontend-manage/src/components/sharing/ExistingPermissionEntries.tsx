@@ -1,14 +1,12 @@
-import {
-  ObjectType,
-  PermissionInfo,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
 import PermissionListEntry from './PermissionListEntry'
 import PermissionRevocationModal from './PermissionRevocationModal'
+import type { PermissionInfo } from './useObjectPermissions'
 
 function ExistingPermissionEntries({
   type,
@@ -32,8 +30,11 @@ function ExistingPermissionEntries({
     permissionId: number
     newPermissionLevel: PermissionLevel
     newPropagation: boolean
-  }) => Promise<void>
-  onPermissionRemoval: (permissionId: number, isOwn: boolean) => Promise<void>
+  }) => Promise<boolean>
+  onPermissionRemoval: (
+    permissionId: number,
+    isOwn: boolean
+  ) => Promise<boolean>
 }) {
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
   const t = useTranslations()
@@ -110,21 +111,48 @@ function ExistingPermissionEntries({
   // confirm modifying own permissions
   const confirmModifyOwnPermissions = async () => {
     if (modifyOwnPermissionsModal.action === 'change') {
-      await onPermissionLevelChange({
+      return onPermissionLevelChange({
         permissionId: modifyOwnPermissionsModal.permissionId!,
         newPermissionLevel: modifyOwnPermissionsModal.newPermissionLevel!,
         newPropagation: modifyOwnPermissionsModal.newPropagation!,
       })
     } else {
-      await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!, true)
+      return onPermissionRemoval(modifyOwnPermissionsModal.permissionId!, true)
     }
-    setModifyOwnPermissionsModal({ ...modifyOwnPermissionsModal, open: false })
   }
 
   // confirm permission revocation
   const confirmRevocation = async () => {
-    await onPermissionRemoval(revocationModal.permissionId!, false)
+    return onPermissionRemoval(revocationModal.permissionId!, false)
   }
+
+  const modals = (
+    <>
+      {modifyOwnPermissionsModal.open && (
+        <ModifyOwnPermissionsModal
+          onClose={() =>
+            setModifyOwnPermissionsModal({
+              ...modifyOwnPermissionsModal,
+              open: false,
+            })
+          }
+          onConfirm={confirmModifyOwnPermissions}
+          action={modifyOwnPermissionsModal.action}
+          newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
+        />
+      )}
+      {revocationModal.open && (
+        <PermissionRevocationModal
+          onClose={() =>
+            setRevocationModal({ ...revocationModal, open: false })
+          }
+          onRevocation={confirmRevocation}
+          username={revocationModal.username}
+          userGroup={revocationModal.userGroup}
+        />
+      )}
+    </>
+  )
 
   return (
     <>
@@ -159,29 +187,9 @@ function ExistingPermissionEntries({
           />
         ))}
 
-      {modifyOwnPermissionsModal.open && (
-        <ModifyOwnPermissionsModal
-          onClose={() =>
-            setModifyOwnPermissionsModal({
-              ...modifyOwnPermissionsModal,
-              open: false,
-            })
-          }
-          onConfirm={confirmModifyOwnPermissions}
-          action={modifyOwnPermissionsModal.action}
-          newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
-        />
-      )}
-      {revocationModal.open && (
-        <PermissionRevocationModal
-          onClose={() =>
-            setRevocationModal({ ...revocationModal, open: false })
-          }
-          onRevocation={confirmRevocation}
-          username={revocationModal.username}
-          userGroup={revocationModal.userGroup}
-        />
-      )}
+      {typeof document !== 'undefined'
+        ? createPortal(modals, document.body)
+        : null}
     </>
   )
 }

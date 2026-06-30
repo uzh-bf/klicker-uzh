@@ -1,4 +1,5 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { ElementType } from '@klicker-uzh/prisma/client'
+import { analyticsElementTypes } from '@lib/analyticsTypes'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -17,7 +18,7 @@ function ElementTypeFilter({
       label={t('manage.analytics.elementType')}
       items={[
         { value: 'all', label: t('manage.analytics.allElementTypes') },
-        ...Object.values(ElementType).map((value) => ({
+        ...analyticsElementTypes.map((value) => ({
           value,
           label: t(`shared.${value}.typeLabel`),
         })),

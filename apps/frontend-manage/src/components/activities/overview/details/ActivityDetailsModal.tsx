@@ -1,24 +1,27 @@
-import { useQuery } from '@apollo/client'
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivityType,
-  ElementInstance,
-  GetActivityDetailsDocument,
-  GetOutdatedElementInstancesDocument,
-  ObjectType,
-  PublicationStatus,
-  ReviewStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import {
+  ActivityType,
+  PublicationStatus,
+  ReviewStatus,
+} from '../../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../../lib/trpc'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
 import ActivityDetailsActions from './ActivityDetailsActions'
 import ActivityInformation from './ActivityInformation'
 import ActivityOverviewTable from './ActivityOverviewTable'
+
+const OUTDATED_INSTANCE_STATUSES: PublicationStatus[] = [
+  PublicationStatus.Draft,
+  PublicationStatus.Scheduled,
+  PublicationStatus.Template,
+]
 
 function ActivityDetailsModal({
   activityId,
@@ -32,40 +35,52 @@ function ActivityDetailsModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const detailsInput: RouterInputs['activity']['details'] = {
+    activityId,
+    activityType:
+      activityType as RouterInputs['activity']['details']['activityType'],
+  }
 
   // fetch activity details
-  const { data: detailsData, loading } = useQuery(GetActivityDetailsDocument, {
-    variables: { activityId, activityType },
-    fetchPolicy: 'cache-and-network',
+  const {
+    data: detailsData,
+    error: detailsError,
+    isLoading: loading,
+  } = trpc.activity.details.useQuery(detailsInput, {
+    refetchOnMount: 'always',
   })
 
   const details = detailsData?.activityDetails
-  const stacks = detailsData?.activityDetails?.stacks ?? []
-  const isReviewed = details?.reviewStatus === ReviewStatus.Reviewed
-
-  // check which instances are outdated
-  const { data } = useQuery(GetOutdatedElementInstancesDocument, {
-    variables: {
-      instanceIds: stacks.flatMap((stack) =>
+  const initialLoading = loading && !details
+  const detailsUnavailable = Boolean((detailsError || !loading) && !details)
+  const stacks = details?.stacks ?? []
+  const detailsStatus = details?.status
+  const detailsReviewStatus = details?.reviewStatus ?? ReviewStatus.Incomplete
+  const isReviewed = detailsReviewStatus === ReviewStatus.Reviewed
+  const instanceIds = useMemo(
+    () =>
+      stacks.flatMap((stack) =>
         stack.elements.map((element) => element.instance.id)
       ),
-    },
-    skip: !details,
-    fetchPolicy: 'cache-and-network',
-  })
+    [stacks]
+  )
+
+  // check which instances are outdated
+  const { data } = trpc.activity.outdatedElementInstances.useQuery(
+    { instanceIds },
+    {
+      enabled: !!details && instanceIds.length > 0,
+      refetchOnMount: 'always',
+    }
+  )
 
   const outdatedInstances = useMemo(() => {
-    if (!details?.status) return []
+    if (!detailsStatus) return []
 
-    return [
-      PublicationStatus.Draft,
-      PublicationStatus.Scheduled,
-      PublicationStatus.Template,
-    ].includes(details.status)
-      ? (data?.getOutdatedElementInstances?.map((instance) => instance.id) ??
-          [])
+    return OUTDATED_INSTANCE_STATUSES.includes(detailsStatus)
+      ? (data?.outdatedElementInstances.map((instance) => instance.id) ?? [])
       : []
-  }, [data?.getOutdatedElementInstances, details?.status])
+  }, [data?.outdatedElementInstances, detailsStatus])
 
   // selected instance id
   const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(
@@ -76,9 +91,8 @@ function ActivityDetailsModal({
       selectedInstanceId !== null
         ? (stacks
             .flatMap((stack) => stack.elements)
-            .find((element) => element.instance.id === selectedInstanceId) ?? {
-            instance: { id: '', elementData: { name: '' } },
-          })
+            .find((element) => element.instance.id === selectedInstanceId) ??
+          null)
         : null,
     [stacks, selectedInstanceId]
   )
@@ -87,10 +101,10 @@ function ActivityDetailsModal({
     <Modal
       open
       fullScreen
-      loading={loading}
+      loading={initialLoading}
       title={t('manage.activities.activityDetails')}
       onClose={() => {
-        refetchActivities?.()
+        void refetchActivities?.().catch(console.error)
         onClose()
       }}
       className={{
@@ -99,7 +113,7 @@ function ActivityDetailsModal({
       data={{ cy: 'activity-details-modal' }}
       dataCloseButton={{ cy: 'close-activity-details-modal' }}
     >
-      {!!details ? (
+      {details ? (
         <div className="flex h-auto min-h-0 flex-col gap-2 lg:flex-row xl:h-full xl:max-h-full xl:flex-row">
           <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-2 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
             <ActivityDetailsActions
@@ -111,7 +125,7 @@ function ActivityDetailsModal({
             <ActivityInformation
               details={details}
               activityType={activityType}
-              activityReviewStatus={details?.reviewStatus}
+              activityReviewStatus={detailsReviewStatus}
             />
 
             <ActivityOverviewTable
@@ -130,7 +144,7 @@ function ActivityDetailsModal({
                     {t('manage.general.elementPreviewDescription')}:
                   </h4>
                   <StudentElementPreviewActivityDetails
-                    instance={selected.instance as ElementInstance}
+                    instance={selected.instance}
                   />
                 </div>
                 <div className="flex flex-row items-center justify-center gap-5">
@@ -171,9 +185,16 @@ function ActivityDetailsModal({
             )}
           </div>
         </div>
-      ) : (
-        <UserNotification type="error" message={t('shared.generic.error')} />
-      )}
+      ) : detailsUnavailable ? (
+        <UserNotification
+          type="error"
+          message={
+            detailsError
+              ? t('shared.generic.systemError')
+              : t('shared.generic.error')
+          }
+        />
+      ) : null}
     </Modal>
   )
 }

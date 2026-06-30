@@ -1,15 +1,9 @@
-import { useMutation } from '@apollo/client'
-import {
-  ActivityInfo,
-  ActivityType,
-  ChangeActivityNameDocument,
-  GetSingleCourseDocument,
-  ReviewStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import type { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 interface ActivityNameChangeModalProps {
   id: string
@@ -31,8 +25,21 @@ function ActivityNameChangeModal({
   refetchActivities,
 }: ActivityNameChangeModalProps) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
-  const [changeActivityName] = useMutation(ChangeActivityNameDocument)
+  const changeActivityName = trpc.activity.changeName.useMutation()
+  const changingName = changeActivityName.isLoading
+  const handleClose = () => {
+    if (!changingName) {
+      onClose()
+    }
+  }
+  const refreshActivityData = () => {
+    return Promise.all([
+      courseId ? utils.course.detail.invalidate({ courseId }) : undefined,
+      refetchActivities?.(),
+    ])
+  }
   const schema = Yup.object().shape({
     name: Yup.string().required(t('manage.activityWizard.activityName')),
     displayName: Yup.string().required(
@@ -45,7 +52,7 @@ function ActivityNameChangeModal({
       open
       hideCloseButton
       escapeDisabled
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.activities.changeActivityName')}
       className={{
         content: 'max-w-lg pb-1',
@@ -59,104 +66,49 @@ function ActivityNameChangeModal({
         }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          const result = await changeActivityName({
-            variables: {
-              id,
-              type,
+          try {
+            const result = await changeActivityName.mutateAsync({
+              activityId: id,
+              activityType:
+                type as RouterInputs['activity']['changeName']['activityType'],
               name: values.name,
               displayName: values.displayName,
-            },
-            update: (cache, { data }) => {
-              // if modification was not toggled from course view or failed, return early
-              if (!courseId || !data?.changeActivityName) return
-
-              // update the corresponding activity list in the course overview
-              cache.updateQuery(
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId },
-                },
-                (data) => {
-                  if (!data?.course) return data
-
-                  let updatedActivities: ActivityInfo[] = []
-                  let updatedActivitiesKey:
-                    | 'liveQuizzesInfo'
-                    | 'practiceQuizzesInfo'
-                    | 'microLearningsInfo'
-                    | 'groupActivitiesInfo' = 'liveQuizzesInfo'
-
-                  switch (type) {
-                    case ActivityType.LiveQuiz:
-                      updatedActivities = [
-                        ...(data.course.liveQuizzesInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'liveQuizzesInfo'
-                      break
-                    case ActivityType.PracticeQuiz:
-                      updatedActivities = [
-                        ...(data.course.practiceQuizzesInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'practiceQuizzesInfo'
-                      break
-                    case ActivityType.MicroLearning:
-                      updatedActivities = [
-                        ...(data.course.microLearningsInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'microLearningsInfo'
-                      break
-                    case ActivityType.GroupActivity:
-                      updatedActivities = [
-                        ...(data.course.groupActivitiesInfo ?? []),
-                      ]
-                      updatedActivitiesKey = 'groupActivitiesInfo'
-                      break
-                    default:
-                      break
-                  }
-
-                  // update the activity name in the list
-                  updatedActivities = updatedActivities.map((activity) => {
-                    if (activity.id === id) {
-                      return {
-                        ...activity,
-                        name: values.name,
-                        displayName: values.displayName,
-                        reviewStatus:
-                          activity.reviewStatus === ReviewStatus.Reviewed
-                            ? ReviewStatus.ModifiedAfterReview
-                            : activity.reviewStatus,
-                      }
-                    }
-                    return activity
-                  })
-
-                  return {
-                    course: {
-                      ...data.course,
-                      [updatedActivitiesKey]: updatedActivities,
-                    },
-                  }
-                }
-              )
-            },
-          })
-
-          if (result.data?.changeActivityName) {
-            await refetchActivities?.()
-            toast({
-              type: 'success',
-              message: t('manage.activities.activityNameChangeSuccess'),
-              options: { duration: 4000 },
             })
-            setSubmitting(false)
-            onClose()
-          } else {
+
+            if (result.changeActivityName) {
+              try {
+                await refreshActivityData()
+              } catch (error) {
+                console.error('Error refreshing activity data', error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 4000 },
+                })
+                return
+              }
+
+              toast({
+                type: 'success',
+                message: t('manage.activities.activityNameChangeSuccess'),
+                options: { duration: 4000 },
+              })
+              onClose()
+            } else {
+              toast({
+                type: 'error',
+                message: t('manage.activities.activityNameChangeError'),
+                options: { duration: 4000 },
+              })
+            }
+          } catch (error) {
+            console.error(error)
             toast({
               type: 'error',
               message: t('manage.activities.activityNameChangeError'),
               options: { duration: 4000 },
             })
+          } finally {
             setSubmitting(false)
           }
         }}
@@ -195,7 +147,8 @@ function ActivityNameChangeModal({
             <div className="mt-3 flex flex-row justify-between">
               <Button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
+                disabled={isSubmitting || changingName}
                 data={{ cy: 'activity-name-change-cancel' }}
               >
                 <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -203,8 +156,8 @@ function ActivityNameChangeModal({
               <Button
                 primary
                 type="submit"
-                disabled={!isValid}
-                loading={isSubmitting}
+                disabled={!isValid || isSubmitting || changingName}
+                loading={isSubmitting || changingName}
                 onClick={submitForm}
                 data={{ cy: 'activity-name-change-confirm' }}
               >

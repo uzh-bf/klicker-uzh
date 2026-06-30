@@ -6,22 +6,37 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementBlockStatus,
-  ElementBlock as ElementBlockType,
-  ElementInstance,
-} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LiveQuizCountdown from './LiveQuizCountdown'
 
-type QuizTimelineInstance = Omit<ElementInstance, 'elementData'> & {
-  elementData: { elementId: number | null; name: string }
+export const ElementBlockStatus = {
+  Active: 'ACTIVE',
+  Executed: 'EXECUTED',
+  Scheduled: 'SCHEDULED',
+} as const
+
+type ElementBlockStatusType =
+  (typeof ElementBlockStatus)[keyof typeof ElementBlockStatus]
+
+type QuizTimelineInstance = {
+  id: number
+  type: string
+  elementType: string
+  elementData: { elementId: number | null; name: string | null }
 }
 
-export type QuizTimelineBlock = Omit<ElementBlockType, 'elements'> & {
+export type QuizTimelineBlock = {
+  id: number
+  numOfParticipants?: number | null
+  order?: number | null
+  status: ElementBlockStatusType
+  expiresAt?: Date | string | null
+  timeLimit?: number | null
+  randomSelection?: number | null
+  execution?: number | null
   elements?: QuizTimelineInstance[] | null
 }
 
@@ -101,7 +116,7 @@ function LiveQuizBlock({
               target="_blank"
               rel="noopener noreferrer"
             >
-              {instance.elementData!.name}{' '}
+              {instance.elementData.name}{' '}
               <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
             </a>
           </Link>

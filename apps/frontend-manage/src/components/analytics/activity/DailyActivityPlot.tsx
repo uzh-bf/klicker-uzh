@@ -1,4 +1,4 @@
-import { WeekdayActivityAnalytics } from '@klicker-uzh/graphql/dist/ops'
+import type { WeekdayActivityAnalytics } from '@lib/analyticsTypes'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import {

@@ -1,25 +1,24 @@
-import { useQuery } from '@apollo/client'
 import {
   faArchive,
   faEllipsis,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  type Element as ElementObject,
-  ElementStatus,
-  type ElementType,
-  ObjectType,
-  type Tag,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import {
+  type Element as ElementObject,
+  ElementStatus,
+  type ElementType,
+  type Tag,
+} from '../../lib/constants/elementTypes'
+import { trpc } from '../../lib/trpc'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
@@ -87,9 +86,7 @@ function Element({
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
   // TODO: once the sharing feature is available for all users, remove this feature flag check
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
+  const { data: user } = trpc.user.profile.useQuery()
 
   const [collectedProps, drag] = useDrag({
     item: {
@@ -124,7 +121,7 @@ function Element({
     actions,
     permissionActionMap: {
       isManager: [
-        ...(dataUser?.userProfile?.privatePreview ? ['shareElement'] : []),
+        ...(user?.privatePreview ? ['shareElement'] : []),
         'deleteElement',
       ],
       isEditor: ['editElement'],

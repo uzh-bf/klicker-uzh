@@ -1073,6 +1073,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} participants',
       groupActivityEnded:
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
+      refreshPage: 'Refresh page',
     },
     assessment: {
       homepageHint:
@@ -3825,6 +3826,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizStartFailed:
         'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
       pptEmbedding: 'PPT-Embedding Evaluation',
+      embeddingLinkCopied:
+        'The embedding link has been copied to the clipboard successfully.',
       startLiveQuiz: 'Start quiz',
       confirmStartLiveQuiz:
         'Are you sure you want to start the following live quiz?',

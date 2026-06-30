@@ -140,6 +140,7 @@ function LoginForm({
                         primary
                         type="submit"
                         loading={isSubmitting}
+                        disabled={isSubmitting}
                         data={{ cy: 'magic-link-login' }}
                       >
                         <Button.Icon icon={faEnvelope} loading={isSubmitting} />
@@ -151,6 +152,7 @@ function LoginForm({
                     <Button
                       fluid
                       type="button"
+                      disabled={isSubmitting}
                       onClick={() => setMagicLinkLogin(false)}
                       data={{ cy: 'password-login' }}
                     >
@@ -185,6 +187,7 @@ function LoginForm({
                     <div className="flex flex-row justify-between">
                       <Button
                         basic
+                        disabled={isSubmitting}
                         onClick={() => setMagicLinkLogin(true)}
                         className={{
                           root: 'text-primary-100 p-0! mt-1 text-sm hover:bg-transparent hover:underline',

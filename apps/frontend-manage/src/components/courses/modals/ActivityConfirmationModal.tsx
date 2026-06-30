@@ -1,6 +1,6 @@
-import { Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
+import React, { useState } from 'react'
 
 interface ActivityConfirmationModalProps {
   onClose: () => void
@@ -28,20 +28,27 @@ function ActivityConfirmationModal({
   children,
 }: ActivityConfirmationModalProps) {
   const t = useTranslations()
+  const [submitRefreshing, setSubmitRefreshing] = useState(false)
+  const submitPending = submitting || submitRefreshing
   const disabled =
     confirmationsInitializing ||
     Object.values(confirmations).some((confirmation) => !confirmation)
+  const handleClose = () => {
+    if (!submitPending) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       loading={loading}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'w-full! max-w-200' }}
       title={title}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={submitting}
-      primaryDisabled={disabled}
+      primaryLoading={submitPending}
+      primaryDisabled={disabled || submitPending}
       primaryButtonStyle={
         confirmationType === 'delete'
           ? 'destructive'
@@ -50,12 +57,24 @@ function ActivityConfirmationModal({
             : undefined
       }
       onPrimaryAction={async () => {
-        await onSubmit()
-        onClose()
+        setSubmitRefreshing(true)
+        try {
+          await onSubmit()
+          setSubmitRefreshing(false)
+          onClose()
+        } catch (error) {
+          setSubmitRefreshing(false)
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
       }}
       dataPrimaryAction={{ cy: 'confirmation-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'confirmation-modal-cancel' }}
       dataCloseButton={{ cy: 'confirmation-modal-close' }}
     >

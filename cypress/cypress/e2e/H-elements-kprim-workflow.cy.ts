@@ -36,8 +36,8 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
-      .realType(this.data.KP.content)
+      .click()
+      .type(this.data.KP.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .realType(this.data.KP.choices[0])
@@ -178,7 +178,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
       .should('exist')
       .contains(messages.shared.READY.statusLabel)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .contains(this.data.KP.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
@@ -203,9 +203,9 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
       .clear()
       .type(this.data.KP.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
-      .realType(this.data.KP.contentEdited)
+      .type(this.data.KP.contentEdited)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .clear()
@@ -253,7 +253,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
       this.data.KP.titleEdited
     )
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .contains(this.data.KP.contentEdited)
 
     cy.wrap(this.data.KP.choicesEdited).each((choice: string, ix) => {

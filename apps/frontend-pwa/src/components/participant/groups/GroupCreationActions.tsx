@@ -8,20 +8,38 @@ function GroupCreationActions({
   courseId,
   setSelectedTab,
   inRandomGroupPool,
+  onCourseOverviewChanged,
 }: {
   courseId: string
   setSelectedTab: (value: SetStateAction<string>) => void
   inRandomGroupPool: boolean
+  onCourseOverviewChanged?: () => void | Promise<void>
 }) {
   if (inRandomGroupPool) {
-    return <PoolNotification courseId={courseId} />
+    return (
+      <PoolNotification
+        courseId={courseId}
+        onCourseOverviewChanged={onCourseOverviewChanged}
+      />
+    )
   }
 
   return (
     <div className="grid h-max grid-cols-1 gap-4 md:grid-cols-3">
-      <GroupCreationBlock courseId={courseId} setSelectedTab={setSelectedTab} />
-      <GroupJoinBlock courseId={courseId} setSelectedTab={setSelectedTab} />
-      <RandomGroupBlock courseId={courseId} />
+      <GroupCreationBlock
+        courseId={courseId}
+        setSelectedTab={setSelectedTab}
+        onCourseOverviewChanged={onCourseOverviewChanged}
+      />
+      <GroupJoinBlock
+        courseId={courseId}
+        setSelectedTab={setSelectedTab}
+        onCourseOverviewChanged={onCourseOverviewChanged}
+      />
+      <RandomGroupBlock
+        courseId={courseId}
+        onCourseOverviewChanged={onCourseOverviewChanged}
+      />
     </div>
   )
 }

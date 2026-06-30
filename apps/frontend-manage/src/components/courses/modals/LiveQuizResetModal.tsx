@@ -1,11 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  GetLiveQuizSummaryDocument,
-  GetSingleCourseDocument,
-  ResetAssessmentLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -23,36 +19,13 @@ function LiveQuizResetModal({
   courseId?: string | null
 }) {
   const t = useTranslations()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetLiveQuizSummaryDocument,
-    { variables: { quizId }, fetchPolicy: 'network-only' }
-  )
-
-  const [resetLiveQuiz, { loading: resetting }] = useMutation(
-    ResetAssessmentLiveQuizDocument,
-    {
-      variables: { id: quizId },
-      update(cache, { data }) {
-        const updatedLiveQuiz = data?.resetAssessmentLiveQuiz
-        if (!updatedLiveQuiz || !courseId) return
-
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            if (!qData?.course?.liveQuizzesInfo) return qData
-            return {
-              course: {
-                ...qData.course,
-                liveQuizzesInfo: qData.course.liveQuizzesInfo.map((lq) =>
-                  lq.id === updatedLiveQuiz.id ? updatedLiveQuiz : lq
-                ),
-              },
-            }
-          }
-        )
-      },
-    }
-  )
+  const utils = trpc.useUtils()
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.liveQuizSummary.useQuery({ activityId: quizId })
+  const resetLiveQuiz = trpc.activity.resetAssessmentLiveQuiz.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -62,20 +35,41 @@ function LiveQuizResetModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getLiveQuizSummary) {
+    if (summaryData?.liveQuizSummary) {
       setConfirmations({
-        deleteResponses: summaryData.getLiveQuizSummary.numOfResponses === 0,
+        deleteResponses: summaryData.liveQuizSummary.numOfResponses === 0,
         deleteLeaderboardEntries:
-          summaryData.getLiveQuizSummary.numOfLeaderboardEntries === 0,
-        deleteFeedbacks: summaryData.getLiveQuizSummary.numOfFeedbacks === 0,
+          summaryData.liveQuizSummary.numOfLeaderboardEntries === 0,
+        deleteFeedbacks: summaryData.liveQuizSummary.numOfFeedbacks === 0,
         deleteConfusionFeedbacks:
-          summaryData.getLiveQuizSummary.numOfConfusionFeedbacks === 0,
+          summaryData.liveQuizSummary.numOfConfusionFeedbacks === 0,
       })
     }
-  }, [summaryData?.getLiveQuizSummary])
+  }, [summaryData?.liveQuizSummary])
 
-  if (!summaryData?.getLiveQuizSummary) return null
-  const summary = summaryData.getLiveQuizSummary
+  const summary = summaryData?.liveQuizSummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.liveQuizzes.resetLiveQuiz')}
+        message={t('manage.liveQuizzes.resetLiveQuizMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="delete"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
   return (
     <ActivityConfirmationModal
@@ -83,10 +77,19 @@ function LiveQuizResetModal({
       title={t('manage.liveQuizzes.resetLiveQuiz')}
       message={t('manage.liveQuizzes.resetLiveQuizMessage')}
       onSubmit={async () => {
-        await resetLiveQuiz()
-        await onSuccess?.()
+        const result = await resetLiveQuiz.mutateAsync({ activityId: quizId })
+        if (!result.resetAssessmentLiveQuiz?.id) {
+          throw new Error('Failed to reset live quiz')
+        }
+
+        await Promise.all([
+          courseId
+            ? utils.course.detail.invalidate({ courseId })
+            : Promise.resolve(),
+          onSuccess?.(),
+        ])
       }}
-      submitting={resetting}
+      submitting={resetLiveQuiz.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"

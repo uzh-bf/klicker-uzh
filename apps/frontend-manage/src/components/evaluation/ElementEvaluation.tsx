@@ -1,13 +1,13 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import {
   ElementBlockStatus,
   ElementInstanceEvaluation,
   ElementType,
   LocaleType,
   StackEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+} from '@lib/evaluationTypes'
 import { useSessionStorage } from '@uidotdev/usehooks'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -94,7 +94,8 @@ function ElementEvaluation({
               size="lg"
               block={{
                 id: currentStack.stackId,
-                status: currentStack.status ?? ElementBlockStatus.Scheduled,
+                status: (currentStack.status ??
+                  ElementBlockStatus.Scheduled) as never,
                 expiresAt: currentStack.expiresAt,
                 timeLimit: currentStack.timeLimit,
               }}

@@ -1,7 +1,3 @@
-import {
-  type ElementInstanceEvaluation,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import type { LayoutWord } from '@klicker-uzh/word-cloud'
 import { Select, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -13,6 +9,7 @@ import {
 } from 'stopword'
 import { twMerge } from 'tailwind-merge'
 import { CHART_COLORS } from '../constants'
+import { ElementType, type ElementInstanceEvaluation } from '../elementTypes'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import FontSizeButtons from '../FontSizeButtons'
 import NativeD3WordCloud from './NativeD3WordCloud'
@@ -174,7 +171,10 @@ function ElementWordCloud({
     }
   }, [maxTextSize, setMinTextSize])
 
-  const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
+  const supportedElementTypes: ElementType[] = [
+    ElementType.Numerical,
+    ElementType.FreeText,
+  ]
 
   // prepare data to process
   const data = useMemo(

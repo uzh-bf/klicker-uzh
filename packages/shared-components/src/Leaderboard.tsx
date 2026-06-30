@@ -1,4 +1,3 @@
-import type { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -23,10 +22,7 @@ interface LeaderboardProps {
   onJoin?: () => void
   onLeave?: () => void
   onParticipantClick?: (participantId: string, isSelf: boolean) => void
-  participant?: Omit<
-    Participant,
-    'isActive' | 'locale' | 'participantGroups'
-  > | null
+  participant?: { id: string } | null
   hidePodium?: boolean
   hideAvatars?: boolean
   className?: {

@@ -1,18 +1,18 @@
-import { useQuery } from '@apollo/client'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import CourseDashboardList from '../../components/analytics/overview/CourseDashboardList'
 import Layout from '../../components/Layout'
+import { trpc } from '../../lib/trpc'
 
 function Analytics() {
   const t = useTranslations()
-  const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetUserCoursesDocument
-  )
+  const { data, error, isLoading } = trpc.course.userCourses.useQuery()
+  const courseList = data?.userCourses
+  const hasCourseListData = typeof courseList !== 'undefined'
 
-  if (loadingCourses) {
+  if (isLoading && !hasCourseListData) {
     return (
       <Layout displayName={t('shared.generic.learningAnalytics')}>
         <Loader />
@@ -20,9 +20,27 @@ function Analytics() {
     )
   }
 
+  if (!hasCourseListData) {
+    return (
+      <Layout displayName={t('shared.generic.learningAnalytics')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
   return (
     <Layout displayName={t('shared.generic.learningAnalytics')}>
-      <CourseDashboardList courses={dataCourses?.userCourses} />
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('manage.analytics.analyticsLoadingFailed')}
+          className={{ root: 'mb-4 text-sm' }}
+        />
+      ) : null}
+      <CourseDashboardList courses={courseList} />
     </Layout>
   )
 }

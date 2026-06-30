@@ -1,13 +1,9 @@
-import { useMutation } from '@apollo/client'
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  GetActivityDetailsDocument,
-  GetSingleCourseDocument,
-  SetActivityReviewStatusDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { ActivityType } from '../../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../../lib/trpc'
 
 function ActivityReviewButton({
   activityId,
@@ -21,99 +17,76 @@ function ActivityReviewButton({
   isReviewed: boolean
 }) {
   const t = useTranslations()
-  const [setActivityReviewStatus, { loading: settingReviewedStatus }] =
-    useMutation(SetActivityReviewStatusDocument)
+  const utils = trpc.useUtils()
+  const detailsInput: RouterInputs['activity']['details'] = {
+    activityId,
+    activityType:
+      activityType as RouterInputs['activity']['details']['activityType'],
+  }
+  const [refreshingReviewStatus, setRefreshingReviewStatus] = useState(false)
+  const setActivityReviewStatus = trpc.activity.setReviewStatus.useMutation()
+  const updatingReviewStatus =
+    setActivityReviewStatus.isLoading || refreshingReviewStatus
 
   return (
     <Button
-      disabled={settingReviewedStatus}
+      disabled={updatingReviewStatus}
+      loading={updatingReviewStatus}
       className={{ root: 'h-7 text-sm' }}
       data={{ cy: 'activity-review-button' }}
       onClick={async () => {
-        const { data: res } = await setActivityReviewStatus({
-          variables: { activityId, activityType, isReviewed: !isReviewed },
-          update: (cache, { data: res }) => {
-            if (!res?.setActivityReviewStatus) return
+        if (updatingReviewStatus) return
+        setRefreshingReviewStatus(true)
 
-            // update activity details query
-            cache.updateQuery(
-              {
-                query: GetActivityDetailsDocument,
-                variables: { activityId, activityType },
-              },
-              (queryData) => {
-                // if query data does not exist, return null
-                if (!queryData?.activityDetails) return null
-
-                return {
-                  activityDetails: {
-                    ...queryData.activityDetails,
-                    reviewStatus: res.setActivityReviewStatus!,
-                  },
-                }
-              }
-            )
-
-            // if no course id is specified, only update activity details
-            if (!courseId) return
-
-            // update course overview query
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId },
-              },
-              (queryData) => {
-                if (!queryData?.course) return null
-
-                const activityKey:
-                  | 'liveQuizzesInfo'
-                  | 'practiceQuizzesInfo'
-                  | 'microLearningsInfo'
-                  | 'groupActivitiesInfo' =
-                  activityType === ActivityType.LiveQuiz
-                    ? 'liveQuizzesInfo'
-                    : activityType === ActivityType.PracticeQuiz
-                      ? 'practiceQuizzesInfo'
-                      : activityType === ActivityType.MicroLearning
-                        ? 'microLearningsInfo'
-                        : 'groupActivitiesInfo'
-
-                const updatedActivities =
-                  queryData.course?.[activityKey]?.map((act) =>
-                    act.id === activityId
-                      ? {
-                          ...act,
-                          reviewStatus: res.setActivityReviewStatus,
-                        }
-                      : act
-                  ) ?? []
-
-                return {
-                  course: {
-                    ...queryData.course,
-                    [activityKey]: updatedActivities,
-                  },
-                }
-              }
-            )
-          },
-        })
-
-        if (res?.setActivityReviewStatus) {
-          toast({
-            type: 'success',
-            message: t('manage.activities.reviewStatusUpdated'),
+        try {
+          const res = await setActivityReviewStatus.mutateAsync({
+            activityId,
+            activityType:
+              activityType as RouterInputs['activity']['setReviewStatus']['activityType'],
+            isReviewed: !isReviewed,
           })
-        } else {
+
+          if (res.reviewStatus) {
+            try {
+              await Promise.all([
+                courseId
+                  ? utils.course.detail.invalidate({ courseId })
+                  : undefined,
+                utils.activity.details.invalidate(detailsInput),
+              ])
+            } catch (error) {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+              return
+            }
+            toast({
+              type: 'success',
+              message: t('manage.activities.reviewStatusUpdated'),
+            })
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.activities.reviewStatusUpdateFailed'),
+            })
+          }
+        } catch (error) {
+          console.error(error)
           toast({
             type: 'error',
             message: t('manage.activities.reviewStatusUpdateFailed'),
           })
+        } finally {
+          setRefreshingReviewStatus(false)
         }
       }}
     >
-      <Button.Icon icon={isReviewed ? faX : faCheckDouble} />
+      <Button.Icon
+        icon={isReviewed ? faX : faCheckDouble}
+        loading={updatingReviewStatus}
+      />
       <Button.Label>
         {isReviewed
           ? t('manage.activities.resetReview')

@@ -1,21 +1,15 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreateMicroLearningMutation,
-  CreateMicroLearningMutationVariables,
-  EditMicroLearningMutation,
-  EditMicroLearningMutationVariables,
-  GetSingleCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import type { RouterInputs, RouterOutputs } from '../../../../lib/trpc'
 import {
   ElementStackFormValues,
   MicroLearningFormValues,
 } from '../WizardLayout'
+
+type CreateMicroLearningInput = RouterInputs['activity']['createMicroLearning']
+type CreateMicroLearningResult =
+  RouterOutputs['activity']['createMicroLearning']
+type EditMicroLearningInput = RouterInputs['activity']['editMicroLearning']
+type EditMicroLearningResult = RouterOutputs['activity']['editMicroLearning']
 
 interface MicroLearningFormSubmissionProps {
   id?: string
@@ -23,26 +17,14 @@ interface MicroLearningFormSubmissionProps {
   values: MicroLearningFormValues
   editMode: boolean
   createMicroLearning: (
-    options?:
-      | MutationFunctionOptions<
-          CreateMicroLearningMutation,
-          CreateMicroLearningMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<CreateMicroLearningMutation>>
+    input: CreateMicroLearningInput
+  ) => Promise<CreateMicroLearningResult>
   editMicroLearning: (
-    options?:
-      | MutationFunctionOptions<
-          EditMicroLearningMutation,
-          EditMicroLearningMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<EditMicroLearningMutation>>
+    input: EditMicroLearningInput
+  ) => Promise<EditMicroLearningResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
+  invalidateCourseDetail: (courseId: string) => Promise<void>
+  invalidateActivities: () => Promise<void>
   onError: () => void
 }
 
@@ -54,10 +36,13 @@ async function submitMicrolearningForm({
   createMicroLearning,
   editMicroLearning,
   setIsWizardCompleted,
+  invalidateCourseDetail,
+  invalidateActivities,
   onError,
 }: MicroLearningFormSubmissionProps) {
   try {
     let success = false
+    const courseIdsToInvalidate = new Set<string>()
 
     const createUpdateJSON = {
       name: values.name,
@@ -80,99 +65,38 @@ async function submitMicrolearningForm({
           duplicateInstance: element.duplicateInstance,
         })),
       })),
-      startDate: dayjs(values.startDate).utc().format(),
-      endDate: dayjs(values.endDate).utc().format(),
+      startDate: dayjs(values.startDate).utc().toDate(),
+      endDate: dayjs(values.endDate).utc().toDate(),
       multiplier: parseInt(values.multiplier),
       courseId: values.courseId!,
     }
 
     if (editMode && id) {
-      const { data: result } = await editMicroLearning({
-        variables: { id, ...createUpdateJSON },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.editMicroLearning?.courseId) return
+      const result = await editMicroLearning({ id, ...createUpdateJSON })
+      success = Boolean(result.editMicroLearning)
+      if (result.editMicroLearning?.courseId) {
+        const courseIds = [
+          previousCourseId,
+          result.editMicroLearning.courseId,
+        ].filter((courseId): courseId is string => Boolean(courseId))
 
-          // if the course assignment changed, remove the microlearning from the previous course
-          if (
-            previousCourseId &&
-            res.editMicroLearning.courseId !== previousCourseId
-          ) {
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: previousCourseId },
-              },
-              (data) => {
-                if (!data?.course) return data
-
-                const activities =
-                  data.course.microLearningsInfo?.filter(
-                    (ml) => ml.id !== res.editMicroLearning!.id
-                  ) ?? []
-                return {
-                  course: { ...data.course, microLearningsInfo: activities },
-                }
-              }
-            )
-          }
-
-          // updated / add the microlearning in the currently assigned course
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.editMicroLearning.courseId! },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              const activities = [
-                ...(data.course.microLearningsInfo?.filter(
-                  (ml) => ml.id !== res.editMicroLearning!.id
-                ) ?? []),
-                res.editMicroLearning!,
-              ]
-              return {
-                course: { ...data.course, microLearningsInfo: activities },
-              }
-            }
-          )
-        },
-      })
-      success = Boolean(result?.editMicroLearning)
+        courseIds.forEach((courseId) => courseIdsToInvalidate.add(courseId))
+      }
     } else {
-      const { data: result } = await createMicroLearning({
-        variables: createUpdateJSON,
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.createMicroLearning?.courseId) return
-
-          // change the status of the microlearning on the course overview back to draft
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.createMicroLearning.courseId! },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              return {
-                course: {
-                  ...data.course,
-                  microLearningsInfo: [
-                    ...(data.course.microLearningsInfo ?? []),
-                    res.createMicroLearning!,
-                  ],
-                },
-              }
-            }
-          )
-        },
-      })
-      success = Boolean(result?.createMicroLearning)
+      const result = await createMicroLearning(createUpdateJSON)
+      success = Boolean(result.createMicroLearning)
+      if (result.createMicroLearning?.courseId) {
+        courseIdsToInvalidate.add(result.createMicroLearning.courseId)
+      }
     }
 
     if (success) {
+      await Promise.all([
+        invalidateActivities(),
+        ...Array.from(courseIdsToInvalidate).map((courseId) =>
+          invalidateCourseDetail(courseId).catch(console.error)
+        ),
+      ])
       setIsWizardCompleted(true)
     } else {
       onError()

@@ -1,6 +1,5 @@
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
@@ -16,16 +15,24 @@ import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
+import { ElementType, type LiveQuizElementInstance } from './types'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
 })
 
+type SharedSingleStudentResponseInstance = Parameters<
+  typeof useSingleStudentResponse
+>[0]['instance']
+type SharedStudentElementInstance = React.ComponentProps<
+  typeof StudentElement
+>['element']
+
 interface QuestionAreaProps {
   isBlockActive?: boolean
   gamificationEnabled: boolean
   expiresAt?: Date
-  instances: ElementInstance[]
+  instances: LiveQuizElementInstance[]
   handleNewResponse: ({
     liveQuizId,
     instanceId,
@@ -70,14 +77,14 @@ function QuestionArea({
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
     useState<InstanceStackStudentResponseType>({
-      type: ElementType.FreeText,
+      type: ElementType.FreeText as InstanceStackStudentResponseType['type'],
       response: undefined,
       valid: false,
     })
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
-    instance: currentInstance,
+    instance: currentInstance as SharedSingleStudentResponseInstance,
     setStudentResponse,
   })
 
@@ -233,22 +240,12 @@ function QuestionArea({
   }
 
   function showStatusCodeToast(statusCode: number) {
-    // status code 200 (regular and assessment responses) -> successful submission
-    if (statusCode === 200) {
-      toast({
-        message: t('pwa.assessment.submissionSuccessful'),
-        type: 'success',
-      })
-    }
-    // status code 208 (assessment responses) -> already recorded
-    else if (statusCode === 208) {
-      toast({
-        message: t('pwa.assessment.submissionAlreadyRecorded'),
-        type: 'success',
-      })
-    }
+    // Successful submissions update the inline responded-at state. Avoid
+    // stacking success toasts over the live-quiz controls during rapid answers.
+    if (statusCode === 200 || statusCode === 208) return
+
     // status code 400 (regular and assessment responses) -> invalid request
-    else if (statusCode === 400) {
+    if (statusCode === 400) {
       toast({
         message: t('pwa.assessment.submissionGeneralError'),
         type: 'error',
@@ -291,6 +288,7 @@ function QuestionArea({
     correlationKey?: string | null
   }): Promise<boolean> {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+    const inputType = input.type as ElementType
 
     if (!input.valid) {
       toast({
@@ -299,9 +297,9 @@ function QuestionArea({
       })
       return false
     } else if (
-      ((type === ElementType.Sc && input.type === ElementType.Sc) ||
-        (type === ElementType.Mc && input.type === ElementType.Mc) ||
-        (type === ElementType.Kprim && input.type === ElementType.Kprim)) &&
+      ((type === ElementType.Sc && inputType === ElementType.Sc) ||
+        (type === ElementType.Mc && inputType === ElementType.Mc) ||
+        (type === ElementType.Kprim && inputType === ElementType.Kprim)) &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of objects with answer ix and selected boolean
@@ -334,7 +332,7 @@ function QuestionArea({
       }
     } else if (
       ElementType.FreeText === type &&
-      input.type === ElementType.FreeText &&
+      inputType === ElementType.FreeText &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a string
@@ -362,7 +360,7 @@ function QuestionArea({
       }
     } else if (
       ElementType.Numerical === type &&
-      input.type === ElementType.Numerical &&
+      inputType === ElementType.Numerical &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a number (float)
@@ -370,7 +368,7 @@ function QuestionArea({
         liveQuizId: quizId,
         instanceId,
         type,
-        answer: String(parseFloat(input.response)),
+        answer: String(parseFloat(input.response as string)),
         correlationKey,
       })
 
@@ -390,7 +388,7 @@ function QuestionArea({
       }
     } else if (
       ElementType.Selection === type &&
-      input.type === ElementType.Selection &&
+      inputType === ElementType.Selection &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of answer ids that were selected
@@ -420,7 +418,7 @@ function QuestionArea({
       }
     } else if (
       ElementType.CaseStudy === type &&
-      input.type === ElementType.CaseStudy &&
+      inputType === ElementType.CaseStudy &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
@@ -556,7 +554,7 @@ function QuestionArea({
           disabledInput={
             !isBlockActive || !remainingQuestions.includes(activeInstance)
           }
-          element={currentInstance}
+          element={currentInstance as SharedStudentElementInstance}
           elementIx={activeInstance}
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}

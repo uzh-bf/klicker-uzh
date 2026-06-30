@@ -1,11 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeletePracticeQuizDocument,
-  GetPracticeQuizSummaryDocument,
-  GetSingleCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -21,45 +18,13 @@ function PracticeQuizDeletionModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetPracticeQuizSummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
-
-  const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
-    DeletePracticeQuizDocument,
-    {
-      variables: { id: activityId },
-      update: (cache, { data: res }) => {
-        // if the practice quiz is not part of a course or the mutation was not successful, return early
-        if (!res?.deletePracticeQuiz?.id) return
-
-        // change the status of the practice quiz on the course overview back to draft
-        cache.updateQuery(
-          {
-            query: GetSingleCourseDocument,
-            variables: { courseId },
-          },
-          (data) => {
-            if (!data?.course) return data
-
-            return {
-              course: {
-                ...data.course,
-                practiceQuizzesInfo:
-                  data.course.practiceQuizzesInfo?.filter(
-                    (pq) => pq.id !== res.deletePracticeQuiz!.id
-                  ) ?? [],
-              },
-            }
-          }
-        )
-      },
-    }
-  )
+  const utils = trpc.useUtils()
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.practiceQuizSummary.useQuery({ activityId })
+  const deleteActivity = trpc.activity.delete.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -67,19 +32,41 @@ function PracticeQuizDeletionModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getPracticeQuizSummary) {
+    if (summaryData?.practiceQuizSummary) {
       setConfirmations({
-        deleteResponses:
-          summaryData?.getPracticeQuizSummary.numOfResponses === 0,
+        deleteResponses: summaryData.practiceQuizSummary.numOfResponses === 0,
         deleteAnonymousResponses:
-          summaryData.getPracticeQuizSummary.numOfAnonymousResponses === 0,
+          summaryData.practiceQuizSummary.numOfAnonymousResponses === 0,
       })
     }
-  }, [summaryData?.getPracticeQuizSummary])
+  }, [summaryData?.practiceQuizSummary])
 
-  if (!summaryData?.getPracticeQuizSummary) return null
+  const summary = summaryData?.practiceQuizSummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.course.deletePracticeQuiz')}
+        message={t('manage.course.deletePracticeQuizMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="delete"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
-  const summary = summaryData.getPracticeQuizSummary
+  const confirmationData = (count: number, cy: string) =>
+    count > 0 ? { cy } : undefined
 
   return (
     <ActivityConfirmationModal
@@ -87,10 +74,20 @@ function PracticeQuizDeletionModal({
       title={t('manage.course.deletePracticeQuiz')}
       message={t('manage.course.deletePracticeQuizMessage')}
       onSubmit={async () => {
-        await deletePracticeQuiz()
-        await refetchActivities?.()
+        const result = await deleteActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.PRACTICE_QUIZ,
+        })
+        if (!result.deleteActivity?.id) {
+          throw new Error('Failed to delete practice quiz')
+        }
+
+        await Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ])
       }}
-      submitting={deletingPracticeQuiz}
+      submitting={deleteActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"
@@ -113,7 +110,10 @@ function PracticeQuizDeletionModal({
           confirmed={confirmations.deleteResponses}
           notApplicable={summary.numOfResponses === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-responses' }}
+          data={confirmationData(
+            summary.numOfResponses,
+            'confirm-deletion-responses'
+          )}
         />
         <ConfirmationItem
           label={
@@ -132,7 +132,10 @@ function PracticeQuizDeletionModal({
           confirmed={confirmations.deleteAnonymousResponses}
           notApplicable={summary.numOfAnonymousResponses === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-anonymous-responses' }}
+          data={confirmationData(
+            summary.numOfAnonymousResponses,
+            'confirm-deletion-anonymous-responses'
+          )}
         />
       </div>
     </ActivityConfirmationModal>

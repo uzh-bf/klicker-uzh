@@ -1,13 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  CancelLiveQuizDocument,
-  GetLiveQuizSummaryDocument,
-  GetUserRunningLiveQuizzesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { api } from '../../../lib/trpc'
 import LiveQuizAbortionConfirmations from './LiveQuizAbortionConfirmations'
 
 export interface LiveQuizAbortionConfirmationType {
@@ -28,6 +23,9 @@ function CancelLiveQuizModal({
 }) {
   const router = useRouter()
   const t = useTranslations()
+  const utils = api.useUtils()
+  const usesLocalTestOrigin =
+    process.env.NEXT_PUBLIC_API_URL?.startsWith('http://127.0.0.1:')
 
   const initialConfirmations: LiveQuizAbortionConfirmationType = {
     deleteResponses: false,
@@ -40,93 +38,125 @@ function CancelLiveQuizModal({
     useState<LiveQuizAbortionConfirmationType>({
       ...initialConfirmations,
     })
+  const [cancelPending, setCancelPending] = useState(false)
 
-  // fetch course information
-  const { data, loading: queryLoading } = useQuery(GetLiveQuizSummaryDocument, {
-    variables: { quizId },
-    fetchPolicy: 'network-only',
-  })
-
-  const [cancelLiveQuiz, { loading: quizDeleting }] = useMutation(
-    CancelLiveQuizDocument,
-    {
-      variables: { id: quizId },
-      update(cache, { data: res }) {
-        // return early if the mutation failed
-        if (!res?.cancelLiveQuiz) return
-
-        cache.updateQuery(
-          { query: GetUserRunningLiveQuizzesDocument },
-          (data) => {
-            // if no data is present, return early
-            if (!data?.userRunningLiveQuizzes) return data
-
-            // remove the cancelled live quiz from the existing list
-            return {
-              userRunningLiveQuizzes: data.userRunningLiveQuizzes.filter(
-                (q) => q.id !== res.cancelLiveQuiz!.id
-              ),
-            }
-          }
-        )
-      },
-    }
-  )
+  const {
+    data,
+    error: summaryError,
+    isLoading: queryLoading,
+  } = api.activity.liveQuizSummary.useQuery({ activityId: quizId })
+  const cancelLiveQuiz = api.liveQuiz.cancel.useMutation()
 
   useEffect(() => {
-    if (!data?.getLiveQuizSummary) {
+    if (!data?.liveQuizSummary) {
       return
     }
 
     setConfirmations({
-      deleteResponses: data.getLiveQuizSummary.numOfResponses === 0,
-      deleteFeedbacks: data.getLiveQuizSummary.numOfFeedbacks === 0,
+      deleteResponses: data.liveQuizSummary.numOfResponses === 0,
+      deleteFeedbacks: data.liveQuizSummary.numOfFeedbacks === 0,
       deleteConfusionFeedbacks:
-        data.getLiveQuizSummary.numOfConfusionFeedbacks === 0,
+        data.liveQuizSummary.numOfConfusionFeedbacks === 0,
       deleteLeaderboardEntries:
-        data.getLiveQuizSummary.numOfLeaderboardEntries === 0,
+        data.liveQuizSummary.numOfLeaderboardEntries === 0,
     })
-  }, [data?.getLiveQuizSummary])
-  const summary = data?.getLiveQuizSummary
+  }, [data?.liveQuizSummary])
+  const summary = data?.liveQuizSummary
+  const initialSummaryLoading = queryLoading && !summary
+  const summaryUnavailable = Boolean(
+    (summaryError || !queryLoading) && !summary
+  )
+  const cancelling = cancelLiveQuiz.isLoading || cancelPending
+  const handleClose = () => {
+    if (cancelling) return
+
+    onClose()
+    setConfirmations({ ...initialConfirmations })
+  }
 
   return (
     <Modal
       open
-      loading={queryLoading || !summary}
-      onClose={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      loading={initialSummaryLoading}
+      onClose={handleClose}
       title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
-      primaryLoading={quizDeleting}
+      primaryLoading={cancelling}
       primaryDisabled={
-        queryLoading ||
+        cancelling ||
+        initialSummaryLoading ||
+        summaryUnavailable ||
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        await cancelLiveQuiz()
-        router.push('/activities')
-        onClose()
-        setConfirmations({ ...initialConfirmations })
+        if (cancelling) return
+
+        setCancelPending(true)
+
+        try {
+          const result = await cancelLiveQuiz.mutateAsync({ id: quizId })
+          if (!result.liveQuiz?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            setCancelPending(false)
+            return
+          }
+
+          await Promise.all([
+            utils.activity.userActivities.invalidate(),
+            utils.liveQuiz.running.invalidate(),
+            utils.activity.liveQuizSummary.invalidate({
+              activityId: quizId,
+            }),
+          ]).catch(console.error)
+
+          if (
+            (process.env.NODE_ENV === 'test' || usesLocalTestOrigin) &&
+            typeof window !== 'undefined'
+          ) {
+            window.location.assign('/activities')
+            return
+          }
+
+          const routed = await router.push('/activities')
+          if (!routed)
+            throw new Error('Live quiz cancellation navigation failed')
+          onClose()
+          setConfirmations({ ...initialConfirmations })
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+          setCancelPending(false)
+        }
       }}
       dataPrimaryAction={{ cy: 'confirm-cancel-live-quiz' }}
       secondaryLabel={t('shared.generic.close')}
-      onSecondaryAction={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
       className={{ content: 'max-w-240' }}
     >
-      {summary && (
+      {summaryUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {summary ? (
         <LiveQuizAbortionConfirmations
           summary={summary}
           confirmations={confirmations}
           setConfirmations={setConfirmations}
         />
-      )}
+      ) : null}
     </Modal>
   )
 }

@@ -1,7 +1,4 @@
-import {
-  ActivityQuizAnalytics,
-  ActivityType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType, type ActivityQuizAnalytics } from '@klicker-uzh/types'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ErrorRatesLegend from '../performance/ErrorRatesLegend'
@@ -51,7 +48,7 @@ function ActivityAnalyticsCharts({
           <H3>{t('manage.analytics.successRates')}</H3>
           <ErrorRatesLegend colors={colors} />
         </div>
-        {activityType === ActivityType.MicroLearning ? (
+        {activityType === ActivityType.MICRO_LEARNING ? (
           <UserNotification type="info">
             {t('manage.analytics.microLearningOneSubmissionHint')}
           </UserNotification>
@@ -66,7 +63,7 @@ function ActivityAnalyticsCharts({
             }}
             colors={colors}
           />
-          {activityType !== ActivityType.MicroLearning ? (
+          {activityType !== ActivityType.MICRO_LEARNING ? (
             <>
               <CircularPerformancePlot
                 title={t('manage.analytics.firstAttempt')}

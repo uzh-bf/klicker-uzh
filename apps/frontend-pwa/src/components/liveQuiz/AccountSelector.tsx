@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faKeyboard } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -8,11 +8,8 @@ import {
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  LoginTemporaryParticipantDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
+import { LoginTemporaryParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import {
   Button,
@@ -29,7 +26,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import CarouselMonitor from './CarouselMonitor'
@@ -70,22 +67,47 @@ function AccountSelector({
     'anonymous' | 'temporary' | 'loggedIn' | undefined
   >(`login-state-${quizId}`, undefined)
   const [api, setApi] = useState<CarouselApi>()
+  const selfQueryErrorToastShown = useRef(false)
 
   const [loginTemporaryParticipant, { loading: loggingIn }] = useMutation(
     LoginTemporaryParticipantDocument
   )
+  const utils = trpc.useUtils()
 
   // check if the user is already logged in as a participant or temporary participant of this quiz
-  const { data, loading, refetch } = useQuery(SelfDocument, {
-    variables: { liveQuizId: quizId },
-    fetchPolicy: 'network-only',
-    skip: loginState === 'anonymous', // if the user has already opted to participate anonymously, skip the query
-  })
+  const {
+    data,
+    error: selfQueryError,
+    isLoading,
+  } = trpc.participant.self.useQuery(
+    { liveQuizId: quizId },
+    {
+      enabled: loginState !== 'anonymous', // if the user has already opted to participate anonymously, skip the query
+      refetchOnMount: 'always',
+    }
+  )
   useEffect(() => {
     // wait while the query is still loading
-    if (loading || loginState === 'anonymous') {
+    if (isLoading || loginState === 'anonymous') {
       return
     }
+
+    if (selfQueryError && !data?.self) {
+      setOpen(false)
+
+      if (!selfQueryErrorToastShown.current) {
+        selfQueryErrorToastShown.current = true
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+      }
+
+      return
+    }
+
+    selfQueryErrorToastShown.current = false
 
     // once the query has finished loading, check if the user is logged in and show the modal otherwise
     if (
@@ -99,16 +121,15 @@ function AccountSelector({
 
     // if the user is logged in as a participant, set the login state to 'loggedIn'
     // depending on whether the user has a participation on the course, a notification / warning will be shown
-    if (data.self.role === UserRole.Participant) {
+    if (data.self.role === 'PARTICIPANT') {
       setLoginState('loggedIn')
     }
 
     // if the user is logged in as a temporary participant, set the login state to 'temporary'
-    if (data.self.role === UserRole.TemporaryParticipant) {
+    if (data.self.role === 'TEMPORARY_PARTICIPANT') {
       setLoginState('temporary')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, loading])
+  }, [data, isLoading, loginState, quizId, selfQueryError, setLoginState, t])
 
   return (
     <Modal
@@ -142,9 +163,11 @@ function AccountSelector({
               primary
               className={{ root: 'justify-start' }}
               onClick={() => {
-                router.push(
-                  `/login?redirect_to=${encodeURIComponent(`/session/${quizId}`)}`
-                )
+                void router
+                  .push(
+                    `/login?redirect_to=${encodeURIComponent(`/session/${quizId}`)}`
+                  )
+                  .catch(console.error)
               }}
               data={{ cy: 'login-with-account' }}
             >
@@ -195,11 +218,17 @@ function AccountSelector({
                 pseudonym: values.pseudonym,
                 avatar: values.avatar !== '' ? values.avatar : undefined,
               },
-              // refetch is required here to ensure up-to-date data with temporary leaderboard entry
-              refetchQueries: [{ query: SelfDocument }],
             })
 
             if (data?.loginTemporaryParticipant) {
+              const refreshedSelf = await utils.participant.self.fetch({
+                liveQuizId: quizId,
+              })
+
+              if (!refreshedSelf.self) {
+                throw new Error('Temporary participant self refresh failed')
+              }
+
               setLoginState('temporary')
               setOpen(false)
 
@@ -214,8 +243,6 @@ function AccountSelector({
                 ),
                 options: { duration: 5000 },
               })
-
-              await refetch() // refetch the self query to update the user data
             } else {
               toast({
                 type: 'error',
@@ -233,7 +260,7 @@ function AccountSelector({
           }
         }}
       >
-        {({ values, setFieldValue }) => (
+        {({ values, isSubmitting, setFieldValue }) => (
           <Form className="flex flex-col">
             {step === 'pseudonym' ? (
               <>
@@ -241,6 +268,7 @@ function AccountSelector({
                   basic
                   className={{ root: 'w-max px-2 py-1 text-sm' }}
                   onClick={() => setStep('choice')}
+                  disabled={isSubmitting || loggingIn}
                   data={{ cy: 'cancel-define-pseudonym' }}
                 >
                   <Button.Icon icon={faArrowLeft} />
@@ -265,6 +293,8 @@ function AccountSelector({
                 <Button
                   type="button"
                   disabled={
+                    isSubmitting ||
+                    loggingIn ||
                     !values.pseudonym ||
                     values.pseudonym.length < 5 ||
                     values.pseudonym.length > 15
@@ -284,6 +314,7 @@ function AccountSelector({
                   basic
                   className={{ root: 'w-max px-2 py-1 text-sm' }}
                   onClick={() => setStep('pseudonym')}
+                  disabled={isSubmitting || loggingIn}
                   data={{ cy: 'cancel-choose-avatar' }}
                 >
                   <Button.Icon icon={faArrowLeft} />
@@ -363,7 +394,8 @@ function AccountSelector({
                 <Button
                   primary
                   type="submit"
-                  loading={loggingIn}
+                  disabled={isSubmitting || loggingIn}
+                  loading={isSubmitting || loggingIn}
                   className={{ root: 'mt-2 self-end' }}
                   data={{ cy: 'submit-pseudonym-and-avatar' }}
                 >

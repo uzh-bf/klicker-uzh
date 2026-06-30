@@ -1,11 +1,11 @@
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Suspense } from 'react'
+import { Suspense, type MouseEvent } from 'react'
 import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useCopyCatalogObject from './useCopyCatalogObject'
 
@@ -38,30 +38,29 @@ function CatalogCopyModal({
     objectType,
     objectId,
     catalogCollectionId,
-    onError: onErrorToast,
   })
+  const handleClose = (e?: MouseEvent) => {
+    e?.stopPropagation()
+    if (!copying) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={(e) => {
-        e?.stopPropagation()
-        onClose()
-      }}
+      onClose={handleClose}
       secondaryLabel={
         <div className="flex flex-row items-center gap-2.5">
           <FontAwesomeIcon icon={faBan} />
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={(e) => {
-        e?.stopPropagation()
-        onClose()
-      }}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-object-copy' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
-          <FontAwesomeIcon icon={faCopy} />
+          {!copying && <FontAwesomeIcon icon={faCopy} />}
           <span>
             {t('manage.catalog.copyObjectType', {
               object: t(`shared.types.${objectType}`),
@@ -70,6 +69,7 @@ function CatalogCopyModal({
         </div>
       }
       primaryLoading={copying}
+      primaryDisabled={copying}
       onPrimaryAction={async (e) => {
         e?.stopPropagation()
         const success = await onCopy()

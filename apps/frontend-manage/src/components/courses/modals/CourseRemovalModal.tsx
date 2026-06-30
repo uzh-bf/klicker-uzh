@@ -1,11 +1,6 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetUserCoursesDocument,
-  ObjectType,
-  RemoveObjectDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -21,13 +16,12 @@ function CourseRemovalModal({
   setModalOpen: (newOpen: boolean) => void
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
+  const removeObject = trpc.sharing.removeObject.useMutation()
   const [confirmations, setConfirmations] = useState({
     actionFinal: false, // action cannot be undone, course will remain accessible to students
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
-
-  const [removeObject, { loading: removing }] =
-    useMutation(RemoveObjectDocument)
 
   // on modal opening, reset the confirmation state
   useEffect(() => {
@@ -48,26 +42,26 @@ function CourseRemovalModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await removeObject({
-          variables: {
-            objectId: courseId,
-            objectType: ObjectType.Course,
-          },
-          update: (cache, { data }) => {
-            // check if the removal was successful
-            if (!data?.removeObject) return
-
-            // remove the course from the queries list
-            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
-              userCourses: qData?.userCourses?.filter(
-                (course) => course.id !== data.removeObject!
-              ),
-            }))
-          },
+        const result = await removeObject.mutateAsync({
+          objectId: courseId,
+          objectType: 'COURSE',
         })
-        setModalOpen(false)
+        if (!result.removedObjectId) {
+          throw new Error('Failed to remove course')
+        }
+
+        utils.course.userCourses.setData(undefined, (data) =>
+          data?.userCourses
+            ? {
+                userCourses: data.userCourses.filter(
+                  (course) => course.id !== result.removedObjectId
+                ),
+              }
+            : data
+        )
+        void utils.course.userCourses.invalidate().catch(console.error)
       }}
-      submitting={removing}
+      submitting={removeObject.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={false}
       confirmationType="delete"

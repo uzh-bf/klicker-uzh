@@ -11,32 +11,35 @@ import {
   faThumbTack,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { AudienceFeedbackResponse } from '../types'
 import FeedbackDeletionModal from './FeedbackDeletionModal'
 
 interface IFeedback {
   id: number
   content: string
-  createdAt: string
+  createdAt: Date | string
   votes: number
   resolved: boolean
   pinned: boolean
-  responses?: FeedbackResponse[]
-  resolvedAt: string
+  responses?: AudienceFeedbackResponse[] | null
+  resolvedAt: Date | string | null
 }
 
 interface Props extends IFeedback {
-  onDeleteFeedback: () => void
-  onPinFeedback: (pinState: boolean) => void
-  onResolveFeedback: (resolvedState: boolean) => void
-  onRespondToFeedback: (feebdackId: number, response: string) => void
-  onDeleteResponse: (responseId: number) => void
+  onDeleteFeedback: () => Promise<boolean>
+  onPinFeedback: (pinState: boolean) => Promise<boolean>
+  onResolveFeedback: (resolvedState: boolean) => Promise<boolean>
+  onRespondToFeedback: (
+    feebdackId: number,
+    response: string
+  ) => Promise<boolean>
+  onDeleteResponse: (responseId: number) => Promise<boolean>
 }
 
 function Feedback({
@@ -57,6 +60,21 @@ function Feedback({
   const [isEditingActive, setIsEditingActive] = useState(false)
   const [isBeingDeleted, setIsBeingDeleted] = useState(false)
   const [showDeletionModal, setShowDeletionModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
+
+  async function runFeedbackAction(
+    actionKey: string,
+    action: () => Promise<boolean>
+  ) {
+    if (pendingAction) return false
+
+    setPendingAction(actionKey)
+    try {
+      return await action()
+    } finally {
+      setPendingAction(null)
+    }
+  }
 
   return (
     <div className="rounded-md border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -127,9 +145,12 @@ function Feedback({
               <div className="flex items-center gap-1">
                 <Button
                   basic
+                  disabled={pendingAction !== null}
                   onClick={(e) => {
                     e?.stopPropagation()
-                    setShowDeletionModal(true)
+                    if (!pendingAction) {
+                      setShowDeletionModal(true)
+                    }
                   }}
                   className={{
                     root: 'h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600',
@@ -170,7 +191,7 @@ function Feedback({
             responses.map((response) => (
               <div
                 className="no-page-break-inside rounded-lg border border-gray-200 bg-white p-3 shadow-sm print:border-l-4 print:border-l-blue-400"
-                key={response.createdAt}
+                key={response.id}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -196,10 +217,16 @@ function Feedback({
                     </div>
                     <Button
                       basic
+                      disabled={pendingAction !== null}
+                      loading={pendingAction === `response-${response.id}`}
                       className={{
                         root: 'h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600',
                       }}
-                      onClick={() => onDeleteResponse(response.id)}
+                      onClick={() => {
+                        void runFeedbackAction(`response-${response.id}`, () =>
+                          onDeleteResponse(response.id)
+                        )
+                      }}
                       data={{ cy: `delete-response-${response.content}` }}
                     >
                       <Button.Icon withoutLabel icon={faTrashCan} />
@@ -216,8 +243,11 @@ function Feedback({
                 className={{
                   root: 'text-primary-100 hover:text-primary-100 mb-0.5 py-1',
                 }}
-                disabled={resolved}
-                onClick={() => onPinFeedback(!pinned)}
+                disabled={resolved || pendingAction !== null}
+                loading={pendingAction === 'pin'}
+                onClick={() => {
+                  void runFeedbackAction('pin', () => onPinFeedback(!pinned))
+                }}
                 data={{ cy: `pin-feedback-${content}` }}
               >
                 <Button.Icon icon={faThumbTack} />
@@ -232,11 +262,17 @@ function Feedback({
                 className={{
                   root: 'text-primary-100 hover:text-primary-100 mb-0.5 px-3 py-1',
                 }}
+                disabled={pendingAction !== null}
+                loading={pendingAction === 'resolve'}
                 onClick={() => {
-                  onResolveFeedback(!resolved)
-                  if (!resolved) {
-                    setIsEditingActive(false)
-                  }
+                  void (async () => {
+                    const success = await runFeedbackAction('resolve', () =>
+                      onResolveFeedback(!resolved)
+                    )
+                    if (success && !resolved) {
+                      setIsEditingActive(false)
+                    }
+                  })()
                 }}
                 data={{ cy: `resolve-feedback-${content}` }}
               >
@@ -250,14 +286,16 @@ function Feedback({
             </div>
             <Formik
               initialValues={{ respondToFeedbackInput: '' }}
-              onSubmit={(values, { setSubmitting }) => {
+              onSubmit={async (values, { resetForm, setSubmitting }) => {
                 if (values.respondToFeedbackInput !== '') {
-                  onRespondToFeedback(id, values.respondToFeedbackInput)
-                  values.respondToFeedbackInput = ''
-
-                  setTimeout(() => {
-                    setSubmitting(false)
-                  }, 700)
+                  const success = await onRespondToFeedback(
+                    id,
+                    values.respondToFeedbackInput
+                  )
+                  if (success) {
+                    resetForm()
+                  }
+                  setSubmitting(false)
                 } else {
                   setSubmitting(false)
                 }
@@ -291,13 +329,14 @@ function Feedback({
                       type="submit"
                       disabled={
                         isSubmitting ||
+                        pendingAction !== null ||
                         resolved ||
                         values.respondToFeedbackInput === ''
                       }
                       className={{ root: 'mt-1 h-8' }}
                       data={{ cy: `submit-feedback-response-${content}` }}
                     >
-                      <Button.Icon icon={faPaperPlane} />
+                      <Button.Icon icon={faPaperPlane} loading={isSubmitting} />
                       <Button.Label>{t('shared.generic.respond')}</Button.Label>
                     </Button>
                   </div>
@@ -315,11 +354,7 @@ function Feedback({
           onConfirm={async () => {
             setIsBeingDeleted(true)
             try {
-              await new Promise<void>((resolve) => {
-                onDeleteFeedback()
-                resolve()
-              })
-              setShowDeletionModal(false)
+              return await onDeleteFeedback()
             } finally {
               setIsBeingDeleted(false)
             }

@@ -17,6 +17,17 @@ export type ActivityBatchOperationActions = {
   }
 }
 
+export type ActivityBatchOperationCourse = {
+  id: string
+  name: string
+  isGamificationEnabled: boolean
+  isAssessmentEnabled: boolean
+  isGroupCreationEnabled: boolean
+  startDate: Date
+  endDate: Date
+  groupDeadlineDate: Date
+}
+
 export const INITIAL_ACTIVITY_BATCH_OPERATIONS: ActivityBatchOperationActions =
   {
     multiplier: undefined,

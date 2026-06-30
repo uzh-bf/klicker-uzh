@@ -1,10 +1,6 @@
-import { useMutation } from '@apollo/client'
-import {
-  DeleteCatalogCollectionDocument,
-  GetCatalogCollectionsListDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 interface CatalogCollectionDeletionModalProps {
   catalogCollectionId: string
@@ -20,44 +16,50 @@ function CatalogCollectionDeletionModal({
   onSuccess,
 }: CatalogCollectionDeletionModalProps) {
   const t = useTranslations()
-  const [deleteCatalogCollection, { loading: deleting }] = useMutation(
-    DeleteCatalogCollectionDocument
-  )
+  const utils = trpc.useUtils()
+  const deleteCatalogCollection =
+    trpc.sharing.deleteCatalogCollection.useMutation()
+  const loading = deleteCatalogCollection.isLoading
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.catalog.deleteCatalogCollectionTitle')}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-delete-collection' }}
       primaryLabel={t('manage.catalog.deleteConfirm')}
       primaryButtonStyle="destructive"
-      primaryLoading={deleting}
+      primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
         try {
-          await deleteCatalogCollection({
-            variables: { catalogCollectionId },
-            update: (cache, { data }) => {
-              // check if the deletion was successful
-              if (!data?.deleteCatalogCollection) return
+          const res = await deleteCatalogCollection.mutateAsync({
+            catalogCollectionId,
+          })
 
-              // remove the catalog collection from the list
-              cache.updateQuery(
-                { query: GetCatalogCollectionsListDocument },
-                (data) => {
-                  if (!data?.getCatalogCollectionsList) return data
-                  return {
-                    ...data,
-                    getCatalogCollectionsList:
-                      data.getCatalogCollectionsList.filter(
-                        (collection) => collection.id !== catalogCollectionId
-                      ),
-                  }
-                }
-              )
-            },
+          if (!res.deletedCatalogCollectionId) {
+            toast({
+              type: 'error',
+              message: t('manage.catalog.deletionFailed'),
+            })
+            return
+          }
+
+          utils.sharing.catalogCollections.setData(undefined, (data) => {
+            if (!data?.catalogCollections) return data
+
+            return {
+              catalogCollections: data.catalogCollections.filter(
+                (collection) => collection.id !== catalogCollectionId
+              ),
+            }
           })
 
           onSuccess()

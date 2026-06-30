@@ -1,14 +1,13 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { H4 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 
 function AnalyticsCourseLabel({
   course,
 }: {
-  course: Pick<Course, 'id' | 'name' | 'startDate' | 'endDate'>
+  course: { name: string; startDate: Date; endDate: Date }
 }) {
   const isPast = course.endDate
     ? dayjs(course.endDate).isBefore(dayjs())

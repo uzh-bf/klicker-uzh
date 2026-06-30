@@ -1,13 +1,8 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetSingleCourseDocument,
-  OpenGroupActivityDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -31,51 +26,8 @@ function GroupActivityStartingModal({
   refetchActivities,
 }: GroupActivityStartingModalProps) {
   const t = useTranslations()
-  const [openGroupActivity, { loading: openingGroupActivity }] = useMutation(
-    OpenGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        openGroupActivity: {
-          id: activityId,
-          status: PublicationStatus.Published,
-          scheduledStartAt: new Date(),
-          __typename: 'GroupActivity',
-        },
-      },
-      update: (cache, { data }) => {
-        // check if the starting was successful
-        if (!data?.openGroupActivity) return
-
-        // update the group activity on the course overview
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            if (!qData?.course) return qData
-
-            return {
-              course: {
-                ...qData.course,
-                groupActivitiesInfo: (
-                  qData.course.groupActivitiesInfo ?? []
-                ).map((ga) =>
-                  ga.id === data.openGroupActivity!.id
-                    ? {
-                        ...ga,
-                        status: data.openGroupActivity!.status,
-                        scheduledStartAt:
-                          data.openGroupActivity!.scheduledStartAt,
-                      }
-                    : ga
-                ),
-              },
-            }
-          }
-        )
-      },
-    }
-  )
+  const utils = trpc.useUtils()
+  const openGroupActivity = trpc.activity.openGroupActivity.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     participantGroups: false,
@@ -96,10 +48,17 @@ function GroupActivityStartingModal({
       title={t('manage.course.startGroupActivityNow')}
       message={t('manage.course.startGroupActivityNowMessage')}
       onSubmit={async () => {
-        await openGroupActivity()
-        await refetchActivities?.()
+        const result = await openGroupActivity.mutateAsync({ activityId })
+        if (!result.openGroupActivity?.id) {
+          throw new Error('Failed to start group activity')
+        }
+
+        await Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ])
       }}
-      submitting={openingGroupActivity}
+      submitting={openGroupActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={false}
       confirmationType="confirm"

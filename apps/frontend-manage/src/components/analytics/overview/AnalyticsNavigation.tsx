@@ -1,15 +1,14 @@
-import { useQuery } from '@apollo/client'
 import {
   faChevronLeft,
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { SelectField } from '@uzh-bf/design-system'
+import { SelectField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { trpc } from '../../../lib/trpc'
 
 interface AnalyticsNavigationProps {
   hrefLeft: string
@@ -26,13 +25,11 @@ function AnalyticsNavigation({
   labelRight,
   slug,
 }: AnalyticsNavigationProps) {
-  const { data, loading } = useQuery(GetUserCoursesDocument)
+  const { data, error, isLoading } = trpc.course.userCourses.useQuery()
   const router = useRouter()
   const t = useTranslations()
-
-  if (loading) {
-    return <Loader />
-  }
+  const selectedCourseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
   return (
     <div className="mb-6 grid w-full grid-cols-2 md:grid-cols-3">
@@ -44,21 +41,38 @@ function AnalyticsNavigation({
         <div className="flex flex-row items-center gap-0.5">{labelLeft}</div>
       </Link>
       <div className="hidden justify-center md:flex">
-        <SelectField
-          label={`${t('shared.generic.course')}:`}
-          labelType="large"
-          value={router.query.courseId as string}
-          items={
-            data?.userCourses?.map((course) => ({
-              label: course.name,
-              value: course.id,
-            })) ?? []
-          }
-          onChange={(value) => {
-            router.push({ pathname: `/analytics/${value}/${slug}` })
-          }}
-          className={{ select: { trigger: 'h-8' } }}
-        />
+        {isLoading && !data ? (
+          <Loader />
+        ) : !data?.userCourses ? (
+          <UserNotification
+            type="error"
+            message={t('manage.analytics.analyticsLoadingFailed')}
+            className={{ root: 'text-sm' }}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-1">
+            <SelectField
+              label={`${t('shared.generic.course')}:`}
+              labelType="large"
+              value={selectedCourseId}
+              items={data.userCourses.map((course) => ({
+                label: course.name,
+                value: course.id,
+              }))}
+              onChange={(value) => {
+                router.push({ pathname: `/analytics/${value}/${slug}` })
+              }}
+              className={{ select: { trigger: 'h-8' } }}
+            />
+            {error ? (
+              <UserNotification
+                type="error"
+                message={t('manage.analytics.analyticsLoadingFailed')}
+                className={{ root: 'py-1 text-sm' }}
+              />
+            ) : null}
+          </div>
+        )}
       </div>
       <Link
         href={hrefRight}

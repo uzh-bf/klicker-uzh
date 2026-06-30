@@ -1,21 +1,22 @@
-import { useQuery } from '@apollo/client'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
-import { SelfWithAchievementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
 import ProfileData from '../components/participant/ProfileData'
+import { trpc } from '../lib/trpc'
 
 const Profile = () => {
   const t = useTranslations()
-  const { data, loading } = useQuery(SelfWithAchievementsDocument)
   const router = useRouter()
+  const { data, error, isLoading } =
+    trpc.participant.selfWithAchievements.useQuery()
+  const profile = data?.selfWithAchievements
 
-  if (loading || !data?.selfWithAchievements)
+  if (isLoading && !profile)
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -25,7 +26,35 @@ const Profile = () => {
       </Layout>
     )
 
-  const { participant, achievements } = data.selfWithAchievements
+  if (error && !profile) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.profile.myProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.profile.myProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  const { participant, achievements } = profile
 
   return (
     <Layout
@@ -33,6 +62,12 @@ const Profile = () => {
       displayName={t('pwa.profile.myProfile')}
     >
       <div className="flex flex-col items-center gap-2 rounded border p-2 md:mx-auto md:w-max md:p-4">
+        {error && profile ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         <Button
           basic
           onClick={() => router.push('/editProfile')}

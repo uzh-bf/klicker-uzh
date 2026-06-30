@@ -1,8 +1,3 @@
-import {
-  ElementData,
-  ElementInstance,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
@@ -11,8 +6,21 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import { Checkbox, FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, type ComponentProps } from 'react'
+import {
+  ElementData,
+  ElementInstance,
+  ElementType,
+} from '../../../lib/constants/elementTypes'
 import { ElementFormTypes } from './types'
+
+type StudentElementInstance = ComponentProps<typeof StudentElement>['element']
+
+const CHOICE_ELEMENT_TYPES: readonly ElementType[] = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+]
 
 interface StudentElementPreviewWrapperProps {
   values: ElementData | ElementFormTypes
@@ -29,6 +37,7 @@ function StudentElementPreviewWrapper({
   const [showFeedbacksExplanation, setShowFeedbacksExplanation] = useState(
     initialFeedbacksExplanation
   )
+  const valuesOptions = 'options' in values ? values.options : undefined
 
   const explanationOrFeedbacksDefined =
     'explanation' in values &&
@@ -36,21 +45,21 @@ function StudentElementPreviewWrapper({
     ((values.explanation &&
       !values.explanation.match(/^(<br>(\n)*)$/g) &&
       values.explanation !== '') ||
-      ('options' in values &&
-        'hasAnswerFeedbacks' in values.options &&
-        values.options.hasAnswerFeedbacks))
+      (valuesOptions &&
+        'hasAnswerFeedbacks' in valuesOptions &&
+        valuesOptions.hasAnswerFeedbacks))
 
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
     useState<InstanceStackStudentResponseType>({
-      type: ElementType.Sc,
+      type: ElementType.Sc as InstanceStackStudentResponseType['type'],
       response: undefined,
       valid: false,
     })
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
-    instance: instance,
+    instance: instance as StudentElementInstance | null | undefined,
     setStudentResponse,
   })
   const stackStorage = useMemo<StackStudentResponseType | undefined>(() => {
@@ -79,11 +88,11 @@ function StudentElementPreviewWrapper({
               __typename: 'ChoicesInstanceEvaluation',
               explanation,
               feedbacks:
-                'options' in values &&
-                'hasAnswerFeedbacks' in values.options &&
-                values.options.hasAnswerFeedbacks
-                  ? 'choices' in values.options
-                    ? values.options.choices
+                valuesOptions &&
+                'hasAnswerFeedbacks' in valuesOptions &&
+                valuesOptions.hasAnswerFeedbacks
+                  ? 'choices' in valuesOptions
+                    ? valuesOptions.choices
                     : undefined
                   : undefined,
             },
@@ -159,16 +168,12 @@ function StudentElementPreviewWrapper({
               required={false}
               labelType="large"
               label={
-                [ElementType.Sc, ElementType.Mc, ElementType.Kprim].includes(
-                  values.type
-                )
+                CHOICE_ELEMENT_TYPES.includes(values.type)
                   ? t('manage.questionPool.showFeedbacksExplanation')
                   : t('manage.questionPool.showExplanation')
               }
               tooltip={
-                [ElementType.Sc, ElementType.Mc, ElementType.Kprim].includes(
-                  values.type
-                )
+                CHOICE_ELEMENT_TYPES.includes(values.type)
                   ? t.rich(
                       'manage.questionPool.showFeedbacksExplanationTooltip',
                       { b: (text) => <b>{text}</b> }
@@ -183,7 +188,7 @@ function StudentElementPreviewWrapper({
         )}
         <StudentElement
           preview
-          element={instance}
+          element={instance as StudentElementInstance}
           elementIx={0}
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}

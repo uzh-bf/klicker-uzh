@@ -11,11 +11,7 @@ import {
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  CatalogObject,
-  ObjectAccess,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -24,6 +20,7 @@ import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
+import type { CatalogBrowserObject } from '../catalogBrowserTypes'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from './CatalogChangeAccessModal'
 import CatalogCopyModal from './CatalogCopyModal'
@@ -37,7 +34,7 @@ function CatalogObjectItem({
   catalogCollectionId,
   managedAccess,
 }: {
-  object: CatalogObject
+  object: CatalogBrowserObject
   catalogCollectionId?: string
   managedAccess: boolean
 }) {

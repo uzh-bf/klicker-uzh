@@ -1,9 +1,3 @@
-import { useQuery } from '@apollo/client'
-import {
-  Course,
-  LocaleType,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
@@ -22,9 +16,33 @@ import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
 import * as yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import EditorField from '../../activities/creation/EditorField'
 import CourseDateChangeMonitor from './CourseDateChangeMonitor'
 import GamificationSettingMonitor from './GamificationSettingMonitor'
+
+export const LocaleType = {
+  De: 'de',
+  En: 'en',
+} as const
+
+export type LocaleType = (typeof LocaleType)[keyof typeof LocaleType]
+
+type Course = {
+  name?: string | null
+  displayName?: string | null
+  description?: string | null
+  notificationEmail?: string | null
+  language?: LocaleType | null
+  color?: string | null
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  isGamificationEnabled?: boolean | null
+  isGroupCreationEnabled?: boolean | null
+  groupDeadlineDate?: Date | string | null
+  maxGroupSize?: number | null
+  preferredGroupSize?: number | null
+}
 
 interface CourseManipulationModalProps {
   initialValues?: Course
@@ -33,6 +51,7 @@ interface CourseManipulationModalProps {
   latestEndDate?: string
   containsActivities?: boolean
   containsGroups?: boolean
+  submitting?: boolean
   onModalClose: () => void
   onSubmit: (
     values: CourseManipulationFormData,
@@ -64,19 +83,15 @@ function CourseManipulationModal({
   latestEndDate,
   containsActivities = false,
   containsGroups = false,
+  submitting = false,
   onModalClose,
   onSubmit,
 }: CourseManipulationModalProps) {
   const t = useTranslations()
   const formRef = useRef<FormikProps<CourseManipulationFormData>>(null)
 
-  // fetch user (from cache) to get email for notification field initialization
-  const { data: dataUser, loading: loadingUser } = useQuery(
-    UserProfileDocument,
-    {
-      fetchPolicy: 'cache-only',
-    }
-  )
+  const { data: dataUser, isLoading: loadingUser } =
+    trpc.user.profile.useQuery()
 
   // check if initialValues.startDate is in the past
   const startDatePast =
@@ -225,7 +240,13 @@ function CourseManipulationModal({
           ? t('manage.course.modifyCourse')
           : t('manage.courseList.createNewCourse')
       }
-      onClose={onModalClose}
+      onClose={() => {
+        if (submitting || formRef.current?.isSubmitting) {
+          return
+        }
+
+        onModalClose()
+      }}
       className={{ content: 'w-full!' }}
     >
       <Formik
@@ -236,13 +257,9 @@ function CourseManipulationModal({
           displayName: initialValues?.displayName ?? '',
           description: initialValues?.description ?? '',
           notificationEmail:
-            initialValues?.notificationEmail ??
-            dataUser?.userProfile?.email ??
-            '',
+            initialValues?.notificationEmail ?? dataUser?.email ?? '',
           language:
-            initialValues?.language ??
-            dataUser?.userProfile?.locale ??
-            LocaleType.En,
+            initialValues?.language ?? dataUser?.locale ?? LocaleType.En,
           color: initialValues?.color ?? '#0028A5',
           startDate: startDateInit,
           endDate: endDateInit,
@@ -323,7 +340,7 @@ function CourseManipulationModal({
                   <FormikDatePicker
                     required
                     name="startDate"
-                    disabled={startDatePast}
+                    disabled={Boolean(startDatePast)}
                     label={t('manage.courseList.startDate')}
                     tooltip={t('manage.courseList.startDateTooltip')}
                     dataTrigger={{ cy: 'course-start-date' }}
@@ -391,7 +408,7 @@ function CourseManipulationModal({
                       required
                       labelLeft
                       disabled={
-                        initialValues?.isGamificationEnabled &&
+                        Boolean(initialValues?.isGamificationEnabled) &&
                         (containsActivities || containsGroups)
                       }
                       name="isGamificationEnabled"
@@ -407,7 +424,7 @@ function CourseManipulationModal({
                       labelLeft
                       disabled={
                         !values.isGamificationEnabled ||
-                        (initialValues?.isGroupCreationEnabled &&
+                        (Boolean(initialValues?.isGroupCreationEnabled) &&
                           containsGroups)
                       }
                       name="isGroupCreationEnabled"
@@ -506,7 +523,8 @@ function CourseManipulationModal({
             )}
             <Button
               primary
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isSubmitting || submitting}
+              loading={isSubmitting || submitting}
               type="submit"
               className={{ root: 'float-right mt-3' }}
               data={{ cy: 'manipulate-course-submit' }}

@@ -1,3 +1,5 @@
+import { nanoid } from 'nanoid'
+import { sort } from 'remeda'
 import {
   CaseStudyElementData,
   ChoicesElementData,
@@ -8,9 +10,7 @@ import {
   FreeTextElementData,
   NumericalElementData,
   SelectionElementData,
-} from '@klicker-uzh/graphql/dist/ops'
-import { nanoid } from 'nanoid'
-import { sort } from 'remeda'
+} from '../../../lib/constants/elementTypes'
 import {
   ElementFormTypes,
   ElementFormTypesCaseStudySolution,
@@ -55,7 +55,7 @@ function extractFormValuesFromElementInstance({
           (a, b) => (a.ix > b.ix ? 1 : -1)
         ),
       },
-    }
+    } as ElementFormTypes
   } else if (element.type === ElementType.Numerical) {
     const options = (element as NumericalElementData).options
 
@@ -81,7 +81,7 @@ function extractFormValuesFromElementInstance({
           : undefined,
         exactSolutions: options.exactSolutions ?? undefined,
       },
-    }
+    } as ElementFormTypes
   } else if (element.type === ElementType.FreeText) {
     const options = (element as FreeTextElementData).options
 
@@ -97,7 +97,7 @@ function extractFormValuesFromElementInstance({
           : undefined,
         solutions: options.solutions,
       },
-    }
+    } as ElementFormTypes
   } else if (element.type === ElementType.Selection) {
     const options = (element as SelectionElementData).options
 
@@ -112,7 +112,7 @@ function extractFormValuesFromElementInstance({
           : '',
         correctAnswers: options.answerCollectionSolutionIds ?? undefined,
       },
-    }
+    } as ElementFormTypes
   } else if (element.type === ElementType.CaseStudy) {
     const options = (element as CaseStudyElementData).options
 
@@ -134,7 +134,7 @@ function extractFormValuesFromElementInstance({
             step: String(criterion.step),
           })) ?? [],
         cases:
-          options.cases.map((caseItem) => ({
+          (options.cases ?? []).map((caseItem) => ({
             id: caseItem.id,
             title: caseItem.title,
             description: caseItem.description,
@@ -162,18 +162,18 @@ function extractFormValuesFromElementInstance({
               : undefined,
           })) ?? [],
       },
-    }
+    } as ElementFormTypes
   } else if (element.type === ElementType.Flashcard) {
     return {
       ...sharedAttributes,
       type: ElementType.Flashcard,
       explanation: element.explanation ?? '',
-    }
+    } as ElementFormTypes
   } else if (element.type === ElementType.Content) {
     return {
       ...sharedAttributes,
       type: ElementType.Content,
-    }
+    } as ElementFormTypes
   }
 
   // default / fallback case (should not happen)
@@ -199,7 +199,7 @@ function extractFormValuesFromElementInstance({
         },
       ],
     },
-  }
+  } as ElementFormTypes
 }
 
 export default extractFormValuesFromElementInstance

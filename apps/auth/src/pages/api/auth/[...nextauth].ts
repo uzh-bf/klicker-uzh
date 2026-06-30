@@ -46,11 +46,22 @@ const SHARED_OPTIONS: Partial<NextAuthOptions> = {
   },
 }
 
+function shouldUseSecureAuthCookies() {
+  const authUrl = process.env.NEXTAUTH_URL || process.env.APP_ORIGIN_AUTH
+  if (authUrl) {
+    return authUrl.startsWith('https://')
+  }
+
+  return process.env.NODE_ENV === 'production'
+}
+
 function getParticipantConfig({
   requestId,
 }: {
   requestId: string
 }): NextAuthOptions {
+  const secureCookies = shouldUseSecureAuthCookies()
+
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
   // Avoid setting Domain for localhost or IPs.
@@ -107,6 +118,7 @@ function getParticipantConfig({
 
   return {
     ...SHARED_OPTIONS,
+    useSecureCookies: secureCookies,
 
     providers: EduIDParticipantProvider ? [EduIDParticipantProvider] : [],
 
@@ -119,7 +131,7 @@ function getParticipantConfig({
           path: '/',
           httpOnly: true,
           sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
+          secure: secureCookies,
         },
       },
     },
@@ -244,6 +256,8 @@ function getLecturerConfig({
 }: {
   requestId: string
 }): NextAuthOptions {
+  const secureCookies = shouldUseSecureAuthCookies()
+
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
   // Avoid setting Domain for localhost or IPs.
@@ -359,6 +373,7 @@ function getLecturerConfig({
 
   return {
     ...SHARED_OPTIONS,
+    useSecureCookies: secureCookies,
 
     adapter: PrismaAdapter(prisma),
     providers: EduIDLecturerProvider
@@ -374,7 +389,7 @@ function getLecturerConfig({
           path: '/',
           httpOnly: true,
           sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
+          secure: secureCookies,
         },
       },
     },

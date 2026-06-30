@@ -1,47 +1,18 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetUserRunningLiveQuizzesDocument,
-  PublicationStatus,
-  StartLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '../../../lib/trpc'
 
-function useStartLiveQuiz({ id, name }: { id: string; name: string }) {
-  const [startLiveQuiz, { loading: startingQuiz }] = useMutation(
-    StartLiveQuizDocument,
-    {
-      variables: { id },
-      update(cache, { data: res }) {
-        // return early if the mutation failed
-        if (!res?.startLiveQuiz) return
+function useStartLiveQuiz({ id }: { id: string; name: string }) {
+  const utils = trpc.useUtils()
+  const startLiveQuiz = trpc.liveQuiz.start.useMutation({
+    onSuccess: async (result) => {
+      if (!result.liveQuiz) return
+      await utils.liveQuiz.running.invalidate()
+    },
+  })
 
-        cache.updateQuery(
-          { query: GetUserRunningLiveQuizzesDocument },
-          (data) => {
-            // if no data is present, return early
-            if (!data?.userRunningLiveQuizzes) return data
-
-            // add the new live quiz to the existing list
-            return {
-              userRunningLiveQuizzes: [
-                ...data.userRunningLiveQuizzes,
-                { id: res.startLiveQuiz!.id, name: res.startLiveQuiz!.name },
-              ],
-            }
-          }
-        )
-      },
-      optimisticResponse: {
-        startLiveQuiz: {
-          __typename: 'LiveQuizMeta',
-          id,
-          name,
-          status: PublicationStatus.Published,
-        },
-      },
-    }
-  )
-
-  return { onStart: startLiveQuiz, starting: startingQuiz }
+  return {
+    onStart: () => startLiveQuiz.mutateAsync({ id }),
+    starting: startLiveQuiz.isLoading,
+  }
 }
 
 export default useStartLiveQuiz

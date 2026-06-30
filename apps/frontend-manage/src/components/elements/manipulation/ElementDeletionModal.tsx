@@ -1,11 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeleteElementDocument,
-  GetElementSummaryDocument,
-  GetUserTagsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from '../../courses/modals/ActivityConfirmationModal'
 
@@ -23,6 +19,8 @@ function ElementDeletionModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
+  const utils = trpc.useUtils()
+  const deleteElement = trpc.element.delete.useMutation()
   const [confirmations, setConfirmations] = useState({
     actionFinal: false, // action cannot be undone, element will not be removed from any created activities
     otherUsersAccess: false, // other users might not lose access to the element, if used
@@ -31,25 +29,20 @@ function ElementDeletionModal({
   })
 
   // fetch element information
-  const { data, loading: queryLoading } = useQuery(GetElementSummaryDocument, {
-    variables: { id: elementId },
-    skip: !elementId,
-    fetchPolicy: 'network-only',
-  })
-
-  // deletion mutation
-  const [deleteElement, { loading: deleting }] = useMutation(
-    DeleteElementDocument
+  const {
+    data,
+    error: summaryError,
+    isLoading: queryLoading,
+  } = trpc.element.summary.useQuery({ id: elementId }, { enabled: !!elementId })
+  const summary = data?.elementSummary
+  const initialSummaryLoading = queryLoading && !summary
+  const summaryUnavailable = Boolean(
+    (summaryError || !queryLoading) && !summary
   )
 
-  const notApplicableShared =
-    !!data?.getElementSummary &&
-    !data.getElementSummary.sharedElementActivityUse
-  const notApplicableDerived =
-    !!data?.getElementSummary && !data.getElementSummary.retainsDerivedAccess
-  const notApplicableResources =
-    !!data?.getElementSummary &&
-    !data.getElementSummary.derivedAccessToResources
+  const notApplicableShared = !!summary && !summary.sharedElementActivityUse
+  const notApplicableDerived = !!summary && !summary.retainsDerivedAccess
+  const notApplicableResources = !!summary && !summary.derivedAccessToResources
 
   // on modal opening, reset the confirmation state
   useEffect(() => {
@@ -73,94 +66,109 @@ function ElementDeletionModal({
       confirmationType="delete"
       onClose={() => setModalOpen(false)}
       title={t('manage.questionPool.deleteElement')}
-      loading={queryLoading}
+      loading={initialSummaryLoading}
       message={t.rich('manage.questionPool.confirmDeletion', {
         name: title,
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await deleteElement({
-          variables: { id: elementId },
-          // refetch required, since it is more cumbersome to compute a diff of removed tags than just refetch them (cheap)
-          refetchQueries: [{ query: GetUserTagsDocument }],
-        })
-        await refetchElements()
-        setModalOpen(false)
+        const result = await deleteElement.mutateAsync({ id: elementId })
+
+        if (!result.deletedElementId) {
+          throw new Error('Failed to delete element')
+        }
+
+        await Promise.all([
+          utils.resources.answerCollectionsInfo.invalidate(),
+          utils.element.tags.invalidate(),
+          refetchElements(),
+        ])
       }}
-      submitting={deleting}
-      confirmations={confirmations}
-      confirmationsInitializing={false}
+      submitting={deleteElement.isLoading}
+      confirmations={summary ? confirmations : { summaryLoaded: false }}
+      confirmationsInitializing={initialSummaryLoading}
     >
-      <div className="flex flex-col gap-2">
-        <ConfirmationItem
-          confirmationType="delete"
-          label={t('manage.questionPool.elementDeletionFinal')}
-          onClick={() => {
-            setConfirmations((prev) => ({
-              ...prev,
-              actionFinal: true,
-            }))
-          }}
-          confirmed={confirmations.actionFinal}
-          notApplicable={false}
-          data={{ cy: 'confirm-deletion-final' }}
+      {summaryUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
         />
-        <ConfirmationItem
-          confirmationType="delete"
-          label={
-            notApplicableShared
-              ? t('manage.questionPool.elementDeletionOtherUsersNotApplicable')
-              : t('manage.questionPool.elementDeletionOtherUsers')
-          }
-          onClick={() => {
-            setConfirmations((prev) => ({
-              ...prev,
-              otherUsersAccess: true,
-            }))
-          }}
-          confirmed={confirmations.otherUsersAccess}
-          notApplicable={notApplicableShared}
-          data={{ cy: 'confirm-other-users-access' }}
-        />
-        <ConfirmationItem
-          confirmationType="delete"
-          label={
-            notApplicableDerived
-              ? t(
-                  'manage.questionPool.elementDeletionDerivedAccessNotApplicable'
-                )
-              : t('manage.questionPool.elementDeletionDerivedAccessHint')
-          }
-          onClick={() => {
-            setConfirmations((prev) => ({
-              ...prev,
-              derivedAccessHint: true,
-            }))
-          }}
-          confirmed={confirmations.derivedAccessHint}
-          notApplicable={notApplicableDerived}
-          data={{ cy: 'confirm-derived-access' }}
-        />
-        <ConfirmationItem
-          confirmationType="delete"
-          label={
-            notApplicableResources
-              ? t(
-                  'manage.questionPool.elementDeletionDependencyAccessNotApplicable'
-                )
-              : t('manage.questionPool.elementDeletionDependencyAccess')
-          }
-          onClick={() => {
-            setConfirmations((prev) => ({
-              ...prev,
-              dependencyAccess: true,
-            }))
-          }}
-          confirmed={confirmations.dependencyAccess}
-          notApplicable={notApplicableResources}
-          data={{ cy: 'confirm-dependency-access' }}
-        />
-      </div>
+      ) : null}
+
+      {summary ? (
+        <div className="flex flex-col gap-2">
+          <ConfirmationItem
+            confirmationType="delete"
+            label={t('manage.questionPool.elementDeletionFinal')}
+            onClick={() => {
+              setConfirmations((prev) => ({
+                ...prev,
+                actionFinal: true,
+              }))
+            }}
+            confirmed={confirmations.actionFinal}
+            notApplicable={false}
+            data={{ cy: 'confirm-deletion-final' }}
+          />
+          <ConfirmationItem
+            confirmationType="delete"
+            label={
+              notApplicableShared
+                ? t(
+                    'manage.questionPool.elementDeletionOtherUsersNotApplicable'
+                  )
+                : t('manage.questionPool.elementDeletionOtherUsers')
+            }
+            onClick={() => {
+              setConfirmations((prev) => ({
+                ...prev,
+                otherUsersAccess: true,
+              }))
+            }}
+            confirmed={confirmations.otherUsersAccess}
+            notApplicable={notApplicableShared}
+            data={{ cy: 'confirm-other-users-access' }}
+          />
+          <ConfirmationItem
+            confirmationType="delete"
+            label={
+              notApplicableDerived
+                ? t(
+                    'manage.questionPool.elementDeletionDerivedAccessNotApplicable'
+                  )
+                : t('manage.questionPool.elementDeletionDerivedAccessHint')
+            }
+            onClick={() => {
+              setConfirmations((prev) => ({
+                ...prev,
+                derivedAccessHint: true,
+              }))
+            }}
+            confirmed={confirmations.derivedAccessHint}
+            notApplicable={notApplicableDerived}
+            data={{ cy: 'confirm-derived-access' }}
+          />
+          <ConfirmationItem
+            confirmationType="delete"
+            label={
+              notApplicableResources
+                ? t(
+                    'manage.questionPool.elementDeletionDependencyAccessNotApplicable'
+                  )
+                : t('manage.questionPool.elementDeletionDependencyAccess')
+            }
+            onClick={() => {
+              setConfirmations((prev) => ({
+                ...prev,
+                dependencyAccess: true,
+              }))
+            }}
+            confirmed={confirmations.dependencyAccess}
+            notApplicable={notApplicableResources}
+            data={{ cy: 'confirm-dependency-access' }}
+          />
+        </div>
+      ) : null}
     </ActivityConfirmationModal>
   )
 }

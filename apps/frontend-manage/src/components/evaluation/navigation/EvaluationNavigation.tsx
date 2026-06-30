@@ -1,9 +1,6 @@
-import { useQuery } from '@apollo/client'
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
-import {
-  StackEvaluation,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { StackEvaluation } from '@lib/evaluationTypes'
+import { trpc } from '@lib/trpc'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
@@ -42,8 +39,8 @@ function EvaluationNavigation({
   feedbacksAvailable,
 }: EvaluationNavigationProps) {
   const t = useTranslations()
-  const { data: user, loading } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
+  const { data: user, isLoading } = trpc.user.profile.useQuery(undefined, {
+    enabled: type === 'Asynchronous',
   })
 
   // automatically switch the active stack based on the active instance
@@ -74,9 +71,7 @@ function EvaluationNavigation({
         <div />
       )}
       <div className="flex flex-row items-center gap-4">
-        {!loading &&
-        user?.userProfile?.publicPreview &&
-        type === 'Asynchronous' ? (
+        {!isLoading && user?.publicPreview && type === 'Asynchronous' ? (
           <Button
             className={{ root: 'h-8 py-0' }}
             onClick={() =>

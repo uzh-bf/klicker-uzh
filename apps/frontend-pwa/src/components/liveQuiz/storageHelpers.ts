@@ -1,4 +1,3 @@
-import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { InstanceStackStudentResponseType } from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   validateCaseStudyResponse,
@@ -13,6 +12,7 @@ import { FreeTextElementData, NumericalElementData } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { Dispatch, SetStateAction } from 'react'
+import { ElementType, type LiveQuizElementInstance } from './types'
 
 export async function updateStoredResponses(
   instanceId: number | number[],
@@ -63,7 +63,7 @@ export async function loadStoredResponse({
 }: {
   quizId: string
   execution: number
-  currentInstance: ElementInstance | undefined
+  currentInstance: LiveQuizElementInstance | undefined
   setStudentResponse: Dispatch<SetStateAction<InstanceStackStudentResponseType>>
   setSubmittedAt: Dispatch<SetStateAction<number | null>>
 }) {
@@ -79,7 +79,7 @@ export async function loadStoredResponse({
     // if the block was already submitted, load the previously submitted response and remove the temporary one (if it exists)
     if (stored) {
       setStudentResponse({
-        type: currentInstance.elementType,
+        type: currentInstance.elementType as InstanceStackStudentResponseType['type'],
         response: stored.response as any,
         valid: true,
       })
@@ -95,7 +95,7 @@ export async function loadStoredResponse({
     } else {
       setSubmittedAt(null)
       setStudentResponse({
-        type: currentInstance.elementType,
+        type: currentInstance.elementType as InstanceStackStudentResponseType['type'],
         response: tempStored as any,
         valid: false, // initialize loaded response with invalid -> subsequent validation
       })
@@ -114,15 +114,17 @@ export async function loadStoredResponse({
         } else if (currentInstance.elementType === ElementType.Numerical) {
           const valid = validateNumericalResponse({
             response: tempStored,
-            options: (currentInstance.elementData as NumericalElementData)
-              .options,
+            options: (
+              currentInstance.elementData as unknown as NumericalElementData
+            ).options,
           })
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.FreeText) {
           const valid = validateFreeTextResponse({
             response: tempStored,
-            options: (currentInstance.elementData as FreeTextElementData)
-              .options,
+            options: (
+              currentInstance.elementData as unknown as FreeTextElementData
+            ).options,
           })
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.Selection) {

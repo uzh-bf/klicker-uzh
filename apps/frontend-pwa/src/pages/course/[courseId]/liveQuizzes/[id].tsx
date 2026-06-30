@@ -1,6 +1,12 @@
-import { ValidateAvailableLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
+import { createTRPCSSRClient } from '@lib/trpc'
 import { GetServerSidePropsContext } from 'next'
-import { initializeApollo } from '../../../../lib/apollo'
+
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isUuid(value: string) {
+  return uuidPattern.test(value)
+}
 
 function CourseLiveQuiz() {
   return null
@@ -19,17 +25,28 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  const apolloClient = initializeApollo()
   const quizId = ctx.params.id as string
   const courseId = ctx.params.courseId as string
 
-  // validate that the live quiz is valid, published and in course
-  const liveQuizValid = await apolloClient.query({
-    query: ValidateAvailableLiveQuizDocument,
-    variables: { quizId, courseId },
-  })
+  if (!isUuid(quizId) || !isUuid(courseId)) {
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+        permanent: false,
+      },
+    }
+  }
 
-  if (!liveQuizValid.data?.validateAvailableLiveQuiz) {
+  const trpcClient = createTRPCSSRClient(ctx)
+
+  // validate that the live quiz is valid, published and in course
+  const liveQuizValid =
+    await trpcClient.participant.validateAvailableLiveQuiz.query({
+      quizId,
+      courseId,
+    })
+
+  if (!liveQuizValid.isAvailable) {
     return {
       redirect: {
         destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,

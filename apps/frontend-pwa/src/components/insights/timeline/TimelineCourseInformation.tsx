@@ -19,8 +19,8 @@ function TimelineCourseInformation({
 }: {
   courseName: string
   courseGamified: boolean
-  courseStart: string
-  courseEnd: string
+  courseStart: Date | string
+  courseEnd: Date | string
   totalPoints?: number | null
   totalXp: number
 }) {

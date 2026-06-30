@@ -1,24 +1,23 @@
-import { useMutation } from '@apollo/client'
-import {
-  ChangeElementStatusDocument,
-  ElementStatus,
-  GetSingleElementDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormLabel,
   FormikSelectField,
   FormikTextField,
   SelectField,
+  toast,
 } from '@uzh-bf/design-system'
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
+import { ElementStatus } from '../../../lib/constants/elementTypes'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
 import useElementTypeOptions from './useElementTypeOptions'
 import useStatusOptions from './useStatusOptions'
+
+type ChangeElementStatusInput = RouterInputs['element']['changeStatus']
 
 interface ElementInformationFieldsProps {
   isTemplate?: boolean
@@ -41,9 +40,10 @@ function ElementInformationFields({
   const statusOptions = useStatusOptions()
   const questionTypeOptions = useElementTypeOptions()
   const { setFieldValue } = useFormikContext()
+  const utils = trpc.useUtils()
 
   const [statusSaving, setStatusSaving] = useState(false)
-  const [changeElementStatus] = useMutation(ChangeElementStatusDocument)
+  const changeElementStatus = trpc.element.changeStatus.useMutation()
 
   return (
     <>
@@ -66,35 +66,38 @@ function ElementInformationFields({
             onChange={async (newValue) => {
               setStatusSaving(true)
 
-              if (typeof elementId !== 'undefined') {
-                await changeElementStatus({
-                  variables: { elementId, status: newValue as ElementStatus },
-                  update: (cache, { data }) => {
-                    // check if request was successful
-                    const success = data?.changeElementStatus
-                    if (!success) return
+              try {
+                if (typeof elementId !== 'undefined') {
+                  const result = await changeElementStatus.mutateAsync({
+                    elementId,
+                    status: newValue as ChangeElementStatusInput['status'],
+                  })
 
-                    // update single question query
-                    cache.updateQuery(
-                      {
-                        query: GetSingleElementDocument,
-                        variables: { id: elementId },
-                      },
-                      (data) => ({
-                        element: data?.element
-                          ? {
-                              ...data?.element,
-                              status: newValue as ElementStatus,
-                            }
-                          : null,
-                      })
-                    )
-                  },
+                  if (!result.success) {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 6000 },
+                    })
+                    return
+                  }
+
+                  void utils.element.single
+                    .invalidate({ id: elementId })
+                    .catch(console.error)
+                }
+
+                setFieldValue('status', newValue as ElementStatus)
+              } catch (error) {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 6000 },
                 })
+              } finally {
+                setStatusSaving(false)
               }
-
-              setFieldValue('status', newValue as ElementStatus)
-              setStatusSaving(false)
             }}
             contentPosition="popper"
             disabled={isSubmitting || statusSaving}

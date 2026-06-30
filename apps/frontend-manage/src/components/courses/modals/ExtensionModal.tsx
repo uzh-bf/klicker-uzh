@@ -1,14 +1,15 @@
-import { useMutation } from '@apollo/client'
+import { ActivityType } from '@klicker-uzh/types'
 import {
-  ExtendGroupActivityDocument,
-  ExtendMicroLearningDocument,
-  GetSingleCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
+  Button,
+  FormikDatetimePicker,
+  Modal,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 interface ExtensionModalProps {
   type: 'microLearning' | 'groupActivity'
@@ -32,13 +33,24 @@ function ExtensionModal({
   refetchActivities,
 }: ExtensionModalProps) {
   const t = useTranslations()
-  const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
-  const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument)
+  const utils = trpc.useUtils()
+  const extendActivity = trpc.activity.extend.useMutation()
+  const refreshCourseActivityData = () => {
+    return Promise.all([
+      utils.course.detail.invalidate({ courseId }),
+      refetchActivities?.(),
+    ])
+  }
+  const handleClose = () => {
+    if (!extendActivity.isLoading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       hideCloseButton={true}
       title={title}
       className={{
@@ -56,97 +68,36 @@ function ExtensionModal({
               .min(new Date(), t('manage.course.futureEndDateRequired')),
           })}
           onSubmit={async (values, { setSubmitting }) => {
-            const utcEndDate = dayjs(values.endDate).utc().format()
+            const utcEndDate = dayjs(values.endDate).utc().toDate()
             setSubmitting(true)
 
-            if (type === 'microLearning') {
-              await extendMicroLearning({
-                variables: { id, endDate: utcEndDate },
-                optimisticResponse: {
-                  __typename: 'Mutation',
-                  extendMicroLearning: {
-                    __typename: 'MicroLearning',
-                    id,
-                    scheduledEndAt: utcEndDate,
-                  },
-                },
-                update: (cache, { data }) => {
-                  // check if the extension was successful
-                  if (!data?.extendMicroLearning) return
-
-                  // update the end date of the modified microlearning in the cache
-                  cache.updateQuery(
-                    { query: GetSingleCourseDocument, variables: { courseId } },
-                    (qData) => {
-                      if (!qData?.course) return qData
-
-                      return {
-                        course: {
-                          ...qData.course,
-                          microLearningsInfo: (
-                            qData.course.microLearningsInfo ?? []
-                          ).map((ml) =>
-                            ml.id === data.extendMicroLearning!.id
-                              ? {
-                                  ...ml,
-                                  scheduledEndAt:
-                                    data.extendMicroLearning!.scheduledEndAt,
-                                }
-                              : ml
-                          ),
-                        },
-                      }
-                    }
-                  )
-                },
+            try {
+              const result = await extendActivity.mutateAsync({
+                activityId: id,
+                activityType:
+                  type === 'microLearning'
+                    ? ActivityType.MICRO_LEARNING
+                    : ActivityType.GROUP_ACTIVITY,
+                endDate: utcEndDate,
               })
-              await refetchActivities?.()
-            } else if (type === 'groupActivity') {
-              await extendGroupActivity({
-                variables: { id, endDate: utcEndDate },
-                optimisticResponse: {
-                  __typename: 'Mutation',
-                  extendGroupActivity: {
-                    __typename: 'GroupActivity',
-                    id,
-                    scheduledEndAt: utcEndDate,
-                  },
-                },
-                update: (cache, { data }) => {
-                  // check if the extension was successful
-                  if (!data?.extendGroupActivity) return
-
-                  // update the end date of the modified group activity in the cache
-                  cache.updateQuery(
-                    { query: GetSingleCourseDocument, variables: { courseId } },
-                    (qData) => {
-                      if (!qData?.course) return qData
-
-                      return {
-                        course: {
-                          ...qData.course,
-                          groupActivitiesInfo: (
-                            qData.course.groupActivitiesInfo ?? []
-                          ).map((ga) =>
-                            ga.id === data.extendGroupActivity!.id
-                              ? {
-                                  ...ga,
-                                  scheduledEndAt:
-                                    data.extendGroupActivity!.scheduledEndAt,
-                                }
-                              : ga
-                          ),
-                        },
-                      }
-                    }
-                  )
-                },
+              if (result.extendActivity?.id) {
+                await refreshCourseActivityData()
+                onClose()
+              } else {
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                })
+              }
+            } catch (error) {
+              console.error(error)
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
               })
-              await refetchActivities?.()
+            } finally {
+              setSubmitting(false)
             }
-
-            setSubmitting(false)
-            onClose()
           }}
         >
           {({ isValid, isSubmitting }) => (
@@ -169,7 +120,8 @@ function ExtensionModal({
               />
               <div className="mt-3 flex flex-row justify-between">
                 <Button
-                  onClick={onClose}
+                  onClick={handleClose}
+                  disabled={isSubmitting || extendActivity.isLoading}
                   data={{ cy: 'extend-activity-cancel' }}
                 >
                   <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -177,8 +129,10 @@ function ExtensionModal({
                 <Button
                   primary
                   type="submit"
-                  loading={isSubmitting}
-                  disabled={!isValid}
+                  loading={isSubmitting || extendActivity.isLoading}
+                  disabled={
+                    !isValid || isSubmitting || extendActivity.isLoading
+                  }
                   data={{ cy: 'extend-activity-confirm' }}
                 >
                   <Button.Label>{t('shared.generic.confirm')}</Button.Label>

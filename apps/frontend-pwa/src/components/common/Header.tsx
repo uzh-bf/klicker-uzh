@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import {
   faExclamationCircle,
@@ -7,32 +6,47 @@ import {
   faUser,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ChangeParticipantLocaleDocument,
-  Course,
-  LocaleType,
-  LogoutParticipantDocument,
-  LogoutTemporaryParticipantDocument,
-  Participant,
-  SelfDocument,
-  StudentCourse,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '@lib/trpc'
 import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
 
+const PARTICIPANT_ROLE = 'PARTICIPANT'
+const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+
+type HeaderCourse = {
+  color?: string | null
+  displayName?: string | null
+  id?: string | null
+  name?: string | null
+}
+
+type HeaderParticipantRole =
+  | typeof PARTICIPANT_ROLE
+  | typeof TEMPORARY_PARTICIPANT_ROLE
+  | 'USER'
+  | 'ADMIN'
+
+type HeaderParticipant = {
+  avatar?: string | null
+  email?: string | null
+  institutionalEmail?: string | null
+  level?: number | null
+  role?: HeaderParticipantRole | null
+  username?: string | null
+}
+
+type ParticipantLocale = RouterInputs['participant']['changeLocale']['locale']
+
 interface HeaderProps {
-  participant?: Partial<Participant>
+  participant?: HeaderParticipant
   title?: string
-  course?:
-    | Partial<Course>
-    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
+  course?: HeaderCourse
   liveQuizId?: string
 }
 
@@ -45,22 +59,25 @@ function Header({
   const router = useRouter()
   const { pathname, asPath, query } = router
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
-  const [changeParticipantLocale, { loading: changingLocale }] = useMutation(
-    ChangeParticipantLocaleDocument
-  )
-  const [logoutParticipant, { loading: loggingOut }] = useMutation(
-    LogoutParticipantDocument
-  )
-  const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
-    useMutation(LogoutTemporaryParticipantDocument)
+  const changeParticipantLocale = trpc.participant.changeLocale.useMutation()
+  const logoutParticipant = trpc.participant.logout.useMutation()
+  const logoutTemporaryParticipant =
+    trpc.participant.logoutTemporary.useMutation()
+  const [headerActionPending, setHeaderActionPending] = useState(false)
+  const changingLocale =
+    changeParticipantLocale.isLoading || headerActionPending
+  const loggingOut = logoutParticipant.isLoading || headerActionPending
+  const loggingOutTemporary =
+    logoutTemporaryParticipant.isLoading || headerActionPending
 
   const pageInFrame =
     global?.window &&
     global?.window?.location !== global?.window?.parent.location
   const showProfileSetup =
     participant &&
-    participant.role === UserRole.Participant &&
+    participant.role === PARTICIPANT_ROLE &&
     process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
     (!participant?.avatar || !participant?.email)
 
@@ -112,7 +129,7 @@ function Header({
 
       <div className="flex flex-row items-center gap-2 sm:gap-4">
         {participant &&
-          participant.role === UserRole.Participant &&
+          participant.role === PARTICIPANT_ROLE &&
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
@@ -169,7 +186,7 @@ function Header({
                           {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
                             ? (participant.institutionalEmail ??
                               participant.email)
-                            : `${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                            : `${participant?.username}${participant.role === TEMPORARY_PARTICIPANT_ROLE ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
                         </div>
                       </div>
                     ),
@@ -205,7 +222,7 @@ function Header({
                 ]
               : []),
             ...((!router.pathname.includes('/session') ||
-              participant?.role !== UserRole.TemporaryParticipant) &&
+              participant?.role !== TEMPORARY_PARTICIPANT_ROLE) &&
             process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
             (participant || !pageInFrame)
               ? [
@@ -261,13 +278,13 @@ function Header({
               items: [
                 {
                   id: 'languageDE',
-                  value: LocaleType.De,
+                  value: 'de' as ParticipantLocale,
                   flag: '🇩🇪',
                   label: t('shared.generic.de'),
                 },
                 {
                   id: 'languageEN',
-                  value: LocaleType.En,
+                  value: 'en' as ParticipantLocale,
                   flag: '🇬🇧',
                   label: t('shared.generic.en'),
                 },
@@ -282,23 +299,59 @@ function Header({
                 ),
                 type: 'checkbox',
                 onClick: async () => {
-                  if (
-                    participant &&
-                    participant.role === UserRole.Participant
-                  ) {
-                    await changeParticipantLocale({
-                      variables: { locale: language.value },
-                    })
-                  }
+                  if (changingLocale) return
+                  setHeaderActionPending(true)
 
-                  router.push({ pathname, query }, asPath, {
-                    locale: language.value,
-                  })
+                  try {
+                    if (participant && participant.role === PARTICIPANT_ROLE) {
+                      const updatedLocale =
+                        await changeParticipantLocale.mutateAsync({
+                          locale: language.value,
+                        })
+                      utils.participant.self.setData(undefined, (data) =>
+                        data?.self?.role === PARTICIPANT_ROLE
+                          ? {
+                              ...data,
+                              self: {
+                                ...data.self,
+                                locale: updatedLocale.locale,
+                              },
+                            }
+                          : data
+                      )
+                      void utils.participant.self
+                        .invalidate()
+                        .catch((error) => {
+                          console.error(
+                            'Error refreshing participant self',
+                            error
+                          )
+                        })
+                    }
+
+                    const routed = await router.push(
+                      { pathname, query },
+                      asPath,
+                      {
+                        locale: language.value,
+                      }
+                    )
+                    if (!routed) throw new Error('Locale navigation failed')
+                  } catch (error) {
+                    console.error(error)
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
+                  } finally {
+                    setHeaderActionPending(false)
+                  }
                 },
                 selected: router.locale === language.value,
               })),
             },
-            ...(participant?.role === UserRole.Participant && !pageInFrame
+            ...(participant?.role === PARTICIPANT_ROLE && !pageInFrame
               ? [
                   {
                     id: 'logout',
@@ -314,15 +367,51 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
-                      await logoutParticipant()
-                      router.push('/login')
+                      if (loggingOut) return
+                      setHeaderActionPending(true)
+
+                      try {
+                        const loggedOut = await logoutParticipant.mutateAsync()
+
+                        if (loggedOut) {
+                          sessionStorage.removeItem('participant_token')
+                          utils.participant.self.setData(undefined, {
+                            self: null,
+                          })
+                          void utils.participant.self
+                            .invalidate()
+                            .catch((error) => {
+                              console.error(
+                                'Error refreshing participant self after logout',
+                                error
+                              )
+                            })
+                          const routed = await router.push('/login')
+                          if (!routed)
+                            throw new Error('Logout navigation failed')
+                        } else {
+                          toast({
+                            type: 'error',
+                            message: t('shared.generic.systemError'),
+                            options: { duration: 5000 },
+                          })
+                        }
+                      } catch (error) {
+                        console.error(error)
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 5000 },
+                        })
+                      } finally {
+                        setHeaderActionPending(false)
+                      }
                     },
                     data: { cy: 'logout' },
                   },
                 ]
               : []),
-            ...(participant?.role === UserRole.TemporaryParticipant &&
-            liveQuizId
+            ...(participant?.role === TEMPORARY_PARTICIPANT_ROLE && liveQuizId
               ? [
                   {
                     id: 'logout',
@@ -338,20 +427,22 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
+                      if (loggingOutTemporary) return
+                      setHeaderActionPending(true)
+
                       try {
                         // log out temporary participant for this live quiz
-                        const { data } = await logoutTemporaryParticipant({
-                          variables: { liveQuizId },
-                          refetchQueries: [
-                            { query: SelfDocument, variables: { liveQuizId } },
-                          ],
-                        })
+                        const loggedOut =
+                          await logoutTemporaryParticipant.mutateAsync({
+                            liveQuizId,
+                          })
 
-                        if (data?.logoutTemporaryParticipant) {
+                        if (loggedOut) {
                           // remove local storage entry for temporary participant
                           localStorage.removeItem(`login-state-${liveQuizId}`)
 
                           router.reload()
+                          return
                         } else {
                           toast({
                             type: 'error',
@@ -372,6 +463,7 @@ function Header({
                           ),
                         })
                       }
+                      setHeaderActionPending(false)
                     },
                     data: { cy: 'logout' },
                   },

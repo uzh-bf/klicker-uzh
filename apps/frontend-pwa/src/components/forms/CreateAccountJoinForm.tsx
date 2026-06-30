@@ -1,5 +1,4 @@
-import { useLazyQuery } from '@apollo/client'
-import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   FormikPinField,
@@ -15,7 +14,7 @@ function CreateAccountJoinForm() {
   const t = useTranslations()
   const router = useRouter()
 
-  const [checkValidCoursePin] = useLazyQuery(CheckValidCoursePinDocument)
+  const utils = trpc.useUtils()
 
   return (
     <div className="mx-auto w-full py-4">
@@ -23,39 +22,61 @@ function CreateAccountJoinForm() {
         {t('pwa.login.existingParticipantAccount')}
       </UserNotification>
       <Formik
+        validateOnMount
         initialValues={{ pin: '' }}
         validationSchema={yup.object({
           pin: yup
             .number()
             .typeError(t('pwa.joinCourse.coursePinNumerical'))
+            .test(
+              'len',
+              t('pwa.joinCourse.coursePinRequired'),
+              (val) => val !== undefined && val.toString().length === 9
+            )
             .required(t('pwa.joinCourse.coursePinRequired')),
         })}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           setSubmitting(true)
 
-          const { data } = await checkValidCoursePin({
-            variables: { pin: parseInt(values.pin.replace(/\s/g, '')) },
-          })
+          const normalizedPin = values.pin.replace(/\s/g, '')
 
-          if (data?.checkValidCoursePin) {
-            router.push(
-              `/course/${
-                data.checkValidCoursePin
-              }/join?pin=${values.pin.replace(/\s/g, '')}`
-            )
-          } else {
+          try {
+            const courseId = await utils.participant.checkValidCoursePin.fetch({
+              pin: Number(normalizedPin),
+            })
+
+            if (courseId) {
+              const routed = await router.push({
+                pathname: '/course/[courseId]/join',
+                query: { courseId, pin: normalizedPin },
+              })
+              if (!routed) {
+                window.location.assign(
+                  `/course/${encodeURIComponent(courseId)}/join?pin=${encodeURIComponent(normalizedPin)}`
+                )
+              }
+              return
+            }
+
             toast({
               type: 'error',
               message: t('pwa.login.coursePinInvalid'),
               options: { duration: 6000 },
             })
             resetForm()
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 6000 },
+            })
+          } finally {
+            setSubmitting(false)
           }
-
-          setSubmitting(false)
         }}
       >
-        {({ isSubmitting }) => (
+        {({ isSubmitting, isValid }) => (
           <Form className="flex flex-col">
             <FormikPinField
               required
@@ -69,8 +90,8 @@ function CreateAccountJoinForm() {
             <Button
               primary
               type="submit"
-              // TODO: add validation and disable button for invalid / incomplete pints
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isValid}
+              loading={isSubmitting}
               className={{ root: 'self-end' }}
               data={{ cy: 'signup-course' }}
             >

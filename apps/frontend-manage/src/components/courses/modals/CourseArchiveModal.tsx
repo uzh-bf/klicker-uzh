@@ -1,7 +1,7 @@
-import { useMutation } from '@apollo/client'
-import { ToggleArchiveCourseDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 
 function CourseArchiveModal({
   onClose,
@@ -13,9 +13,15 @@ function CourseArchiveModal({
   isArchived: boolean
 }) {
   const t = useTranslations()
-  const [toggleArchiveCourse, { loading }] = useMutation(
-    ToggleArchiveCourseDocument
-  )
+  const utils = trpc.useUtils()
+  const [archivePending, setArchivePending] = useState(false)
+  const toggleArchiveCourse = trpc.course.toggleArchive.useMutation()
+  const archiving = toggleArchiveCourse.isLoading || archivePending
+  const handleClose = () => {
+    if (!archiving) {
+      onClose()
+    }
+  }
 
   if (!courseId) {
     return null
@@ -24,43 +30,65 @@ function CourseArchiveModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={
         isArchived
           ? t('manage.courseList.unarchiveCourse')
           : t('manage.courseList.archiveCourse')
       }
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={loading}
+      primaryLoading={archiving}
+      primaryDisabled={archiving}
       onPrimaryAction={async () => {
-        await toggleArchiveCourse({
-          variables: { id: courseId, isArchived: !isArchived },
-          optimisticResponse: {
-            __typename: 'Mutation',
-            toggleArchiveCourse: {
-              __typename: 'Course',
-              id: courseId,
-              isArchived: !isArchived,
-            },
-          },
-          update: (cache, { data }) => {
-            // check if the query was successful
-            if (!data?.toggleArchiveCourse) return
+        if (archiving) return
+        setArchivePending(true)
 
-            // update the entry in the course list accordingly
-            cache.modify({
-              id: cache.identify(data.toggleArchiveCourse),
-              fields: {
-                isArchived: () => data.toggleArchiveCourse!.isArchived,
-              },
+        try {
+          const result = await toggleArchiveCourse.mutateAsync({
+            id: courseId,
+            isArchived: !isArchived,
+          })
+
+          if (!result.course?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
             })
-          },
-        })
-        onClose()
+            setArchivePending(false)
+            return
+          }
+
+          utils.course.userCourses.setData(undefined, (data) =>
+            data?.userCourses
+              ? {
+                  userCourses: data.userCourses
+                    .map((course) =>
+                      course.id === result.course?.id
+                        ? { ...course, isArchived: result.course.isArchived }
+                        : course
+                    )
+                    .sort((a, b) =>
+                      a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
+                    ),
+                }
+              : data
+          )
+          await utils.course.userCourses.invalidate().catch(console.error)
+          onClose()
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+          setArchivePending(false)
+        }
       }}
       dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'course-archive-modal-cancel' }}
       className={{ content: 'max-w-120' }}
     >

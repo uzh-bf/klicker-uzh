@@ -1,6 +1,5 @@
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Course } from '@klicker-uzh/graphql/dist/ops'
 import {
   Card,
   CardContent,
@@ -9,35 +8,34 @@ import {
   Checkbox,
   Select,
   Tooltip,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ActivityBatchOperationActions } from './types'
+import {
+  ActivityBatchOperationActions,
+  ActivityBatchOperationCourse,
+} from './types'
 
 interface ActivityCourseCardProps {
-  courses: Pick<
-    Course,
-    | 'id'
-    | 'name'
-    | 'isGamificationEnabled'
-    | 'isAssessmentEnabled'
-    | 'isGroupCreationEnabled'
-    | 'startDate'
-    | 'endDate'
-    | 'groupDeadlineDate'
-  >[]
+  courses: ActivityBatchOperationCourse[]
+  coursesUnavailable?: boolean
   selectedActions: ActivityBatchOperationActions
   setSelectedActions: Dispatch<SetStateAction<ActivityBatchOperationActions>>
 }
 
 function ActivityCourseCardContent({
   courses,
+  coursesUnavailable = false,
   selectedActions,
   setSelectedActions,
   noCoursesAvailable,
-}: ActivityCourseCardProps & { noCoursesAvailable: boolean }) {
+}: ActivityCourseCardProps & {
+  noCoursesAvailable: boolean
+}) {
   const t = useTranslations()
+  const courseSelectionDisabled = noCoursesAvailable || coursesUnavailable
 
   return (
     <Card
@@ -49,10 +47,10 @@ function ActivityCourseCardContent({
     >
       <CardHeader className="px-0">
         <CardTitle className="flex w-full flex-row items-center justify-between font-normal">
-          <span className={twMerge(noCoursesAvailable && 'opacity-50')}>
+          <span className={twMerge(courseSelectionDisabled && 'opacity-50')}>
             {t('manage.activities.changeCourse')}
           </span>
-          {noCoursesAvailable && (
+          {courseSelectionDisabled && (
             <FontAwesomeIcon
               size="sm"
               icon={faLock}
@@ -64,7 +62,7 @@ function ActivityCourseCardContent({
       <CardContent className="px-0">
         <div className="flex items-center gap-2">
           <Checkbox
-            disabled={noCoursesAvailable}
+            disabled={courseSelectionDisabled}
             checked={typeof selectedActions.course !== 'undefined'}
             onCheck={() => {
               setSelectedActions((prev) => ({
@@ -119,9 +117,19 @@ function ActivityCourseCardContent({
               root: 'h-8',
               trigger: 'h-8 w-56 lg:w-44',
             }}
-            disabled={typeof selectedActions.course === 'undefined'}
+            disabled={
+              courseSelectionDisabled ||
+              typeof selectedActions.course === 'undefined'
+            }
           />
         </div>
+        {coursesUnavailable ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mt-2 text-sm' }}
+          />
+        ) : null}
       </CardContent>
     </Card>
   )
@@ -129,16 +137,21 @@ function ActivityCourseCardContent({
 
 function ActivityCourseCard({
   courses,
+  coursesUnavailable = false,
   selectedActions,
   setSelectedActions,
 }: ActivityCourseCardProps) {
   const t = useTranslations()
   const noCoursesAvailable = courses.length === 0
+  const tooltip = coursesUnavailable
+    ? t('shared.generic.systemError')
+    : t('manage.activities.batchNoCoursesAvailable')
 
-  return noCoursesAvailable ? (
-    <Tooltip delay={0} tooltip={t('manage.activities.batchNoCoursesAvailable')}>
+  return noCoursesAvailable || coursesUnavailable ? (
+    <Tooltip delay={0} tooltip={tooltip}>
       <ActivityCourseCardContent
         courses={courses}
+        coursesUnavailable={coursesUnavailable}
         selectedActions={selectedActions}
         setSelectedActions={setSelectedActions}
         noCoursesAvailable={noCoursesAvailable}
@@ -147,6 +160,7 @@ function ActivityCourseCard({
   ) : (
     <ActivityCourseCardContent
       courses={courses}
+      coursesUnavailable={coursesUnavailable}
       selectedActions={selectedActions}
       setSelectedActions={setSelectedActions}
       noCoursesAvailable={noCoursesAvailable}

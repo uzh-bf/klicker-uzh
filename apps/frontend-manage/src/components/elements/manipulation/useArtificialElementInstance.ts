@@ -1,10 +1,10 @@
+import { nanoid } from 'nanoid'
+import { useMemo } from 'react'
 import {
   ElementData,
   ElementInstance,
   ElementInstanceType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { nanoid } from 'nanoid'
-import { useMemo } from 'react'
+} from '../../../lib/constants/elementTypes'
 import { ElementFormTypes } from './types'
 
 function useArtificialElementInstance({

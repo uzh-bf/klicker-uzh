@@ -1,30 +1,55 @@
-import { useQuery } from '@apollo/client'
-import {
-  Course,
-  GetBookmarksPracticeQuizDocument,
-  PracticeQuiz as PracticeQuizType,
-  SelfDocument,
-  StackFeedbackStatus,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
 
+const PARTICIPANT_ROLE = 'PARTICIPANT'
+const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+const STACK_FEEDBACK_STATUS = {
+  Correct: 'correct',
+  Incorrect: 'incorrect',
+  ManuallyGraded: 'manuallyGraded',
+  Partial: 'partial',
+  Unanswered: 'unanswered',
+} as const
+
+type StackFeedbackStatus =
+  (typeof STACK_FEEDBACK_STATUS)[keyof typeof STACK_FEEDBACK_STATUS]
+
+type PracticeQuizType = NonNullable<
+  RouterOutputs['participant']['practiceQuiz']['practiceQuiz']
+>
+type ElementStackProp = Parameters<typeof ElementStack>[0]['stack']
+type PracticeQuizStack = PracticeQuizType['stacks'][number] | ElementStackProp
+type PracticeQuizRendererQuiz = Pick<
+  PracticeQuizType,
+  | 'description'
+  | 'displayName'
+  | 'id'
+  | 'name'
+  | 'numOfStacks'
+  | 'orderType'
+  | 'pointsMultiplier'
+  | 'resetTimeDays'
+> & {
+  course: Pick<PracticeQuizType['course'], 'id'>
+  stacks?: PracticeQuizStack[] | null
+}
+
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
   'correct' | 'unanswered' | 'incorrect' | 'partial' | undefined
 > = {
-  [StackFeedbackStatus.Correct]: 'correct',
-  [StackFeedbackStatus.Incorrect]: 'incorrect',
-  [StackFeedbackStatus.Partial]: 'partial',
-  [StackFeedbackStatus.Unanswered]: 'unanswered',
-  [StackFeedbackStatus.ManuallyGraded]: 'unanswered',
+  [STACK_FEEDBACK_STATUS.Correct]: 'correct',
+  [STACK_FEEDBACK_STATUS.Incorrect]: 'incorrect',
+  [STACK_FEEDBACK_STATUS.Partial]: 'partial',
+  [STACK_FEEDBACK_STATUS.Unanswered]: 'unanswered',
+  [STACK_FEEDBACK_STATUS.ManuallyGraded]: 'unanswered',
 }
 
 export function resetPracticeQuizLocalStorage(id: string) {
@@ -37,7 +62,7 @@ export function resetPracticeQuizLocalStorage(id: string) {
 }
 
 interface PracticeQuizProps {
-  quiz: Omit<PracticeQuizType, 'course'> & { course: Pick<Course, 'id'> }
+  quiz: PracticeQuizRendererQuiz
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void
@@ -60,8 +85,10 @@ function PracticeQuiz({
   const router = useRouter()
   const t = useTranslations()
   const currentStack = quiz.stacks?.[currentIx]
-  const { data: dataParticipant } = useQuery(SelfDocument, {
-    skip: previewOnly,
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
+  const { data: dataParticipant } = trpc.participant.self.useQuery(undefined, {
+    enabled: !previewOnly,
   })
 
   const handleAllStacksCompletion = () => {
@@ -96,17 +123,21 @@ function PracticeQuiz({
     )
   )
 
-  const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
-    variables: {
-      courseId: router.query.courseId as string,
-      quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
-    },
-    skip:
-      previewOnly ||
-      !router.query.courseId ||
-      !dataParticipant?.self ||
-      dataParticipant?.self.role !== UserRole.Participant,
-  })
+  const practiceQuizBookmarksInput = {
+    courseId,
+    quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
+  }
+  const { data: bookmarksData } =
+    trpc.participant.practiceQuizBookmarks.useQuery(
+      practiceQuizBookmarksInput,
+      {
+        enabled:
+          !previewOnly &&
+          courseId !== '' &&
+          !!dataParticipant?.self &&
+          dataParticipant?.self.role === PARTICIPANT_ROLE,
+      }
+    )
 
   return (
     <div className="flex-1">
@@ -124,7 +155,7 @@ function PracticeQuiz({
                     status:
                       FEEDBACK_STATUS_PROGRESS_MAP[
                         progressState?.[stack.id].status ??
-                          StackFeedbackStatus.Unanswered
+                          STACK_FEEDBACK_STATUS.Unanswered
                       ],
                     score: progressState?.[stack.id].score ?? null,
                   }
@@ -174,23 +205,26 @@ function PracticeQuiz({
             parentId={quiz.id}
             courseId={quiz.course!.id}
             embedded={embedded}
-            stack={currentStack}
+            stack={currentStack as ElementStackProp}
             currentStep={currentIx + 1}
             totalSteps={quiz.stacks?.length ?? 0}
             setStepStatus={(value) => {
               setProgressState((prev) => {
                 const next = { ...prev }
-                next[currentStack.id] = value
+                next[currentStack.id] = {
+                  status: value.status as StackFeedbackStatus,
+                  score: value.score,
+                }
                 return next
               })
             }}
             handleNextElement={handleNextElement}
             withParticipant={
               !!dataParticipant?.self &&
-              dataParticipant.self.role !== UserRole.TemporaryParticipant
+              dataParticipant.self.role !== TEMPORARY_PARTICIPANT_ROLE
             }
             onAllStacksCompletion={handleAllStacksCompletion}
-            bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
+            bookmarks={bookmarksData}
             previewOnly={previewOnly}
           />
         )}

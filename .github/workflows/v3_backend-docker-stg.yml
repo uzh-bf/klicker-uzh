@@ -10,6 +10,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/backend-docker/**'
+      - 'packages/api/**'
       - 'packages/graphql/**'
       - 'packages/prisma/**'
       - '.github/workflows/v3_backend-docker**'

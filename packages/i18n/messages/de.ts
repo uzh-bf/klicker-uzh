@@ -1073,6 +1073,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
       groupActivityEnded:
         'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
+      refreshPage: 'Seite aktualisieren',
     },
     assessment: {
       homepageHint:
@@ -3891,6 +3892,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizStartFailed:
         'Leider konnte Ihr Live Quiz aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.',
       pptEmbedding: 'PPT-Einbettung Evaluation',
+      embeddingLinkCopied:
+        'Der Einbettungslink wurde erfolgreich in die Zwischenablage kopiert.',
       startLiveQuiz: 'Quiz starten',
       confirmStartLiveQuiz:
         'Sind Sie sich sicher, dass sie das folgende Live Quiz starten möchten?',

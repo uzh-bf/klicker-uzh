@@ -1,4 +1,3 @@
-import { LiveQuiz } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -6,6 +5,7 @@ import {
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
 import { useMemo } from 'react'
+import type { LiveQuiz } from '../../../../lib/constants/elementTypes'
 import { LiveQuizTemplateFormValues } from '../types'
 
 function useInitialLiveQuizTemplateFormData({

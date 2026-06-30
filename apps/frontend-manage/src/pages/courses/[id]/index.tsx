@@ -1,14 +1,9 @@
-import { useQuery } from '@apollo/client'
 import {
   faCrown,
   faList,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetSingleCourseDocument,
-  ReviewStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
@@ -18,6 +13,7 @@ import {
   Prose,
   TabContent,
   Tabs,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -33,6 +29,32 @@ import GroupActivityList from '../../../components/courses/GroupActivityList'
 import LiveQuizList from '../../../components/courses/LiveQuizList'
 import MicroLearningList from '../../../components/courses/MicroLearningList'
 import PracticeQuizList from '../../../components/courses/PracticeQuizList'
+import type { ActivityInfo } from '../../../lib/constants/activityEnums'
+import type { LocaleType } from '../../../lib/evaluationTypes'
+import { trpc } from '../../../lib/trpc'
+
+const REVIEW_STATUS_REVIEWED = 'REVIEWED'
+const REVIEW_STATUS_MODIFIED_AFTER_REVIEW = 'MODIFIED_AFTER_REVIEW'
+
+const courseActivityTabValues = [
+  'liveQuizzes',
+  'practiceQuizzes',
+  'microLearnings',
+  'groupActivities',
+] as const
+const courseGamificationTabValues = [
+  'ind-leaderboard',
+  'group-leaderboard',
+  'groups',
+] as const
+
+function isCourseActivityTab(value: string) {
+  return (courseActivityTabValues as readonly string[]).includes(value)
+}
+
+function isCourseGamificationTab(value: string) {
+  return (courseGamificationTabValues as readonly string[]).includes(value)
+}
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -45,11 +67,15 @@ function CourseOverviewPage() {
     null
   )
 
-  const { loading, error, data } = useQuery(GetSingleCourseDocument, {
-    variables: { courseId: router.query.id as string },
-    skip: !router.query.id,
-    fetchPolicy: 'network-only', // critical query, should always be up to date
-  })
+  const courseId = typeof router.query.id === 'string' ? router.query.id : ''
+  const { isLoading, error, data } = trpc.course.detail.useQuery(
+    { courseId },
+    {
+      enabled: Boolean(courseId),
+      refetchOnMount: 'always',
+      staleTime: 0,
+    }
+  )
 
   const { earliestStartDate, latestEndDate, earliestGroupDeadline } =
     useEarliestLatestCourseDates({
@@ -68,14 +94,20 @@ function CourseOverviewPage() {
   }, [data, router])
 
   useEffect(() => {
-    if (router.query.tab) {
-      setTabValue(router.query.tab as string)
+    if (
+      typeof router.query.tab === 'string' &&
+      isCourseActivityTab(router.query.tab)
+    ) {
+      setTabValue(router.query.tab)
     }
   }, [router.query.tab])
 
   useEffect(() => {
-    if (router.query.gamificationTab) {
-      setGamificationTabValue(router.query.gamificationTab as string)
+    if (
+      typeof router.query.gamificationTab === 'string' &&
+      isCourseGamificationTab(router.query.gamificationTab)
+    ) {
+      setGamificationTabValue(router.query.gamificationTab)
     }
   }, [router.query.gamificationTab])
 
@@ -96,10 +128,10 @@ function CourseOverviewPage() {
 
     const totalActivities = allActivities.length
     const completedActivities = allActivities.filter(
-      (quiz) => quiz.reviewStatus === ReviewStatus.Reviewed
+      (quiz) => quiz.reviewStatus === REVIEW_STATUS_REVIEWED
     ).length
     const reviewCompletedModified = allActivities.filter(
-      (quiz) => quiz.reviewStatus === ReviewStatus.ModifiedAfterReview
+      (quiz) => quiz.reviewStatus === REVIEW_STATUS_MODIFIED_AFTER_REVIEW
     ).length
 
     return {
@@ -113,11 +145,18 @@ function CourseOverviewPage() {
     }
   }, [data?.course])
 
-  if (error) {
-    return <div>{error.message}</div>
+  if (error && !data?.course) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
   }
 
-  if (loading || !data?.course)
+  if (!data?.course)
     return (
       <Layout>
         <Loader />
@@ -125,6 +164,15 @@ function CourseOverviewPage() {
     )
 
   const { course } = data
+  const courseLanguage = course.language as unknown as LocaleType
+  const liveQuizzes = (course.liveQuizzesInfo ??
+    []) as unknown as ActivityInfo[]
+  const practiceQuizzes = (course.practiceQuizzesInfo ??
+    []) as unknown as ActivityInfo[]
+  const microLearnings = (course.microLearningsInfo ??
+    []) as unknown as ActivityInfo[]
+  const groupActivities = (course.groupActivitiesInfo ??
+    []) as unknown as ActivityInfo[]
 
   return (
     <Layout>
@@ -352,8 +400,8 @@ function CourseOverviewPage() {
             >
               <LiveQuizList
                 courseId={course.id}
-                courseLanguage={course.language}
-                liveQuizzes={course.liveQuizzesInfo ?? []}
+                courseLanguage={courseLanguage}
+                liveQuizzes={liveQuizzes}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
               />
@@ -365,8 +413,8 @@ function CourseOverviewPage() {
             >
               <PracticeQuizList
                 courseId={course.id}
-                courseLanguage={course.language}
-                practiceQuizzes={course.practiceQuizzesInfo ?? []}
+                courseLanguage={courseLanguage}
+                practiceQuizzes={practiceQuizzes}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
               />
@@ -378,8 +426,8 @@ function CourseOverviewPage() {
             >
               <MicroLearningList
                 courseId={course.id}
-                courseLanguage={course.language}
-                microLearnings={course.microLearningsInfo ?? []}
+                courseLanguage={courseLanguage}
+                microLearnings={microLearnings}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
               />
@@ -390,7 +438,7 @@ function CourseOverviewPage() {
               className={{ root: 'px-0 py-1' }}
             >
               <GroupActivityList
-                groupActivities={course.groupActivitiesInfo ?? []}
+                groupActivities={groupActivities}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
               />

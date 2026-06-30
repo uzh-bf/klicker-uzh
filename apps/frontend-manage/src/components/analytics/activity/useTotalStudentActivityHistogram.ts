@@ -1,4 +1,4 @@
-import { ParticipantCourseActivity } from '@klicker-uzh/graphql/dist/ops'
+import type { ParticipantCourseActivity } from '@lib/analyticsTypes'
 import { useMemo } from 'react'
 import computeHistogramStatistics from '../computeHistogramStatistics'
 

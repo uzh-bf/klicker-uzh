@@ -1,44 +1,26 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreateGroupActivityMutation,
-  CreateGroupActivityMutationVariables,
-  EditGroupActivityMutation,
-  EditGroupActivityMutationVariables,
-  GetSingleCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import type { RouterInputs, RouterOutputs } from '../../../../lib/trpc'
 import { GroupActivityFormValues } from '../WizardLayout'
+
+type CreateGroupActivityInput = RouterInputs['activity']['createGroupActivity']
+type CreateGroupActivityResult =
+  RouterOutputs['activity']['createGroupActivity']
+type EditGroupActivityInput = RouterInputs['activity']['editGroupActivity']
+type EditGroupActivityResult = RouterOutputs['activity']['editGroupActivity']
 
 interface GroupActivityFormSubmissionProps {
   id?: string
   previousCourseId?: string
   values: GroupActivityFormValues
   createGroupActivity: (
-    options?:
-      | MutationFunctionOptions<
-          CreateGroupActivityMutation,
-          CreateGroupActivityMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<CreateGroupActivityMutation>>
+    input: CreateGroupActivityInput
+  ) => Promise<CreateGroupActivityResult>
   editGroupActivity: (
-    options?:
-      | MutationFunctionOptions<
-          EditGroupActivityMutation,
-          EditGroupActivityMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<EditGroupActivityMutation>>
+    input: EditGroupActivityInput
+  ) => Promise<EditGroupActivityResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
+  invalidateCourseDetail: (courseId: string) => Promise<void>
+  invalidateActivities: () => Promise<void>
   onError: () => void
 }
 
@@ -49,139 +31,64 @@ async function submitGroupActivityForm({
   createGroupActivity,
   editGroupActivity,
   setIsWizardCompleted,
+  invalidateCourseDetail,
+  invalidateActivities,
   onError,
 }: GroupActivityFormSubmissionProps) {
   try {
     let success = false
+    const courseIdsToInvalidate = new Set<string>()
+    const createUpdateJSON = {
+      name: values.name,
+      displayName: values.displayName,
+      description: values.description,
+      startDate: dayjs(values.startDate).utc().toDate(),
+      endDate: dayjs(values.endDate).utc().toDate(),
+      multiplier: parseInt(values.multiplier),
+      courseId: values.courseId!,
+      clues: values.clues as CreateGroupActivityInput['clues'],
+      stack: {
+        elements: values.stack.elements.map((element, ix) => ({
+          elementId: element.id,
+          order: ix,
+          existingInstanceId: element.existingInstanceId,
+          duplicateInstance: element.duplicateInstance,
+        })),
+        order: 0,
+      },
+    }
+
     if (id) {
-      const { data: result } = await editGroupActivity({
-        variables: {
-          id,
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-          startDate: dayjs(values.startDate).utc().format(),
-          endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
-          courseId: values.courseId!,
-          clues: values.clues,
-          stack: {
-            elements: values.stack.elements.map((element, ix) => ({
-              elementId: element.id,
-              order: ix,
-              existingInstanceId: element.existingInstanceId,
-              duplicateInstance: element.duplicateInstance,
-            })),
-            order: 0,
-          },
-        },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.editGroupActivity?.courseId) return
+      const result = await editGroupActivity({ id, ...createUpdateJSON })
 
-          // if the course assignment changed, remove the microlearning from the previous course
-          if (
-            previousCourseId &&
-            res.editGroupActivity.courseId !== previousCourseId
-          ) {
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: previousCourseId },
-              },
-              (data) => {
-                if (!data?.course) return data
+      success = Boolean(result.editGroupActivity)
+      if (result.editGroupActivity?.courseId) {
+        const courseIds = [
+          previousCourseId,
+          result.editGroupActivity.courseId,
+        ].filter((courseId): courseId is string => Boolean(courseId))
 
-                return {
-                  course: {
-                    ...data.course,
-                    groupActivitiesInfo:
-                      data.course.groupActivitiesInfo?.filter(
-                        (ga) => ga.id !== res.editGroupActivity!.id
-                      ),
-                  },
-                }
-              }
-            )
-          }
-
-          // updated / add the group activity in the currently assigned course
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.editGroupActivity.courseId },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              const activities = [
-                ...(data.course.groupActivitiesInfo?.filter(
-                  (ga) => ga.id !== res.editGroupActivity!.id
-                ) ?? []),
-                res.editGroupActivity!,
-              ]
-              return {
-                course: { ...data.course, groupActivitiesInfo: activities },
-              }
-            }
-          )
-        },
-      })
-
-      success = Boolean(result?.editGroupActivity)
+        courseIds.forEach((courseId) => courseIdsToInvalidate.add(courseId))
+      }
     } else {
-      const { data: result } = await createGroupActivity({
-        variables: {
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-          startDate: dayjs(values.startDate).utc().format(),
-          endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
-          courseId: values.courseId!,
-          clues: values.clues,
-          stack: {
-            elements: values.stack.elements.map((element, ix) => ({
-              elementId: element.id,
-              order: ix,
-              existingInstanceId: element.existingInstanceId,
-              duplicateInstance: element.duplicateInstance,
-            })),
-            order: 0,
-          },
-        },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.createGroupActivity?.courseId) return
+      const result = await createGroupActivity(createUpdateJSON)
 
-          // change the status of the group activity on the course overview back to draft
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.createGroupActivity.courseId },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              return {
-                course: {
-                  ...data.course,
-                  groupActivitiesInfo: [
-                    ...(data.course.groupActivitiesInfo ?? []),
-                    res.createGroupActivity!,
-                  ],
-                },
-              }
-            }
-          )
-        },
-      })
-
-      success = Boolean(result?.createGroupActivity)
+      success = Boolean(result.createGroupActivity)
+      if (result.createGroupActivity?.courseId) {
+        courseIdsToInvalidate.add(result.createGroupActivity.courseId)
+      }
     }
 
     if (success) {
+      await Promise.all([
+        invalidateActivities(),
+        ...Array.from(courseIdsToInvalidate).map((courseId) =>
+          invalidateCourseDetail(courseId).catch(console.error)
+        ),
+      ])
       setIsWizardCompleted(true)
+    } else {
+      onError()
     }
   } catch (error) {
     console.log(error)

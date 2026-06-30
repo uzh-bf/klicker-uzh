@@ -1,13 +1,13 @@
-import { useSuspenseQuery } from '@apollo/client'
 import {
   faArrowRight,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetStudentCourseResultsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { trpc } from '../../../lib/trpc'
 
 function CourseSingleStudentResults({
   courseId,
@@ -19,14 +19,18 @@ function CourseSingleStudentResults({
   const t = useTranslations()
   const formatter = useFormatter()
 
-  const { data, error } = useSuspenseQuery(GetStudentCourseResultsDocument, {
-    variables: { courseId, participantId },
-    fetchPolicy: 'network-only',
-    skip: !courseId || !participantId,
-  })
-  const studentCourseResults = data?.studentCourseResults ?? []
+  const { data, error, isLoading } =
+    trpc.activity.studentCourseResults.useQuery(
+      { courseId, participantId },
+      { enabled: Boolean(courseId && participantId) }
+    )
+  const studentCourseResults = data?.studentCourseResults
 
-  if (error || !data?.studentCourseResults) {
+  if (isLoading && !studentCourseResults) {
+    return <Loader />
+  }
+
+  if (error && !studentCourseResults) {
     return (
       <UserNotification
         type="error"
@@ -35,12 +39,30 @@ function CourseSingleStudentResults({
     )
   }
 
-  if (studentCourseResults.length === 0) {
+  if (!studentCourseResults) {
     return (
       <UserNotification
-        type="info"
-        message={t('pwa.assessment.noCompletedLiveQuizzesYet')}
+        type="warning"
+        message={t('manage.assessment.errorLoadingCourseResults')}
       />
+    )
+  }
+
+  if (studentCourseResults.length === 0) {
+    return (
+      <>
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t('manage.assessment.errorLoadingCourseResults')}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
+        <UserNotification
+          type="info"
+          message={t('pwa.assessment.noCompletedLiveQuizzesYet')}
+        />
+      </>
     )
   }
 
@@ -58,6 +80,12 @@ function CourseSingleStudentResults({
 
   return (
     <div className="space-y-3">
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingCourseResults')}
+        />
+      ) : null}
       {studentCourseResults.map((result) => (
         <div
           key={result.id}

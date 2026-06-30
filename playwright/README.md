@@ -19,17 +19,37 @@ playwright/
 
 ## Local run
 
-1. Start dependencies: `./_run_app_dependencies.sh` (from repo root)
-2. Start Playwright app stack: `pnpm run dev:playwright`
-3. Run all tests:
+From repo root:
 
 ```bash
-# with Infisical secrets (recommended)
-pnpm --filter @klicker-uzh/playwright test:run
+# Start Postgres, Redis, Hatchet, Traefik, create Hatchet token, and apply Prisma schema.
+# Non-interactive mode skips optional build/reset prompts; detach mode returns after setup.
+KLICKER_NONINTERACTIVE=1 KLICKER_DEPENDENCIES_DETACH=1 ./_run_app_dependencies.sh playwright
 
-# without Infisical (env vars already exported)
-pnpm --filter @klicker-uzh/playwright test:run:raw
+# Start the app stack in local-port Playwright mode.
+# Raw mode avoids Infisical and runs build:test first so instrumented backend sources are fresh.
+volta run pnpm run dev:playwright:raw
+
+# Confirm Playwright can discover the active Chromium suite.
+volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
 ```
+
+Run tests:
+
+```bash
+# with Infisical secrets
+volta run pnpm --filter @klicker-uzh/playwright test:run -- --project=chromium tests/A-login.spec.ts
+
+# without Infisical
+volta run pnpm --filter @klicker-uzh/playwright test:run:raw -- --project=chromium tests/A-login.spec.ts
+
+# full active Chromium suite
+volta run pnpm --filter @klicker-uzh/playwright test:run -- --project=chromium
+```
+
+Stop Docker dependencies with `./_down.sh`.
+
+In Codex/agent shells, prefer `volta run pnpm` or `/Users/roland/.volta/bin/pnpm`; an ambient pnpm with a different version can recreate `node_modules`. For production-like CI parity, `volta run pnpm run start:playwright` builds first and serves the `start:test` stack.
 
 ## Useful commands
 

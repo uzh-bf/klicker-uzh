@@ -11,6 +11,8 @@
     "APP_STUDENT_DOMAIN",
     "APP_STUDENT_SUBDOMAIN",
     "APP_SECRET",
+    "APP_CHAT_GUEST_SECRET",
+    "CHAT_GUEST_SEED",
     "ASSESSMENT_MODE",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
@@ -97,7 +99,14 @@
     "UPSTREAM_OPENAI_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
-    "LANGFUSE_HOST"
+    "LANGFUSE_HOST",
+    "MCP_STUDENT_GRAPHQL_ENDPOINT",
+    "MCP_STUDENT_HOST",
+    "MCP_STUDENT_PATH",
+    "MCP_STUDENT_PORT",
+    "MCP_STUDENT_QUESTION_REF_SECRET",
+    "MCP_STUDENT_QUESTION_REF_TTL_SECONDS",
+    "MCP_STUDENT_URL"
   ],
   "tasks": {
     "lint": {
@@ -107,6 +116,11 @@
       "cache": false,
       "outputLogs": "new-only",
       "dependsOn": ["^build"]
+    },
+    "@klicker-uzh/prisma#check": {
+      "cache": false,
+      "outputLogs": "new-only",
+      "dependsOn": ["build"]
     },
     "build": {
       "dependsOn": ["^build"],
@@ -122,6 +136,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/api#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -134,6 +149,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/api#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -146,6 +162,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/api#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -158,6 +175,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/api#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"

@@ -1,15 +1,27 @@
-import {
-  GroupActivityClueInstance,
-  ParameterType,
-  Participant,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 
+type ParameterType = 'NUMBER' | 'STRING'
+
+const ParameterType = {
+  Number: 'NUMBER' as ParameterType,
+  String: 'STRING' as ParameterType,
+}
+
 interface GroupActivityClueProps {
-  clue: Omit<GroupActivityClueInstance, 'name' | 'participant'> & {
-    participant: Partial<Participant>
+  clue: {
+    id: number
+    displayName: string
+    type: ParameterType
+    unit?: string | null
+    value?: string | null
+    participant: {
+      avatar?: string | null
+      id: string
+      isSelf?: boolean
+      username?: string | null
+    }
   }
 }
 

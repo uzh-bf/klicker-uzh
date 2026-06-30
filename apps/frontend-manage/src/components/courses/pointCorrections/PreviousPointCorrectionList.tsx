@@ -1,10 +1,9 @@
-import {
-  PointCorrection,
-  PointCorrectionType,
-  User,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import {
+  PointCorrectionType,
+  type PreviousPointCorrection,
+} from '../../../lib/assessmentResultsTypes'
 
 function InfoBlock({
   title,
@@ -28,18 +27,7 @@ function InfoBlock({
 function PreviousPointCorrectionList({
   corrections,
 }: {
-  corrections: (Omit<
-    PointCorrection,
-    'correctedBy' | 'instance' | 'liveQuiz' | 'participant' | 'participants'
-  > & {
-    correctedBy?: Pick<User, 'id' | 'shortname'> | null
-    instance?: { elementData?: { name?: string } } | null
-    liveQuiz?: { id: string; name: string } | null
-    participant?: { id: string; email?: string | null; username: string } | null
-    participants?:
-      | { id: string; email?: string | null; username: string }[]
-      | null
-  })[]
+  corrections: PreviousPointCorrection[]
 }) {
   const t = useTranslations()
 

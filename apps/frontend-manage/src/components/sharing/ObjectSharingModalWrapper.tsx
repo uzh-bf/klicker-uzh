@@ -1,4 +1,4 @@
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { useState } from 'react'
 import ObjectSharingModal from './ObjectSharingModal'
 import TransferOwnershipModal from './TransferOwnershipModal'
@@ -42,26 +42,26 @@ function ObjectSharingModalWrapper({
     return null
   }
 
+  const refreshActivitiesOnClose =
+    objectType === ObjectType.LiveQuiz ||
+    objectType === ObjectType.PracticeQuiz ||
+    objectType === ObjectType.MicroLearning ||
+    objectType === ObjectType.GroupActivity
+
   return (
     <>
       <ObjectSharingModal
-        onClose={async () => {
-          // if an operation related to elements was executed, refetch the element list
-          if (objectType === ObjectType.Element) {
-            await refetchElements?.()
-          }
-
-          // if an operation related to activities was executed, refetch the activity list
-          if (
-            objectType === ObjectType.LiveQuiz ||
-            objectType === ObjectType.PracticeQuiz ||
-            objectType === ObjectType.MicroLearning ||
-            objectType === ObjectType.GroupActivity
-          ) {
-            await refetchActivities?.()
-          }
-
+        onClose={() => {
           onClose()
+
+          const parentRefreshes = [
+            objectType === ObjectType.Element ? refetchElements?.() : undefined,
+            refreshActivitiesOnClose ? refetchActivities?.() : undefined,
+          ].filter((refresh): refresh is Promise<void> => Boolean(refresh))
+
+          if (parentRefreshes.length > 0) {
+            void Promise.all(parentRefreshes).catch(console.error)
+          }
         }}
         objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
         objectType={objectType}

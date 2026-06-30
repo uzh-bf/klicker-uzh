@@ -1,6 +1,5 @@
-import type { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import React, { useEffect } from 'react'
+import { ElementType, type ElementInstance } from '../elementTypes'
 import type {
   CaseStudyStudentResponseType,
   ElementChoicesType,

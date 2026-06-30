@@ -1,42 +1,38 @@
-import { SubscribeToMoreOptions } from '@apollo/client'
-import {
-  MicroLearning,
-  MicroLearningEndedDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { MicroLearningEndedEvent } from '@klicker-uzh/api'
+import { api } from '@lib/trpc'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+
+type EndedMicroLearning = MicroLearningEndedEvent
 
 interface MicroLearningSubscriberProps {
   activityId: string
   microLearningName: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onEnded?: (microLearning: EndedMicroLearning) => void | Promise<void>
 }
 
 function MicroLearningSubscriber({
   activityId,
   microLearningName,
-  subscribeToMore,
+  onEnded,
 }: MicroLearningSubscriberProps) {
   const t = useTranslations()
+  const onEndedRef = useRef(onEnded)
+  const handledActivityIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    subscribeToMore({
-      document: MicroLearningEndedDocument,
-      variables: { activityId },
-      updateQuery: (
-        prev: { microLearning: MicroLearning },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: {
-            data: { microLearningEnded: MicroLearning }
-          }
-        }
-      ): { microLearning: MicroLearning } => {
-        if (!subscriptionData.data) return prev
+    onEndedRef.current = onEnded
+  }, [onEnded])
 
-        // trigger toast for ended microlearning
+  api.realtime.microLearningEnded.useSubscription(
+    { activityId },
+    {
+      onData(microLearning) {
+        if (handledActivityIdRef.current === microLearning.id) return
+
+        handledActivityIdRef.current = microLearning.id
+
         toast({
           type: 'warning',
           message: t('pwa.courses.microLearningEndedToast', {
@@ -45,16 +41,12 @@ function MicroLearningSubscriber({
           options: { duration: 10000 },
         })
 
-        // update the values returned by the course overview data query
-        const updatedMicroLearning = {
-          ...prev.microLearning,
-          ...subscriptionData.data.microLearningEnded,
-        }
-
-        return { microLearning: updatedMicroLearning }
+        void Promise.resolve(onEndedRef.current?.(microLearning)).catch(
+          console.error
+        )
       },
-    })
-  }, [activityId, subscribeToMore])
+    }
+  )
 
   return null
 }

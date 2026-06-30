@@ -1,10 +1,7 @@
 import { faX } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityFeedback,
-  ActivityType,
-  ElementType,
-  InstanceFeedback,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ElementType } from '@klicker-uzh/prisma/client'
+import { ActivityType } from '@klicker-uzh/types'
+import type { ActivityFeedback, InstanceFeedback } from '@lib/analyticsTypes'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'

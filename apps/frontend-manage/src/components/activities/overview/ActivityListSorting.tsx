@@ -1,15 +1,15 @@
 import { faSortAsc, faSortDesc } from '@fortawesome/free-solid-svg-icons'
-import { SortByType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { LibrarySortType } from '../../../lib/hooks/useSortingAndFiltering'
+import { SortByType } from '../../../lib/constants/activityEnums'
+import { ActivitySortType } from '../../../lib/hooks/useActivitySortingAndFiltering'
 
 function ActivityListSorting({
   sort,
   handleSortByChange,
   handleSortOrderToggle,
 }: {
-  sort: LibrarySortType
+  sort: ActivitySortType
   handleSortByChange: (newSortBy: SortByType) => void
   handleSortOrderToggle: () => void
 }) {

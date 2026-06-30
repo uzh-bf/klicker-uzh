@@ -1,15 +1,3 @@
-import { useMutation } from '@apollo/client'
-import {
-  CaseStudyCaseResponse,
-  ElementStack,
-  ElementType,
-  GroupActivityDecision,
-  GroupActivityDetailsDocument,
-  GroupActivityResults,
-  ResponseCorrectnessType,
-  SelectionElementData,
-  SubmitGroupActivityDecisionsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   CaseStudyStudentResponseType,
   StackStudentResponseType,
@@ -17,20 +5,50 @@ import StudentElement, {
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
-import { ChoicesResponse } from '@klicker-uzh/types'
-import { Button } from '@uzh-bf/design-system'
+import type {
+  CaseStudyCaseResponse,
+  ChoicesResponse,
+  GroupActivityDecision,
+  GroupActivityResults,
+} from '@klicker-uzh/types'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc, type RouterInputs } from '../../lib/trpc'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
+
+type GroupActivityResponseInput =
+  RouterInputs['participant']['submitGroupActivityDecisions']['responses'][number]
+type ElementStack = Parameters<typeof useStudentResponse>[0]['stack']
+type ElementType = NonNullable<ElementStack['elements']>[number]['elementType']
+type ResponseCorrectnessType = 'CORRECT' | 'INCORRECT' | 'PARTIAL'
+
+const ElementType = {
+  CaseStudy: 'CASE_STUDY' as ElementType,
+  Content: 'CONTENT' as ElementType,
+  Flashcard: 'FLASHCARD' as ElementType,
+  FreeText: 'FREE_TEXT' as ElementType,
+  Kprim: 'KPRIM' as ElementType,
+  Mc: 'MC' as ElementType,
+  Numerical: 'NUMERICAL' as ElementType,
+  Sc: 'SC' as ElementType,
+  Selection: 'SELECTION' as ElementType,
+}
+
+const ResponseCorrectnessType = {
+  Correct: 'CORRECT' as ResponseCorrectnessType,
+  Incorrect: 'INCORRECT' as ResponseCorrectnessType,
+  Partial: 'PARTIAL' as ResponseCorrectnessType,
+}
 
 interface GroupActivityStackProps {
   activityId: number
   activityEnded: boolean
   stack: ElementStack
   decisions?: GroupActivityDecision[] | null
+  onSubmitted: () => Promise<unknown>
   results?: GroupActivityResults | null
   submittedAt?: string
 }
@@ -40,26 +58,16 @@ function GroupActivityStack({
   activityEnded,
   stack,
   decisions,
+  onSubmitted,
   results,
   submittedAt,
 }: GroupActivityStackProps) {
   const t = useTranslations()
-  const router = useRouter()
-
-  const [submitGroupActivityDecisions, { loading: submitLoading }] =
-    useMutation(SubmitGroupActivityDecisionsDocument, {
-      // previous submissions need to be loaded in the correct format
-      // duplication of logic for rarely called function is probably not worth it
-      refetchQueries: [
-        {
-          query: GroupActivityDetailsDocument,
-          variables: {
-            groupId: router.query.groupId,
-            activityId: router.query.activityId,
-          },
-        },
-      ],
-    })
+  const submitGroupActivityDecisions =
+    trpc.participant.submitGroupActivityDecisions.useMutation()
+  const [submissionRefreshing, setSubmissionRefreshing] = useState(false)
+  const [submissionConfirmed, setSubmissionConfirmed] = useState(false)
+  const [submissionRefreshFailed, setSubmissionRefreshFailed] = useState(false)
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: true,
@@ -76,6 +84,16 @@ function GroupActivityStack({
   })
 
   useEffect(() => {
+    setSubmissionConfirmed(false)
+    setSubmissionRefreshFailed(false)
+  }, [activityId])
+
+  useEffect(() => {
+    if (decisions) {
+      setSubmissionConfirmed(false)
+      setSubmissionRefreshFailed(false)
+    }
+
     const loadedResponses = decisions?.reduce<StackStudentResponseType>(
       (acc, decision) => {
         if (!decision) return acc
@@ -91,7 +109,7 @@ function GroupActivityStack({
               {}
             ),
             valid: true,
-          }
+          } as StackStudentResponseType[number]
           return acc
         } else if (decision.type === ElementType.Kprim) {
           const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce<
@@ -105,7 +123,7 @@ function GroupActivityStack({
               responseObj
             ),
             valid: true,
-          }
+          } as StackStudentResponseType[number]
           return acc
         } else if (decision.type === ElementType.Numerical) {
           acc[decision.instanceId] = {
@@ -114,24 +132,24 @@ function GroupActivityStack({
               ? String(decision.numericalResponse)
               : undefined,
             valid: true,
-          }
+          } as StackStudentResponseType[number]
           return acc
         } else if (decision.type === ElementType.FreeText) {
           acc[decision.instanceId] = {
             type: decision.type,
             response: decision.freeTextResponse ?? undefined,
             valid: true,
-          }
+          } as StackStudentResponseType[number]
           return acc
         } else if (decision.type === ElementType.Selection) {
           const instance = stack.elements?.find(
             (element) => element.id === decision.instanceId
           )
           const response = getEmptySelectionResponse({
-            numberOfInputs: instance
-              ? (instance.elementData as SelectionElementData).options
-                  .numberOfInputs
-              : 1,
+            numberOfInputs:
+              instance?.elementData.__typename === 'SelectionElementData'
+                ? instance.elementData.options.numberOfInputs
+                : 1,
           })
           decision.selectionResponse
             ? decision.selectionResponse.forEach((answerId, ix) => {
@@ -143,7 +161,7 @@ function GroupActivityStack({
             type: decision.type,
             response,
             valid: true,
-          }
+          } as StackStudentResponseType[number]
           return acc
         } else if (decision.type === ElementType.CaseStudy) {
           const decisionsObject =
@@ -169,14 +187,14 @@ function GroupActivityStack({
             type: decision.type,
             response: decisionsObject ?? undefined,
             valid: true,
-          }
+          } as StackStudentResponseType[number]
           return acc
         } else if (decision.type === ElementType.Content) {
           acc[decision.instanceId] = {
             type: decision.type,
             response: decision.contentResponse ?? undefined,
             valid: true,
-          }
+          } as StackStudentResponseType[number]
           return acc
         }
 
@@ -276,126 +294,70 @@ function GroupActivityStack({
           disabled={
             Object.values(studentResponse).some(
               (response) => !response.valid
-            ) || activityEnded
+            ) ||
+            activityEnded ||
+            submitGroupActivityDecisions.isLoading ||
+            submissionRefreshing ||
+            submissionConfirmed
           }
           onClick={async () => {
-            const result = await submitGroupActivityDecisions({
-              variables: {
-                activityId: activityId,
-                responses: Object.entries(studentResponse).map(
-                  ([instanceId, value]) => {
-                    if (
-                      value.type === ElementType.Sc ||
-                      value.type === ElementType.Mc ||
-                      value.type === ElementType.Kprim
-                    ) {
-                      // convert the solution objects into integer lists
-                      const responseList: ChoicesResponse[] = Object.entries(
-                        value.response!
-                      )
-                        .filter(([, value]) => value)
-                        .map(([key, value]) => ({
-                          ix: parseInt(key),
-                          selected: value ?? false,
-                        }))
+            const responses = buildGroupActivityResponseInput(studentResponse)
+            setSubmissionRefreshing(true)
+            const submitDecisions = submitGroupActivityDecisions.mutateAsync
+            try {
+              const result = await submitDecisions({
+                activityId,
+                responses,
+              }).catch((error) => {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+                return undefined
+              })
 
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        choicesResponse: responseList,
-                      }
-                    } else if (value.type === ElementType.Numerical) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Numerical,
-                        numericalResponse: parseFloat(value.response!),
-                      }
-                    } else if (value.type === ElementType.FreeText) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.FreeText,
-                        freeTextResponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Content) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Content,
-                        contentReponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Selection) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Selection,
-                        selectionResponse: Object.values(
-                          value.response!
-                        ).filter(
-                          (entry) =>
-                            entry !== -1 &&
-                            typeof entry !== 'undefined' &&
-                            entry !== null
-                        ),
-                      }
-                    } else if (value.type === ElementType.CaseStudy) {
-                      const caseStudyResponse: CaseStudyCaseResponse[] =
-                        Object.entries(value.response!).map(
-                          ([caseId, caseResponse]) => {
-                            return {
-                              caseId,
-                              itemResponses: Object.entries(caseResponse).map(
-                                ([itemId, itemResponse]) => {
-                                  return {
-                                    itemId: parseInt(itemId),
-                                    criterionResponses: Object.entries(
-                                      itemResponse
-                                    ).flatMap(
-                                      ([criterionId, criterionResponse]) => {
-                                        if (
-                                          typeof criterionResponse ===
-                                          'undefined'
-                                        ) {
-                                          return []
-                                        }
+              if (typeof result === 'undefined') {
+                return
+              }
 
-                                        return {
-                                          criterionId: criterionId,
-                                          response: criterionResponse,
-                                        }
-                                      }
-                                    ),
-                                  }
-                                }
-                              ),
-                            }
-                          }
-                        )
+              if (!result?.groupActivityInstanceId) {
+                console.error('Error submitting response')
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+                return
+              }
 
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        caseStudyResponse,
-                      }
-                    } else {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        response: value.response,
-                      }
-                    }
-                  }
-                ),
-              },
-            })
+              setSubmissionConfirmed(true)
+              setSubmissionRefreshFailed(false)
+              const refreshResult = await onSubmitted().catch((error) => {
+                console.error(error)
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                  options: { duration: 5000 },
+                })
+                setSubmissionRefreshFailed(true)
+                return undefined
+              })
 
-            if (!result?.data?.submitGroupActivityDecisions) {
-              console.error('Error submitting response')
-              return
+              // set status and score according to returned correctness
+              if (refreshResult !== undefined) {
+                setStudentResponse({})
+                setSubmissionRefreshFailed(false)
+              }
+            } finally {
+              setSubmissionRefreshing(false)
             }
-
-            // set status and score according to returned correctness
-            setStudentResponse({})
           }}
           type="submit"
-          loading={submitLoading}
+          loading={
+            submitGroupActivityDecisions.isLoading || submissionRefreshing
+          }
           className={{
             root: 'float-right mt-4 text-lg font-bold',
           }}
@@ -403,6 +365,19 @@ function GroupActivityStack({
         >
           <Button.Label>{t('pwa.groupActivity.sendAnswers')}</Button.Label>
         </Button>
+      ) : null}
+      {submissionConfirmed && submissionRefreshFailed && !decisions ? (
+        <UserNotification type="error" className={{ root: 'mt-4 text-base' }}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>{t('shared.generic.systemError')}</div>
+            <Button
+              onClick={() => window.location.reload()}
+              className={{ root: 'h-8 self-start md:self-auto' }}
+            >
+              <Button.Label>{t('pwa.groupActivity.refreshPage')}</Button.Label>
+            </Button>
+          </div>
+        </UserNotification>
       ) : null}
       {!!decisions && submittedAt ? (
         <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
@@ -417,3 +392,106 @@ function GroupActivityStack({
 }
 
 export default GroupActivityStack
+
+function buildGroupActivityResponseInput(
+  studentResponse: StackStudentResponseType
+): GroupActivityResponseInput[] {
+  return Object.entries(studentResponse).map<GroupActivityResponseInput>(
+    ([instanceId, value]) => {
+      if (
+        value.type === ElementType.Sc ||
+        value.type === ElementType.Mc ||
+        value.type === ElementType.Kprim
+      ) {
+        // convert the solution objects into integer lists
+        const responseList: ChoicesResponse[] = Object.entries(
+          value.response as Record<string, boolean | undefined>
+        )
+          .filter(([, value]) => value)
+          .map(([key, value]) => ({
+            ix: parseInt(key),
+            selected: value ?? false,
+          }))
+
+        return {
+          instanceId: parseInt(instanceId),
+          type: toGroupActivityResponseElementType(value.type),
+          choicesResponse: responseList,
+        }
+      } else if (value.type === ElementType.Numerical) {
+        return {
+          instanceId: parseInt(instanceId),
+          type: toGroupActivityResponseElementType(ElementType.Numerical),
+          numericalResponse: parseFloat(value.response as string),
+        }
+      } else if (value.type === ElementType.FreeText) {
+        return {
+          instanceId: parseInt(instanceId),
+          type: toGroupActivityResponseElementType(ElementType.FreeText),
+          freeTextResponse: value.response as string | undefined,
+        }
+      } else if (value.type === ElementType.Content) {
+        return {
+          instanceId: parseInt(instanceId),
+          type: toGroupActivityResponseElementType(ElementType.Content),
+          contentReponse: value.response as boolean | undefined,
+        }
+      } else if (value.type === ElementType.Selection) {
+        return {
+          instanceId: parseInt(instanceId),
+          type: toGroupActivityResponseElementType(ElementType.Selection),
+          selectionResponse: Object.values(
+            value.response as Record<string, number | undefined>
+          ).filter(
+            (entry): entry is number =>
+              entry !== -1 && typeof entry !== 'undefined' && entry !== null
+          ),
+        }
+      } else if (value.type === ElementType.CaseStudy) {
+        const caseStudyResponse: CaseStudyCaseResponse[] = Object.entries(
+          value.response as CaseStudyStudentResponseType
+        ).map(([caseId, caseResponse]) => {
+          return {
+            caseId,
+            itemResponses: Object.entries(caseResponse).map(
+              ([itemId, itemResponse]) => {
+                return {
+                  itemId: parseInt(itemId),
+                  criterionResponses: Object.entries(itemResponse).flatMap(
+                    ([criterionId, criterionResponse]) => {
+                      if (typeof criterionResponse === 'undefined') {
+                        return []
+                      }
+
+                      return {
+                        criterionId: criterionId,
+                        response: criterionResponse,
+                      }
+                    }
+                  ),
+                }
+              }
+            ),
+          }
+        })
+
+        return {
+          instanceId: parseInt(instanceId),
+          type: toGroupActivityResponseElementType(value.type),
+          caseStudyResponse,
+        }
+      } else {
+        return {
+          instanceId: parseInt(instanceId),
+          type: toGroupActivityResponseElementType(value.type),
+        }
+      }
+    }
+  )
+}
+
+function toGroupActivityResponseElementType(
+  type: ElementType
+): GroupActivityResponseInput['type'] {
+  return type as GroupActivityResponseInput['type']
+}

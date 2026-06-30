@@ -1,7 +1,9 @@
-import { useQuery } from '@apollo/client'
-import { GetCatalogCollectionInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { toast, UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import ObjectImport from './actions/ObjectImport'
 import PendingSharingRequests from './actions/PendingSharingRequests'
 
@@ -10,41 +12,100 @@ function CatalogBrowser({
 }: {
   catalogCollectionId?: string
 }) {
+  const t = useTranslations()
   const router = useRouter()
+  const isCollectionView = typeof catalogCollectionId === 'string'
+  const [redirectError, setRedirectError] = useState(false)
 
   // get current collection metadata (only if inside a collection)
-  const { data: metaData, loading: metaDataLoading } = useQuery(
-    GetCatalogCollectionInfoDocument,
+  const {
+    data: metaData,
+    error: metaDataError,
+    isLoading: metaDataLoading,
+  } = trpc.sharing.catalogCollectionInfo.useQuery(
+    { catalogCollectionId },
     {
-      variables: {
-        catalogCollectionId: catalogCollectionId as string,
-      },
-      skip: typeof catalogCollectionId !== 'string',
+      enabled: isCollectionView,
     }
   )
+  const collectionInfo = metaData?.catalogCollectionInfo
+  const collectionMissing =
+    isCollectionView && !collectionInfo && !metaDataLoading && !metaDataError
 
-  if (metaDataLoading) {
+  useEffect(() => {
+    if (!collectionMissing) return
+
+    let active = true
+    setRedirectError(false)
+
+    async function redirectToCatalog() {
+      try {
+        const routed = await router.push('/resources/catalog')
+        if (!routed && active) {
+          window.location.assign('/resources/catalog')
+        }
+      } catch (error) {
+        console.error(error)
+        if (active) {
+          setRedirectError(true)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
+      }
+    }
+
+    void redirectToCatalog()
+
+    return () => {
+      active = false
+    }
+  }, [collectionMissing, router, t])
+
+  if (isCollectionView && metaDataLoading && !collectionInfo) {
     return <Loader />
   }
 
-  // redirect user to home of catalog if access is not valid
-  if (
-    typeof catalogCollectionId !== 'undefined' &&
-    !metaData?.getCatalogCollectionInfo &&
-    !metaDataLoading
-  ) {
-    router.push('/resources/catalog')
+  if (isCollectionView && metaDataError && !collectionInfo) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
+  }
+
+  if (collectionMissing) {
+    if (!redirectError) {
+      return <Loader />
+    }
+
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
   return (
     <div className="h-full">
+      {isCollectionView && metaDataError && collectionInfo ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <PendingSharingRequests />
       <ObjectImport
-        collectionName={metaData?.getCatalogCollectionInfo?.name}
+        collectionName={collectionInfo?.name}
         catalogCollectionId={catalogCollectionId as string | undefined}
         collectionEditor={
           (typeof catalogCollectionId === 'undefined' ||
-            metaData?.getCatalogCollectionInfo?.isEditor) ??
+            collectionInfo?.isEditor) ??
           false
         }
       />

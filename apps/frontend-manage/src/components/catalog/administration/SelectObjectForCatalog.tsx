@@ -1,15 +1,10 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetCatalogAnswerCollectionsDocument,
-  GetCatalogElementsDocument,
-  GetCatalogLiveQuizTemplatesDocument,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import Select from 'react-select'
+import { trpc } from '../../../lib/trpc'
 
 interface SelectObjectForCatalogProps {
   objectType: ObjectType
@@ -23,71 +18,84 @@ function SelectObjectForCatalog({
   setFieldValue,
 }: SelectObjectForCatalogProps) {
   const t = useTranslations()
-  const [isLoading, setIsLoading] = useState(true)
-  const [options, setOptions] = useState<{ value: string; label: string }[]>([])
-
-  // mutations for data fetching
-  const { data: collectionsData, loading: collectionsLoading } = useQuery(
-    GetCatalogAnswerCollectionsDocument,
-    {
-      skip: objectType !== ObjectType.AnswerCollection,
-      fetchPolicy: 'cache-and-network',
-    }
-  )
-  const { data: liveQuizTemplateData, loading: liveQuizTemplateLoading } =
-    useQuery(GetCatalogLiveQuizTemplatesDocument, {
-      skip: objectType !== ObjectType.LiveQuiz || !isTemplate,
-      fetchPolicy: 'cache-and-network',
-    })
-  const { data: elementsData, loading: elementsLoading } = useQuery(
-    GetCatalogElementsDocument,
-    {
-      skip: objectType !== ObjectType.Element,
-      fetchPolicy: 'cache-and-network',
-    }
-  )
+  const answerCollectionsEnabled = objectType === ObjectType.AnswerCollection
+  const liveQuizTemplatesEnabled =
+    objectType === ObjectType.LiveQuiz && !!isTemplate
+  const elementsEnabled = objectType === ObjectType.Element
+  const {
+    data: collectionsData,
+    isLoading: collectionsLoading,
+    isFetching: collectionsFetching,
+    error: collectionsError,
+  } = trpc.sharing.catalogAnswerCollections.useQuery(undefined, {
+    enabled: answerCollectionsEnabled,
+  })
+  const {
+    data: liveQuizTemplateData,
+    isLoading: liveQuizTemplateLoading,
+    isFetching: liveQuizTemplateFetching,
+    error: liveQuizTemplateError,
+  } = trpc.sharing.catalogLiveQuizTemplates.useQuery(undefined, {
+    enabled: liveQuizTemplatesEnabled,
+  })
+  const {
+    data: elementsData,
+    isLoading: elementsLoading,
+    isFetching: elementsFetching,
+    error: elementsError,
+  } = trpc.sharing.catalogElements.useQuery(undefined, {
+    enabled: elementsEnabled,
+  })
   // TODO: ... add loading queries for other object types
 
-  useEffect(() => {
-    // load available objects based on the selected type
-    const loadObjects = async () => {
-      setIsLoading(true)
-
-      try {
-        // load objects available to the user for sharing (owner or admin access)
-        if (objectType === ObjectType.AnswerCollection) {
-          const collections =
-            collectionsData?.getCatalogAnswerCollections?.map((c) => ({
-              value: c.id,
-              label: c.name,
-            })) ?? []
-          setOptions(collections)
-        } else if (objectType === ObjectType.LiveQuiz && isTemplate) {
-          const templates =
-            liveQuizTemplateData?.getCatalogLiveQuizTemplates?.map((t) => ({
-              value: t.id,
-              label: t.name,
-            })) ?? []
-          setOptions(templates)
-        } else if (objectType === ObjectType.Element) {
-          const elements =
-            elementsData?.getCatalogElements?.map((e) => ({
-              value: e.id,
-              label: e.name,
-            })) ?? []
-          setOptions(elements)
-        } // TODO: ... add other object types here
-        else {
-          setOptions([])
-        }
-      } catch (error) {
-        console.error('Error loading objects:', error)
-      } finally {
-        setIsLoading(false)
-      }
+  const isLoading =
+    (answerCollectionsEnabled && collectionsLoading && !collectionsData) ||
+    (liveQuizTemplatesEnabled &&
+      liveQuizTemplateLoading &&
+      !liveQuizTemplateData) ||
+    (elementsEnabled && elementsLoading && !elementsData)
+  const isFetching =
+    (answerCollectionsEnabled && collectionsFetching) ||
+    (liveQuizTemplatesEnabled && liveQuizTemplateFetching) ||
+    (elementsEnabled && elementsFetching)
+  const queryError =
+    (answerCollectionsEnabled && collectionsError) ||
+    (liveQuizTemplatesEnabled && liveQuizTemplateError) ||
+    (elementsEnabled && elementsError)
+  const hasQueryData =
+    (answerCollectionsEnabled && !!collectionsData) ||
+    (liveQuizTemplatesEnabled && !!liveQuizTemplateData) ||
+    (elementsEnabled && !!elementsData)
+  const options = useMemo(() => {
+    // load objects available to the user for sharing (owner or admin access)
+    if (objectType === ObjectType.AnswerCollection) {
+      return (
+        collectionsData?.catalogAnswerCollections.map((collection) => ({
+          value: collection.id,
+          label: collection.name,
+        })) ?? []
+      )
     }
 
-    loadObjects()
+    if (objectType === ObjectType.LiveQuiz && isTemplate) {
+      return (
+        liveQuizTemplateData?.catalogLiveQuizTemplates.map((template) => ({
+          value: template.id,
+          label: template.name,
+        })) ?? []
+      )
+    }
+
+    if (objectType === ObjectType.Element) {
+      return (
+        elementsData?.catalogElements.map((element) => ({
+          value: element.id,
+          label: element.name,
+        })) ?? []
+      )
+    }
+
+    return []
   }, [
     collectionsData,
     elementsData,
@@ -104,31 +112,48 @@ function SelectObjectForCatalog({
         })}
       </p>
 
-      {collectionsLoading || liveQuizTemplateLoading || elementsLoading ? (
+      {isLoading ? (
         <Loader />
-      ) : options.length > 0 ? (
-        <Select
-          id="object-selection-catalog-addition"
-          instanceId="object-selection-catalog-addition"
-          isSearchable
-          isLoading={isLoading}
-          menuPlacement="top" // open menu towards the top for space reasons on modal
-          options={options}
-          placeholder={t('manage.catalog.searchObjects')}
-          onChange={(selected) => setFieldValue('objectId', selected?.value)}
-          noOptionsMessage={() => t('manage.catalog.noObjectsFound')}
-          styles={{
-            control: (baseStyles) => ({
-              ...baseStyles,
-              borderColor: '#d1d5db',
-            }),
-          }}
+      ) : queryError && !hasQueryData ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
         />
       ) : (
-        <UserNotification
-          type="info"
-          message={t('manage.catalog.noObjectsAvailable')}
-        />
+        <div className="space-y-2">
+          {queryError ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+          ) : null}
+          {options.length > 0 ? (
+            <Select
+              id="object-selection-catalog-addition"
+              instanceId="object-selection-catalog-addition"
+              isSearchable
+              isLoading={isFetching}
+              menuPlacement="top" // open menu towards the top for space reasons on modal
+              options={options}
+              placeholder={t('manage.catalog.searchObjects')}
+              onChange={(selected) =>
+                setFieldValue('objectId', selected?.value)
+              }
+              noOptionsMessage={() => t('manage.catalog.noObjectsFound')}
+              styles={{
+                control: (baseStyles) => ({
+                  ...baseStyles,
+                  borderColor: '#d1d5db',
+                }),
+              }}
+            />
+          ) : (
+            <UserNotification
+              type="info"
+              message={t('manage.catalog.noObjectsAvailable')}
+            />
+          )}
+        </div>
       )}
     </div>
   )

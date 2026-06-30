@@ -1,6 +1,6 @@
 import { faThumbsDown, faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { InstanceQuizAnalytics as InstanceQuizAnalyticsType } from '@klicker-uzh/graphql/dist/ops'
+import type { InstanceQuizAnalytics as InstanceQuizAnalyticsType } from '@klicker-uzh/types'
 import { Collapsible } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'

@@ -1,7 +1,7 @@
 import { faBars } from '@fortawesome/free-solid-svg-icons'
-import { Element } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { Element } from '../../../lib/constants/activityEnums'
 import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
 
 interface BaseProps {
@@ -41,9 +41,9 @@ function PasteSelectionButton({
           title: question.name,
           type: question.type,
           hasSampleSolution:
-            'options' in question
+            'options' in question && question.options != null
               ? (question.options.hasSampleSolution ?? false)
-              : true,
+              : (question.hasSampleSolution ?? true),
           existingInstanceId: null,
           duplicateInstance: false,
         }))

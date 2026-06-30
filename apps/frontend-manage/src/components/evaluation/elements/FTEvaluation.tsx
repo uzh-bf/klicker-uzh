@@ -1,8 +1,8 @@
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import {
   FreeTextActivityEvaluationData,
   LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+} from '@lib/evaluationTypes'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'

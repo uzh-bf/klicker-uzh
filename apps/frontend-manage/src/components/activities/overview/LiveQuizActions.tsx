@@ -1,16 +1,13 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  ActivityInfo,
-  ActivityType,
-  DeleteLiveQuizDocument,
-  GetSingleCourseDocument,
-  ObjectType,
-  PublicationStatus,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import {
+  ActivityInfo,
+  ActivityType,
+  PublicationStatus,
+} from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
@@ -26,6 +23,8 @@ import useLiveQuizActions from '../actions/useLiveQuizActions'
 import useStartLiveQuiz from '../actions/useStartLiveQuiz'
 import ActivityActions from './ActivityActions'
 import ActivityRemovalModal from './ActivityRemovalModal'
+
+type LiveQuizQRModalProps = Parameters<typeof LiveQuizQRModal>[0]
 
 // create a map between the activity status and the available actions (in order)
 const statusActionMap = {
@@ -83,6 +82,11 @@ const statusActionMap = {
   [PublicationStatus.Graded]: [],
 }
 
+function toDateString(value: Date | string | null | undefined) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
+}
+
 function LiveQuizActions({
   liveQuiz,
   isTemplate,
@@ -113,47 +117,15 @@ function LiveQuizActions({
     activityId: string
     activityType: ActivityType
   }>({ open: false, activityId: '', activityType: ActivityType.LiveQuiz })
+  const utils = trpc.useUtils()
 
   const { onStart, starting } = useStartLiveQuiz({
     id: liveQuiz.id,
     name: liveQuiz.name,
   })
 
-  const [deleteLiveQuiz, { loading: deleting }] = useMutation(
-    DeleteLiveQuizDocument,
-    {
-      variables: { id: liveQuiz.id },
-      update: (cache, { data: res }) => {
-        // if the live quiz is not part of a course or the mutation was not successful, return early
-        if (!liveQuiz.courseId || !res?.deleteLiveQuiz?.id) return
-
-        // change the status of the live quiz on the course overview back to draft
-        cache.updateQuery(
-          {
-            query: GetSingleCourseDocument,
-            variables: { courseId: liveQuiz.courseId! },
-          },
-          (data) => {
-            if (!data?.course) return data
-
-            return {
-              course: {
-                ...data.course,
-                liveQuizzesInfo:
-                  data.course.liveQuizzesInfo?.filter(
-                    (lq) => lq.id !== res.deleteLiveQuiz!.id
-                  ) ?? [],
-              },
-            }
-          }
-        )
-      },
-    }
-  )
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const deleteLiveQuiz = trpc.activity.delete.useMutation()
+  const { data: user } = trpc.user.profile.useQuery()
 
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(() => {
@@ -220,6 +192,7 @@ function LiveQuizActions({
     setDeletionModal,
     setActivityLogOpen,
     setResetModal,
+    refetchActivities,
   })
 
   // get all available actions based on permissions and status
@@ -251,7 +224,7 @@ function LiveQuizActions({
             activityId={liveQuiz.id}
             title={liveQuiz.name}
             courseId={liveQuiz.courseId}
-            courseStartDate={liveQuiz.courseStartDate}
+            courseStartDate={toDateString(liveQuiz.courseStartDate)}
             onClose={() => setSchedulingModal(false)}
           />
         )}
@@ -261,10 +234,23 @@ function LiveQuizActions({
             quizId={liveQuiz.id}
             onClose={() => setDeletionModal(false)}
             onDelete={async () => {
-              await deleteLiveQuiz()
+              const result = await deleteLiveQuiz.mutateAsync({
+                activityId: liveQuiz.id,
+                activityType:
+                  ActivityType.LiveQuiz as RouterInputs['activity']['delete']['activityType'],
+              })
+              if (!result.deleteActivity?.id) {
+                throw new Error('Failed to delete live quiz')
+              }
+
               await refetchActivities?.()
+              if (liveQuiz.courseId) {
+                void utils.course.detail
+                  .invalidate({ courseId: liveQuiz.courseId })
+                  .catch(console.error)
+              }
             }}
-            deleting={deleting}
+            deleting={deleteLiveQuiz.isLoading}
           />
         )}
 
@@ -331,7 +317,9 @@ function LiveQuizActions({
             quizId={liveQuiz.id}
             quizPin={liveQuiz.pinCode}
             isAssessmentEnabled={liveQuiz.isAssessmentEnabled ?? false}
-            language={liveQuiz.courseLanguage}
+            language={
+              liveQuiz.courseLanguage as LiveQuizQRModalProps['language']
+            }
             onClose={() => setQRModal(false)}
           />
         )}

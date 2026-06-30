@@ -27,15 +27,16 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Accordion, Button, UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import {
   ActivityType,
   PublicationStatus,
   ReviewStatus,
-  SharingType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Accordion, Button } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
+} from '../../../lib/constants/activityEnums'
+import { SharingType } from '../../../lib/constants/sharingEnums'
 import type { ActivityModeFilters } from '../../../lib/hooks/useActivitySortingAndFiltering'
 import FilterItem from '../../elements/tags/FilterItem'
 import { SHARING_TYPE_FILTERS } from '../../elements/tags/FilterList'
@@ -94,6 +95,8 @@ function ActivityOverviewFilters({
   toggleModeFilter,
   handleReset,
   availableCourses = [],
+  availableCoursesError = false,
+  availableCoursesLoading = false,
   filtersActive = false,
 }: {
   filters: ActivityOverviewFilterType
@@ -106,9 +109,15 @@ function ActivityOverviewFilters({
   toggleModeFilter: (mode: keyof ActivityModeFilters) => void
   handleReset: () => void
   availableCourses?: { id: string; name: string }[]
+  availableCoursesError?: boolean
+  availableCoursesLoading?: boolean
   filtersActive: boolean
 }) {
   const t = useTranslations()
+  const showCourseFilters =
+    availableCourses.length > 0 ||
+    availableCoursesLoading ||
+    availableCoursesError
 
   return (
     <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
@@ -222,33 +231,50 @@ function ActivityOverviewFilters({
           ))}
         </FilterListEntry>
 
-        {availableCourses.length > 0 && (
+        {showCourseFilters && (
           <FilterListEntry
             trigger={t('shared.generic.courses')}
             value="course-filters"
             active={filters.course !== undefined}
             data={{ cy: `collapse-tag-header-courses` }}
           >
-            <FilterItem
-              key="unassigned"
-              text={t('manage.activities.noCourseAssigned')}
-              icon={[faX, faX]}
-              active={filters.course === null}
-              onClick={() => toggleCourseFilter(null)}
-              data={{ cy: 'course-filter-unassigned' }}
-            />
-            {availableCourses.map((course) => (
-              <FilterItem
-                key={course.id}
-                text={course.name}
-                icon={[faUserGroup, faUserGroup]}
-                active={filters.course === course.id}
-                onClick={() => toggleCourseFilter(course.id)}
-                data={{
-                  cy: `course-filter-${course.name.toLowerCase().replace(/\s+/g, '-')}`,
-                }}
-              />
-            ))}
+            {availableCoursesLoading && availableCourses.length === 0 ? (
+              <Loader />
+            ) : (
+              <>
+                {availableCoursesError ? (
+                  <UserNotification
+                    type="error"
+                    message={t('shared.generic.systemError')}
+                    className={{ root: 'mb-1 py-1 text-sm' }}
+                  />
+                ) : null}
+                {availableCourses.length > 0 ? (
+                  <>
+                    <FilterItem
+                      key="unassigned"
+                      text={t('manage.activities.noCourseAssigned')}
+                      icon={[faX, faX]}
+                      active={filters.course === null}
+                      onClick={() => toggleCourseFilter(null)}
+                      data={{ cy: 'course-filter-unassigned' }}
+                    />
+                    {availableCourses.map((course) => (
+                      <FilterItem
+                        key={course.id}
+                        text={course.name}
+                        icon={[faUserGroup, faUserGroup]}
+                        active={filters.course === course.id}
+                        onClick={() => toggleCourseFilter(course.id)}
+                        data={{
+                          cy: `course-filter-${course.name.toLowerCase().replace(/\s+/g, '-')}`,
+                        }}
+                      />
+                    ))}
+                  </>
+                ) : null}
+              </>
+            )}
           </FilterListEntry>
         )}
 

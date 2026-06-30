@@ -1,10 +1,6 @@
-import { useQuery } from '@apollo/client'
 import { faChartSimple } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  GetActivityAnalyticsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { ActivityType } from '@klicker-uzh/types'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -15,22 +11,24 @@ import InstanceQuizAnalytics from '../../../../components/analytics/quiz/Instanc
 import QuizAnalyticsNavigation from '../../../../components/analytics/quiz/QuizAnalyticsNavigation'
 import PreviewTag from '../../../../components/common/PreviewTag'
 import Layout from '../../../../components/Layout'
+import { trpc } from '../../../../lib/trpc'
 
 function QuizAnalytics() {
   const router = useRouter()
   const t = useTranslations()
-  const activityId = router.query.id as string
-  const courseId = router.query.courseId as string
+  const activityId = typeof router.query.id === 'string' ? router.query.id : ''
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
-  const { data, loading, error } = useQuery(GetActivityAnalyticsDocument, {
-    variables: { activityId },
-    skip: !activityId,
-  })
+  const { data, isLoading, error } = trpc.analytics.activity.useQuery(
+    { activityId },
+    { enabled: activityId !== '' }
+  )
 
   const navigation = (
     <QuizAnalyticsNavigation courseId={courseId} activityId={activityId} />
   )
-  const analytics = data?.getActivityAnalytics
+  const analytics = data?.activityAnalytics
 
   const chartColors = {
     correct: '#064e3b',
@@ -39,7 +37,7 @@ function QuizAnalytics() {
   }
 
   // loading state
-  if (loading || !activityId) {
+  if (!activityId || (isLoading && !analytics)) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.quizDashboard')}
@@ -49,7 +47,16 @@ function QuizAnalytics() {
   }
 
   // error state
-  if (analytics === null || typeof analytics === 'undefined' || error) {
+  if (error && !analytics) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (analytics === null || typeof analytics === 'undefined') {
     return (
       <AnalyticsErrorView
         title={t('manage.analytics.quizDashboard')}
@@ -61,6 +68,13 @@ function QuizAnalytics() {
   return (
     <Layout displayName={t('manage.analytics.quizDashboard')}>
       {navigation}
+      {error && analytics ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
         <div className="relative mb-3 flex w-full flex-row items-end justify-between">
           <div className="flex flex-row items-center gap-5">
@@ -73,7 +87,7 @@ function QuizAnalytics() {
             className={{ root: 'h-8' }}
             onClick={() =>
               window.open(
-                analytics.activityType === ActivityType.PracticeQuiz
+                analytics.activityType === ActivityType.PRACTICE_QUIZ
                   ? `${router.locale ? `/${router.locale}` : ''}/practiceQuiz/${activityId}/evaluation`
                   : `${router.locale ? `/${router.locale}` : ''}/microLearning/${activityId}/evaluation`,
                 '_blank'

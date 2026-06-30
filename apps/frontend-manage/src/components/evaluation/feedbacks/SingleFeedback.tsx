@@ -1,12 +1,27 @@
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 
+export type DisplayFeedback = {
+  id: number
+  content: string
+  votes: number
+  createdAt: string | Date
+  isPinned: boolean
+  isPublished: boolean
+  isResolved: boolean
+  responses?:
+    | {
+        id: number
+        content: string
+      }[]
+    | null
+}
+
 interface SingleFeedbackProps {
-  feedback: Feedback
+  feedback: DisplayFeedback
 }
 
 function SingleFeedback({ feedback }: SingleFeedbackProps) {

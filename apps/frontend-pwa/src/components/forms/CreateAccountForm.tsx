@@ -1,9 +1,8 @@
-import { useLazyQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   Checkbox,
@@ -14,16 +13,27 @@ import {
   H4,
   Prose,
 } from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
+import { Form, Formik, type FormikHelpers } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
+interface CreateAccountFormValues {
+  email: string
+  username: string
+  password: string
+  passwordRepetition: string
+  isProfilePublic: boolean
+}
+
 interface Props {
   initialUsername?: string
   initialEmail?: string
-  handleSubmit: (values: any, formikExtra: any) => void
+  handleSubmit: (
+    values: CreateAccountFormValues,
+    formikExtra: FormikHelpers<CreateAccountFormValues>
+  ) => void | Promise<void>
 }
 
 function CreateAccountForm({
@@ -32,9 +42,7 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
-  const [checkParticipantNameAvailable] = useLazyQuery(
-    CheckParticipantNameAvailableDocument
-  )
+  const utils = trpc.useUtils()
 
   const createAccountSchema = yup.object({
     email: yup
@@ -83,7 +91,7 @@ function CreateAccountForm({
       isInitialValid={false}
       initialValues={{
         email: initialEmail?.toLowerCase() ?? '',
-        username: initialUsername,
+        username: initialUsername ?? '',
         password: '',
         passwordRepetition: '',
         isProfilePublic: true,
@@ -127,7 +135,7 @@ function CreateAccountForm({
               <Button
                 primary
                 type="submit"
-                disabled={!tosChecked || !isValid}
+                disabled={isSubmitting || !tosChecked || !isValid}
                 loading={isSubmitting}
                 className={{
                   root: 'h-8 w-full flex-none md:w-max',
@@ -165,11 +173,9 @@ function CreateAccountForm({
                     await validateField('username')
                   }}
                   checkUsernameAvailable={async (name: string) => {
-                    const { data: result } =
-                      await checkParticipantNameAvailable({
-                        variables: { username: name },
-                      })
-                    return result?.checkParticipantNameAvailable ?? false
+                    return utils.participant.checkNameAvailable.fetch({
+                      username: name,
+                    })
                   }}
                   unavailableMessage={t('shared.generic.usernameAvailability')}
                   className={{ label: 'mt-0' }}

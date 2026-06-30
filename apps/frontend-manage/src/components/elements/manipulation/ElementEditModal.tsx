@@ -1,22 +1,11 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  CreateAnswerCollectionDocument,
-  ElementType,
-  FlagOutdatedElementInstancesDocument,
-  GetSingleElementDocument,
-  GetUserTagsDocument,
-  ManipulateCaseStudyQuestionDocument,
-  ManipulateChoicesQuestionDocument,
-  ManipulateContentElementDocument,
-  ManipulateFlashcardElementDocument,
-  ManipulateFreeTextQuestionDocument,
-  ManipulateNumericalQuestionDocument,
-  ManipulateSelectionQuestionDocument,
-  UpdateElementInstancesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import React, { useMemo, useState } from 'react'
+import {
+  ElementType,
+  type EditableElement,
+} from '../../../lib/constants/elementTypes'
+import { trpc } from '../../../lib/trpc'
 import ElementEditForm from './ElementEditForm'
 import {
   createInlineCaseStudyCollection,
@@ -58,9 +47,32 @@ function ElementEditModal({
   refetchElements,
 }: ElementEditModalProps): React.ReactElement {
   const router = useRouter()
+  const utils = trpc.useUtils()
+  const createAnswerCollectionMutation =
+    trpc.resources.createAnswerCollection.useMutation()
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
+  const refreshAfterElementManipulation = async (
+    updatedElementId?: number | null
+  ) => {
+    try {
+      await Promise.all([
+        updatedElementId
+          ? utils.element.single.invalidate({ id: updatedElementId })
+          : Promise.resolve(),
+        utils.element.tags.invalidate(),
+        refetchElements(),
+      ])
+    } catch (error) {
+      console.error('Error refreshing element after manipulation:', error)
+    }
+  }
+  const refreshAnswerCollectionsInfo = async () => {
+    await utils.resources.answerCollectionsInfo.invalidate().catch((error) => {
+      console.error('Error refreshing answer collections:', error)
+    })
+  }
 
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
@@ -70,45 +82,45 @@ function ElementEditModal({
       undefined
     )
 
-  const { loading: loadingQuestion, data: dataQuestion } = useQuery(
-    GetSingleElementDocument,
+  const {
+    isInitialLoading: loadingQuestion,
+    isFetched: questionFetched,
+    data: dataQuestion,
+    error: questionError,
+  } = trpc.element.single.useQuery(
+    { id: elementId! },
     {
-      variables: { id: elementId! },
-      skip: typeof elementId === 'undefined' || !isOpen,
-      fetchPolicy: 'cache-and-network',
+      enabled: typeof elementId !== 'undefined' && isOpen,
     }
   )
+  const initialElementUnavailable =
+    mode !== ElementEditMode.CREATE &&
+    isOpen &&
+    questionFetched &&
+    !dataQuestion?.element
+  const initialElementLoadError = Boolean(
+    (questionError || initialElementUnavailable) && !dataQuestion?.element
+  )
 
-  const [manipulateContentElement] = useMutation(
-    ManipulateContentElementDocument
-  )
-  const [manipulateFlashcardElement] = useMutation(
-    ManipulateFlashcardElementDocument
-  )
-  const [manipulateChoicesQuestion] = useMutation(
-    ManipulateChoicesQuestionDocument
-  )
-  const [manipulateNumericalQuestion] = useMutation(
-    ManipulateNumericalQuestionDocument
-  )
-  const [manipulateFreeTextQuestion] = useMutation(
-    ManipulateFreeTextQuestionDocument
-  )
-  const [manipulateSelectionQuestion] = useMutation(
-    ManipulateSelectionQuestionDocument
-  )
-  const [manipulateCaseStudyQuestion] = useMutation(
-    ManipulateCaseStudyQuestionDocument
-  )
-  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
-  const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
-  const [flagOutdatedElementInstances] = useMutation(
-    FlagOutdatedElementInstancesDocument
-  )
+  const manipulateContentElement = trpc.element.manipulateContent.useMutation()
+  const manipulateFlashcardElement =
+    trpc.element.manipulateFlashcard.useMutation()
+  const manipulateChoicesQuestion = trpc.element.manipulateChoices.useMutation()
+  const manipulateNumericalQuestion =
+    trpc.element.manipulateNumerical.useMutation()
+  const manipulateFreeTextQuestion =
+    trpc.element.manipulateFreeText.useMutation()
+  const manipulateSelectionQuestion =
+    trpc.element.manipulateSelection.useMutation()
+  const manipulateCaseStudyQuestion =
+    trpc.element.manipulateCaseStudy.useMutation()
+  const updateElementInstances = trpc.element.updateInstances.useMutation()
+  const flagOutdatedElementInstances =
+    trpc.element.flagOutdatedInstances.useMutation()
 
   const initialValues = useElementFormInitialValues({
     mode,
-    question: dataQuestion?.element,
+    question: dataQuestion?.element as EditableElement | null | undefined,
     isDuplication,
   })
 
@@ -132,13 +144,16 @@ function ElementEditModal({
         !formikInitialValues ||
         Object.keys(formikInitialValues).length === 0
       }
+      loadingError={initialElementLoadError}
       initialValues={formikInitialValues}
-      onClose={async () => {
+      onClose={() => {
         // close the modal
         handleSetIsOpen(false)
 
         // refetch elements here, since element status might have changed and refetch cannot be used there to avoid closing modal
-        await refetchElements?.()
+        void refetchElements?.().catch((error) => {
+          console.error('Error refreshing elements after closing modal:', error)
+        })
 
         // remove potential query parameters that open element edit modal on reload
         const {
@@ -147,13 +162,15 @@ function ElementEditModal({
           contextActivityType,
           ...query
         } = router.query
-        router.push({ pathname: '/', query }, undefined, { shallow: true })
+        void router.push({ pathname: '/', query }, undefined, { shallow: true })
       }}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
       onSubmitElement={async (values) => {
+        let updatedElementId: number | null = null
+
         try {
           switch (values.type) {
             case ElementType.Content: {
@@ -163,17 +180,14 @@ function ElementEditModal({
                 values,
               })
 
-              const result = await manipulateContentElement({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateContentElement.mutateAsync(args)
 
-              const data = result.data?.manipulateContentElement
+              const data = result.element
               if (data?.__typename !== 'ContentElement' || !data.id) {
                 return false
               }
 
+              updatedElementId = data.id
               break
             }
 
@@ -184,17 +198,14 @@ function ElementEditModal({
                 values,
               })
 
-              const result = await manipulateFlashcardElement({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateFlashcardElement.mutateAsync(args)
 
-              const data = result.data?.manipulateFlashcardElement
+              const data = result.element
               if (data?.__typename !== 'FlashcardElement' || !data.id) {
                 return false
               }
 
+              updatedElementId = data.id
               break
             }
 
@@ -207,17 +218,14 @@ function ElementEditModal({
                 values,
               })
 
-              const result = await manipulateChoicesQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateChoicesQuestion.mutateAsync(args)
 
-              const data = result.data?.manipulateChoicesQuestion
+              const data = result.element
               if (data?.__typename !== 'ChoicesElement' || !data.id) {
                 return false
               }
 
+              updatedElementId = data.id
               break
             }
 
@@ -228,17 +236,14 @@ function ElementEditModal({
                 values,
               })
 
-              const result = await manipulateNumericalQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateNumericalQuestion.mutateAsync(args)
 
-              const data = result.data?.manipulateNumericalQuestion
+              const data = result.element
               if (data?.__typename !== 'NumericalElement' || !data.id) {
                 return false
               }
 
+              updatedElementId = data.id
               break
             }
 
@@ -249,17 +254,14 @@ function ElementEditModal({
                 values,
               })
 
-              const result = await manipulateFreeTextQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateFreeTextQuestion.mutateAsync(args)
 
-              const data = result.data?.manipulateFreeTextQuestion
+              const data = result.element
               if (data?.__typename !== 'FreeTextElement' || !data.id) {
                 return false
               }
 
+              updatedElementId = data.id
               break
             }
 
@@ -269,7 +271,14 @@ function ElementEditModal({
                 values.options.itemSelectionMode === 'new'
                   ? await createInlineSelectionCollection({
                       values,
-                      createAnswerCollection,
+                      createAnswerCollection: async (input) => {
+                        const res =
+                          await createAnswerCollectionMutation.mutateAsync(
+                            input
+                          )
+                        return res.answerCollection
+                      },
+                      onAnswerCollectionCreated: refreshAnswerCollectionsInfo,
                     })
                   : undefined
 
@@ -290,17 +299,14 @@ function ElementEditModal({
                     : values,
               })
 
-              const result = await manipulateSelectionQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateSelectionQuestion.mutateAsync(args)
 
-              const data = result.data?.manipulateSelectionQuestion
+              const data = result.element
               if (data?.__typename !== 'SelectionElement' || !data.id) {
                 return false
               }
 
+              updatedElementId = data.id
               break
             }
 
@@ -310,7 +316,14 @@ function ElementEditModal({
                 values.options.itemSelectionMode === 'new'
                   ? await createInlineCaseStudyCollection({
                       values,
-                      createAnswerCollection,
+                      createAnswerCollection: async (input) => {
+                        const res =
+                          await createAnswerCollectionMutation.mutateAsync(
+                            input
+                          )
+                        return res.answerCollection
+                      },
+                      onAnswerCollectionCreated: refreshAnswerCollectionsInfo,
                     })
                   : undefined
 
@@ -331,17 +344,14 @@ function ElementEditModal({
                     : values,
               })
 
-              const result = await manipulateCaseStudyQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
+              const result = await manipulateCaseStudyQuestion.mutateAsync(args)
 
-              const data = result.data?.manipulateCaseStudyQuestion
+              const data = result.element
               if (data?.__typename !== 'CaseStudyElement' || !data.id) {
                 return false
               }
 
+              updatedElementId = data.id
               break
             }
 
@@ -355,11 +365,9 @@ function ElementEditModal({
             elementId !== null &&
             typeof elementId !== 'undefined'
           ) {
-            await updateElementInstances({
-              variables: {
-                elementId: elementId,
-                includeTemplates: includeTemplateUpdates,
-              },
+            await updateElementInstances.mutateAsync({
+              elementId: elementId,
+              includeTemplates: includeTemplateUpdates,
             })
           } else if (
             mode === ElementEditMode.EDIT &&
@@ -367,13 +375,17 @@ function ElementEditModal({
             elementId !== null &&
             typeof elementId !== 'undefined'
           ) {
-            await flagOutdatedElementInstances({ variables: { elementId } })
+            await flagOutdatedElementInstances.mutateAsync({ elementId })
           }
 
           return true
         } catch (err) {
           console.error('Error submitting element:', err)
           return false
+        } finally {
+          if (updatedElementId !== null) {
+            await refreshAfterElementManipulation(updatedElementId)
+          }
         }
       }}
       onSuccess={() => {

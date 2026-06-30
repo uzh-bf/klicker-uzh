@@ -1,11 +1,10 @@
-import {
-  CatalogCollection,
-  CatalogObject,
-  ObjectAccess,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import * as JsSearch from 'js-search'
 import { useMemo } from 'react'
+import type {
+  CatalogBrowserCollection,
+  CatalogBrowserObject,
+} from '../catalogBrowserTypes'
 
 function useObjectFilters({
   objects,
@@ -14,14 +13,14 @@ function useObjectFilters({
   typeFilter,
   accessTypeFilter,
 }: {
-  objects: CatalogObject[]
-  collections: CatalogCollection[]
+  objects: CatalogBrowserObject[]
+  collections: CatalogBrowserCollection[]
   search?: string
   typeFilter: ObjectType | 'all'
   accessTypeFilter: ObjectAccess | 'all'
 }): {
-  filteredObjects: CatalogObject[]
-  filteredCatalogCollections: CatalogCollection[]
+  filteredObjects: CatalogBrowserObject[]
+  filteredCatalogCollections: CatalogBrowserCollection[]
 } {
   return useMemo(() => {
     // filter objects based on access type and object type
@@ -65,11 +64,11 @@ function useObjectFilters({
 
     // apply search filter if search term exists
     const searchFilteredObjects = search
-      ? (searchInstance.search(search) as CatalogObject[])
+      ? (searchInstance.search(search) as CatalogBrowserObject[])
       : filteredObjects
 
     const searchFilteredCollections = search
-      ? (searchInstanceCollections.search(search) as CatalogCollection[])
+      ? (searchInstanceCollections.search(search) as CatalogBrowserCollection[])
       : filteredCollections
 
     return {

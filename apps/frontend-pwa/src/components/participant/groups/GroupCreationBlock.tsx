@@ -1,24 +1,22 @@
-import { useMutation } from '@apollo/client'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateParticipantGroupDocument,
-  GetParticipantGroupsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import GroupAction from './GroupAction'
 
 function GroupCreationBlock({
   courseId,
   setSelectedTab,
+  onCourseOverviewChanged,
 }: {
   courseId: string
   setSelectedTab: (value: string) => void
+  onCourseOverviewChanged?: () => void | Promise<void>
 }) {
   const t = useTranslations()
-  const [createParticipantGroup, { loading }] = useMutation(
-    CreateParticipantGroupDocument
-  )
+  const createParticipantGroup =
+    trpc.participant.createParticipantGroup.useMutation()
 
   return (
     <GroupAction
@@ -33,21 +31,28 @@ function GroupCreationBlock({
           }),
       })}
       onSubmit={async (value) => {
-        const result = await createParticipantGroup({
-          variables: { courseId: courseId, name: value },
-          // refetch is more effective here to avoid code duplication for participant aggregation
-          // -> performance implications are not relevant here, short loading circle is acceptable
-          // participant groups query is joint between course and separate -> separate call sufficient
-          refetchQueries: [
-            { query: GetParticipantGroupsDocument, variables: { courseId } },
-          ],
-        })
+        try {
+          const result = await createParticipantGroup.mutateAsync({
+            courseId,
+            name: value,
+          })
 
-        if (result.data?.createParticipantGroup?.id) {
-          setSelectedTab(result.data.createParticipantGroup.id)
+          if (result?.id) {
+            await Promise.resolve(onCourseOverviewChanged?.())
+            setSelectedTab(result.id)
+            return
+          }
+        } catch (error) {
+          console.error(error)
         }
+
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
       }}
-      loading={loading}
+      loading={createParticipantGroup.isLoading}
       placeholder={t('pwa.courses.groupName')}
       textSubmit={t('shared.generic.create')}
       inputData={{ cy: 'group-creation-name-input' }}

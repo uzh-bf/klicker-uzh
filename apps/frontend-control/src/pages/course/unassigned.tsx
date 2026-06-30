@@ -1,9 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetUnassignedLiveQuizzesDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc, type RouterOutputs } from '@lib/trpc'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -11,32 +7,57 @@ import { useMemo } from 'react'
 import Layout from '../../components/Layout'
 import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
 
+const publicationStatus = {
+  draft: 'DRAFT',
+  published: 'PUBLISHED',
+  scheduled: 'SCHEDULED',
+} as const
+
+type UnassignedLiveQuiz =
+  RouterOutputs['liveQuiz']['unassigned']['liveQuizzes'][number]
+
 function UnassignedLiveQuizzes() {
   const t = useTranslations()
-  const { data, loading, error } = useQuery(GetUnassignedLiveQuizzesDocument)
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = trpc.liveQuiz.unassigned.useQuery()
+  const hasLiveQuizData = typeof data !== 'undefined'
 
   const runningQuizzes = useMemo(() => {
-    return data?.unassignedLiveQuizzes?.filter(
-      (quiz) => quiz.status === PublicationStatus.Published
+    return data?.liveQuizzes.filter(
+      (quiz: UnassignedLiveQuiz) => quiz.status === publicationStatus.published
     )
   }, [data])
 
   const plannedQuizzes = useMemo(() => {
-    return data?.unassignedLiveQuizzes?.filter(
-      (quiz) =>
-        quiz.status === PublicationStatus.Scheduled ||
-        quiz.status === PublicationStatus.Draft
+    return data?.liveQuizzes.filter(
+      (quiz: UnassignedLiveQuiz) =>
+        quiz.status === publicationStatus.scheduled ||
+        quiz.status === publicationStatus.draft
     )
   }, [data])
 
-  if (loading) {
+  if (loading && !hasLiveQuizData) {
     return (
       <Layout title={t('control.home.liveQuizzesNoCourse')}>
         <Loader />
       </Layout>
     )
   }
-  if (error || !data) {
+  if (error && !hasLiveQuizData) {
+    return (
+      <Layout title={t('control.home.liveQuizzesNoCourse')}>
+        <UserNotification
+          type="error"
+          className={{ root: 'text-base' }}
+          message={t('control.home.loadingLiveQuizzesFailed')}
+        />
+      </Layout>
+    )
+  }
+  if (!data) {
     return (
       <Layout title={t('control.home.liveQuizzesNoCourse')}>
         <UserNotification
@@ -50,6 +71,13 @@ function UnassignedLiveQuizzes() {
 
   return (
     <Layout title={t('control.home.liveQuizzesNoCourse')}>
+      {error && data ? (
+        <UserNotification
+          type="error"
+          className={{ root: 'mb-4 text-base' }}
+          message={t('control.home.loadingLiveQuizzesFailed')}
+        />
+      ) : null}
       <LiveQuizLists
         runningLiveQuizzes={runningQuizzes || []}
         plannedLiveQuizzes={plannedQuizzes || []}

@@ -1,20 +1,35 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetCatalogSharingRequestsDocument,
-  ObjectSharingRequest,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Badge, H2 } from '@uzh-bf/design-system'
+import { ObjectType } from '@lib/constants/sharingEnums'
+import { Badge, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc, type RouterOutputs } from '../../../lib/trpc'
 import CatalogSeparatorTitle from './CatalogSeparatorTitle'
 import CatalogSharingRequest from './CatalogSharingRequest'
 
+type ObjectSharingRequest = NonNullable<
+  RouterOutputs['sharing']['catalogSharingRequests']['catalogSharingRequests']
+>[number]
+
 function PendingSharingRequests() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetCatalogSharingRequestsDocument)
-  const requests = data?.getCatalogSharingRequests
+  const { data, error, isLoading } =
+    trpc.sharing.catalogSharingRequests.useQuery()
+  const requests = data?.catalogSharingRequests
 
-  if (loading || !requests || requests.length === 0) {
+  if (isLoading && !requests) {
+    return null
+  }
+
+  if (error && !requests) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+        className={{ root: 'mb-8' }}
+      />
+    )
+  }
+
+  if (!requests || requests.length === 0) {
     return null
   }
 
@@ -45,6 +60,13 @@ function PendingSharingRequests() {
       <div className="mb-3 text-sm">
         {t('manage.catalog.sharingRequestsExplanation')}
       </div>
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-3' }}
+        />
+      ) : null}
       <div>
         {Object.entries(groupedRequests).map(([type, requests]) => {
           if (requests.length === 0) {

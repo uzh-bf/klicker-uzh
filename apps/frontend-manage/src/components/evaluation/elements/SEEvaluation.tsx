@@ -1,5 +1,5 @@
-import { SelectionActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import { SelectionActivityEvaluationData } from '@lib/evaluationTypes'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 

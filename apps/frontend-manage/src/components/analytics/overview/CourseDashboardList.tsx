@@ -1,14 +1,20 @@
-import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import PreviewTag from '../../common/PreviewTag'
 import AnalyticsCourseLabel from './AnalyticsCourseLabel'
 import DashboardButtons from './DashboardButtons'
 
+type CourseDashboardListCourse = {
+  id: string
+  name: string
+  startDate: Date
+  endDate: Date
+}
+
 function CourseDashboardList({
   courses,
 }: {
-  courses?: Pick<Course, 'id' | 'name' | 'startDate' | 'endDate'>[] | null
+  courses?: CourseDashboardListCourse[] | null
 }) {
   const t = useTranslations()
 

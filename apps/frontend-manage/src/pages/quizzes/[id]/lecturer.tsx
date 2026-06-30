@@ -1,39 +1,65 @@
-import { useQuery } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Feedback,
-  FeedbackPinnedDocument,
-  GetLecturerViewLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Head from 'next/head'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import { api, type RouterOutputs } from '../../../lib/trpc'
+
+type LecturerViewLiveQuiz = NonNullable<
+  RouterOutputs['liveQuiz']['lecturerView']['lecturerViewLiveQuiz']
+>
+type LecturerFeedback = LecturerViewLiveQuiz['feedbacks'][number]
+
+const statusContainerClass =
+  'flex min-h-screen w-full items-center justify-center p-4'
+const statusNotificationClass = { root: 'w-full max-w-lg text-lg' }
 
 function LecturerView() {
   const t = useTranslations()
   const router = useRouter()
+  const quizId = typeof router.query.id === 'string' ? router.query.id : ''
 
-  const { data, loading, error, subscribeToMore } = useQuery(
-    GetLecturerViewLiveQuizDocument,
+  const {
+    data,
+    isLoading,
+    error,
+    refetch: refetchLecturerView,
+  } = api.liveQuiz.lecturerView.useQuery(
+    { id: quizId },
     {
-      variables: {
-        id: router.query.id as string,
+      enabled: Boolean(quizId),
+      refetchInterval: 10000, // polling only required for confusion feedbacks (lower priority)
+    }
+  )
+  const refetchLecturerViewRef = useRef(refetchLecturerView)
+  const liveQuizId = data?.lecturerViewLiveQuiz?.id
+
+  useEffect(() => {
+    refetchLecturerViewRef.current = refetchLecturerView
+  }, [refetchLecturerView])
+
+  api.realtime.feedbackPinned.useSubscription(
+    { quizId: liveQuizId ?? '' },
+    {
+      enabled: Boolean(liveQuizId),
+      onData() {
+        void Promise.resolve(refetchLecturerViewRef.current()).catch(
+          console.error
+        )
       },
-      pollInterval: 10000, // polling only required for confusion feedbacks (lower priority)
-      skip: !router.query.id,
     }
   )
 
   const aggregateConfusion = useMemo(() => {
-    const quiz = data?.getLecturerViewLiveQuiz
+    const quiz = data?.lecturerViewLiveQuiz
 
     if (
       quiz &&
@@ -46,7 +72,7 @@ function LecturerView() {
       )
     }
     return 0
-  }, [data?.getLecturerViewLiveQuiz])
+  }, [data?.lecturerViewLiveQuiz])
 
   const borderColor = useMemo(() => {
     if (aggregateConfusion >= 1.4) {
@@ -60,49 +86,39 @@ function LecturerView() {
     return 'border-green-300'
   }, [aggregateConfusion])
 
-  useEffect(() => {
-    const quizId = data?.getLecturerViewLiveQuiz?.id
-    if (!quizId) return
+  if (isLoading && !data) {
+    return (
+      <div className={statusContainerClass}>
+        <Loader />
+      </div>
+    )
+  }
 
-    const feedbackPinned = subscribeToMore({
-      document: FeedbackPinnedDocument,
-      variables: { quizId },
-      updateQuery: (prev, { subscriptionData }) => {
-        if (!subscriptionData.data || !prev.getLecturerViewLiveQuiz) return prev
-        const prevQuiz = prev.getLecturerViewLiveQuiz
-        const updatedFeedback = subscriptionData.data.feedbackPinned
-        const feedbackShown = !!prevQuiz?.feedbacks?.find(
-          (f) => f.id === updatedFeedback.id
-        )
-
-        return {
-          getLecturerViewLiveQuiz: {
-            ...prevQuiz,
-            feedbacks: updatedFeedback.isPinned
-              ? [
-                  ...(prevQuiz?.feedbacks ?? []),
-                  ...(feedbackShown ? [] : [updatedFeedback]),
-                ]
-              : prevQuiz?.feedbacks?.filter((f) => f.id !== updatedFeedback.id),
-          },
-        }
-      },
-    })
-
-    return () => {
-      feedbackPinned && feedbackPinned()
-    }
-  }, [subscribeToMore, data?.getLecturerViewLiveQuiz?.id])
-
-  if (loading) {
-    return <Loader />
+  if (error && !data) {
+    return (
+      <div className={statusContainerClass}>
+        <UserNotification
+          className={statusNotificationClass}
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </div>
+    )
   }
 
   if (!data) {
-    return <div className="p-4">{t('manage.lecturer.noDataAvailable')}</div>
+    return (
+      <div className={statusContainerClass}>
+        <UserNotification
+          className={statusNotificationClass}
+          type="warning"
+          message={t('manage.lecturer.noDataAvailable')}
+        />
+      </div>
+    )
   }
 
-  const quiz = data?.getLecturerViewLiveQuiz
+  const quiz = data?.lecturerViewLiveQuiz
   const isLiveQAEnabled = quiz?.isLiveQAEnabled
   const isConfusionFeedbackEnabled = quiz?.isConfusionFeedbackEnabled
   const confusionSummary = quiz?.confusionSummary
@@ -110,16 +126,12 @@ function LecturerView() {
 
   if (!isLiveQAEnabled && !isConfusionFeedbackEnabled) {
     return (
-      <div className="p-4">
-        {t('manage.lecturer.audienceInteractionNotActivated')}
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-4">
-        {t('shared.generic.error')}: {error.message}
+      <div className={statusContainerClass}>
+        <UserNotification
+          className={statusNotificationClass}
+          type="info"
+          message={t('manage.lecturer.audienceInteractionNotActivated')}
+        />
       </div>
     )
   }
@@ -143,25 +155,27 @@ function LecturerView() {
             </div>
           )}
 
-          {feedbacks?.map(({ id, content, createdAt, votes }: Feedback) => (
-            <div
-              className="border-primary-100 mt-4 flex items-center rounded border border-solid"
-              key={id}
-            >
-              <div className="flex-1 p-4">
-                <p className="mb-0 text-2xl">{content}</p>
-                <div className="mt-2 flex flex-row text-lg text-gray-500">
-                  <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
+          {feedbacks?.map(
+            ({ id, content, createdAt, votes }: LecturerFeedback) => (
+              <div
+                className="border-primary-100 mt-4 flex items-center rounded border border-solid"
+                key={id}
+              >
+                <div className="flex-1 p-4">
+                  <p className="mb-0 text-2xl">{content}</p>
+                  <div className="mt-2 flex flex-row text-lg text-gray-500">
+                    <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
+                  </div>
+                </div>
+                <div className="flex flex-initial flex-col justify-between pr-4">
+                  <div className="text-3xl text-gray-500">
+                    {votes}{' '}
+                    <FontAwesomeIcon icon={faThumbsUp} className="mr-0.5" />
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-initial flex-col justify-between pr-4">
-                <div className="text-3xl text-gray-500">
-                  {votes}{' '}
-                  <FontAwesomeIcon icon={faThumbsUp} className="mr-0.5" />
-                </div>
-              </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       )}
 

@@ -1,7 +1,7 @@
-import { useQuery } from '@apollo/client'
-import { GetLiveQuizSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -17,10 +17,11 @@ function LiveQuizDeletionModal({
   deleting: boolean
 }) {
   const t = useTranslations()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetLiveQuizSummaryDocument,
-    { variables: { quizId }, fetchPolicy: 'network-only' }
-  )
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.liveQuizSummary.useQuery({ activityId: quizId })
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -30,41 +31,61 @@ function LiveQuizDeletionModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getLiveQuizSummary) {
-      setConfirmations({
-        deleteResponses: summaryData?.getLiveQuizSummary.numOfResponses === 0,
-        deleteLeaderboardEntries:
-          summaryData.getLiveQuizSummary.numOfLeaderboardEntries === 0,
-        deleteFeedbacks: summaryData.getLiveQuizSummary.numOfFeedbacks === 0,
-        deleteConfusionFeedbacks:
-          summaryData.getLiveQuizSummary.numOfConfusionFeedbacks === 0,
-      })
-    }
-  }, [summaryData?.getLiveQuizSummary])
+    const liveQuizSummary = summaryData?.liveQuizSummary
+    if (!liveQuizSummary) return
 
-  if (!summaryData?.getLiveQuizSummary) return null
+    setConfirmations((prev) => ({
+      deleteResponses:
+        prev.deleteResponses || liveQuizSummary.numOfResponses === 0,
+      deleteLeaderboardEntries:
+        prev.deleteLeaderboardEntries ||
+        liveQuizSummary.numOfLeaderboardEntries === 0,
+      deleteFeedbacks:
+        prev.deleteFeedbacks || liveQuizSummary.numOfFeedbacks === 0,
+      deleteConfusionFeedbacks:
+        prev.deleteConfusionFeedbacks ||
+        liveQuizSummary.numOfConfusionFeedbacks === 0,
+    }))
+  }, [summaryData?.liveQuizSummary])
 
-  const summary = summaryData.getLiveQuizSummary
+  const summary = summaryData?.liveQuizSummary
+  const summaryUnavailable = !summary
+  const loadingLabel = t('shared.generic.loading')
+  const confirmationData = (count: number | undefined, cy: string) =>
+    (count ?? 0) > 0 ? { cy } : undefined
 
   return (
     <ActivityConfirmationModal
       onClose={onClose}
       title={t('manage.liveQuizzes.deleteLiveQuiz')}
       message={t('manage.liveQuizzes.deleteLiveQuizMessage')}
-      onSubmit={async () => await onDelete()}
+      onSubmit={async () => {
+        if (summaryUnavailable) return
+        await onDelete()
+      }}
       submitting={deleting}
       confirmations={confirmations}
-      confirmationsInitializing={summaryLoading}
+      confirmationsInitializing={summaryLoading || summaryUnavailable}
       confirmationType="delete"
     >
       <div className="flex flex-col gap-2">
+        {summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         <ConfirmationItem
           label={
-            summary.numOfResponses === 0
-              ? t('manage.liveQuizzes.noResponsesToDelete')
-              : t('manage.liveQuizzes.deleteResponses', {
-                  number: summary.numOfResponses,
-                })
+            summaryUnavailable
+              ? `${t('manage.liveQuizzes.deleteResponses', {
+                  number: 0,
+                })} ${loadingLabel}`
+              : summary.numOfResponses === 0
+                ? t('manage.liveQuizzes.noResponsesToDelete')
+                : t('manage.liveQuizzes.deleteResponses', {
+                    number: summary.numOfResponses,
+                  })
           }
           onClick={() => {
             setConfirmations((prev) => ({
@@ -73,17 +94,22 @@ function LiveQuizDeletionModal({
             }))
           }}
           confirmed={confirmations.deleteResponses}
-          notApplicable={summary.numOfResponses === 0}
+          notApplicable={summary?.numOfResponses === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-responses' }}
+          data={confirmationData(
+            summary?.numOfResponses,
+            'confirm-deletion-responses'
+          )}
         />
         <ConfirmationItem
           label={
-            summary.numOfFeedbacks === 0
-              ? t('manage.liveQuizzes.noFeedbacksToDelete')
-              : t('manage.liveQuizzes.deleteFeedbacks', {
-                  number: summary.numOfFeedbacks,
-                })
+            summaryUnavailable
+              ? loadingLabel
+              : summary.numOfFeedbacks === 0
+                ? t('manage.liveQuizzes.noFeedbacksToDelete')
+                : t('manage.liveQuizzes.deleteFeedbacks', {
+                    number: summary.numOfFeedbacks,
+                  })
           }
           onClick={() => {
             setConfirmations((prev) => ({
@@ -92,17 +118,23 @@ function LiveQuizDeletionModal({
             }))
           }}
           confirmed={confirmations.deleteFeedbacks}
-          notApplicable={summary.numOfFeedbacks === 0}
+          notApplicable={summary?.numOfFeedbacks === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-qa-feedbacks' }}
+          data={confirmationData(
+            summary?.numOfFeedbacks,
+            'confirm-deletion-qa-feedbacks'
+          )}
+          disabled={summaryUnavailable}
         />
         <ConfirmationItem
           label={
-            summary.numOfConfusionFeedbacks === 0
-              ? t('manage.liveQuizzes.noConfusionFeedbacksToDelete')
-              : t('manage.liveQuizzes.deleteConfusionFeedbacks', {
-                  number: summary.numOfConfusionFeedbacks,
-                })
+            summaryUnavailable
+              ? loadingLabel
+              : summary.numOfConfusionFeedbacks === 0
+                ? t('manage.liveQuizzes.noConfusionFeedbacksToDelete')
+                : t('manage.liveQuizzes.deleteConfusionFeedbacks', {
+                    number: summary.numOfConfusionFeedbacks,
+                  })
           }
           onClick={() => {
             setConfirmations((prev) => ({
@@ -111,9 +143,13 @@ function LiveQuizDeletionModal({
             }))
           }}
           confirmed={confirmations.deleteConfusionFeedbacks}
-          notApplicable={summary.numOfConfusionFeedbacks === 0}
+          notApplicable={summary?.numOfConfusionFeedbacks === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-confusion-feedbacks' }}
+          data={confirmationData(
+            summary?.numOfConfusionFeedbacks,
+            'confirm-deletion-confusion-feedbacks'
+          )}
+          disabled={summaryUnavailable}
         />
       </div>
     </ActivityConfirmationModal>

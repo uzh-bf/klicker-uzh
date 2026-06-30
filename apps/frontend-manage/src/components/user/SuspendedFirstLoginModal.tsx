@@ -1,9 +1,3 @@
-import { useLazyQuery, useMutation, useSuspenseQuery } from '@apollo/client'
-import {
-  ChangeInitialSettingsDocument,
-  CheckShortnameAvailableDocument,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
@@ -25,6 +19,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { trpc } from '../../lib/trpc'
 
 function SuspendedFirstLoginModal({
   refetchElements,
@@ -37,19 +32,16 @@ function SuspendedFirstLoginModal({
     boolean | undefined
   >(true)
 
-  const { data } = useSuspenseQuery(UserProfileDocument)
-  const [changeInitialSettings] = useMutation(ChangeInitialSettingsDocument)
+  const utils = trpc.useUtils()
+  const { data: user } = trpc.user.profile.useQuery()
+  const changeInitialSettings = trpc.user.changeInitialSettings.useMutation()
   const t = useTranslations()
 
-  const [checkShortnameAvailable] = useLazyQuery(
-    CheckShortnameAvailableDocument
-  )
-
   useEffect(() => {
-    if (data?.userProfile?.firstLogin) {
+    if (user?.firstLogin) {
       setFirstLogin(true)
     }
-  }, [data.userProfile])
+  }, [user?.firstLogin])
 
   if (!firstLogin) {
     return null
@@ -59,7 +51,7 @@ function SuspendedFirstLoginModal({
     <Modal
       fullScreen
       open={firstLogin}
-      loading={!data.userProfile}
+      loading={!user}
       onClose={() => null}
       hideCloseButton
       className={{ content: 'h-max pb-1' }}
@@ -70,7 +62,7 @@ function SuspendedFirstLoginModal({
       <div className="mb-3 max-w-none">
         {t('manage.firstLogin.makeFirstSettings')}
       </div>
-      {data.userProfile && (
+      {user && (
         <Formik
           isInitialValid={false}
           validateOnMount
@@ -94,40 +86,44 @@ function SuspendedFirstLoginModal({
             ),
           })}
           initialValues={{
-            shortname: data.userProfile.shortname,
-            locale: data.userProfile.locale,
-            sendProjectUpdates: data.userProfile.sendProjectUpdates,
+            shortname: user.shortname,
+            locale: user.locale,
+            sendProjectUpdates: user.sendProjectUpdates,
             seedDemoElements: undefined,
           }}
           onSubmit={async (values, { setSubmitting, setErrors }) => {
             setShowGenericError(false)
             setSubmitting(true)
 
-            const trimmedUsername = values.shortname.trim()
+            try {
+              const trimmedUsername = values.shortname.trim()
 
-            const result = await changeInitialSettings({
-              variables: {
+              const result = await changeInitialSettings.mutateAsync({
                 shortname: trimmedUsername,
                 locale: values.locale,
                 sendUpdates: values.sendProjectUpdates,
                 seedDemoElements: values.seedDemoElements ?? false,
-              },
-            })
-            await refetchElements()
-
-            if (!result) {
-              setShowGenericError(true)
-            } else if (
-              result.data?.changeInitialSettings?.shortname !== trimmedUsername
-            ) {
-              setErrors({
-                shortname: t('manage.settings.shortnameTaken'),
               })
-            } else {
-              setFirstLogin(false)
-            }
 
-            setSubmitting(false)
+              if (!result) {
+                setShowGenericError(true)
+              } else if (result.shortname !== trimmedUsername) {
+                setErrors({
+                  shortname: t('manage.settings.shortnameTaken'),
+                })
+              } else {
+                await Promise.all([
+                  refetchElements(),
+                  utils.user.profile.invalidate(),
+                ])
+                setFirstLogin(false)
+              }
+            } catch (error) {
+              console.error(error)
+              setShowGenericError(true)
+            } finally {
+              setSubmitting(false)
+            }
           }}
         >
           {({ isValid, isSubmitting, validateField }) => (
@@ -146,10 +142,9 @@ function SuspendedFirstLoginModal({
                     await validateField('shortname')
                   }}
                   checkUsernameAvailable={async (name: string) => {
-                    const { data: result } = await checkShortnameAvailable({
-                      variables: { shortname: name },
+                    return await utils.user.checkShortnameAvailable.fetch({
+                      shortname: name,
                     })
-                    return result?.checkShortnameAvailable ?? false
                   }}
                   unavailableMessage={t('shared.generic.usernameAvailability')}
                   className={{
@@ -247,7 +242,7 @@ function SuspendedFirstLoginModal({
                 primary
                 type="submit"
                 loading={isSubmitting}
-                disabled={!isValid}
+                disabled={!isValid || isSubmitting}
                 className={{ root: 'mt-4 w-32 self-end' }}
                 data={{ cy: 'first-login-save-settings' }}
               >

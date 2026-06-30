@@ -1,8 +1,8 @@
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import {
   LocaleType,
   NumericalActivityEvaluationData,
-} from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+} from '@lib/evaluationTypes'
 import { useState } from 'react'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'

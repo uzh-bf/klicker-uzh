@@ -1,12 +1,12 @@
 import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import { Element, ElementType } from '../../../lib/constants/activityEnums'
 import { ElementDragDropTypes } from '../../elements/Element'
 import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
 
@@ -84,9 +84,9 @@ function AddStackButton({
                 title: question.name,
                 type: question.type,
                 hasSampleSolution:
-                  'options' in question
+                  'options' in question && question.options != null
                     ? (question.options.hasSampleSolution ?? false)
-                    : true,
+                    : (question.hasSampleSolution ?? true),
                 existingInstanceId: null,
                 duplicateInstance: false,
               }))
@@ -132,9 +132,9 @@ function AddStackButton({
                     title: question.name,
                     type: question.type,
                     hasSampleSolution:
-                      'options' in question
+                      'options' in question && question.options != null
                         ? (question.options.hasSampleSolution ?? false)
-                        : true,
+                        : (question.hasSampleSolution ?? true),
                     existingInstanceId: null,
                     duplicateInstance: false,
                   },

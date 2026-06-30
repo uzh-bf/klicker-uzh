@@ -1,9 +1,4 @@
-import { useMutation } from '@apollo/client'
-import {
-  CreateCatalogCollectionDocument,
-  GetCatalogCollectionsListDocument,
-  ObjectAccess,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess } from '@lib/constants/sharingEnums'
 import {
   Button,
   FormikTextField,
@@ -12,7 +7,9 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as yup from 'yup'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 
 function CreateCatalogCollectionModal({
@@ -25,12 +22,22 @@ function CreateCatalogCollectionModal({
   onError: () => void
 }) {
   const t = useTranslations()
-  const [createCatalogCollection] = useMutation(CreateCatalogCollectionDocument)
+  const utils = trpc.useUtils()
+  const createCatalogCollection =
+    trpc.sharing.createCatalogCollection.useMutation()
+  const [createPending, setCreatePending] = useState(false)
+  const creating = createCatalogCollection.isLoading || createPending
+  const handleClose = () => {
+    if (!creating) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
+      escapeDisabled={creating}
       title={t('manage.catalog.createCatalogCollectionTitle')}
       data={{ cy: 'create-catalog-collection-modal' }}
       className={{ content: 'pb-1' }}
@@ -49,38 +56,43 @@ function CreateCatalogCollectionModal({
           access: yup.string().required(t('manage.catalog.accessRequired')),
         })}
         onSubmit={async (values, { resetForm }) => {
+          if (createPending) return
+
+          setCreatePending(true)
+          let didCreateCollection = false
+
           try {
-            const res = await createCatalogCollection({
-              variables: {
-                name: values.name,
-                access: values.access as ObjectAccess,
-              },
-              update: (cache, { data }) => {
-                // check if the creation was successful
-                if (!data?.createCatalogCollection) return
+            const input: RouterInputs['sharing']['createCatalogCollection'] = {
+              name: values.name,
+              access:
+                values.access as unknown as RouterInputs['sharing']['createCatalogCollection']['access'],
+            }
+            const res = await createCatalogCollection.mutateAsync(input)
 
-                // update the cached list of catalog collections
-                cache.updateQuery(
-                  { query: GetCatalogCollectionsListDocument },
-                  (qData) => ({
-                    getCatalogCollectionsList: [
-                      ...(qData?.getCatalogCollectionsList ?? []),
-                      data.createCatalogCollection!,
-                    ],
-                  })
-                )
-              },
-            })
-
-            if (res.data?.createCatalogCollection) {
+            if (res.catalogCollection) {
+              utils.sharing.catalogCollections.setData(
+                undefined,
+                (queryData) => ({
+                  catalogCollections: [
+                    ...(queryData?.catalogCollections ?? []),
+                    res.catalogCollection,
+                  ],
+                })
+              )
               resetForm()
-              onSuccess()
+              didCreateCollection = true
             } else {
               onError()
             }
           } catch (error) {
             console.error('Error creating catalog collection:', error)
             onError()
+          } finally {
+            setCreatePending(false)
+
+            if (didCreateCollection) {
+              onSuccess()
+            }
           }
         }}
       >
@@ -111,7 +123,8 @@ function CreateCatalogCollectionModal({
 
             <div className="flex justify-between gap-2">
               <Button
-                onClick={onClose}
+                onClick={handleClose}
+                disabled={isSubmitting || creating}
                 data={{ cy: 'cancel-catalog-collection-creation' }}
               >
                 <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -119,8 +132,8 @@ function CreateCatalogCollectionModal({
               <Button
                 type="submit"
                 primary
-                disabled={!isValid || isSubmitting}
-                loading={isSubmitting}
+                disabled={!isValid || isSubmitting || creating}
+                loading={isSubmitting || creating}
                 data={{ cy: 'create-catalog-collection-submit' }}
               >
                 <Button.Label>{t('shared.generic.create')}</Button.Label>

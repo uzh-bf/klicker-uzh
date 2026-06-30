@@ -1,4 +1,4 @@
-import { ActivityProgress } from '@klicker-uzh/graphql/dist/ops'
+import type { ActivityProgress } from '@lib/analyticsTypes'
 import { useTranslations } from 'next-intl'
 import {
   Bar,

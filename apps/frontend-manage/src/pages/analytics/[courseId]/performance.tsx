@@ -1,6 +1,4 @@
-import { useQuery } from '@apollo/client'
-import { GetCoursePerformanceAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1, TabContent, Tabs } from '@uzh-bf/design-system'
+import { H1, TabContent, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -15,11 +13,13 @@ import StudentActivityPerformance from '../../../components/analytics/performanc
 import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
 import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
+import { trpc } from '../../../lib/trpc'
 
 function PerformanceDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId as string
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
   const [tabValue, setTabValue] = useState<
     | 'performanceRates'
@@ -28,16 +28,16 @@ function PerformanceDashboard() {
     | 'feedbackOverview'
   >('performanceRates')
 
-  const { data, loading, error } = useQuery(
-    GetCoursePerformanceAnalyticsDocument,
-    { variables: { courseId }, skip: !courseId }
+  const { data, isLoading, error } = trpc.analytics.coursePerformance.useQuery(
+    { courseId },
+    { enabled: courseId !== '' }
   )
 
   const navigation = <PerformanceAnalyticsNavigation courseId={courseId} />
-  const course = data?.getCoursePerformanceAnalytics
+  const course = data?.coursePerformanceAnalytics
 
   // loading state
-  if (loading || !courseId) {
+  if (!courseId || (isLoading && !course)) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.performanceDashboard')}
@@ -47,7 +47,16 @@ function PerformanceDashboard() {
   }
 
   // error state
-  if (course === null || typeof course === 'undefined' || error) {
+  if (error && !course) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (course === null || typeof course === 'undefined') {
     return (
       <AnalyticsErrorView
         title={t('manage.analytics.performanceDashboard')}
@@ -59,6 +68,13 @@ function PerformanceDashboard() {
   return (
     <Layout displayName={t('manage.analytics.performanceDashboard')}>
       {navigation}
+      {error && course ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div>
         <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
           <div className="flex flex-row items-center gap-5">

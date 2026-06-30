@@ -1,13 +1,20 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetUserGroupsUserDocument,
-  PromoteGroupMemberToAdminDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function usePromoteGroupMemberToAdmin() {
-  const [promoteGroupMemberToAdmin, { loading }] = useMutation(
-    PromoteGroupMemberToAdminDocument
-  )
+  const t = useTranslations()
+  const utils = trpc.useUtils()
+  const promoteGroupMemberToAdmin =
+    trpc.sharing.promoteGroupMemberToAdmin.useMutation()
+  const [promotionPending, setPromotionPending] = useState(false)
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
 
   const onPromotion = async ({
     groupId,
@@ -16,48 +23,32 @@ function usePromoteGroupMemberToAdmin() {
     groupId: number
     memberId: string
   }) => {
+    if (promotionPending) return
+
+    setPromotionPending(true)
+
     try {
-      await promoteGroupMemberToAdmin({
-        variables: { groupId, memberId },
-        optimisticResponse: { promoteGroupMemberToAdmin: true },
-        update: (cache, { data }) => {
-          // verify that the promotion was successful
-          if (!data?.promoteGroupMemberToAdmin) return
-
-          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
-            if (!qData?.getUserGroupsUser) return qData
-
-            return {
-              getUserGroupsUser: qData.getUserGroupsUser.map(
-                (existingGroup) => {
-                  if (groupId === existingGroup.id) {
-                    const promotedMember = existingGroup.members?.find(
-                      (m) => m.id === memberId
-                    )
-                    if (!promotedMember) return existingGroup
-
-                    return {
-                      ...existingGroup,
-                      admins: [...(existingGroup.admins ?? []), promotedMember],
-                      members: existingGroup.members?.filter(
-                        (m) => m.id !== memberId
-                      ),
-                    }
-                  }
-
-                  return existingGroup
-                }
-              ),
-            }
-          })
-        },
+      const result = await promoteGroupMemberToAdmin.mutateAsync({
+        groupId,
+        memberId,
       })
+      if (result.promoted) {
+        await utils.sharing.userGroups.invalidate()
+      } else {
+        onErrorToast()
+      }
     } catch (e) {
       console.error(e)
+      onErrorToast()
+    } finally {
+      setPromotionPending(false)
     }
   }
 
-  return { onPromotion, promoting: loading }
+  return {
+    onPromotion,
+    promoting: promoteGroupMemberToAdmin.isLoading || promotionPending,
+  }
 }
 
 export default usePromoteGroupMemberToAdmin

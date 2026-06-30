@@ -1,7 +1,7 @@
 import {
   FreeTextActivityEvaluationData,
   LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
+} from '@lib/evaluationTypes'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'

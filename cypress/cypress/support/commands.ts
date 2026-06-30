@@ -80,6 +80,95 @@ Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
   })
 })
 
+function clearPersistedClientState() {
+  cy.clearAllCookies()
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+
+  return cy.wrap(null, { log: false }).then(async () => {
+    await localforage.clear()
+  })
+}
+
+function deleteIndexedDbDatabase(win: Cypress.AUTWindow, name: string) {
+  return new Cypress.Promise<void>((resolve) => {
+    try {
+      const request = win.indexedDB?.deleteDatabase(name)
+
+      if (!request) {
+        resolve()
+        return
+      }
+
+      request.onsuccess = () => resolve()
+      request.onerror = () => resolve()
+      request.onblocked = () => resolve()
+    } catch {
+      resolve()
+    }
+  })
+}
+
+function clearBrowserControlledClientState(win: Cypress.AUTWindow) {
+  try {
+    win.localStorage.clear()
+  } catch {
+    // Cypress can expose a cross-origin window after app-to-app navigation.
+  }
+
+  try {
+    win.sessionStorage.clear()
+  } catch {
+    // Cypress can expose a cross-origin window after app-to-app navigation.
+  }
+
+  const clearServiceWorkers = (() => {
+    try {
+      return (
+        win.navigator.serviceWorker
+          ?.getRegistrations()
+          .then((registrations) =>
+            Promise.all(
+              registrations.map((registration) => registration.unregister())
+            )
+          )
+          .catch(() => undefined) ?? Promise.resolve()
+      )
+    } catch {
+      return Promise.resolve()
+    }
+  })()
+
+  const clearCaches = (() => {
+    try {
+      return (
+        win.caches
+          ?.keys()
+          .then((keys) =>
+            Promise.all(keys.map((key) => win.caches.delete(key)))
+          )
+          .catch(() => undefined) ?? Promise.resolve()
+      )
+    } catch {
+      return Promise.resolve()
+    }
+  })()
+
+  return Cypress.Promise.all([
+    deleteIndexedDbDatabase(win, 'localforage'),
+    clearServiceWorkers,
+    clearCaches,
+  ])
+}
+
+function visitWithFreshClientState(url: string) {
+  cy.visit(url)
+  cy.window({ log: false }).then((win) =>
+    clearBrowserControlledClientState(win)
+  )
+  cy.visit(url)
+}
+
 Cypress.Commands.add('seed', () => {
   // seed all required initial data directly into the database
   cy.task('seedDatabase').then((result: boolean) => {
@@ -90,7 +179,7 @@ Cypress.Commands.add('seed', () => {
       )
     }
   })
-  cy.reload()
+  clearPersistedClientState()
 })
 
 Cypress.Commands.add('seedActivities', () => {
@@ -103,7 +192,7 @@ Cypress.Commands.add('seedActivities', () => {
       )
     }
   })
-  cy.reload()
+  clearPersistedClientState()
 })
 
 Cypress.Commands.add('cleanup', () => {
@@ -114,14 +203,8 @@ Cypress.Commands.add('cleanup', () => {
       throw new Error('An error occurred while resetting the database!')
     }
   })
-  cy.reload()
+  clearPersistedClientState()
 })
-
-const clearPersistedClientState = () => {
-  return cy.wrap(null, { log: false }).then(async () => {
-    await localforage.clear()
-  })
-}
 
 const assertManageSession = () => {
   cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
@@ -169,7 +252,7 @@ const loginFactory = (
       })
     })
 
-    cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
+    visitWithFreshClientState(redirectUrl ?? Cypress.env('URL_MANAGE'))
 
     if (!redirectUrl) {
       assertManageSession()
@@ -301,6 +384,7 @@ Cypress.Commands.add('logoutUser', () => {
 
 interface StudentLoginOptions {
   preserveClientState?: boolean
+  password?: string
 }
 
 Cypress.Commands.add('loginStudent', (options: StudentLoginOptions = {}) => {
@@ -314,33 +398,17 @@ Cypress.Commands.add(
   'loginStudentPassword',
   ({
     username,
+    password = Cypress.env('STUDENT_PASSWORD'),
     preserveClientState = false,
   }: { username: string } & StudentLoginOptions) => {
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.visit(
-      Cypress.env('URL_STUDENT_LOGIN'),
-      preserveClientState
-        ? undefined
-        : {
-            onBeforeLoad: (win) => {
-              win.localStorage.clear()
-              win.sessionStorage.clear()
-              try {
-                win.indexedDB?.deleteDatabase('localforage')
-              } catch {
-                // Fall back to the regular localforage clear after load.
-              }
-            },
-          }
-    )
-    if (!preserveClientState) {
+    if (preserveClientState) {
+      cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
+    } else {
       clearPersistedClientState()
+      cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     }
     cy.get('[data-cy="username-field"]').click().type(username)
-    cy.get('[data-cy="password-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="password-field"]').click().type(password)
     cy.get('[data-cy="submit-login"]').click()
   }
 )
@@ -1018,7 +1086,11 @@ Cypress.Commands.add(
 
     if (copyBeforeConversion) {
       cy.get('[data-cy="copy-option-template"]').click()
-      cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
+      cy.get('[data-cy="confirm-activity-unavailability"]').should(
+        'have.attr',
+        'data-confirmation-active',
+        'false'
+      )
     } else {
       cy.get('[data-cy="convert-option-template"]').click()
       cy.get('[data-cy="template-next-step"]').should('be.disabled')
@@ -1027,15 +1099,27 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-content-visibility"]').click()
-    cy.get('[data-cy="confirm-content-visibility"]').should('not.exist')
+    cy.get('[data-cy="confirm-content-visibility"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-question-access"]').click()
-    cy.get('[data-cy="confirm-question-access"]').should('not.exist')
+    cy.get('[data-cy="confirm-question-access"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     if (resourceAccessRequired) {
       cy.get('[data-cy="template-next-step"]').should('be.disabled')
       cy.get('[data-cy="confirm-resource-access"]').click()
     }
-    cy.get('[data-cy="confirm-resource-access"]').should('not.exist')
+    cy.get('[data-cy="confirm-resource-access"]').should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get('[data-cy="template-next-step"]').click()
 
     // insert name, description and instructions for the new template
@@ -1627,6 +1711,13 @@ interface AnswerCaseStudyArgs {
   sequentialUI?: boolean
 }
 
+function getSliderKey(click: string) {
+  if (click === '{leftarrow}') return 'ArrowLeft'
+  if (click === '{rightarrow}') return 'ArrowRight'
+
+  throw new Error(`Unsupported case study slider key: ${click}`)
+}
+
 Cypress.Commands.add(
   'answerCaseStudy',
   ({
@@ -1650,7 +1741,12 @@ Cypress.Commands.add(
             `[data-cy="cs-slider-${elementIx}-${parseInt(caseIx)}-${parseInt(itemIx)}-${parseInt(criterionIx)}"]`
           )
             .click()
-            .type(answer.click.repeat(answer.steps))
+            .then(() => {
+              const key = getSliderKey(answer.click)
+              for (let i = 0; i < answer.steps; i += 1) {
+                cy.realPress(key)
+              }
+            })
 
           // verify that correct value is set
           const criterion = criteria[criterionIx]
@@ -1865,6 +1961,7 @@ declare global {
       loginAssessmentStudent(): Chainable<void>
       loginStudentPassword({
         username,
+        password,
         preserveClientState,
       }: { username: string } & StudentLoginOptions): Chainable<void>
       createAnswerCollection({

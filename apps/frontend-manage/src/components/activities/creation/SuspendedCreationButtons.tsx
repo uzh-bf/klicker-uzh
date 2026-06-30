@@ -1,16 +1,13 @@
-import { useSuspenseQuery } from '@apollo/client'
-import {
-  ActivityType,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-
 import {
   faChalkboardUser,
   faGraduationCap,
   faUserGroup,
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ActivityType } from '../../../lib/constants/activityEnums'
+import { trpc } from '../../../lib/trpc'
 import CreationButton from './CreationButton'
 
 interface CreationButtonsProps {
@@ -20,10 +17,18 @@ interface CreationButtonsProps {
 function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
   const t = useTranslations()
 
-  const { data } = useSuspenseQuery(UserProfileDocument)
+  const { data, error, isLoading } = trpc.user.profile.useQuery()
+  const catalystDisabled = (isLoading && !data) || !data?.catalyst
 
   return (
     <div className="grid gap-1 pb-4 md:grid-cols-4 md:gap-2">
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'py-1 md:col-span-4' }}
+        />
+      ) : null}
       <CreationButton
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
@@ -34,7 +39,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
       />
       <CreationButton
         isCatalystRequired
-        disabled={!data?.userProfile?.catalyst}
+        disabled={catalystDisabled}
         icon={faChalkboardUser}
         text={t('manage.questionPool.createMicrolearning')}
         onClick={() => {
@@ -44,7 +49,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
       />
       <CreationButton
         isCatalystRequired
-        disabled={!data?.userProfile?.catalyst}
+        disabled={catalystDisabled}
         icon={faGraduationCap}
         text={t('manage.questionPool.createPracticeQuiz')}
         onClick={() => {
@@ -54,7 +59,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
       />
       <CreationButton
         isCatalystRequired
-        disabled={!data?.userProfile?.catalyst}
+        disabled={catalystDisabled}
         icon={faUserGroup}
         text={t('manage.questionPool.createGroupTask')}
         onClick={() => {

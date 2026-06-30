@@ -1,7 +1,9 @@
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useField } from 'formik'
+import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import type { AnswerCollection } from '../../../../lib/constants/elementTypes'
 import { ElementFormTypesCaseStudy } from '../types'
 import CaseStudyCasesFields, {
   CaseStudySetterProps,
@@ -15,6 +17,8 @@ interface CaseStudyOptionsProps extends CaseStudySetterProps {
   hasSampleSolution: boolean
   collections: Omit<AnswerCollection, 'description'>[]
   collectionsLoading: boolean
+  collectionsError: boolean
+  collectionsRefetching: boolean
   refetchCollections: () => Promise<any>
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
@@ -30,10 +34,13 @@ function CaseStudyOptions({
   hasSampleSolution,
   collections,
   collectionsLoading,
+  collectionsError,
+  collectionsRefetching,
   refetchCollections,
   setAnswerCollectionEntries,
   openAnswerCollectionEditModal,
 }: CaseStudyOptionsProps) {
+  const t = useTranslations()
   const [selectionMode, _, selectionModeHelpers] = useField<
     ElementFormTypesCaseStudy['options']['itemSelectionMode']
   >('options.itemSelectionMode')
@@ -46,12 +53,21 @@ function CaseStudyOptions({
     return <Loader />
   }
 
+  if (collectionsError) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+        className={{ root: 'text-sm' }}
+      />
+    )
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       {(selectionMode.value === 'existing' ||
         typeof selectionMode.value === 'undefined') && (
         <CaseStudyCollectionSelection
-          loading={collectionsLoading}
           disabled={inputsDisabled}
           creationMode={creationMode}
           collections={collections}
@@ -61,7 +77,8 @@ function CaseStudyOptions({
           setItemSelectionMode={(newValue) =>
             selectionModeHelpers.setValue(newValue)
           }
-          refetchCollections={async () => await refetchCollections()}
+          refetchCollections={refetchCollections}
+          loading={collectionsRefetching}
           openAnswerCollectionEditModal={openAnswerCollectionEditModal}
         />
       )}

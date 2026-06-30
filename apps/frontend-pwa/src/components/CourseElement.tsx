@@ -10,8 +10,8 @@ interface CourseElementProps {
   disabled?: boolean
   course: {
     id: string
-    startDate: string
-    endDate: string
+    startDate: Date | string
+    endDate: Date | string
     isSubscribed: boolean
     displayName: string
   }

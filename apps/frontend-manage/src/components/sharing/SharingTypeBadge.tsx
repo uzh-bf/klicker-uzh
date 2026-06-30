@@ -1,19 +1,20 @@
 import { faFolderTree, faLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SharingType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+
+type SharingTypeValue = 'OWNED' | 'SHARED' | 'DEPENDENCY'
 
 function SharingTypeBadge({
   sharingType,
   className,
 }: {
-  sharingType?: SharingType | null
+  sharingType?: SharingTypeValue | null
   className?: { root?: string; icon?: string }
 }) {
   const t = useTranslations()
 
-  if (sharingType === SharingType.Shared) {
+  if (sharingType === 'SHARED') {
     return (
       <div
         className={twMerge(
@@ -28,7 +29,7 @@ function SharingTypeBadge({
         <div>{t('shared.generic.shared')}</div>
       </div>
     )
-  } else if (sharingType === SharingType.Dependency) {
+  } else if (sharingType === 'DEPENDENCY') {
     return (
       <div
         className={twMerge(

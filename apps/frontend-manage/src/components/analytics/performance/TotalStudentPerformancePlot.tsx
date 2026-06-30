@@ -1,9 +1,6 @@
-import {
-  ParticipantPerformance,
-  PerformanceLevel,
-} from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
+import type { ParticipantPerformance } from '@lib/analyticsTypes'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import {
@@ -180,9 +177,9 @@ function TotalStudentPerformancePlot({
               ...entry,
               student: t('manage.analytics.studentN', { number: ix + 1 }),
               performanceLevelNumber:
-                entry.totalPerformance === PerformanceLevel.High
+                entry.totalPerformance === 'HIGH'
                   ? 3
-                  : entry.totalPerformance === PerformanceLevel.Medium
+                  : entry.totalPerformance === 'MEDIUM'
                     ? 2
                     : 1,
             }))}

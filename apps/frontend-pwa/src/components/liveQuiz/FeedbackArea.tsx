@@ -1,12 +1,5 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  AddConfusionTimestepDocument,
-  CreateFeedbackDocument,
-  GetFeedbacksDocument,
-  UpvoteFeedbackDocument,
-  VoteFeedbackResponseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { push } from '@socialgouv/matomo-next'
 import {
   Button,
@@ -14,6 +7,7 @@ import {
   H2,
   H3,
   Slider,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -54,12 +48,15 @@ function FeedbackArea({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const quizId = router.query.id as string
+  const utils = trpc.useUtils()
+  const quizId = typeof router.query.id === 'string' ? router.query.id : ''
 
-  const [createFeedback] = useMutation(CreateFeedbackDocument)
-  const [addConfusionTimestep] = useMutation(AddConfusionTimestepDocument)
-  const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
-  const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
+  const createFeedback = trpc.participant.createLiveQuizFeedback.useMutation()
+  const addConfusionTimestep =
+    trpc.participant.addLiveQuizConfusionTimestep.useMutation()
+  const upvoteFeedback = trpc.participant.upvoteLiveQuizFeedback.useMutation()
+  const voteFeedbackResponse =
+    trpc.participant.voteLiveQuizFeedbackResponse.useMutation()
 
   const [confusionDifficulty, setConfusionDifficulty] = useState(0)
   const [confusionSpeed, setConfusionSpeed] = useState(0)
@@ -68,29 +65,48 @@ function FeedbackArea({
   const confusionSubmissionTimeout = useRef<any>(null)
 
   const {
-    loading: feedbacksLoading,
+    isLoading: feedbacksLoading,
     data: feedbacksData,
-    subscribeToMore,
-  } = useQuery(GetFeedbacksDocument, {
-    variables: {
-      quizId: router.query.id as string,
-    },
-    skip: !router.query.id,
-  })
+    error: feedbacksError,
+    refetch: refetchFeedbacks,
+  } = trpc.participant.liveQuizFeedbacks.useQuery(
+    { quizId },
+    { enabled: !!quizId }
+  )
+  const feedbacks = feedbacksData?.feedbacks
 
   const onAddFeedback = async (input: string) => {
-    if (!router.query.id) return
-    await createFeedback({
-      variables: {
-        quizId: router.query.id as string,
-        content: input,
-      },
+    if (!quizId) return
+    const result = await createFeedback.mutateAsync({
+      quizId,
+      content: input,
     })
+    const createdFeedback = result.feedback
+
+    if (!createdFeedback) {
+      throw new Error('Feedback was not created')
+    }
+
+    if (createdFeedback.isPublished) {
+      utils.participant.liveQuizFeedbacks.setData({ quizId }, (previous) => {
+        if (!previous) return { feedbacks: [createdFeedback] }
+        if (
+          previous.feedbacks.some(
+            (feedback) => feedback.id === createdFeedback.id
+          )
+        ) {
+          return previous
+        }
+
+        return { feedbacks: [createdFeedback, ...previous.feedbacks] }
+      })
+    }
+
     toast({ type: 'success', message: t('pwa.feedbacks.feedbackSubmitted') })
   }
 
   const onUpvoteFeedback = async (id: number, change: number) => {
-    await upvoteFeedback({ variables: { feedbackId: id, increment: change } })
+    await upvoteFeedback.mutateAsync({ feedbackId: id, increment: change })
   }
 
   const onReactToFeedbackResponse = async (
@@ -98,12 +114,10 @@ function FeedbackArea({
     upvoteChange: number,
     downvoteChange: number
   ) => {
-    await voteFeedbackResponse({
-      variables: {
-        id: id,
-        incrementUpvote: upvoteChange,
-        incrementDownvote: downvoteChange,
-      },
+    await voteFeedbackResponse.mutateAsync({
+      id,
+      incrementUpvote: upvoteChange,
+      incrementDownvote: downvoteChange,
     })
   }
 
@@ -142,42 +156,50 @@ function FeedbackArea({
   // handle creation of a new confusion timestep with debounce for aggregation
   const handleNewConfusionTS = useCallback(
     async ({ speed = 0, difficulty = 0 }): Promise<void> => {
-      try {
-        addConfusionTimestep({
-          variables: {
-            quizId,
-            difficulty: difficulty,
-            speed: speed,
-          },
-        })
+      if (!quizId) return
 
-        localForage.setItem(`${quizId}-confusion`, {
+      try {
+        await addConfusionTimestep.mutateAsync({
+          quizId,
+          difficulty: difficulty,
+          speed: speed,
+        })
+      } catch (error) {
+        console.error(error)
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+        return
+      }
+
+      void localForage
+        .setItem(`${quizId}-confusion`, {
           prevSpeed: speed,
           prevDifficulty: difficulty,
           prevTimestamp: dayjs().format(),
         })
-        push([
-          'trackEvent',
-          'Join Live Quiz',
-          'Confusion Interacted',
-          `speed=${speed}, difficulty=${difficulty}`,
-        ])
-      } catch ({ message }: any) {
-        console.error(message)
-      } finally {
-        // disable confusion voting for 1 minute
-        setConfusionEnabled(false)
-        if (confusionButtonTimeout.current) {
-          clearTimeout(confusionButtonTimeout.current)
-        }
-        confusionButtonTimeout.current = setTimeout(
-          setConfusionEnabled,
-          60000,
-          true
-        )
+        .catch(console.error)
+      push([
+        'trackEvent',
+        'Join Live Quiz',
+        'Confusion Interacted',
+        `speed=${speed}, difficulty=${difficulty}`,
+      ])
+
+      // disable confusion voting for 1 minute
+      setConfusionEnabled(false)
+      if (confusionButtonTimeout.current) {
+        clearTimeout(confusionButtonTimeout.current)
       }
+      confusionButtonTimeout.current = setTimeout(
+        setConfusionEnabled,
+        60000,
+        true
+      )
     },
-    [addConfusionTimestep, quizId]
+    [addConfusionTimestep, quizId, t]
   )
 
   // custom implementation of confusion feedback debouncing
@@ -211,33 +233,52 @@ function FeedbackArea({
   }
 
   const openFeedbacks = useMemo(
-    () =>
-      feedbacksData?.feedbacks?.filter(
-        (feedback) => feedback?.isResolved === false
-      ),
-    [feedbacksData]
+    () => feedbacks?.filter((feedback) => feedback?.isResolved === false),
+    [feedbacks]
   )
 
   const resolvedFeedbacks = useMemo(
-    () =>
-      feedbacksData?.feedbacks?.filter(
-        (feedback) => feedback?.isResolved === true
-      ),
-    [feedbacksData]
+    () => feedbacks?.filter((feedback) => feedback?.isResolved === true),
+    [feedbacks]
   )
+  const isConfusionSliderDisabled =
+    !isConfusionEnabled || addConfusionTimestep.isLoading
 
-  if (feedbacksLoading || !feedbacksData?.feedbacks) {
+  if (feedbacksLoading && typeof feedbacks === 'undefined') {
     return <Loader />
+  }
+
+  if (feedbacksError && typeof feedbacks === 'undefined') {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
+  }
+
+  if (typeof feedbacks === 'undefined') {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
   }
 
   return (
     <div className={twMerge('h-full w-full pt-4 md:pt-2', className)}>
       <H2>{t('pwa.feedbacks.title')}</H2>
 
-      <FeedbackAreaSubscriber
-        quizId={quizId}
-        subscribeToMore={subscribeToMore}
-      />
+      <FeedbackAreaSubscriber quizId={quizId} onChanged={refetchFeedbacks} />
+
+      {feedbacksError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4 text-base' }}
+        />
+      ) : null}
 
       {isLiveQAEnabled && (
         <div className="mb-8">
@@ -245,15 +286,23 @@ function FeedbackArea({
             initialValues={{ feedbackInput: '' }}
             onSubmit={async (values, { setSubmitting, resetForm }) => {
               if (values.feedbackInput !== '') {
-                await onAddFeedback(values.feedbackInput)
-                resetForm()
-
-                setTimeout(() => {
+                try {
+                  await onAddFeedback(values.feedbackInput)
+                  resetForm()
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                } finally {
                   setSubmitting(false)
-                }, 700)
-              } else {
-                setSubmitting(false)
+                }
+                return
               }
+
+              setSubmitting(false)
             }}
           >
             {({ isSubmitting }) => (
@@ -300,7 +349,7 @@ function FeedbackArea({
             </H3>
             <div className="-mt-1 w-full">
               <Slider
-                disabled={!isConfusionEnabled}
+                disabled={isConfusionSliderDisabled}
                 handleChange={(newValue: any): Promise<void> =>
                   onNewConfusionTS(newValue, 'speed')
                 }
@@ -320,7 +369,7 @@ function FeedbackArea({
             </H3>
             <div className="-mt-1 w-full">
               <Slider
-                disabled={!isConfusionEnabled}
+                disabled={isConfusionSliderDisabled}
                 handleChange={(newValue: any): Promise<void> =>
                   onNewConfusionTS(newValue, 'difficulty')
                 }
@@ -337,7 +386,7 @@ function FeedbackArea({
         </div>
       )}
 
-      {isLiveQAEnabled && feedbacksData?.feedbacks.length > 0 && (
+      {isLiveQAEnabled && feedbacks.length > 0 && (
         <div>
           {openFeedbacks && openFeedbacks.length > 0 && (
             <div className="mb-8">
@@ -345,7 +394,7 @@ function FeedbackArea({
               {openFeedbacks.map((feedback) =>
                 feedback ? (
                   <PublicFeedback
-                    key={feedback.content}
+                    key={feedback.id}
                     feedback={feedback}
                     onUpvoteFeedback={onUpvoteFeedback}
                     onReactToFeedbackResponse={onReactToFeedbackResponse}
@@ -369,7 +418,7 @@ function FeedbackArea({
                 .map((feedback) =>
                   feedback ? (
                     <PublicFeedback
-                      key={feedback.content}
+                      key={feedback.id}
                       feedback={feedback}
                       onUpvoteFeedback={onUpvoteFeedback}
                       onReactToFeedbackResponse={onReactToFeedbackResponse}

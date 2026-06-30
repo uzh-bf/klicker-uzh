@@ -1,9 +1,3 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetCourseActivitiesDocument,
-  MicroLearning,
-  PracticeQuiz,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   H1,
@@ -22,6 +16,13 @@ import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoad
 import QuizSelectionNavigation from '../../../../components/analytics/quiz/QuizSelectionNavigation'
 import PreviewTag from '../../../../components/common/PreviewTag'
 import Layout from '../../../../components/Layout'
+import { trpc, type RouterOutputs } from '../../../../lib/trpc'
+
+type CourseActivities = NonNullable<
+  RouterOutputs['course']['activities']['courseActivities']
+>
+type PracticeQuizActivity = CourseActivities['practiceQuizzes'][number]
+type MicroLearningActivity = CourseActivities['microLearnings'][number]
 
 const ActivityLink = ({
   courseId,
@@ -43,17 +44,18 @@ const ActivityLink = ({
 function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId as string
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
   const [practiceSearch, setPracticeSearch] = useState('')
   const [microSearch, setMicroSearch] = useState('')
 
-  const { data, loading, error } = useQuery(GetCourseActivitiesDocument, {
-    variables: { courseId },
-    skip: !courseId,
-  })
+  const { data, isLoading, error } = trpc.course.activities.useQuery(
+    { courseId },
+    { enabled: courseId !== '' }
+  )
 
   const navigation = <QuizSelectionNavigation courseId={courseId} />
-  const course = data?.getCourseActivities
+  const course = data?.courseActivities
 
   const practiceSearchEngine = useMemo(() => {
     const search = new JsSearch.Search('id')
@@ -75,16 +77,16 @@ function ActivityDashboard() {
 
   const filteredPracticeQuizzes = useMemo(() => {
     if (!practiceSearch) return course?.practiceQuizzes
-    return practiceSearchEngine.search(practiceSearch) as PracticeQuiz[]
+    return practiceSearchEngine.search(practiceSearch) as PracticeQuizActivity[]
   }, [practiceSearch, course?.practiceQuizzes, practiceSearchEngine])
 
   const filteredMicroLearnings = useMemo(() => {
     if (!microSearch) return course?.microLearnings
-    return microSearchEngine.search(microSearch) as MicroLearning[]
+    return microSearchEngine.search(microSearch) as MicroLearningActivity[]
   }, [microSearch, course?.microLearnings, microSearchEngine])
 
   // loading state
-  if (loading || !courseId) {
+  if (!courseId || (isLoading && !course)) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.quizDashboard')}
@@ -94,7 +96,16 @@ function ActivityDashboard() {
   }
 
   // error state
-  if (course === null || typeof course === 'undefined' || error) {
+  if (error && !course) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (course === null || typeof course === 'undefined') {
     return (
       <AnalyticsErrorView
         title={t('manage.analytics.quizDashboard')}
@@ -106,6 +117,13 @@ function ActivityDashboard() {
   return (
     <Layout displayName={t('manage.analytics.quizDashboard')}>
       {navigation}
+      {error && course ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div>
         <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
           <div className="flex flex-row items-center gap-5">

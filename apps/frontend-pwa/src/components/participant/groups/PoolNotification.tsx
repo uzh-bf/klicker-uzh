@@ -1,39 +1,20 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetCourseOverviewDataDocument,
-  LeaveRandomCourseGroupPoolDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 
-function PoolNotification({ courseId }: { courseId: string }) {
+function PoolNotification({
+  courseId,
+  onCourseOverviewChanged,
+}: {
+  courseId: string
+  onCourseOverviewChanged?: () => void | Promise<void>
+}) {
   const t = useTranslations()
-  const [leaveRandomCourseGroupPool, { loading }] = useMutation(
-    LeaveRandomCourseGroupPoolDocument,
-    {
-      variables: { courseId },
-      update: (cache, { data }) => {
-        // verify that the pool was left successfully
-        if (!data?.leaveRandomCourseGroupPool) return
-
-        // update the course overview data accordingly
-        cache.updateQuery(
-          { query: GetCourseOverviewDataDocument, variables: { courseId } },
-          (qData) => {
-            if (!qData?.getCourseOverviewData) return qData
-
-            return {
-              ...qData,
-              getCourseOverviewData: {
-                ...qData.getCourseOverviewData,
-                inRandomGroupPool: false,
-              },
-            }
-          }
-        )
-      },
-    }
-  )
+  const [overviewRefreshing, setOverviewRefreshing] = useState(false)
+  const leaveRandomCourseGroupPool =
+    trpc.participant.leaveRandomCourseGroupPool.useMutation()
+  const leavingPool = leaveRandomCourseGroupPool.isLoading || overviewRefreshing
 
   return (
     <div className="flex flex-col items-end gap-2">
@@ -44,8 +25,30 @@ function PoolNotification({ courseId }: { courseId: string }) {
       />
       <Button
         destructive
-        disabled={loading}
-        onClick={async () => await leaveRandomCourseGroupPool()}
+        disabled={leavingPool}
+        loading={leavingPool}
+        onClick={async () => {
+          try {
+            setOverviewRefreshing(true)
+            const result = await leaveRandomCourseGroupPool.mutateAsync({
+              courseId,
+            })
+            if (result) {
+              await Promise.resolve(onCourseOverviewChanged?.())
+              return
+            }
+          } catch (error) {
+            console.error(error)
+          } finally {
+            setOverviewRefreshing(false)
+          }
+
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }}
         data={{ cy: 'leave-random-group-pool' }}
       >
         {t('pwa.courses.leaveRandomGroupPool')}

@@ -1,18 +1,23 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetStudentAssessmentResultsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ActivityType } from '@klicker-uzh/types'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 import AssessmentResultsList from './AssessmentResultsList'
 
 function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   const t = useTranslations()
-  const { data } = useSuspenseQuery(GetStudentAssessmentResultsDocument, {
-    variables: { courseId },
-    fetchPolicy: 'network-only',
-  })
+  const { data, error, isLoading } =
+    trpc.participant.studentAssessmentResults.useQuery(
+      { courseId },
+      { retry: false }
+    )
 
-  if (!data.studentAssessmentResults) {
+  const assessmentResults = data?.studentAssessmentResults
+
+  if (isLoading && !assessmentResults) return <Loader />
+
+  if (error && !assessmentResults) {
     return (
       <UserNotification
         type="error"
@@ -21,13 +26,28 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     )
   }
 
-  const liveQuizzes = data.studentAssessmentResults.liveQuizzes
-  const practiceQuizzes = data.studentAssessmentResults.practiceQuizzes
-  const microLearnings = data.studentAssessmentResults.microLearnings
-  const groupActivities = data.studentAssessmentResults.groupActivities
+  if (!assessmentResults) {
+    return (
+      <UserNotification
+        type="warning"
+        message={t('pwa.assessment.failedToLoadActivityResults')}
+      />
+    )
+  }
+
+  const liveQuizzes = assessmentResults.liveQuizzes
+  const practiceQuizzes = assessmentResults.practiceQuizzes
+  const microLearnings = assessmentResults.microLearnings
+  const groupActivities = assessmentResults.groupActivities
 
   return (
     <div>
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('pwa.assessment.failedToLoadActivityResults')}
+        />
+      ) : null}
       <div className="mb-4 text-sm md:mb-6 md:text-base">
         {t('pwa.assessment.activityResultsDescription')}
       </div>

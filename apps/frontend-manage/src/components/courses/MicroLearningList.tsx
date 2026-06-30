@@ -1,12 +1,9 @@
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  LocaleType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { ActivityInfo, ActivityType } from '../../lib/constants/activityEnums'
+import type { LocaleType } from '../../lib/evaluationTypes'
 import ActivityList from '../activities/overview/ActivityList'
 import ActivityListLegend from '../activities/overview/ActivityListLegend'
 import QRCodePopover from './QRCodePopover'

@@ -5,10 +5,6 @@ import {
   faXmarkCircle,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementInstance,
-  ResponseCorrectness,
-} from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
@@ -16,8 +12,12 @@ import { Modal } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  LiveQuizStudentAssessmentInstance,
+  ResponseCorrectness,
+} from '../../../lib/assessmentResultsTypes'
 
-export type AssessmentResultInstance = ElementInstance & {
+export type AssessmentResultInstance = LiveQuizStudentAssessmentInstance & {
   hasSampleSolution: boolean
   basePoints: number
   correctnessPoints: number
@@ -163,7 +163,7 @@ function StudentAssessmentResponseModal({
 
           <StudentElement
             preview
-            element={instance}
+            element={instance as never}
             elementIx={0}
             singleStudentResponse={response}
             setSingleStudentResponse={

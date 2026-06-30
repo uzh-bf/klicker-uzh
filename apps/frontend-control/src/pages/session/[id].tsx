@@ -1,16 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivateLiveQuizBlockDocument,
-  DeactivateLiveQuizBlockDocument,
-  ElementBlockStatus,
-  EndLiveQuizDocument,
-  GetControlLiveQuizDocument,
-  GetUnassignedLiveQuizzesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { trpc } from '@lib/trpc'
+import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -19,6 +11,14 @@ import { sort } from 'remeda'
 import Layout from '../../components/Layout'
 import LiveQuizBlock from '../../components/liveQuizzes/LiveQuizBlock'
 
+const elementBlockStatus = {
+  scheduled: 'SCHEDULED',
+} as const
+
+const liveQuizStatus = {
+  ended: 'ENDED',
+} as const
+
 function RunningLiveQuiz() {
   const t = useTranslations()
   const router = useRouter()
@@ -26,48 +26,39 @@ function RunningLiveQuiz() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-
-  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
-    ActivateLiveQuizBlockDocument
-  )
-  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateLiveQuizBlockDocument
-  )
-  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
-    EndLiveQuizDocument,
-    {
-      update(cache, { data }) {
-        // verify that the quiz has been ended successfully
-        if (!data?.endLiveQuiz) return
-
-        // remove the ended live quiz from the unassigned list in control application (not shown here)
-        cache.updateQuery(
-          { query: GetUnassignedLiveQuizzesDocument },
-          (qData) => {
-            if (!qData?.unassignedLiveQuizzes) return qData
-
-            return {
-              unassignedLiveQuizzes: qData.unassignedLiveQuizzes.filter(
-                (q) => q.id !== data.endLiveQuiz!.id
-              ),
-            }
-          }
-        )
-      },
+  const quizId = router.query.id
+  const validQuizId = typeof quizId === 'string' ? quizId : undefined
+  const utils = trpc.useUtils()
+  const showControlActionError = () => {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
+  const refreshCurrentLiveQuiz = async () => {
+    if (validQuizId) {
+      await utils.liveQuiz.control.invalidate({ id: validQuizId })
     }
-  )
+  }
+  const activateLiveQuizBlock = trpc.liveQuiz.activateBlock.useMutation()
+  const deactivateLiveQuizBlock = trpc.liveQuiz.deactivateBlock.useMutation()
+  const endLiveQuiz = trpc.liveQuiz.end.useMutation()
+  const [activatePending, setActivatePending] = useState(false)
+  const [deactivatePending, setDeactivatePending] = useState(false)
+  const [endPending, setEndPending] = useState(false)
+  const activating = activateLiveQuizBlock.isLoading || activatePending
+  const deactivating = deactivateLiveQuizBlock.isLoading || deactivatePending
+  const ending = endLiveQuiz.isLoading || endPending
 
   const {
-    loading: quizLoading,
+    isLoading: quizLoading,
     error: quizError,
     data: quizData,
-  } = useQuery(GetControlLiveQuizDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    pollInterval: 1000,
-    skip: !router.query.id,
-  })
+  } = trpc.liveQuiz.control.useQuery(
+    { id: validQuizId ?? '' },
+    { enabled: typeof validQuizId !== 'undefined', refetchInterval: 1000 }
+  )
 
   useEffect(() => {
     setCurrentBlockOrder(quizData?.controlLiveQuiz?.activeBlock?.order)
@@ -83,14 +74,16 @@ function RunningLiveQuiz() {
 
     if (!sortedBlocks) return
     const scheduledNext = sortedBlocks.find(
-      (block) => block.status === ElementBlockStatus.Scheduled
+      (block) => block.status === elementBlockStatus.scheduled
     )
     setNextBlockOrder(
       typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order
     )
   }, [quizData?.controlLiveQuiz?.blocks])
 
-  if (quizLoading) {
+  const controlLiveQuiz = quizData?.controlLiveQuiz
+
+  if (quizLoading && !controlLiveQuiz) {
     return (
       <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <Loader />
@@ -98,7 +91,7 @@ function RunningLiveQuiz() {
     )
   }
 
-  if (!quizData?.controlLiveQuiz || quizError) {
+  if (quizError && !controlLiveQuiz) {
     return (
       <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <UserNotification
@@ -109,7 +102,28 @@ function RunningLiveQuiz() {
     )
   }
 
-  const { id, name, course, blocks } = quizData?.controlLiveQuiz
+  if (!controlLiveQuiz) {
+    return (
+      <Layout title={t('control.liveQuiz.liveQuizControl')}>
+        <UserNotification
+          message={t('control.liveQuiz.errorLoadingLiveQuiz')}
+          type="error"
+        />
+      </Layout>
+    )
+  }
+
+  const { id, name, course, blocks } = controlLiveQuiz
+  const refreshControlOverview = async () => {
+    if (course) {
+      await utils.course.controlCourse.invalidate({
+        courseId: course.id,
+      })
+      return
+    }
+
+    await utils.liveQuiz.unassigned.invalidate()
+  }
 
   if (!blocks) {
     return (
@@ -127,6 +141,13 @@ function RunningLiveQuiz() {
       title={t('control.liveQuiz.liveQuizWithName', { name: name })}
       quizId={id}
     >
+      {quizError && controlLiveQuiz ? (
+        <UserNotification
+          message={t('control.liveQuiz.errorLoadingLiveQuiz')}
+          type="error"
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
         {typeof currentBlockOrder !== 'undefined' ? (
           <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
@@ -154,18 +175,34 @@ function RunningLiveQuiz() {
                 </div>
               )}
             <Button
-              loading={deactivatingBlock}
+              loading={deactivating}
               onClick={async () => {
-                await deactivateLiveQuizBlock({
-                  variables: {
+                if (deactivating) return
+                const blockId = blocks.find(
+                  (block) => block.order === currentBlockOrder
+                )?.id
+                if (typeof blockId === 'undefined') return
+
+                setDeactivatePending(true)
+                try {
+                  const result = await deactivateLiveQuizBlock.mutateAsync({
                     quizId: id,
-                    blockId:
-                      blocks.find((block) => block.order === currentBlockOrder)
-                        ?.id || -1,
-                  },
-                })
-                setCurrentBlockOrder(undefined)
+                    blockId,
+                  })
+                  if (!result.deactivated) {
+                    showControlActionError()
+                    return
+                  }
+
+                  await refreshCurrentLiveQuiz()
+                  setCurrentBlockOrder(undefined)
+                } catch {
+                  showControlActionError()
+                } finally {
+                  setDeactivatePending(false)
+                }
               }}
+              disabled={deactivating}
               className={{
                 root: 'float-right',
               }}
@@ -195,21 +232,35 @@ function RunningLiveQuiz() {
               />
             )}
             <Button
-              loading={activatingBlock}
+              loading={activating}
               onClick={async () => {
-                {
-                  await activateLiveQuizBlock({
-                    variables: {
-                      quizId: id,
-                      blockId:
-                        blocks.find((block) => block.order === nextBlockOrder)
-                          ?.id || -1,
-                    },
+                if (activating) return
+                const blockId = blocks.find(
+                  (block) => block.order === nextBlockOrder
+                )?.id
+                if (typeof blockId === 'undefined') return
+
+                setActivatePending(true)
+                try {
+                  const result = await activateLiveQuizBlock.mutateAsync({
+                    quizId: id,
+                    blockId,
                   })
+                  if (!result.liveQuiz) {
+                    showControlActionError()
+                    return
+                  }
+
+                  await refreshCurrentLiveQuiz()
                   setCurrentBlockOrder(nextBlockOrder)
                   setNextBlockOrder(nextBlockOrder + 1)
+                } catch {
+                  showControlActionError()
+                } finally {
+                  setActivatePending(false)
                 }
               }}
+              disabled={activating}
               className={{
                 root: 'bg-primary-80 float-right text-white',
               }}
@@ -230,13 +281,33 @@ function RunningLiveQuiz() {
               className={{ root: 'mb-2' }}
             />
             <Button
-              loading={endingLiveQuiz}
+              loading={ending}
               onClick={async () => {
-                await endLiveQuiz({ variables: { id: id } })
-                router.push(
-                  course ? `/course/${course?.id}` : '/course/unassigned'
-                )
+                if (ending) return
+                setEndPending(true)
+
+                try {
+                  const result = await endLiveQuiz.mutateAsync({ id })
+                  if (result.liveQuiz?.status !== liveQuizStatus.ended) {
+                    showControlActionError()
+                    setEndPending(false)
+                    return
+                  }
+
+                  await Promise.all([
+                    refreshCurrentLiveQuiz(),
+                    refreshControlOverview(),
+                  ])
+                  const routed = await router.push(
+                    course ? `/course/${course.id}` : '/course/unassigned'
+                  )
+                  if (!routed) throw new Error('Navigation after ending failed')
+                } catch {
+                  showControlActionError()
+                  setEndPending(false)
+                }
               }}
+              disabled={ending}
               className={{
                 root: 'bg-uzh-red-100 hover:bg-uzh-red-100 float-right text-white',
               }}

@@ -1,14 +1,9 @@
-import { useMutation } from '@apollo/client'
 import {
   faBan,
   faCheck,
   faPlusCircle,
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateAnswerCollectionDocument,
-  GetAnswerCollectionsInfoDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikTextField,
@@ -19,6 +14,7 @@ import {
 import { FieldArray, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import EditorField from '../../activities/creation/EditorField'
 
 type AnswerCollectionFormValues = {
@@ -29,7 +25,9 @@ type AnswerCollectionFormValues = {
 
 function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
   const t = useTranslations()
-  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
+  const utils = trpc.useUtils()
+  const createAnswerCollection =
+    trpc.resources.createAnswerCollection.useMutation()
 
   const validationSchema = Yup.object({
     name: Yup.string().required(t('manage.resources.nameRequired')),
@@ -65,40 +63,30 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
           entries: [{ value: undefined }, { value: undefined }],
         }}
         onSubmit={async (values: AnswerCollectionFormValues) => {
-          const { data } = await createAnswerCollection({
-            variables: {
+          try {
+            const res = await createAnswerCollection.mutateAsync({
               name: values.name!,
               description: values.description!,
               answers: values.entries.map((entry) => entry.value!),
-            },
-            update: (cache, { data }) => {
-              // check if the creation was successful
-              if (!data?.createAnswerCollection) return
-
-              cache.updateQuery(
-                { query: GetAnswerCollectionsInfoDocument },
-                (qData) => {
-                  if (!qData?.getAnswerCollectionsInfo) return qData
-
-                  return {
-                    getAnswerCollectionsInfo: [
-                      ...qData.getAnswerCollectionsInfo,
-                      data.createAnswerCollection!,
-                    ],
-                  }
-                }
-              )
-            },
-          })
-
-          if (data?.createAnswerCollection?.id) {
-            toast({
-              type: 'success',
-              message: t('manage.resources.collectionCreationSuccess'),
-              options: { duration: 3000 },
             })
-            onClose()
-          } else {
+
+            if (res.answerCollection?.id) {
+              await utils.resources.answerCollectionsInfo.invalidate()
+              toast({
+                type: 'success',
+                message: t('manage.resources.collectionCreationSuccess'),
+                options: { duration: 3000 },
+              })
+              onClose()
+            } else {
+              toast({
+                type: 'error',
+                message: t('manage.resources.collectionCreationError'),
+                options: { duration: 10000 },
+              })
+            }
+          } catch (error) {
+            console.error('Error creating answer collection:', error)
             toast({
               type: 'error',
               message: t('manage.resources.collectionCreationError'),
@@ -143,6 +131,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
                       />
                       <Button
                         onClick={() => remove(index)}
+                        disabled={isSubmitting}
                         data={{ cy: `remove-response-entry-${index}` }}
                         className={{
                           root: 'h-9 w-9 self-end border-red-600 text-red-600 hover:text-red-600',
@@ -154,6 +143,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
                   ))}
                   <Button
                     onClick={() => push({ value: undefined })}
+                    disabled={isSubmitting}
                     className={{ root: 'w-full' }}
                     data={{ cy: 'add-response-entry' }}
                   >
@@ -176,6 +166,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
               <Button
                 className={{ root: 'h-8 border-red-400' }}
                 onClick={onClose}
+                disabled={isSubmitting}
                 data={{ cy: 'cancel-create-answer-collection' }}
               >
                 <Button.Icon icon={faBan} />
@@ -183,7 +174,7 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
               </Button>
               <Button
                 type="submit"
-                disabled={!isValid}
+                disabled={!isValid || isSubmitting}
                 loading={isSubmitting}
                 className={{ root: 'h-8 border-green-700' }}
                 data={{ cy: 'submit-create-answer-collection' }}

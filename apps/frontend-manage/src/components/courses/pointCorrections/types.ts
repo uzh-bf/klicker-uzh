@@ -1,4 +1,4 @@
-import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
+import type { PointCorrectionType } from '../../../lib/assessmentResultsTypes'
 
 export type CorrectionScope = 'instance' | 'quiz'
 

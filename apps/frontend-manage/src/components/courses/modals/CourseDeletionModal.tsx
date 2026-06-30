@@ -1,12 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeleteCourseDocument,
-  GetCourseSummaryDocument,
-  GetUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
 
 export interface CourseDeletionConfirmationType {
@@ -41,36 +36,54 @@ function CourseDeletionModal({
       ...initialConfirmations,
     })
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
   // fetch course information
-  const { data, loading: queryLoading } = useQuery(GetCourseSummaryDocument, {
-    variables: { courseId: courseId ?? '' },
-    skip: !courseId,
-  })
+  const {
+    data,
+    error: summaryError,
+    isLoading: queryLoading,
+  } = trpc.course.summary.useQuery(
+    { courseId: courseId ?? '' },
+    { enabled: Boolean(courseId) }
+  )
 
-  const [deleteCourse, { loading: courseDeleting }] =
-    useMutation(DeleteCourseDocument)
+  const deleteCourse = trpc.course.delete.useMutation()
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const deleting = deleteCourse.isLoading || deleteSubmitting
 
   // skip confirmation for the elements where none are present
   useEffect(() => {
-    if (!courseId || !data?.getCourseSummary) {
+    if (!courseId || !data?.courseSummary) {
       return
     }
 
     setConfirmations({
-      deleteParticipations: data.getCourseSummary.numOfParticipations === 0,
-      disconnectLiveQuizzes: data.getCourseSummary.numOfLiveQuizzes === 0,
-      deletePracticeQuizzes: data.getCourseSummary.numOfPracticeQuizzes === 0,
-      deleteMicroLearnings: data.getCourseSummary.numOfMicroLearnings === 0,
-      deleteGroupActivities: data.getCourseSummary.numOfGroupActivities === 0,
-      deleteParticipantGroups:
-        data.getCourseSummary.numOfParticipantGroups === 0,
+      deleteParticipations: data.courseSummary.numOfParticipations === 0,
+      disconnectLiveQuizzes: data.courseSummary.numOfLiveQuizzes === 0,
+      deletePracticeQuizzes: data.courseSummary.numOfPracticeQuizzes === 0,
+      deleteMicroLearnings: data.courseSummary.numOfMicroLearnings === 0,
+      deleteGroupActivities: data.courseSummary.numOfGroupActivities === 0,
+      deleteParticipantGroups: data.courseSummary.numOfParticipantGroups === 0,
       deleteLeaderboardEntries:
-        data.getCourseSummary.numOfLeaderboardEntries === 0,
+        data.courseSummary.numOfLeaderboardEntries === 0,
     })
-  }, [courseId, data?.getCourseSummary])
+  }, [courseId, data?.courseSummary])
 
-  const summary = data?.getCourseSummary
+  const summary = data?.courseSummary
+  const initialSummaryLoading = queryLoading && !summary
+  const summaryUnavailable = Boolean(
+    (summaryError || !queryLoading) && !summary
+  )
+  const closeModal = () => {
+    onClose()
+    setConfirmations({ ...initialConfirmations })
+  }
+  const handleClose = () => {
+    if (!deleting) {
+      closeModal()
+    }
+  }
   if (!courseId) {
     return null
   }
@@ -78,60 +91,74 @@ function CourseDeletionModal({
   return (
     <Modal
       open
-      loading={queryLoading || !summary}
-      onClose={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      loading={initialSummaryLoading}
+      onClose={handleClose}
       className={{ content: 'w-full! max-w-240' }}
       title={t('manage.courseList.deleteCourse')}
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
-      primaryLoading={courseDeleting}
+      primaryLoading={deleting}
       primaryDisabled={
-        queryLoading ||
+        deleting ||
+        initialSummaryLoading ||
+        summaryUnavailable ||
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        await deleteCourse({
-          variables: { id: courseId },
-          optimisticResponse: {
-            __typename: 'Mutation',
-            deleteCourse: {
-              __typename: 'Course',
-              id: courseId,
-            },
-          },
-          update: (cache, { data }) => {
-            // check if the deletion was successful
-            if (!data?.deleteCourse) return
+        setDeleteSubmitting(true)
+        try {
+          const result = await deleteCourse.mutateAsync({ id: courseId })
 
-            // remove the course from the queries list
-            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
-              userCourses: qData?.userCourses?.filter(
-                (course) => course.id !== data.deleteCourse!.id
-              ),
-            }))
-          },
-        })
-        onClose()
-        setConfirmations({ ...initialConfirmations })
+          if (!result.course?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
+          utils.course.userCourses.setData(undefined, (data) =>
+            data?.userCourses
+              ? {
+                  userCourses: data.userCourses.filter(
+                    (course) => course.id !== result.course?.id
+                  ),
+                }
+              : data
+          )
+          await utils.course.userCourses.invalidate().catch(console.error)
+          closeModal()
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        } finally {
+          setDeleteSubmitting(false)
+        }
       }}
       dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}
       secondaryLabel={t('shared.generic.close')}
-      onSecondaryAction={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
-      {summary && (
+      {summaryUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
+      {summary ? (
         <CourseDeletionConfirmations
           summary={summary}
           confirmations={confirmations}
           setConfirmations={setConfirmations}
         />
-      )}
+      ) : null}
     </Modal>
   )
 }

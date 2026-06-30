@@ -6,19 +6,20 @@ import {
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
+type PermissionLevelValue = 'READ' | 'EXECUTE' | 'WRITE' | 'ADMIN' | 'OWNER'
+
 const PermissionLevelIcons: Record<
-  PermissionLevel,
+  PermissionLevelValue,
   { icon: IconDefinition; color: string } | undefined
 > = {
-  [PermissionLevel.Read]: { icon: faEye, color: 'text-blue-600' },
-  [PermissionLevel.Execute]: { icon: faPersonRunning, color: 'text-green-700' },
-  [PermissionLevel.Write]: { icon: faUserPen, color: 'text-orange-600' },
-  [PermissionLevel.Admin]: { icon: faUserTie, color: 'text-red-600' },
-  [PermissionLevel.Owner]: undefined,
+  READ: { icon: faEye, color: 'text-blue-600' },
+  EXECUTE: { icon: faPersonRunning, color: 'text-green-700' },
+  WRITE: { icon: faUserPen, color: 'text-orange-600' },
+  ADMIN: { icon: faUserTie, color: 'text-red-600' },
+  OWNER: undefined,
 }
 
 function ObjectPermissionLevel({
@@ -28,7 +29,7 @@ function ObjectPermissionLevel({
   className,
 }: {
   objectName: string
-  permissionLevel: PermissionLevel
+  permissionLevel: PermissionLevelValue
   iconOnly?: boolean
   className?: string
 }) {

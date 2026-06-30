@@ -1,0 +1,386 @@
+import { describe, expect, test, vi } from 'vitest'
+import {
+  publishFeedbackAdded,
+  publishFeedbackCreated,
+  publishFeedbackPinned,
+  publishFeedbackRemoved,
+  publishFeedbackUpdated,
+  publishGroupActivityEnded,
+  publishGroupActivityStarted,
+  publishLiveQuizSettingsChanged,
+  publishMicroLearningEnded,
+  publishRunningLiveQuizUpdated,
+  publishSingleGroupActivityEnded,
+  realtimeEvents,
+  type FeedbackSource,
+  type GroupActivitySource,
+  type LiveQuizSettingsChangedSource,
+  type MicroLearningEndedSource,
+  type RunningLiveQuizUpdatedSource,
+} from '../../realtime/events.js'
+import { appRouter } from '../root.js'
+
+type IteratorResolver<T> = (result: IteratorResult<T>) => void
+
+function createRealtimePubSub<T>() {
+  const queues = new Map<string, T[]>()
+  const pending = new Map<string, IteratorResolver<T>[]>()
+  let closed = false
+
+  const getQueue = (event: string) => {
+    const queue = queues.get(event) ?? []
+    queues.set(event, queue)
+    return queue
+  }
+
+  const getPending = (event: string) => {
+    const eventPending = pending.get(event) ?? []
+    pending.set(event, eventPending)
+    return eventPending
+  }
+
+  return {
+    publish: vi.fn((event: string, payload: T) => {
+      const next = getPending(event).shift()
+      if (next) {
+        next({ value: payload, done: false })
+        return
+      }
+
+      getQueue(event).push(payload)
+    }),
+    subscribe: vi.fn((event: string): AsyncIterable<T> => {
+      return {
+        [Symbol.asyncIterator]() {
+          return {
+            next(): Promise<IteratorResult<T>> {
+              const value = getQueue(event).shift()
+              if (value) return Promise.resolve({ value, done: false })
+              if (closed)
+                return Promise.resolve({ value: undefined, done: true })
+
+              return new Promise((resolve) => {
+                getPending(event).push(resolve)
+              })
+            },
+            return(): Promise<IteratorResult<T>> {
+              closed = true
+
+              pending.forEach((eventPending) => {
+                while (eventPending.length > 0) {
+                  eventPending.shift()?.({ value: undefined, done: true })
+                }
+              })
+
+              return Promise.resolve({ value: undefined, done: true })
+            },
+          }
+        },
+      }
+    }),
+  }
+}
+
+function receiveNext<T>(stream: {
+  subscribe(observer: { next(value: T): void; error(error: unknown): void }): {
+    unsubscribe(): void
+  }
+}) {
+  return new Promise<T>((resolve, reject) => {
+    let subscription: { unsubscribe(): void } | undefined
+
+    subscription = stream.subscribe({
+      next(value) {
+        subscription?.unsubscribe()
+        resolve(value)
+      },
+      error: reject,
+    })
+  })
+}
+
+function createMicroLearning(
+  fields: Partial<MicroLearningEndedSource> = {}
+): MicroLearningEndedSource {
+  return {
+    id: 'microlearning-1',
+    displayName: 'Microlearning 1',
+    scheduledStartAt: new Date('2026-06-19T08:00:00.000Z'),
+    scheduledEndAt: new Date('2026-06-19T09:00:00.000Z'),
+    ...fields,
+  }
+}
+
+function createGroupActivity(
+  fields: Partial<GroupActivitySource> = {}
+): GroupActivitySource {
+  return {
+    id: 'group-activity-1',
+    courseId: 'course-1',
+    displayName: 'Group activity 1',
+    status: 'PUBLISHED',
+    description: 'Collaborative case',
+    scheduledStartAt: new Date('2026-06-19T08:00:00.000Z'),
+    scheduledEndAt: new Date('2026-06-19T09:00:00.000Z'),
+    ...fields,
+  }
+}
+
+function createRunningLiveQuiz(
+  fields: Partial<RunningLiveQuizUpdatedSource> = {}
+): RunningLiveQuizUpdatedSource {
+  return {
+    id: 'live-quiz-1',
+    beforeFirstBlock: false,
+    activeBlock: null,
+    blocks: [],
+    ...fields,
+  }
+}
+
+function createLiveQuizSettings(
+  fields: Partial<LiveQuizSettingsChangedSource> = {}
+): LiveQuizSettingsChangedSource {
+  return {
+    liveQuizId: 'live-quiz-1',
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: false,
+    ...fields,
+  }
+}
+
+function createFeedback(fields: Partial<FeedbackSource> = {}): FeedbackSource {
+  return {
+    id: 1,
+    liveQuizId: 'live-quiz-1',
+    ...fields,
+  }
+}
+
+describe('realtime router', () => {
+  test('streams matching microlearning-ended events from the shared pubSub event', async () => {
+    const pubSub = createRealtimePubSub<MicroLearningEndedSource>()
+    const caller = appRouter.createCaller({ pubSub })
+
+    const stream = await caller.realtime.microLearningEnded({
+      activityId: 'microlearning-1',
+    })
+
+    const received = receiveNext(stream)
+
+    publishMicroLearningEnded(
+      pubSub,
+      createMicroLearning({ id: 'microlearning-2' })
+    )
+    publishMicroLearningEnded(pubSub, createMicroLearning())
+
+    await expect(received).resolves.toEqual({
+      id: 'microlearning-1',
+      displayName: 'Microlearning 1',
+      scheduledStartAt: '2026-06-19T08:00:00.000Z',
+      scheduledEndAt: '2026-06-19T09:00:00.000Z',
+    })
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.microLearningEnded
+    )
+    expect(pubSub.publish).toHaveBeenCalledWith(
+      realtimeEvents.microLearningEnded,
+      expect.objectContaining({ id: 'microlearning-1' })
+    )
+  })
+
+  test('fails clearly when no realtime event stream is available', async () => {
+    const caller = appRouter.createCaller({})
+
+    await expect(
+      caller.realtime.microLearningEnded({ activityId: 'microlearning-1' })
+    ).rejects.toThrow('Realtime event stream unavailable')
+  })
+
+  test('streams matching group-activity events from the shared pubSub events', async () => {
+    const pubSub = createRealtimePubSub<GroupActivitySource>()
+    const caller = appRouter.createCaller({ pubSub })
+
+    const startedStream = await caller.realtime.groupActivityStarted({
+      courseId: 'course-1',
+    })
+    const endedStream = await caller.realtime.groupActivityEnded({
+      courseId: 'course-1',
+    })
+    const singleEndedStream = await caller.realtime.singleGroupActivityEnded({
+      activityId: 'group-activity-1',
+    })
+
+    const started = receiveNext(startedStream)
+    const ended = receiveNext(endedStream)
+    const singleEnded = receiveNext(singleEndedStream)
+
+    publishGroupActivityStarted(
+      pubSub,
+      createGroupActivity({ id: 'group-activity-2', courseId: 'course-2' })
+    )
+    publishGroupActivityEnded(
+      pubSub,
+      createGroupActivity({ id: 'group-activity-2', courseId: 'course-2' })
+    )
+    publishSingleGroupActivityEnded(
+      pubSub,
+      createGroupActivity({ id: 'group-activity-2' })
+    )
+
+    publishGroupActivityStarted(pubSub, createGroupActivity())
+    publishGroupActivityEnded(pubSub, createGroupActivity())
+    publishSingleGroupActivityEnded(pubSub, createGroupActivity())
+
+    const expected = {
+      id: 'group-activity-1',
+      courseId: 'course-1',
+      displayName: 'Group activity 1',
+      status: 'PUBLISHED',
+      description: 'Collaborative case',
+      scheduledStartAt: '2026-06-19T08:00:00.000Z',
+      scheduledEndAt: '2026-06-19T09:00:00.000Z',
+    }
+
+    await expect(started).resolves.toEqual(expected)
+    await expect(ended).resolves.toEqual(expected)
+    await expect(singleEnded).resolves.toEqual(expected)
+
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.groupActivityStarted
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.groupActivityEnded
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.singleGroupActivityEnded
+    )
+  })
+
+  test('streams matching live-quiz update and settings events from the shared pubSub events', async () => {
+    const pubSub = createRealtimePubSub<
+      RunningLiveQuizUpdatedSource | LiveQuizSettingsChangedSource
+    >()
+    const caller = appRouter.createCaller({ pubSub })
+
+    const runningStream = await caller.realtime.runningLiveQuizUpdated({
+      id: 'live-quiz-1',
+    })
+    const settingsStream = await caller.realtime.liveQuizSettingsChanged({
+      quizId: 'live-quiz-1',
+    })
+
+    const running = receiveNext(runningStream)
+    const settings = receiveNext(settingsStream)
+
+    publishRunningLiveQuizUpdated(
+      pubSub,
+      createRunningLiveQuiz({ id: 'live-quiz-2' })
+    )
+    publishLiveQuizSettingsChanged(
+      pubSub,
+      createLiveQuizSettings({ liveQuizId: 'live-quiz-2' })
+    )
+
+    publishRunningLiveQuizUpdated(pubSub, createRunningLiveQuiz())
+    publishLiveQuizSettingsChanged(pubSub, createLiveQuizSettings())
+
+    await expect(running).resolves.toEqual({ id: 'live-quiz-1' })
+    await expect(settings).resolves.toEqual({
+      liveQuizId: 'live-quiz-1',
+      isLiveQAEnabled: true,
+      isConfusionFeedbackEnabled: false,
+    })
+
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.runningLiveQuizUpdated
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.liveQuizSettingsChanged
+    )
+  })
+
+  test('streams matching feedback events from the shared pubSub events', async () => {
+    const pubSub = createRealtimePubSub<FeedbackSource>()
+    const caller = appRouter.createCaller({ pubSub })
+
+    const addedStream = await caller.realtime.feedbackAdded({
+      quizId: 'live-quiz-1',
+    })
+    const createdStream = await caller.realtime.feedbackCreated({
+      quizId: 'live-quiz-1',
+    })
+    const pinnedStream = await caller.realtime.feedbackPinned({
+      quizId: 'live-quiz-1',
+    })
+    const removedStream = await caller.realtime.feedbackRemoved({
+      quizId: 'live-quiz-1',
+    })
+    const updatedStream = await caller.realtime.feedbackUpdated({
+      quizId: 'live-quiz-1',
+    })
+
+    const added = receiveNext(addedStream)
+    const created = receiveNext(createdStream)
+    const pinned = receiveNext(pinnedStream)
+    const removed = receiveNext(removedStream)
+    const updated = receiveNext(updatedStream)
+
+    publishFeedbackAdded(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackCreated(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackPinned(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackRemoved(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+    publishFeedbackUpdated(
+      pubSub,
+      createFeedback({ id: 2, liveQuizId: 'live-quiz-2' })
+    )
+
+    publishFeedbackAdded(pubSub, createFeedback())
+    publishFeedbackCreated(pubSub, createFeedback())
+    publishFeedbackPinned(pubSub, createFeedback())
+    publishFeedbackRemoved(pubSub, createFeedback())
+    publishFeedbackUpdated(pubSub, createFeedback())
+
+    await expect(added).resolves.toEqual({ id: 1, liveQuizId: 'live-quiz-1' })
+    await expect(created).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
+    await expect(pinned).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
+    await expect(removed).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
+    await expect(updated).resolves.toEqual({
+      id: 1,
+      liveQuizId: 'live-quiz-1',
+    })
+
+    expect(pubSub.subscribe).toHaveBeenCalledWith(realtimeEvents.feedbackAdded)
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.feedbackCreated
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(realtimeEvents.feedbackPinned)
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.feedbackRemoved
+    )
+    expect(pubSub.subscribe).toHaveBeenCalledWith(
+      realtimeEvents.feedbackUpdated
+    )
+  })
+})

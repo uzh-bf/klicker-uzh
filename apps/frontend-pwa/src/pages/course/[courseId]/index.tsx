@@ -1,19 +1,10 @@
-import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetCourseGroupActivitiesDocument,
-  GetCourseOverviewDataDocument,
-  GetStudentCourseLeaderboardDocument,
-  JoinCourseLeaderboardDocument,
-  LeaveCourseLeaderboardDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import {
@@ -25,6 +16,7 @@ import {
   TabContent,
   Tabs,
   UserNotification,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
@@ -34,7 +26,7 @@ import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
@@ -42,6 +34,7 @@ import SuspendedAssessmentResults from '../../../components/insights/assessmentR
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
+import { trpc } from '../../../lib/trpc'
 
 interface Props {
   courseId: string
@@ -66,68 +59,119 @@ function CourseOverview({
   const [leaderboardType, setLeaderboardType] = useState<'course' | 'biweekly'>(
     'course'
   )
+  const [leaderboardMutationRefreshing, setLeaderboardMutationRefreshing] =
+    useState(false)
+  const utils = trpc.useUtils()
+  const courseInput = useMemo(() => ({ courseId }), [courseId])
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
-  const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
-    variables: { courseId },
+  const { data, isLoading, error } =
+    trpc.participant.courseOverview.useQuery(courseInput)
+
+  const leaderboardInput = useMemo(
+    () => ({ courseId, mode: leaderboardType }),
+    [courseId, leaderboardType]
+  )
+  const {
+    data: dataLeaderboard,
+    error: leaderboardError,
+    isLoading: loadingLeaderboard,
+  } = trpc.participant.courseLeaderboard.useQuery(leaderboardInput)
+
+  const {
+    data: groupActivitiesData,
+    error: groupActivitiesError,
+    isLoading: loadingGroupActivities,
+  } = trpc.participant.courseGroupActivities.useQuery(courseInput, {
+    enabled:
+      Boolean(data?.courseOverview?.participant) &&
+      Boolean(data?.courseOverview?.participation),
   })
 
-  const { data: dataLeaderboard, loading: loadingLeaderboard } = useQuery(
-    GetStudentCourseLeaderboardDocument,
-    {
-      variables: { courseId, mode: leaderboardType },
-    }
-  )
+  const invalidateLeaderboardData = async () => {
+    await Promise.all([
+      utils.participant.courseLeaderboard.invalidate(leaderboardInput),
+      utils.participant.courseOverview.invalidate(courseInput),
+    ])
+  }
 
-  const [groupActivityQueryRef, { subscribeToMore: subscribeActivityList }] =
-    useBackgroundQuery(GetCourseGroupActivitiesDocument, {
-      variables: { courseId },
+  const onLeaderboardMutationError = () => {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
+
+  const refreshLeaderboardData = async () => {
+    try {
+      await invalidateLeaderboardData()
+      return true
+    } catch (error) {
+      console.error('Error refreshing course leaderboard data', error)
+      onLeaderboardMutationError()
+      return false
+    }
+  }
+
+  const joinCourseLeaderboard =
+    trpc.participant.joinCourseLeaderboard.useMutation({
+      onError: onLeaderboardMutationError,
     })
 
-  const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
-    variables: { courseId },
-    // refetching the leaderboard here makes sense to ensure that the participant
-    // is placed correctly in the leaderboard
-    refetchQueries: [
-      {
-        query: GetStudentCourseLeaderboardDocument,
-        variables: { courseId, mode: leaderboardType },
-      },
-    ],
-  })
+  const leaveCourseLeaderboard =
+    trpc.participant.leaveCourseLeaderboard.useMutation({
+      onError: onLeaderboardMutationError,
+    })
 
-  const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
-    variables: { courseId },
-  })
+  const joiningLeaderboard =
+    joinCourseLeaderboard.isLoading || leaderboardMutationRefreshing
+
+  const onJoinCourseLeaderboard = () => {
+    if (joiningLeaderboard) {
+      return
+    }
+
+    void (async () => {
+      try {
+        setLeaderboardMutationRefreshing(true)
+        await joinCourseLeaderboard.mutateAsync(courseInput)
+        await refreshLeaderboardData()
+      } catch {
+        // `onError` shows the toast.
+      } finally {
+        setLeaderboardMutationRefreshing(false)
+      }
+    })()
+  }
 
   useEffect(() => {
-    const participation = data?.getCourseOverviewData?.participation
+    const participation = data?.courseOverview?.participation
 
     // if assessment is enabled, switch to the assessment results tab automatically
-    if (data?.getCourseOverviewData?.course?.isAssessmentEnabled) {
+    if (data?.courseOverview?.course?.isAssessmentEnabled) {
       setSelectedTab('assessment-results')
     }
     // if a course description is set but gamification is not enabled or the user is not participating in the course,
     // switch to the info tab automatically
     else if (
-      data?.getCourseOverviewData &&
+      data?.courseOverview &&
       (!participation ||
-        (!data.getCourseOverviewData?.course?.isGamificationEnabled &&
-          data.getCourseOverviewData?.course?.description))
+        (!data.courseOverview?.course?.isGamificationEnabled &&
+          data.courseOverview?.course?.description))
     ) {
       setSelectedTab('info')
     }
   }, [data])
 
-  if (
-    !data?.getCourseOverviewData ||
-    !data.getCourseOverviewData.course ||
-    loading
-  ) {
+  const courseOverview = data?.courseOverview
+  const course = courseOverview?.course
+
+  if (isLoading && !course) {
     return (
       <Layout displayName={t('shared.generic.leaderboard')}>
         <Loader />
@@ -135,28 +179,39 @@ function CourseOverview({
     )
   }
 
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+  if (error && !course) {
+    return (
+      <Layout displayName={t('shared.generic.leaderboard')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!courseOverview || !course) {
+    return (
+      <Layout displayName={t('shared.generic.leaderboard')}>
+        <UserNotification type="error" message={t('shared.error.404')} />
+      </Layout>
+    )
   }
 
   const {
-    course,
     participant,
     participation,
     groupLeaderboard,
     groupLeaderboardStatistics,
     inRandomGroupPool,
-  } = data.getCourseOverviewData
+  } = courseOverview
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
     (group) => group.score > 0
   )
 
-  const top10Participants = dataLeaderboard?.getStudentCourseLeaderboard
-    ?.leaderboard
-    ? dataLeaderboard?.getStudentCourseLeaderboard?.leaderboard.map(
-        (entry) => entry.participantId
-      )
+  const top10Participants = dataLeaderboard?.leaderboard
+    ? dataLeaderboard.leaderboard.map((entry) => entry.participantId)
     : []
 
   const openProfileModal = (id: string, isSelf: boolean) => {
@@ -367,18 +422,28 @@ function CourseOverview({
                           )}
                         </div>
 
-                        {!dataLeaderboard?.getStudentCourseLeaderboard ||
-                        loadingLeaderboard ? (
-                          <Loader />
+                        {!dataLeaderboard ? (
+                          loadingLeaderboard && !leaderboardError ? (
+                            <Loader />
+                          ) : (
+                            <UserNotification
+                              type="error"
+                              message={t('shared.generic.systemError')}
+                            />
+                          )
                         ) : (
                           <>
+                            {leaderboardError ? (
+                              <UserNotification
+                                type="error"
+                                message={t('shared.generic.systemError')}
+                                className={{ root: 'mb-4 text-sm' }}
+                              />
+                            ) : null}
                             {participant?.id && participation?.isActive && (
                               <Leaderboard
-                                leaderboard={
-                                  dataLeaderboard?.getStudentCourseLeaderboard
-                                    ?.leaderboard ?? []
-                                }
-                                onJoin={() => joinCourseLeaderboard()}
+                                leaderboard={dataLeaderboard.leaderboard ?? []}
+                                onJoin={onJoinCourseLeaderboard}
                                 onLeave={() =>
                                   setIsLeaveCourseLeaderboardModalOpen(true)
                                 }
@@ -410,7 +475,9 @@ function CourseOverview({
                                   <Button
                                     fluid
                                     primary
-                                    onClick={() => joinCourseLeaderboard()}
+                                    disabled={joiningLeaderboard}
+                                    loading={joiningLeaderboard}
+                                    onClick={onJoinCourseLeaderboard}
                                     className={{ root: 'mt-3 h-max py-1' }}
                                     data={{
                                       cy: 'student-course-join-leaderboard',
@@ -434,14 +501,14 @@ function CourseOverview({
                               <div>
                                 {t('shared.leaderboard.participantCount', {
                                   number:
-                                    dataLeaderboard?.getStudentCourseLeaderboard
-                                      ?.leaderboardStatistics?.participantCount,
+                                    dataLeaderboard.leaderboardStatistics
+                                      ?.participantCount,
                                 })}
                               </div>
                               <div>
                                 {t('shared.leaderboard.averagePoints', {
                                   number:
-                                    dataLeaderboard?.getStudentCourseLeaderboard?.leaderboardStatistics?.averageScore?.toFixed(
+                                    dataLeaderboard.leaderboardStatistics?.averageScore?.toFixed(
                                       2
                                     ),
                                 })}
@@ -601,9 +668,20 @@ function CourseOverview({
                       isGroupDeadlinePassed={
                         course.isGroupDeadlinePassed ?? false
                       }
-                      groupActivityQueryRef={groupActivityQueryRef}
+                      groupActivities={
+                        groupActivitiesData?.groupActivities ?? []
+                      }
+                      groupActivitiesLoading={loadingGroupActivities}
+                      groupActivitiesError={Boolean(groupActivitiesError)}
                       setSelectedTab={setSelectedTab}
-                      subscribeActivityList={subscribeActivityList}
+                      onCourseOverviewChanged={() =>
+                        utils.participant.courseOverview.invalidate(courseInput)
+                      }
+                      onGroupActivitiesChanged={() =>
+                        utils.participant.courseGroupActivities.invalidate(
+                          courseInput
+                        )
+                      }
                     />
                   </Suspense>
                 ))}
@@ -618,6 +696,9 @@ function CourseOverview({
                     courseId={courseId}
                     setSelectedTab={setSelectedTab}
                     inRandomGroupPool={inRandomGroupPool ?? false}
+                    onCourseOverviewChanged={() =>
+                      utils.participant.courseOverview.invalidate(courseInput)
+                    }
                   />
                 </TabContent>
               )}
@@ -633,10 +714,23 @@ function CourseOverview({
           {isLeaveCourseLeaderboardModalOpen && (
             <LeaveLeaderboardModal
               onClose={() => setIsLeaveCourseLeaderboardModalOpen(false)}
-              onConfirm={() => {
-                leaveCourseLeaderboard()
-                setIsLeaveCourseLeaderboardModalOpen(false)
+              onConfirm={async () => {
+                try {
+                  setLeaderboardMutationRefreshing(true)
+                  await leaveCourseLeaderboard.mutateAsync(courseInput)
+                  const refreshed = await refreshLeaderboardData()
+                  if (!refreshed) return
+                  setIsLeaveCourseLeaderboardModalOpen(false)
+                } catch {
+                  // `onError` shows the toast; keep the modal open for retry.
+                } finally {
+                  setLeaderboardMutationRefreshing(false)
+                }
               }}
+              loading={
+                leaveCourseLeaderboard.isLoading ||
+                leaderboardMutationRefreshing
+              }
             />
           )}
         </>
@@ -663,10 +757,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
-
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
@@ -683,13 +774,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on course overview:', error)
 

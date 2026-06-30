@@ -1,7 +1,7 @@
-import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { Tag } from '../../lib/constants/elementTypes'
 
 function ElementTags({
   tags = [],

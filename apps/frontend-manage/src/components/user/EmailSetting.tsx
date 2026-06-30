@@ -1,16 +1,14 @@
-import { useMutation } from '@apollo/client'
-import {
-  ChangeEmailSettingsDocument,
-  User,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Switch } from '@uzh-bf/design-system'
+import { Switch, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import SimpleSetting from './SimpleSetting'
 
-function EmailSetting({ user }: { user: User }) {
+type UserProfile = NonNullable<RouterOutputs['user']['profile']>
+
+function EmailSetting({ user }: { user: UserProfile }) {
   const t = useTranslations()
-  const [changeEmailSettings] = useMutation(ChangeEmailSettingsDocument)
+  const utils = trpc.useUtils()
+  const changeEmailSettings = trpc.user.changeEmailSettings.useMutation()
 
   return (
     <SimpleSetting
@@ -18,38 +16,21 @@ function EmailSetting({ user }: { user: User }) {
       tooltip={t('manage.settings.emailUpdatesTooltip')}
     >
       <Switch
+        disabled={changeEmailSettings.isLoading}
         checked={user?.sendProjectUpdates ?? false}
-        onCheckedChange={async () =>
-          await changeEmailSettings({
-            variables: { projectUpdates: !user?.sendProjectUpdates },
-            optimisticResponse: {
-              __typename: 'Mutation',
-              changeEmailSettings: {
-                __typename: 'User',
-                id: user.id,
-                sendProjectUpdates: !user?.sendProjectUpdates,
-              },
-            },
-            update: (cache, { data }) => {
-              // verify that the change was successful
-              if (!data?.changeEmailSettings) return
-
-              // update the cache with the new user data
-              cache.updateQuery({ query: UserProfileDocument }, (qData) => {
-                if (!qData?.userProfile) return qData
-
-                return {
-                  ...qData,
-                  userProfile: {
-                    ...qData.userProfile,
-                    sendProjectUpdates:
-                      data.changeEmailSettings!.sendProjectUpdates,
-                  },
-                }
-              })
-            },
-          })
-        }
+        onCheckedChange={async (projectUpdates) => {
+          try {
+            await changeEmailSettings.mutateAsync({ projectUpdates })
+            await utils.user.profile.invalidate()
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          }
+        }}
       />
     </SimpleSetting>
   )

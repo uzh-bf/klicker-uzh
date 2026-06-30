@@ -1,14 +1,12 @@
-import { useQuery } from '@apollo/client'
+import { ObjectType } from '@lib/constants/sharingEnums'
+import { useTranslations } from 'next-intl'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import {
   ActivityInfo,
   ActivityType,
-  ElementInstanceType,
-  ObjectType,
   PublicationStatus,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+} from '../../../lib/constants/activityEnums'
+import { trpc } from '../../../lib/trpc'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from '../../courses/modals/GroupActivityEndingModal'
@@ -64,6 +62,14 @@ const statusActionMap = {
   [PublicationStatus.Template]: [],
 }
 
+function toDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value)
+}
+
+function toDateString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value
+}
+
 function GroupActivityActions({
   groupActivity,
   isTemplate,
@@ -88,10 +94,7 @@ function GroupActivityActions({
   const [removalModal, setRemovalModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
+  const { data: user } = trpc.user.profile.useQuery()
 
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(() => {
@@ -160,24 +163,26 @@ function GroupActivityActions({
             refetchActivities={refetchActivities}
           />
         ) : null}
-        {publishingModal && (
-          <PublishConfirmationModal
-            onClose={() => setPublishingModal(false)}
-            activityType={ElementInstanceType.GroupActivity}
-            activityId={groupActivity.id}
-            startAt={groupActivity.scheduledStartAt}
-            endAt={groupActivity.scheduledEndAt}
-            title={groupActivity.name}
-            courseId={groupActivity.courseId!}
-            refetchActivities={refetchActivities}
-          />
-        )}
-        {extensionModal && (
+        {publishingModal &&
+          groupActivity.scheduledStartAt &&
+          groupActivity.scheduledEndAt && (
+            <PublishConfirmationModal
+              onClose={() => setPublishingModal(false)}
+              activityType="GROUP_ACTIVITY"
+              activityId={groupActivity.id}
+              startAt={toDate(groupActivity.scheduledStartAt)}
+              endAt={toDate(groupActivity.scheduledEndAt)}
+              title={groupActivity.name}
+              courseId={groupActivity.courseId!}
+              refetchActivities={refetchActivities}
+            />
+          )}
+        {extensionModal && groupActivity.scheduledEndAt && (
           <ExtensionModal
             onClose={() => setExtensionModal(false)}
             type="groupActivity"
             id={groupActivity.id}
-            currentEndDate={groupActivity.scheduledEndAt}
+            currentEndDate={toDate(groupActivity.scheduledEndAt)}
             courseId={groupActivity.courseId!}
             title={t('manage.course.extendGroupActivity')}
             description={t('manage.course.extendGroupActivityDescription')}
@@ -212,17 +217,19 @@ function GroupActivityActions({
             refetchActivities={refetchActivities}
           />
         )}
-        {startingModal && (
-          <GroupActivityStartingModal
-            onClose={() => setStartingModal(false)}
-            activityId={groupActivity.id}
-            activityEndDate={groupActivity.scheduledEndAt}
-            groupDeadlineDate={groupActivity.groupDeadlineDate}
-            numOfParticipantGroups={groupActivity.numOfParticipantGroups ?? 0}
-            courseId={groupActivity.courseId!}
-            refetchActivities={refetchActivities}
-          />
-        )}
+        {startingModal &&
+          groupActivity.scheduledEndAt &&
+          groupActivity.groupDeadlineDate && (
+            <GroupActivityStartingModal
+              onClose={() => setStartingModal(false)}
+              activityId={groupActivity.id}
+              activityEndDate={toDateString(groupActivity.scheduledEndAt)}
+              groupDeadlineDate={toDateString(groupActivity.groupDeadlineDate)}
+              numOfParticipantGroups={groupActivity.numOfParticipantGroups ?? 0}
+              courseId={groupActivity.courseId!}
+              refetchActivities={refetchActivities}
+            />
+          )}
 
         {groupActivity && activityLogOpen ? (
           <ActivityLogDialog

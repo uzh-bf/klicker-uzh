@@ -1,15 +1,12 @@
-import { useQuery } from '@apollo/client'
 import { faCheck, faInfoCircle, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Course,
-  GetActiveUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   Checkbox,
   FormikTextField,
   SelectField,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -17,6 +14,7 @@ import { Dispatch, SetStateAction, useMemo } from 'react'
 import * as yup from 'yup'
 import useCoursesGamificationSplit from '../../../../lib/hooks/useCoursesGamificationSplit'
 import useLiveQuizCourseGrouping from '../../../../lib/hooks/useLiveQuizCourseGrouping'
+import { trpc } from '../../../../lib/trpc'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import EditorField from '../../creation/EditorField'
 import LiveQuizGradingIllustration from '../../creation/liveQuiz/LiveQuizGradingIllustration'
@@ -36,40 +34,29 @@ function LiveQuizTemplateSettings({
   setClosingSettingsDisabled: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
-  const { data: dataCourses } = useQuery(GetActiveUserCoursesDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const {
+    data: dataCourses,
+    error: coursesError,
+    isLoading: coursesLoading,
+  } = trpc.course.activeUserCourses.useQuery()
 
   const courseSelection = useMemo(
     (): ElementSelectCourse[] =>
-      dataCourses?.getActiveUserCourses?.map(
-        (
-          course: Pick<
-            Course,
-            | 'id'
-            | 'name'
-            | 'isGamificationEnabled'
-            | 'isAssessmentEnabled'
-            | 'isGroupCreationEnabled'
-            | 'startDate'
-            | 'endDate'
-            | 'groupDeadlineDate'
-            | 'isManager'
-          >
-        ) => ({
-          label: course.name,
-          value: course.id,
-          isGamified: course.isGamificationEnabled,
-          isAssessmentEnabled: course.isAssessmentEnabled,
-          isGroupCreationEnabled: course.isGroupCreationEnabled,
-          startDate: course.startDate,
-          endDate: course.endDate,
-          groupDeadline: course.groupDeadlineDate,
-          isManager: course.isManager ?? false,
-        })
-      ) ?? [],
+      dataCourses?.activeUserCourses?.map((course) => ({
+        label: course.name,
+        value: course.id,
+        isGamified: course.isGamificationEnabled,
+        isAssessmentEnabled: course.isAssessmentEnabled,
+        isGroupCreationEnabled: course.isGroupCreationEnabled,
+        startDate: course.startDate,
+        endDate: course.endDate,
+        groupDeadline: course.groupDeadlineDate,
+        isManager: course.isManager ?? false,
+      })) ?? [],
     [dataCourses]
   )
+  const coursesInitialLoading = coursesLoading && !dataCourses
+  const coursesUnavailable = Boolean(coursesError && !dataCourses)
   const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
     useCoursesGamificationSplit({
       courseSelection,
@@ -186,53 +173,64 @@ function LiveQuizTemplateSettings({
                     }}
                     data={{ cy: 'template-live-quiz-name' }}
                   />
-                  <SelectField
-                    value={values.courseId}
-                    onChange={(newValue) => {
-                      // find the selected course to set the gamification and assessment settings correctly
-                      const newSelectedCourse = courseSelection.find(
-                        (course) => course.value === newValue
-                      )
+                  <div className="mb-4 flex w-full flex-col gap-1">
+                    <SelectField
+                      value={values.courseId}
+                      onChange={(newValue) => {
+                        // find the selected course to set the gamification and assessment settings correctly
+                        const newSelectedCourse = courseSelection.find(
+                          (course) => course.value === newValue
+                        )
 
-                      // set the gamification and assessment booleans according to the course settings
-                      setFieldValue(
-                        'isGamificationEnabled',
-                        newSelectedCourse?.isGamified ?? false
-                      )
-                      setFieldValue(
-                        'isAssessmentEnabled',
-                        newSelectedCourse?.isAssessmentEnabled ?? false
-                      )
+                        // set the gamification and assessment booleans according to the course settings
+                        setFieldValue(
+                          'isGamificationEnabled',
+                          newSelectedCourse?.isGamified ?? false
+                        )
+                        setFieldValue(
+                          'isAssessmentEnabled',
+                          newSelectedCourse?.isAssessmentEnabled ?? false
+                        )
 
-                      // set course id value
-                      setFieldValue('courseId', newValue)
-                    }}
-                    label={t('shared.generic.course')}
-                    tooltip={t.rich(
-                      'manage.activityWizard.liveQuizDescCourse',
-                      {
-                        link: (text) => (
-                          <a
-                            href="https://www.klicker.uzh.ch/tutorials/live_quiz/#what-functionalities-become-available-through-gamified-live-quizzes"
-                            className="text-primary-100 hover:underline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {text}
-                          </a>
-                        ),
-                      }
-                    )}
-                    placeholder={t(
-                      'manage.activityWizard.liveQuizSelectCourse'
-                    )}
-                    groups={groupedCourses}
-                    data={{ cy: 'template-live-quiz-course' }}
-                    className={{
-                      tooltip: 'z-20',
-                      select: { trigger: 'h-9' },
-                    }}
-                  />
+                        // set course id value
+                        setFieldValue('courseId', newValue)
+                      }}
+                      label={t('shared.generic.course')}
+                      tooltip={t.rich(
+                        'manage.activityWizard.liveQuizDescCourse',
+                        {
+                          link: (text) => (
+                            <a
+                              href="https://www.klicker.uzh.ch/tutorials/live_quiz/#what-functionalities-become-available-through-gamified-live-quizzes"
+                              className="text-primary-100 hover:underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {text}
+                            </a>
+                          ),
+                        }
+                      )}
+                      placeholder={t(
+                        'manage.activityWizard.liveQuizSelectCourse'
+                      )}
+                      groups={groupedCourses}
+                      disabled={coursesInitialLoading || coursesUnavailable}
+                      data={{ cy: 'template-live-quiz-course' }}
+                      className={{
+                        tooltip: 'z-20',
+                        select: { trigger: 'h-9' },
+                      }}
+                    />
+                    {coursesInitialLoading ? <Loader /> : null}
+                    {coursesUnavailable ? (
+                      <UserNotification
+                        type="error"
+                        message={t('shared.generic.systemError')}
+                        className={{ root: 'py-1 text-sm' }}
+                      />
+                    ) : null}
+                  </div>
                 </div>
 
                 <FormikTextField
@@ -336,7 +334,12 @@ function LiveQuizTemplateSettings({
                 <div className="flex justify-end">
                   <Button
                     type="submit"
-                    disabled={!isValid || isSubmitting}
+                    disabled={
+                      !isValid ||
+                      isSubmitting ||
+                      coursesInitialLoading ||
+                      coursesUnavailable
+                    }
                     primary
                     data={{ cy: 'submit-template-settings' }}
                   >

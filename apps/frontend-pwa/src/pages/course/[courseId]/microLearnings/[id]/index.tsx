@@ -1,19 +1,13 @@
-import { useQuery } from '@apollo/client'
 import {
   faClock,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetMicroLearningDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { trpc } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -25,6 +19,8 @@ import nookies from 'nookies'
 import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
+
+const PARTICIPANT_ROLE = 'PARTICIPANT'
 
 function MicrolearningIntroduction({
   id,
@@ -47,21 +43,34 @@ function MicrolearningIntroduction({
     cookiesAvailable,
   })
 
-  const { loading, error, data, subscribeToMore } = useQuery(
-    GetMicroLearningDocument,
-    {
-      variables: { id },
-      skip: !id,
-    }
+  const utils = trpc.useUtils()
+  const { isLoading, error, data } = trpc.participant.microLearning.useQuery(
+    { id },
+    { enabled: !!id }
   )
-  const { data: selfData } = useQuery(SelfDocument, {
-    skip: data?.microLearning?.isOwner ?? false,
+  const {
+    data: selfData,
+    error: selfError,
+    isLoading: selfLoading,
+  } = trpc.participant.self.useQuery(undefined, {
+    enabled: !(data?.microLearning?.isOwner ?? false),
   })
 
-  if (loading) {
+  if (isLoading && !data) {
     return (
       <Layout>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error && !data?.microLearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }
@@ -77,14 +86,16 @@ function MicrolearningIntroduction({
     )
   }
 
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
-  }
-
   const microLearning = data.microLearning
   const microLearningPast = dayjs(microLearning.scheduledEndAt).isBefore(
     dayjs()
   )
+  const selfUnavailable = Boolean(selfError && !selfData?.self)
+  const participantMissing =
+    !microLearning.isOwner &&
+    !selfLoading &&
+    !selfUnavailable &&
+    (!selfData?.self || selfData.self.role !== PARTICIPANT_ROLE)
 
   return (
     <Layout
@@ -94,46 +105,71 @@ function MicrolearningIntroduction({
       <MicroLearningSubscriber
         activityId={microLearning.id}
         microLearningName={microLearning.displayName}
-        subscribeToMore={subscribeToMore}
+        onEnded={(endedMicroLearning) =>
+          utils.participant.microLearning.setData({ id }, (previous) =>
+            previous?.microLearning
+              ? {
+                  microLearning: {
+                    ...previous.microLearning,
+                    ...endedMicroLearning,
+                  },
+                }
+              : previous
+          )
+        }
       />
       <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
-        {(!selfData?.self || selfData.self.role !== UserRole.Participant) &&
-          (microLearning.isOwner ? (
-            <PreviewMessage
-              activityType={t('shared.generic.microlearning')}
-              name={microLearning.name}
-              displayName={microLearning.displayName}
-              className="mb-4"
-            />
-          ) : (
-            <UserNotification type="warning" className={{ root: 'mb-4' }}>
-              {pageInFrame
-                ? t('pwa.general.userNotLoggedInFrame')
-                : t.rich('pwa.general.userNotLoggedIn', {
-                    login: (text) => (
-                      <Button
-                        basic
-                        className={{
-                          root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
-                        }}
-                        onClick={() =>
-                          router.push(
-                            `/login?expired=true&redirect_to=${
-                              encodeURIComponent(
-                                window?.location?.pathname +
-                                  (window?.location?.search ?? '')
-                              ) ?? '/'
-                            }`
-                          )
-                        }
-                        data={{ cy: 'login-to-start-microlearning' }}
-                      >
-                        <Button.Label>{text}</Button.Label>
-                      </Button>
-                    ),
-                  })}
-            </UserNotification>
-          ))}
+        {microLearning.isOwner ? (
+          <PreviewMessage
+            activityType={t('shared.generic.microlearning')}
+            name={microLearning.name}
+            displayName={microLearning.displayName}
+            className="mb-4"
+          />
+        ) : null}
+        {error && microLearning ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-4' }}
+          />
+        ) : null}
+        {selfUnavailable ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-4' }}
+          />
+        ) : null}
+        {participantMissing ? (
+          <UserNotification type="warning" className={{ root: 'mb-4' }}>
+            {pageInFrame
+              ? t('pwa.general.userNotLoggedInFrame')
+              : t.rich('pwa.general.userNotLoggedIn', {
+                  login: (text) => (
+                    <Button
+                      basic
+                      className={{
+                        root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
+                      }}
+                      onClick={() =>
+                        router.push(
+                          `/login?expired=true&redirect_to=${
+                            encodeURIComponent(
+                              window?.location?.pathname +
+                                (window?.location?.search ?? '')
+                            ) ?? '/'
+                          }`
+                        )
+                      }
+                      data={{ cy: 'login-to-start-microlearning' }}
+                    >
+                      <Button.Label>{text}</Button.Label>
+                    </Button>
+                  ),
+                })}
+          </UserNotification>
+        ) : null}
         {microLearningPast ? (
           <UserNotification
             type="warning"
@@ -195,7 +231,11 @@ function MicrolearningIntroduction({
         >
           <Button
             primary
-            disabled={!microLearning.isOwner && microLearningPast}
+            disabled={
+              (!microLearning.isOwner && microLearningPast) ||
+              (!microLearning.isOwner && selfLoading)
+            }
+            loading={!microLearning.isOwner && selfLoading}
             className={{
               root: 'w-full text-lg md:w-auto md:self-end',
             }}
@@ -223,10 +263,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
-
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
@@ -243,14 +280,14 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on microlearning:', error)
 

@@ -1,13 +1,5 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  CreateParticipantAccountDocument,
-  GetBasicCourseInformationDocument,
-  JoinCourseWithPinDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { initializeApollo } from '@lib/apollo'
+import { createTRPCSSRClient, trpc } from '@lib/trpc'
 import {
   Button,
   FormikPinField,
@@ -24,6 +16,8 @@ import * as Yup from 'yup'
 import Layout from '../../../components/Layout'
 import CreateAccountForm from '../../../components/forms/CreateAccountForm'
 
+const PARTICIPANT_ROLE = 'PARTICIPANT'
+
 function JoinCourse({
   courseId,
   displayName,
@@ -37,7 +31,7 @@ function JoinCourse({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const [showError, setError] = useState(false)
+  const [showError, setError] = useState<string | false>(false)
   const [initialPin, setInitialPin] = useState<string>('')
 
   const joinCourseWithPinSchema = Yup.object({
@@ -52,26 +46,42 @@ function JoinCourse({
   })
 
   useEffect(() => {
-    const pin = router.query.pin ? String(router.query.pin) : undefined
-    setInitialPin(pin || '')
+    setInitialPin(typeof router.query.pin === 'string' ? router.query.pin : '')
   }, [router.query.pin])
 
-  const { loading: loadingParticipant, data: dataParticipant } =
-    useQuery(SelfDocument)
+  const {
+    data: dataParticipant,
+    error: participantError,
+    isLoading: loadingParticipant,
+  } = trpc.participant.self.useQuery()
+  const joinCourseWithPin = trpc.participant.joinCourseWithPin.useMutation()
+  const createParticipantAccount = trpc.participant.createAccount.useMutation()
+  const utils = trpc.useUtils()
 
-  const [createParticipantAccount] = useMutation(
-    CreateParticipantAccountDocument,
-    { refetchQueries: [{ query: SelfDocument }] }
-  )
-  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
-
-  if (loadingParticipant || courseLoading) {
+  if ((loadingParticipant && !dataParticipant) || courseLoading) {
     return (
       <Layout
         displayName={t('pwa.general.joinCourse')}
         course={{ displayName: displayName, color: color, id: courseId }}
       >
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (participantError && !dataParticipant) {
+    return (
+      <Layout
+        displayName={t('pwa.general.joinCourse')}
+        course={{ displayName: displayName, color: color, id: courseId }}
+      >
+        <div className="mx-auto max-w-5xl md:mb-4 md:rounded md:border md:p-8 md:pt-6">
+          <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
+          <UserNotification
+            message={t('pwa.joinCourse.genericError')}
+            type="error"
+          />
+        </div>
       </Layout>
     )
   }
@@ -83,15 +93,23 @@ function JoinCourse({
     >
       <div className="mx-auto max-w-5xl md:mb-4 md:rounded md:border md:p-8 md:pt-6">
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
+        {participantError ? (
+          <UserNotification
+            message={t('pwa.joinCourse.genericError')}
+            type="error"
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
 
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self &&
-        dataParticipant.self.role === UserRole.Participant ? (
+        dataParticipant.self.role === PARTICIPANT_ROLE ? (
           <div>
             <div className="mb-3">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
+              enableReinitialize
               validateOnMount
               initialValues={{
                 pin: initialPin,
@@ -99,16 +117,28 @@ function JoinCourse({
               validationSchema={joinCourseWithPinSchema}
               onSubmit={async (values, { setSubmitting }) => {
                 setSubmitting(true)
-                const participant = await joinCourseWithPin({
-                  variables: {
-                    pin: Number(values.pin.replace(/\s/g, '')),
-                  },
-                })
+                setError(false)
 
-                if (participant?.data?.joinCourseWithPin) {
-                  router.push('/')
-                } else {
-                  setError(true)
+                try {
+                  const participant = await joinCourseWithPin.mutateAsync({
+                    pin: Number(values.pin.replace(/\s/g, '')),
+                  })
+
+                  if (participant) {
+                    await Promise.all([
+                      utils.participant.self.invalidate(),
+                      utils.participant.participations.invalidate(),
+                    ])
+                    const routed = await router.push('/')
+                    if (!routed) window.location.assign('/')
+                    return
+                  }
+
+                  setError(t('pwa.joinCourse.invalidPin'))
+                } catch (error) {
+                  console.error(error)
+                  setError(t('pwa.joinCourse.genericError'))
+                } finally {
                   setSubmitting(false)
                 }
               }}
@@ -127,6 +157,7 @@ function JoinCourse({
                       primary
                       type="submit"
                       disabled={isSubmitting || !isValid}
+                      loading={isSubmitting}
                       className={{
                         root: 'float-right mt-2',
                       }}
@@ -151,30 +182,44 @@ function JoinCourse({
                 symbols: false,
                 numbers: true,
               })}
-              handleSubmit={async (values) => {
-                await createParticipantAccount({
-                  variables: {
-                    email: values.email.trim().toLowerCase(),
-                    username: values.username.trim(),
-                    password: values.password.trim(),
-                    isProfilePublic: values.isProfilePublic,
-                    courseId,
-                  },
-                })
+              handleSubmit={async (values, { setSubmitting }) => {
+                setSubmitting(true)
+                setError(false)
 
-                await router.push({
-                  pathname: '/login',
-                  query: {
-                    newAccount: true,
-                  },
-                })
+                try {
+                  const createResult =
+                    await createParticipantAccount.mutateAsync({
+                      email: values.email.trim().toLowerCase(),
+                      username: values.username.trim(),
+                      password: values.password.trim(),
+                      isProfilePublic: values.isProfilePublic,
+                      courseId,
+                    })
+
+                  if (createResult?.participant) {
+                    const routed = await router.push({
+                      pathname: '/login',
+                      query: {
+                        newAccount: true,
+                      },
+                    })
+                    if (!routed)
+                      window.location.assign('/login?newAccount=true')
+                    return
+                  }
+                } catch (error) {
+                  console.error(error)
+                }
+
+                setError(t('pwa.joinCourse.genericError'))
+                setSubmitting(false)
               }}
             />
           </div>
         )}
         {showError && (
           <UserNotification
-            message="Es gab einen Fehler bei Ihrer Eingabe, bitte überprüfen Sie diese erneut."
+            message={showError}
             type="error"
             className={{ root: 'mt-14' }}
           />
@@ -194,23 +239,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  const apolloClient = initializeApollo()
+  const trpcClient = createTRPCSSRClient(ctx)
 
   try {
-    const { data, loading } = await apolloClient.query({
-      query: GetBasicCourseInformationDocument,
-      variables: {
+    const { basicCourseInformation } =
+      await trpcClient.course.basicCourseInformation.query({
         courseId: ctx.params.courseId,
-      },
-    })
+      })
 
     return {
       props: {
         courseId: ctx.params.courseId,
-        displayName: data?.basicCourseInformation?.displayName,
-        color: data?.basicCourseInformation?.color,
-        description: data?.basicCourseInformation?.description,
-        courseLoading: loading,
+        displayName: basicCourseInformation?.displayName,
+        color: basicCourseInformation?.color,
+        description: basicCourseInformation?.description,
+        courseLoading: false,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },

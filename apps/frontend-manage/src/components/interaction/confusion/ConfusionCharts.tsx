@@ -1,4 +1,3 @@
-import { ConfusionSummary } from '@klicker-uzh/graphql/dist/ops'
 import { H3, Tooltip } from '@uzh-bf/design-system'
 import React from 'react'
 
@@ -6,6 +5,7 @@ import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import type { ConfusionSummary } from '../types'
 import ConfusionSection from './ConfusionSection'
 
 function ConfusionCharts({

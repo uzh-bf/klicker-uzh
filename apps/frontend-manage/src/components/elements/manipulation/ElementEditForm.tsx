@@ -1,25 +1,25 @@
-import { useQuery } from '@apollo/client'
 import { faMagnifyingGlass, faMessage } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementData,
-  ElementStatus,
-  ElementType,
-  GetAnswerCollectionsElementsDocument,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import {
   Button,
   H3,
   Modal,
   TabContent,
   Tabs,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  ElementData,
+  ElementStatus,
+  ElementType,
+} from '../../../lib/constants/elementTypes'
+import { trpc } from '../../../lib/trpc'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
@@ -52,6 +52,7 @@ function ElementEditForm({
   mode,
   elementId,
   loading,
+  loadingError = false,
   initialValues,
   onSubmitElement,
   setAutoSavedElement,
@@ -73,6 +74,7 @@ function ElementEditForm({
   elementId?: number
   // loading state
   loading: boolean
+  loadingError?: boolean
   // form data props
   initialValues?: ElementFormTypes
   onSubmitElement: (
@@ -104,20 +106,38 @@ function ElementEditForm({
 
   const {
     data,
-    loading: collectionsLoading,
+    error: collectionsError,
+    isLoading: collectionsLoading,
+    isFetching: collectionsFetching,
     refetch,
-  } = useQuery(GetAnswerCollectionsElementsDocument, {
-    variables: { templateId },
-    fetchPolicy: 'network-only',
-  })
-  const collections = data?.getAnswerCollectionsElements ?? []
+  } = trpc.resources.answerCollectionsForElements.useQuery(
+    { templateId },
+    { refetchOnMount: 'always' }
+  )
+  const hasCollectionsData = typeof data !== 'undefined'
+  const collectionsInitialError = Boolean(
+    collectionsError && !hasCollectionsData
+  )
+  const collections = data?.answerCollections ?? []
+  const refetchAnswerCollections = useCallback(async () => {
+    try {
+      await refetch({ throwOnError: true })
+    } catch (error) {
+      console.error('Error refreshing answer collections:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
+    }
+  }, [refetch, t])
 
   return (
     <Modal
       open
       fullScreen
       escapeDisabled
-      loading={loading || (!isTemplate && !initialValues)}
+      loading={!loadingError && (loading || (!isTemplate && !initialValues))}
       title={t(`manage.elements.${mode}Title`)}
       onClose={() => onClose()}
       className={{
@@ -127,6 +147,13 @@ function ElementEditForm({
       }}
       dataCloseButton={{ cy: 'close-element-modal' }}
     >
+      {loadingError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
+
       {initialValues && (
         <Formik
           validateOnMount
@@ -135,18 +162,34 @@ function ElementEditForm({
           validationSchema={questionManipulationSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
-            const success = await onSubmitElement(values)
+            let releaseSubmitting = true
 
-            // close modal, set success toast
-            setSubmitting(false)
-            if (!success) {
+            try {
+              const success = await onSubmitElement(values)
+
+              // close modal, set success toast
+              if (!success) {
+                toast({
+                  type: 'error',
+                  message: t('manage.elements.questionSavedFailed'),
+                  options: { duration: 6000 },
+                })
+              } else {
+                releaseSubmitting = false
+                setSubmitting(false)
+                onSuccess()
+              }
+            } catch (error) {
+              console.error('Error submitting element form:', error)
               toast({
                 type: 'error',
                 message: t('manage.elements.questionSavedFailed'),
                 options: { duration: 6000 },
               })
-            } else {
-              onSuccess()
+            } finally {
+              if (releaseSubmitting) {
+                setSubmitting(false)
+              }
             }
           }}
         >
@@ -254,9 +297,9 @@ function ElementEditForm({
                         values={values}
                         collections={collections}
                         collectionsLoading={collectionsLoading}
-                        refetchCollections={async () => {
-                          await refetch()
-                        }}
+                        collectionsError={collectionsInitialError}
+                        collectionsRefetching={collectionsFetching}
+                        refetchCollections={refetchAnswerCollections}
                         setAnswerCollectionEntries={setAnswerCollectionEntries}
                         openAnswerCollectionEditModal={(
                           collectionId: number
@@ -278,9 +321,9 @@ function ElementEditForm({
                         hasSampleSolution={values.options.hasSampleSolution}
                         collections={collections}
                         collectionsLoading={collectionsLoading}
-                        refetchCollections={async () => {
-                          await refetch()
-                        }}
+                        collectionsError={collectionsInitialError}
+                        collectionsRefetching={collectionsFetching}
+                        refetchCollections={refetchAnswerCollections}
                         setAnswerCollectionEntries={setAnswerCollectionEntries}
                         openAnswerCollectionEditModal={(
                           collectionId: number
@@ -383,7 +426,12 @@ function ElementEditForm({
               >
                 {!isTemplate && !inputsDisabled && (
                   <Button
-                    onClick={() => onClose()}
+                    onClick={() => {
+                      if (!isSubmitting) {
+                        onClose()
+                      }
+                    }}
+                    disabled={isSubmitting}
                     data={{ cy: 'close-element-modal-button' }}
                   >
                     {t('shared.generic.close')}
@@ -393,7 +441,7 @@ function ElementEditForm({
                   <Button
                     primary
                     onClick={() => submitForm()}
-                    disabled={!isValid}
+                    disabled={!isValid || isSubmitting}
                     loading={isSubmitting}
                     data={{ cy: 'save-new-question' }}
                   >
@@ -411,9 +459,7 @@ function ElementEditForm({
           inlineEditing
           collectionId={collectionModal.id}
           onClose={() => setCollectionModal({ open: false, id: undefined })}
-          refetchAnswerCollections={async () => {
-            await refetch()
-          }}
+          refetchAnswerCollections={refetchAnswerCollections}
           className={{ overlay: 'z-30', content: 'z-30' }}
         />
       ) : null}

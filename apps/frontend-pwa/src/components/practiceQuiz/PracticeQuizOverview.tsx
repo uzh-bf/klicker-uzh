@@ -1,25 +1,26 @@
-import { useQuery } from '@apollo/client'
 import {
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementOrderType,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { trpc } from '../../lib/trpc'
+
+const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+const ORDER_TYPE_TRANSLATION_KEYS = {
+  SEQUENTIAL: 'pwa.practiceQuiz.orderSEQUENTIAL',
+  SPACED_REPETITION: 'pwa.practiceQuiz.orderSPACED_REPETITION',
+} as const
 
 interface PracticeQuizOverviewProps {
   displayName: string
   description?: string
   numOfStacks?: number
-  orderType: ElementOrderType
+  orderType: string
   resetTimeDays?: number
   //   previouslyAnswered?: number
   //   stacksWithQuestions?: number
@@ -42,7 +43,15 @@ function PracticeQuizOverview({
 }: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
-  const { data } = useQuery(SelfDocument, { skip: previewOnly })
+  const { data, error, isLoading } = trpc.participant.self.useQuery(undefined, {
+    enabled: !previewOnly,
+  })
+  const hasIdentityError = Boolean(error && !data?.self)
+  const participantMissing =
+    !previewOnly &&
+    !isLoading &&
+    !hasIdentityError &&
+    (!data?.self || data.self.role === TEMPORARY_PARTICIPANT_ROLE)
 
   const pageInFrame =
     global?.window &&
@@ -50,36 +59,41 @@ function PracticeQuizOverview({
 
   return (
     <div className="flex flex-col space-y-4">
-      {!previewOnly &&
-        (!data?.self || data.self.role === UserRole.TemporaryParticipant) && (
-          <UserNotification type="warning">
-            {pageInFrame
-              ? t('pwa.general.userNotLoggedInFrame')
-              : t.rich('pwa.general.userNotLoggedIn', {
-                  login: (text) => (
-                    <Button
-                      basic
-                      className={{
-                        root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
-                      }}
-                      onClick={() =>
-                        router.push(
-                          `/login?expired=true&redirect_to=${
-                            encodeURIComponent(
-                              window?.location?.pathname +
-                                (window?.location?.search ?? '')
-                            ) ?? '/'
-                          }`
-                        )
-                      }
-                      data={{ cy: 'login-to-student-login-collect-points' }}
-                    >
-                      {text}
-                    </Button>
-                  ),
-                })}
-          </UserNotification>
-        )}
+      {hasIdentityError ? (
+        <UserNotification type="error">
+          {t('shared.generic.systemError')}
+        </UserNotification>
+      ) : null}
+
+      {participantMissing ? (
+        <UserNotification type="warning">
+          {pageInFrame
+            ? t('pwa.general.userNotLoggedInFrame')
+            : t.rich('pwa.general.userNotLoggedIn', {
+                login: (text) => (
+                  <Button
+                    basic
+                    className={{
+                      root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
+                    }}
+                    onClick={() =>
+                      router.push(
+                        `/login?expired=true&redirect_to=${
+                          encodeURIComponent(
+                            window?.location?.pathname +
+                              (window?.location?.search ?? '')
+                          ) ?? '/'
+                        }`
+                      )
+                    }
+                    data={{ cy: 'login-to-student-login-collect-points' }}
+                  >
+                    {text}
+                  </Button>
+                ),
+              })}
+        </UserNotification>
+      ) : null}
 
       <div className="border-b">
         <H3 className={{ root: 'mb-0' }}>{displayName}</H3>
@@ -102,7 +116,7 @@ function PracticeQuizOverview({
           {typeof orderType !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faShuffle} />
-              <div>{t(`pwa.practiceQuiz.order${orderType}`)}</div>
+              <div>{t(toOrderTypeTranslationKey(orderType))}</div>
             </div>
           )}
         </div>
@@ -163,6 +177,8 @@ function PracticeQuizOverview({
 
       <Button
         primary
+        disabled={!previewOnly && isLoading}
+        loading={!previewOnly && isLoading}
         className={{ root: 'h-9 self-end text-lg' }}
         onClick={() => setCurrentIx(0)}
         data={{ cy: 'start-practice-quiz' }}
@@ -174,3 +190,9 @@ function PracticeQuizOverview({
 }
 
 export default PracticeQuizOverview
+
+function toOrderTypeTranslationKey(orderType: string) {
+  return orderType === 'SEQUENTIAL'
+    ? ORDER_TYPE_TRANSLATION_KEYS.SEQUENTIAL
+    : ORDER_TYPE_TRANSLATION_KEYS.SPACED_REPETITION
+}

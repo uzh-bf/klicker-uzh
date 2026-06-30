@@ -1,4 +1,4 @@
-import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess } from '@lib/constants/sharingEnums'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'

@@ -1,13 +1,21 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { ActivityLogEntry, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, TextareaField } from '@uzh-bf/design-system'
+import type { ObjectType } from '@lib/constants/sharingEnums'
+import {
+  Button,
+  TextareaField,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useObjectActivity } from '../../lib/hooks/useObjectActivity'
+import {
+  type ActivityLogEntry,
+  useObjectActivity,
+} from '../../lib/hooks/useObjectActivity'
 
 dayjs.extend(relativeTime)
 
@@ -30,12 +38,11 @@ function ActivityLog({
     entries,
     loading: queryLoading,
     error: queryError,
+    unavailable: queryUnavailable,
     addActivityMessage,
-    resolveActivityLogEntry,
     deleteActivityMessage,
     isAddingMessage: hookIsAddingMessage,
-    isResolvingMessage: hookIsResolvingMessage,
-    isDeletingMessage: hookIsDeletingMessage,
+    isDeletingMessage,
     refetch,
   } = useObjectActivity({
     objectId,
@@ -52,18 +59,55 @@ function ActivityLog({
     setIsSubmitting(true)
 
     try {
-      await addActivityMessage(message.trim())
+      const result = await addActivityMessage(message.trim())
+
+      if (!result?.activityMessage) {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+        return
+      }
+
       setMessage('')
     } catch (error) {
       console.error('[ActivityLog] Failed to submit message:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteMessage = async (id: number) => {
+    try {
+      const result = await deleteActivityMessage(id)
+
+      if (!result?.deleted) {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
+      }
+    } catch (error) {
+      console.error('[ActivityLog] Failed to delete message:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
     }
   }
 
   // determine which entries, loading and error states to use
   const loading = queryLoading
   const error = !!queryError
+  const unavailable = !!queryUnavailable
   const isAddingMessage = hookIsAddingMessage
 
   if (loading) {
@@ -74,7 +118,7 @@ function ActivityLog({
     )
   }
 
-  if (error) {
+  if (unavailable) {
     return (
       <div className="flex w-full flex-col rounded-md border border-red-300 bg-red-50 p-4">
         <div className="flex flex-col items-center justify-center">
@@ -128,6 +172,14 @@ function ActivityLog({
         }}
       >
         <div className="flex flex-col space-y-2">
+          {error ? (
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+              className={{ root: 'mb-2 py-1 text-sm' }}
+            />
+          ) : null}
+
           {entries.length === 0 && (
             <div className="flex flex-col items-center justify-center p-4 text-center">
               <div className="mb-2 text-4xl text-gray-300">📝</div>
@@ -186,18 +238,21 @@ function ActivityLog({
 
                             <Button
                               basic
+                              disabled={isDeletingMessage}
                               className={{
                                 root: twMerge(
                                   'hidden px-3 py-0 text-red-600 hover:text-red-600',
                                   entry.isOwn && 'group-hover:block'
                                 ),
                               }}
-                              onClick={async () =>
-                                await deleteActivityMessage(entry.id)
-                              }
+                              onClick={() => void handleDeleteMessage(entry.id)}
                               data={{ cy: 'activity-log-delete-message' }}
                             >
-                              <Button.Icon withoutLabel icon={faTrashCan} />
+                              <Button.Icon
+                                withoutLabel
+                                icon={faTrashCan}
+                                loading={isDeletingMessage}
+                              />
                             </Button>
                           </div>
 

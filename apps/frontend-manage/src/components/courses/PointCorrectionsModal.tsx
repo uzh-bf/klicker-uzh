@@ -1,18 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  CorrectAssessmentPointsInstanceDocument,
-  CorrectAssessmentPointsLiveQuizDocument,
-  GetAssessmentCourseParticipantsDocument,
-  GetAssessmentResultsLiveQuizDocument,
-  GetEndedLiveQuizzesCourseDocument,
-  GetLiveQuizStudentAssessmentResponsesDocument,
-  PointCorrectionType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Modal, toast } from '@uzh-bf/design-system'
+import { Modal, UserNotification, toast } from '@uzh-bf/design-system'
 import { Form, Formik, getIn } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import * as Yup from 'yup'
+import { PointCorrectionType } from '../../lib/assessmentResultsTypes'
+import { trpc } from '../../lib/trpc'
 import PointCorrectionsAdjustmentsStep from './pointCorrections/PointCorrectionsAdjustmentsStep'
 import PointCorrectionsAudienceStep from './pointCorrections/PointCorrectionsAudienceStep'
 import PointCorrectionsReasonStep from './pointCorrections/PointCorrectionsReasonStep'
@@ -65,22 +57,48 @@ function PointCorrectionsModal({
 }) {
   const t = useTranslations()
   const [activeStep, setActiveStep] = useState(0)
+  const utils = trpc.useUtils()
 
-  const { data: endedQuizzesData, loading: endedQuizzesLoading } = useQuery(
-    GetEndedLiveQuizzesCourseDocument,
-    { variables: { courseId }, fetchPolicy: 'network-only' }
+  const {
+    data: endedQuizzesData,
+    error: endedQuizzesError,
+    isLoading: endedQuizzesLoading,
+  } = trpc.activity.endedLiveQuizzesCourse.useQuery(
+    { courseId },
+    { enabled: Boolean(courseId) }
   )
-  const { data: courseParticipantsData, loading: courseParticipantsLoading } =
-    useQuery(GetAssessmentCourseParticipantsDocument, {
-      variables: { courseId },
-      fetchPolicy: 'network-only',
-    })
-  const [correctAssessmentPointsInstance] = useMutation(
-    CorrectAssessmentPointsInstanceDocument
+  const {
+    data: courseParticipantsData,
+    error: courseParticipantsError,
+    isLoading: courseParticipantsLoading,
+  } = trpc.activity.assessmentCourseParticipants.useQuery(
+    { courseId },
+    { enabled: Boolean(courseId) }
   )
-  const [correctAssessmentPointsLiveQuiz] = useMutation(
-    CorrectAssessmentPointsLiveQuizDocument
-  )
+  const correctAssessmentPointsInstance =
+    trpc.activity.correctAssessmentPointsInstance.useMutation()
+  const correctAssessmentPointsLiveQuiz =
+    trpc.activity.correctAssessmentPointsLiveQuiz.useMutation()
+
+  const invalidatePointCorrectionData = async ({
+    liveQuizId,
+    participantId,
+  }: {
+    liveQuizId: string
+    participantId?: string | null
+  }) => {
+    await Promise.all([
+      utils.activity.assessmentResultsCourse.invalidate({ courseId }),
+      utils.activity.assessmentResultsLiveQuiz.invalidate({ liveQuizId }),
+      utils.activity.previousPointCorrections.invalidate(),
+      participantId
+        ? utils.activity.liveQuizStudentAssessmentResponses.invalidate({
+            liveQuizId,
+            participantId,
+          })
+        : Promise.resolve(),
+    ])
+  }
 
   const validationSchemas = useMemo(() => {
     const adjustmentSchema = Yup.object({
@@ -217,7 +235,7 @@ function PointCorrectionsModal({
       validationSchema={validationSchemas[activeStep]}
       onSubmit={async (values, { resetForm, setSubmitting }) => {
         let success = false
-        let error = null
+        let error: unknown = null
         setSubmitting(true)
 
         if (values.scopeType === 'instance') {
@@ -234,41 +252,34 @@ function PointCorrectionsModal({
             return
           }
 
-          // trigger instance point correction
-          const { data: result, errors } =
-            await correctAssessmentPointsInstance({
-              variables: {
-                instanceId: parseInt(values.instanceId, 10),
-                awardBasePoints: values.adjustments.baseAward,
-                awardCorrectnessPoints: values.adjustments.correctnessAward,
-                awardBonusPoints: values.adjustments.bonusAward,
-                deductBasePoints: values.adjustments.baseDeduct,
-                deductCorrectnessPoints: values.adjustments.correctnessDeduct,
-                deductBonusPoints: values.adjustments.bonusDeduct,
-                reason: values.lecturerReason.trim(),
-                studentReason: values.useSameReasonForStudents
-                  ? values.lecturerReason.trim()
-                  : values.studentReason.trim(),
-                scope: values.participantScope,
-                participantId: values.participantId,
-                participantIds: values.participantIds,
-              },
-              refetchQueries: [
-                {
-                  query: GetLiveQuizStudentAssessmentResponsesDocument,
-                  variables: {
-                    liveQuizId: values.quizId,
-                    participantId: preselectedParticipantId,
-                  },
-                },
-                {
-                  query: GetAssessmentResultsLiveQuizDocument,
-                  variables: { liveQuizId: values.quizId },
-                },
-              ],
+          try {
+            const result = await correctAssessmentPointsInstance.mutateAsync({
+              instanceId: parseInt(values.instanceId, 10),
+              awardBasePoints: values.adjustments.baseAward,
+              awardCorrectnessPoints: values.adjustments.correctnessAward,
+              awardBonusPoints: values.adjustments.bonusAward,
+              deductBasePoints: values.adjustments.baseDeduct,
+              deductCorrectnessPoints: values.adjustments.correctnessDeduct,
+              deductBonusPoints: values.adjustments.bonusDeduct,
+              reason: values.lecturerReason.trim(),
+              studentReason: values.useSameReasonForStudents
+                ? values.lecturerReason.trim()
+                : values.studentReason.trim(),
+              scope: values.participantScope,
+              participantId: values.participantId,
+              participantIds: values.participantIds,
             })
-          success = result?.correctAssessmentPointsInstance !== null
-          error = JSON.stringify(errors)
+            success = result.correctAssessmentPointsInstance !== null
+            if (success) {
+              await invalidatePointCorrectionData({
+                liveQuizId: values.quizId,
+                participantId:
+                  preselectedParticipantId || values.participantId || null,
+              })
+            }
+          } catch (mutationError) {
+            error = mutationError
+          }
         } else {
           if (!values.quizId || values.participantScope === '') {
             toast({
@@ -279,41 +290,34 @@ function PointCorrectionsModal({
             return
           }
 
-          // trigger live quiz point correction
-          const { data: result, errors } =
-            await correctAssessmentPointsLiveQuiz({
-              variables: {
-                liveQuizId: values.quizId,
-                awardBasePoints: values.adjustments.baseAward,
-                awardCorrectnessPoints: values.adjustments.correctnessAward,
-                awardBonusPoints: values.adjustments.bonusAward,
-                deductBasePoints: values.adjustments.baseDeduct,
-                deductCorrectnessPoints: values.adjustments.correctnessDeduct,
-                deductBonusPoints: values.adjustments.bonusDeduct,
-                reason: values.lecturerReason,
-                studentReason: values.useSameReasonForStudents
-                  ? values.lecturerReason
-                  : values.studentReason,
-                scope: values.participantScope,
-                participantId: values.participantId,
-                participantIds: values.participantIds,
-              },
-              refetchQueries: [
-                {
-                  query: GetLiveQuizStudentAssessmentResponsesDocument,
-                  variables: {
-                    liveQuizId: values.quizId,
-                    participantId: preselectedParticipantId,
-                  },
-                },
-                {
-                  query: GetAssessmentResultsLiveQuizDocument,
-                  variables: { liveQuizId: values.quizId },
-                },
-              ],
+          try {
+            const result = await correctAssessmentPointsLiveQuiz.mutateAsync({
+              liveQuizId: values.quizId,
+              awardBasePoints: values.adjustments.baseAward,
+              awardCorrectnessPoints: values.adjustments.correctnessAward,
+              awardBonusPoints: values.adjustments.bonusAward,
+              deductBasePoints: values.adjustments.baseDeduct,
+              deductCorrectnessPoints: values.adjustments.correctnessDeduct,
+              deductBonusPoints: values.adjustments.bonusDeduct,
+              reason: values.lecturerReason,
+              studentReason: values.useSameReasonForStudents
+                ? values.lecturerReason
+                : values.studentReason,
+              scope: values.participantScope,
+              participantId: values.participantId,
+              participantIds: values.participantIds,
             })
-          success = result?.correctAssessmentPointsLiveQuiz !== null
-          error = JSON.stringify(errors)
+            success = result.correctAssessmentPointsLiveQuiz !== null
+            if (success) {
+              await invalidatePointCorrectionData({
+                liveQuizId: values.quizId,
+                participantId:
+                  preselectedParticipantId || values.participantId || null,
+              })
+            }
+          } catch (mutationError) {
+            error = mutationError
+          }
         }
 
         if (success) {
@@ -342,7 +346,22 @@ function PointCorrectionsModal({
         submitForm,
         values,
       }) => {
+        const quizzes = endedQuizzesData?.endedLiveQuizzesCourse
+        const participants =
+          courseParticipantsData?.assessmentCourseParticipants
+        const initialQuizzesLoading = endedQuizzesLoading && !quizzes
+        const initialParticipantsLoading =
+          courseParticipantsLoading && !participants
+        const quizzesUnavailable = Boolean(
+          (endedQuizzesError || !endedQuizzesLoading) && !quizzes
+        )
+        const participantsUnavailable = Boolean(
+          (courseParticipantsError || !courseParticipantsLoading) &&
+            !participants
+        )
+
         const handleClose = () => {
+          if (isSubmitting) return
           resetForm()
           setActiveStep(0)
           onClose()
@@ -369,27 +388,32 @@ function PointCorrectionsModal({
         const stepComponents = [
           <PointCorrectionsScopeStep
             key="scope"
-            quizzes={endedQuizzesData?.endedLiveQuizzesCourse ?? []}
+            quizzes={quizzes ?? []}
             disabledLiveQuizSelection={Boolean(preselectedLiveQuizId)}
             disabledInstanceSelection={Boolean(preselectedInstanceId)}
           />,
           <PointCorrectionsAudienceStep
             key="audience"
-            participants={
-              courseParticipantsData?.assessmentCourseParticipants ?? []
-            }
+            participants={participants ?? []}
             fixedParticipant={Boolean(preselectedParticipantId)}
           />,
           <PointCorrectionsAdjustmentsStep key="adjustments" />,
           <PointCorrectionsReasonStep key="reason" />,
           <PointCorrectionsSummaryStep
             key="summary"
-            quizzes={endedQuizzesData?.endedLiveQuizzesCourse ?? []}
-            participants={
-              courseParticipantsData?.assessmentCourseParticipants ?? []
-            }
+            quizzes={quizzes ?? []}
+            participants={participants ?? []}
           />,
         ]
+        const currentStepLoading =
+          (activeStep === 0 && initialQuizzesLoading) ||
+          (activeStep === 1 && initialParticipantsLoading) ||
+          (activeStep === 4 &&
+            (initialQuizzesLoading || initialParticipantsLoading))
+        const currentStepUnavailable =
+          (activeStep === 0 && quizzesUnavailable) ||
+          (activeStep === 1 && participantsUnavailable) ||
+          (activeStep === 4 && (quizzesUnavailable || participantsUnavailable))
 
         const scopeValid = Boolean(
           values.scopeType &&
@@ -418,14 +442,18 @@ function PointCorrectionsModal({
           allValid,
         ]
         const isLastStep = activeStep === stepComponents.length - 1
-        const primaryDisabled = isLastStep ? !allValid : !stepStatus[activeStep]
+        const primaryDisabled =
+          isSubmitting ||
+          currentStepLoading ||
+          currentStepUnavailable ||
+          (isLastStep ? !allValid : !stepStatus[activeStep])
 
         return (
           <Form>
             <Modal
               open
               escapeDisabled
-              loading={endedQuizzesLoading || courseParticipantsLoading}
+              loading={currentStepLoading}
               title={t('manage.course.pointCorrections')}
               onClose={handleClose}
               secondaryLabel={
@@ -435,6 +463,8 @@ function PointCorrectionsModal({
               }
               onSecondaryAction={(event) => {
                 event?.stopPropagation()
+                if (isSubmitting) return
+
                 activeStep === 0
                   ? handleClose()
                   : setActiveStep((prev) => Math.max(prev - 1, 0))
@@ -448,6 +478,8 @@ function PointCorrectionsModal({
               primaryLoading={isSubmitting}
               onPrimaryAction={async (event) => {
                 event?.stopPropagation()
+                if (isSubmitting) return
+
                 isLastStep ? await submitForm() : await goToNextStep()
               }}
               className={{
@@ -471,7 +503,14 @@ function PointCorrectionsModal({
                 </div>
 
                 <div className="rounded-md border border-gray-200 bg-white p-4 shadow-sm">
-                  {stepComponents[activeStep]}
+                  {currentStepUnavailable ? (
+                    <UserNotification
+                      type="error"
+                      message={t('shared.generic.systemError')}
+                    />
+                  ) : (
+                    stepComponents[activeStep]
+                  )}
                 </div>
               </div>
             </Modal>

@@ -1,6 +1,5 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
 import {
   ShadcnTable,
   ShadcnTableBody,
@@ -11,6 +10,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { ActivityInfo } from '../../../../lib/constants/activityEnums'
 import ObjectPermissionLevel from '../../../sharing/ObjectPermissionLevel'
 
 function SelectedActivitiesList({

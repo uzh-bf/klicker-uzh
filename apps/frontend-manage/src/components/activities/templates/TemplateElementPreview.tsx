@@ -1,19 +1,20 @@
-import { useQuery } from '@apollo/client'
-import {
-  ElementType,
-  GetArtificialInstanceDocument,
-  GetTemplatePreviewAnswerCollectionEntriesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
-import { H3 } from '@uzh-bf/design-system'
+import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, type ComponentProps } from 'react'
+import {
+  ElementType,
+  type ElementInstance,
+} from '../../../lib/constants/elementTypes'
+import { trpc } from '../../../lib/trpc'
 import useArtificialElementInstance from '../../elements/manipulation/useArtificialElementInstance'
 import { ActivityTemplateElementFormValues } from './types'
+
+type StudentElementInstance = ComponentProps<typeof StudentElement>['element']
 
 function TemplateElementPreview({
   templateId,
@@ -26,41 +27,65 @@ function TemplateElementPreview({
 }): React.ReactElement {
   const t = useTranslations()
 
+  const answerCollectionId =
+    templateElement.formValues &&
+    'options' in templateElement.formValues &&
+    'answerCollection' in templateElement.formValues.options &&
+    typeof templateElement.formValues.options.answerCollection === 'string'
+      ? parseInt(templateElement.formValues.options.answerCollection)
+      : -1
+  const shouldFetchAnswerCollectionEntries =
+    !!templateElement.formValues &&
+    (templateElement.instance.elementData.__typename ===
+      'SelectionElementData' ||
+      templateElement.instance.elementData.__typename ===
+        'CaseStudyElementData')
+
   // fetch answer collection entries for the selected answer collection (for preview)
-  const { data: answerCollectionData } = useQuery(
-    GetTemplatePreviewAnswerCollectionEntriesDocument,
-    {
-      variables: {
+  const { data: answerCollectionData, error: answerCollectionError } =
+    trpc.activity.templatePreviewAnswerCollectionEntries.useQuery(
+      {
         templateId,
-        answerCollectionId:
-          templateElement.formValues &&
-          'options' in templateElement.formValues &&
-          'answerCollection' in templateElement.formValues.options &&
-          typeof templateElement.formValues.options.answerCollection ===
-            'string'
-            ? parseInt(templateElement.formValues?.options.answerCollection)
-            : -1,
+        answerCollectionId,
       },
-      skip:
-        !templateElement.formValues ||
-        !(
-          templateElement.instance.elementData.__typename ===
-            'SelectionElementData' ||
-          templateElement.instance.elementData.__typename ===
-            'CaseStudyElementData'
-        ),
-      fetchPolicy: 'cache-and-network',
+      {
+        enabled: shouldFetchAnswerCollectionEntries,
+      }
+    )
+
+  const existingElementId =
+    typeof templateElement.elementId === 'number'
+      ? templateElement.elementId
+      : -1
+  const shouldFetchArtificialInstance =
+    templateElement.useExistingElement && existingElementId !== -1
+
+  const {
+    data: artificialInstanceData,
+    error: artificialInstanceError,
+    isLoading: artificialInstanceLoading,
+  } = trpc.element.artificialInstance.useQuery(
+    {
+      elementId: existingElementId,
+    },
+    {
+      enabled: shouldFetchArtificialInstance,
     }
   )
 
+  const artificialInstance = artificialInstanceData?.artificialInstance as
+    | ElementInstance
+    | null
+    | undefined
+
   // to avoid re-rendering issues, memoize the collection entries before passing them to the artificial instance computation
   const stableCollectionEntries = useMemo(() => {
-    if (answerCollectionData?.getTemplatePreviewAnswerCollectionEntries) {
-      return answerCollectionData.getTemplatePreviewAnswerCollectionEntries
+    if (answerCollectionData?.templatePreviewAnswerCollectionEntries) {
+      return answerCollectionData.templatePreviewAnswerCollectionEntries
     }
 
     return undefined
-  }, [answerCollectionData?.getTemplatePreviewAnswerCollectionEntries])
+  }, [answerCollectionData?.templatePreviewAnswerCollectionEntries])
 
   // convert current form entries into an artificial instance (skipped internally if formValues is null)
   const convertedInstance = useArtificialElementInstance({
@@ -72,20 +97,9 @@ function TemplateElementPreview({
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
     useState<InstanceStackStudentResponseType>({
-      type: ElementType.Sc,
+      type: ElementType.Sc as InstanceStackStudentResponseType['type'],
       response: undefined,
       valid: false,
-    })
-
-  const { data: artificialInstance, loading: artificialInstanceLoading } =
-    useQuery(GetArtificialInstanceDocument, {
-      variables: {
-        elementId: templateElement.elementId!,
-      },
-      skip:
-        !templateElement.useExistingElement ||
-        templateElement.elementId === null,
-      fetchPolicy: 'cache-and-network',
     })
 
   // determine the loaded instance based on whether an existing element is selected or a new element is defined
@@ -94,11 +108,8 @@ function TemplateElementPreview({
       templateElement.useExistingElement &&
       templateElement.elementId !== null
     ) {
-      if (
-        !artificialInstanceLoading &&
-        artificialInstance?.artificialInstance
-      ) {
-        return artificialInstance.artificialInstance
+      if (!artificialInstanceLoading && artificialInstance) {
+        return artificialInstance
       }
     } else if (
       templateElement.useNewElement &&
@@ -112,7 +123,7 @@ function TemplateElementPreview({
   }, [
     templateElement.useExistingElement,
     templateElement.elementId,
-    artificialInstance?.artificialInstance,
+    artificialInstance,
     artificialInstanceLoading,
     templateElement.useNewElement,
     templateElement.formValues,
@@ -124,12 +135,29 @@ function TemplateElementPreview({
     templateElement.useTemplateInstance || showTemplateInstancePreview
       ? templateElement.instance
       : loadedInstance
+  const usesComputedPreview =
+    !templateElement.useTemplateInstance && !showTemplateInstancePreview
+  const previewUnavailable =
+    usesComputedPreview &&
+    (Boolean(answerCollectionError) ||
+      Boolean(artificialInstanceError) ||
+      (shouldFetchArtificialInstance &&
+        !artificialInstanceLoading &&
+        !artificialInstance))
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
-    instance: effectiveInstance,
+    instance: effectiveInstance as StudentElementInstance | null,
     setStudentResponse,
   })
+
+  if (previewUnavailable) {
+    return (
+      <UserNotification type="error">
+        {t('shared.generic.systemError')}
+      </UserNotification>
+    )
+  }
 
   if (!effectiveInstance) {
     return <Loader />
@@ -141,7 +169,7 @@ function TemplateElementPreview({
       <div className="rounded border p-4">
         <StudentElement
           preview
-          element={effectiveInstance}
+          element={effectiveInstance as StudentElementInstance}
           elementIx={0}
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}

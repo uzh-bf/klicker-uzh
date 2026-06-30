@@ -1,25 +1,33 @@
 import { faStar } from '@fortawesome/free-regular-svg-icons'
 import { faShieldHeart, faTrophy } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Achievement,
-  Level,
-  ParticipantAchievementInstance,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Label, Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useMemo } from 'react'
-import PossibleAchievementsTile from './PossibleAchievementsTile'
-import ReceivedAchievementTile from './ReceivedAchievementTile'
+import PossibleAchievementsTile, {
+  type PossibleAchievement,
+} from './PossibleAchievementsTile'
+import ReceivedAchievementTile, {
+  type ReceivedAchievementInstance,
+} from './ReceivedAchievementTile'
+
+interface ProfileLevel {
+  avatar?: string | null
+  id: number
+  index: number
+  name?: string | null
+  requiredXp: number
+  nextLevel?: ProfileLevel | null
+}
 
 interface ProfileProps {
   isSelf?: boolean
   username: string
   xp: number
-  level?: Level | null
-  achievements?: ParticipantAchievementInstance[] | null
-  possibleAchievements?: Achievement[] | null
+  level?: ProfileLevel | null
+  achievements?: ReceivedAchievementInstance[] | null
+  possibleAchievements?: PossibleAchievement[] | null
   avatar?: string | null
   showProfileDetails?: boolean | null
 }

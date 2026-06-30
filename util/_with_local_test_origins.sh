@@ -9,6 +9,9 @@ fi
 export COOKIE_DOMAIN='127.0.0.1'
 export API_DOMAIN="$COOKIE_DOMAIN"
 
+export APP_SECRET="${APP_SECRET:-abcd}"
+export DATABASE_URL="${DATABASE_URL:-postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod}"
+
 export APP_ORIGIN_API='http://127.0.0.1:3000'
 export APP_ORIGIN_PWA='http://127.0.0.1:3001'
 export APP_ORIGIN_MANAGE='http://127.0.0.1:3002'

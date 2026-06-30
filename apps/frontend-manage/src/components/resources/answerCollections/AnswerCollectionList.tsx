@@ -1,22 +1,40 @@
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import type { RouterOutputs } from '../../../lib/trpc'
 import AnswerCollectionItem from './AnswerCollectionItem'
+
+type AnswerCollectionInfo =
+  RouterOutputs['resources']['answerCollectionsInfo']['answerCollections'][number]
 
 function AnswerCollectionList({
   collections,
+  error,
   loading,
 }: {
-  collections?: AnswerCollection[]
+  collections?: AnswerCollectionInfo[]
+  error: boolean
   loading: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const highlightedCollectionId =
+    typeof router.query.highlight === 'string'
+      ? Number(router.query.highlight)
+      : undefined
+  const hasHighlightedCollectionId = Number.isInteger(highlightedCollectionId)
 
   if (loading) {
     return <Loader />
+  }
+
+  if (error) {
+    return (
+      <UserNotification className={{ root: 'mt-1.5' }} type="error">
+        {t('shared.generic.systemError')}
+      </UserNotification>
+    )
   }
 
   return (
@@ -33,8 +51,8 @@ function AnswerCollectionList({
               key={`answer-collection-${collection.id}`}
               collection={collection}
               highlighted={
-                router.query?.highlight
-                  ? parseInt(router.query.highlight as string) === collection.id
+                hasHighlightedCollectionId
+                  ? highlightedCollectionId === collection.id
                   : undefined
               }
             />

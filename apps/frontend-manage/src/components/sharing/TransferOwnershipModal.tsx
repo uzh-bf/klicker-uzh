@@ -1,8 +1,9 @@
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as Yup from 'yup'
 import useTransferObjectOwnership from './useTransferObjectOwnership'
 
@@ -12,7 +13,6 @@ function TransferOwnershipModal({
   objectType,
   objectName,
   isTemplate = false,
-  catalogCollectionId,
 }: {
   onClose: () => void
   objectId: number | string
@@ -22,18 +22,24 @@ function TransferOwnershipModal({
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
+  const [transferPending, setTransferPending] = useState(false)
   const onTransferFailure = () =>
     toast({
       type: 'error',
       message: t('manage.sharing.ownershipTransferError'),
     })
 
-  const { onTransfer, transferring } = useTransferObjectOwnership({
-    objectType,
-    objectId,
-    catalogCollectionId,
-    onError: onTransferFailure,
-  })
+  const { onTransfer, transferring: transferLoading } =
+    useTransferObjectOwnership({
+      objectType,
+      objectId,
+    })
+  const transferring = transferLoading || transferPending
+  const handleClose = () => {
+    if (!transferring) {
+      onClose()
+    }
+  }
 
   const activityTemplate =
     isTemplate &&
@@ -47,7 +53,7 @@ function TransferOwnershipModal({
       open
       escapeDisabled
       title={t('manage.sharing.transferOwnership')}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'max-w-lg pb-2' }}
       dataCloseButton={{ cy: 'close-transfer-ownership-modal' }}
     >
@@ -78,6 +84,9 @@ function TransferOwnershipModal({
             ),
           })}
           onSubmit={async (values, { setSubmitting, resetForm }) => {
+            if (transferring) return
+
+            setTransferPending(true)
             try {
               const success = await onTransfer(values.shortnameOrEmail)
 
@@ -88,7 +97,10 @@ function TransferOwnershipModal({
                   options: { duration: 3000 },
                 })
                 resetForm()
+                setSubmitting(false)
+                setTransferPending(false)
                 onClose()
+                return
               } else {
                 onTransferFailure()
               }
@@ -98,12 +110,14 @@ function TransferOwnershipModal({
             }
 
             setSubmitting(false)
+            setTransferPending(false)
           }}
         >
           {({ isSubmitting, isValid }) => (
             <Form className="space-y-2">
               <div>
                 <FormikTextField
+                  autoFocus
                   id="shortnameOrEmail"
                   name="shortnameOrEmail"
                   label={
@@ -120,7 +134,8 @@ function TransferOwnershipModal({
 
               <div className="flex items-center justify-between pt-3">
                 <Button
-                  onClick={onClose}
+                  onClick={handleClose}
+                  disabled={transferring || isSubmitting}
                   data={{ cy: 'cancel-ownership-transfer' }}
                 >
                   <Button.Label>{t('shared.generic.cancel')}</Button.Label>
@@ -128,11 +143,14 @@ function TransferOwnershipModal({
                 <Button
                   primary
                   type="submit"
-                  disabled={transferring || !isValid}
-                  loading={isSubmitting}
+                  disabled={transferring || isSubmitting || !isValid}
+                  loading={transferring || isSubmitting}
                   data={{ cy: 'confirm-ownership-transfer' }}
                 >
-                  <Button.Icon icon={faExchangeAlt} loading={isSubmitting} />
+                  <Button.Icon
+                    icon={faExchangeAlt}
+                    loading={transferring || isSubmitting}
+                  />
                   <Button.Label>
                     {t('manage.sharing.confirmTransferOwnership')}
                   </Button.Label>

@@ -1,9 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetDerivedPermissionOriginDocument,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { PermissionLevel } from '@lib/constants/sharingEnums'
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -12,9 +8,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function DerivedPermissionInfoDialog({
   derivedPermissionOriginAlert,
@@ -31,11 +29,14 @@ function DerivedPermissionInfoDialog({
 }) {
   const t = useTranslations()
 
-  const { data, loading } = useQuery(GetDerivedPermissionOriginDocument, {
-    variables: { id: derivedPermissionOriginAlert.permissionId ?? -1 },
-    skip: !derivedPermissionOriginAlert.permissionId,
-  })
-  const info = data?.getDerivedPermissionOrigin
+  const { data, error, isLoading } =
+    trpc.sharing.derivedPermissionOrigin.useQuery(
+      { id: derivedPermissionOriginAlert.permissionId ?? -1 },
+      { enabled: Boolean(derivedPermissionOriginAlert.permissionId) }
+    )
+  const info = data?.derivedPermissionOrigin
+  const originUnavailable = Boolean(error && !info)
+  const staleOriginError = Boolean(error && info)
 
   return (
     <AlertDialog
@@ -56,10 +57,22 @@ function DerivedPermissionInfoDialog({
             {t('manage.sharing.derivedPermissionOrigin')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {loading ? (
+            {isLoading && !info ? (
               <Loader />
+            ) : originUnavailable ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+              />
             ) : (
               <>
+                {staleOriginError ? (
+                  <UserNotification
+                    type="error"
+                    message={t('shared.generic.systemError')}
+                    className={{ root: 'mb-2 py-1 text-sm' }}
+                  />
+                ) : null}
                 <span className="mb-2">
                   {t('manage.sharing.derivedAccessFor', {
                     user: info?.permissionUser ?? t('shared.generic.unknown'),

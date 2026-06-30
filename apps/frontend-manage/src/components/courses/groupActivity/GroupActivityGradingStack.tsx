@@ -1,15 +1,4 @@
-import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
-import {
-  ElementData,
-  ElementInstance,
-  ElementType,
-  GradeGroupActivitySubmissionDocument,
-  GroupActivityDecision,
-  GroupActivityGrading,
-  GroupActivityInstance,
-  SelectionElementData,
-} from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   CaseStudyStudentResponseType,
   StackStudentResponseType,
@@ -29,7 +18,19 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import {
+  ElementType,
+  type ElementData,
+  type ElementInstance,
+  type GroupActivityDecision,
+  type GroupActivityGradingResult,
+  type GroupActivityInstance,
+  type SelectionElementData,
+} from '../../../lib/groupActivityGradingTypes'
+import { trpc } from '../../../lib/trpc'
 import ContentInput from '../../common/ContentInput'
+
+type StudentElementInstance = Parameters<typeof StudentElement>[0]['element']
 
 interface GroupActivityGradingStackProps {
   setEdited: (edited: boolean) => void
@@ -49,9 +50,9 @@ function GroupActivityGradingStack({
   maxPoints,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
-  const [gradeGroupActivitySubmissions] = useMutation(
-    GradeGroupActivitySubmissionDocument
-  )
+  const utils = trpc.useUtils()
+  const gradeGroupActivitySubmission =
+    trpc.activity.gradeGroupActivitySubmission.useMutation()
 
   const EditingDetector = () => {
     const { touched } = useFormikContext()
@@ -83,7 +84,7 @@ function GroupActivityGradingStack({
             response: decision.choicesResponse?.reduce(
               (acc: Record<number, boolean>, choice: any) => ({
                 ...acc,
-                [choice]: true,
+                [choice.ix]: true,
               }),
               {}
             ),
@@ -203,7 +204,7 @@ function GroupActivityGradingStack({
         passed: results?.passed ?? undefined,
         comment: results?.comment ?? undefined,
         grading:
-          results?.grading.map((result: GroupActivityGrading) => {
+          results?.grading.map((result: GroupActivityGradingResult) => {
             return {
               instanceId: result.instanceId,
               score: result.score,
@@ -219,8 +220,8 @@ function GroupActivityGradingStack({
       validationSchema={gradingSchema}
       onSubmit={async (values, { setSubmitting, resetForm }) => {
         setSubmitting(true)
-        const result = await gradeGroupActivitySubmissions({
-          variables: {
+        try {
+          const result = await gradeGroupActivitySubmission.mutateAsync({
             id: submission.id,
             groupActivityId: submission.groupActivityId,
             gradingDecisions: {
@@ -232,25 +233,48 @@ function GroupActivityGradingStack({
                 feedback: res.feedback,
               })),
             },
-          },
-        })
-
-        if (result.data?.gradeGroupActivitySubmission?.id) {
-          setSubmitting(false)
-          resetForm()
-          toast({
-            type: 'success',
-            message: t('manage.groupActivity.stackGradingSuccess'),
-            options: { duration: 4000 },
           })
-          setEdited(false)
-        } else {
-          setSubmitting(false)
+
+          if (result.gradeGroupActivitySubmission?.id) {
+            try {
+              await utils.activity.groupActivityGrading.invalidate({
+                id: submission.groupActivityId,
+              })
+            } catch (error) {
+              console.error(
+                'Error refreshing group activity grading after submission grading',
+                error
+              )
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 6000 },
+              })
+              return
+            }
+
+            resetForm()
+            toast({
+              type: 'success',
+              message: t('manage.groupActivity.stackGradingSuccess'),
+              options: { duration: 4000 },
+            })
+            setEdited(false)
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.groupActivity.stackGradingError'),
+              options: { duration: 6000 },
+            })
+          }
+        } catch {
           toast({
             type: 'error',
             message: t('manage.groupActivity.stackGradingError'),
             options: { duration: 6000 },
           })
+        } finally {
+          setSubmitting(false)
         }
       }}
     >
@@ -277,7 +301,7 @@ function GroupActivityGradingStack({
                 </H3>
                 <StudentElement
                   preview
-                  element={element}
+                  element={element as StudentElementInstance}
                   elementIx={ix}
                   studentResponse={
                     (findResponse(
@@ -420,7 +444,7 @@ function GroupActivityGradingStack({
             </div>
             <Button
               primary
-              disabled={!isValid || gradingCompleted}
+              disabled={!isValid || gradingCompleted || isSubmitting}
               type="submit"
               loading={isSubmitting}
               onClick={() => submitForm()}

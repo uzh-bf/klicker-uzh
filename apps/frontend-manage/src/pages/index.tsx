@@ -1,17 +1,16 @@
-import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  Element,
-  GetUserElementsDocument,
-  SharingType,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, toast } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type ComponentProps,
+} from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
@@ -27,13 +26,64 @@ import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
 import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
+import {
+  ActivityType,
+  type Element as CreationElement,
+} from '../lib/constants/activityEnums'
+import { SharingType } from '../lib/constants/sharingEnums'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
+import { trpc, type RouterInputs } from '../lib/trpc'
+
+type ElementListInput = RouterInputs['element']['list']
+type ElementListElement = NonNullable<
+  ComponentProps<typeof ElementList>['elements']
+>[number]
+type ElementSelection = Record<number, ElementListElement>
+const activityTypes = Object.values(ActivityType)
+
+function getQueryString(value: string | string[] | undefined) {
+  return typeof value === 'string' ? value : undefined
+}
+
+function getActivityTypeQuery(value: string | string[] | undefined) {
+  const stringValue = getQueryString(value)
+
+  return activityTypes.includes(stringValue as ActivityType)
+    ? (stringValue as ActivityType)
+    : undefined
+}
+
+function getPositiveIntegerQuery(value: string | string[] | undefined) {
+  const numericValue = Number.parseInt(getQueryString(value) ?? '', 10)
+
+  return Number.isInteger(numericValue) && numericValue > 0
+    ? numericValue
+    : undefined
+}
 
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const queryElementId = getQueryString(router.query.elementId)
+  const queryEditMode = getActivityTypeQuery(router.query.editMode)
+  const queryDuplicationMode = getActivityTypeQuery(
+    router.query.duplicationMode
+  )
+  const queryConversionMode =
+    getQueryString(router.query.conversionMode) ===
+    'microLearningToPracticeQuiz'
+      ? 'microLearningToPracticeQuiz'
+      : undefined
+  const queryCreationMode: ActivityType | undefined = queryElementId
+    ? (queryEditMode ??
+      queryDuplicationMode ??
+      (queryConversionMode ? ActivityType.PracticeQuiz : undefined))
+    : undefined
+  const queryEditElementId = getPositiveIntegerQuery(router.query.editElementId)
+  const filterByCourse = getQueryString(router.query.filterByCourse)
+  const filterByActivity = getQueryString(router.query.filterByActivity)
 
   // search, filter and pagination states
   const [searchString, setSearchString] = useState('')
@@ -69,9 +119,7 @@ function Index() {
   const [isElementCreationModalOpen, setIsElementCreationModalOpen] =
     useState(false)
 
-  const [selectedElements, setSelectedElements] = useState<{
-    [elementId: number]: Element
-  }>({})
+  const [selectedElements, setSelectedElements] = useState<ElementSelection>({})
 
   // initialize the sorting and filtering state from local storage (if available)
   const [storedFiltering, _] = useState(() => {
@@ -106,7 +154,7 @@ function Index() {
 
   const handleResetCleanURL = useCallback(() => {
     // if a filtering by activity / course is set through the URL, reset it
-    if (router.query.filterByActivity || router.query.filterByCourse) {
+    if (filterByActivity || filterByCourse) {
       router.push({ pathname: '/', query: {} }, undefined, {
         shallow: true,
       })
@@ -114,36 +162,41 @@ function Index() {
 
     // reset the filters and sorting
     handleReset()
-  }, [router.query.filterByCourse, router.query.filterByActivity])
+  }, [filterByCourse, filterByActivity])
 
+  const elementListInput: ElementListInput = {
+    status: filters.status as ElementListInput['status'],
+    type: filters.type as ElementListInput['type'],
+    hasSampleSolution: filters.sampleSolution,
+    hasAnswerFeedbacks: filters.answerFeedbacks,
+    searchString: searchString.trim() || undefined,
+    showOwned: filters.sharingType.includes(
+      SharingType.Owned as (typeof filters.sharingType)[number]
+    ),
+    showShared: filters.sharingType.includes(
+      SharingType.Shared as (typeof filters.sharingType)[number]
+    ),
+    showDependencies: filters.sharingType.includes(
+      SharingType.Dependency as (typeof filters.sharingType)[number]
+    ),
+    tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
+    activityId: filters.activityId,
+    multiplier: filters.multiplier,
+    showUntagged: filters.untagged,
+    sortByType: sort.by as unknown as ElementListInput['sortByType'],
+    sortByAsc: sort.asc,
+    showArchived: filters.archive,
+    numEntries: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  }
   const {
-    loading: loadingElements,
+    isLoading: loadingElements,
     data: dataElements,
+    error: elementsError,
     refetch: refetchElements,
-  } = useQuery(GetUserElementsDocument, {
-    variables: {
-      status: filters.status,
-      type: filters.type,
-      hasSampleSolution: filters.sampleSolution,
-      hasAnswerFeedbacks: filters.answerFeedbacks,
-      searchString: searchString.trim() || undefined,
-      showOwned: filters.sharingType.includes(SharingType.Owned),
-      showShared: filters.sharingType.includes(SharingType.Shared),
-      showDependencies: filters.sharingType.includes(SharingType.Dependency),
-      tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
-      activityId: filters.activityId,
-      multiplier: filters.multiplier,
-      showUntagged: filters.untagged,
-      sortByType: sort.by,
-      sortByAsc: sort.asc,
-      showArchived: filters.archive,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
-    },
-    fetchPolicy: 'network-only',
-  })
-  const numOfElements = dataElements?.userElements?.numOfElements || 0
-  const elements = dataElements?.userElements?.elements ?? []
+  } = trpc.element.list.useQuery(elementListInput)
+  const numOfElements = dataElements?.numOfElements || 0
+  const elements = (dataElements?.elements ?? []) as ElementListElement[]
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -214,14 +267,10 @@ function Index() {
     router.prefetch('/quizzes')
     router.prefetch('/activities')
 
-    if (router.query.elementId && router.query.editMode) {
-      setCreationMode(router.query.editMode as ActivityType)
-    } else if (router.query.elementId && router.query.duplicationMode) {
-      setCreationMode(router.query.duplicationMode as ActivityType)
-    } else if (router.query.elementId && router.query.conversionMode) {
-      setCreationMode(router.query.conversionMode as ActivityType)
+    if (queryCreationMode) {
+      setCreationMode(queryCreationMode)
     }
-  }, [router])
+  }, [router, queryCreationMode])
 
   // once the activity wizard is opened, deselect all invalid elements
   useEffect(() => {
@@ -239,26 +288,26 @@ function Index() {
 
   // if passed through the query arguments, open the element editing dialog
   useEffect(() => {
-    if (router.query.editElementId) {
+    if (queryEditElementId) {
       setModificationModalOpen(true)
     }
-  }, [router.query.editElementId])
+  }, [queryEditElementId])
 
   // if the library should be filtered by activity, reset the filters and re-set them accordingly
   useEffect(() => {
-    if (router.query.filterByActivity) {
+    if (filterByActivity) {
       handleReset()
 
-      if (router.query.filterByCourse) {
+      if (filterByCourse) {
         toggleCourseIdFilter({
-          courseId: router.query.filterByCourse as string,
+          courseId: filterByCourse,
         })
       }
       toggleActivityIdFilter({
-        activityId: router.query.filterByActivity as string,
+        activityId: filterByActivity,
       })
     }
-  }, [router.query.filterByCourse, router.query.filterByActivity])
+  }, [filterByCourse, filterByActivity])
 
   // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
   const filtersActiveExceptCourse = !!(
@@ -294,11 +343,13 @@ function Index() {
               router.push('/')
               setCreationMode(() => undefined)
             }}
-            activityId={router.query.elementId as string}
-            editMode={router.query.editMode as ActivityType}
-            conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as ActivityType}
-            selection={selectedElements}
+            activityId={queryElementId}
+            editMode={queryEditMode}
+            conversionMode={queryConversionMode}
+            duplicationMode={queryDuplicationMode}
+            selection={
+              selectedElements as Record<number, CreationElement | undefined>
+            }
             resetSelection={() => setSelectedElements({})}
           />
         </>
@@ -338,7 +389,11 @@ function Index() {
                   elements={elements}
                   selectedElements={selectedElements}
                   setSelectedElements={setSelectedElements}
-                  creationMode={creationMode}
+                  creationMode={
+                    creationMode as ComponentProps<
+                      typeof ElementListSelectAllCheckbox
+                    >['creationMode']
+                  }
                 />
                 <ElementListSearch setSearchString={setSearchString} />
                 <ElementListSorting
@@ -387,10 +442,16 @@ function Index() {
             </div>
 
             <div className="h-full overflow-y-auto">
-              {!dataElements || loadingElements ? (
+              {loadingElements && !dataElements ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader />
                 </div>
+              ) : elementsError && !dataElements ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                  className={{ root: 'm-4' }}
+                />
               ) : (
                 <>
                   <ElementList
@@ -405,7 +466,10 @@ function Index() {
                         options: { duration: 4000 },
                       })
                     }
-                    setSelectedElements={(id: number, data: Element) => {
+                    setSelectedElements={(
+                      id: number,
+                      data: ElementListElement
+                    ) => {
                       setSelectedElements((prev) => {
                         const newSelected = { ...prev }
                         if (newSelected[id]) {
@@ -467,7 +531,7 @@ function Index() {
           }}
         />
       )}
-      {modificationModalOpen && router.query.editElementId && (
+      {modificationModalOpen && queryEditElementId && (
         <ElementEditModal
           isOpen
           inputsDisabled={false}
@@ -479,7 +543,7 @@ function Index() {
               options: { duration: 4000 },
             })
           }
-          elementId={parseInt(router.query.editElementId as string, 10)}
+          elementId={queryEditElementId}
           mode={ElementEditMode.EDIT}
           refetchElements={async () => {
             await refetchElements()

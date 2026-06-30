@@ -1,12 +1,26 @@
-import { ParticipantAchievementInstance } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 
+export interface ReceivedAchievementInstance {
+  id: number
+  achievedAt: Date | string
+  achievedCount: number
+  achievement: {
+    id: number
+    nameDE?: string | null
+    nameEN?: string | null
+    descriptionDE?: string | null
+    descriptionEN?: string | null
+    icon: string
+    iconColor?: string | null
+  }
+}
+
 function ReceivedAchievementTile({
   instance,
 }: {
-  instance: ParticipantAchievementInstance
+  instance: ReceivedAchievementInstance
 }) {
   const { locale } = useRouter()
   const achievement = instance.achievement

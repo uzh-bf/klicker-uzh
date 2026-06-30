@@ -1,6 +1,5 @@
 import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
   FormikNumberField,
@@ -11,6 +10,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ElementOrderType } from '../../../../lib/constants/activityEnums'
 import CourseSelectionMonitorPracticeQuiz from '../CourseSelectionMonitorPracticeQuiz'
 import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'

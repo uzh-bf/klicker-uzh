@@ -1,4 +1,4 @@
-import { ParticipantActivityTimestamp } from '@klicker-uzh/graphql/dist/ops'
+import type { ParticipantActivityTimestamp } from '@lib/analyticsTypes'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ActivityTimeSeriesPlot from './ActivityTimeSeriesPlot'

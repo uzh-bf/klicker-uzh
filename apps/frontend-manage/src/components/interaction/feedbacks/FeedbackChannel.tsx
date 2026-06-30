@@ -2,21 +2,30 @@
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
-import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import FeedbacksPrintView from '../../evaluation/feedbacks/FeedbacksPrintView'
+import type { AudienceFeedback } from '../types'
 import FeedbackList from './FeedbackList'
 import FeedbackOverviewFilters from './FeedbackOverviewFilters'
 import FeedbackSearchBar from './FeedbackSearchBar'
 
 interface Props {
   liveQuizName: string
-  feedbacks?: FeedbackType[]
-  handleDeleteFeedback: (feedbackId: number) => void
-  handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
-  handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void
-  handleResolveFeedback: (feedbackId: number, resolvedState: boolean) => void
-  handleRespondToFeedback: (feedbackId: number, response: string) => void
-  handleDeleteFeedbackResponse: (responseId: number) => void
+  feedbacks?: AudienceFeedback[]
+  handleDeleteFeedback: (feedbackId: number) => Promise<boolean>
+  handlePinFeedback: (feedbackId: number, isPinned: boolean) => Promise<boolean>
+  handlePublishFeedback: (
+    feedbackId: number,
+    isPublished: boolean
+  ) => Promise<boolean>
+  handleResolveFeedback: (
+    feedbackId: number,
+    resolvedState: boolean
+  ) => Promise<boolean>
+  handleRespondToFeedback: (
+    feedbackId: number,
+    response: string
+  ) => Promise<boolean>
+  handleDeleteFeedbackResponse: (responseId: number) => Promise<boolean>
   isActive?: boolean
   isPublic?: boolean
 }

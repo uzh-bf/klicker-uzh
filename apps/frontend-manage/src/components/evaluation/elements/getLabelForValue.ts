@@ -1,8 +1,16 @@
-import { CaseStudyElementResultCriterionInfo } from '@klicker-uzh/graphql/dist/ops'
+type CriterionLabelSource = {
+  id?: string
+  name?: string
+  labels?: {
+    min: string
+    mid?: string | null
+    max: string
+  } | null
+}
 
 function getLabelForValue(
   value: number,
-  criterion: CaseStudyElementResultCriterionInfo | undefined,
+  criterion: CriterionLabelSource | undefined,
   lower: number,
   upper: number,
   rangeMode?: boolean

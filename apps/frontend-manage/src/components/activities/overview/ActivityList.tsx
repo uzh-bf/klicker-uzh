@@ -1,13 +1,14 @@
-import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
+import type { ActivityInfo } from '../../../lib/constants/activityEnums'
 import ActivityListEntry from './ActivityListEntry'
 
 function ActivityList({
   filtersActive,
+  searchActive = false,
   activities,
   noActivities,
   hideActivityType = false,
@@ -18,6 +19,7 @@ function ActivityList({
   refetchActivities,
 }: {
   filtersActive: boolean
+  searchActive?: boolean
   activities: ActivityInfo[]
   noActivities: boolean
   hideActivityType?: boolean
@@ -29,6 +31,10 @@ function ActivityList({
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const highlightedActivityId =
+    typeof router.query.highlight === 'string'
+      ? router.query.highlight
+      : undefined
 
   if (noActivities) {
     return (
@@ -52,20 +58,22 @@ function ActivityList({
 
   return (
     <div className="flex flex-col gap-2">
-      {filtersActive && (
+      {(filtersActive || (searchActive && activities.length === 0)) && (
         <UserNotification type="warning" className={{ root: 'ml-6.5' }}>
           {activities.length === 0 &&
             t('manage.activities.noActivitiesWarning')}{' '}
-          {t.rich('manage.activities.activeFiltersWarning', {
-            reset: (text) => (
-              <span
-                className="cursor-pointer font-bold underline"
-                onClick={handleFilterReset}
-              >
-                {text}
-              </span>
-            ),
-          })}
+          {filtersActive
+            ? t.rich('manage.activities.activeFiltersWarning', {
+                reset: (text) => (
+                  <span
+                    className="cursor-pointer font-bold underline"
+                    onClick={handleFilterReset}
+                  >
+                    {text}
+                  </span>
+                ),
+              })
+            : null}
         </UserNotification>
       )}
       {activities.map((activity) => (
@@ -73,8 +81,8 @@ function ActivityList({
           key={`activity-list-entry-${activity.id}`}
           activity={activity}
           highlighted={
-            router.query?.highlight
-              ? (router.query.highlight as string) === activity.id
+            highlightedActivityId
+              ? highlightedActivityId === activity.id
               : undefined
           }
           hideType={hideActivityType}

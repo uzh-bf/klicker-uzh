@@ -1,11 +1,11 @@
+import { useReducer } from 'react'
 import {
   ActivityType,
   PublicationStatus,
   ReviewStatus,
-  SharingType,
   SortByType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useReducer } from 'react'
+} from '../constants/activityEnums'
+import { SharingType } from '../constants/sharingEnums'
 
 export type ActivityModeFilters = {
   gamified: boolean

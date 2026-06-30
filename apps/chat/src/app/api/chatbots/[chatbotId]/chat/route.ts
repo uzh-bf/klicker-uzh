@@ -19,6 +19,7 @@ import {
   generateText,
   stepCountIs,
   streamText,
+  tool,
   type ModelMessage,
   type StepResult,
 } from 'ai'
@@ -28,6 +29,13 @@ import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
 import { type ReasoningEffort } from 'src/lib/config/reasoning'
 import { CreditsService } from 'src/services/credits'
 import { DisclaimersService } from 'src/services/disclaimers'
+import {
+  formatPracticeCandidatesForPrompt,
+  getPracticeStackForQuiz,
+  lookupRelevantPracticeStacks,
+  STUDENT_PRACTICE_QUIZ_TOOL_NAME,
+  toPracticeCandidateId,
+} from 'src/services/studentPracticeMcp'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
@@ -668,7 +676,7 @@ export async function POST(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, authMode, chatbot: authChatbot } = authResult
 
   // check disclaimer acceptance
   try {
@@ -879,12 +887,104 @@ export async function POST(
   }))
 
   // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
-  const toolNames = Object.keys(mcpTools || {})
+  const mcpTools = await getAggregatedMCPTools(
+    mcpServersWithConfigs,
+    chatbotId,
+    participantId
+  )
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
+
+  let practiceCandidatePrompt = ''
+  let practiceCandidateCount = 0
+  const practiceCandidateRefs = new Map<string, string>()
+
+  if (selectedMode === 'tutor') {
+    try {
+      const lookupResult = await lookupRelevantPracticeStacks({
+        chatbotId,
+        courseId: authChatbot.courseId,
+        messages,
+        participantId,
+      })
+      const candidates = lookupResult?.candidates ?? []
+      practiceCandidateCount = candidates.length
+      candidates.forEach((candidate, index) => {
+        practiceCandidateRefs.set(
+          toPracticeCandidateId(index),
+          candidate.questionRef
+        )
+      })
+      practiceCandidatePrompt = formatPracticeCandidatesForPrompt(candidates)
+
+      logChatDev('studentPractice.lookup', {
+        requestId,
+        chatbotId,
+        participantId,
+        candidateCount: practiceCandidateCount,
+      })
+    } catch (error) {
+      console.warn(
+        'Student practice lookup failed; continuing without quiz candidates',
+        {
+          requestId,
+          chatbotId,
+          error,
+        }
+      )
+    }
+  }
+
+  const studentPracticeTools: Record<string, any> = {}
+  if (practiceCandidatePrompt) {
+    studentPracticeTools[STUDENT_PRACTICE_QUIZ_TOOL_NAME] = tool({
+      description:
+        'Show a selected answer-safe practice quiz question to the student. Use only candidateId values from the current relevant practice candidate context.',
+      inputSchema: z.object({
+        candidateId: z
+          .string()
+          .min(1)
+          .describe('Candidate id from the current practice candidate context'),
+      }),
+      execute: async ({ candidateId }) => {
+        const questionRef = practiceCandidateRefs.get(candidateId)
+        if (!questionRef) {
+          throw new Error('Unknown practice candidate id')
+        }
+
+        const payload = await getPracticeStackForQuiz({
+          chatbotId,
+          participantId,
+          questionRef,
+        })
+
+        if (!payload) {
+          throw new Error('Student practice MCP is not configured')
+        }
+
+        return {
+          kind: 'student-practice-quiz',
+          ...payload,
+        }
+      },
+      toModelOutput: () => ({
+        type: 'text' as const,
+        value:
+          'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.',
+      }),
+    })
+  }
+
+  const chatTools: Record<string, any> = {
+    ...(mcpTools || {}),
+    ...studentPracticeTools,
+  }
+  const toolNames = Object.keys(chatTools)
+  const effectiveSystemPrompt = practiceCandidatePrompt
+    ? `${systemPrompt}\n\n${practiceCandidatePrompt}`
+    : systemPrompt
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -944,6 +1044,26 @@ export async function POST(
         )
       }
     }
+  }
+
+  // Phase A: anonymous (LTI guest) users are locked to fallback models.
+  // This is the FINAL model override — runs after all account-mode model
+  // resolution branches so it cannot be silently overwritten by the
+  // `!chatbot.modelSelection` branch (the bug from the original branch).
+  // Phase B replaces this with reasoning-effort tier gating.
+  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
+    // Pick a fallback directly. `getAutomaticModelId` returns the *primary*
+    // when credits>0 even when called with `chatbot.allowedModelIds`, which
+    // would re-trip this branch and 503 anonymous users that have credits.
+    const guestFallback = modelRegistry.find((m) => m.fallback)
+    if (!guestFallback) {
+      return NextResponse.json(
+        { error: 'No fallback model available for guest access' },
+        { status: 503 }
+      )
+    }
+    selectedModel = guestFallback.id
+    selectedModelConfig = guestFallback
   }
 
   const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
@@ -1068,6 +1188,7 @@ export async function POST(
     maxOutputTokens: maxOutputTokens ?? null,
     toolCount: toolNames.length,
     toolNames,
+    practiceCandidateCount,
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
@@ -1282,10 +1403,10 @@ export async function POST(
       },
     },
     messages: modelMessages as ModelMessage[],
-    tools: mcpTools,
+    tools: chatTools,
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
-    system: systemPrompt,
+    system: effectiveSystemPrompt,
 
     abortSignal: req.signal,
 

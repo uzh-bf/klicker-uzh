@@ -1,14 +1,9 @@
-import { useMutation } from '@apollo/client'
 import {
   faBan,
   faCheck,
   faPlusCircle,
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  CreateUserGroupDocument,
-  GetUserGroupsUserDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSwitchField,
@@ -18,6 +13,7 @@ import {
 import { FieldArray, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../lib/trpc'
 
 type UserGroupCreationFormValues = {
   name?: string
@@ -34,7 +30,11 @@ function UserGroupCreationForm({
   onError: () => void
 }) {
   const t = useTranslations()
-  const [createUserGroup] = useMutation(CreateUserGroupDocument)
+  const utils = trpc.useUtils()
+  const createUserGroup = trpc.sharing.createUserGroup.useMutation()
+  const refreshUserGroups = () => {
+    return utils.sharing.userGroups.invalidate()
+  }
 
   const validationSchema = Yup.object({
     name: Yup.string().required(t('manage.userGroups.nameRequired')),
@@ -69,32 +69,13 @@ function UserGroupCreationForm({
         }}
         onSubmit={async (values: UserGroupCreationFormValues) => {
           try {
-            const { data } = await createUserGroup({
-              variables: {
-                name: values.name!,
-                members: values.members!,
-              },
-              update: (cache, { data }) => {
-                // check if the creation was successful
-                if (!data?.createUserGroup) return
-
-                // update the list of user groups
-                cache.updateQuery(
-                  { query: GetUserGroupsUserDocument },
-                  (qData) => {
-                    if (!qData?.getUserGroupsUser) return qData
-                    return {
-                      getUserGroupsUser: [
-                        ...qData.getUserGroupsUser,
-                        data.createUserGroup!,
-                      ],
-                    }
-                  }
-                )
-              },
+            const result = await createUserGroup.mutateAsync({
+              name: values.name!,
+              members: values.members!,
             })
 
-            if (data?.createUserGroup?.id) {
+            if (result.userGroup?.id) {
+              await refreshUserGroups()
               onClose()
               onSuccess()
             } else {
@@ -142,6 +123,7 @@ function UserGroupCreationForm({
                       </div>
                       <Button
                         onClick={() => remove(index)}
+                        disabled={isSubmitting}
                         data={{ cy: `remove-member-${index}` }}
                         className={{
                           root: 'h-9 w-9 self-end border-red-600 text-red-600 hover:text-red-600',
@@ -155,6 +137,7 @@ function UserGroupCreationForm({
                     onClick={() =>
                       push({ shortnameOrEmail: '', isAdmin: false })
                     }
+                    disabled={isSubmitting}
                     className={{ root: 'w-full' }}
                     data={{ cy: 'add-member' }}
                   >
@@ -177,6 +160,7 @@ function UserGroupCreationForm({
               <Button
                 className={{ root: 'h-8 border-red-400' }}
                 onClick={onClose}
+                disabled={isSubmitting}
                 data={{ cy: 'cancel-create-user-group' }}
               >
                 <Button.Icon icon={faBan} />
@@ -184,7 +168,7 @@ function UserGroupCreationForm({
               </Button>
               <Button
                 type="submit"
-                disabled={!isValid}
+                disabled={!isValid || isSubmitting}
                 loading={isSubmitting}
                 className={{ root: 'h-8 border-green-700' }}
                 data={{ cy: 'submit-create-user-group' }}

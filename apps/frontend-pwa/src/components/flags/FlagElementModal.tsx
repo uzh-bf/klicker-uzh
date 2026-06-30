@@ -1,13 +1,8 @@
-import { useMutation } from '@apollo/client'
 import { faMessage } from '@fortawesome/free-regular-svg-icons'
 import {
   faEnvelope,
   faMessage as faMessageSolid,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  FlagElementDocument,
-  GetStackElementFeedbacksDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import {
   Button,
@@ -20,6 +15,8 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc } from '../../lib/trpc'
+import type { StackElementFeedback } from '../hooks/useStackElementFeedbacks'
 
 interface FlagElementModalProps {
   index: number
@@ -27,7 +24,7 @@ interface FlagElementModalProps {
   elementId: number
   feedbackValue?: string
   setFeedbackValue: (newValue: string) => void
-  stackInstanceIds: number[]
+  onFeedbackChanged: (feedback: StackElementFeedback) => void
 }
 
 function FlagElementModal({
@@ -36,11 +33,12 @@ function FlagElementModal({
   elementId,
   feedbackValue,
   setFeedbackValue,
-  stackInstanceIds,
+  onFeedbackChanged,
 }: FlagElementModalProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
-  const [flagElement, { error }] = useMutation(FlagElementDocument)
+  const [flagElementPending, setFlagElementPending] = useState(false)
+  const flagElement = trpc.participant.flagElement.useMutation()
 
   const flagElementSchema = Yup.object().shape({
     description: Yup.string().test({
@@ -54,58 +52,49 @@ function FlagElementModal({
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
     setSubmitting(true)
-    if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
-      const result = await flagElement({
-        variables: {
+    setFlagElementPending(true)
+    try {
+      if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
+        const result = await flagElement.mutateAsync({
           elementInstanceId: instanceId,
-          elementId: elementId,
+          elementId,
           content,
-        },
-        update(cache, { data }) {
-          // verify that the flagging operation was successful
-          if (!data?.flagElement) return
-
-          // add or replace the element feedback in the corresponding list
-          cache.updateQuery(
-            {
-              query: GetStackElementFeedbacksDocument,
-              variables: { instanceIds: stackInstanceIds },
-            },
-            (qData) => {
-              if (!qData?.getStackElementFeedbacks)
-                return { getStackElementFeedbacks: [data.flagElement!] }
-
-              return {
-                getStackElementFeedbacks: [
-                  ...qData.getStackElementFeedbacks.filter(
-                    (feedback) =>
-                      feedback.elementInstanceId !==
-                      data.flagElement!.elementInstanceId
-                  ),
-                  data.flagElement!,
-                ],
-              }
-            }
-          )
-        },
-      })
-      if (result.data?.flagElement?.id) {
-        toast({
-          type: 'success',
-          message: t('pwa.practiceQuiz.feedbackTransmitted'),
-          options: { duration: 5000 },
         })
-        setFeedbackValue(content)
-        setOpen(false)
-      } else {
-        toast({
-          type: 'error',
-          message: error?.message ?? t('shared.generic.systemError'),
-          options: { duration: 5000 },
-        })
+
+        if (result?.id) {
+          onFeedbackChanged(result)
+          toast({
+            type: 'success',
+            message: t('pwa.practiceQuiz.feedbackTransmitted'),
+            options: { duration: 5000 },
+          })
+          setFeedbackValue(content)
+          setOpen(false)
+        } else {
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
       }
+    } catch (error) {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    } finally {
+      setFlagElementPending(false)
+      setSubmitting(false)
     }
-    setSubmitting(false)
+  }
+
+  const closeModal = () => {
+    if (!flagElementPending) {
+      setOpen(false)
+    }
   }
 
   return (
@@ -129,7 +118,7 @@ function FlagElementModal({
           />
         </ForwardRefButton>
       }
-      onClose={() => setOpen(false)}
+      onClose={closeModal}
       hideCloseButton
       escapeDisabled
     >
@@ -157,7 +146,8 @@ function FlagElementModal({
               />
               <div className="mt-4 flex flex-col justify-between gap-2 md:flex-row md:gap-0">
                 <Button
-                  onClick={() => setOpen(false)}
+                  onClick={closeModal}
+                  disabled={isSubmitting || flagElementPending}
                   className={{ root: 'order-2 text-base md:order-1' }}
                   data={{ cy: 'cancel-flag-element' }}
                 >
@@ -167,11 +157,14 @@ function FlagElementModal({
                   primary
                   className={{ root: 'order-1 float-right' }}
                   type="submit"
-                  disabled={!isValid}
-                  loading={isSubmitting}
+                  disabled={isSubmitting || flagElementPending || !isValid}
+                  loading={isSubmitting || flagElementPending}
                   data={{ cy: 'submit-flag-element' }}
                 >
-                  <Button.Icon icon={faEnvelope} loading={isSubmitting} />
+                  <Button.Icon
+                    icon={faEnvelope}
+                    loading={isSubmitting || flagElementPending}
+                  />
                   <Button.Label>
                     {!!feedbackValue
                       ? t('pwa.practiceQuiz.updateFeedback')

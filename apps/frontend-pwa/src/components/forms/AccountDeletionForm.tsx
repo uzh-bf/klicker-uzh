@@ -1,9 +1,5 @@
-import { useMutation } from '@apollo/client'
-import {
-  DeleteParticipantAccountDocument,
-  LogoutParticipantDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { trpc } from '@lib/trpc'
+import { Button, H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -11,12 +7,15 @@ function AccountDeletionForm() {
   const t = useTranslations()
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [deleteParticipantAccount, { loading: deletingAccount }] = useMutation(
-    DeleteParticipantAccountDocument
-  )
-  const [logoutParticipant, { loading: loggingOut }] = useMutation(
-    LogoutParticipantDocument
-  )
+  const deleteParticipantAccount = trpc.participant.deleteAccount.useMutation()
+  const logoutParticipant = trpc.participant.logout.useMutation()
+  const deleting =
+    deleteParticipantAccount.isLoading || logoutParticipant.isLoading
+  const closeDeletionModal = (): void => {
+    if (!deleting) {
+      setDeleteModalOpen(false)
+    }
+  }
 
   return (
     <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
@@ -43,20 +42,41 @@ function AccountDeletionForm() {
               hideCloseButton
               title={t('pwa.profile.deleteProfile')}
               open={deleteModalOpen}
-              onClose={(): void => setDeleteModalOpen(false)}
+              onClose={closeDeletionModal}
               primaryLabel={t('shared.generic.confirm')}
               primaryButtonStyle="destructive"
-              primaryLoading={deletingAccount || loggingOut}
+              primaryLoading={deleting}
+              primaryDisabled={deleting}
               onPrimaryAction={async () => {
-                await deleteParticipantAccount()
                 try {
-                  await logoutParticipant()
-                } catch (e) {}
-                window?.location.reload()
+                  const deleted = await deleteParticipantAccount.mutateAsync()
+
+                  if (!deleted) {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 5000 },
+                    })
+                    return
+                  }
+
+                  await logoutParticipant
+                    .mutateAsync()
+                    .catch((error) => console.error(error))
+                  sessionStorage.removeItem('participant_token')
+                  window?.location.reload()
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                }
               }}
               dataPrimaryAction={{ cy: 'delete-account-command' }}
               secondaryLabel={t('shared.generic.cancel')}
-              onSecondaryAction={() => setDeleteModalOpen(false)}
+              onSecondaryAction={closeDeletionModal}
               dataSecondaryAction={{ cy: 'cancel-delete-account' }}
               className={{ content: 'max-w-md' }}
             >

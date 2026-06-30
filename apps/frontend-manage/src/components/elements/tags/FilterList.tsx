@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import {
   faCheckCircle as faCheckCircleRegular,
   faCircleXmark,
@@ -29,18 +28,15 @@ import {
   faSquareCheck as faSquareCheckSolid,
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ElementStatus,
-  ElementType,
-  SharingType,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Accordion, Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ElementStatus, ElementType } from '../../../lib/constants/elementTypes'
+import { SharingType } from '../../../lib/constants/sharingEnums'
 import { LibraryFilters } from '../../../lib/hooks/useSortingAndFiltering'
+import { trpc } from '../../../lib/trpc'
 import FilterItem from './FilterItem'
 import FilterListEntry from './FilterListEntry'
 import SuspendedActivitySelection from './SuspendedActivitySelection'
@@ -110,9 +106,7 @@ function FilterList({
 }: FilterListProps): React.ReactElement {
   const t = useTranslations()
 
-  const { data: user } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
+  const { data: user } = trpc.user.profile.useQuery()
   const ELEMENT_TYPE_FILTERS: Record<
     ElementType,
     IconDefinition[] | undefined
@@ -205,7 +199,7 @@ function FilterList({
           })}
         </FilterListEntry>
 
-        {user?.userProfile?.privatePreview ? (
+        {user?.privatePreview ? (
           <FilterListEntry
             trigger={t('shared.generic.sharing')}
             value="sharing-types"

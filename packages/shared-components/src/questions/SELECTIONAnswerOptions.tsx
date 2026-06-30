@@ -1,9 +1,9 @@
-import type { SelectionElementOptions } from '@klicker-uzh/graphql/dist/ops'
 import { FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
+import type { SelectionElementOptions } from '../elementTypes'
 import type { SelectionStudentResponseType } from '../StudentElement'
 
 interface SELECTIONAnswerOptionsProps {

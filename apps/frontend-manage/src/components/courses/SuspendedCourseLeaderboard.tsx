@@ -1,17 +1,13 @@
-import { useMutation, useSuspenseQuery } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetCourseLeaderboardDocument,
-  UpdateWeeklyTimelineEntriesCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
-import { Button, ShadcnTableCell } from '@uzh-bf/design-system'
+import { Button, ShadcnTableCell, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../lib/trpc'
 
 dayjs.extend(customParseFormat)
 
@@ -33,25 +29,16 @@ function SuspendedCourseLeaderboard({
   customEndDate?: string
 }) {
   const t = useTranslations()
-  const { data, refetch } = useSuspenseQuery(GetCourseLeaderboardDocument, {
-    variables: {
-      courseId,
-      courseSelection: leaderboardType === 'course',
-      weeklySelection: leaderboardType === 'weekly',
-      rollingSelection:
-        leaderboardType === '7rolling' || leaderboardType === '14rolling',
-      customSelection: leaderboardType === 'custom',
-      startDate:
-        leaderboardType === 'weekly' ? weeklyStartDate : customStartDate,
-      endDate: customEndDate,
-      days: leaderboardType === '7rolling' ? 7 : 14,
-    },
+  const [data, { refetch }] = trpc.course.leaderboard.useSuspenseQuery({
+    courseId,
+    leaderboardType,
+    weeklyStartDate,
+    customStartDate,
+    customEndDate,
   })
-
-  const [updateWeeklyTimelineEntriesCourse, { loading: updateLoading }] =
-    useMutation(UpdateWeeklyTimelineEntriesCourseDocument, {
-      variables: { courseId },
-    })
+  const updateWeeklyTimelineEntriesCourse =
+    trpc.course.updateWeeklyTimelineEntries.useMutation()
+  const courseLeaderboard = data.courseLeaderboard
 
   const showLastUpdated =
     leaderboardType === '7rolling' ||
@@ -90,7 +77,7 @@ function SuspendedCourseLeaderboard({
           displayName: t('shared.leaderboard.points'),
         },
       ]}
-      data={data.getCourseLeaderboard?.leaderboard ?? []}
+      data={courseLeaderboard?.leaderboard ?? []}
       csvFilename={`${courseName.replace(' ', '-')}_course_leaderboard`}
       className={{
         tableHeader: 'h-7 p-2',
@@ -109,7 +96,7 @@ function SuspendedCourseLeaderboard({
                 {(leaderboardType === 'weekly' ||
                   leaderboardType === 'custom') && (
                   <div>
-                    {`${t('manage.course.lastModified')}: ${data.getCourseLeaderboard?.computedAt ? dayjs(data.getCourseLeaderboard?.computedAt).format('DD.MM.YYYY, HH:mm') : t('shared.generic.never')}`}
+                    {`${t('manage.course.lastModified')}: ${courseLeaderboard?.computedAt ? dayjs(courseLeaderboard?.computedAt).format('DD.MM.YYYY, HH:mm') : t('shared.generic.never')}`}
                   </div>
                 )}
                 {(leaderboardType === '7rolling' ||
@@ -117,39 +104,63 @@ function SuspendedCourseLeaderboard({
                   <div className="mb-0.5 flex flex-row items-center gap-1">
                     <FontAwesomeIcon icon={faClock} />
                     <span>
-                      {data.getCourseLeaderboard?.computedAt
-                        ? `${dayjs(data.getCourseLeaderboard.computedAt)
+                      {courseLeaderboard?.computedAt
+                        ? `${dayjs(courseLeaderboard.computedAt)
                             .subtract(
                               leaderboardType === '7rolling' ? 7 : 14,
                               'day'
                             )
                             .format(
                               'DD.MM.YYYY, HH:mm'
-                            )} - ${dayjs(data.getCourseLeaderboard.computedAt).format('DD.MM.YYYY, HH:mm')}`
+                            )} - ${dayjs(courseLeaderboard.computedAt).format('DD.MM.YYYY, HH:mm')}`
                         : t('shared.generic.never')}
                     </span>
                   </div>
                 )}
                 <Button
                   onClick={async () => {
-                    if (
-                      leaderboardType === 'weekly' ||
-                      leaderboardType === 'custom'
-                    ) {
-                      await updateWeeklyTimelineEntriesCourse()
-                    }
+                    try {
+                      if (
+                        leaderboardType === 'weekly' ||
+                        leaderboardType === 'custom'
+                      ) {
+                        const result =
+                          await updateWeeklyTimelineEntriesCourse.mutateAsync({
+                            courseId,
+                          })
 
-                    await refetch()
+                        if (!result.updateWeeklyTimelineEntriesCourse) {
+                          throw new Error(
+                            'Weekly timeline recomputation failed'
+                          )
+                        }
+
+                        await refetch()
+                        return
+                      }
+
+                      await refetch()
+                    } catch (error) {
+                      console.error(error)
+                      toast({
+                        type: 'error',
+                        message: t('shared.generic.systemError'),
+                        options: { duration: 5000 },
+                      })
+                    }
                   }}
                   className={{ root: 'h-6 w-max' }}
-                  disabled={updateLoading}
+                  disabled={updateWeeklyTimelineEntriesCourse.isLoading}
+                  loading={updateWeeklyTimelineEntriesCourse.isLoading}
                 >
                   <Button.Icon
                     icon={faSync}
                     className={{
                       root: twMerge(
                         'h-3.5 w-3.5',
-                        updateLoading ? 'animate-spin' : ''
+                        updateWeeklyTimelineEntriesCourse.isLoading
+                          ? 'animate-spin'
+                          : ''
                       ),
                     }}
                   />
@@ -161,16 +172,14 @@ function SuspendedCourseLeaderboard({
             <div>
               <div>
                 {t('manage.course.participantsLeaderboard', {
-                  number:
-                    data.getCourseLeaderboard?.numOfActiveParticipants ?? 0,
+                  number: courseLeaderboard?.numOfActiveParticipants ?? 0,
                 })}
                 /{numOfParticipants}
               </div>
               <div>
                 {t('manage.course.avgPoints', {
                   points:
-                    data.getCourseLeaderboard?.averageActiveScore?.toFixed(2) ??
-                    0,
+                    courseLeaderboard?.averageActiveScore?.toFixed(2) ?? 0,
                 })}
               </div>
             </div>

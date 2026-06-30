@@ -1,23 +1,16 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
+  faCheck,
   faExclamationCircle,
   faQuestion,
   faRankingStar,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementBlockStatus,
-  ElementType,
-  GetFeedbacksDocument,
-  GetRunningLiveQuizDocument,
-  SelfDocument,
-  SetLiveQuizPinDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { SetLiveQuizPinDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
-import { addApolloState, initializeApollo } from '@lib/apollo'
+import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import {
   Button,
   FormikAlphaNumericPinField,
@@ -25,6 +18,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -38,6 +32,11 @@ import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
 import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
+import {
+  ElementBlockStatus,
+  ElementType,
+  type StudentLiveQuizData,
+} from '../../components/liveQuiz/types'
 
 const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
@@ -63,7 +62,11 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
     credentials: 'include',
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type)) {
+  if (
+    type === ElementType.Sc ||
+    type === ElementType.Mc ||
+    type === ElementType.Kprim
+  ) {
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
@@ -73,10 +76,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         response: { choices: answer },
       }),
     }
-  } else if (
-    QUESTION_GROUPS.NUMERICAL.includes(type) ||
-    QUESTION_GROUPS.FREE_TEXT.includes(type)
-  ) {
+  } else if (type === ElementType.Numerical || type === ElementType.FreeText) {
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
@@ -142,6 +142,21 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
   }
 }
 
+function hasLiveQuizError(error: any, message: string) {
+  return (
+    error?.message === message ||
+    error?.graphQLErrors?.some((err: any) => err.message === message)
+  )
+}
+
+function hasLiveQuizPinError(error: any) {
+  return (
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING') ||
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT') ||
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_INVALID')
+  )
+}
+
 function Index({ id }: { id: string }) {
   const t = useTranslations()
   const router = useRouter()
@@ -155,13 +170,20 @@ function Index({ id }: { id: string }) {
   const [isDesktop, setIsDesktop] = useState<boolean>(false)
 
   const [setLiveQuizPin] = useMutation(SetLiveQuizPinDocument)
-  const { data, loading, error, subscribeToMore, refetch } = useQuery(
-    GetRunningLiveQuizDocument,
-    { variables: { id } }
+  const {
+    data,
+    isLoading: loading,
+    isFetching,
+    error,
+    refetch,
+  } = trpc.participant.runningLiveQuiz.useQuery(
+    { id },
+    {
+      retry: (failureCount, error) =>
+        hasLiveQuizPinError(error) ? false : failureCount < 3,
+    }
   )
-  const { data: selfData } = useQuery(SelfDocument, {
-    variables: { liveQuizId: id },
-  })
+  const { data: selfData } = trpc.participant.self.useQuery({ liveQuizId: id })
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
   useEffect(() => {
@@ -256,26 +278,22 @@ function Index({ id }: { id: string }) {
     }
   }, [data?.studentLiveQuiz])
 
-  if (loading) {
-    return (
-      <Layout>
-        <Loader />
-      </Layout>
-    )
-  }
-
   // pin error handling
   const isPinMissing =
-    error?.graphQLErrors?.some(
-      (e) =>
-        e.message === 'LIVE_QUIZ_PIN_MISSING' ||
-        e.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
-    ) ||
-    error?.message === 'LIVE_QUIZ_PIN_MISSING' ||
-    error?.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
-  const isPinInvalid =
-    error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_INVALID') ||
-    error?.message === 'LIVE_QUIZ_PIN_INVALID'
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING') ||
+    hasLiveQuizError(error, 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT')
+  const isPinInvalid = hasLiveQuizError(error, 'LIVE_QUIZ_PIN_INVALID')
+  const handleLiveQuizRetry = async () => {
+    try {
+      await refetch({ throwOnError: true })
+    } catch (error) {
+      console.error('Error refreshing live quiz session:', error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+      })
+    }
+  }
 
   if (isPinMissing || isPinInvalid) {
     return (
@@ -300,13 +318,34 @@ function Index({ id }: { id: string }) {
             onSubmit={async (values, { setSubmitting }) => {
               try {
                 await setLiveQuizPin({
-                  variables: { liveQuizId: id, pin: values.pin },
+                  variables: {
+                    liveQuizId: id,
+                    pin: values.pin,
+                  },
                 })
-                await refetch()
-              } catch (e: any) {
-                // show toast on invalid pin
-                const msg = t('pwa.liveQuiz.invalidPin')
-                toast({ type: 'error', message: msg })
+
+                try {
+                  await refetch({ throwOnError: true })
+                } catch (error) {
+                  console.error(
+                    'Error loading live quiz after PIN entry:',
+                    error
+                  )
+                  toast({
+                    type: 'error',
+                    message: hasLiveQuizPinError(error)
+                      ? t('pwa.liveQuiz.invalidPin')
+                      : t('shared.generic.systemError'),
+                  })
+                }
+              } catch (error) {
+                console.error('Error setting live quiz PIN:', error)
+                toast({
+                  type: 'error',
+                  message: hasLiveQuizPinError(error)
+                    ? t('pwa.liveQuiz.invalidPin')
+                    : t('shared.generic.systemError'),
+                })
               } finally {
                 setSubmitting(false)
               }
@@ -331,11 +370,41 @@ function Index({ id }: { id: string }) {
                   className={{ root: 'w-full' }}
                   data={{ cy: 'live-quiz-submit-pin' }}
                 >
+                  <Button.Icon icon={faCheck} loading={isSubmitting} />
                   <Button.Label>{t('pwa.liveQuiz.submitPin')}</Button.Label>
                 </Button>
               </Form>
             )}
           </Formik>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (loading) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
+
+  if (error && !data?.studentLiveQuiz) {
+    return (
+      <Layout>
+        <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+          <Button
+            onClick={() => void handleLiveQuizRetry()}
+            className={{ root: 'h-8' }}
+            disabled={isFetching}
+          >
+            <Button.Icon icon={faArrowsRotate} loading={isFetching} />
+            <Button.Label>{t('pwa.liveQuiz.refreshPage')}</Button.Label>
+          </Button>
         </div>
       </Layout>
     )
@@ -381,6 +450,8 @@ function Index({ id }: { id: string }) {
   const leaderboardAvailable = !!selfData?.self && !!isGamificationEnabled
   const hasQuestionPanel = !!(blocks && blocks.length > 0)
   const hasSidebarPanel = feedbackAvailable || leaderboardAvailable
+  const questionBlocks = blocks as StudentLiveQuizData['blocks']
+  const questionActiveBlock = activeBlock as StudentLiveQuizData['activeBlock']
 
   const mobileMenuItems: {
     value: string
@@ -431,8 +502,8 @@ function Index({ id }: { id: string }) {
     return (
       <LiveQuizQuestionColumn
         quizId={id}
-        blocks={blocks}
-        activeBlock={activeBlock}
+        blocks={questionBlocks}
+        activeBlock={questionActiveBlock}
         beforeFirstBlock={beforeFirstBlock}
         displayName={displayName}
         description={description}
@@ -484,13 +555,20 @@ function Index({ id }: { id: string }) {
       liveQuizId={id}
       className={{ body: 'p-0 px-4 pb-4' }}
     >
-      <LiveQuizSubscriber id={id} subscribeToMore={subscribeToMore} />
+      <LiveQuizSubscriber id={id} onChanged={refetch} />
       <DynamicAccountSelector
         isGamificationEnabled={isGamificationEnabled}
         quizId={id}
       />
 
       <div className="md:mx-auto md:w-full md:max-w-[88rem] md:pt-5">
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
         {isDesktop ? (
           hasQuestionPanel && hasSidebarPanel ? (
             <ResizablePanelGroup
@@ -540,29 +618,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  const apolloClient = initializeApollo()
+  const authorizationHeader = ctx.req.cookies?.[
+    'next-auth.participant-session-token'
+  ]
+    ? {
+        authorization: `Bearer ${
+          ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''
+        }`,
+      }
+    : undefined
+  const trpcClient = createTRPCSSRClient(ctx, authorizationHeader)
+  let liveQuiz: RouterOutputs['participant']['runningLiveQuiz'] | null = null
 
-  let liveQuiz = null
   try {
-    liveQuiz = await apolloClient.query({
-      query: GetRunningLiveQuizDocument,
-      variables: { id: ctx.query?.id as string },
-      context: {
-        headers: {
-          authorization: ctx.req.cookies?.[
-            'next-auth.participant-session-token'
-          ]
-            ? `Bearer ${ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''}`
-            : undefined,
-        },
-      },
+    liveQuiz = await trpcClient.participant.runningLiveQuiz.query({
+      id: ctx.params.id,
     })
   } catch (e: any) {
     // if the user is requesting an assessment quiz from the PWA domain, redirect them to the assessment domain
     if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
-      ) &&
+      hasLiveQuizError(e, 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT') &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -578,9 +653,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // if the user is requesting a standard PWA quiz with PIN protection from the assessment domain, redirect them to the PWA domain
     if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING'
-      ) &&
+      hasLiveQuizError(e, 'LIVE_QUIZ_PIN_MISSING') &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -595,11 +668,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     // if the user is requesting access to an assessment live quiz and is not authenticated, redirect to the assessment login
-    if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'UNAUTHORIZED_ASSESSMENT'
-      )
-    ) {
+    if (hasLiveQuizError(e, 'UNAUTHORIZED_ASSESSMENT')) {
       return {
         redirect: {
           destination: `${
@@ -615,11 +684,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     // if the user does not have a valid participation in the requested live quiz, redirect to the assessment home page with a warning toast
-    if (
-      e.graphQLErrors?.some(
-        (err: any) => err.message === 'MISSING_ASSESSMENT_COURSE_PARTICIPATION'
-      )
-    ) {
+    if (hasLiveQuizError(e, 'MISSING_ASSESSMENT_COURSE_PARTICIPATION')) {
       return {
         redirect: {
           destination: `${
@@ -635,9 +700,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // if the fetch was successful, redirect based on the assessment boolean
   // -> if student entered valid PIN for an assessment quiz and then visits quiz through PWA domain (or vice-versa)
-  if (liveQuiz?.data.studentLiveQuiz) {
+  if (liveQuiz?.studentLiveQuiz) {
     if (
-      liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      liveQuiz.studentLiveQuiz.isAssessmentEnabled &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -652,7 +717,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     if (
-      !liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      !liveQuiz.studentLiveQuiz.isAssessmentEnabled &&
       ctx.req.headers.host &&
       !process.env.APP_ORIGIN_PWA!.includes(ctx.req.headers.host)
     ) {
@@ -667,21 +732,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  await apolloClient.query({
-    query: GetFeedbacksDocument,
-    variables: {
-      quizId: ctx.query?.id as string,
-      skip: !ctx.query?.id,
-    },
-  })
-
-  return addApolloState(apolloClient, {
+  return {
     props: {
       id: ctx.params.id,
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
-  })
+  }
 }
 
 export default Index

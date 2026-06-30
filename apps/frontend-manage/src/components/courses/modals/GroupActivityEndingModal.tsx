@@ -1,12 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  EndGroupActivityDocument,
-  GetGroupActivitySummaryDocument,
-  GetSingleCourseDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -22,54 +18,13 @@ function GroupActivityEndingModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetGroupActivitySummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
-
-  const [endGroupActivity, { loading: endingGroupActivity }] = useMutation(
-    EndGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        endGroupActivity: {
-          id: activityId,
-          status: PublicationStatus.Ended,
-          scheduledEndAt: new Date(),
-          __typename: 'GroupActivity',
-        },
-      },
-      update(cache, { data }) {
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            const endedGa = data?.endGroupActivity
-            if (!qData?.course?.groupActivitiesInfo || !endedGa) return qData
-
-            return {
-              course: {
-                ...qData.course,
-                groupActivitiesInfo: qData.course.groupActivitiesInfo.map(
-                  (groupActivity) =>
-                    groupActivity.id === endedGa.id
-                      ? {
-                          ...groupActivity,
-                          scheduledEndAt: endedGa.scheduledEndAt,
-                          status: endedGa.status,
-                        }
-                      : groupActivity
-                ),
-              },
-            }
-          }
-        )
-      },
-    }
-  )
+  const utils = trpc.useUtils()
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.groupActivitySummary.useQuery({ activityId })
+  const endActivity = trpc.activity.end.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     startedInstances: false,
@@ -77,17 +32,38 @@ function GroupActivityEndingModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getGroupActivitySummary) {
+    if (summaryData?.groupActivitySummary) {
       setConfirmations({
         startedInstances:
-          summaryData?.getGroupActivitySummary.numOfStartedInstances === 0,
+          summaryData.groupActivitySummary.numOfStartedInstances === 0,
         submissions: true,
       })
     }
-  }, [summaryData?.getGroupActivitySummary])
+  }, [summaryData?.groupActivitySummary])
 
-  if (!summaryData?.getGroupActivitySummary) return null
-  const summary = summaryData.getGroupActivitySummary
+  const summary = summaryData?.groupActivitySummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.course.endGroupActivity')}
+        message={t('manage.course.endGroupActivityMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="confirm"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
   return (
     <ActivityConfirmationModal
@@ -95,10 +71,20 @@ function GroupActivityEndingModal({
       title={t('manage.course.endGroupActivity')}
       message={t('manage.course.endGroupActivityMessage')}
       onSubmit={async () => {
-        await endGroupActivity()
-        await refetchActivities?.()
+        const result = await endActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        })
+        if (!result.endActivity?.id) {
+          throw new Error('Failed to end group activity')
+        }
+
+        await Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ])
       }}
-      submitting={endingGroupActivity}
+      submitting={endActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="confirm"

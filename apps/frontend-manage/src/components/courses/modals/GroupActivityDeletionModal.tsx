@@ -1,11 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  DeleteGroupActivityDocument,
-  GetGroupActivitySummaryDocument,
-  GetSingleCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType } from '@klicker-uzh/types'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -21,45 +18,13 @@ function GroupActivityDeletionModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
-  const { data: summaryData, loading: summaryLoading } = useQuery(
-    GetGroupActivitySummaryDocument,
-    {
-      variables: { id: activityId },
-      skip: !open,
-    }
-  )
-
-  const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
-    DeleteGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      update: (cache, { data: res }) => {
-        // if the group activity is not part of a course or the mutation was not successful, return early
-        if (!res?.deleteGroupActivity?.id) return
-
-        // change the status of the group activity on the course overview back to draft
-        cache.updateQuery(
-          {
-            query: GetSingleCourseDocument,
-            variables: { courseId },
-          },
-          (data) => {
-            if (!data?.course) return data
-
-            return {
-              course: {
-                ...data.course,
-                groupActivitiesInfo:
-                  data.course.groupActivitiesInfo?.filter(
-                    (ga) => ga.id !== res.deleteGroupActivity!.id
-                  ) ?? [],
-              },
-            }
-          }
-        )
-      },
-    }
-  )
+  const utils = trpc.useUtils()
+  const {
+    data: summaryData,
+    error: summaryError,
+    isLoading: summaryLoading,
+  } = trpc.activity.groupActivitySummary.useQuery({ activityId })
+  const deleteActivity = trpc.activity.delete.useMutation()
 
   const [confirmations, setConfirmations] = useState({
     deleteStartedInstances: false,
@@ -67,19 +32,42 @@ function GroupActivityDeletionModal({
   })
 
   useEffect(() => {
-    if (summaryData?.getGroupActivitySummary) {
+    if (summaryData?.groupActivitySummary) {
       setConfirmations({
         deleteStartedInstances:
-          summaryData?.getGroupActivitySummary.numOfStartedInstances === 0,
+          summaryData.groupActivitySummary.numOfStartedInstances === 0,
         deleteSubmissions:
-          summaryData.getGroupActivitySummary.numOfSubmissions === 0,
+          summaryData.groupActivitySummary.numOfSubmissions === 0,
       })
     }
-  }, [summaryData?.getGroupActivitySummary])
+  }, [summaryData?.groupActivitySummary])
 
-  if (!summaryData?.getGroupActivitySummary) return null
+  const summary = summaryData?.groupActivitySummary
+  if (!summary) {
+    return (
+      <ActivityConfirmationModal
+        onClose={onClose}
+        title={t('manage.course.deleteGroupActivity')}
+        message={t('manage.course.deleteGroupActivityMessage')}
+        loading={summaryLoading}
+        onSubmit={async () => undefined}
+        submitting={false}
+        confirmations={{ summaryLoaded: false }}
+        confirmationsInitializing={summaryLoading}
+        confirmationType="delete"
+      >
+        {!summaryLoading || summaryError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+      </ActivityConfirmationModal>
+    )
+  }
 
-  const summary = summaryData.getGroupActivitySummary
+  const confirmationData = (count: number, cy: string) =>
+    count > 0 ? { cy } : undefined
 
   return (
     <ActivityConfirmationModal
@@ -87,10 +75,20 @@ function GroupActivityDeletionModal({
       title={t('manage.course.deleteGroupActivity')}
       message={t('manage.course.deleteGroupActivityMessage')}
       onSubmit={async () => {
-        await deleteGroupActivity()
-        await refetchActivities?.()
+        const result = await deleteActivity.mutateAsync({
+          activityId,
+          activityType: ActivityType.GROUP_ACTIVITY,
+        })
+        if (!result.deleteActivity?.id) {
+          throw new Error('Failed to delete group activity')
+        }
+
+        await Promise.all([
+          utils.course.detail.invalidate({ courseId }),
+          refetchActivities?.(),
+        ])
       }}
-      submitting={deletingGroupActivity}
+      submitting={deleteActivity.isLoading}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"
@@ -113,7 +111,10 @@ function GroupActivityDeletionModal({
           confirmed={confirmations.deleteStartedInstances}
           notApplicable={summary.numOfStartedInstances === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-started-instances' }}
+          data={confirmationData(
+            summary.numOfStartedInstances,
+            'confirm-deletion-started-instances'
+          )}
         />
         <ConfirmationItem
           label={
@@ -132,7 +133,10 @@ function GroupActivityDeletionModal({
           confirmed={confirmations.deleteSubmissions}
           notApplicable={summary.numOfSubmissions === 0}
           confirmationType="delete"
-          data={{ cy: 'confirm-deletion-submissions' }}
+          data={confirmationData(
+            summary.numOfSubmissions,
+            'confirm-deletion-submissions'
+          )}
         />
       </div>
     </ActivityConfirmationModal>

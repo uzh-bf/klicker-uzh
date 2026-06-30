@@ -1,6 +1,6 @@
-import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
+import { PointCorrectionType } from '../../../lib/assessmentResultsTypes'
 import type { PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsSummaryStep({

@@ -1,16 +1,17 @@
-import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetSingleCourseDocument,
-  GetUserActivitiesDocument,
-  ScheduleLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
+  Button,
+  FormikDatetimePicker,
+  Modal,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 function LiveQuizSchedulingModal({
   activityId,
@@ -26,9 +27,15 @@ function LiveQuizSchedulingModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [scheduleLiveQuiz, { loading: liveQuizScheduling }] = useMutation(
-    ScheduleLiveQuizDocument
-  )
+  const utils = trpc.useUtils()
+  const scheduleLiveQuiz = trpc.activity.scheduleLiveQuiz.useMutation()
+  const [scheduleSubmitting, setScheduleSubmitting] = useState(false)
+  const scheduling = scheduleLiveQuiz.isLoading || scheduleSubmitting
+  const handleClose = () => {
+    if (!scheduling) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
@@ -39,7 +46,7 @@ function LiveQuizSchedulingModal({
           {t('manage.liveQuizzes.scheduleLiveQuiz')}: {title}
         </div>
       }
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'max-w-xl pb-2 text-base' }}
       dataCloseButton={{ cy: 'cancel-live-quiz-scheduling' }}
     >
@@ -51,21 +58,36 @@ function LiveQuizSchedulingModal({
         initialValues={{ availableFrom: undefined }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
-          await scheduleLiveQuiz({
-            variables: {
-              id: activityId,
-              availableFrom: dayjs(values.availableFrom).utc().format(),
-            },
-            // TODO: replace with cache update
-            refetchQueries: [
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId },
-              },
-              { query: GetUserActivitiesDocument },
-            ],
-          })
-          onClose()
+          setScheduleSubmitting(true)
+          try {
+            const result = await scheduleLiveQuiz.mutateAsync({
+              activityId,
+              availableFrom: dayjs(values.availableFrom).utc().toDate(),
+            })
+            if (result.scheduleLiveQuiz?.id) {
+              await Promise.all([
+                utils.activity.userActivities.invalidate(),
+                courseId
+                  ? utils.course.detail.invalidate({ courseId })
+                  : Promise.resolve(),
+              ])
+              onClose()
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+            })
+          } finally {
+            setSubmitting(false)
+            setScheduleSubmitting(false)
+          }
         }}
         validationSchema={yup.object().shape({
           availableFrom: yup
@@ -80,7 +102,7 @@ function LiveQuizSchedulingModal({
             ),
         })}
       >
-        {({ isValid }) => {
+        {({ isValid, isSubmitting }) => {
           return (
             <Form className="flex flex-row items-end justify-between">
               <FormikDatetimePicker
@@ -102,11 +124,14 @@ function LiveQuizSchedulingModal({
               <Button
                 primary
                 type="submit"
-                loading={liveQuizScheduling}
-                disabled={!isValid}
+                loading={isSubmitting || scheduling}
+                disabled={!isValid || isSubmitting || scheduling}
                 data={{ cy: 'schedule-live-quiz-publication' }}
               >
-                <Button.Icon icon={faClock} loading={liveQuizScheduling} />
+                <Button.Icon
+                  icon={faClock}
+                  loading={isSubmitting || scheduling}
+                />
                 <Button.Label>
                   {t('manage.course.confirmScheduling')}
                 </Button.Label>

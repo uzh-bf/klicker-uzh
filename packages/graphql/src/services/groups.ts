@@ -1,3 +1,8 @@
+import {
+  publishGroupActivityEnded,
+  publishGroupActivityStarted,
+  publishSingleGroupActivityEnded,
+} from '@klicker-uzh/api'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -1708,7 +1713,7 @@ export async function openGroupActivity(
   })
 
   // trigger subscription to immediately update student frontend
-  ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
+  publishGroupActivityStarted(ctx.pubSub, updatedGroupActivity)
   return updatedGroupActivity
 }
 
@@ -1803,8 +1808,8 @@ export async function endGroupActivity(
   })
 
   // trigger subscription to immediately update student frontend
-  ctx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
-  ctx.pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
+  publishGroupActivityEnded(ctx.pubSub, updatedGroupActivity)
+  publishSingleGroupActivityEnded(ctx.pubSub, updatedGroupActivity)
 
   return updatedGroupActivity
 }
@@ -2527,8 +2532,8 @@ export const handleEndExpiredGroupActivity: HatchetHandlers['handleEndExpiredGro
       })
 
       // publish the event to subscribers
-      globalCtx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
-      globalCtx.pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
+      publishGroupActivityEnded(globalCtx.pubSub, updatedGroupActivity)
+      publishSingleGroupActivityEnded(globalCtx.pubSub, updatedGroupActivity)
       globalCtx.emitter.emit('invalidate', {
         typename: 'GroupActivity',
         id: updatedGroupActivity.id,

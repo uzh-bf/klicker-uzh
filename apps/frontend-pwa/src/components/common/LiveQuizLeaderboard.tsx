@@ -1,11 +1,6 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  GetLiveQuizLeaderboardDocument,
-  LogoutParticipantDocument,
-  SelfDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2, UserNotification } from '@uzh-bf/design-system'
+import { trpc } from '@lib/trpc'
+import { H2, UserNotification, toast } from '@uzh-bf/design-system'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
@@ -43,30 +38,36 @@ function LiveQuizLeaderboard({
   const t = useTranslations()
   const router = useRouter()
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
+  const logoutParticipant = trpc.participant.logout.useMutation()
+  const logoutLoading = logoutParticipant.isLoading
 
-  const { data: selfData } = useQuery(SelfDocument, {
-    variables: { liveQuizId: quizId },
-    fetchPolicy: 'cache-only',
+  const { data: selfData, error: selfError } = trpc.participant.self.useQuery({
+    liveQuizId: quizId,
   })
+  const self = selfData?.self ?? null
 
-  const { data, loading } = useQuery(GetLiveQuizLeaderboardDocument, {
-    variables: { quizId },
-    // use network-only to trigger a refetch once the component is displayed
-    // TODO: replace this by a send of the leaderboard within the subscription
-    // TODO: otherwise, this could overload the server if 1000 simultaneous users are on the leaderboard
-    fetchPolicy: 'network-only',
-  })
+  const {
+    data: leaderboardData,
+    isLoading,
+    error: leaderboardError,
+  } = trpc.participant.liveQuizLeaderboard.useQuery(
+    { quizId },
+    {
+      refetchOnMount: 'always',
+    }
+  )
 
-  // logout mutation in case user decides not to participate in gamification
-  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
+  // use a fresh request once the component is displayed
+  // TODO: replace this by a send of the leaderboard within the subscription
+  // TODO: otherwise, this could overload the server if 1000 simultaneous users are on the leaderboard
 
   // save the current leaderboard to local storage
   useEffect(() => {
     const asyncFunc = async () => {
-      const leaderboard = data?.liveQuizLeaderboard
+      const leaderboard = leaderboardData ?? []
 
       const selfEntry = leaderboard?.find(
-        (entry) => entry.participantId === selfData?.self?.id
+        (entry) => entry.participantId === self?.id
       )
 
       if (selfEntry) {
@@ -96,13 +97,61 @@ function LiveQuizLeaderboard({
     }
 
     asyncFunc()
-  }, [data, selfData?.self?.id])
+  }, [leaderboardData, self?.id])
 
-  if (loading || !data) {
+  const handleLogout = async () => {
+    if (logoutLoading) return
+
+    try {
+      const loggedOut = await logoutParticipant.mutateAsync()
+      if (!loggedOut) {
+        throw new Error('Logout failed')
+      }
+
+      sessionStorage.removeItem('participant_token')
+      router.reload()
+    } catch (error) {
+      console.error(error)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    }
+  }
+
+  const renderLogoutLink = (text: React.ReactNode) => (
+    <button
+      type="button"
+      disabled={logoutLoading}
+      onClick={handleLogout}
+      className={twMerge(
+        'inline appearance-none border-0 bg-transparent p-0 text-inherit underline',
+        logoutLoading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+      )}
+    >
+      {text}
+    </button>
+  )
+
+  if (isLoading && typeof leaderboardData === 'undefined') {
     return <Loader />
   }
 
-  const leaderboard = data.liveQuizLeaderboard ?? []
+  if (leaderboardError && typeof leaderboardData === 'undefined') {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+      />
+    )
+  }
+
+  if (typeof leaderboardData === 'undefined') {
+    return <Loader />
+  }
+
+  const leaderboard = leaderboardData ?? []
   return (
     <div
       className={twMerge(
@@ -111,11 +160,25 @@ function LiveQuizLeaderboard({
       )}
     >
       <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
+      {selfError && !selfData ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'w-200 max-w-full md:text-base' }}
+        />
+      ) : null}
+      {leaderboardError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'w-200 max-w-full md:text-base' }}
+        />
+      ) : null}
       <div className="w-200 max-w-full">
         {leaderboard.length && leaderboard.length > 0 ? (
           <Leaderboard
             leaderboard={leaderboard ?? []}
-            participant={selfData?.self}
+            participant={self}
             podiumImgSrc={{
               rank1: Rank1Img,
               rank2: Rank2Img,
@@ -134,8 +197,8 @@ function LiveQuizLeaderboard({
 
       {/* live quiz is not part of gamified course, but still gamified, 
       participant is logged in with standard account, participation not relevant */}
-      {selfData?.self?.id &&
-      !selfData.self.scopeQuizId && // regular user login
+      {self?.id &&
+      !self.scopeQuizId && // regular user login
       showLeaderboardGamifiedQuizHint &&
       !isPartOfGamifiedCourse &&
       isBeforeFirstBlock ? (
@@ -147,25 +210,15 @@ function LiveQuizLeaderboard({
           {isAssessmentEnabled
             ? t('shared.leaderboard.liveQuizGamifiedAssessment')
             : t.rich('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse', {
-                logout: (text) => (
-                  <span
-                    onClick={async () => {
-                      await logoutParticipant()
-                      router.reload()
-                    }}
-                    className="cursor-pointer underline"
-                  >
-                    {text}
-                  </span>
-                ),
+                logout: renderLogoutLink,
               })}
         </UserNotification>
       ) : null}
 
       {/* live quiz is part of gamified course, but user has no participation in course */}
-      {selfData?.self?.id &&
-      !selfData.self.scopeQuizId && // regular user login
-      !selfData.self.isCourseParticipant && // user is not a participant in the course
+      {self?.id &&
+      !self.scopeQuizId && // regular user login
+      !self.isCourseParticipant && // user is not a participant in the course
       showLeaderboardGamifiedQuizHint &&
       isPartOfGamifiedCourse &&
       isBeforeFirstBlock ? (
@@ -181,27 +234,17 @@ function LiveQuizLeaderboard({
             : t.rich(
                 'shared.leaderboard.liveQuizGamifiedCourseNoParticipation',
                 {
-                  logout: (text) => (
-                    <span
-                      onClick={async () => {
-                        await logoutParticipant()
-                        router.reload()
-                      }}
-                      className="cursor-pointer underline"
-                    >
-                      {text}
-                    </span>
-                  ),
+                  logout: renderLogoutLink,
                 }
               )}
         </UserNotification>
       ) : null}
 
       {/* live quiz is part of gamified course, but user has an inactive participation in course */}
-      {selfData?.self?.id &&
-      !selfData.self.scopeQuizId && // regular user login
-      selfData.self.isCourseParticipant && // user is a participant of the course
-      selfData.self.isCourseParticipationActive === false && // but participation is inactive
+      {self?.id &&
+      !self.scopeQuizId && // regular user login
+      self.isCourseParticipant && // user is a participant of the course
+      self.isCourseParticipationActive === false && // but participation is inactive
       showLeaderboardGamifiedQuizHint &&
       isPartOfGamifiedCourse &&
       isBeforeFirstBlock ? (

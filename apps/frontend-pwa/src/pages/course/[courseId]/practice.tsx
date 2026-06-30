@@ -1,8 +1,6 @@
-import { useQuery } from '@apollo/client'
-import { GetCoursePracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { trpc } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -29,18 +27,28 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
     cookiesAvailable,
   })
 
-  const { loading, error, data } = useQuery(GetCoursePracticeQuizDocument, {
-    variables: { courseId },
-  })
+  const { data, error, isLoading } =
+    trpc.participant.coursePracticeQuiz.useQuery({ courseId })
 
-  if (loading)
+  if (isLoading && !data)
     return (
       <Layout>
         <Loader />
       </Layout>
     )
 
-  if (!data?.coursePracticeQuiz) {
+  if (error && !data?.practiceQuiz) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!data?.practiceQuiz) {
     return (
       <Layout>
         <UserNotification
@@ -49,9 +57,6 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
         />
       </Layout>
     )
-  }
-  if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
   const handleNextQuestion = () => {
@@ -62,15 +67,22 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
   return (
     <Layout
       displayName={t('shared.generic.practiceTitle')}
-      course={data.coursePracticeQuiz.course ?? undefined}
+      course={data.practiceQuiz.course ?? undefined}
     >
+      {error && data.practiceQuiz ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <PracticeQuiz
         quiz={{
-          ...data?.coursePracticeQuiz,
+          ...data.practiceQuiz,
           description: t('pwa.courses.coursePracticeArea', {
-            courseName: data?.coursePracticeQuiz.course?.displayName ?? 0,
+            courseName: data.practiceQuiz.course.displayName,
           }),
-          course: data?.coursePracticeQuiz.course!,
+          course: data.practiceQuiz.course,
         }}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
@@ -94,9 +106,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
@@ -113,13 +123,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on practice:', error)
 

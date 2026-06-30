@@ -1,5 +1,5 @@
-import { ElementData } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import { ElementData } from '../../../lib/constants/elementTypes'
 import StudentElementPreviewWrapper from './StudentElementPreviewWrapper'
 import { ElementFormTypes } from './types'
 import useArtificialElementInstance from './useArtificialElementInstance'

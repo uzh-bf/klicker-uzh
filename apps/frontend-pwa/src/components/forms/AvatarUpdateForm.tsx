@@ -1,11 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  Participant,
-  SelfDocument,
-  UpdateParticipantAvatarDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { AvatarOptions } from '@klicker-uzh/shared-components/src/constants'
 import {
   AvatarAccessoryTypes,
@@ -19,21 +13,38 @@ import {
   AvatarMouthTypes,
   AvatarSkinToneTypes,
 } from '@klicker-uzh/types'
+import { trpc } from '@lib/trpc'
 import { Button, FormikSelectField, H3 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import hash from 'object-hash'
 import { pick } from 'remeda'
 
+type AvatarSettings = {
+  skinTone: string
+  eyes: string
+  mouth: string
+  hair: string
+  facialHair: string
+  accessory: string
+  hairColor: string
+  clothing: string
+  clothingColor: string
+}
+
+type AvatarUser = {
+  avatarSettings?: AvatarSettings | null
+}
+
 interface AvatarUpdateFormProps {
-  user: Partial<Participant>
+  user: AvatarUser
   onError: () => void
-  onSuccess: () => void
+  onSuccess: () => void | Promise<void>
 }
 
 function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
   const t = useTranslations()
-  const [updateParticipantAvatar] = useMutation(UpdateParticipantAvatarDocument)
+  const updateParticipantAvatar = trpc.participant.updateAvatar.useMutation()
 
   return (
     <Formik
@@ -74,8 +85,8 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
 
         const avatarHash = hash(definition)
 
-        const result = await updateParticipantAvatar({
-          variables: {
+        try {
+          const result = await updateParticipantAvatar.mutateAsync({
             avatar: avatarHash,
             avatarSettings: pick(definition, [
               'skinTone',
@@ -88,30 +99,17 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
               'hairColor',
               'facialHair',
             ]),
-          },
-          update: (cache, { data }) => {
-            // verify that the avatar update succeeded
-            if (!data?.updateParticipantAvatar) return
+          })
 
-            // update the avatar of the user across the app
-            cache.updateQuery({ query: SelfDocument }, (qData) => {
-              if (!qData?.self) return qData
-
-              return {
-                self: {
-                  ...qData.self,
-                  avatar: data.updateParticipantAvatar!.avatar,
-                  avatarSettings: data.updateParticipantAvatar!.avatarSettings,
-                },
-              }
-            })
-          },
-        })
-
-        if (result.data?.updateParticipantAvatar && !result.errors) {
-          onSuccess()
-        } else {
+          if (result) {
+            await onSuccess()
+          } else {
+            onError()
+          }
+        } catch {
           onError()
+        } finally {
+          setSubmitting(false)
         }
       }}
     >
@@ -182,7 +180,7 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
                     fluid
                     type="submit"
                     loading={isSubmitting}
-                    disabled={!isValid}
+                    disabled={isSubmitting || !isValid}
                     className={{ root: 'border-primary-100 mt-3 h-8' }}
                     data={{ cy: 'save-avatar-update' }}
                   >

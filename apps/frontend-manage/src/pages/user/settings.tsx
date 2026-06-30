@@ -1,7 +1,5 @@
-import { useQuery } from '@apollo/client'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
@@ -10,28 +8,51 @@ import DelegatedAccessSettings from '../../components/user/DelegatedAccessSettin
 import EmailSetting from '../../components/user/EmailSetting'
 import LanguageSetting from '../../components/user/LanguageSetting'
 import ShortnameSetting from '../../components/user/ShortnameSetting'
+import { trpc } from '../../lib/trpc'
 
 function Settings() {
   const t = useTranslations()
-  const { data: user } = useQuery(UserProfileDocument)
+  const { data: user, error, isLoading } = trpc.user.profile.useQuery()
 
-  if (!user?.userProfile) {
-    return <Loader />
+  if (isLoading && !user) {
+    return (
+      <Layout displayName={t('shared.generic.settings')}>
+        <Loader />
+      </Layout>
+    )
+  }
+
+  if (!user) {
+    return (
+      <Layout displayName={t('shared.generic.settings')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
   }
 
   return (
     <Layout displayName={t('shared.generic.settings')}>
       <div className="border-uzh-grey-100 w-184 mx-auto flex max-w-full flex-col rounded border border-solid p-4">
         <H2>{t('manage.settings.userSettings')}</H2>
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-2 py-1' }}
+          />
+        ) : null}
         <div className="mb-1">
-          {`${t('manage.settings.storedEmail')}: ${user.userProfile.email}`}
+          {`${t('manage.settings.storedEmail')}: ${user.email}`}
         </div>
-        <ShortnameSetting user={user.userProfile} />
-        <LanguageSetting user={user.userProfile} />
-        <EmailSetting user={user.userProfile} />
+        <ShortnameSetting user={user} />
+        <LanguageSetting user={user} />
+        <EmailSetting user={user} />
 
         <Suspense fallback={<Loader />}>
-          <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />
+          <DelegatedAccessSettings shortname={user.shortname} />
         </Suspense>
       </div>
     </Layout>

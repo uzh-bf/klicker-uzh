@@ -8,17 +8,23 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Button, StepItem, StepProgress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
+type StackFeedbackStatus =
+  | 'correct'
+  | 'incorrect'
+  | 'manuallyGraded'
+  | 'partial'
+  | 'unanswered'
+
 const ICON_MAP: Record<StackFeedbackStatus, IconDefinition> = {
-  [StackFeedbackStatus.ManuallyGraded]: faCheck,
-  [StackFeedbackStatus.Correct]: faCheckDouble,
-  [StackFeedbackStatus.Incorrect]: faX,
-  [StackFeedbackStatus.Partial]: faCheck,
-  [StackFeedbackStatus.Unanswered]: faInbox,
+  manuallyGraded: faCheck,
+  correct: faCheckDouble,
+  incorrect: faX,
+  partial: faCheck,
+  unanswered: faInbox,
 }
 
 interface StepProgressWithScoringProps {

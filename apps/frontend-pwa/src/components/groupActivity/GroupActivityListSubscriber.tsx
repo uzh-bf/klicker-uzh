@@ -1,40 +1,36 @@
-import { SubscribeToMoreOptions } from '@apollo/client'
-import {
-  GroupActivity,
-  GroupActivityEndedDocument,
-  GroupActivityStartedDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { api } from '@lib/trpc'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface GroupActivityListSubscriberProps {
   courseId: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onChanged?: () => void | Promise<void>
 }
 
 function GroupActivityListSubscriber({
   courseId,
-  subscribeToMore,
+  onChanged,
 }: GroupActivityListSubscriberProps) {
   const t = useTranslations()
+  const onChangedRef = useRef(onChanged)
+  const handledEndedActivityIdsRef = useRef<Set<string>>(new Set())
+  const handledStartedActivityIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    subscribeToMore({
-      document: GroupActivityEndedDocument,
-      variables: { courseId },
-      updateQuery: (
-        prev: { groupActivities: GroupActivity[] },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: { data: { groupActivityEnded: GroupActivity } }
-        }
-      ): { groupActivities: GroupActivity[] } => {
-        if (!subscriptionData.data) return prev
+    onChangedRef.current = onChanged
+  }, [onChanged])
 
-        // trigger toast for ended group activity
-        const updatedActivity = subscriptionData.data.groupActivityEnded
+  api.realtime.groupActivityEnded.useSubscription(
+    { courseId },
+    {
+      onData(updatedActivity) {
+        if (handledEndedActivityIdsRef.current.has(updatedActivity.id)) {
+          return
+        }
+
+        handledEndedActivityIdsRef.current.add(updatedActivity.id)
+
         toast({
           type: 'warning',
           message: t('pwa.courses.groupActivityEndedToast', {
@@ -43,40 +39,21 @@ function GroupActivityListSubscriber({
           options: { duration: 10000 },
         })
 
-        // update the values returned by the course group activity data query
-        const updatedQueryContent = prev.groupActivities.map((activity) =>
-          activity.id === updatedActivity.id ? updatedActivity : activity
-        )
-
-        return { groupActivities: updatedQueryContent }
+        void Promise.resolve(onChangedRef.current?.()).catch(console.error)
       },
-    })
+    }
+  )
 
-    subscribeToMore({
-      document: GroupActivityStartedDocument,
-      variables: { courseId },
-      updateQuery: (
-        prev: { groupActivities: GroupActivity[] },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: { data: { groupActivityStarted: GroupActivity } }
-        }
-      ): { groupActivities: GroupActivity[] } => {
-        if (!subscriptionData.data) return prev
-
-        // required saveguard since the subscription is somehow triggered twice
-        if (
-          prev.groupActivities.some(
-            (activity) =>
-              activity.id === subscriptionData.data.groupActivityStarted.id
-          )
-        ) {
-          return prev
+  api.realtime.groupActivityStarted.useSubscription(
+    { courseId },
+    {
+      onData(newActivity) {
+        if (handledStartedActivityIdsRef.current.has(newActivity.id)) {
+          return
         }
 
-        // trigger toast for ended group activity
-        const newActivity = subscriptionData.data.groupActivityStarted
+        handledStartedActivityIdsRef.current.add(newActivity.id)
+
         toast({
           type: 'success',
           message: t('pwa.courses.groupActivityStartedToast', {
@@ -85,12 +62,10 @@ function GroupActivityListSubscriber({
           options: { duration: 10000 },
         })
 
-        // update the values returned by the course overview data query
-        const updatedQueryContent = [newActivity, ...prev.groupActivities]
-        return { groupActivities: updatedQueryContent }
+        void Promise.resolve(onChangedRef.current?.()).catch(console.error)
       },
-    })
-  }, [courseId, subscribeToMore])
+    }
+  )
 
   return null
 }

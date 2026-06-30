@@ -1,5 +1,4 @@
 import { faPlus, faSave } from '@fortawesome/free-solid-svg-icons'
-import { ParameterType } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikNumberField,
@@ -10,6 +9,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
+import { ParameterType } from '../../../../lib/constants/activityEnums'
 
 interface GroupActivityClueModalProps {
   initialValues?: {

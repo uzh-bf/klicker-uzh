@@ -1,6 +1,6 @@
-import { ParticipantCourseActivity } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
+import type { ParticipantCourseActivity } from '@lib/analyticsTypes'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import {

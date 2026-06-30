@@ -1,11 +1,11 @@
 import { faTag } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TagActions from './TagActions'
 import TagEditForm from './TagEditForm'
+import type { UserTagData } from './types'
 
 function UserTag({
   tag,
@@ -14,14 +14,16 @@ function UserTag({
   isStatic = false,
   onMoveDown,
   onMoveUp,
+  movingTags = false,
   refetchElements,
 }: {
-  tag: Tag
+  tag: UserTagData
   handleTagClick: (tagId: number) => void
   active: boolean
   isStatic?: boolean
   onMoveUp?: () => void
   onMoveDown?: () => void
+  movingTags?: boolean
   refetchElements: () => Promise<void>
 }) {
   const [editMode, setEditMode] = useState(false)
@@ -70,6 +72,7 @@ function UserTag({
               }
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
+              movingTags={movingTags}
               refetchElements={refetchElements}
             />
           </div>

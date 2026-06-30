@@ -1,25 +1,21 @@
-import { useMutation } from '@apollo/client'
 import {
   faArrowRight,
   faHourglassEnd,
   faHourglassStart,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementInstanceType,
-  GetSingleCourseDocument,
-  PublishGroupActivityDocument,
-  PublishMicroLearningDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { ActivityType } from '@klicker-uzh/types'
+import { Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
+
+type PublishableScheduledActivityType = 'MICROLEARNING' | 'GROUP_ACTIVITY'
 
 interface PublishConfirmationModalProps {
   onClose: () => void
-  activityType:
-    | ElementInstanceType.Microlearning
-    | ElementInstanceType.GroupActivity
+  activityType: PublishableScheduledActivityType
   activityId: string
   startAt: Date
   endAt: Date
@@ -39,100 +35,73 @@ function PublishConfirmationModal({
   refetchActivities,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
-
-  const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
-    PublishMicroLearningDocument,
-    {
-      variables: { id: activityId },
-      update(cache, { data }) {
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            const publishedMicro = data?.publishMicroLearning
-            if (!qData?.course?.microLearningsInfo || !publishedMicro)
-              return qData
-
-            return {
-              course: {
-                ...qData.course,
-                microLearningsInfo: qData.course.microLearningsInfo.map(
-                  (micro) =>
-                    micro.id === publishedMicro.id
-                      ? {
-                          ...micro,
-                          status: publishedMicro.status,
-                        }
-                      : micro
-                ),
-              },
-            }
-          }
-        )
-      },
+  const utils = trpc.useUtils()
+  const publishActivity = trpc.activity.publish.useMutation()
+  const [publishSubmitting, setPublishSubmitting] = useState(false)
+  const isMicroLearning = activityType === 'MICROLEARNING'
+  const publishing = publishActivity.isLoading || publishSubmitting
+  const handleClose = () => {
+    if (!publishing) {
+      onClose()
     }
-  )
-
-  const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
-    PublishGroupActivityDocument,
-    {
-      variables: { id: activityId },
-      update(cache, { data }) {
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            const publishedGa = data?.publishGroupActivity
-            if (!qData?.course?.groupActivitiesInfo || !publishedGa)
-              return qData
-
-            return {
-              course: {
-                ...qData.course,
-                groupActivitiesInfo: qData.course.groupActivitiesInfo.map(
-                  (groupActivity) =>
-                    groupActivity.id === publishedGa.id
-                      ? {
-                          ...groupActivity,
-                          status: publishedGa.status,
-                        }
-                      : groupActivity
-                ),
-              },
-            }
-          }
-        )
-      },
-    }
-  )
+  }
 
   return (
     <Modal
       open
       title={t(`manage.course.publishItem${activityType}`)}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={mlPublishLoading || gaPublishLoading}
+      primaryLoading={publishing}
+      primaryDisabled={publishing}
       onPrimaryAction={async () => {
-        if (activityType === ElementInstanceType.Microlearning) {
-          await publishMicroLearning()
-        } else if (activityType === ElementInstanceType.GroupActivity) {
-          await publishGroupActivity()
+        setPublishSubmitting(true)
+        try {
+          const result = await publishActivity.mutateAsync({
+            activityId,
+            activityType: isMicroLearning
+              ? ActivityType.MICRO_LEARNING
+              : ActivityType.GROUP_ACTIVITY,
+          })
+
+          if (!result.publishActivity?.id) {
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
+          await Promise.all([
+            utils.course.detail.invalidate({ courseId }),
+            refetchActivities?.(),
+          ])
+          onClose()
+        } catch (error) {
+          console.error(error)
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        } finally {
+          setPublishSubmitting(false)
         }
-        await refetchActivities?.()
-        onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-publish-action' }}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={() => {
-        onClose()
+        handleClose()
       }}
       dataSecondaryAction={{ cy: 'cancel-publish-action' }}
-      onClose={onClose}
+      onClose={handleClose}
       hideCloseButton={true}
       className={{ content: 'max-w-2xl', title: 'text-xl' }}
     >
       <div className="mt-4 space-y-2 text-base">
         <div>
           {t.rich(
-            activityType === ElementInstanceType.Microlearning
+            isMicroLearning
               ? 'manage.course.confirmPublishingMicrolearning'
               : 'manage.course.confirmPublishingGroupActivity',
             { name: title, b: (text) => <b>{text}</b> }
@@ -165,7 +134,7 @@ function PublishConfirmationModal({
         </div>
         <div className="text-sm text-gray-600">
           {t(
-            activityType === ElementInstanceType.Microlearning
+            isMicroLearning
               ? 'manage.course.microlearningPublishingHint'
               : 'manage.course.groupActivityPublishingHint'
           )}

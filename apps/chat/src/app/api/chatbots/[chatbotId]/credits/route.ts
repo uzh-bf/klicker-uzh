@@ -18,7 +18,7 @@ export async function GET(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, authMode } = authResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     courseId: true,
@@ -35,36 +35,43 @@ export async function GET(
       chatbotId
     )
 
-    const availableModels = getModelsForChatbot(
-      chatbotResult.chatbot,
-      credits
-    ).map(
-      ({
-        id,
-        name,
-        description,
-        fallback,
-        supportsReasoning,
-        supportsImageAttachments,
-        supportedReasoningEfforts,
-      }) => ({
-        id,
-        name,
-        description,
-        fallback,
-        supportsReasoning,
-        supportsImageAttachments,
-        allowedReasoningEfforts: supportedReasoningEfforts,
-      })
-    )
+    let availableModels = getModelsForChatbot(chatbotResult.chatbot, credits)
+
+    // Phase A: anonymous (LTI guest) restricted to fallback models only.
+    // Phase B replaces this with reasoning-effort tier gating so guests can
+    // use the flagship model at free effort levels.
+    if (authMode === 'anonymous') {
+      availableModels = availableModels.filter((m) => m.fallback)
+    }
+
+    const automaticModelId =
+      authMode === 'anonymous'
+        ? (availableModels[0]?.id ?? null)
+        : getAutomaticModelId(credits, chatbotResult.chatbot.allowedModelIds)
 
     return NextResponse.json({
       ...credits,
-      availableModels,
-      automaticModelId: getAutomaticModelId(
-        credits,
-        chatbotResult.chatbot.allowedModelIds
+      availableModels: availableModels.map(
+        ({
+          id,
+          name,
+          description,
+          fallback,
+          supportsReasoning,
+          supportsImageAttachments,
+          supportedReasoningEfforts,
+        }) => ({
+          id,
+          name,
+          description,
+          fallback,
+          supportsReasoning,
+          supportsImageAttachments,
+          allowedReasoningEfforts: supportedReasoningEfforts,
+        })
       ),
+      automaticModelId,
+      authMode,
     })
   } catch (error) {
     console.error('Failed to fetch credits:', error)

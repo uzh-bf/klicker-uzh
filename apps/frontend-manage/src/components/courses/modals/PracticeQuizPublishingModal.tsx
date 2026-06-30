@@ -1,16 +1,19 @@
-import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { ActivityType } from '@klicker-uzh/types'
 import {
-  GetSingleCourseDocument,
-  PublishPracticeQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDatetimePicker, H3, Modal } from '@uzh-bf/design-system'
+  Button,
+  FormikDatetimePicker,
+  H3,
+  Modal,
+  toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 
 interface PracticeQuizPublishingModalProps {
   activityId: string
@@ -30,41 +33,30 @@ function PracticeQuizPublishingModal({
   refetchActivities,
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
-  const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
-    useMutation(PublishPracticeQuizDocument, {
-      update(cache, { data }) {
-        cache.updateQuery(
-          { query: GetSingleCourseDocument, variables: { courseId } },
-          (qData) => {
-            const publishedPq = data?.publishPracticeQuiz
-            if (!qData?.course?.practiceQuizzesInfo || !publishedPq)
-              return qData
-
-            return {
-              course: {
-                ...qData.course,
-                practiceQuizzesInfo: qData.course.practiceQuizzesInfo.map(
-                  (practiceQuiz) =>
-                    practiceQuiz.id === publishedPq.id
-                      ? {
-                          ...practiceQuiz,
-                          automaticPublicationAt: publishedPq.availableFrom,
-                          status: publishedPq.status,
-                        }
-                      : practiceQuiz
-                ),
-              },
-            }
-          }
-        )
-      },
+  const utils = trpc.useUtils()
+  const publishPracticeQuiz = trpc.activity.publish.useMutation()
+  const refreshCourseActivityData = () => {
+    return Promise.all([
+      utils.course.detail.invalidate({ courseId }),
+      refetchActivities?.(),
+    ])
+  }
+  const handleClose = () => {
+    if (!publishPracticeQuiz.isLoading) {
+      onClose()
+    }
+  }
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
     })
 
   return (
     <Modal
       open
       title={`${t('shared.generic.practiceQuiz')}: ${title}`}
-      onClose={onClose}
+      onClose={handleClose}
       className={{ content: 'pb-2 text-base' }}
       dataCloseButton={{ cy: 'cancel-practice-quiz-publication' }}
     >
@@ -83,11 +75,24 @@ function PracticeQuizPublishingModal({
           <Button
             primary
             onClick={async () => {
-              await publishPracticeQuiz({ variables: { id: activityId } })
-              await refetchActivities?.()
-              onClose()
+              try {
+                const result = await publishPracticeQuiz.mutateAsync({
+                  activityId,
+                  activityType: ActivityType.PRACTICE_QUIZ,
+                })
+                if (result.publishActivity?.id) {
+                  await refreshCourseActivityData()
+                  onClose()
+                } else {
+                  onErrorToast()
+                }
+              } catch (error) {
+                console.error(error)
+                onErrorToast()
+              }
             }}
-            loading={practiceQuizPublishing}
+            loading={publishPracticeQuiz.isLoading}
+            disabled={publishPracticeQuiz.isLoading}
             data={{ cy: 'publish-practice-quiz-immediately' }}
             className={{ root: 'float-right mt-3' }}
           >
@@ -110,14 +115,24 @@ function PracticeQuizPublishingModal({
             initialValues={{ availableFrom: undefined }}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
-              await publishPracticeQuiz({
-                variables: {
-                  id: activityId,
-                  availableFrom: dayjs(values.availableFrom).utc().format(),
-                },
-              })
-              await refetchActivities?.()
-              onClose()
+              try {
+                const result = await publishPracticeQuiz.mutateAsync({
+                  activityId,
+                  activityType: ActivityType.PRACTICE_QUIZ,
+                  availableFrom: dayjs(values.availableFrom).utc().toDate(),
+                })
+                if (result.publishActivity?.id) {
+                  await refreshCourseActivityData()
+                  onClose()
+                } else {
+                  onErrorToast()
+                }
+              } catch (error) {
+                console.error(error)
+                onErrorToast()
+              } finally {
+                setSubmitting(false)
+              }
             }}
             validationSchema={yup.object().shape({
               availableFrom: yup
@@ -130,7 +145,7 @@ function PracticeQuizPublishingModal({
                 ),
             })}
           >
-            {({ isValid }) => {
+            {({ isSubmitting, isValid }) => {
               return (
                 <Form>
                   <FormikDatetimePicker
@@ -156,8 +171,10 @@ function PracticeQuizPublishingModal({
                   <Button
                     primary
                     type="submit"
-                    loading={practiceQuizPublishing}
-                    disabled={!isValid}
+                    loading={publishPracticeQuiz.isLoading || isSubmitting}
+                    disabled={
+                      !isValid || isSubmitting || publishPracticeQuiz.isLoading
+                    }
                     data={{ cy: 'schedule-practice-quiz-publication' }}
                     className={{ root: 'float-right mt-3' }}
                   >

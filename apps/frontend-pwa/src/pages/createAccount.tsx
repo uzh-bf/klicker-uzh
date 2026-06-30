@@ -6,14 +6,12 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
 
-import { useMutation } from '@apollo/client'
-import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import bodyParser from 'body-parser'
 import Layout from 'src/components/Layout'
 import CreateAccountForm from 'src/components/forms/CreateAccountForm'
-import { addApolloState, initializeApollo } from 'src/lib/apollo'
+import { trpc } from 'src/lib/trpc'
 
 interface Props {
   signedLtiData?: string
@@ -33,9 +31,7 @@ function CreateAccount({
 }: Props) {
   const t = useTranslations()
   const router = useRouter()
-  const [createParticipantAccount] = useMutation(
-    CreateParticipantAccountDocument
-  )
+  const createParticipantAccount = trpc.participant.createAccount.useMutation()
 
   useParticipantToken({
     participantToken,
@@ -51,40 +47,44 @@ function CreateAccount({
         handleSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
 
-          const login = await createParticipantAccount({
-            variables: {
+          try {
+            const createResult = await createParticipantAccount.mutateAsync({
               email: values.email.trim().toLowerCase(),
               username: values.username.trim(),
               password: values.password.trim(),
               isProfilePublic: values.isProfilePublic,
               signedLtiData,
-            },
-          })
+            })
 
-          const createResult = login.data?.createParticipantAccount
-          const participantToken = createResult?.participantToken ?? null
+            const participantToken = createResult?.participantToken ?? null
 
-          if (participantToken) {
-            await router.replace(
-              `/editProfile?newAccount=true&participantToken=${participantToken}`,
-              {
+            if (participantToken) {
+              const routed = await router.replace({
                 pathname: '/editProfile',
                 query: {
                   newAccount: true,
                   participantToken,
                 },
+              })
+              if (!routed) {
+                window.location.assign(
+                  `/editProfile?newAccount=true&participantToken=${encodeURIComponent(participantToken)}`
+                )
               }
-            )
-            return
-          }
+              return
+            }
 
-          // keep legacy non-LTI behavior for direct /createAccount usage
-          if (!signedLtiData && createResult?.participant) {
-            await router.push({
-              pathname: '/login',
-              query: { newAccount: true },
-            })
-            return
+            // keep legacy non-LTI behavior for direct /createAccount usage
+            if (!signedLtiData && createResult?.participant) {
+              const routed = await router.push({
+                pathname: '/login',
+                query: { newAccount: true },
+              })
+              if (!routed) window.location.assign('/login?newAccount=true')
+              return
+            }
+          } catch (error) {
+            console.error(error)
           }
 
           toast({
@@ -92,7 +92,6 @@ function CreateAccount({
             message: t('pwa.profile.createProfileFailed'),
             options: { duration: 6000 },
           })
-
           setSubmitting(false)
         }}
       />
@@ -113,9 +112,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   try {
     const { req, res, query } = ctx
-    const apolloClient = initializeApollo()
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       ctx,
     })
 
@@ -123,9 +120,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       if (!cookiesAvailable) {
         return {
           redirect: {
-            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${participantToken}`,
+            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${encodeURIComponent(participantToken)}`,
             permanent: false,
-            query: { participantToken },
           },
         }
       }
@@ -203,7 +199,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     if (!query?.disableLti && signedLtiData.token !== '') {
-      return addApolloState(apolloClient, {
+      return {
         props: {
           signedLtiData: signedLtiData.token,
           ssoId: signedLtiData.ssoId,
@@ -217,7 +213,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
-      })
+      }
     }
 
     return {

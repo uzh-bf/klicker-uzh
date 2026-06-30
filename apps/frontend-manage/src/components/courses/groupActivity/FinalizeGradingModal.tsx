@@ -1,9 +1,8 @@
-import { useMutation } from '@apollo/client'
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { FinalizeGroupActivityGradingDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 function FinalizeGradingModal({
   onClose,
@@ -13,40 +12,81 @@ function FinalizeGradingModal({
   activityId: string
 }) {
   const t = useTranslations()
-  const [finalizeGroupActivityGrading, { loading: finalizingGrading }] =
-    useMutation(FinalizeGroupActivityGradingDocument)
+  const utils = trpc.useUtils()
+  const finalizeGroupActivityGrading =
+    trpc.activity.finalizeGroupActivityGrading.useMutation()
+  const finalizing = finalizeGroupActivityGrading.isLoading
+  const closeIfIdle = () => {
+    if (!finalizing) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
       title={t('manage.groupActivity.finalizeGrading')}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={finalizingGrading}
+      primaryLoading={finalizing}
+      primaryDisabled={finalizing}
       onPrimaryAction={async () => {
-        const { data } = await finalizeGroupActivityGrading({
-          variables: { id: activityId },
-        })
+        if (finalizing) return
 
-        if (data?.finalizeGroupActivityGrading?.id) {
-          toast({
-            type: 'success',
-            message: t('manage.groupActivity.finalizeGradingSuccess'),
-            options: { duration: 4000 },
+        try {
+          const data = await finalizeGroupActivityGrading.mutateAsync({
+            id: activityId,
           })
-        } else {
+          const finalized = data?.finalizeGroupActivityGrading
+
+          if (finalized?.id) {
+            utils.activity.groupActivityGrading.setData(
+              { id: activityId },
+              (queryData) => {
+                if (!queryData?.groupActivityGrading) return queryData
+
+                return {
+                  groupActivityGrading: {
+                    ...queryData.groupActivityGrading,
+                    status: finalized.status,
+                  },
+                }
+              }
+            )
+            void utils.activity.groupActivityGrading
+              .invalidate({ id: activityId })
+              .catch((error) => {
+                console.error(
+                  'Error refreshing group activity grading after finalization',
+                  error
+                )
+              })
+            toast({
+              type: 'success',
+              message: t('manage.groupActivity.finalizeGradingSuccess'),
+              options: { duration: 4000 },
+            })
+            onClose()
+          } else {
+            toast({
+              type: 'error',
+              message: t('manage.groupActivity.finalizeGradingError'),
+              options: { duration: 6000 },
+            })
+          }
+        } catch (error) {
+          console.error(error)
           toast({
             type: 'error',
             message: t('manage.groupActivity.finalizeGradingError'),
             options: { duration: 6000 },
           })
         }
-        onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-finalize-grading' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={closeIfIdle}
       dataSecondaryAction={{ cy: 'cancel-finalize-grading' }}
-      onClose={onClose}
+      onClose={closeIfIdle}
       hideCloseButton={true}
       className={{ content: 'max-w-xl' }}
     >

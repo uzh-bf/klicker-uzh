@@ -35,7 +35,16 @@ determine_proxy() {
 	esac
 }
 
+is_noninteractive() {
+	[ "${KLICKER_NONINTERACTIVE:-}" = "1" ] || [ "${CI:-}" = "true" ] || [ ! -t 0 ]
+}
+
 confirm() {
+	if is_noninteractive; then
+		echo "$1 [non-interactive: no]"
+		return 1
+	fi
+
 	while true; do
 		printf "%s [Y/n] " "$1"
 		read -r response
@@ -150,6 +159,12 @@ else
 	else
 		echo "Skipping Prisma database setup"
 	fi
+fi
+
+if [ "${KLICKER_DEPENDENCIES_DETACH:-}" = "1" ]; then
+	trap - INT TERM HUP EXIT
+	echo "Dependencies are ready and left running. Stop them with ./_down.sh."
+	exit 0
 fi
 
 docker compose logs -f

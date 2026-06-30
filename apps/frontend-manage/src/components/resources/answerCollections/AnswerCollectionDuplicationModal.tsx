@@ -1,13 +1,10 @@
-import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  DuplicateAnswerCollectionDocument,
-  GetAnswerCollectionsInfoDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 
 function AnswerCollectionDuplicationModal({
   collectionId,
@@ -19,9 +16,16 @@ function AnswerCollectionDuplicationModal({
   onSuccess: () => void
 }) {
   const t = useTranslations()
-  const [duplicateAnswerCollection, { loading }] = useMutation(
-    DuplicateAnswerCollectionDocument
-  )
+  const utils = trpc.useUtils()
+  const duplicateAnswerCollection =
+    trpc.resources.duplicateAnswerCollection.useMutation()
+  const [duplicationPending, setDuplicationPending] = useState(false)
+  const loading = duplicateAnswerCollection.isLoading || duplicationPending
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   const onErrorToast = () =>
     toast({
@@ -33,7 +37,7 @@ function AnswerCollectionDuplicationModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.resources.duplicateCollection')}
       secondaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -41,7 +45,7 @@ function AnswerCollectionDuplicationModal({
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-duplication' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -50,34 +54,32 @@ function AnswerCollectionDuplicationModal({
         </div>
       }
       primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
+        setDuplicationPending(true)
         try {
-          const result = await duplicateAnswerCollection({
-            variables: { id: collectionId },
-            update: (cache, { data }) => {
-              // check if the duplication was successful
-              if (!data?.duplicateAnswerCollection) return
-
-              // update the list of answer collections with the duplicate
-              cache.updateQuery(
-                { query: GetAnswerCollectionsInfoDocument },
-                (qData) => {
-                  if (!qData?.getAnswerCollectionsInfo) return qData
-
-                  return {
-                    getAnswerCollectionsInfo: [
-                      ...qData.getAnswerCollectionsInfo,
-                      data.duplicateAnswerCollection!,
-                    ],
-                  }
-                }
-              )
-            },
+          const result = await duplicateAnswerCollection.mutateAsync({
+            id: collectionId,
           })
 
-          if (result.data?.duplicateAnswerCollection) {
+          if (result.answerCollection) {
+            const duplicatedCollection = result.answerCollection
+            utils.resources.answerCollectionsInfo.setData(undefined, (data) =>
+              data?.answerCollections
+                ? {
+                    answerCollections: [
+                      ...data.answerCollections.filter(
+                        (collection) =>
+                          collection.id !== duplicatedCollection.id
+                      ),
+                      duplicatedCollection,
+                    ],
+                  }
+                : data
+            )
             onClose()
             onSuccess()
+            return
           } else {
             onErrorToast()
           }
@@ -85,6 +87,7 @@ function AnswerCollectionDuplicationModal({
           console.error('Error duplicating collection:', error)
           onErrorToast()
         }
+        setDuplicationPending(false)
       }}
       dataPrimaryAction={{ cy: 'confirm-duplication' }}
       className={{ content: 'max-w-2xl' }}

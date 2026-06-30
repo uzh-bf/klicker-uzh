@@ -1,5 +1,4 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikNumberField,
@@ -13,6 +12,7 @@ import Link from 'next/link'
 import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
+import type { AnswerCollection } from '../../../../lib/constants/elementTypes'
 import { ElementFormTypesSelection } from '../types'
 import AnswerCollectionInlineEditButton from './AnswerCollectionInlineEditButton'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
@@ -177,7 +177,9 @@ function SelectionCollectionOptions({
           />
           <Button
             disabled={loading || inputsDisabled}
-            onClick={async () => await refetchCollections()}
+            onClick={() => {
+              void refetchCollections().catch(console.error)
+            }}
             className={{ root: 'h-9 w-9' }}
             data={{ cy: 'refresh-answer-collections' }}
           >

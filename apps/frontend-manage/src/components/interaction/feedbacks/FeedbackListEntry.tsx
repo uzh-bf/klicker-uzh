@@ -1,17 +1,18 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
+import { useState } from 'react'
+import type { AudienceFeedback } from '../types'
 import Feedback from './Feedback'
 
 interface FeedbackListEntryProps {
-  feedback: FeedbackType
+  feedback: AudienceFeedback
   isPublic?: boolean
-  onDeleteFeedback: () => void
-  onDeleteResponse: (responseId: number) => void
-  onPinFeedback: (pinState: boolean) => void
-  onResolveFeedback: (resolvedState: boolean) => void
-  onRespondToFeedback: (response: string) => void
-  onPublishFeedback?: (publishState: boolean) => void
+  onDeleteFeedback: () => Promise<boolean>
+  onDeleteResponse: (responseId: number) => Promise<boolean>
+  onPinFeedback: (pinState: boolean) => Promise<boolean>
+  onResolveFeedback: (resolvedState: boolean) => Promise<boolean>
+  onRespondToFeedback: (response: string) => Promise<boolean>
+  onPublishFeedback?: (publishState: boolean) => Promise<boolean>
 }
 
 function FeedbackListEntry({
@@ -24,6 +25,19 @@ function FeedbackListEntry({
   onRespondToFeedback,
   onPublishFeedback,
 }: FeedbackListEntryProps) {
+  const [publishing, setPublishing] = useState(false)
+
+  async function handlePublishClick() {
+    if (publishing || !onPublishFeedback) return
+
+    setPublishing(true)
+    try {
+      await onPublishFeedback(!feedback.isPublished)
+    } finally {
+      setPublishing(false)
+    }
+  }
+
   return (
     <div className="flex flex-row gap-2 print:mt-2">
       {!isPublic && onPublishFeedback && (
@@ -32,9 +46,9 @@ function FeedbackListEntry({
             className={{
               root: 'h-9 w-9',
             }}
-            onClick={() => {
-              onPublishFeedback(!feedback.isPublished)
-            }}
+            disabled={publishing}
+            loading={publishing}
+            onClick={() => void handlePublishClick()}
             data={{ cy: `publish-feedback-${feedback.content}` }}
           >
             <Button.Icon

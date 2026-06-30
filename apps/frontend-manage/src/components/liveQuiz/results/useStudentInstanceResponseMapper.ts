@@ -1,8 +1,3 @@
-import {
-  ElementInstance,
-  ElementType,
-  GetLiveQuizStudentAssessmentResponsesQuery,
-} from '@klicker-uzh/graphql/dist/ops'
 import type {
   CaseStudyStudentResponseType,
   ChoicesStudentResponseType,
@@ -11,10 +6,13 @@ import type {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import type { SingleQuestionResponseLiveQuiz } from '@klicker-uzh/types'
 import { useCallback } from 'react'
+import {
+  ElementType,
+  LiveQuizStudentAssessmentInstance,
+  LiveQuizStudentAssessmentResponses,
+} from '../../../lib/assessmentResultsTypes'
 
-export type LiveQuizStudentBlocks = NonNullable<
-  GetLiveQuizStudentAssessmentResponsesQuery['liveQuizStudentAssessmentResponses']
->
+export type LiveQuizStudentBlocks = LiveQuizStudentAssessmentResponses
 
 export function useStudentInstanceResponseMapper() {
   return useCallback(
@@ -22,7 +20,7 @@ export function useStudentInstanceResponseMapper() {
       instance,
       submission,
     }: {
-      instance: ElementInstance
+      instance: LiveQuizStudentAssessmentInstance
       submission: SingleQuestionResponseLiveQuiz
     }): InstanceStackStudentResponseType | null => {
       const elementType = instance.elementType
@@ -42,7 +40,7 @@ export function useStudentInstanceResponseMapper() {
       if (elementType === ElementType.Content) {
         if (!('viewed' in submission)) return null
         return {
-          type: ElementType.Content,
+          type: ElementType.Content as never,
           response: submission.viewed,
           valid: true,
         }
@@ -68,7 +66,7 @@ export function useStudentInstanceResponseMapper() {
         }, {})
 
         return {
-          type: elementType,
+          type: elementType as never,
           response: responseMap,
           valid: true,
         }
@@ -83,7 +81,7 @@ export function useStudentInstanceResponseMapper() {
         }
 
         return {
-          type: ElementType.Numerical,
+          type: ElementType.Numerical as never,
           response: String(submission.value),
           valid: true,
         }
@@ -98,7 +96,7 @@ export function useStudentInstanceResponseMapper() {
         }
 
         return {
-          type: ElementType.FreeText,
+          type: ElementType.FreeText as never,
           response: String(submission.value),
           valid: true,
         }
@@ -115,7 +113,7 @@ export function useStudentInstanceResponseMapper() {
         })
 
         return {
-          type: ElementType.Selection,
+          type: ElementType.Selection as never,
           response,
           valid: true,
         }
@@ -127,7 +125,7 @@ export function useStudentInstanceResponseMapper() {
         }
 
         return {
-          type: ElementType.CaseStudy,
+          type: ElementType.CaseStudy as never,
           response: submission.assessment as CaseStudyStudentResponseType,
           valid: true,
         }

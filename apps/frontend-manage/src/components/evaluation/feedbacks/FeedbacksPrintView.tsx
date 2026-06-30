@@ -1,10 +1,9 @@
-import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import SingleFeedback from './SingleFeedback'
+import SingleFeedback, { DisplayFeedback } from './SingleFeedback'
 
 interface FeedbacksPrintViewProps {
-  feedbacks?: Feedback[]
+  feedbacks?: DisplayFeedback[]
   liveQuizName: string
 }
 

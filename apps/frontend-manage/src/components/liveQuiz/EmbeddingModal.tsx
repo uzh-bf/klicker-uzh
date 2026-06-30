@@ -1,10 +1,9 @@
-import { useQuery } from '@apollo/client'
-import { GetLiveQuizEmbeddingInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import { routing } from '@klicker-uzh/i18n'
-import { Modal, Select, Switch } from '@uzh-bf/design-system'
+import { Modal, Select, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import HMACLink from './HMACLink'
 
 function EmbeddingModal({
@@ -20,10 +19,12 @@ function EmbeddingModal({
   const [showSolution, setShowSolution] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
   const router = useRouter()
-  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
-    variables: { id: quizId },
-    fetchPolicy: 'cache-and-network',
+  const { data, error, isLoading } = trpc.liveQuiz.embeddingInfo.useQuery({
+    id: quizId,
   })
+  const embeddingInfo = data?.embeddingInfo
+  const initialLoading = isLoading && !embeddingInfo
+  const embeddingUnavailable = Boolean((error || !isLoading) && !embeddingInfo)
 
   // language state for links
   type LocaleType = (typeof routing.locales)[number]
@@ -37,7 +38,7 @@ function EmbeddingModal({
   return (
     <Modal
       open
-      loading={loading}
+      loading={initialLoading}
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
       onClose={onClose}
       primaryLabel={t('shared.generic.close')}
@@ -46,82 +47,95 @@ function EmbeddingModal({
       dataPrimaryAction={{ cy: 'close-embedding-modal' }}
       className={{ content: 'max-h-[calc(100%-3rem)]', footer: 'justify-end' }}
     >
-      <div className="mb-4 rounded-md border p-2.5">
-        <Switch
-          size="sm"
-          label={t('manage.evaluation.showSolution')}
-          checked={showSolution}
-          onCheckedChange={(val) => setShowSolution(val)}
-          data={{ cy: 'embedding-show-solution-switch' }}
+      {embeddingUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
         />
-        <div className="pl-13 mb-3 text-sm">
-          {t('manage.evaluation.showSolutionInfo')}
-        </div>
-        <Switch
-          size="sm"
-          label={t('manage.evaluation.showExplanation')}
-          checked={showExplanation}
-          onCheckedChange={(val) => setShowExplanation(val)}
-          data={{ cy: 'embedding-show-explanation-switch' }}
-        />
-        <div className="pl-13 mb-3 text-sm">
-          {t('manage.evaluation.showExplanationInfo')}
-        </div>
-        <div className="pl-13">
-          <div className="font-bold">{t('shared.generic.language')}</div>
-          <Select
-            value={language}
-            onChange={(newValue) => setLanguage(newValue as LocaleType)}
-            items={routing.locales.map((loc) => ({
-              label: t(`shared.generic.${loc}`),
-              value: loc,
-            }))}
-          />
-        </div>
-      </div>
+      ) : null}
 
-      <div className="flex flex-col gap-4">
-        <div>
-          <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
-          <HMACLink
-            quizId={quizId}
-            hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-            params=""
-            identifier="generic-evaluation"
-            language={language}
-          />
-        </div>
-        {data?.getLiveQuizEmbeddingInfo?.instances?.map((instance, ix) => {
-          return (
-            <div key={instance.id}>
-              <div className="line-clamp-1 font-bold">
-                {ix + 1} {instance.name}
+      {embeddingInfo ? (
+        <>
+          <div className="mb-4 rounded-md border p-2.5">
+            <Switch
+              size="sm"
+              label={t('manage.evaluation.showSolution')}
+              checked={showSolution}
+              onCheckedChange={(val) => setShowSolution(val)}
+              data={{ cy: 'embedding-show-solution-switch' }}
+            />
+            <div className="pl-13 mb-3 text-sm">
+              {t('manage.evaluation.showSolutionInfo')}
+            </div>
+            <Switch
+              size="sm"
+              label={t('manage.evaluation.showExplanation')}
+              checked={showExplanation}
+              onCheckedChange={(val) => setShowExplanation(val)}
+              data={{ cy: 'embedding-show-explanation-switch' }}
+            />
+            <div className="pl-13 mb-3 text-sm">
+              {t('manage.evaluation.showExplanationInfo')}
+            </div>
+            <div className="pl-13">
+              <div className="font-bold">{t('shared.generic.language')}</div>
+              <Select
+                value={language}
+                onChange={(newValue) => setLanguage(newValue as LocaleType)}
+                items={routing.locales.map((loc) => ({
+                  label: t(`shared.generic.${loc}`),
+                  value: loc,
+                }))}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div>
+              <div className="w-30 font-bold">
+                {t('shared.generic.evaluation')}
               </div>
               <HMACLink
                 quizId={quizId}
-                hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-                params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
-                identifier={`question-${ix}`}
+                hmac={embeddingInfo.hmac}
+                params=""
+                identifier="generic-evaluation"
                 language={language}
               />
             </div>
-          )
-        })}
-        {isGamificationEnabled && (
-          <div>
-            <div className="w-30 font-bold">
-              {t('shared.generic.leaderboard')}:
-            </div>
-            <HMACLink
-              quizId={quizId}
-              hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-              params="leaderboard=true&hideControls=true"
-              identifier="leaderboard"
-              language={language}
-            />
+            {embeddingInfo.instances?.map((instance, ix) => {
+              return (
+                <div key={instance.id}>
+                  <div className="line-clamp-1 font-bold">
+                    {ix + 1} {instance.name}
+                  </div>
+                  <HMACLink
+                    quizId={quizId}
+                    hmac={embeddingInfo.hmac}
+                    params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
+                    identifier={`question-${ix}`}
+                    language={language}
+                  />
+                </div>
+              )
+            })}
+            {isGamificationEnabled && (
+              <div>
+                <div className="w-30 font-bold">
+                  {t('shared.generic.leaderboard')}:
+                </div>
+                <HMACLink
+                  quizId={quizId}
+                  hmac={embeddingInfo.hmac}
+                  params="leaderboard=true&hideControls=true"
+                  identifier="leaderboard"
+                  language={language}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : null}
     </Modal>
   )
 }

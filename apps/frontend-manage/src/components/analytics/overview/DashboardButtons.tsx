@@ -1,11 +1,14 @@
-import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import ActivityDashboardLabel from './ActivityDashboardLabel'
 import PerformanceDashboardLabel from './PerformanceDashboardLabel'
 import QuizDashboardLabel from './QuizDashboardLabel'
 
-function DashboardButtons({ course }: { course: Pick<Course, 'id' | 'name'> }) {
+function DashboardButtons({
+  course,
+}: {
+  course: { id: string; name: string }
+}) {
   const router = useRouter()
 
   return (

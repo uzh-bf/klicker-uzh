@@ -1,156 +1,97 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetCatalogCollectionsListDocument,
-  GetCatalogObjectsDocument,
-  ObjectType,
-  RequestCatalogCollectionDocument,
-  RequestCatalogObjectDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 
 // function to trigger access request creation, returns success boolean
 function useRequestCatalogObject({
   objectType,
   objectId,
   catalogCollectionId,
-  onError,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
-  onError: () => void
 }): { onRequest: () => Promise<boolean>; requesting: boolean } {
-  const [requestCatalogCollection, { loading: requestingCatalogCollection }] =
-    useMutation(RequestCatalogCollectionDocument)
-  const [requestCatalogObject, { loading: requestingCatalogObject }] =
-    useMutation(RequestCatalogObjectDocument)
+  const utils = trpc.useUtils()
+  const requestCatalogCollection =
+    trpc.sharing.requestCatalogCollection.useMutation()
+  const requestCatalogObject = trpc.sharing.requestCatalogObject.useMutation()
 
   if (objectType === ObjectType.CatalogCollection) {
     const onRequestCatalogCollection = async () => {
       try {
-        const res = await requestCatalogCollection({
-          variables: { catalogCollectionId: objectId as string },
-          update: (cache, { data }) => {
-            // check if request was successful
-            if (!data?.requestCatalogCollection) return
-
-            // update lists of answer collections
-            cache.updateQuery(
-              { query: GetCatalogCollectionsListDocument },
-              (qData) => {
-                if (!qData?.getCatalogCollectionsList) return qData
-                return {
-                  getCatalogCollectionsList:
-                    qData.getCatalogCollectionsList.map((collection) =>
-                      collection.id === objectId
-                        ? data.requestCatalogCollection!
-                        : collection
-                    ),
-                }
-              }
-            )
-          },
-        })
-
-        if (res.data?.requestCatalogCollection?.id) {
-          return true
-        } else {
-          onError()
-          return false
+        const input: RouterInputs['sharing']['requestCatalogCollection'] = {
+          catalogCollectionId: objectId as string,
         }
+        const res = await requestCatalogCollection.mutateAsync(input)
+
+        if (res.catalogCollection?.id) {
+          utils.sharing.catalogCollections.setData(undefined, (queryData) => {
+            if (!queryData?.catalogCollections) return queryData
+
+            return {
+              catalogCollections: queryData.catalogCollections.map(
+                (collection) =>
+                  collection.id === objectId
+                    ? res.catalogCollection!
+                    : collection
+              ),
+            }
+          })
+          return true
+        }
+
+        return false
       } catch (error) {
         console.error(error)
-        onError()
         return false
       }
     }
 
     return {
       onRequest: onRequestCatalogCollection,
-      requesting: requestingCatalogCollection,
+      requesting: requestCatalogCollection.isLoading,
     }
   }
 
   const onRequestCatalogObject = async () => {
     try {
-      const res = await requestCatalogObject({
-        variables: {
-          objectId: String(objectId),
-          objectType,
-          catalogCollectionId,
-        },
-        update: (cache, { data }) => {
-          // check if request was successful
-          if (!data?.requestCatalogObject) return
-
-          // update lists of answer collections
-          cache.updateQuery(
-            {
-              query: GetCatalogObjectsDocument,
-              variables: { catalogCollectionId },
-            },
-            (qData) => {
-              if (!qData?.getCatalogObjects) return qData
-              return {
-                getCatalogObjects: qData.getCatalogObjects.map((obj) =>
-                  (typeof objectId === 'number' && obj.objectId === objectId) ||
-                  (typeof objectId === 'string' && obj.objectUuid === objectId)
-                    ? { ...obj, isRequested: true }
-                    : obj
-                ),
-              }
-            }
-          )
-
-          const catalogObjects = cache.readQuery({
-            query: GetCatalogObjectsDocument,
-            variables: {
-              catalogCollectionId,
-            },
-          })
-
-          if (catalogObjects?.getCatalogObjects) {
-            const updatedObjects = catalogObjects?.getCatalogObjects.map(
-              (obj) => {
-                if (
-                  (typeof objectId === 'number' && obj.objectId === objectId) ||
-                  (typeof objectId === 'string' && obj.objectUuid === objectId)
-                ) {
-                  return { ...obj, isRequested: true }
-                }
-
-                return obj
-              }
-            )
-
-            cache.writeQuery({
-              query: GetCatalogObjectsDocument,
-              variables: {
-                catalogCollectionId,
-              },
-              data: {
-                getCatalogObjects: updatedObjects,
-              },
-            })
-          }
-        },
-      })
-
-      if (res.data?.requestCatalogObject) {
-        return true
-      } else {
-        onError()
-        return false
+      const input: RouterInputs['sharing']['requestCatalogObject'] = {
+        objectId: String(objectId),
+        objectType:
+          objectType as unknown as RouterInputs['sharing']['requestCatalogObject']['objectType'],
+        catalogCollectionId,
       }
+      const res = await requestCatalogObject.mutateAsync(input)
+
+      if (res.requested) {
+        utils.sharing.catalogObjects.setData(
+          { catalogCollectionId },
+          (queryData) => {
+            if (!queryData?.catalogObjects) return queryData
+
+            return {
+              catalogObjects: queryData.catalogObjects.map((obj) =>
+                (typeof objectId === 'number' && obj.objectId === objectId) ||
+                (typeof objectId === 'string' && obj.objectUuid === objectId)
+                  ? { ...obj, isRequested: true }
+                  : obj
+              ),
+            }
+          }
+        )
+        return true
+      }
+
+      return false
     } catch (error) {
       console.error(error)
-      onError()
       return false
     }
   }
 
   return {
     onRequest: onRequestCatalogObject,
-    requesting: requestingCatalogObject,
+    requesting: requestCatalogObject.isLoading,
   }
 }
 

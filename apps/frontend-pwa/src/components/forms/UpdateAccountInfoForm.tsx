@@ -1,11 +1,6 @@
-import { useLazyQuery, useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import {
-  CheckParticipantNameAvailableDocument,
-  Participant,
-  UpdateParticipantProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   FormikSwitchField,
@@ -19,10 +14,16 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as yup from 'yup'
 
+type ProfileUser = {
+  email?: string | null
+  isProfilePublic?: boolean | null
+  username?: string | null
+}
+
 interface UpdateAccountInfoFormProps {
-  user: Partial<Participant>
+  user: ProfileUser
   onError: () => void
-  onSuccess: () => void
+  onSuccess: () => void | Promise<void>
 }
 
 function UpdateAccountInfoForm({
@@ -31,12 +32,8 @@ function UpdateAccountInfoForm({
   onSuccess,
 }: UpdateAccountInfoFormProps) {
   const t = useTranslations()
-  const [updateParticipantProfile] = useMutation(
-    UpdateParticipantProfileDocument
-  )
-  const [checkParticipantNameAvailable] = useLazyQuery(
-    CheckParticipantNameAvailableDocument
-  )
+  const updateParticipantProfile = trpc.participant.updateProfile.useMutation()
+  const utils = trpc.useUtils()
 
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | undefined
@@ -86,32 +83,45 @@ function UpdateAccountInfoForm({
         password: '',
         passwordRepetition: '',
       }}
-      onSubmit={async (values, { setSubmitting }) => {
+      onSubmit={async (values, { resetForm, setSubmitting }) => {
         setSubmitting(true)
 
         if (
           typeof values.username === 'undefined' ||
+          values.username === null ||
           typeof values.email === 'undefined' ||
           values.email === null
         ) {
           onError()
+          setSubmitting(false)
           return
         }
 
-        const result = await updateParticipantProfile({
-          variables: {
+        try {
+          const result = await updateParticipantProfile.mutateAsync({
             isProfilePublic: values.isProfilePublic,
             password:
               values.password === '' ? undefined : values.password.trim(),
             username: values.username.trim(),
             email: values.email.toLowerCase(),
-          },
-        })
+          })
 
-        if (!result.data?.updateParticipantProfile || result.errors) {
+          if (!result) {
+            onError()
+          } else {
+            resetForm({
+              values: {
+                ...values,
+                password: '',
+                passwordRepetition: '',
+              },
+            })
+            await onSuccess()
+          }
+        } catch {
           onError()
-        } else {
-          onSuccess()
+        } finally {
+          setSubmitting(false)
         }
       }}
     >
@@ -157,11 +167,9 @@ function UpdateAccountInfoForm({
                       await validateField('username')
                     }}
                     checkUsernameAvailable={async (name: string) => {
-                      const { data: result } =
-                        await checkParticipantNameAvailable({
-                          variables: { username: name },
-                        })
-                      return result?.checkParticipantNameAvailable ?? false
+                      return utils.participant.checkNameAvailable.fetch({
+                        username: name,
+                      })
                     }}
                     unavailableMessage={t(
                       'shared.generic.usernameAvailability'
@@ -215,7 +223,7 @@ function UpdateAccountInfoForm({
                 <Button
                   fluid
                   type="submit"
-                  disabled={!isValid || !isUsernameAvailable}
+                  disabled={isSubmitting || !isValid || !isUsernameAvailable}
                   loading={isSubmitting}
                   className={{ root: 'border-primary-100 h-8' }}
                   data={{ cy: 'save-account-update' }}

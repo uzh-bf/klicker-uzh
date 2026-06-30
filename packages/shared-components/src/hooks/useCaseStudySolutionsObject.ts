@@ -1,5 +1,5 @@
-import type { CaseStudyInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
+import type { CaseStudyInstanceEvaluation } from '../elementTypes'
 
 function useCaseStudySolutionsObject({
   evaluation,

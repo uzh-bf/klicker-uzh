@@ -31,6 +31,7 @@ import {
   createEditor,
   Descendant,
   Editor,
+  Range,
   Element as SlateElement,
   Transforms,
 } from 'slate'
@@ -112,6 +113,53 @@ const HOTKEYS: Record<string, FormatType> = {
   'mod+i': 'italic',
 }
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
+const DELETE_INPUT_TYPES = new Set([
+  'deleteByCut',
+  'deleteContent',
+  'deleteContentBackward',
+  'deleteContentForward',
+])
+
+function getExpandedSelection(editor: CustomEditor): Range | null {
+  if (editor.selection && !Range.isCollapsed(editor.selection)) {
+    return editor.selection
+  }
+
+  const domSelection = window.getSelection()
+  if (
+    !domSelection ||
+    domSelection.isCollapsed ||
+    !domSelection.anchorNode ||
+    !domSelection.focusNode ||
+    !ReactEditor.hasDOMNode(editor, domSelection.anchorNode, {
+      editable: true,
+    }) ||
+    !ReactEditor.hasDOMNode(editor, domSelection.focusNode, {
+      editable: true,
+    })
+  ) {
+    return null
+  }
+
+  const range = ReactEditor.toSlateRange(editor, domSelection, {
+    exactMatch: false,
+    suppressThrow: true,
+  })
+
+  return range && !Range.isCollapsed(range) ? range : null
+}
+
+function deleteExpandedSelection(editor: CustomEditor): boolean {
+  const selection = getExpandedSelection(editor)
+
+  if (!selection) {
+    return false
+  }
+
+  Transforms.select(editor, selection)
+  Editor.deleteFragment(editor)
+  return true
+}
 
 function ContentInput({
   content,
@@ -166,7 +214,23 @@ function ContentInput({
             placeholder={placeholder}
             renderElement={renderElement}
             renderLeaf={renderLeaf}
+            onDOMBeforeInput={(event) => {
+              if (
+                DELETE_INPUT_TYPES.has(event.inputType) &&
+                deleteExpandedSelection(editor)
+              ) {
+                event.preventDefault()
+              }
+            }}
             onKeyDown={(event) => {
+              if (
+                (event.key === 'Backspace' || event.key === 'Delete') &&
+                deleteExpandedSelection(editor)
+              ) {
+                event.preventDefault()
+                return
+              }
+
               for (const hotkey in HOTKEYS) {
                 if (isHotkey(hotkey, event)) {
                   event.preventDefault()

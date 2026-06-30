@@ -7,15 +7,15 @@ import {
   faWarning,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementInstanceVersionInfo,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import { useMemo } from 'react'
 import { swapIndices } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import {
+  ElementInstanceVersionInfo,
+  ElementType,
+} from '../../../lib/constants/activityEnums'
 import { OutdatedInstancesRefetchFunction } from './InstanceUpdateOption'
 import {
   ElementBlockErrorValues,

@@ -1,13 +1,12 @@
-import { useQuery } from '@apollo/client'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../lib/trpc'
 import Header from './common/Header'
 
 interface LayoutProps {
@@ -30,16 +29,35 @@ function Layout({
   const router = useRouter()
 
   const {
-    loading: loadingUser,
+    isLoading: loadingUser,
     error: errorUser,
     data: dataUser,
-  } = useQuery(UserProfileDocument, { fetchPolicy: 'cache-and-network' })
+  } = trpc.user.profile.useQuery()
+  const unauthorizedProfileError = isUnauthorizedError(errorUser)
+  const shouldShowProfileError =
+    !dataUser && Boolean(errorUser) && !unauthorizedProfileError
+  const shouldRedirectToLogin =
+    !dataUser &&
+    !shouldShowProfileError &&
+    (!loadingUser || unauthorizedProfileError)
 
-  if (!dataUser && !loadingUser) {
-    router.push('/login')
+  useEffect(() => {
+    if (!shouldRedirectToLogin) return
+
+    void router.push('/login')
+  }, [router, shouldRedirectToLogin])
+
+  if (shouldShowProfileError) {
+    return (
+      <div className="mx-auto my-auto">
+        <UserNotification type="error">
+          {t('shared.generic.systemError')}
+        </UserNotification>
+      </div>
+    )
   }
 
-  if (loadingUser) {
+  if (loadingUser && !dataUser) {
     return (
       <div className="mx-auto my-auto">
         <Loader />
@@ -47,10 +65,18 @@ function Layout({
     )
   }
 
-  if (!dataUser || (!loadingUser && errorUser)) {
+  if (shouldRedirectToLogin) {
+    return (
+      <div className="mx-auto my-auto">
+        <Loader />
+      </div>
+    )
+  }
+
+  if (!dataUser) {
     return (
       <UserNotification type="error">
-        {errorUser?.message || t('shared.generic.systemError')}
+        {t('shared.generic.systemError')}
       </UserNotification>
     )
   }
@@ -63,7 +89,7 @@ function Layout({
       </Head>
 
       <div className="flex-none">
-        <Header user={dataUser.userProfile} />
+        <Header user={dataUser} />
       </div>
 
       <div
@@ -82,3 +108,12 @@ function Layout({
 }
 
 export default Layout
+
+function isUnauthorizedError(error: unknown) {
+  if (!(error instanceof Error)) return false
+
+  return (
+    error.message === 'Unauthorized' ||
+    (error as { data?: { code?: string } }).data?.code === 'UNAUTHORIZED'
+  )
+}

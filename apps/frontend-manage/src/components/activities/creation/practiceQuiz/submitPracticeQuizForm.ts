@@ -1,17 +1,10 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreatePracticeQuizMutation,
-  CreatePracticeQuizMutationVariables,
-  EditPracticeQuizMutation,
-  EditPracticeQuizMutationVariables,
-  GetSingleCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { RouterInputs, RouterOutputs } from '../../../../lib/trpc'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
+
+type CreatePracticeQuizInput = RouterInputs['activity']['createPracticeQuiz']
+type CreatePracticeQuizResult = RouterOutputs['activity']['createPracticeQuiz']
+type EditPracticeQuizInput = RouterInputs['activity']['editPracticeQuiz']
+type EditPracticeQuizResult = RouterOutputs['activity']['editPracticeQuiz']
 
 interface PracticeQuizFormSubmissionProps {
   id?: string
@@ -19,26 +12,14 @@ interface PracticeQuizFormSubmissionProps {
   values: PracticeQuizFormValues
   editMode: boolean
   createPracticeQuiz: (
-    options?:
-      | MutationFunctionOptions<
-          CreatePracticeQuizMutation,
-          CreatePracticeQuizMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<CreatePracticeQuizMutation>>
+    input: CreatePracticeQuizInput
+  ) => Promise<CreatePracticeQuizResult>
   editPracticeQuiz: (
-    options?:
-      | MutationFunctionOptions<
-          EditPracticeQuizMutation,
-          EditPracticeQuizMutationVariables,
-          DefaultContext,
-          ApolloCache<any>
-        >
-      | undefined
-  ) => Promise<FetchResult<EditPracticeQuizMutation>>
+    input: EditPracticeQuizInput
+  ) => Promise<EditPracticeQuizResult>
   setIsWizardCompleted: (isCompleted: boolean) => void
+  invalidateCourseDetail: (courseId: string) => Promise<void>
+  invalidateActivities: () => Promise<void>
   onError: () => void
 }
 
@@ -50,10 +31,13 @@ async function submitPracticeQuizForm({
   createPracticeQuiz,
   editPracticeQuiz,
   setIsWizardCompleted,
+  invalidateCourseDetail,
+  invalidateActivities,
   onError,
 }: PracticeQuizFormSubmissionProps) {
   try {
     let success = false
+    const courseIdsToInvalidate = new Set<string>()
 
     const createOrUpdateJSON = {
       name: values.name,
@@ -82,99 +66,38 @@ async function submitPracticeQuizForm({
       }),
       multiplier: parseInt(values.multiplier),
       courseId: values.courseId!,
-      order: values.order,
+      order: values.order as CreatePracticeQuizInput['order'],
       resetTimeDays: parseInt(values.resetTimeDays),
     }
 
     if (editMode && id) {
-      const result = await editPracticeQuiz({
-        variables: { id, ...createOrUpdateJSON },
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.editPracticeQuiz?.courseId) return
+      const result = await editPracticeQuiz({ id, ...createOrUpdateJSON })
 
-          // if the course assignment changed, remove the practice quiz from the previous course
-          if (
-            previousCourseId &&
-            res.editPracticeQuiz.courseId !== previousCourseId
-          ) {
-            cache.updateQuery(
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: previousCourseId! },
-              },
-              (data) => {
-                if (!data?.course) return data
+      success = Boolean(result.editPracticeQuiz)
+      if (result.editPracticeQuiz?.courseId) {
+        const courseIds = [
+          previousCourseId,
+          result.editPracticeQuiz.courseId,
+        ].filter((courseId): courseId is string => Boolean(courseId))
 
-                const activities =
-                  data.course.practiceQuizzesInfo?.filter(
-                    (pq) => pq.id !== res.editPracticeQuiz!.id
-                  ) ?? []
-                return {
-                  course: { ...data.course, practiceQuizzesInfo: activities },
-                }
-              }
-            )
-          }
-
-          // updated / add the practice quiz in the currently assigned course
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.editPracticeQuiz.courseId },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              const activities = [
-                ...(data.course.practiceQuizzesInfo?.filter(
-                  (pq) => pq.id !== res.editPracticeQuiz!.id
-                ) ?? []),
-                res.editPracticeQuiz!,
-              ]
-              return {
-                course: { ...data.course, practiceQuizzesInfo: activities },
-              }
-            }
-          )
-        },
-      })
-
-      success = Boolean(result.data?.editPracticeQuiz)
+        courseIds.forEach((courseId) => courseIdsToInvalidate.add(courseId))
+      }
     } else {
-      const result = await createPracticeQuiz({
-        variables: createOrUpdateJSON,
-        update: (cache, { data: res }) => {
-          // if the mutation was not successful, return early
-          if (!res?.createPracticeQuiz?.courseId) return
+      const result = await createPracticeQuiz(createOrUpdateJSON)
 
-          // change the status of the practice quiz on the course overview back to draft
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: res.createPracticeQuiz.courseId! },
-            },
-            (data) => {
-              if (!data?.course) return data
-
-              return {
-                course: {
-                  ...data.course,
-                  practiceQuizzesInfo: [
-                    ...(data.course.practiceQuizzesInfo ?? []),
-                    res.createPracticeQuiz!,
-                  ],
-                },
-              }
-            }
-          )
-        },
-      })
-
-      success = Boolean(result.data?.createPracticeQuiz)
+      success = Boolean(result.createPracticeQuiz)
+      if (result.createPracticeQuiz?.courseId) {
+        courseIdsToInvalidate.add(result.createPracticeQuiz.courseId)
+      }
     }
 
     if (success) {
+      await Promise.all([
+        invalidateActivities(),
+        ...Array.from(courseIdsToInvalidate).map((courseId) =>
+          invalidateCourseDetail(courseId).catch(console.error)
+        ),
+      ])
       setIsWizardCompleted(true)
     } else {
       onError()

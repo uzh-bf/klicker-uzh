@@ -1,15 +1,12 @@
-import { useMutation } from '@apollo/client'
 import {
   faBan,
   faPersonWalkingArrowRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetUserGroupsUserDocument,
-  LeaveUserGroupDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 
 function LeaveUserGroupModal({
   onClose,
@@ -23,7 +20,18 @@ function LeaveUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  const [leaveUserGroup, { loading }] = useMutation(LeaveUserGroupDocument)
+  const utils = trpc.useUtils()
+  const leaveUserGroup = trpc.sharing.leaveUserGroup.useMutation()
+  const [leavePending, setLeavePending] = useState(false)
+  const loading = leaveUserGroup.isLoading || leavePending
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
+  const refreshUserGroups = () => {
+    return utils.sharing.userGroups.invalidate()
+  }
 
   const onErrorToast = () =>
     toast({
@@ -35,7 +43,7 @@ function LeaveUserGroupModal({
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.userGroups.leaveGroup')}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -44,33 +52,18 @@ function LeaveUserGroupModal({
         </div>
       }
       primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
+        if (loading) return
+
+        let releasePending = true
+        setLeavePending(true)
+
         try {
-          const { data: success } = await leaveUserGroup({
-            variables: {
-              groupId,
-            },
-            update: (cache, { data }) => {
-              // check if request was successful
-              if (!data?.leaveUserGroup) return
-
-              // update list of user groups
-              cache.updateQuery(
-                { query: GetUserGroupsUserDocument },
-                (qData) => {
-                  if (!qData?.getUserGroupsUser) return
-
-                  return {
-                    getUserGroupsUser: qData.getUserGroupsUser.filter(
-                      (group) => group.id !== groupId
-                    ),
-                  }
-                }
-              )
-            },
-          })
-
-          if (success?.leaveUserGroup) {
+          const success = await leaveUserGroup.mutateAsync({ groupId })
+          if (success.left) {
+            await refreshUserGroups()
+            releasePending = false
             onSuccess()
           } else {
             onErrorToast()
@@ -78,6 +71,10 @@ function LeaveUserGroupModal({
         } catch (error) {
           console.error('Error leaving user group:', error)
           onErrorToast()
+        } finally {
+          if (releasePending) {
+            setLeavePending(false)
+          }
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-leave-group' }}
@@ -87,7 +84,7 @@ function LeaveUserGroupModal({
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-leave-group' }}
       className={{ content: 'max-w-xl' }}
     >

@@ -1,5 +1,5 @@
-import { CaseStudyElementResultCaseInfo } from '@klicker-uzh/graphql/dist/ops'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
+import { CaseStudyElementResultCaseInfo } from '@lib/evaluationTypes'
 import { Checkbox, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'

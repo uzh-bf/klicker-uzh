@@ -5,28 +5,25 @@ import {
   faPencil,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  CatalogCollection,
-  ObjectAccess,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from '../actions/CatalogChangeAccessModal'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
+import type { CatalogBrowserCollection } from '../catalogBrowserTypes'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
+import ObjectAccessLabel from '../ObjectAccessLabel'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
 function CatalogCollectionListItem({
   collection,
 }: {
-  collection: CatalogCollection
+  collection: CatalogBrowserCollection
 }) {
   const t = useTranslations()
   const router = useRouter()

@@ -5,18 +5,15 @@ import {
   HttpLink,
   InMemoryCache,
   NormalizedCacheObject,
-  split,
 } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import { RetryLink } from '@apollo/client/link/retry'
-import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
+import { getStoredAuthToken } from '@klicker-uzh/util/client-auth'
 import merge from 'deepmerge'
-import { getOperationAST } from 'graphql'
 import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
-import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
 import { useMemo } from 'react'
@@ -48,7 +45,7 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
 
   const authLink = setContext((_, { headers }) => {
     if (isBrowser) {
-      const token = sessionStorage.getItem('participant_token')
+      const token = getStoredAuthToken('participant_token')
 
       return {
         headers: {
@@ -98,7 +95,7 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
     if (networkError) console.log(`[Network error]`, networkError)
   })
 
-  let link: ApolloLink = new HttpLink({
+  const link: ApolloLink = new HttpLink({
     uri: isBrowser
       ? process.env.NEXT_PUBLIC_API_URL
       : process.env.API_URL_SSR ||
@@ -121,36 +118,6 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
         max: 3,
       },
     })
-
-    const wsLink = new GraphQLWsLink(
-      createClient({
-        url: (process.env.NEXT_PUBLIC_API_URL as string)
-          .replace('http://', 'ws://')
-          .replace('https://', 'wss://'),
-        // connectionParams: () => {
-        //   // Note: getSession() is a placeholder function created by you
-        //   const session = getSession();
-        //   if (!session) {
-        //     return {};
-        //   }
-        //   return {
-        //     Authorization: `Bearer ${session.token}`,
-        //   };
-        // },
-      })
-    )
-
-    link = split(
-      ({ query, operationName }) => {
-        const definition = getOperationAST(query, operationName)
-        return (
-          definition?.kind === 'OperationDefinition' &&
-          definition.operation === 'subscription'
-        )
-      },
-      wsLink,
-      link
-    )
 
     return from([retryLink, errorLink, authLink, ...persistedLink, link])
   }

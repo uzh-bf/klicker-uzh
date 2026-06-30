@@ -1,9 +1,6 @@
-import {
-  ElementType,
-  type NumericalSolutionRange,
-} from '@klicker-uzh/graphql/dist/ops'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useMemo } from 'react'
+import { ElementType, type NumericalSolutionRange } from '../elementTypes'
 
 interface UseEvaluationHistogramDataProps {
   type: ElementType

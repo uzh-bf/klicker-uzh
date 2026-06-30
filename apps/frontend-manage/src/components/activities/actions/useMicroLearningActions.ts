@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import {
   faCalendar,
   faCopy as faCopyRegular,
@@ -19,16 +18,15 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  GetSingleCourseDocument,
-  UnpublishMicroLearningDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import {
+  ActivityType,
+  type ActivityInfo,
+} from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
 
 function useMicroLearningActions({
@@ -54,9 +52,10 @@ function useMicroLearningActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
-  const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
-    UnpublishMicroLearningDocument
-  )
+  const utils = trpc.useUtils()
+  const unpublishMicroLearning = trpc.activity.unpublish.useMutation()
+  const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const unpublishing = unpublishMicroLearning.isLoading || unpublishRefreshing
   const onSuccessToast = () =>
     toast({
       type: 'success',
@@ -197,40 +196,37 @@ function useMicroLearningActions({
         label: t('manage.course.unpublishMicrolearning'),
         icon: faLock,
         onClick: async () => {
-          await unpublishMicroLearning({
-            variables: { id: microLearning.id! },
-            update: (cache, { data: res }) => {
-              // if the mutation was not successful, return early
-              if (!res?.unpublishMicroLearning?.id) return
-
-              // change the status of the practice quiz on the course overview back to draft
-              cache.updateQuery(
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: microLearning.courseId! },
-                },
-                (data) => {
-                  if (!data?.course) return data
-
-                  return {
-                    course: {
-                      ...data.course,
-                      microLearningsInfo: data.course.microLearningsInfo?.map(
-                        (quiz) =>
-                          quiz.id === res.unpublishMicroLearning?.id
-                            ? {
-                                ...quiz,
-                                status: res.unpublishMicroLearning?.status,
-                              }
-                            : quiz
-                      ),
-                    },
-                  }
-                }
-              )
-            },
-          })
-          await refetchActivities?.()
+          setUnpublishRefreshing(true)
+          try {
+            const result = await unpublishMicroLearning.mutateAsync({
+              activityId: microLearning.id,
+              activityType:
+                ActivityType.MicroLearning as RouterInputs['activity']['unpublish']['activityType'],
+            })
+            if (result.unpublishActivity?.id) {
+              await Promise.all([
+                microLearning.courseId
+                  ? utils.course.detail.invalidate({
+                      courseId: microLearning.courseId,
+                    })
+                  : undefined,
+                refetchActivities?.(),
+              ]).catch(console.error)
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+            })
+          } finally {
+            setUnpublishRefreshing(false)
+          }
         },
         disabled: unpublishing,
         data: { cy: `unpublish-microlearning-${microLearning.name}` },
@@ -272,6 +268,9 @@ function useMicroLearningActions({
       setEndingModal,
       setSharingModal,
       unpublishMicroLearning,
+      unpublishing,
+      utils,
+      refetchActivities,
       setDeletionModal,
       setRemovalModal,
       setActivityLogOpen,

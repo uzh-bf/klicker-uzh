@@ -1,9 +1,13 @@
-import { CourseSummary } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import type { RouterOutputs } from '../../../lib/trpc'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import { CourseDeletionConfirmationType } from './CourseDeletionModal'
+
+type CourseSummary = NonNullable<
+  RouterOutputs['course']['summary']['courseSummary']
+>
 
 interface CourseDeletionConfirmationsProps {
   summary: CourseSummary
@@ -17,6 +21,8 @@ function CourseDeletionConfirmations({
   setConfirmations,
 }: CourseDeletionConfirmationsProps) {
   const t = useTranslations()
+  const confirmationData = (count: number, cy: string) =>
+    count > 0 ? { cy } : undefined
 
   return (
     <div className="flex flex-col gap-2">
@@ -42,7 +48,10 @@ function CourseDeletionConfirmations({
         confirmed={confirmations.deleteParticipations}
         notApplicable={summary.numOfParticipations === 0}
         confirmationType="delete"
-        data={{ cy: 'course-deletion-participations-confirm' }}
+        data={confirmationData(
+          summary.numOfParticipations,
+          'course-deletion-participations-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -61,7 +70,10 @@ function CourseDeletionConfirmations({
         confirmed={confirmations.disconnectLiveQuizzes}
         notApplicable={summary.numOfLiveQuizzes === 0}
         confirmationType="delete"
-        data={{ cy: 'course-deletion-live-quiz-confirm' }}
+        data={confirmationData(
+          summary.numOfLiveQuizzes,
+          'course-deletion-live-quiz-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -80,7 +92,10 @@ function CourseDeletionConfirmations({
         confirmed={confirmations.deletePracticeQuizzes}
         notApplicable={summary.numOfPracticeQuizzes === 0}
         confirmationType="delete"
-        data={{ cy: 'course-deletion-practice-quiz-confirm' }}
+        data={confirmationData(
+          summary.numOfPracticeQuizzes,
+          'course-deletion-practice-quiz-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -99,7 +114,10 @@ function CourseDeletionConfirmations({
         confirmed={confirmations.deleteMicroLearnings}
         notApplicable={summary.numOfMicroLearnings === 0}
         confirmationType="delete"
-        data={{ cy: 'course-deletion-micro-learning-confirm' }}
+        data={confirmationData(
+          summary.numOfMicroLearnings,
+          'course-deletion-micro-learning-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -118,7 +136,10 @@ function CourseDeletionConfirmations({
         confirmed={confirmations.deleteGroupActivities}
         notApplicable={summary.numOfGroupActivities === 0}
         confirmationType="delete"
-        data={{ cy: 'course-deletion-group-activity-confirm' }}
+        data={confirmationData(
+          summary.numOfGroupActivities,
+          'course-deletion-group-activity-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -137,7 +158,10 @@ function CourseDeletionConfirmations({
         confirmed={confirmations.deleteParticipantGroups}
         notApplicable={summary.numOfParticipantGroups === 0}
         confirmationType="delete"
-        data={{ cy: 'course-deletion-participant-group-confirm' }}
+        data={confirmationData(
+          summary.numOfParticipantGroups,
+          'course-deletion-participant-group-confirm'
+        )}
       />
       <ConfirmationItem
         label={
@@ -156,7 +180,10 @@ function CourseDeletionConfirmations({
         confirmed={confirmations.deleteLeaderboardEntries}
         notApplicable={summary.numOfLeaderboardEntries === 0}
         confirmationType="delete"
-        data={{ cy: 'course-deletion-leaderboard-entry-confirm' }}
+        data={confirmationData(
+          summary.numOfLeaderboardEntries,
+          'course-deletion-leaderboard-entry-confirm'
+        )}
       />
     </div>
   )

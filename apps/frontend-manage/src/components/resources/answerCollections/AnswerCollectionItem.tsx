@@ -4,13 +4,14 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AnswerCollection, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@lib/constants/sharingEnums'
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
+import type { RouterOutputs } from '../../../lib/trpc'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
@@ -21,11 +22,14 @@ import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
 
+type AnswerCollectionInfo =
+  RouterOutputs['resources']['answerCollectionsInfo']['answerCollections'][number]
+
 function AnswerCollectionItem({
   collection,
   highlighted = false,
 }: {
-  collection: AnswerCollection
+  collection: AnswerCollectionInfo
   highlighted?: boolean
 }) {
   const t = useTranslations()
@@ -142,6 +146,8 @@ function AnswerCollectionItem({
                 item: 'py-0.5 text-sm',
                 trigger:
                   'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+                viewport:
+                  'data-[state=closed]:animate-none! data-[state=open]:animate-none!',
               }}
               data={{ cy: `answer-collection-actions-${collection.name}` }}
             />

@@ -1,4 +1,3 @@
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import Image from 'next/image'
 
 const POSITIONS = [
@@ -11,7 +10,7 @@ const POSITIONS = [
 
 interface GroupVisualizationProps {
   groupName: string
-  participants: Omit<Participant, 'isActive' | 'locale' | 'xp'>[]
+  participants: { avatar?: string | null }[]
   scaleFactor?: number
 }
 

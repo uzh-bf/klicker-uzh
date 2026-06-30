@@ -1,7 +1,6 @@
-import { useQuery } from '@apollo/client'
 import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
-import { GetControlCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { H4, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -11,12 +10,13 @@ import ListButton from '../components/common/ListButton'
 function Index() {
   const t = useTranslations()
   const {
-    loading: loadingCourses,
+    isLoading: loadingCourses,
     error: errorCourses,
     data: dataCourses,
-  } = useQuery(GetControlCoursesDocument)
+  } = trpc.course.controlCourses.useQuery()
+  const hasCoursesData = typeof dataCourses !== 'undefined'
 
-  if (loadingCourses) {
+  if (loadingCourses && !hasCoursesData) {
     return (
       <Layout title={t('control.home.courseSelection')}>
         <Loader />
@@ -24,14 +24,25 @@ function Index() {
     )
   }
 
-  if ((!loadingCourses && !dataCourses) || errorCourses) {
+  if (errorCourses && !hasCoursesData) {
     return (
       <Layout title={t('control.home.courseSelection')}>
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
-          message="Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen
-        Sie es später erneut."
+          message={t('control.course.loadingFailed')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!dataCourses) {
+    return (
+      <Layout title={t('control.home.courseSelection')}>
+        <UserNotification
+          type="error"
+          className={{ root: 'text-base' }}
+          message={t('control.course.loadingFailed')}
         />
       </Layout>
     )
@@ -40,6 +51,13 @@ function Index() {
   return (
     <Layout title={t('control.home.courseSelection')}>
       <div className="flex w-full flex-col gap-4">
+        {errorCourses && dataCourses ? (
+          <UserNotification
+            type="error"
+            className={{ root: 'text-base' }}
+            message={t('control.course.loadingFailed')}
+          />
+        ) : null}
         {dataCourses?.controlCourses && (
           <div>
             <H4>{t('control.home.selectCourse')}</H4>

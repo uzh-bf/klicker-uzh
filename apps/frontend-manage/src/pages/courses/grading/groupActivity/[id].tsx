@@ -1,9 +1,3 @@
-import { useQuery } from '@apollo/client'
-import {
-  ElementType,
-  GetGradingGroupActivityDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -16,6 +10,11 @@ import FinalizeGradingModal from '../../../../components/courses/groupActivity/F
 import GroupActivityGradingStack from '../../../../components/courses/groupActivity/GroupActivityGradingStack'
 import GroupActivitySubmission from '../../../../components/courses/groupActivity/GroupActivitySubmission'
 import SubmissionSwitchModal from '../../../../components/courses/groupActivity/SubmissionSwitchModal'
+import {
+  ElementType,
+  PublicationStatus,
+} from '../../../../lib/groupActivityGradingTypes'
+import { trpc } from '../../../../lib/trpc'
 
 const MAX_POINTS_PER_QUESTION = 25
 
@@ -29,15 +28,15 @@ function GroupActivityGrading() {
   const [switchingModal, setSwitchingModal] = useState<boolean>(false)
   const [finalizeModal, setFinalizeModal] = useState<boolean>(false)
   const [nextSubmission, setNextSubmission] = useState<number>(-1)
+  const activityId = typeof router.query.id === 'string' ? router.query.id : ''
 
-  const { data, loading } = useQuery(GetGradingGroupActivityDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    skip: !router.query.id,
-  })
+  const { data, error, isLoading } =
+    trpc.activity.groupActivityGrading.useQuery(
+      { id: activityId },
+      { enabled: Boolean(activityId) }
+    )
 
-  const groupActivity = data?.getGradingGroupActivity
+  const groupActivity = data?.groupActivityGrading
   const maxPoints =
     useMemo(() => {
       return groupActivity?.stacks?.[0].elements
@@ -69,21 +68,44 @@ function GroupActivityGrading() {
     [groupActivity?.activityInstances]
   )
 
-  if (loading)
+  if ((isLoading && !groupActivity) || !activityId)
     return (
       <Layout>
         <Loader />
       </Layout>
     )
 
+  if (error && !groupActivity) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
   if (!groupActivity) {
     return (
-      <Layout>{t('manage.groupActivity.activityMissingOrNotCompleted')}</Layout>
+      <Layout>
+        <UserNotification
+          type="warning"
+          message={t('manage.groupActivity.activityMissingOrNotCompleted')}
+        />
+      </Layout>
     )
   }
 
   return (
     <Layout>
+      {error && groupActivity ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <H1 className={{ root: 'mb-4' }}>
         {t('manage.groupActivity.gradingTitle', { name: groupActivity.name })}
       </H1>

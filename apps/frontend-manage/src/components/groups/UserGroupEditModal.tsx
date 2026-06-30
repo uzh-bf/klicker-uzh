@@ -8,7 +8,6 @@ import {
   faUserXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   H4,
@@ -20,6 +19,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AddUserGroupMember from './AddUserGroupMember'
+import type { UserGroup } from './types'
 import useChangeUserGroupName from './useChangeUserGroupName'
 import useDemoteGroupAdminToMember from './useDemoteGroupAdminToMember'
 import usePromoteGroupMemberToAdmin from './usePromoteGroupMemberToAdmin'
@@ -47,11 +47,17 @@ function UserGroupEditModal({
 
   const [titleEditMode, setTitleEditMode] = useState(false)
   const [titleState, setTitleState] = useState(group.name)
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      escapeDisabled={loading}
+      onClose={handleClose}
       title={
         titleEditMode ? (
           <div className="flex max-w-[90%] flex-row items-center md:max-w-[80%]">
@@ -67,6 +73,7 @@ function UserGroupEditModal({
               className={{
                 root: 'bg-primary-100 hover:bg-primary-100/90 ml-1.5 px-2 py-2 text-white hover:text-white',
               }}
+              disabled={loading || titleState.trim() === ''}
               onClick={async () => {
                 await onNameChange({
                   groupId: group.id,
@@ -76,7 +83,7 @@ function UserGroupEditModal({
               }}
               data={{ cy: 'save-new-group-name' }}
             >
-              <Button.Icon withoutLabel icon={faSave} />
+              <Button.Icon withoutLabel icon={faSave} loading={nameChanging} />
             </Button>
           </div>
         ) : (
@@ -85,6 +92,7 @@ function UserGroupEditModal({
             {isGroupEditor ? (
               <Button
                 basic
+                disabled={loading}
                 onClick={() => setTitleEditMode(true)}
                 className={{ root: 'px-1.5 py-1.5' }}
                 data={{ cy: 'edit-group-name' }}
@@ -159,7 +167,11 @@ function UserGroupEditModal({
                           cy: `transfer-group-ownership-${admin.shortname}`,
                         }}
                       >
-                        <Button.Icon withoutLabel icon={faUserTie} />
+                        <Button.Icon
+                          withoutLabel
+                          icon={faUserTie}
+                          loading={transferringOwnership}
+                        />
                       </Button>
                     ) : null}
                     <Button
@@ -174,7 +186,11 @@ function UserGroupEditModal({
                       }}
                       data={{ cy: `demote-group-admin-${admin.shortname}` }}
                     >
-                      <Button.Icon withoutLabel icon={faUserMinus} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserMinus}
+                        loading={demoting}
+                      />
                     </Button>
                     <Button
                       basic
@@ -190,7 +206,11 @@ function UserGroupEditModal({
                       }}
                       data={{ cy: `remove-group-admin-${admin.shortname}` }}
                     >
-                      <Button.Icon withoutLabel icon={faUserXmark} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserXmark}
+                        loading={removing}
+                      />
                     </Button>
                   </div>
                 ) : null}
@@ -261,7 +281,7 @@ function UserGroupEditModal({
                       disabled={loading}
                       className={{ root: 'px-1.5 py-1' }}
                       onClick={async () => {
-                        onPromotion({
+                        await onPromotion({
                           groupId: group.id,
                           memberId: member.id!,
                         })
@@ -270,7 +290,11 @@ function UserGroupEditModal({
                         cy: `promote-group-member-${member.shortname}`,
                       }}
                     >
-                      <Button.Icon withoutLabel icon={faUserPlus} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserPlus}
+                        loading={promoting}
+                      />
                     </Button>
                     <Button
                       basic
@@ -286,7 +310,11 @@ function UserGroupEditModal({
                       }}
                       data={{ cy: `remove-group-member-${member.shortname}` }}
                     >
-                      <Button.Icon withoutLabel icon={faUserXmark} />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faUserXmark}
+                        loading={removing}
+                      />
                     </Button>
                   </div>
                 ) : null}

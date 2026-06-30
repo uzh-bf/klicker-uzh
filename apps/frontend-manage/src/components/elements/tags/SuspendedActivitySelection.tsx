@@ -1,11 +1,8 @@
-import { useSuspenseQuery } from '@apollo/client'
-import {
-  GetCourseActivityIdsDocument,
-  GetUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { SelectField } from '@uzh-bf/design-system'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { SelectField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
+import { trpc } from '../../../lib/trpc'
 
 function SuspendedActivitySelection({
   activeCourseId,
@@ -19,15 +16,18 @@ function SuspendedActivitySelection({
   toggleActivityIdFilter: ({ activityId }: { activityId?: string }) => void
 }) {
   const t = useTranslations()
-  const { data: userCourses } = useSuspenseQuery(GetUserCoursesDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
-  const { data: courseActivities } = useSuspenseQuery(
-    GetCourseActivityIdsDocument,
-    {
-      variables: { courseId: activeCourseId },
-      fetchPolicy: 'cache-and-network',
-    }
+  const {
+    data: userCourses,
+    error: coursesError,
+    isLoading: loadingCourses,
+  } = trpc.course.userCourses.useQuery()
+  const {
+    data: courseActivities,
+    error: activitiesError,
+    isLoading: loadingActivities,
+  } = trpc.course.activityIds.useQuery({ courseId: activeCourseId })
+  const staleSelectionError = Boolean(
+    (coursesError && userCourses) || (activitiesError && courseActivities)
   )
 
   // combine the activities in a course into the format required by the select field
@@ -36,7 +36,7 @@ function SuspendedActivitySelection({
       {
         label: t('shared.generic.liveQuizzes'),
         items:
-          courseActivities?.getCourseActivityIds?.liveQuizzes.map((quiz) => ({
+          courseActivities?.courseActivityIds?.liveQuizzes.map((quiz) => ({
             value: quiz.id,
             label: quiz.name,
           })) || [],
@@ -44,17 +44,15 @@ function SuspendedActivitySelection({
       {
         label: t('shared.generic.practiceQuizzes'),
         items:
-          courseActivities?.getCourseActivityIds?.practiceQuizzes.map(
-            (quiz) => ({
-              value: quiz.id,
-              label: quiz.name,
-            })
-          ) || [],
+          courseActivities?.courseActivityIds?.practiceQuizzes.map((quiz) => ({
+            value: quiz.id,
+            label: quiz.name,
+          })) || [],
       },
       {
         label: t('shared.generic.microlearnings'),
         items:
-          courseActivities?.getCourseActivityIds?.microLearnings.map((ml) => ({
+          courseActivities?.courseActivityIds?.microLearnings.map((ml) => ({
             value: ml.id,
             label: ml.name,
           })) || [],
@@ -62,7 +60,7 @@ function SuspendedActivitySelection({
       {
         label: t('shared.generic.groupActivities'),
         items:
-          courseActivities?.getCourseActivityIds?.groupActivities.map((ga) => ({
+          courseActivities?.courseActivityIds?.groupActivities.map((ga) => ({
             value: ga.id,
             label: ga.name,
           })) || [],
@@ -71,20 +69,44 @@ function SuspendedActivitySelection({
     [courseActivities, t]
   )
 
+  if (
+    (loadingCourses && !userCourses) ||
+    (loadingActivities && !courseActivities)
+  ) {
+    return <Loader />
+  }
+
+  if (!userCourses?.userCourses || !courseActivities?.courseActivityIds) {
+    return (
+      <UserNotification
+        type="error"
+        message={t('shared.generic.systemError')}
+        className={{ root: 'text-sm' }}
+      />
+    )
+  }
+
   // group the activities by type for the select field
   return (
     <div>
+      {staleSelectionError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-1 py-1 text-sm' }}
+        />
+      ) : null}
       <SelectField
         id="course-select"
         label={t('shared.generic.course')}
-        disabled={userCourses.userCourses?.length === 0}
+        disabled={userCourses?.userCourses.length === 0}
         value={activeCourseId ?? 'no-course'}
         items={[
           {
             value: 'no-course',
             label: t('manage.activityWizard.liveQuizNoCourse'),
           },
-          ...(userCourses.userCourses?.map((course) => ({
+          ...(userCourses?.userCourses.map((course) => ({
             value: course.id,
             label: course.displayName || course.name,
           })) || []),

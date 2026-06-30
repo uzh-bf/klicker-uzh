@@ -864,9 +864,15 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).click()
     cy.get(`[data-cy="end-microlearning-${this.data.running.nameNew}"]`).click()
-    cy.get(`[data-cy="confirm-responses-microlearning"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-responses-microlearning"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get(`[data-cy="confirm-anonymous-responses-microlearning"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
@@ -1032,9 +1038,15 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${this.data.future.name}"]`
     ).click()
     cy.get(`[data-cy="delete-microlearning-${this.data.future.name}"]`).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should(
+      'have.attr',
+      'data-confirmation-active',
+      'false'
+    )
     cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
-      'not.exist'
+      'have.attr',
+      'data-confirmation-active',
+      'false'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.wait(500)

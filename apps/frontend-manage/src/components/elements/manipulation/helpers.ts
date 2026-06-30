@@ -1,16 +1,5 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  FetchResult,
-  MutationFunctionOptions,
-} from '@apollo/client'
-import {
-  CreateAnswerCollectionMutation,
-  ElementStatus,
-  Exact,
-  GetAnswerCollectionsInfoDocument,
-  Scalars,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementStatus } from '../../../lib/constants/elementTypes'
+import type { RouterOutputs } from '../../../lib/trpc'
 import {
   ElementFormTypesCaseStudy,
   ElementFormTypesCaseStudySolutions,
@@ -156,8 +145,18 @@ export function prepareNumericalArgs({
         values.options.hasSampleSolution &&
         values.options.solutionType === 'range'
           ? values.options.solutionRanges?.map((range) => ({
-              min: range.min === '' ? undefined : parseFloat(String(range.min)),
-              max: range.max === '' ? undefined : parseFloat(String(range.max)),
+              min:
+                range.min === '' ||
+                range.min === null ||
+                typeof range.min === 'undefined'
+                  ? undefined
+                  : parseFloat(String(range.min)),
+              max:
+                range.max === '' ||
+                range.max === null ||
+                typeof range.max === 'undefined'
+                  ? undefined
+                  : parseFloat(String(range.max)),
             }))
           : undefined,
       exactSolutions:
@@ -218,31 +217,26 @@ export function prepareFreeTextArgs({
   }
 }
 
-type CreateAnswerCollectionType = (
-  options?:
-    | MutationFunctionOptions<
-        CreateAnswerCollectionMutation,
-        Exact<{
-          name: Scalars['String']['input']
-          description: Scalars['String']['input']
-          answers:
-            | Array<Scalars['String']['input']>
-            | Scalars['String']['input']
-        }>,
-        DefaultContext,
-        ApolloCache<any>
-      >
-    | undefined
-) => Promise<FetchResult<CreateAnswerCollectionMutation>>
+type CreatedAnswerCollection = NonNullable<
+  RouterOutputs['resources']['createAnswerCollection']['answerCollection']
+>
+
+type CreateAnswerCollectionType = (input: {
+  name: string
+  description: string
+  answers: string[]
+}) => Promise<CreatedAnswerCollection | null | undefined>
 
 interface CreateInlineSelectionCollectionProps {
   values: ElementFormTypesSelection
   createAnswerCollection: CreateAnswerCollectionType
+  onAnswerCollectionCreated?: () => void | Promise<void>
 }
 
 export async function createInlineSelectionCollection({
   values,
   createAnswerCollection,
+  onAnswerCollectionCreated,
 }: CreateInlineSelectionCollectionProps) {
   if (!values.options.manuallyCreatedItems) {
     return null
@@ -253,44 +247,25 @@ export async function createInlineSelectionCollection({
     status: ElementStatus
   } = JSON.parse(JSON.stringify(values))
 
-  const { data } = await createAnswerCollection({
-    variables: {
-      name: `AC: ${values.name}`,
-      description: `Answer collection containing all the items used in the context of the selection question ${values.name}`,
-      answers:
-        values.options.manuallyCreatedItems.map((item) => item.value) ?? [],
-    },
-    update: (cache, { data }) => {
-      if (!data?.createAnswerCollection) return
-
-      const queryData = cache.readQuery({
-        query: GetAnswerCollectionsInfoDocument,
-      })
-      const previousCollections = queryData?.getAnswerCollectionsInfo
-      if (!previousCollections) return
-
-      cache.writeQuery({
-        query: GetAnswerCollectionsInfoDocument,
-        data: {
-          getAnswerCollectionsInfo: [
-            ...previousCollections,
-            data.createAnswerCollection,
-          ],
-        },
-      })
-    },
+  const answerCollection = await createAnswerCollection({
+    name: `AC: ${values.name}`,
+    description: `Answer collection containing all the items used in the context of the selection question ${values.name}`,
+    answers:
+      values.options.manuallyCreatedItems.map((item) => item.value) ?? [],
   })
 
-  if (!data?.createAnswerCollection) {
+  if (!answerCollection) {
     return null
   }
 
+  await onAnswerCollectionCreated?.()
+
   // set the answer collection id to the newly created answer collection
-  innerValues.options.answerCollection = String(data.createAnswerCollection.id)
+  innerValues.options.answerCollection = String(answerCollection.id)
 
   if (values.options.hasSampleSolution) {
     // create a map between the old item index and the new correct answer collection entry ids
-    const entries = data.createAnswerCollection.entries ?? []
+    const entries = answerCollection.entries ?? []
     const itemOldIdNewIdMap = new Map<number, number>()
     values.options.manuallyCreatedItems.forEach((createdItem) => {
       const entry = entries.find((entry) => entry.value === createdItem.value)
@@ -339,7 +314,9 @@ export function prepareSelectionArgs({
       hasSampleSolution: values.options.hasSampleSolution,
       answerCollection: parseInt(values.options.answerCollection!),
       numberOfInputs: parseInt(values.options.numberOfInputs),
-      correctAnswers: values.options.correctAnswers,
+      correctAnswers: values.options.hasSampleSolution
+        ? values.options.correctAnswers
+        : undefined,
     },
 
     tags: values.tags,
@@ -349,11 +326,13 @@ export function prepareSelectionArgs({
 interface CreateInlineCaseStudyCollectionProps {
   values: ElementFormTypesCaseStudy
   createAnswerCollection: CreateAnswerCollectionType
+  onAnswerCollectionCreated?: () => void | Promise<void>
 }
 
 export async function createInlineCaseStudyCollection({
   values,
   createAnswerCollection,
+  onAnswerCollectionCreated,
 }: CreateInlineCaseStudyCollectionProps) {
   if (!values.options.manuallyCreatedItems) {
     return null
@@ -364,43 +343,24 @@ export async function createInlineCaseStudyCollection({
     status: ElementStatus
   } = JSON.parse(JSON.stringify(values))
 
-  const { data } = await createAnswerCollection({
-    variables: {
-      name: `AC: ${values.name}`,
-      description: `Answer collection containing all the items used in the context of the case study ${values.name}`,
-      answers:
-        values.options.manuallyCreatedItems.map((item) => item.value) ?? [],
-    },
-    update: (cache, { data }) => {
-      if (!data?.createAnswerCollection) return
-
-      const queryData = cache.readQuery({
-        query: GetAnswerCollectionsInfoDocument,
-      })
-      const previousCollections = queryData?.getAnswerCollectionsInfo
-      if (!previousCollections) return
-
-      cache.writeQuery({
-        query: GetAnswerCollectionsInfoDocument,
-        data: {
-          getAnswerCollectionsInfo: [
-            ...previousCollections,
-            data.createAnswerCollection,
-          ],
-        },
-      })
-    },
+  const answerCollection = await createAnswerCollection({
+    name: `AC: ${values.name}`,
+    description: `Answer collection containing all the items used in the context of the case study ${values.name}`,
+    answers:
+      values.options.manuallyCreatedItems.map((item) => item.value) ?? [],
   })
 
-  if (!data?.createAnswerCollection) {
+  if (!answerCollection) {
     return null
   }
 
+  await onAnswerCollectionCreated?.()
+
   // set the answer collection id to the newly created answer collection
-  innerValues.options.answerCollection = String(data.createAnswerCollection.id)
+  innerValues.options.answerCollection = String(answerCollection.id)
 
   // set the items to the newly created answer collection items (in the same order as the values were defined)
-  const entries = data.createAnswerCollection.entries ?? []
+  const entries = answerCollection.entries ?? []
   const entryIds = values.options.manuallyCreatedItems.flatMap(
     (createdItem) => {
       const entry = entries.find((entry) => entry.value === createdItem.value)

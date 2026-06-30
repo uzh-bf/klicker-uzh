@@ -1,32 +1,13 @@
-import {
-  QueryRef,
-  SubscribeToMoreFunction,
-  useMutation,
-  useReadQuery,
-  useSuspenseQuery,
-} from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
-import {
-  AddMessageToGroupDocument,
-  Exact,
-  GetCourseGroupActivitiesQuery,
-  GetCourseOverviewDataDocument,
-  GetGroupActivityInstancesDocument,
-  GroupActivityInstance,
-  GroupMessage,
-  LeaveParticipantGroupDocument,
-  Participant,
-  ParticipantGroup,
-  Participation,
-  Scalars,
-} from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormikTextareaField,
   H3,
   TabContent,
   UserNotification,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -35,39 +16,39 @@ import Image from 'next/image'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
+import { useState } from 'react'
 import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import GroupActivityList from '../groupActivity/GroupActivityList'
 import GroupActivityListSubscriber from '../groupActivity/GroupActivityListSubscriber'
 import GroupVisualization from '../participant/groups/GroupVisualization'
 import EditableGroupName from './EditableGroupName'
 
+type CourseOverviewData = RouterOutputs['participant']['courseOverview']
+type ParticipantGroupData = CourseOverviewData['participantGroups'][number]
+type ParticipantGroupMessage = ParticipantGroupData['messages'][number]
+type CourseOverview = NonNullable<CourseOverviewData['courseOverview']>
+type CourseOverviewParticipant = NonNullable<CourseOverview['participant']>
+type CourseOverviewParticipation = NonNullable<CourseOverview['participation']>
+type CourseGroupActivity =
+  RouterOutputs['participant']['courseGroupActivities']['groupActivities'][number]
+
 interface SuspendedGroupViewProps {
-  group: Omit<ParticipantGroup, 'participants' | 'messages'> & {
-    participants?:
-      | Pick<Participant, 'id' | 'username' | 'score' | 'rank' | 'level'>[]
-      | null
-    messages?:
-      | (Pick<GroupMessage, 'id' | 'content' | 'createdAt'> & {
-          participant: Pick<Participant, 'id' | 'username' | 'avatar'>
-        })[]
-      | null
-  }
-  participation: Omit<Participation, 'completedMicroLearnings'>
-  participant: Omit<Participant, 'isActive' | 'locale' | 'participantGroups'>
+  group: ParticipantGroupData
+  participation: CourseOverviewParticipation
+  participant: CourseOverviewParticipant
   courseId: string
   maxGroupSize: number
-  groupDeadlineDate: string
+  groupDeadlineDate: Date | string
   isGroupDeadlinePassed: boolean
-  groupActivityQueryRef: QueryRef<GetCourseGroupActivitiesQuery>
+  groupActivities: CourseGroupActivity[]
+  groupActivitiesLoading?: boolean
+  groupActivitiesError?: boolean
   setSelectedTab: (value: string) => void
-  subscribeActivityList: SubscribeToMoreFunction<
-    GetCourseGroupActivitiesQuery,
-    Exact<{
-      courseId: Scalars['String']['input']
-    }>
-  >
+  onCourseOverviewChanged?: () => void | Promise<void>
+  onGroupActivitiesChanged?: () => void | Promise<void>
 }
 
 function SuspendedGroupView({
@@ -78,43 +59,97 @@ function SuspendedGroupView({
   maxGroupSize,
   groupDeadlineDate,
   isGroupDeadlinePassed,
-  groupActivityQueryRef,
+  groupActivities,
+  groupActivitiesLoading,
+  groupActivitiesError,
   setSelectedTab,
-  subscribeActivityList,
+  onCourseOverviewChanged,
+  onGroupActivitiesChanged,
 }: SuspendedGroupViewProps) {
   const t = useTranslations()
-  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
-  const [addMessageToGroup] = useMutation(AddMessageToGroupDocument)
+  const leaveParticipantGroup =
+    trpc.participant.leaveParticipantGroup.useMutation()
+  const addMessageToGroup = trpc.participant.addMessageToGroup.useMutation()
+  const [leaveGroupLoading, setLeaveGroupLoading] = useState(false)
+  const utils = trpc.useUtils()
 
-  const { data: groupActivitiesData } = useReadQuery(groupActivityQueryRef)
-  const { data: rawActivityInstances } = useSuspenseQuery(
-    GetGroupActivityInstancesDocument,
-    {
-      variables: { courseId, groupId: group.id },
-    }
-  )
+  function addGroupMessageToCourseOverview(message: ParticipantGroupMessage) {
+    utils.participant.courseOverview.setData({ courseId }, (data) => {
+      if (!data) return data
 
-  const groupActivities = groupActivitiesData?.groupActivities ?? []
+      return {
+        ...data,
+        participantGroups: data.participantGroups.map((participantGroup) =>
+          participantGroup.id === group.id
+            ? {
+                ...participantGroup,
+                messages: [
+                  message,
+                  ...participantGroup.messages.filter(
+                    (existingMessage) => existingMessage.id !== message.id
+                  ),
+                ],
+              }
+            : participantGroup
+        ),
+      }
+    })
+  }
+
+  const {
+    data: rawActivityInstances,
+    error: groupActivityInstancesError,
+    isLoading: groupActivityInstancesLoading,
+  } = trpc.participant.groupActivityInstances.useQuery({
+    courseId,
+    groupId: group.id,
+  })
   const groupActivityInstances =
-    rawActivityInstances.groupActivityInstances?.reduce<
-      Record<string, GroupActivityInstance>
+    rawActivityInstances?.groupActivityInstances?.reduce<
+      Record<
+        string,
+        RouterOutputs['participant']['groupActivityInstances']['groupActivityInstances'][number]
+      >
     >((acc, groupActivityInstance) => {
       return {
         ...acc,
         [groupActivityInstance.groupActivityId]: groupActivityInstance,
       }
     }, {}) ?? {}
+  const showGroupActivitiesLoading =
+    groupActivitiesLoading && groupActivities.length === 0
+  const showGroupActivitiesError =
+    groupActivitiesError && groupActivities.length === 0
+  const showGroupActivityInstancesLoading =
+    groupActivities.length > 0 &&
+    groupActivityInstancesLoading &&
+    !rawActivityInstances
+  const showGroupActivityInstancesError =
+    groupActivities.length > 0 &&
+    Boolean(groupActivityInstancesError) &&
+    !rawActivityInstances
+  const showGroupActivitiesStaleError =
+    groupActivities.length > 0 && groupActivitiesError
+  const showGroupActivityInstancesStaleError =
+    groupActivities.length > 0 &&
+    Boolean(groupActivityInstancesError) &&
+    Boolean(rawActivityInstances)
 
   return (
     <TabContent key={group.id} value={group.id} className={{ root: 'md:px-4' }}>
       <GroupActivityListSubscriber
         courseId={courseId}
-        subscribeToMore={subscribeActivityList}
+        onChanged={onGroupActivitiesChanged}
       />
       <div className="flex flex-col gap-2">
         <div className="flex flex-row flex-wrap gap-4">
           <div className="flex flex-1 flex-col">
-            <EditableGroupName groupId={group.id} groupName={group.name} />
+            <EditableGroupName
+              courseId={courseId}
+              groupId={group.id}
+              groupName={group.name}
+              onChanged={onCourseOverviewChanged}
+            />
             {(!participation.isActive ||
               group.participants!.length === 1 ||
               group.participants!.length === maxGroupSize) && (
@@ -168,35 +203,39 @@ function SuspendedGroupView({
                 isGroupDeadlinePassed
                   ? undefined
                   : () => {
-                      leaveParticipantGroup({
-                        variables: { courseId, groupId: group.id },
-                        update: (cache, { data }) => {
-                          // verify that leaving the group was successful
-                          if (!data?.leaveParticipantGroup) return
+                      void (async () => {
+                        if (leaveGroupLoading) return
 
-                          // update the course overview to not list this group anymore
-                          cache.updateQuery(
-                            {
-                              query: GetCourseOverviewDataDocument,
-                              variables: { courseId },
-                            },
-                            (qData) => {
-                              if (!qData?.participantGroups) return qData
+                        try {
+                          setLeaveGroupLoading(true)
+                          const result =
+                            await leaveParticipantGroup.mutateAsync({
+                              courseId,
+                              groupId: group.id,
+                            })
 
-                              return {
-                                ...qData,
-                                participantGroups:
-                                  qData.participantGroups.filter(
-                                    (g) =>
-                                      g.id !== data.leaveParticipantGroup!.id
-                                  ),
-                              }
-                            }
-                          )
-                        },
-                      })
+                          if (!result) {
+                            toast({
+                              type: 'error',
+                              message: t('shared.generic.systemError'),
+                              options: { duration: 6000 },
+                            })
+                            return
+                          }
 
-                      setSelectedTab('global')
+                          await Promise.resolve(onCourseOverviewChanged?.())
+                          setSelectedTab('global')
+                        } catch (error) {
+                          console.error(error)
+                          toast({
+                            type: 'error',
+                            message: t('shared.generic.systemError'),
+                            options: { duration: 6000 },
+                          })
+                        } finally {
+                          setLeaveGroupLoading(false)
+                        }
+                      })()
                     }
               }
               hidePodium
@@ -230,13 +269,40 @@ function SuspendedGroupView({
           </div>
         </div>
 
-        {(groupActivities.length ?? -1) > 0 && (
-          <GroupActivityList
-            groupId={group.id}
-            groupActivities={groupActivities}
-            groupActivityInstances={groupActivityInstances}
-          />
-        )}
+        {showGroupActivitiesLoading || showGroupActivityInstancesLoading ? (
+          <div className="mt-4">
+            <H3>{t('shared.generic.groupActivities')}</H3>
+            <div className="border-t pt-2">
+              <Loader />
+            </div>
+          </div>
+        ) : showGroupActivitiesError || showGroupActivityInstancesError ? (
+          <div className="mt-4">
+            <H3>{t('shared.generic.groupActivities')}</H3>
+            <div className="border-t pt-2">
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+              />
+            </div>
+          </div>
+        ) : groupActivities.length > 0 ? (
+          <>
+            {showGroupActivitiesStaleError ||
+            showGroupActivityInstancesStaleError ? (
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+                className={{ root: 'mt-4 text-sm' }}
+              />
+            ) : null}
+            <GroupActivityList
+              groupId={group.id}
+              groupActivities={groupActivities}
+              groupActivityInstances={groupActivityInstances}
+            />
+          </>
+        ) : null}
 
         <div className="mt-4">
           <H3 className={{ root: 'border-b' }}>
@@ -325,44 +391,34 @@ function SuspendedGroupView({
               })}
               onSubmit={async (values, { resetForm, setSubmitting }) => {
                 setSubmitting(true)
-                await addMessageToGroup({
-                  variables: { groupId: group.id, content: values.content },
-                  update: (cache, { data }) => {
-                    // verify that posting the message was successful
-                    if (!data?.addMessageToGroup) return
-
-                    // add the message to the chat
-                    cache.updateQuery(
-                      {
-                        query: GetCourseOverviewDataDocument,
-                        variables: { courseId },
-                      },
-                      (qData) => {
-                        if (!qData?.participantGroups) return qData
-
-                        return {
-                          ...qData,
-                          participantGroups: qData.participantGroups.map(
-                            (groups) => {
-                              if (groups.id === group.id) {
-                                return {
-                                  ...groups,
-                                  messages: [
-                                    data.addMessageToGroup!, // new messages need to be added in the beginning due to reverse parsing
-                                    ...(groups.messages ?? []),
-                                  ],
-                                }
-                              }
-                              return groups
-                            }
-                          ),
-                        }
-                      }
+                try {
+                  const result = await addMessageToGroup.mutateAsync({
+                    groupId: group.id,
+                    content: values.content,
+                  })
+                  if (result) {
+                    addGroupMessageToCourseOverview(result)
+                    void Promise.resolve(onCourseOverviewChanged?.()).catch(
+                      console.error
                     )
-                  },
-                })
-                resetForm()
-                setSubmitting(false)
+                    resetForm()
+                  } else {
+                    toast({
+                      type: 'error',
+                      message: t('shared.generic.systemError'),
+                      options: { duration: 6000 },
+                    })
+                  }
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 6000 },
+                  })
+                } finally {
+                  setSubmitting(false)
+                }
               }}
             >
               {({ isValid, isSubmitting }) => (
@@ -386,6 +442,7 @@ function SuspendedGroupView({
                     <Button.Icon
                       withoutLabel
                       icon={faPaperPlane}
+                      loading={isSubmitting}
                       className={{ root: 'mr-0.5' }}
                     />
                   </Button>

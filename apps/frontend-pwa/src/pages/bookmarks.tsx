@@ -1,24 +1,52 @@
-import { useQuery } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
-import { GetParticipantCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
+import { trpc } from '../lib/trpc'
 
 function Bookmarks() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetParticipantCoursesDocument)
+  const { data, error, isLoading } = trpc.participant.courses.useQuery()
+  const participantCourses = data?.participantCourses
 
-  if (loading && !data) {
+  if (isLoading && !participantCourses) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
         displayName={t('pwa.general.myBookmarks')}
       >
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error && !participantCourses) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.general.myBookmarks')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!participantCourses) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.general.myBookmarks')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }
@@ -30,14 +58,20 @@ function Bookmarks() {
     >
       <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H1 className={{ root: 'text-xl' }}>{t('pwa.general.selectCourse')}</H1>
-        {data?.participantCourses?.length === 0 && (
+        {error && participantCourses ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+        {participantCourses.length === 0 && (
           <div className="flex flex-col gap-2">
             <UserNotification type="info">
               {t('pwa.courses.noBookmarksSet')}
             </UserNotification>
           </div>
         )}
-        {data?.participantCourses?.map((course) => (
+        {participantCourses.map((course) => (
           <LinkButton
             key={course.id}
             href={`/course/${course.id}/bookmarks`}

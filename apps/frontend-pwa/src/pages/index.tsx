@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
@@ -9,12 +8,6 @@ import {
   faGraduationCap,
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ParticipationsDocument,
-  SelfDocument,
-  SubscribeToPushDocument,
-  UnsubscribeFromPushDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
 import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
@@ -23,24 +16,25 @@ import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import MicroLearningListSubscriber from '../components/microLearning/MicroLearningListSubscriber'
 import useStudentOverviewSplit from '../lib/hooks/useStudentOverviewSplit'
+import { trpc } from '../lib/trpc'
 
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const utils = trpc.useUtils()
+  const assessmentOnly = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
 
   const { value: showAssessmentHint, setValue: setShowAssessmentHint } =
     useStickyState('showAssessmentHint', 'true')
 
   // fetch user info for locale
-  const { data: selfData } = useQuery(SelfDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: selfData } = trpc.participant.self.useQuery()
 
   // if the user is not part of the required assessment course, show an error toast
   useEffect(() => {
@@ -83,56 +77,48 @@ function Index() {
   // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
   //   useStickyState('hasSeenSurvey', 'false')
 
-  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
-  const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
+  const subscribeToPush = trpc.participant.subscribeToPush.useMutation()
+  const unsubscribeFromPush = trpc.participant.unsubscribeFromPush.useMutation()
 
   async function subscribeUser(
     subscriptionObject: PushSubscription,
     courseId: string
   ) {
-    await subscribeToPush({
-      variables: {
-        subscriptionObject: {
-          endpoint: subscriptionObject.endpoint,
-          expirationTime: subscriptionObject.expirationTime,
-          keys: {
-            auth: subscriptionObject.toJSON().keys!.auth,
-            p256dh: subscriptionObject.toJSON().keys!.p256dh,
-          },
+    await subscribeToPush.mutateAsync({
+      subscriptionObject: {
+        endpoint: subscriptionObject.endpoint,
+        expirationTime: subscriptionObject.expirationTime,
+        keys: {
+          auth: subscriptionObject.toJSON().keys!.auth,
+          p256dh: subscriptionObject.toJSON().keys!.p256dh,
         },
-        courseId,
       },
-      refetchQueries: [
-        {
-          query: ParticipationsDocument,
-          variables: {
-            endpoint: subscriptionObject.endpoint,
-            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-          },
-        },
-      ],
+      courseId,
     })
+
+    void utils.participant.participations
+      .invalidate({
+        endpoint: subscriptionObject.endpoint,
+        assessmentOnly,
+      })
+      .catch(console.error)
   }
 
   async function unsubscribeUser(
     subscriptionObject: PushSubscription,
     courseId: string
   ) {
-    await unsubscribeFromPush({
-      variables: {
-        courseId,
-        endpoint: subscriptionObject.endpoint,
-      },
-      refetchQueries: [
-        {
-          query: ParticipationsDocument,
-          variables: {
-            endpoint: subscriptionObject.endpoint,
-            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-          },
-        },
-      ],
+    await unsubscribeFromPush.mutateAsync({
+      courseId,
+      endpoint: subscriptionObject.endpoint,
     })
+
+    void utils.participant.participations
+      .invalidate({
+        endpoint: subscriptionObject.endpoint,
+        assessmentOnly,
+      })
+      .catch(console.error)
   }
 
   const {
@@ -146,21 +132,36 @@ function Index() {
     unsubscribeFromPush: unsubscribeUser,
   })
 
-  const { data, loading, subscribeToMore } = useQuery(ParticipationsDocument, {
-    variables: {
-      endpoint: subscription?.endpoint,
-      assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-    },
-    fetchPolicy: 'network-only',
-  })
+  const participationsInput = useMemo(
+    () => ({ endpoint: subscription?.endpoint, assessmentOnly }),
+    [assessmentOnly, subscription?.endpoint]
+  )
+  const {
+    data,
+    error: participationsError,
+    isLoading,
+  } = trpc.participant.participations.useQuery(participationsInput)
+  const participations = data?.participations
+  const hasParticipationsData = typeof participations !== 'undefined'
 
   const { courses, oldCourses, activeLiveQuizzes, activeMicrolearning } =
-    useStudentOverviewSplit({ participations: data?.participations ?? [] })
+    useStudentOverviewSplit({ participations: participations ?? [] })
 
-  if (loading || !data) {
+  if (isLoading && !hasParticipationsData) {
     return (
       <Layout key="loading-layout" displayName={t('shared.generic.title')}>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (!hasParticipationsData) {
+    return (
+      <Layout key="error-layout" displayName={t('shared.generic.title')}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
       </Layout>
     )
   }
@@ -222,6 +223,13 @@ function Index() {
         className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
         data-cy="homepage"
       >
+        {participationsError ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
         {/* {hasSeenSurvey === 'false' && (
           <Link
             href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
@@ -325,7 +333,11 @@ function Index() {
                 >
                   <MicroLearningListSubscriber
                     activityId={micro.id}
-                    subscribeToMore={subscribeToMore}
+                    onEnded={() =>
+                      utils.participant.participations.invalidate(
+                        participationsInput
+                      )
+                    }
                   />
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between text-xs">

@@ -1,12 +1,11 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  ActivityLogEntry,
-  AddActivityMessageDocument,
-  DeleteActivityMessageDocument,
-  GetObjectActivityDocument,
-  ObjectType,
-  ResolveActivityLogEntryDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ObjectType } from '@lib/constants/sharingEnums'
+import { trpc, type RouterInputs, type RouterOutputs } from '../trpc'
+
+type ObjectActivityInput = RouterInputs['sharing']['objectActivity']
+
+export type ActivityLogEntry = NonNullable<
+  RouterOutputs['sharing']['objectActivity']['objectActivity']
+>[number]
 
 export function useObjectActivity({
   objectId,
@@ -17,30 +16,52 @@ export function useObjectActivity({
   objectType: ObjectType
   visible?: boolean
 }) {
-  // query for fetching activity entries using the unified query
-  const { data, loading, error, refetch } = useQuery(
-    GetObjectActivityDocument,
-    {
-      variables: { objectId: String(objectId), objectType },
-      skip: !objectId || !visible,
-      fetchPolicy: 'cache-and-network',
-    }
-  )
+  const utils = trpc.useUtils()
+  const activityInput: ObjectActivityInput = {
+    objectId: String(objectId),
+    objectType: objectType as unknown as ObjectActivityInput['objectType'],
+  }
 
-  // mutation for adding messages
-  const [addMessage, { loading: addingMessage }] = useMutation(
-    AddActivityMessageDocument
-  )
+  const { data, isLoading, isFetching, error, refetch } =
+    trpc.sharing.objectActivity.useQuery(activityInput, {
+      enabled: Boolean(objectId) && visible,
+      refetchOnMount: 'always',
+    })
 
-  // mutation for resolving/unresolving messages
-  const [resolveMessage, { loading: resolvingMessage }] = useMutation(
-    ResolveActivityLogEntryDocument
-  )
+  const addMessage = trpc.sharing.addActivityMessage.useMutation({
+    onSuccess: (mutationData) => {
+      if (!mutationData.activityMessage) return
 
-  // mutation for deleting messages
-  const [deleteMessage, { loading: deletingMessage }] = useMutation(
-    DeleteActivityMessageDocument
-  )
+      utils.sharing.objectActivity.setData(activityInput, (queryData) => {
+        if (!queryData?.objectActivity) return queryData
+
+        return {
+          objectActivity: [
+            ...queryData.objectActivity,
+            mutationData.activityMessage!,
+          ],
+        }
+      })
+    },
+  })
+
+  const resolveMessage = trpc.sharing.resolveActivityLogEntry.useMutation()
+
+  const deleteMessage = trpc.sharing.deleteActivityMessage.useMutation({
+    onSuccess: (mutationData, variables) => {
+      if (!mutationData.deleted) return
+
+      utils.sharing.objectActivity.setData(activityInput, (queryData) => {
+        if (!queryData?.objectActivity) return queryData
+
+        return {
+          objectActivity: queryData.objectActivity.filter(
+            (entry) => entry.id !== variables.id
+          ),
+        }
+      })
+    },
+  })
 
   const addActivityMessage = async (message: string) => {
     if (!objectId) {
@@ -50,119 +71,33 @@ export function useObjectActivity({
       return
     }
 
-    return addMessage({
-      variables: {
-        objectId: typeof objectId === 'number' ? objectId.toString() : objectId,
-        objectType,
-        message,
-      },
-      update: (cache, { data }) => {
-        // verify that the posting of the message was successful
-        if (!data?.addActivityMessage) return
-
-        // update the displayed messages
-        cache.updateQuery(
-          {
-            query: GetObjectActivityDocument,
-            variables: { objectId: String(objectId), objectType },
-          },
-          (qData) => {
-            if (!qData?.getObjectActivity) return qData
-
-            return {
-              getObjectActivity: [
-                ...(qData.getObjectActivity || []),
-                data.addActivityMessage!,
-              ],
-            }
-          }
-        )
-      },
+    return addMessage.mutateAsync({
+      ...activityInput,
+      message,
     })
   }
 
-  const resolveActivityLogEntry = async (id: number, resolved: boolean) => {
-    return resolveMessage({
-      variables: { id },
-      optimisticResponse: {
-        resolveActivityLogEntry: {
-          __typename: 'ActivityLogEntry',
-          id,
-          resolved,
-          // Set resolvedAt to current date if resolving, null if unresolving
-          resolvedAt: resolved ? new Date().toISOString() : null,
-        },
-      },
-      update: (cache, { data }) => {
-        // verify that the resolution was successful
-        if (!data?.resolveActivityLogEntry) return
-
-        // update the displayed messages
-        cache.updateQuery(
-          {
-            query: GetObjectActivityDocument,
-            variables: { objectId: String(objectId), objectType },
-          },
-          (qData) => {
-            if (!qData?.getObjectActivity) return qData
-
-            return {
-              getObjectActivity: qData.getObjectActivity.map((entry) =>
-                entry.id === id
-                  ? {
-                      ...entry,
-                      resolved: data.resolveActivityLogEntry!.resolved,
-                      resolvedAt: data.resolveActivityLogEntry!.resolvedAt,
-                    }
-                  : entry
-              ),
-            }
-          }
-        )
-      },
-    })
+  const resolveActivityLogEntry = async (id: number, _resolved: boolean) => {
+    return resolveMessage.mutateAsync({ id })
   }
 
   const deleteActivityMessage = async (id: number) => {
-    return deleteMessage({
-      variables: { id },
-      update: (cache, { data }) => {
-        // verify that the deletion was successful
-        if (!data?.deleteActivityMessage) return
-
-        // update the displayed messages
-        cache.updateQuery(
-          {
-            query: GetObjectActivityDocument,
-            variables: { objectId: String(objectId), objectType },
-          },
-          (qData) => {
-            if (!qData?.getObjectActivity) return qData
-
-            return {
-              getObjectActivity: qData.getObjectActivity.filter(
-                (entry) => entry.id !== id
-              ),
-            }
-          }
-        )
-      },
-    })
+    return deleteMessage.mutateAsync({ id })
   }
 
-  // extract entries from the response
-  const entries: ActivityLogEntry[] = data?.getObjectActivity || []
+  const entries: ActivityLogEntry[] = data?.objectActivity || []
 
   return {
     entries,
-    loading,
-    error,
+    loading: isLoading || (isFetching && !data),
+    error: Boolean(error),
+    unavailable: Boolean(error && !data),
     addActivityMessage,
     resolveActivityLogEntry,
     deleteActivityMessage,
-    isAddingMessage: addingMessage,
-    isResolvingMessage: resolvingMessage,
-    isDeletingMessage: deletingMessage,
+    isAddingMessage: addMessage.isLoading,
+    isResolvingMessage: resolveMessage.isLoading,
+    isDeletingMessage: deleteMessage.isLoading,
     refetch,
   }
 }

@@ -1,10 +1,8 @@
-import { useQuery } from '@apollo/client'
-import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { trpc } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
-import { toast } from '@uzh-bf/design-system'
+import { UserNotification, toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
@@ -21,7 +19,8 @@ function EditProfile({
   cookiesAvailable?: boolean
 }) {
   const t = useTranslations()
-  const { data, loading, refetch } = useQuery(SelfDocument)
+  const { data, error, isLoading, refetch } = trpc.participant.self.useQuery()
+  const self = data?.self
 
   const onError = () =>
     toast({
@@ -35,14 +34,37 @@ function EditProfile({
       message: t('pwa.profile.editProfileSuccess'),
       options: { duration: 3500 },
     })
+  const onRefreshError = (error?: unknown) => {
+    if (error) console.error(error)
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 6000 },
+    })
+  }
+  const onProfileMutationSuccess = async () => {
+    const result = await refetch().catch((error) => {
+      onRefreshError(error)
+      return null
+    })
+
+    if (!result) return
+
+    if (result.error) {
+      onRefreshError(result.error)
+      return
+    }
+
+    onSuccess()
+  }
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
-    callback: () => refetch(),
+    callback: () => void refetch().catch(onRefreshError),
   })
 
-  if (loading || !data?.self) {
+  if (isLoading && !self) {
     return (
       <Layout
         course={{ displayName: t('shared.generic.title') }}
@@ -53,25 +75,59 @@ function EditProfile({
     )
   }
 
+  if (error && !self) {
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!self) {
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
   return (
     <Layout
       course={{ displayName: t('shared.generic.title') }}
       displayName={t('pwa.profile.editProfile')}
     >
       <div className="flex flex-col gap-8 md:mx-auto md:w-full md:max-w-5xl md:gap-4">
+        {error && self ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         <div className="flex w-full flex-col gap-8 md:flex-row md:gap-4">
           <div className="w-full md:h-full md:w-1/2">
             <UpdateAccountInfoForm
-              user={data.self}
+              user={self}
               onError={onError}
-              onSuccess={onSuccess}
+              onSuccess={onProfileMutationSuccess}
             />
           </div>
           <div className="w-full md:h-full md:w-1/2">
             <AvatarUpdateForm
-              user={data.self}
+              user={self}
               onError={onError}
-              onSuccess={onSuccess}
+              onSuccess={onProfileMutationSuccess}
             />
           </div>
         </div>
@@ -85,9 +141,7 @@ function EditProfile({
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
-    const apolloClient = initializeApollo()
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       ctx,
     })
 
@@ -111,13 +165,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         cookiesAvailable,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on editProfile:', error)
 

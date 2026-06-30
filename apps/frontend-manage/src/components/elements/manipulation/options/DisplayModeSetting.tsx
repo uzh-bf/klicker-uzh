@@ -1,6 +1,9 @@
-import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import {
+  ElementDisplayMode,
+  ElementType,
+} from '../../../../lib/constants/elementTypes'
 
 function DisplayModeSetting({
   type,
@@ -11,7 +14,7 @@ function DisplayModeSetting({
 }) {
   const t = useTranslations()
 
-  return [ElementType.Sc, ElementType.Mc].includes(type) ? (
+  return type === ElementType.Sc || type === ElementType.Mc ? (
     <FormikSelectField
       disabled={disabled}
       contentPosition="popper"

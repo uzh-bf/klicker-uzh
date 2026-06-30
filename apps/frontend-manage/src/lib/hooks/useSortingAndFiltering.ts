@@ -1,10 +1,10 @@
+import { useReducer } from 'react'
 import {
   ElementStatus,
   ElementType,
-  SharingType,
   SortByType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useReducer } from 'react'
+} from '../constants/elementTypes'
+import { SharingType } from '../constants/sharingEnums'
 
 export type LibraryFilters = {
   archive: boolean

@@ -1,94 +1,102 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetCourseGroupsDocument,
-  GetSingleCourseDocument,
-  ManualRandomGroupAssignmentsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 
 function AssignmentConfirmationModal({
   courseId,
+  onAssigned,
   onClose,
 }: {
   courseId: string
+  onAssigned: () => void
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [
-    manualRandomGroupAssignments,
-    { loading: randomGroupCreationLoading },
-  ] = useMutation(ManualRandomGroupAssignmentsDocument, {
-    update: (cache, { data }) => {
-      // check if the finalization was successful
-      if (!data?.manualRandomGroupAssignments) return
+  const utils = trpc.useUtils()
+  const assignmentMutation =
+    trpc.course.manualRandomGroupAssignments.useMutation()
+  const [assignmentPending, setAssignmentPending] = useState(false)
+  const assigning = assignmentMutation.isLoading || assignmentPending
 
-      // update the modified course settings
-      cache.updateQuery(
-        { query: GetSingleCourseDocument, variables: { courseId } },
-        (qData) => {
-          if (!qData?.course) return qData
-
-          return {
-            course: {
-              ...qData.course,
-              randomAssignmentFinalized: true,
-              groupDeadlineDate: new Date(),
-
-              numOfParticipantGroups: data.manualRandomGroupAssignments!.length,
-            },
-          }
-        }
-      )
-
-      // update the course participant groups
-      cache.updateQuery(
-        { query: GetCourseGroupsDocument, variables: { courseId } },
-        (qData) => {
-          if (!qData?.getCourseGroups) return qData
-
-          return {
-            getCourseGroups: {
-              ...qData.getCourseGroups,
-              groupAssignmentPoolEntries: [],
-              participantGroups: data.manualRandomGroupAssignments!,
-            },
-          }
-        }
-      )
-    },
-  })
+  function showErrorToast() {
+    console.error('Error while creating random groups')
+    toast({
+      type: 'error',
+      message: t('manage.course.groupAssignmentFailed'),
+      options: { duration: 5000 },
+    })
+  }
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={() => {
+        if (!assigning) {
+          onClose()
+        }
+      }}
       title={t('manage.course.finalizeRandomGroupAssignment')}
       primaryLabel={t('shared.generic.confirm')}
-      primaryLoading={randomGroupCreationLoading}
+      primaryLoading={assigning}
+      primaryDisabled={assigning}
       onPrimaryAction={async () => {
-        const res = await manualRandomGroupAssignments({
-          variables: { courseId: courseId },
-        })
-        if (res.data?.manualRandomGroupAssignments) {
+        if (assigning) {
+          return
+        }
+
+        let releasePending = true
+        setAssignmentPending(true)
+
+        try {
+          const res = await assignmentMutation.mutateAsync({ courseId })
+
+          if (!res.participantGroups) {
+            showErrorToast()
+            return
+          }
+
+          try {
+            await Promise.all([
+              utils.course.groups.invalidate({ courseId }),
+              utils.course.summary.invalidate({ courseId }),
+            ])
+          } catch (error) {
+            console.error(
+              'Error refreshing random group assignment state',
+              error
+            )
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+            return
+          }
+
+          onAssigned()
           toast({
             type: 'success',
             message: t('manage.course.groupAssignmentSuccessful'),
             options: { duration: 5000 },
           })
+          releasePending = false
           onClose()
-        } else {
-          console.error('Error while creating random groups')
-          toast({
-            type: 'error',
-            message: t('manage.course.groupAssignmentFailed'),
-            options: { duration: 5000 },
-          })
+        } catch {
+          showErrorToast()
+        } finally {
+          if (releasePending) {
+            setAssignmentPending(false)
+          }
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-random-group-assignment' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={() => {
+        if (!assigning) {
+          onClose()
+        }
+      }}
       dataSecondaryAction={{ cy: 'cancel-random-group-assignment' }}
     >
       <div className="mb-2 font-bold">{t('shared.generic.pleaseReview')}</div>

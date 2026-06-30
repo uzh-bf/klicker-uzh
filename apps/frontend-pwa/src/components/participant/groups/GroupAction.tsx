@@ -72,7 +72,7 @@ function GroupAction({
           validationSchema={validationSchema}
           validateOnMount
         >
-          {({ isValid }) => (
+          {({ isValid, isSubmitting }) => (
             <Form className="w-full px-2">
               <div className="flex flex-row gap-2">
                 <FormikTextField
@@ -85,8 +85,8 @@ function GroupAction({
                   primary
                   type="submit"
                   data={data}
-                  loading={loading}
-                  disabled={!isValid}
+                  loading={loading || isSubmitting}
+                  disabled={!isValid || loading || isSubmitting}
                   className={{ root: 'h-8' }}
                 >
                   {textSubmit}
@@ -106,6 +106,7 @@ function GroupAction({
       }}
       onClick={onClick}
       disabled={loading}
+      loading={loading}
       data={data}
     >
       <TitleIcon />

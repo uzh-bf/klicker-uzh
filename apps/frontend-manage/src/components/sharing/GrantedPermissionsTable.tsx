@@ -1,20 +1,19 @@
 import { faPeopleArrows } from '@fortawesome/free-solid-svg-icons'
-import {
-  ObjectType,
-  PermissionInfo,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3 } from '@uzh-bf/design-system'
+import { ObjectType, PermissionLevel } from '@lib/constants/sharingEnums'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import DirectSharingForm from './DirectSharingForm'
 import ExistingPermissionEntries from './ExistingPermissionEntries'
+import type { PermissionInfo } from './useObjectPermissions'
 
 function GrantedPermissionsTable({
   type,
   permissions,
   ownerPermission,
   permissionsLoading,
+  permissionsError,
+  permissionsUnavailable,
   changeLoading,
   isOwner,
   showPropagationSetting,
@@ -27,6 +26,8 @@ function GrantedPermissionsTable({
   permissions: PermissionInfo[]
   ownerPermission?: PermissionInfo
   permissionsLoading: boolean
+  permissionsError: boolean
+  permissionsUnavailable: boolean
   changeLoading: boolean
   isOwner: boolean
   showPropagationSetting: boolean
@@ -38,8 +39,11 @@ function GrantedPermissionsTable({
     permissionId: number
     newPermissionLevel: PermissionLevel
     newPropagation: boolean
-  }) => Promise<void>
-  onPermissionRemoval: (permissionId: number, isOwn: boolean) => Promise<void>
+  }) => Promise<boolean>
+  onPermissionRemoval: (
+    permissionId: number,
+    isOwn: boolean
+  ) => Promise<boolean>
   onOwnershipTransfer: () => void
   shareObjectCallback: ({
     shortnameOrEmail,
@@ -104,8 +108,29 @@ function GrantedPermissionsTable({
                 <Loader />
               </td>
             </tr>
+          ) : permissionsUnavailable ? (
+            <tr>
+              <td colSpan={showPropagationSetting ? 5 : 4} className="py-3">
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                  className={{ root: 'mx-4 text-sm' }}
+                />
+              </td>
+            </tr>
           ) : (
             <>
+              {permissionsError ? (
+                <tr>
+                  <td colSpan={showPropagationSetting ? 5 : 4} className="py-3">
+                    <UserNotification
+                      type="error"
+                      message={t('shared.generic.systemError')}
+                      className={{ root: 'mx-4 text-sm' }}
+                    />
+                  </td>
+                </tr>
+              ) : null}
               <ExistingPermissionEntries
                 type={type}
                 permissions={permissions ?? []}

@@ -1,16 +1,8 @@
-import { useQuery } from '@apollo/client'
 import {
   faPlayCircle,
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
-import {
-  CountCatalogSharingRequestsDocument,
-  GetUserCoursesDocument,
-  GetUserRunningLiveQuizzesDocument,
-  User,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import {
   Navigation,
   NavigationItemProps,
@@ -21,32 +13,43 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import SupportModal from './SupportModal'
 
-function Header({ user }: { user?: User | null }): React.ReactElement {
+type UserProfile = RouterOutputs['user']['profile']
+
+function Header({ user }: { user?: UserProfile }): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  const { data: pendingRequestData } = useQuery(
-    CountCatalogSharingRequestsDocument
-  )
-  const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
-    fetchPolicy: 'cache-first',
-  })
-  const { data: courseData } = useQuery(GetUserCoursesDocument, {
-    fetchPolicy: 'cache-first',
-  })
+  const { data: pendingRequestData } =
+    trpc.sharing.catalogSharingRequestCount.useQuery()
+  const { data: liveQuizData } = trpc.liveQuiz.running.useQuery()
+  const { data: courseData } = trpc.course.userCourses.useQuery()
 
-  const quizzes = liveQuizData?.userRunningLiveQuizzes
+  const quizzes = liveQuizData?.liveQuizzes
   const courses = courseData?.userCourses
+  const usesLocalTestOrigin =
+    process.env.NEXT_PUBLIC_API_URL?.startsWith('http://127.0.0.1:')
+  const navigateToResource = (href: string) => {
+    if (
+      (process.env.NODE_ENV === 'test' || usesLocalTestOrigin) &&
+      typeof window !== 'undefined'
+    ) {
+      window.location.assign(href)
+      return
+    }
+
+    void router.push(href)
+  }
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),
-      onClick: () => router.push('/resources/answerCollections'),
+      onClick: () => navigateToResource('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
     ...(user?.privatePreview
@@ -55,7 +58,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
             key: 'chatbots-item',
             type: 'link' as const,
             label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
+            onClick: () => navigateToResource('/resources/chatbots'),
             data: { cy: 'chatbots' },
           },
         ]
@@ -65,11 +68,9 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'link' as const,
       disabled: !user?.privatePreview,
       label: t('manage.general.catalog'),
-      onClick: () => router.push('/resources/catalog'),
+      onClick: () => navigateToResource('/resources/catalog'),
       badge: !user?.privatePreview ? t('shared.generic.comingSoon') : undefined,
-      notification:
-        pendingRequestData &&
-        pendingRequestData.countCatalogSharingRequests !== 0,
+      notification: pendingRequestData && pendingRequestData.count !== 0,
       data: { cy: 'catalog' },
       className: {
         label: 'bg-opacity-100',
@@ -82,7 +83,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'link' as const,
       disabled: !user?.privatePreview,
       label: t('manage.general.userGroups'),
-      onClick: () => router.push('/resources/userGroups'),
+      onClick: () => navigateToResource('/resources/userGroups'),
       badge: !user?.privatePreview ? t('shared.generic.comingSoon') : undefined,
       data: { cy: 'user-groups' },
       className: {
@@ -96,7 +97,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'link' as const,
       disabled: true,
       label: t('manage.general.mediaLibrary'),
-      onClick: () => router.push('/resources/mediaLibrary'),
+      onClick: () => navigateToResource('/resources/mediaLibrary'),
       badge: t('shared.generic.comingSoon'),
       data: { cy: 'media-library' },
       className: {
@@ -144,9 +145,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||
         router.pathname === '/resources/mediaLibrary',
-      notification:
-        pendingRequestData &&
-        pendingRequestData.countCatalogSharingRequests !== 0,
+      notification: pendingRequestData && pendingRequestData.count !== 0,
       elements: resourceElements,
       data: { cy: 'resources' },
       className: {
@@ -255,7 +254,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           onClick: () => router.push('/user/settings'),
           data: { cy: 'menu-user-settings' },
         },
-        ...(user?.role === UserRole.Admin
+        ...(user?.role === 'ADMIN'
           ? [
               {
                 key: 'admin',

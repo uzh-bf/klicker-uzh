@@ -1,49 +1,75 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faCheckCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetMicroLearningDocument,
-  GetParticipationDocument,
-  MarkMicroLearningCompletedDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { trpc } from '@lib/trpc'
+import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import useStackEvaluationAggregation from '../../../../../components/hooks/useStackEvaluationAggregation'
 import Layout from '../../../../../components/Layout'
 
+const PARTICIPANT_ROLE = 'PARTICIPANT'
+
 function MicrolearningEvaluation() {
   const t = useTranslations()
   const router = useRouter()
-  const id = router.query.id as string
+  const id = typeof router.query.id === 'string' ? router.query.id : ''
 
-  const { loading, data } = useQuery(GetMicroLearningDocument, {
-    variables: { id },
-    skip: !id,
-  })
-  const { data: participant } = useQuery(SelfDocument)
-  const { data: participation } = useQuery(GetParticipationDocument, {
-    variables: { courseId: data?.microLearning?.course?.id ?? '' },
-    skip: !data?.microLearning?.course?.id,
-  })
-
-  const [markMicrolearningCompleted, { loading: markingAsCompleted }] =
-    useMutation(MarkMicroLearningCompletedDocument)
+  const utils = trpc.useUtils()
+  const { isLoading, error, data } = trpc.participant.microLearning.useQuery(
+    { id },
+    { enabled: id !== '' }
+  )
+  const { data: participant, error: participantError } =
+    trpc.participant.self.useQuery()
+  const { data: participationData, error: participationError } =
+    trpc.participant.participation.useQuery(
+      { courseId: data?.microLearning?.course?.id ?? '' },
+      { enabled: !!data?.microLearning?.course?.id }
+    )
+  const markMicrolearningCompleted =
+    trpc.participant.markMicroLearningCompleted.useMutation()
 
   const microlearning = data?.microLearning
+  const participation = participationData?.participation
+  const participantUnavailable = Boolean(participantError && !participant?.self)
+  const participationUnavailable = Boolean(participationError && !participation)
   const aggregatedResults = useStackEvaluationAggregation({
     microlearning: microlearning,
   })
+  const [finishPending, setFinishPending] = useState(false)
+  const finishingMicrolearning =
+    markMicrolearningCompleted.isLoading || finishPending
 
-  if (loading || !microlearning) {
+  if (isLoading && !microlearning) {
     return (
       <Layout>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error && !microlearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!microlearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="warning"
+          message={t('pwa.microLearning.notFound')}
+        />
       </Layout>
     )
   }
@@ -54,6 +80,12 @@ function MicrolearningEvaluation() {
       course={microlearning.course ?? undefined}
     >
       <div className="flex flex-col gap-3 md:mx-auto md:mb-4 md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
+        {error && microlearning ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         {microlearning.isOwner ? (
           <PreviewMessage
             activityType={t('shared.generic.microlearning')}
@@ -84,7 +116,7 @@ function MicrolearningEvaluation() {
               {t('shared.generic.evaluation')}
             </H3>
             <H3 className={{ root: 'self-end text-base md:text-lg' }}>
-              {participation?.getParticipation?.isActive
+              {participation?.isActive
                 ? t('pwa.practiceQuiz.pointsCollectedPossible')
                 : t('pwa.practiceQuiz.pointsComputedAvailable')}
             </H3>
@@ -92,7 +124,7 @@ function MicrolearningEvaluation() {
           <div>
             {aggregatedResults &&
               aggregatedResults.evaluation &&
-              data.microLearning?.stacks?.map((stack, ix) => (
+              microlearning.stacks?.map((stack, ix) => (
                 <div className="flex flex-row justify-between" key={stack.id}>
                   <div>
                     {stack.displayName ||
@@ -103,7 +135,7 @@ function MicrolearningEvaluation() {
                       ?.pointsAwarded !== 'undefined' &&
                       aggregatedResults.evaluation[stack.id]?.pointsAwarded !==
                         null &&
-                      participation?.getParticipation?.isActive &&
+                      participation?.isActive &&
                       `${
                         aggregatedResults.evaluation[stack.id]?.pointsAwarded
                       }/`}
@@ -114,7 +146,7 @@ function MicrolearningEvaluation() {
               ))}
           </div>
 
-          {participation?.getParticipation?.isActive && (
+          {participation?.isActive && (
             <H3 className={{ root: 'mt-4 text-right' }}>
               {t('pwa.practiceQuiz.totalPoints', {
                 points: aggregatedResults?.totalPointsAwarded ?? 0,
@@ -123,8 +155,8 @@ function MicrolearningEvaluation() {
           )}
         </div>
 
-        {typeof participation?.getParticipation?.isActive === 'boolean' &&
-          participation?.getParticipation?.isActive === false && (
+        {typeof participation?.isActive === 'boolean' &&
+          participation?.isActive === false && (
             <UserNotification type="info">
               {t.rich('pwa.microLearning.inactiveParticipation', {
                 it: (text) => <span className="italic">{text}</span>,
@@ -132,9 +164,17 @@ function MicrolearningEvaluation() {
               })}
             </UserNotification>
           )}
+        {participantUnavailable || participationUnavailable ? (
+          <UserNotification
+            className={{ root: 'mt-5' }}
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
         {participant?.self &&
-          participant.self.role === UserRole.Participant &&
-          !participation?.getParticipation && (
+          participant.self.role === PARTICIPANT_ROLE &&
+          !participation &&
+          !participationUnavailable && (
             <UserNotification className={{ root: 'mt-5' }} type="info">
               {t.rich('pwa.microLearning.missingParticipation', {
                 it: (text) => <span className="italic">{text}</span>,
@@ -142,16 +182,34 @@ function MicrolearningEvaluation() {
               })}
             </UserNotification>
           )}
-        {participation?.getParticipation && (
+        {participation && (
           <div className="text-right">
             <Button
               primary
-              loading={markingAsCompleted}
+              disabled={finishingMicrolearning}
+              loading={finishingMicrolearning}
               onClick={async () => {
-                await markMicrolearningCompleted({
-                  variables: { courseId: microlearning.course!.id, id },
-                })
-                router.replace('/')
+                if (finishingMicrolearning) return
+
+                setFinishPending(true)
+
+                try {
+                  await markMicrolearningCompleted.mutateAsync({
+                    courseId: microlearning.course!.id,
+                    id,
+                  })
+                  await utils.participant.participations.invalidate()
+                  const routed = await router.replace('/')
+                  if (!routed) throw new Error('Finish navigation failed')
+                } catch (error) {
+                  console.error(error)
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 5000 },
+                  })
+                  setFinishPending(false)
+                }
               }}
               data={{ cy: 'finish-microlearning' }}
             >

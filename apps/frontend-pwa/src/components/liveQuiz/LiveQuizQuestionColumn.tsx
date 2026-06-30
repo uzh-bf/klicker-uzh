@@ -1,23 +1,21 @@
 import { faCheck, faClock, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementBlockStatus,
-  ElementType,
-  type GetRunningLiveQuizQuery,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { H2, StepProgress, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import QuestionArea from './QuestionArea'
-
-type LiveQuizData = NonNullable<GetRunningLiveQuizQuery['studentLiveQuiz']>
+import {
+  ElementBlockStatus,
+  type ElementType,
+  type StudentLiveQuizData,
+} from './types'
 
 interface LiveQuizQuestionColumnProps {
   quizId: string
-  blocks?: LiveQuizData['blocks']
-  activeBlock?: LiveQuizData['activeBlock'] | null
+  blocks?: StudentLiveQuizData['blocks']
+  activeBlock?: StudentLiveQuizData['activeBlock'] | null
   beforeFirstBlock?: boolean | null
   displayName: string
   description?: string | null
@@ -135,7 +133,7 @@ function LiveQuizQuestionColumn({
           isBlockActive
           quizId={quizId}
           gamificationEnabled={isGamificationEnabled}
-          expiresAt={activeBlock.expiresAt}
+          expiresAt={activeBlock.expiresAt ?? undefined}
           instances={activeBlock.elements ?? []}
           handleNewResponse={handleNewResponse}
           timeLimit={activeBlock?.timeLimit ?? undefined}

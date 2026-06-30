@@ -62,16 +62,10 @@
  *   const quizState = useKlickerQuizState(iframeElement, 'https://pwa.klicker.uzh.ch')
  *   {quizState.status === 'completed' && <button>Weiter</button>}
  */
-import { useQuery } from '@apollo/client'
-import {
-  GetPracticeQuizDocument,
-  PublicationStatus,
-  StackFeedbackStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { trpc, type RouterOutputs } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -90,6 +84,19 @@ const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
 const QUIZ_STATE_VERSION = 1
 
 type EmbedQuizStatus = 'overview' | 'in-progress' | 'completed'
+type PracticeQuizDetail = NonNullable<
+  RouterOutputs['participant']['practiceQuiz']['practiceQuiz']
+>
+type PracticeQuizComponentQuiz = Parameters<typeof PracticeQuiz>[0]['quiz']
+type PracticeQuizProgressStatus =
+  | 'correct'
+  | 'incorrect'
+  | 'manuallyGraded'
+  | 'partial'
+  | 'unanswered'
+
+const STACK_FEEDBACK_STATUS_UNANSWERED = 'unanswered'
+const PUBLICATION_STATUS_SCHEDULED = 'SCHEDULED'
 
 type EmbedQuizStatePayload = {
   version: typeof QUIZ_STATE_VERSION
@@ -101,7 +108,7 @@ type EmbedQuizStatePayload = {
 type PracticeQuizProgressState = Record<
   string,
   {
-    status: StackFeedbackStatus
+    status: PracticeQuizProgressStatus
     score?: number | null
   }
 >
@@ -129,11 +136,12 @@ function PracticeQuizPage({
     cookiesAvailable,
   })
 
-  const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
-    variables: { id },
+  const { data, error, isLoading } = trpc.participant.practiceQuiz.useQuery({
+    id,
   })
 
-  const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const practiceQuiz = data?.practiceQuiz
+  const totalSteps = practiceQuiz?.stacks?.length ?? 0
 
   useEffect(() => {
     if (!embedded) return
@@ -155,11 +163,11 @@ function PracticeQuizPage({
   }, [embedded])
 
   useEffect(() => {
-    if (!embedded || !data?.practiceQuiz) return
+    if (!embedded || !practiceQuiz) return
 
-    const stackIds = data.practiceQuiz.stacks?.map((stack) => stack.id) ?? []
+    const stackIds = practiceQuiz.stacks?.map((stack) => stack.id) ?? []
     setIsCompleted(readStoredCompletion(id, stackIds))
-  }, [embedded, id, data?.practiceQuiz])
+  }, [embedded, id, practiceQuiz])
 
   useEffect(() => {
     if (currentIx >= 0) {
@@ -168,7 +176,7 @@ function PracticeQuizPage({
   }, [currentIx])
 
   useEffect(() => {
-    if (!embedded || !parentOrigin || loading || !data?.practiceQuiz) return
+    if (!embedded || !parentOrigin || isLoading || !practiceQuiz) return
 
     const payload = buildQuizStatePayload({
       currentIx,
@@ -186,21 +194,32 @@ function PracticeQuizPage({
   }, [
     embedded,
     parentOrigin,
-    loading,
-    data?.practiceQuiz,
+    isLoading,
+    practiceQuiz,
     currentIx,
     isCompleted,
     totalSteps,
   ])
 
-  if (loading)
+  if (isLoading && !practiceQuiz)
     return (
       <Layout embedded={embedded}>
         <Loader />
       </Layout>
     )
 
-  if (!data?.practiceQuiz) {
+  if (error && !practiceQuiz) {
+    return (
+      <Layout embedded={embedded}>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (!practiceQuiz) {
     return (
       <Layout embedded={embedded}>
         <UserNotification
@@ -211,30 +230,29 @@ function PracticeQuizPage({
     )
   }
 
-  if (error) {
-    return (
-      <Layout embedded={embedded}>{t('shared.generic.systemError')}</Layout>
-    )
-  }
-
   // show notification with activity start date
   if (
-    data.practiceQuiz.status === PublicationStatus.Scheduled &&
-    !data.practiceQuiz.isOwner
+    practiceQuiz.status === PUBLICATION_STATUS_SCHEDULED &&
+    !practiceQuiz.isOwner
   ) {
     return (
       <Layout
         embedded={embedded}
-        displayName={data.practiceQuiz.displayName}
-        course={data.practiceQuiz.course ?? undefined}
+        displayName={practiceQuiz.displayName}
+        course={practiceQuiz.course ?? undefined}
       >
+        {error && practiceQuiz ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
         <UserNotification
           type="warning"
           message={t('pwa.practiceQuiz.scheduledAvailableFrom', {
-            name: data.practiceQuiz.displayName,
-            date: dayjs(data.practiceQuiz.availableFrom).format(
-              'DD.MM.YYYY HH:mm'
-            ),
+            name: practiceQuiz.displayName,
+            date: dayjs(practiceQuiz.availableFrom).format('DD.MM.YYYY HH:mm'),
           })}
         />
       </Layout>
@@ -249,16 +267,20 @@ function PracticeQuizPage({
   return (
     <Layout
       embedded={embedded}
-      displayName={data.practiceQuiz.displayName}
-      course={data.practiceQuiz.course ?? undefined}
+      displayName={practiceQuiz.displayName}
+      course={practiceQuiz.course ?? undefined}
     >
+      {error && practiceQuiz ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
       <PracticeQuiz
         showResetLocalStorage
         embedded={embedded}
-        quiz={{
-          ...data.practiceQuiz,
-          course: data.practiceQuiz.course!,
-        }}
+        quiz={toPracticeQuizComponentQuiz(practiceQuiz)}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
         handleNextElement={handleNextQuestion}
@@ -270,7 +292,7 @@ function PracticeQuizPage({
               }
             : undefined
         }
-        previewOnly={data.practiceQuiz.isOwner ?? undefined}
+        previewOnly={practiceQuiz.isOwner ?? undefined}
       />
       {!embedded && (
         <Footer
@@ -295,12 +317,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
-
     const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
@@ -319,7 +338,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         id: ctx.params.id,
         courseId: ctx.params.courseId,
@@ -327,7 +346,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on practice quiz:', error)
 
@@ -410,7 +429,7 @@ function readStoredCompletion(
 
     return stackIds.every((stackId) => {
       const status = progressState?.[String(stackId)]?.status
-      return status && status !== StackFeedbackStatus.Unanswered
+      return status && status !== STACK_FEEDBACK_STATUS_UNANSWERED
     })
   } catch (error) {
     console.warn(
@@ -426,4 +445,13 @@ function readStoredCompletion(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function toPracticeQuizComponentQuiz(
+  quiz: PracticeQuizDetail
+): PracticeQuizComponentQuiz {
+  return {
+    ...quiz,
+    course: quiz.course,
+  } as unknown as PracticeQuizComponentQuiz
 }

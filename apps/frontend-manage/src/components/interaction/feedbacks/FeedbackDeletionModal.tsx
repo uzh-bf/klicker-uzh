@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 interface FeedbackDeletionModalProps {
   open: boolean
   onClose: () => void
-  onConfirm: () => Promise<void>
+  onConfirm: () => Promise<boolean>
   feedbackContent: string
   loading?: boolean
 }
@@ -25,11 +25,16 @@ function FeedbackDeletionModal({
     feedbackContent.length > 50
       ? `${feedbackContent.substring(0, 50)}...`
       : feedbackContent
+  const handleClose = () => {
+    if (!loading) {
+      onClose()
+    }
+  }
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.cockpit.deleteFeedback')}
       secondaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -37,7 +42,7 @@ function FeedbackDeletionModal({
           <span>{t('shared.generic.cancel')}</span>
         </div>
       }
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-feedback-deletion' }}
       primaryButtonStyle="destructive"
       primaryLabel={
@@ -47,9 +52,12 @@ function FeedbackDeletionModal({
         </div>
       }
       primaryLoading={loading}
+      primaryDisabled={loading}
       onPrimaryAction={async () => {
-        await onConfirm()
-        onClose()
+        const success = await onConfirm()
+        if (success) {
+          onClose()
+        }
       }}
       dataPrimaryAction={{ cy: 'confirm-feedback-deletion' }}
       data={{ cy: 'feedback-deletion-modal' }}

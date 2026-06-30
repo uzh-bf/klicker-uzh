@@ -1,9 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faLockOpen } from '@fortawesome/free-solid-svg-icons'
-import {
-  GetUsersPrivatePreviewDocument,
-  GrantPrivatePreviewAccessDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
@@ -14,6 +9,7 @@ import {
   AccordionTrigger,
   Button,
   FormikTextField,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -21,13 +17,19 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import Layout from '../components/Layout'
+import { trpc } from '../lib/trpc'
 
 function AdminPanel() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetUsersPrivatePreviewDocument)
-  const [grantPrivatePreviewAccess] = useMutation(
-    GrantPrivatePreviewAccessDocument
-  )
+  const utils = trpc.useUtils()
+  const {
+    data,
+    error: privatePreviewUsersError,
+    isLoading,
+  } = trpc.user.privatePreviewUsers.useQuery()
+  const hasPrivatePreviewUsersData = typeof data !== 'undefined'
+  const grantPrivatePreviewAccess =
+    trpc.user.grantPrivatePreviewAccess.useMutation()
 
   return (
     <Layout displayName={t('manage.admin.pageName')}>
@@ -55,49 +57,56 @@ function AdminPanel() {
                       .email(t('manage.admin.grantAccessEmailError'))
                       .required(t('manage.admin.grantAccessEmailRequired')),
                   })}
-                  onSubmit={async (values, { resetForm }) => {
-                    const { data: success } = await grantPrivatePreviewAccess({
-                      variables: { email: values.email },
-                      // performance is not relevant for admin access operations
-                      // prefer additional fetches over potentially outdated data
-                      refetchQueries: [
-                        { query: GetUsersPrivatePreviewDocument },
-                      ],
-                    })
+                  onSubmit={async (values, { resetForm, setSubmitting }) => {
+                    setSubmitting(true)
 
-                    if (success?.grantPrivatePreviewAccess === 0) {
-                      // success toast - access granted successfully
-                      toast({
-                        type: 'success',
-                        message: t('manage.admin.accessGranted'),
-                      })
-                      resetForm()
-                      return
-                    } else if (success?.grantPrivatePreviewAccess === 1) {
-                      // error toast - user does not exist
+                    try {
+                      const success =
+                        await grantPrivatePreviewAccess.mutateAsync({
+                          email: values.email,
+                        })
+
+                      if (success === 0) {
+                        await utils.user.privatePreviewUsers.invalidate()
+                        toast({
+                          type: 'success',
+                          message: t('manage.admin.accessGranted'),
+                        })
+                        resetForm()
+                        return
+                      } else if (success === 1) {
+                        toast({
+                          type: 'error',
+                          message: t('manage.admin.userNotExist'),
+                          options: { duration: 6000 },
+                        })
+                        return
+                      } else if (success === 2) {
+                        await utils.user.privatePreviewUsers.invalidate()
+                        toast({
+                          type: 'success',
+                          message: t('manage.admin.alreadyAccess'),
+                          options: { duration: 6000 },
+                        })
+                        resetForm()
+                        return
+                      }
+
                       toast({
                         type: 'error',
-                        message: t('manage.admin.userNotExist'),
+                        message: t('manage.admin.grantAccessError'),
                         options: { duration: 6000 },
                       })
-                      return
-                    } else if (success?.grantPrivatePreviewAccess === 2) {
-                      // success toast - user already has private preview access
+                    } catch (error) {
+                      console.error(error)
                       toast({
-                        type: 'success',
-                        message: t('manage.admin.alreadyAccess'),
+                        type: 'error',
+                        message: t('manage.admin.grantAccessError'),
                         options: { duration: 6000 },
                       })
-                      resetForm()
-                      return
+                    } finally {
+                      setSubmitting(false)
                     }
-
-                    // error toast - mutation failed / insufficient permissions for user triggering it
-                    toast({
-                      type: 'error',
-                      message: t('manage.admin.grantAccessError'),
-                      options: { duration: 6000 },
-                    })
                   }}
                 >
                   {({ isValid, isSubmitting }) => (
@@ -131,8 +140,20 @@ function AdminPanel() {
                   )}
                 </Formik>
               </div>
-              {loading ? (
+              {privatePreviewUsersError && hasPrivatePreviewUsersData ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                  className={{ root: 'mb-2' }}
+                />
+              ) : null}
+              {isLoading && !hasPrivatePreviewUsersData ? (
                 <Loader />
+              ) : !hasPrivatePreviewUsersData ? (
+                <UserNotification
+                  type="error"
+                  message={t('shared.generic.systemError')}
+                />
               ) : (
                 <DataTable
                   isPaginated
@@ -166,7 +187,7 @@ function AdminPanel() {
                       className: 'w-20',
                     },
                   ]}
-                  data={data?.getUsersPrivatePreview ?? []}
+                  data={data}
                   className={{
                     tableHeader: 'h-7 p-2',
                     tableCell: 'h-7 p-2',

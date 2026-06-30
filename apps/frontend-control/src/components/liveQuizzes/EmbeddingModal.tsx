@@ -1,13 +1,14 @@
-import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-solid-svg-icons'
+import { trpc } from '@lib/trpc'
 import {
-  GetLiveQuizEmbeddingInfoDocument,
-  GetSingleLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, Modal } from '@uzh-bf/design-system'
+  Button,
+  H2,
+  Modal,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useMemo } from 'react'
 
 function HMACLink({
   quizId,
@@ -20,6 +21,7 @@ function HMACLink({
   params: string
   identifier: string
 }) {
+  const t = useTranslations()
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
   }/quizzes/${quizId}/evaluation?hmac=${hmac}${params ? `&${params}` : ''}`
@@ -37,7 +39,22 @@ function HMACLink({
         </a>
       </Link>
       <Button
-        onClick={() => navigator?.clipboard?.writeText(link)}
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(link)
+            toast({
+              type: 'success',
+              message: t('control.course.embeddingLinkCopied'),
+            })
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          }
+        }}
         data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
       >
         <Button.Icon withoutLabel icon={faClipboard} />
@@ -54,61 +71,68 @@ function EmbeddingModal({
   quizId: string
 }) {
   const t = useTranslations()
-  const { data: dataLiveQuiz } = useQuery(GetSingleLiveQuizDocument, {
-    variables: { quizId: quizId || '' },
-    skip: !quizId,
-  })
-
-  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
-    variables: { id: quizId },
-    skip: !open,
-  })
-
-  const questions = useMemo(
-    () =>
-      dataLiveQuiz?.liveQuiz?.blocks?.flatMap((block) => block.elements) || [],
-    [dataLiveQuiz?.liveQuiz?.blocks]
+  const {
+    data,
+    error,
+    isLoading: loading,
+  } = trpc.liveQuiz.embeddingInfo.useQuery(
+    { id: quizId },
+    { enabled: !!quizId }
   )
+  const embeddingInfo = data?.embeddingInfo
+  const initialLoading = loading && !embeddingInfo
+  const embeddingUnavailable = Boolean((error || !loading) && !embeddingInfo)
 
   return (
     <Modal
       open
       hideCloseButton
-      loading={loading}
+      loading={initialLoading}
       onClose={onClose}
       onSecondaryAction={onClose}
       secondaryLabel={t('shared.generic.close')}
       dataSecondaryAction={{ cy: 'close-embedding-modal' }}
     >
       <H2>{t('control.course.pptEmbedding')}</H2>
-      <div className="flex flex-col gap-3">
-        {questions?.map((element, ix) => {
-          if (!element || !element.elementData) return null
-
-          return (
-            <div key={element.id}>
-              <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
-                element.elementData.name
-              }`}</div>
-              <HMACLink
-                quizId={quizId}
-                hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-                params={`questionIx=${ix}&hideControls=true`}
-                identifier={`question-${ix}`}
-              />
-            </div>
-          )
-        })}
-      </div>
-      <div className="mt-3">
-        <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
-        <HMACLink
-          quizId={quizId}
-          hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-          params={`leaderboard=true&hideControls=true`}
-          identifier={`leaderboard`}
+      {embeddingUnavailable ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
         />
-      </div>
+      ) : null}
+
+      {embeddingInfo ? (
+        <>
+          <div className="flex flex-col gap-3">
+            {embeddingInfo.instances.map((instance, ix) => {
+              return (
+                <div key={instance.id}>
+                  <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
+                    instance.name
+                  }`}</div>
+                  <HMACLink
+                    quizId={quizId}
+                    hmac={embeddingInfo.hmac}
+                    params={`questionIx=${ix}&hideControls=true`}
+                    identifier={`question-${ix}`}
+                  />
+                </div>
+              )
+            })}
+          </div>
+          <div className="mt-3">
+            <div className="w-30 font-bold">
+              {t('shared.generic.leaderboard')}:
+            </div>
+            <HMACLink
+              quizId={quizId}
+              hmac={embeddingInfo.hmac}
+              params={`leaderboard=true&hideControls=true`}
+              identifier={`leaderboard`}
+            />
+          </div>
+        </>
+      ) : null}
     </Modal>
   )
 }

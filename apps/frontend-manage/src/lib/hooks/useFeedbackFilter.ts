@@ -1,8 +1,17 @@
-import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import * as JsSearch from 'js-search'
 import _sortBy from 'lodash/sortBy'
 import { useEffect, useState } from 'react'
+
+type FeedbackFilterItem = {
+  id: number
+  content: string
+  createdAt: unknown
+  isPinned: boolean
+  isPublished: boolean
+  isResolved: boolean
+  votes: number
+}
 
 const defaultFilterParams = {
   showResolvedInitial: true,
@@ -26,8 +35,8 @@ interface FilterParams {
   sortByInitial?: string
 }
 
-function useFeedbackFilter(
-  feedbacks?: Feedback[],
+function useFeedbackFilter<TFeedback extends FeedbackFilterItem>(
+  feedbacks?: TFeedback[],
   {
     showResolvedInitial,
     showUnpublishedInitial,
@@ -71,7 +80,7 @@ function useFeedbackFilter(
   useEffect(() => {
     let results = feedbacks
     if (withSearch && searchString.length > 0) {
-      results = searchIndex?.search(searchString) as Feedback[]
+      results = searchIndex?.search(searchString) as TFeedback[]
     }
     setFilteredFeedbacks(
       results?.filter((item) => {

@@ -1,4 +1,4 @@
-import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@lib/constants/sharingEnums'
 import { SelectField, UserNotification } from '@uzh-bf/design-system'
 import { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'

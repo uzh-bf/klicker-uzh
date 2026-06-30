@@ -1,15 +1,15 @@
+import { H2, Workflow } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import {
   ElementOrderType,
   ElementType,
   ParameterType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { H2, Workflow } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+} from '../../../lib/constants/activityEnums'
 
 export type GroupActivityClueFormValues = {
   name: string
   displayName: string
-  type: ParameterType.String | ParameterType.Number
+  type: ParameterType
   value: string
   unit?: string
 }

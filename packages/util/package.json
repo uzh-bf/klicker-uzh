@@ -45,5 +45,19 @@
   "volta": {
     "extends": "../../package.json"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
+    "./client-auth": {
+      "types": "./dist/clientAuth.d.ts",
+      "default": "./dist/clientAuth.js"
+    }
+  },
   "type": "module"
 }

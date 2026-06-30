@@ -4,14 +4,14 @@ import {
   faXmarkSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import {
   ActivityDetails,
   ActivityType,
   ReviewStatus,
-} from '@klicker-uzh/graphql/dist/ops'
-import { UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
+} from '../../../../lib/constants/activityEnums'
 import ActivityReviewStatus from '../ActivityReviewStatus'
 
 function BooleanIcon({ value }: { value: boolean }) {

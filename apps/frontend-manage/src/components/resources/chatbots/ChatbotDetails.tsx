@@ -1,13 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ChatModelCapability,
-  Chatbot,
-  CreditResetPeriod,
-  GetChatbotsInfoDocument,
-  UpdateChatbotModelSettingsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Badge,
@@ -22,6 +14,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../../lib/trpc'
+import {
+  CreditResetPeriod,
+  type ChatModelCapability,
+  type Chatbot,
+} from './types'
 
 type ReasoningConfigState = Record<string, string[]>
 
@@ -64,18 +62,22 @@ const buildReasoningConfigState = (
 
 function ChatbotDetails({
   chatbot,
+  error,
   modelRegistry,
   loading,
 }: {
   chatbot?: Chatbot
+  error: boolean
   modelRegistry: ChatModelCapability[]
   loading: boolean
 }) {
   const t = useTranslations()
   const { locale } = useRouter()
-  const [updateChatbotModelSettings, { loading: isSaving }] = useMutation(
-    UpdateChatbotModelSettingsDocument
-  )
+  const utils = trpc.useUtils()
+  const updateChatbotModelSettings =
+    trpc.resources.updateChatbotModelSettings.useMutation()
+  const [savePending, setSavePending] = useState(false)
+  const isSaving = updateChatbotModelSettings.isLoading || savePending
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
@@ -114,6 +116,14 @@ function ChatbotDetails({
 
   if (loading) {
     return <Loader />
+  }
+
+  if (error) {
+    return (
+      <UserNotification className={{ root: 'mt-1.5' }} type="error">
+        {t('shared.generic.systemError')}
+      </UserNotification>
+    )
   }
 
   if (!chatbot) {
@@ -212,8 +222,11 @@ function ChatbotDetails({
   }
 
   const handleSaveModelSettings = async () => {
+    if (isSaving) return
+
     setSaveError(null)
     setSaveSuccess(false)
+    setSavePending(true)
 
     const normalizedAllowedModelIds = useAllModels
       ? []
@@ -231,24 +244,26 @@ function ChatbotDetails({
     })
 
     try {
-      await updateChatbotModelSettings({
-        variables: {
-          chatbotId: chatbot.id,
-          modelSelection: modelSelectionEnabled,
-          allowedModelIds: normalizedAllowedModelIds,
-          allowedReasoningEffortsByModel: normalizedReasoningConfig,
-        },
-        refetchQueries: [{ query: GetChatbotsInfoDocument }],
-        awaitRefetchQueries: true,
+      await updateChatbotModelSettings.mutateAsync({
+        chatbotId: chatbot.id,
+        modelSelection: modelSelectionEnabled,
+        allowedModelIds: normalizedAllowedModelIds,
+        allowedReasoningEffortsByModel: normalizedReasoningConfig,
       })
+      try {
+        await utils.resources.chatbotsInfo.invalidate()
+      } catch (error) {
+        console.error('Error refreshing chatbot model settings', error)
+        setSaveError(t('shared.generic.systemError'))
+        return
+      }
 
       setSaveSuccess(true)
     } catch (error) {
-      setSaveError(
-        error instanceof Error
-          ? error.message
-          : t('manage.resources.chatbotModelSettingsSaveError')
-      )
+      console.error(error)
+      setSaveError(t('manage.resources.chatbotModelSettingsSaveError'))
+    } finally {
+      setSavePending(false)
     }
   }
 
@@ -545,6 +560,7 @@ function ChatbotDetails({
                 </span>
                 <Switch
                   checked={modelSelectionEnabled}
+                  disabled={isSaving}
                   onCheckedChange={setModelSelectionEnabled}
                 />
               </div>
@@ -561,6 +577,7 @@ function ChatbotDetails({
                   type="checkbox"
                   className="h-4 w-4"
                   checked={useAllModels}
+                  disabled={isSaving}
                   onChange={(event) =>
                     handleAllModelsToggle(event.target.checked)
                   }
@@ -588,7 +605,7 @@ function ChatbotDetails({
                         type="checkbox"
                         className="mt-1 h-4 w-4"
                         checked={checked}
-                        disabled={useAllModels}
+                        disabled={isSaving || useAllModels}
                         onChange={(event) =>
                           handleAllowedModelToggle(
                             model.id,
@@ -660,6 +677,7 @@ function ChatbotDetails({
                                     type="checkbox"
                                     className="h-3.5 w-3.5"
                                     checked={checked}
+                                    disabled={isSaving}
                                     onChange={(event) =>
                                       handleReasoningEffortToggle(
                                         model.id,
@@ -685,6 +703,7 @@ function ChatbotDetails({
               <Button
                 onClick={handleSaveModelSettings}
                 disabled={isSaving}
+                loading={isSaving}
                 data={{ cy: 'chatbot-model-settings-save' }}
               >
                 <Button.Label>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 interface PermissionRevocationModalProps {
   onClose: () => void
-  onRevocation: () => Promise<void>
+  onRevocation: () => Promise<boolean>
   username?: string
   userGroup?: string
 }
@@ -18,12 +18,24 @@ function PermissionRevocationModal({
   const t = useTranslations()
   const [isRevoking, setIsRevoking] = useState(false)
 
+  const handleClose = () => {
+    if (!isRevoking) {
+      onClose()
+    }
+  }
+
   const handleRevocation = async () => {
+    if (isRevoking) return
+
     setIsRevoking(true)
+    let success = false
     try {
-      await onRevocation()
+      success = await onRevocation()
     } finally {
       setIsRevoking(false)
+    }
+
+    if (success) {
       onClose()
     }
   }
@@ -32,13 +44,14 @@ function PermissionRevocationModal({
     <Modal
       open
       hideCloseButton
-      onClose={onClose}
+      onClose={handleClose}
       title={t('manage.sharing.revokeDirectPermission')}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={handleClose}
       dataSecondaryAction={{ cy: 'cancel-revocation' }}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={isRevoking}
+      primaryDisabled={isRevoking}
       primaryButtonStyle="destructive"
       onPrimaryAction={handleRevocation}
       dataPrimaryAction={{ cy: 'confirm-revocation' }}

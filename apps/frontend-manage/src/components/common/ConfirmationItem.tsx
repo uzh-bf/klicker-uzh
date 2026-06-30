@@ -15,6 +15,7 @@ interface ConfirmationItemProps {
   onClick: () => void
   confirmationType?: 'confirm' | 'delete'
   data?: { cy?: string; test?: string }
+  disabled?: boolean
 }
 
 function ConfirmationItem({
@@ -24,11 +25,39 @@ function ConfirmationItem({
   onClick,
   confirmationType = 'confirm',
   data,
+  disabled = false,
 }: ConfirmationItemProps) {
   const t = useTranslations()
+  const canConfirm = !confirmed && !disabled
+  const keepConfirmedData =
+    confirmed && notApplicable && confirmationType === 'delete'
+  const handleConfirm = () => {
+    if (canConfirm) {
+      onClick()
+    }
+  }
 
   return (
-    <div className="flex min-h-10 flex-row items-center justify-between border-b pb-2 pl-2">
+    <div
+      className={twMerge(
+        'flex min-h-10 flex-row items-center justify-between border-b pb-2 pl-2',
+        canConfirm && 'cursor-pointer'
+      )}
+      data-confirmation-active={canConfirm ? 'true' : 'false'}
+      data-cy={keepConfirmedData ? data?.cy : undefined}
+      data-test={keepConfirmedData ? data?.test : undefined}
+      aria-disabled={disabled ? 'true' : undefined}
+      role={canConfirm ? 'button' : undefined}
+      tabIndex={canConfirm ? 0 : undefined}
+      onClick={handleConfirm}
+      onKeyDown={(event) => {
+        if (!canConfirm) return
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onClick()
+        }
+      }}
+    >
       <div className="flex flex-row items-center gap-3.5">
         <FontAwesomeIcon
           icon={notApplicable ? faInfoCircle : faExclamationCircle}
@@ -53,14 +82,20 @@ function ConfirmationItem({
         <FontAwesomeIcon icon={faCheck} className="text-green-700" />
       ) : (
         <Button
-          onClick={onClick}
+          onClick={(event) => {
+            event?.stopPropagation()
+            if (!disabled) {
+              onClick()
+            }
+          }}
+          disabled={disabled}
+          data={data}
           className={{
             root: twMerge(
               'border-primary-100 h-7 py-0',
               confirmationType === 'delete' && 'border-red-600'
             ),
           }}
-          data={data}
         >
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>

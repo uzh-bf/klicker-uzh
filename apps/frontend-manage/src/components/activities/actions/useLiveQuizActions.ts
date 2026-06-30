@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faWpforms } from '@fortawesome/free-brands-svg-icons'
 import {
   faClock,
@@ -20,17 +19,19 @@ import {
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  ActivityType,
-  GetSingleCourseDocument,
-  GetUserActivitiesDocument,
-  UnpublishLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useCallback, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom'
+import {
+  ActivityType,
+  type ActivityInfo,
+} from '../../../lib/constants/activityEnums'
+import { trpc, type RouterInputs, type RouterOutputs } from '../../../lib/trpc'
 import { ActivityAction } from './useAvailableActions'
+
+type StartLiveQuizResult = RouterOutputs['liveQuiz']['start']
 
 function useLiveQuizActions({
   quiz,
@@ -47,31 +48,44 @@ function useLiveQuizActions({
   setDeletionModal,
   setActivityLogOpen,
   setResetModal,
+  refetchActivities,
 }: {
   quiz: ActivityInfo
-  onStart: any
+  onStart: () => Promise<StartLiveQuizResult>
   starting: boolean
   setSchedulingModal: Dispatch<SetStateAction<boolean>>
   setEmbeddingModal: Dispatch<SetStateAction<boolean>>
   setQRModal: Dispatch<SetStateAction<boolean>>
   setTemplateEditingModal: Dispatch<SetStateAction<boolean>>
   setTemplateDeletionModal: Dispatch<SetStateAction<boolean>>
-  setConversionModal: Dispatch<
-    SetStateAction<{
-      open: boolean
-      activityId: string
-      activityType: ActivityType
-    }>
-  >
+  setConversionModal: Dispatch<SetStateAction<any>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
   setResetModal: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
-  const [unpublishLiveQuiz] = useMutation(UnpublishLiveQuizDocument)
+  const utils = trpc.useUtils()
+  const unpublishLiveQuiz = trpc.activity.unpublish.useMutation()
+  const [startRouting, setStartRouting] = useState(false)
+  const [unpublishRefreshing, setUnpublishRefreshing] = useState(false)
+  const [deleteSummaryPreparing, setDeleteSummaryPreparing] = useState(false)
+  const startPending = starting || startRouting
+  const unpublishing = unpublishLiveQuiz.isLoading || unpublishRefreshing
+  const prepareDeletionSummary = useCallback(() => {
+    const input = { activityId: quiz.id }
+
+    if (utils.activity.liveQuizSummary.getData(input)?.liveQuizSummary) return
+
+    flushSync(() => setDeleteSummaryPreparing(true))
+    void utils.activity.liveQuizSummary
+      .fetch(input)
+      .catch(console.error)
+      .finally(() => setDeleteSummaryPreparing(false))
+  }, [quiz.id, utils])
 
   const actions = useMemo(
     () => [
@@ -80,10 +94,32 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.startLiveQuiz'),
         icon: faPlay,
         onClick: async () => {
-          await onStart()
-          router.push(`/quizzes/${quiz.id}/cockpit`)
+          setStartRouting(true)
+          try {
+            const result = await onStart()
+            if (!result.liveQuiz) {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+                options: { duration: 5000 },
+              })
+              return
+            }
+
+            const routed = await router.push(`/quizzes/${quiz.id}/cockpit`)
+            if (!routed) throw new Error('Live quiz start navigation failed')
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+              options: { duration: 5000 },
+            })
+          } finally {
+            setStartRouting(false)
+          }
         },
-        disabled: starting,
+        disabled: startPending,
         data: { cy: `start-live-quiz-${quiz.name}` },
       },
       {
@@ -210,21 +246,37 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.unpublishLiveQuiz'),
         icon: faLock,
         onClick: async () => {
-          await unpublishLiveQuiz({
-            variables: { id: quiz.id },
-            refetchQueries: [
-              ...(quiz.courseId
-                ? [
-                    {
-                      query: GetSingleCourseDocument,
-                      variables: { courseId: quiz.courseId },
-                    },
-                  ]
-                : []),
-              { query: GetUserActivitiesDocument },
-            ],
-          })
+          setUnpublishRefreshing(true)
+          try {
+            const result = await unpublishLiveQuiz.mutateAsync({
+              activityId: quiz.id,
+              activityType:
+                ActivityType.LiveQuiz as RouterInputs['activity']['unpublish']['activityType'],
+            })
+            if (result.unpublishActivity?.id) {
+              await Promise.all([
+                quiz.courseId
+                  ? utils.course.detail.invalidate({ courseId: quiz.courseId })
+                  : undefined,
+                refetchActivities?.(),
+              ]).catch(console.error)
+            } else {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+            }
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: t('shared.generic.systemError'),
+            })
+          } finally {
+            setUnpublishRefreshing(false)
+          }
         },
+        disabled: unpublishing,
         data: { cy: `unpublish-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -248,7 +300,11 @@ function useLiveQuizActions({
         id: 'deleteLiveQuiz',
         label: t('manage.liveQuizzes.deleteLiveQuiz'),
         icon: faTrashCan,
-        onClick: () => setDeletionModal(true),
+        onClick: () => {
+          flushSync(() => setDeletionModal(true))
+        },
+        onMenuOpen: prepareDeletionSummary,
+        disabled: deleteSummaryPreparing,
         data: { cy: `delete-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -267,7 +323,13 @@ function useLiveQuizActions({
       quiz.name,
       quiz.templateId,
       onStart,
-      starting,
+      startPending,
+      unpublishLiveQuiz,
+      unpublishing,
+      utils,
+      refetchActivities,
+      deleteSummaryPreparing,
+      prepareDeletionSummary,
       setEmbeddingModal,
       setQRModal,
       setTemplateEditingModal,

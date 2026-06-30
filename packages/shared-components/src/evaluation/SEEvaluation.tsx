@@ -1,13 +1,13 @@
-import type {
-  SelectionElementOptions,
-  SelectionInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
 import type { SingleSelectionResponse } from '@klicker-uzh/types'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
 import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import type {
+  SelectionElementOptions,
+  SelectionInstanceEvaluation,
+} from '../elementTypes'
 
 function SEEValuation({
   evaluation,

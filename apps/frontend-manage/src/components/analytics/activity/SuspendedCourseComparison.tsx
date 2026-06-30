@@ -1,34 +1,63 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Checkbox, H3, Select } from '@uzh-bf/design-system'
+import { Checkbox, H3, Select, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { trpc } from '../../../lib/trpc'
 
 function SuspendedCourseComparison({
   courseComparison,
   setCourseComparison,
   comparisonCourseLoading,
+  comparisonCourseError,
 }: {
   courseComparison: { id: string; name: string } | undefined
   setCourseComparison: (
     course: { id: string; name: string } | undefined
   ) => void
   comparisonCourseLoading: boolean
+  comparisonCourseError: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
+  const currentCourseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : null
 
-  const { data } = useSuspenseQuery(GetUserCoursesDocument)
+  const {
+    data,
+    error: courseListError,
+    isLoading,
+  } = trpc.course.userCourses.useQuery()
+  const courseList = data?.userCourses
+  const hasCourseListData = typeof courseList !== 'undefined'
   const courses =
-    data.userCourses
-      ?.filter((course) => course.id !== router.query.courseId)
+    courseList
+      ?.filter((course) => course.id !== currentCourseId)
       .map((course) => ({
         label: course.name,
         value: course.id,
       })) ?? []
+
+  if (isLoading && !hasCourseListData) {
+    return (
+      <div className="w-full px-4 lg:w-1/4">
+        <Loader />
+      </div>
+    )
+  }
+
+  if (!hasCourseListData) {
+    return (
+      <div className="w-full px-4 lg:w-1/4">
+        <UserNotification
+          type="error"
+          message={t('manage.analytics.analyticsLoadingFailed')}
+          className={{ root: 'text-sm' }}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="w-full px-4 lg:w-1/4">
@@ -52,6 +81,13 @@ function SuspendedCourseComparison({
       {showCourseDropdown ? (
         <div className="flex flex-col gap-2 pl-7">
           <div>{t('manage.analytics.courseComparisonDescription')}</div>
+          {courseListError ? (
+            <UserNotification
+              type="error"
+              message={t('manage.analytics.analyticsLoadingFailed')}
+              className={{ root: 'text-sm' }}
+            />
+          ) : null}
           <div className="flex w-full flex-row">
             <Select
               items={courses}
@@ -68,6 +104,13 @@ function SuspendedCourseComparison({
             />
             {comparisonCourseLoading && <Loader />}
           </div>
+          {comparisonCourseError ? (
+            <UserNotification
+              type="error"
+              message={t('manage.analytics.analyticsLoadingFailed')}
+              className={{ root: 'text-sm' }}
+            />
+          ) : null}
         </div>
       ) : undefined}
     </div>

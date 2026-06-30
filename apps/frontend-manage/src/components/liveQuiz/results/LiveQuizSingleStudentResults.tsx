@@ -1,4 +1,3 @@
-import { useSuspenseQuery } from '@apollo/client'
 import {
   faCircleCheck,
   faCircleHalfStroke,
@@ -9,10 +8,7 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetLiveQuizStudentAssessmentResponsesDocument,
-  ResponseCorrectness,
-} from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { InstanceStackStudentResponseType } from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
@@ -26,9 +22,10 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { Fragment, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ResponseCorrectness } from '../../../lib/assessmentResultsTypes'
+import { trpc } from '../../../lib/trpc'
 import PointCorrectionsModal from '../../courses/PointCorrectionsModal'
 import StudentAssessmentResponseModal, {
   AssessmentResultInstance,
@@ -58,6 +55,7 @@ const CorrectnessIconMap: Record<
 }
 
 function LiveQuizSingleStudentResults({
+  courseId,
   liveQuizId,
   participantId,
   participantEmail,
@@ -65,6 +63,7 @@ function LiveQuizSingleStudentResults({
   quizCorrectnessPoints,
   quizBonusPoints,
 }: {
+  courseId: string
   liveQuizId: string
   participantId: string
   participantEmail: string
@@ -73,7 +72,6 @@ function LiveQuizSingleStudentResults({
   quizBonusPoints: number
 }) {
   const t = useTranslations()
-  const router = useRouter()
   const formatter = useFormatter()
   const toStudentElementResponse = useStudentInstanceResponseMapper()
 
@@ -81,18 +79,19 @@ function LiveQuizSingleStudentResults({
     { instanceId: string; participantId: string } | undefined
   >(undefined)
 
-  const { data, error } = useSuspenseQuery(
-    GetLiveQuizStudentAssessmentResponsesDocument,
-    { variables: { liveQuizId, participantId }, fetchPolicy: 'network-only' }
-  )
+  const { data, error, isLoading } =
+    trpc.activity.liveQuizStudentAssessmentResponses.useQuery(
+      { liveQuizId, participantId },
+      { enabled: Boolean(liveQuizId && participantId) }
+    )
   const [selectedInstance, setSelectedInstance] = useState<{
     instance: AssessmentResultInstance
     response: InstanceStackStudentResponseType
   } | null>(null)
 
-  const blocks = data?.liveQuizStudentAssessmentResponses ?? []
+  const blocks = data?.liveQuizStudentAssessmentResponses
   const computedBlocks = useMemo(() => {
-    return blocks.map((block, blockIx) => {
+    return (blocks ?? []).map((block, blockIx) => {
       const instances = block.instances.map((instanceObj) => {
         const instance = instanceObj.instance
         const elementData = instance.elementData
@@ -169,7 +168,11 @@ function LiveQuizSingleStudentResults({
     })
   }, [blocks, quizBasePoints, quizBonusPoints, quizCorrectnessPoints])
 
-  if (error) {
+  if (isLoading && !blocks) {
+    return <Loader />
+  }
+
+  if (error && !blocks) {
     return (
       <UserNotification
         type="error"
@@ -178,12 +181,32 @@ function LiveQuizSingleStudentResults({
     )
   }
 
-  if (computedBlocks.length === 0) {
+  if (!blocks) {
     return (
       <UserNotification
-        type="info"
-        message={t('manage.assessment.liveQuizStudentHasNoResponses')}
+        type="warning"
+        message={t('manage.assessment.errorLoadingStudentLiveQuizResponses')}
       />
+    )
+  }
+
+  if (computedBlocks.length === 0) {
+    return (
+      <>
+        {error ? (
+          <UserNotification
+            type="error"
+            message={t(
+              'manage.assessment.errorLoadingStudentLiveQuizResponses'
+            )}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
+        <UserNotification
+          type="info"
+          message={t('manage.assessment.liveQuizStudentHasNoResponses')}
+        />
+      </>
     )
   }
 
@@ -203,6 +226,13 @@ function LiveQuizSingleStudentResults({
 
   return (
     <>
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingStudentLiveQuizResponses')}
+          className={{ root: 'mb-3' }}
+        />
+      ) : null}
       <ShadcnTable className="text-xs sm:text-sm">
         <ShadcnTableHeader>
           <ShadcnTableRow>
@@ -573,11 +603,11 @@ function LiveQuizSingleStudentResults({
         />
       )}
 
-      {typeof instancePointCorrection !== 'undefined' && router.query.id ? (
+      {typeof instancePointCorrection !== 'undefined' && courseId ? (
         <PointCorrectionsModal
-          courseId={router.query.id as string}
+          courseId={courseId}
           onClose={() => setInstancePointCorrection(undefined)}
-          preselectedLiveQuizId={router.query.quizId as string}
+          preselectedLiveQuizId={liveQuizId}
           preselectedInstanceId={instancePointCorrection?.instanceId}
           preselectedParticipantId={instancePointCorrection?.participantId}
         />

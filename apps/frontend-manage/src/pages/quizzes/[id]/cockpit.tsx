@@ -1,65 +1,77 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  ActivateLiveQuizBlockDocument,
-  DeactivateLiveQuizBlockDocument,
-  EndLiveQuizDocument,
-  GetCockpitQuizDocument,
-  GetUserRunningLiveQuizzesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { GetStaticPropsContext } from 'next'
+import { UserNotification, toast } from '@uzh-bf/design-system'
+import { GetServerSidePropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
 import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
+import { api } from '../../../lib/trpc'
 
 function Cockpit() {
+  const t = useTranslations()
   const router = useRouter()
+  const quizId = typeof router.query.id === 'string' ? router.query.id : ''
+  const utils = api.useUtils()
+  const [cockpitActionPending, setCockpitActionPending] = useState(false)
+  const showCockpitActionError = () => {
+    toast({
+      type: 'error',
+      message: t('shared.generic.systemError'),
+      options: { duration: 5000 },
+    })
+  }
 
-  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
-    ActivateLiveQuizBlockDocument
-  )
-  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateLiveQuizBlockDocument
-  )
-
-  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
-    EndLiveQuizDocument,
-    {
-      update(cache, { data }) {
-        // verify that the live quiz has ended successfully
-        if (!data?.endLiveQuiz) return
-
-        // update the list of running live quizzes
-        cache.updateQuery(
-          { query: GetUserRunningLiveQuizzesDocument },
-          (qData) => {
-            if (!qData?.userRunningLiveQuizzes) return qData
-            return {
-              userRunningLiveQuizzes: qData.userRunningLiveQuizzes.filter(
-                (q) => q.id !== data.endLiveQuiz!.id
-              ),
-            }
-          }
-        )
-      },
-    }
-  )
+  const activateLiveQuizBlock = api.liveQuiz.activateBlock.useMutation({
+    onSuccess: async () => {
+      await utils.liveQuiz.cockpit.invalidate({ id: quizId })
+    },
+  })
+  const deactivateLiveQuizBlock = api.liveQuiz.deactivateBlock.useMutation({
+    onSuccess: async () => {
+      await utils.liveQuiz.cockpit.invalidate({ id: quizId })
+    },
+  })
+  const endLiveQuiz = api.liveQuiz.end.useMutation({
+    onSuccess: async (result) => {
+      if (!result.liveQuiz?.id) return
+      await utils.liveQuiz.running.invalidate()
+    },
+  })
+  const cockpitActionLoading =
+    activateLiveQuizBlock.isLoading ||
+    deactivateLiveQuizBlock.isLoading ||
+    endLiveQuiz.isLoading ||
+    cockpitActionPending
 
   const {
-    loading: cockpitLoading,
     data: cockpitData,
-    subscribeToMore,
-  } = useQuery(GetCockpitQuizDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    pollInterval: 2000,
-    skip: !router.query.id,
-  })
+    refetch: refetchCockpitQuiz,
+    isLoading: cockpitLoading,
+    error: cockpitError,
+  } = api.liveQuiz.cockpit.useQuery(
+    { id: quizId },
+    {
+      enabled: Boolean(quizId),
+      refetchInterval: 2000,
+    }
+  )
+  const cockpitQuiz = cockpitData?.cockpitQuiz
+
+  if (cockpitError && !cockpitQuiz) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
 
   // data has not been received yet
-  if (cockpitLoading || !cockpitData?.cockpitQuiz)
+  if (cockpitLoading || !cockpitQuiz)
     return (
       <Layout>
         <Loader />
@@ -81,7 +93,7 @@ function Cockpit() {
     blocks,
     confusionSummary,
     feedbacks,
-  } = cockpitData.cockpitQuiz
+  } = cockpitQuiz
 
   return (
     <Layout>
@@ -96,34 +108,71 @@ function Cockpit() {
           language={course?.language ?? null}
           isGamificationEnabled={isGamificationEnabled}
           handleEndLiveQuiz={async () => {
-            await endLiveQuiz({ variables: { id: id } })
-            router.push('/activities')
+            if (cockpitActionLoading) return
+
+            let releasePending = true
+            setCockpitActionPending(true)
+
+            try {
+              const result = await endLiveQuiz.mutateAsync({ id })
+              if (!result.liveQuiz?.id) {
+                showCockpitActionError()
+                return
+              }
+
+              const routed = await router.push('/activities')
+              if (!routed) throw new Error('Live quiz end navigation failed')
+              releasePending = false
+            } catch (error) {
+              console.error(error)
+              showCockpitActionError()
+            } finally {
+              if (releasePending) {
+                setCockpitActionPending(false)
+              }
+            }
           }}
           handleOpenBlock={async (blockId: number) => {
-            await activateLiveQuizBlock({
-              variables: { quizId: id, blockId },
-              // high stakes mutation where cache updates are hard due to cached and db data
-              refetchQueries: [
-                { query: GetCockpitQuizDocument, variables: { id } },
-              ],
-            })
+            if (cockpitActionLoading) return
+
+            setCockpitActionPending(true)
+
+            try {
+              await activateLiveQuizBlock.mutateAsync({
+                quizId: id,
+                blockId,
+              })
+            } catch (error) {
+              console.error(error)
+              showCockpitActionError()
+            } finally {
+              setCockpitActionPending(false)
+            }
           }}
           handleCloseBlock={async (blockId: number) => {
-            await deactivateLiveQuizBlock({
-              variables: { quizId: id, blockId },
-              // high stakes mutation where cache updates are hard due to cached and db data
-              refetchQueries: [
-                { query: GetCockpitQuizDocument, variables: { id } },
-              ],
-            })
+            if (cockpitActionLoading) return
+
+            setCockpitActionPending(true)
+
+            try {
+              await deactivateLiveQuizBlock.mutateAsync({
+                quizId: id,
+                blockId,
+              })
+            } catch (error) {
+              console.error(error)
+              showCockpitActionError()
+            } finally {
+              setCockpitActionPending(false)
+            }
           }}
           startedAt={startedAt}
-          loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
+          loading={cockpitActionLoading}
         />
       </div>
 
       <AudienceInteraction
-        subscribeToMore={subscribeToMore}
+        onFeedbackCreated={refetchCockpitQuiz}
         confusionValues={confusionSummary ?? undefined}
         feedbacks={feedbacks ?? []}
         isLiveQAEnabled={isLiveQAEnabled}
@@ -136,18 +185,42 @@ function Cockpit() {
   )
 }
 
-export async function getStaticProps({ locale }: GetStaticPropsContext) {
-  return {
-    props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
-    },
-  }
+function hasLecturerSession(ctx: GetServerSidePropsContext) {
+  return Boolean(
+    ctx.req.cookies['next-auth.session-token'] ||
+      ctx.req.cookies['__Secure-next-auth.session-token']
+  )
 }
 
-export function getStaticPaths() {
+function getRequestOrigin(ctx: GetServerSidePropsContext) {
+  const proto = (ctx.req.headers['x-forwarded-proto'] || 'http') as string
+  return `${proto}://${ctx.req.headers.host}`
+}
+
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  if (!hasLecturerSession(ctx)) {
+    const manageUrl =
+      process.env.NEXT_PUBLIC_MANAGE_URL ?? getRequestOrigin(ctx)
+    const authUrl =
+      process.env.NEXT_PUBLIC_AUTH_URL ?? `${getRequestOrigin(ctx)}/login`
+    const redirectTo = new URL(ctx.resolvedUrl, manageUrl).toString()
+
+    return {
+      redirect: {
+        destination: `${authUrl}?redirectTo=${encodeURIComponent(redirectTo)}`,
+        permanent: false,
+      },
+    }
+  }
+
   return {
-    paths: [],
-    fallback: 'blocking',
+    props: {
+      messages: (
+        await import(
+          `@klicker-uzh/i18n/messages/${ctx.locale ?? ctx.defaultLocale ?? 'en'}`
+        )
+      ).default,
+    },
   }
 }
 

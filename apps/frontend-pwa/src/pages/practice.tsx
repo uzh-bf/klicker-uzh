@@ -1,16 +1,17 @@
-import { useQuery } from '@apollo/client'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
-import { GetPracticeCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/PracticeQuiz'
+import { trpc } from '../lib/trpc'
 
 function Practice() {
   const t = useTranslations()
-  const { data } = useQuery(GetPracticeCoursesDocument)
+  const { data, error, isLoading } = trpc.participant.practiceCourses.useQuery()
+  const practiceCourses = data?.practiceCourses
 
   return (
     <Layout
@@ -21,7 +22,23 @@ function Practice() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.practiceTitle')}
         </H1>
-        {data?.getPracticeCourses?.map((course) => {
+        {isLoading && !practiceCourses ? <Loader /> : null}
+
+        {error && !practiceCourses ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
+        {error && practiceCourses ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : null}
+
+        {practiceCourses?.map((course) => {
           return (
             <LinkButton
               key={course.id}
@@ -39,8 +56,7 @@ function Practice() {
           )
         })}
 
-        {(!data?.getPracticeCourses ||
-          data.getPracticeCourses.length === 0) && (
+        {!error && practiceCourses?.length === 0 && (
           <UserNotification
             type="info"
             message={t('pwa.practiceQuiz.noRepetition')}
