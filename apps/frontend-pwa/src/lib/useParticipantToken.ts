@@ -1,17 +1,33 @@
+import {
+  bootstrapTokenFromUrl,
+  getStoredAuthToken,
+} from '@klicker-uzh/util/client-auth'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
+
+const PARTICIPANT_SESSION_STORAGE_KEY = 'participant_token'
+const PARTICIPANT_QUERY_KEY = 'participantToken'
 
 function getParticipantTokenRedirect(
   redirectTo: string,
   participantToken: string
 ) {
   const target = new URL(redirectTo, window.location.origin)
-  target.searchParams.set('participantToken', participantToken)
+  target.searchParams.set(PARTICIPANT_QUERY_KEY, participantToken)
 
   return {
     pathname: target.pathname,
     query: Object.fromEntries(target.searchParams.entries()),
     hash: target.hash || undefined,
+  }
+}
+
+function removeStoredParticipantToken(): boolean {
+  try {
+    sessionStorage.removeItem(PARTICIPANT_SESSION_STORAGE_KEY)
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -31,8 +47,15 @@ export default function useParticipantToken({
   useEffect(() => {
     if (typeof participantToken === 'string') {
       if (!cookiesAvailable) {
-        if (!sessionStorage.getItem('participant_token')) {
-          sessionStorage.setItem('participant_token', participantToken)
+        if (!getStoredAuthToken(PARTICIPANT_SESSION_STORAGE_KEY)) {
+          const storedParams = bootstrapTokenFromUrl(
+            new URLSearchParams([[PARTICIPANT_QUERY_KEY, participantToken]]),
+            {
+              storageKey: PARTICIPANT_SESSION_STORAGE_KEY,
+              queryKey: PARTICIPANT_QUERY_KEY,
+            }
+          )
+          if (!storedParams) return
 
           if (redirectTo) {
             router.push(
@@ -43,8 +66,8 @@ export default function useParticipantToken({
           }
         }
       } else {
-        if (sessionStorage.getItem('participant_token')) {
-          sessionStorage.removeItem('participant_token')
+        if (getStoredAuthToken(PARTICIPANT_SESSION_STORAGE_KEY)) {
+          if (!removeStoredParticipantToken()) return
 
           if (redirectTo) {
             router.push(redirectTo)

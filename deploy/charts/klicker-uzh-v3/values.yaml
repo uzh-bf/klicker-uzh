@@ -210,6 +210,51 @@ chat:
 
   affinity: {}
 
+mcpStudent:
+  enabled: true
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  path: /mcp
+  questionRefTtlSeconds: 1200
+
+  secret:
+    name: ''
+    appSecretKey: APP_SECRET
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 7080
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  podSecurityContext: {}
+
+  securityContext: {}
+
 frontendPWA:
   priorityClassName: production-workload
 

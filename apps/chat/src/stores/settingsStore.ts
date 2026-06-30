@@ -1,6 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { authedFetch } from '../lib/client/authedFetch'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import { DEFAULT_PROMPT } from '../lib/config/prompts'
 import { type ReasoningEffort } from '../lib/config/reasoning'
@@ -9,6 +10,8 @@ export interface ModeOption {
   name: string
   description: string
 }
+
+export type AuthMode = 'account' | 'anonymous'
 
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
 
@@ -44,6 +47,16 @@ const resolveReasoningEffortForModel = (
   return allowedReasoningEfforts[0]
 }
 
+const getCreditsFallbackState = (state: SettingsState) => ({
+  credits: { current: 0, total: 0 },
+  modelOptions: [],
+  selectedReasoningEffort: resolveReasoningEffortForModel(
+    state.selectedReasoningEffort,
+    undefined
+  ),
+  authMode: 'account' as AuthMode,
+})
+
 interface SettingsState {
   // Current selections
   selectedModel: ModelID
@@ -54,6 +67,7 @@ interface SettingsState {
     total: number
   }
   modelSelectionEnabled: boolean
+  authMode: AuthMode
 
   // Available options
   modelOptions: ModelOption[]
@@ -73,7 +87,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // initial state
-      selectedModel: 'gpt-4.1',
+      selectedModel: 'gpt-5.5',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
       credits: {
@@ -81,6 +95,7 @@ export const useSettingsStore = create<SettingsState>()(
         total: 0.0,
       },
       modelSelectionEnabled: false,
+      authMode: 'account' as AuthMode,
       modeOptions: {},
 
       // available options
@@ -117,7 +132,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadModeOptions: async (chatbotId: string) => {
         try {
-          const response = await fetch(`/api/chatbots/${chatbotId}`)
+          const response = await authedFetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
           if (!response.ok) {
             console.warn(
@@ -189,9 +204,12 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadCredits: async (chatbotId: string) => {
         try {
-          const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          const response = await authedFetch(
+            `/api/chatbots/${chatbotId}/credits`
+          )
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
+            set(getCreditsFallbackState)
             return
           }
 
@@ -203,6 +221,8 @@ export const useSettingsStore = create<SettingsState>()(
           }
           const availableModels: ModelOption[] = data.availableModels ?? []
           const automaticModelId: string | undefined = data.automaticModelId
+          const authMode: AuthMode =
+            data.authMode === 'anonymous' ? 'anonymous' : 'account'
 
           set((state) => {
             let selectedModel = state.selectedModel
@@ -232,10 +252,12 @@ export const useSettingsStore = create<SettingsState>()(
               modelOptions: availableModels,
               selectedModel,
               selectedReasoningEffort,
+              authMode,
             }
           })
         } catch (error) {
           console.error('Error loading credits:', error)
+          set(getCreditsFallbackState)
         }
       },
 

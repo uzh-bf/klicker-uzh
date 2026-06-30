@@ -1,12 +1,47 @@
+import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+export type { AuthMode }
+
+type ParticipantIdentity = {
+  participantId: string
+  authMode: AuthMode
+}
+
+// Token order: chat_participant_token first, then participant_token.
+// Forward-compat: Phase C "switch to anonymous" only sets the guest cookie;
+// account cookie stays. Guest-first ordering means the switch takes effect
+// without clearing the account cookie or changing this code.
+//
+// Authorization header fallback (`Bearer <token>`) supports the
+// CHIPS-unsupported-browser path: client-side `authedFetch` reads the token
+// from sessionStorage and attaches it to API calls. The header carries a
+// chat-guest token (verified with the chat-guest secret); account-mode users
+// in cookieless contexts are not yet supported here (would need a separate
+// header handoff in PWA flow first).
 export async function getParticipantId(
   req: NextRequest
-): Promise<{ participantId: string } | { response: NextResponse }> {
+): Promise<ParticipantIdentity | { response: NextResponse }> {
+  const headerToken = extractBearerToken(req.headers.get('authorization'))
+  const chatGuestToken =
+    req.cookies.get('chat_participant_token')?.value ?? headerToken
+  if (chatGuestToken) {
+    try {
+      const payload = await verifyChatGuestToken(chatGuestToken)
+      if (payload.sub) {
+        return { participantId: payload.sub, authMode: 'anonymous' }
+      }
+    } catch (error) {
+      console.error('Chat guest token verification failed:', error)
+      // Fall through to participant_token below.
+    }
+  }
+
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -18,10 +53,20 @@ export async function getParticipantId(
     }
   }
 
+  const appSecret = process.env.APP_SECRET
+  if (!appSecret) {
+    return {
+      response: NextResponse.json(
+        { error: 'Server misconfigured' },
+        { status: 500 }
+      ),
+    }
+  }
+
   try {
     const jwtPayload = await jwtVerify(
       participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
+      new TextEncoder().encode(appSecret)
     )
     const participantId =
       typeof jwtPayload.payload.sub === 'string' && jwtPayload.payload.sub
@@ -37,7 +82,7 @@ export async function getParticipantId(
       }
     }
 
-    return { participantId }
+    return { participantId, authMode: 'account' }
   } catch (error) {
     console.error('JWT verification failed:', error)
     return {
@@ -87,14 +132,14 @@ export async function withChatbotAuth(
   req: NextRequest,
   chatbotId: string
 ): Promise<
-  | { participantId: string; chatbot: { courseId: string } }
+  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
   const participantResult = await getParticipantId(req)
   if ('response' in participantResult) {
     return participantResult
   }
-  const { participantId } = participantResult
+  const { participantId, authMode } = participantResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
   if ('response' in chatbotResult) {
@@ -109,7 +154,7 @@ export async function withChatbotAuth(
     return participationResult
   }
 
-  return { participantId, chatbot: chatbotResult.chatbot }
+  return { participantId, authMode, chatbot: chatbotResult.chatbot }
 }
 
 export async function requireParticipation(

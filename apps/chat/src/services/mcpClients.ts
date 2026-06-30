@@ -4,6 +4,7 @@ import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { createHash } from 'crypto'
+import { mintParticipantMcpJwt } from '../lib/server/mcpAuthMint'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -87,10 +88,11 @@ function toSafeToolName(
 /**
  * Creates authentication headers based on server auth type
  */
-function createAuthHeaders(
+async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string
-): Record<string, string> {
+  chatbotId: string,
+  participantId: string
+): Promise<Record<string, string>> {
   const baseHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
   }
@@ -100,6 +102,15 @@ function createAuthHeaders(
     const raw = server.chatbotIdHeader || 'Chatbot-ID'
     const headerName = raw.replace(/[^A-Za-z0-9-]/g, '') || 'Chatbot-ID'
     baseHeaders[headerName] = chatbotId
+  }
+
+  // Per-participant JWT mint for the Klicker MCP server. Identity
+  // comes from the caller's verified participant cookie, not a static
+  // shared secret, so the MCP server can apply row-level auth.
+  if (server.authType.toLowerCase() === 'klicker-participant-jwt') {
+    const token = await mintParticipantMcpJwt(participantId)
+    baseHeaders.Authorization = `Bearer ${token}`
+    return baseHeaders
   }
 
   if (!server.authSecret) {
@@ -143,14 +154,15 @@ function createAuthHeaders(
  */
 export async function createMCPClient(
   server: MCPServerConfig,
-  chatbotId: string
+  chatbotId: string,
+  participantId: string
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
 
   try {
-    const headers = createAuthHeaders(server, chatbotId)
+    const headers = await createAuthHeaders(server, chatbotId, participantId)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -196,12 +208,13 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  chatbotId: string
+  chatbotId: string,
+  participantId: string
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
 
   try {
-    const client = await createMCPClient(server, chatbotId)
+    const client = await createMCPClient(server, chatbotId, participantId)
     const rawTools = await client.tools()
 
     // Apply tool filtering
@@ -233,7 +246,8 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string
+  chatbotId: string,
+  participantId: string
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
 
@@ -252,7 +266,11 @@ export async function getAggregatedMCPTools(
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
     try {
-      const serverTools = await loadServerTools(serverWithConfig, chatbotId)
+      const serverTools = await loadServerTools(
+        serverWithConfig,
+        chatbotId,
+        participantId
+      )
       for (const [name, def] of Object.entries(serverTools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def
@@ -275,7 +293,7 @@ export async function getAggregatedMCPTools(
  * Legacy function for backward compatibility with environment variables
  * @deprecated Use getAggregatedMCPTools with database configuration instead
  */
-export async function getMCPTools(chatbotId: string) {
+export async function getMCPTools(chatbotId: string, participantId: string) {
   console.log(' Using legacy MCP configuration from environment variables')
 
   const mcpKey = process.env.MCP_KEY
@@ -303,7 +321,8 @@ export async function getMCPTools(chatbotId: string) {
   try {
     const serverTools = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
-      chatbotId
+      chatbotId,
+      participantId
     )
     return serverTools
   } catch (error) {
