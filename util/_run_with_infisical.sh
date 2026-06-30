@@ -9,7 +9,7 @@ Description:
   Runs Infisical with the specified environment and command.
 
 Options:
-  --env ENVIRONMENT     Target environment: dev, dev-assessment, dev-cypress, dev-cleverreach, stg, prd (required)
+  --env ENVIRONMENT     Target environment: dev, dev-assessment, dev-cypress, dev-playwright, dev-cleverreach, stg, prd (required)
   -h, --help            Show this help message and exit
 
 Example:
@@ -41,7 +41,7 @@ done
 
 # --- Validate environment ---
 case "$ENV" in
-    "dev"|"dev-assessment"|"dev-cypress"|"dev-cleverreach"|"stg"|"prd")
+    "dev"|"dev-assessment"|"dev-cypress"|"dev-playwright"|"dev-cleverreach"|"stg"|"prd")
         echo "🎯 Target environment: $ENV"
         ;;
     "")
@@ -68,11 +68,7 @@ fi
 
 # --- Select Infisical project ---
 ROOT_DIR=$(git rev-parse --show-toplevel)
-if [[ "$ENV" == "prd" ]]; then
-    CONFIG_FILE="$ROOT_DIR/.infisical_prd.json"
-else
-    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
-fi
+CONFIG_FILE="$ROOT_DIR/.infisical.json"
 PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 
 echo "🔐 Running in Infisical environment: $ENV (Project: $PROJECT_ID)"

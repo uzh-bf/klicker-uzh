@@ -41,7 +41,9 @@ interface PracticeQuizProps {
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void
+  onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
+  embedded?: boolean
   previewOnly?: boolean
 }
 
@@ -50,7 +52,9 @@ function PracticeQuiz({
   currentIx,
   setCurrentIx,
   handleNextElement,
+  onAllStacksCompletion,
   showResetLocalStorage = false,
+  embedded = false,
   previewOnly = false,
 }: PracticeQuizProps) {
   const router = useRouter()
@@ -59,6 +63,16 @@ function PracticeQuiz({
   const { data: dataParticipant } = useQuery(SelfDocument, {
     skip: previewOnly,
   })
+
+  const handleAllStacksCompletion = () => {
+    if (onAllStacksCompletion) {
+      onAllStacksCompletion()
+      return
+    }
+
+    // TODO: re-introduce summary page for practice quiz
+    router.push(`/`)
+  }
 
   const [progressState, setProgressState] = useLocalStorage<
     Record<
@@ -98,7 +112,8 @@ function PracticeQuiz({
     <div className="flex-1">
       <div
         className={twMerge(
-          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:border md:p-8 md:pt-6'
+          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
+          !embedded ? 'md:border' : ''
         )}
       >
         <StepProgressWithScoring
@@ -158,6 +173,7 @@ function PracticeQuiz({
             key={currentStack.id}
             parentId={quiz.id}
             courseId={quiz.course!.id}
+            embedded={embedded}
             stack={currentStack}
             currentStep={currentIx + 1}
             totalSteps={quiz.stacks?.length ?? 0}
@@ -173,10 +189,7 @@ function PracticeQuiz({
               !!dataParticipant?.self &&
               dataParticipant.self.role !== UserRole.TemporaryParticipant
             }
-            onAllStacksCompletion={() =>
-              // TODO: re-introduce summary page for practice quiz
-              router.push(`/`)
-            }
+            onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
           />

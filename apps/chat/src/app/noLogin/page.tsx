@@ -4,6 +4,24 @@ interface NoLoginPageProps {
   searchParams?: Promise<{ redirectTo?: string | string[] }>
 }
 
+function getChatRedirectUrl(redirectTo: string | undefined) {
+  if (!redirectTo) return undefined
+
+  const chatBaseUrl = process.env.NEXT_PUBLIC_CHAT_URL
+    ? process.env.NEXT_PUBLIC_CHAT_URL.replace(/\/$/, '')
+    : 'https://chat.klicker.uzh.ch'
+
+  try {
+    const chatUrl = new URL(chatBaseUrl)
+    const redirectUrl = new URL(redirectTo, chatUrl)
+
+    if (redirectUrl.origin !== chatUrl.origin) return undefined
+    return redirectUrl.toString()
+  } catch {
+    return undefined
+  }
+}
+
 export default async function Page({ searchParams }: NoLoginPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {}
   const redirectToParam = resolvedSearchParams.redirectTo
@@ -14,8 +32,11 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const loginBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
     ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
     : 'https://pwa.klicker.uzh.ch'
+  const redirectUrl = getChatRedirectUrl(redirectTo)
 
-  const loginHref = `${loginBaseUrl}/login`
+  const loginHref = redirectUrl
+    ? `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectUrl)}`
+    : `${loginBaseUrl}/login`
 
   return (
     <div className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
@@ -27,10 +48,10 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
           You need to create a KlickerUZH account or log in before you can
           access this chatbot.
         </p>
-        {redirectTo && (
+        {redirectUrl && (
           <p className="text-muted-foreground mt-2 text-sm">
             After logging in, return to{' '}
-            <span className="font-medium">{redirectTo}</span> to continue your
+            <span className="font-medium">{redirectUrl}</span> to continue your
             conversation.
           </p>
         )}

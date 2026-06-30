@@ -117,6 +117,18 @@ Cypress.Commands.add('cleanup', () => {
   cy.reload()
 })
 
+const clearPersistedClientState = () => {
+  return cy.wrap(null, { log: false }).then(async () => {
+    await localforage.clear()
+  })
+}
+
+const assertManageSession = () => {
+  cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
+  cy.location('pathname').should('not.eq', '/login')
+  cy.location('search').should('not.contain', 'expired=true')
+}
+
 const loginFactory = (
   tokenData: {
     email: string
@@ -158,6 +170,10 @@ const loginFactory = (
     })
 
     cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
+
+    if (!redirectUrl) {
+      assertManageSession()
+    }
   }
 }
 
@@ -277,19 +293,50 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add('logoutUser', () => {
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+  clearPersistedClientState()
   cy.clearCookie('next-auth.session-token')
 })
 
-Cypress.Commands.add('loginStudent', () => {
-  cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
+interface StudentLoginOptions {
+  preserveClientState?: boolean
+}
+
+Cypress.Commands.add('loginStudent', (options: StudentLoginOptions = {}) => {
+  cy.loginStudentPassword({
+    username: Cypress.env('STUDENT_USERNAME'),
+    preserveClientState: options.preserveClientState,
+  })
 })
 
 Cypress.Commands.add(
   'loginStudentPassword',
-  ({ username }: { username: string }) => {
+  ({
+    username,
+    preserveClientState = false,
+  }: { username: string } & StudentLoginOptions) => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
+    cy.visit(
+      Cypress.env('URL_STUDENT_LOGIN'),
+      preserveClientState
+        ? undefined
+        : {
+            onBeforeLoad: (win) => {
+              win.localStorage.clear()
+              win.sessionStorage.clear()
+              try {
+                win.indexedDB?.deleteDatabase('localforage')
+              } catch {
+                // Fall back to the regular localforage clear after load.
+              }
+            },
+          }
+    )
+    if (!preserveClientState) {
+      clearPersistedClientState()
+    }
     cy.get('[data-cy="username-field"]').click().type(username)
     cy.get('[data-cy="password-field"]')
       .click()
@@ -1148,34 +1195,67 @@ interface SetDatetimeArgs {
   datetime: DatetimeType // object containing monthDelta, day, hour, minute, and validation string
 }
 
+function getCalendarDataDay(validation: string) {
+  const match = validation.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
+  if (!match) {
+    throw new Error(
+      `setDate/setDatetime: cannot parse date from "${validation}"`
+    )
+  }
+  const [, dayString, monthString, yearString] = match
+  return new Date(
+    Number(yearString),
+    Number(monthString) - 1,
+    Number(dayString)
+  ).toLocaleDateString()
+}
+
 Cypress.Commands.add(
   'setDatetime',
   ({ cyString, deselectorString, datetime }: SetDatetimeArgs) => {
     cy.get(`[data-cy="${cyString}"]`).realClick()
 
+    const hour = String(datetime.hour).padStart(2, '0')
+    const minute = String(datetime.minute).padStart(2, '0')
+    const targetDataDay = getCalendarDataDay(datetime.validation)
+
     if (datetime.monthDelta > 0) {
       for (let i = 0; i < datetime.monthDelta; i++) {
-        cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-next-month"]`)
+          .closest('button')
+          .should('not.be.disabled')
+          .should('not.have.attr', 'aria-disabled', 'true')
+          .realClick()
+          .wait(100)
       }
     } else if (datetime.monthDelta < 0) {
       for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
-        cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-previous-month"]`)
+          .closest('button')
+          .should('not.be.disabled')
+          .should('not.have.attr', 'aria-disabled', 'true')
+          .realClick()
+          .wait(100)
       }
     }
 
     cy.get(`[data-cy="${cyString}-calendar"]`)
-      .findByText(String(datetime.day))
+      .find(`[data-day="${targetDataDay}"]`)
+      .should('have.length', 1)
       .realClick()
       .wait(100)
     cy.get(`[data-cy="${cyString}-hours"]`)
       .realClick()
-      .type(String(datetime.hour))
+      .type(hour, { delay: 50 })
     cy.get(`[data-cy="${cyString}-minutes"]`)
       .realClick()
-      .type(String(datetime.minute))
+      .type(minute, { delay: 50 })
     cy.get(`[data-cy="${deselectorString}"]`).realClick()
     cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
-    cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation)
+    cy.get(`[data-cy="${cyString}"]`, { timeout: 10000 }).should(
+      'contain',
+      datetime.validation
+    )
   }
 )
 
@@ -1190,23 +1270,35 @@ Cypress.Commands.add(
   ({ cyString, deselectorString, date }: SetDateArgs) => {
     cy.get(`[data-cy="${cyString}"]`).realClick()
 
+    const targetDataDay = getCalendarDataDay(date.validation)
+
     if (date.monthDelta > 0) {
       for (let i = 0; i < date.monthDelta; i++) {
-        cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-next-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
       }
     } else if (date.monthDelta < 0) {
       for (let i = 0; i < Math.abs(date.monthDelta); i++) {
-        cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-previous-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
       }
     }
 
     cy.get(`[data-cy="${cyString}-calendar"]`)
-      .findByText(String(date.day))
+      .find(`[data-day="${targetDataDay}"]`)
+      .should('have.length', 1)
       .realClick()
       .wait(100)
     cy.get(`[data-cy="${deselectorString}"]`).realClick()
     cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
-    cy.get(`[data-cy="${cyString}"]`).should('contain', date.validation)
+    cy.get(`[data-cy="${cyString}"]`, { timeout: 10000 }).should(
+      'contain',
+      date.validation
+    )
   }
 )
 
@@ -1769,9 +1861,12 @@ declare global {
       loginInstitutionalCatalyst3(): Chainable<void>
       loginInstitutionalCatalyst4(): Chainable<void>
       logoutUser(): Chainable<void>
-      loginStudent(): Chainable<void>
+      loginStudent(options?: StudentLoginOptions): Chainable<void>
       loginAssessmentStudent(): Chainable<void>
-      loginStudentPassword({ username }: { username: string }): Chainable<void>
+      loginStudentPassword({
+        username,
+        preserveClientState,
+      }: { username: string } & StudentLoginOptions): Chainable<void>
       createAnswerCollection({
         name,
         description,

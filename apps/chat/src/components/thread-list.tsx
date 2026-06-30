@@ -1,68 +1,115 @@
 'use client'
 
-import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
-import { Button, TextField } from '@uzh-bf/design-system'
-import { useParams } from 'next/navigation'
+import { TextField } from '@uzh-bf/design-system'
+import { useParams, useRouter } from 'next/navigation'
 import { useChatStore, type Thread } from '../stores/chatStore'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export const ThreadList: FC = () => {
   return (
-    <div className="flex flex-col items-stretch gap-1.5">
-      <ThreadListNew />
+    <div className="flex flex-col items-stretch gap-1">
       <ThreadListItems />
     </div>
   )
 }
 
-const ThreadListNew: FC = () => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const { createThread, participationRequired } = useChatStore()
-
-  const handleNewThread = () => {
-    if (participationRequired) return
-    void createThread(chatbotId).catch(() => {
-      /* handled centrally */
-    })
-  }
-
-  return (
-    <Button
-      onClick={handleNewThread}
-      basic
-      disabled={participationRequired}
-      className={{
-        root: 'hover:bg-muted border-1 mx-6 my-2 flex items-center rounded-lg px-2.5 py-1 shadow-sm',
-      }}
-    >
-      <Button.Icon icon={faPlus} />
-      <Button.Label>New Chat</Button.Label>
-    </Button>
-  )
-}
-
 const ThreadListItems: FC = () => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const { threads, activeThreadId, switchToThread, deleteThread } =
-    useChatStore()
+  const { chatbotId, threadId } = useParams<{
+    chatbotId: string
+    threadId?: string
+  }>()
+  const router = useRouter()
+  const { threads, deleteThread } = useChatStore()
+
+  const groupedThreads = useMemo(() => groupThreadsByDate(threads), [threads])
 
   return (
-    <div className="flex flex-col gap-1">
-      {threads.map((thread) => (
-        <ThreadListItem
-          key={thread.id}
-          thread={thread}
-          isActive={thread.id === activeThreadId}
-          onSelect={() => switchToThread(chatbotId, thread.id)}
-          onDelete={() => deleteThread(chatbotId, thread.id)}
-        />
+    <div className="flex flex-col gap-2 p-1">
+      {groupedThreads.map(({ label, items }) => (
+        <div key={label} className="flex flex-col gap-0.5">
+          <p className="text-muted-foreground px-2 text-xs font-semibold uppercase">
+            {label}
+          </p>
+          {items.map((thread) => (
+            <ThreadListItem
+              key={thread.id}
+              thread={thread}
+              isActive={thread.id === threadId}
+              onSelect={() => router.push(`/${chatbotId}/threads/${thread.id}`)}
+              onDelete={async () => {
+                const deleted = await deleteThread(chatbotId, thread.id)
+                if (deleted && thread.id === threadId) {
+                  router.replace(`/${chatbotId}`)
+                }
+              }}
+            />
+          ))}
+        </div>
       ))}
     </div>
   )
+}
+
+const groupThreadsByDate = (threads: Thread[]) => {
+  const todayStart = startOfDay(new Date())
+  const yesterdayStart = addDays(todayStart, -1)
+  const weekStart = startOfWeek(todayStart)
+
+  const groups: Record<string, Thread[]> = {
+    Today: [],
+    Yesterday: [],
+    'This Week': [],
+    Earlier: [],
+  }
+
+  const sortedThreads = [...threads].sort((a, b) => {
+    const aTime = new Date(a.updatedAt).getTime()
+    const bTime = new Date(b.updatedAt).getTime()
+    return bTime - aTime
+  })
+
+  sortedThreads.forEach((thread) => {
+    const updatedAt = startOfDay(new Date(thread.updatedAt))
+
+    if (updatedAt >= todayStart) {
+      groups.Today.push(thread)
+      return
+    }
+
+    if (updatedAt >= yesterdayStart) {
+      groups.Yesterday.push(thread)
+      return
+    }
+
+    if (updatedAt >= weekStart) {
+      groups['This Week'].push(thread)
+      return
+    }
+
+    groups.Earlier.push(thread)
+  })
+
+  return Object.entries(groups)
+    .filter(([, items]) => items.length > 0)
+    .map(([label, items]) => ({ label, items }))
+}
+
+const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+const startOfWeek = (date: Date) => {
+  const day = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  return startOfDay(addDays(date, diff))
 }
 
 interface ThreadListItemProps {
@@ -128,7 +175,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
-      className={`hover:bg-muted focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-2 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-muted' : ''}`}
+      className={`group/thread focus-visible:bg-muted focus-visible:ring-ring flex items-center rounded-lg py-1 transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
     >
       {isEditing ? (
         <>
@@ -136,63 +183,55 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             value={editTitle}
             onChange={setEditTitle}
             onKeyDown={handleKeyDown}
-            className={{ input: 'mx-2 h-8 flex-grow text-sm' }}
+            className={{ input: 'mx-2 h-8 flex-grow bg-white text-sm' }}
             autoFocus
           />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleEditSave}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-1 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <CheckIcon />
-                <span className="sr-only">Save</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Save</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleEditCancel}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-3 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <XIcon />
-                <span className="sr-only">Cancel</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Cancel</TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            onClick={handleEditSave}
+            aria-label="Save"
+            className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+          >
+            <CheckIcon />
+            <span className="sr-only">Save</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleEditCancel}
+            aria-label="Cancel"
+            className="text-foreground focus-visible:ring-ring mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+          >
+            <XIcon />
+            <span className="sr-only">Cancel</span>
+          </button>
         </>
       ) : (
         <>
-          <button onClick={onSelect} className="flex-grow px-3 py-2 text-start">
-            <p className="text-sm">{getThreadTitle()}</p>
+          <button
+            type="button"
+            onClick={onSelect}
+            className="min-w-0 flex-grow px-3 py-1 text-start"
+          >
+            <p className="truncate text-sm">{getThreadTitle()}</p>
           </button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleEditStart}
-                className="hover:text-primary text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-1 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <EditIcon />
-                <span className="sr-only">Edit name</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Edit name</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onDelete}
-                className="hover:text-destructive text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-3 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <Trash2 />
-                <span className="sr-only">Delete chat</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Delete chat</TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            onClick={handleEditStart}
+            aria-label="Edit name"
+            className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
+          >
+            <EditIcon />
+            <span className="sr-only">Edit name</span>
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label="Delete chat"
+            className={`text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
+          >
+            <Trash2 />
+            <span className="sr-only">Delete chat</span>
+          </button>
         </>
       )}
     </div>

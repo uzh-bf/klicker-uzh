@@ -1,5 +1,7 @@
 **/__pycache__/
+**/.venv/
 **/node_modules/
+.pnpm-store/
 coverage/
 .nyc_output/
 .turbo/
@@ -12,6 +14,7 @@ secrets*.yaml
 .env
 **/**/.env
 .github/copilot-instructions.md
+.claude/worktrees/
 
 **/.DS_Store
 *.pem
@@ -45,6 +48,17 @@ dumps/**/*.dump.gpg
 # Temporary files
 *.tmp
 *.log
+NOCOMMIT*
+20??-??-??_chatbot*.csv
+output/
 
 # Environment-specific files
 .env.*
+
+# Obsidian workspace state (keep `deploy/docs/.obsidian/` tracked; ignore the docs-site vault state)
+/apps/docs/docs/.obsidian/
+
+.claude/worktrees
+
+playwright/playwright-report/
+playwright/test-results/

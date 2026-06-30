@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -98,6 +99,8 @@ import {
   AnswerCollectionDownloadLink,
   AnswerCollectionPreviewEntry,
   AnswerCollectionsInfoBasic,
+  ChatModelCapability,
+  Chatbot,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -1435,6 +1438,22 @@ export const Query = builder.queryType({
         type: [AnswerCollectionsInfoBasic],
         resolve: async (_, __, ctx) => {
           return await ResourcesService.getAnswerCollectionsInfoBasic(ctx)
+        },
+      }),
+
+      getChatbotsInfo: t.withAuth(asUser).field({
+        nullable: true,
+        type: [Chatbot],
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatModelRegistry: t.withAuth(asUser).field({
+        nullable: false,
+        type: [ChatModelCapability],
+        resolve: async () => {
+          return ChatbotsService.getChatModelRegistry()
         },
       }),
 

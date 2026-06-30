@@ -9,8 +9,12 @@ import {
   ActivityLogModificationDetails,
   ActivityLogModificationFieldType,
   ActivityType,
-  ElementImportInput,
   ElementManipulationInput,
+  OptionsCaseStudyInput,
+  OptionsChoicesInput,
+  OptionsFreeTextInput,
+  OptionsNumericalInput,
+  OptionsSelectionInput,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
@@ -25,7 +29,7 @@ import dayjs from 'dayjs'
 import EventEmitter from 'events'
 import isEqual from 'lodash/isEqual.js'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
-import { ElementExistsInfo } from 'src/ops.js'
+import type { ElementExistsInfo } from 'src/ops.js'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -35,6 +39,25 @@ import validateElementInputs from '../lib/validateElementInputs.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
+
+type ElementImportInput = {
+  id: number
+  isArchived: boolean
+  name: string
+  content: string
+  type: DB.ElementType
+  optionsChoices?: OptionsChoicesInput | null
+  optionsNumerical?: OptionsNumericalInput | null
+  optionsFreeText?: OptionsFreeTextInput | null
+  optionsSelection?: OptionsSelectionInput | null
+  optionsCaseStudy?: OptionsCaseStudyInput | null
+  pointsMultiplier: number
+  explanation?: string | null
+  version: number
+  status: DB.ElementStatus
+  answerCollectionId?: number | null
+  basePoints: boolean
+}
 
 export async function getUserElements(
   {
@@ -1655,7 +1678,6 @@ export async function checkExistingImportedElements(
         isArchived: element.isArchived,
         isDeleted: false,
         type: element.type,
-        originalId: element.originalId ? String(element.originalId) : null,
       },
     })
 

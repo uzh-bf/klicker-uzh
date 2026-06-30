@@ -2,6 +2,169 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.63...v3.4.0-alpha.64) (2026-06-15)
+
+
+### Features
+
+* **packages/export:** add @klicker-uzh/export package for assessment course data export ([#5043](https://github.com/uzh-bf/klicker-uzh/issues/5043)) ([7d51542](https://github.com/uzh-bf/klicker-uzh/commit/7d5154210c33c11ac9f4f7c0bba6024e566cbaf8))
+
+
+### Bug Fixes
+
+* **chat:** route fallback models through chat completions ([#5121](https://github.com/uzh-bf/klicker-uzh/issues/5121)) ([b6ed437](https://github.com/uzh-bf/klicker-uzh/commit/b6ed43799a29428d5f9e6cbd0c0c298b04f99281))
+* **packages/graphql:** authenticate against every email candidate ([#5069](https://github.com/uzh-bf/klicker-uzh/issues/5069)) ([059d348](https://github.com/uzh-bf/klicker-uzh/commit/059d348dd6e1546008ba7ea3208f66b0ab73f996))
+
+
+### Refactors
+
+* add Playwright PoC workspace and draft PR CI workflow ([#5008](https://github.com/uzh-bf/klicker-uzh/issues/5008)) ([c638d9b](https://github.com/uzh-bf/klicker-uzh/commit/c638d9b393742b8d4507d0aea7c2bd38f287f137))
+
+
+### Documentation
+
+* slim AGENTS.md to a high-level overview + consolidate skills under .agents ([#5122](https://github.com/uzh-bf/klicker-uzh/issues/5122)) ([1f35b4a](https://github.com/uzh-bf/klicker-uzh/commit/1f35b4a85b263bd9f64f3ca1622daea5cba88128))
+
+## [3.4.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.61...v3.4.0-alpha.62) (2026-05-05)
+
+
+### Features
+
+* **chat:** make reasoning effort registry config-driven ([bb52d44](https://github.com/uzh-bf/klicker-uzh/commit/bb52d4449fe21fa828b38aa7410982e77d0eced0))
+
+## [3.4.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.60...v3.4.0-alpha.61) (2026-05-03)
+
+
+### Bug Fixes
+
+* **apps/chat:** stabilize image attachments and login redirects ([#5079](https://github.com/uzh-bf/klicker-uzh/issues/5079)) ([76c36ff](https://github.com/uzh-bf/klicker-uzh/commit/76c36ff6a63ab30bd8e6ab57d000b4807e063962))
+* **deploy:** enable chat image attachments in model registry ([bc31b07](https://github.com/uzh-bf/klicker-uzh/commit/bc31b079c9941a6a783dd3ace43a638a007e6018))
+
+## [3.4.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.59...v3.4.0-alpha.60) (2026-04-21)
+
+
+### Features
+
+* **chat:** add image attachment support ([#5045](https://github.com/uzh-bf/klicker-uzh/issues/5045)) ([9e90bf0](https://github.com/uzh-bf/klicker-uzh/commit/9e90bf0d2d4ab75dc088d7d508df983158b816fb))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** pin embedded PQ buttons with sticky positioning ([#5071](https://github.com/uzh-bf/klicker-uzh/issues/5071)) ([0cf06a4](https://github.com/uzh-bf/klicker-uzh/commit/0cf06a490a3a8f47567c537b21d00ff6ff474460))
+
+## [3.4.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.58...v3.4.0-alpha.59) (2026-04-15)
+
+
+### Enhancements
+
+* improve embedded PQ display and add postMessage interactions with parent app ([#5065](https://github.com/uzh-bf/klicker-uzh/issues/5065)) ([745d634](https://github.com/uzh-bf/klicker-uzh/commit/745d6347fd9631040248a8d9f5d3b8bd0f4a27ce))
+
+## [3.4.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.57...v3.4.0-alpha.58) (2026-04-14)
+
+
+### Bug Fixes
+
+* **cypress:** move CSP frame-ancestors from Next.js middleware to ingress layer ([#5025](https://github.com/uzh-bf/klicker-uzh/issues/5025)) ([e50a349](https://github.com/uzh-bf/klicker-uzh/commit/e50a349f953872f1f967d3467d33e18a8fed1b63))
+* **cypress:** stabilize local cypress seed + F-elements-sc typing ([#5068](https://github.com/uzh-bf/klicker-uzh/issues/5068)) ([3936210](https://github.com/uzh-bf/klicker-uzh/commit/3936210eeb1eb46cb902f5f090d51b3a0b7b16d1))
+* **deploy:** remove quotes from CSP response-set-header annotation ([bc3ff35](https://github.com/uzh-bf/klicker-uzh/commit/bc3ff357fe81671935eda64c9e2adf3cbd64e923))
+
+
+### Enhancements
+
+* **apps/chat:** add litellm proxy ([#5036](https://github.com/uzh-bf/klicker-uzh/issues/5036)) ([23588c9](https://github.com/uzh-bf/klicker-uzh/commit/23588c91949ca1f1d7fcb6975b9acf1518bfa82d))
+* **apps/chat:** migrate Azure OpenAI to OpenAI-compatible API, upgrade AI SDK v6 ([#5027](https://github.com/uzh-bf/klicker-uzh/issues/5027)) ([558e27d](https://github.com/uzh-bf/klicker-uzh/commit/558e27dc2a5ad061cc862aa0cacc26e6cdc8e867))
+
+## [3.4.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.56...v3.4.0-alpha.57) (2026-02-23)
+
+
+### Enhancements
+
+* **apps/lti:** allow linking of existing credential-based user account with new LTI ([#5026](https://github.com/uzh-bf/klicker-uzh/issues/5026)) ([2a6a612](https://github.com/uzh-bf/klicker-uzh/commit/2a6a6125fbea8ce6225a1e3972fa5fd552c06523))
+
+## [3.4.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.55...v3.4.0-alpha.56) (2026-02-15)
+
+
+### Bug Fixes
+
+* **deploy:** allow embedding in lms.uzh.ch for staging klicker ([1352f8c](https://github.com/uzh-bf/klicker-uzh/commit/1352f8ce2b9ff9817a282725b736ea85172c8cda))
+* **deploy:** allow ius.zone embedding ([564dc74](https://github.com/uzh-bf/klicker-uzh/commit/564dc746ceb8c8e30c0395b34d5205a2e6491bf8))
+
+
+### Enhancements
+
+* **apps/lti:** add launch target resolver and docs for LTI custom claims to support system-level moodle integration ([#5023](https://github.com/uzh-bf/klicker-uzh/issues/5023)) ([54a01b0](https://github.com/uzh-bf/klicker-uzh/commit/54a01b009b8721284018a20694681315ba71f305))
+
+## [3.4.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.54...v3.4.0-alpha.55) (2026-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** handle iframe differently for pwa login message ([#5022](https://github.com/uzh-bf/klicker-uzh/issues/5022)) ([c2afb6c](https://github.com/uzh-bf/klicker-uzh/commit/c2afb6c6dc1c0717120478b7469edbb791e7aa28))
+
+## [3.4.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.53...v3.4.0-alpha.54) (2026-02-14)
+
+
+### Bug Fixes
+
+* rework frame ancestors to middleware ([2a0a78c](https://github.com/uzh-bf/klicker-uzh/commit/2a0a78caa8c5bf34612e9bcf5b2618e9c3e3d1bc))
+
+## [3.4.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.52...v3.4.0-alpha.53) (2026-02-14)
+
+
+### Enhancements
+
+* enable import of matriculation number for participant invitations ([#5003](https://github.com/uzh-bf/klicker-uzh/issues/5003)) ([4061cb6](https://github.com/uzh-bf/klicker-uzh/commit/4061cb6305ed6bf4a45635fff10371e4344ad3f8))
+
+## [3.4.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.51...v3.4.0-alpha.52) (2026-02-14)
+
+
+### Bug Fixes
+
+* **apps/chat:** use blob storage url from env to allow avatar display ([339ffe4](https://github.com/uzh-bf/klicker-uzh/commit/339ffe428b543274afac9fd82e767a959c95e3a7))
+
+## [3.4.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.50...v3.4.0-alpha.51) (2026-02-13)
+
+
+### Bug Fixes
+
+* add frame-ancestors config to allow embedding in other apps ([#5019](https://github.com/uzh-bf/klicker-uzh/issues/5019)) ([458f4c7](https://github.com/uzh-bf/klicker-uzh/commit/458f4c7605968f163d52ac0990565da9c3008dec))
+* **apps/chat:** ensure that fallback model can always be used, use available model when model selection is disabled ([574c8d4](https://github.com/uzh-bf/klicker-uzh/commit/574c8d48b4a2959d4f5e6887ede35959bceccc26))
+* **apps/chat:** prevent duplicate thread creation on first message ([a52ff82](https://github.com/uzh-bf/klicker-uzh/commit/a52ff8203dda637827df2903081ec7a32ca57693))
+* **apps/chat:** show modes also when no description is provided ([8ae6ae6](https://github.com/uzh-bf/klicker-uzh/commit/8ae6ae657861b11dad8bab7477d88e5c56e160a5))
+
+## [3.4.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.49...v3.4.0-alpha.50) (2026-02-10)
+
+
+### Enhancements
+
+* **apps/chat:** embedded mode + sidebar/thread UX improvements ([#5005](https://github.com/uzh-bf/klicker-uzh/issues/5005)) ([79750ce](https://github.com/uzh-bf/klicker-uzh/commit/79750ceb33a083692bb58b64932caa5dfaa6d5ea))
+
+## [3.4.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.48...v3.4.0-alpha.49) (2026-02-09)
+
+
+### Bug Fixes
+
+* redirectTo for chatbot no login ([c7378fe](https://github.com/uzh-bf/klicker-uzh/commit/c7378fe6d9aa6e76864f4641d8481f952f5bc39a))
+
+## [3.4.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.47...v3.4.0-alpha.48) (2026-02-08)
+
+
+### Enhancements
+
+* configurable model registry with reasoning, chatbot management UI, and chat UX improvements ([#4989](https://github.com/uzh-bf/klicker-uzh/issues/4989)) ([5bc3460](https://github.com/uzh-bf/klicker-uzh/commit/5bc3460e749bf29536ad50999c87526f69fb3802))
+
+
+### Deployment
+
+* add model registry config for prd chatbot ([cf700fc](https://github.com/uzh-bf/klicker-uzh/commit/cf700fc02e03e4f4b657dc5bd78bb3daed3c4692))
+
+## [3.4.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.46...v3.4.0-alpha.47) (2026-02-04)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add embedded mode for practice quiz ([#4987](https://github.com/uzh-bf/klicker-uzh/issues/4987)) ([79c8628](https://github.com/uzh-bf/klicker-uzh/commit/79c86281999bc2359743d8afa5122197aedbadc2))
+
 ## [3.4.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.45...v3.4.0-alpha.46) (2025-12-12)
 
 ## [3.4.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.44...v3.4.0-alpha.45) (2025-12-09)

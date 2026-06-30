@@ -6,6 +6,8 @@ import {
   convertApiMessageToMessage,
   convertApiThreadToThread,
   isApiError,
+  type ApiHydratedImageAttachment,
+  type ApiImageAttachment,
   type ApiMessage,
   type ApiThread,
 } from '../lib/api/types'
@@ -13,15 +15,35 @@ import {
   extractThreadTitle,
   findBranchLeaf,
   findLeafMessages,
-  getBranches,
   getPathToLeaf,
 } from '../lib/api/utils'
+import {
+  hasAllImageAttachmentsHydrated,
+  mergeHydratedAttachments,
+  sortAttachmentsByPosition,
+} from '../lib/attachments/attachmentState'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 
 /**
  * Extended thread message type that includes parentId for conversation branching
  */
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
+  attachmentSourceMessageId?: string | null
+  chatMode?: string | null
+  modelId?: string | null
+  reasoningEffort?: ReasoningEffort | null
+  reasoningContent?: string | null
+  creditsUsed?: number | null
+  imageAttachments?: {
+    id?: string
+    type: 'image'
+    position?: number
+    imageBase64?: string | null
+    imagePreviewBase64?: string | null
+    imageDescription?: string | null
+    hasFullImage?: boolean
+  }[]
 }
 
 export interface Thread {
@@ -31,6 +53,7 @@ export interface Thread {
   isRunning: boolean
   title?: string
   createdAt: Date
+  updatedAt: Date
 }
 
 interface ChatState {
@@ -43,8 +66,8 @@ interface ChatState {
   // thread management actions
   createThread: (chatbotId: string) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
-  switchToThread: (chatbotId: string, threadId: string) => Promise<void>
-  deleteThread: (chatbotId: string, threadId: string) => Promise<void>
+  switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
+  deleteThread: (chatbotId: string, threadId: string) => Promise<boolean>
   updateThreadTitle: (
     chatbotId: string,
     threadId: string,
@@ -54,14 +77,21 @@ interface ChatState {
   // active thread message actions
   addMessage: (
     chatbotId: string,
-    message: ExtendedThreadMessageLike
+    message: ExtendedThreadMessageLike,
+    targetThreadId?: string
   ) => Promise<string | null>
+  ensureFullImageAttachments: (
+    chatbotId: string,
+    threadId: string,
+    messageId: string,
+    sourceMessageId?: string
+  ) => Promise<ExtendedThreadMessageLike | undefined>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
+  resetSession: () => void
 
   // tree navigation actions
   switchToBranch: (leafId: string) => void
-  getMessageBranches: (messageId: string) => ExtendedThreadMessageLike[]
 }
 
 /**
@@ -77,6 +107,10 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set, get) => {
   const DEFAULT_PARTICIPATION_MESSAGE =
     'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'
+  const attachmentHydrationRequests = new Map<
+    string,
+    Promise<ExtendedThreadMessageLike | undefined>
+  >()
 
   const markParticipationRequired = (message?: string) => {
     set({
@@ -89,6 +123,62 @@ export const useChatStore = create<ChatState>((set, get) => {
 
   const clearParticipationNotice = () => {
     set({ participationRequired: false, participationMessage: null })
+  }
+
+  const mergeMessageAttachments = (
+    message: ExtendedThreadMessageLike,
+    hydratedAttachments: ApiHydratedImageAttachment[]
+  ): ExtendedThreadMessageLike => {
+    const allAttachments = message.imageAttachments ?? []
+    const persistedAttachments = sortAttachmentsByPosition(
+      allAttachments.filter(
+        (attachment): attachment is ApiImageAttachment =>
+          typeof attachment.id === 'string' &&
+          typeof attachment.position === 'number'
+      )
+    )
+    const localOnlyAttachments = allAttachments.filter(
+      (attachment) =>
+        typeof attachment.id !== 'string' ||
+        typeof attachment.position !== 'number'
+    )
+
+    if (persistedAttachments.length === 0) {
+      return message
+    }
+
+    return {
+      ...message,
+      imageAttachments: [
+        ...mergeHydratedAttachments(persistedAttachments, hydratedAttachments),
+        ...localOnlyAttachments,
+      ],
+    }
+  }
+
+  const updateMessageInCollection = (
+    messages: ExtendedThreadMessageLike[],
+    messageId: string,
+    hydratedAttachments: ApiHydratedImageAttachment[]
+  ): ExtendedThreadMessageLike[] =>
+    messages.map((message) =>
+      message.id === messageId
+        ? mergeMessageAttachments(message, hydratedAttachments)
+        : message
+    )
+
+  const updateMessageIdsInCollection = (
+    messages: ExtendedThreadMessageLike[],
+    messageIds: string[],
+    hydratedAttachments: ApiHydratedImageAttachment[]
+  ): ExtendedThreadMessageLike[] => {
+    const targetIds = new Set(messageIds)
+
+    return messages.map((message) =>
+      typeof message.id === 'string' && targetIds.has(message.id)
+        ? mergeMessageAttachments(message, hydratedAttachments)
+        : message
+    )
   }
 
   const handleApiError = (error: unknown) => {
@@ -139,7 +229,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         set((state) => {
           return {
-            threads: [...state.threads, newThread],
+            threads: [newThread, ...state.threads],
             activeThreadId: newThread.id,
             isLoading: false,
           }
@@ -167,14 +257,39 @@ export const useChatStore = create<ChatState>((set, get) => {
           `/chatbots/${chatbotId}/threads`
         )
 
-        const threads = apiThreads.map(convertApiThreadToThread)
+        const freshThreads = apiThreads.map(convertApiThreadToThread)
 
-        set({
-          threads,
-          activeThreadId: null,
-          isLoading: false,
-          participationRequired: false,
-          participationMessage: null,
+        set((state) => {
+          // Preserve cached messages for threads that already exist
+          const existingMap = new Map(state.threads.map((t) => [t.id, t]))
+          const merged = freshThreads.map((fresh) => {
+            const existing = existingMap.get(fresh.id)
+            if (
+              existing &&
+              (existing.allMessages.length > 0 || existing.messages.length > 0)
+            ) {
+              return {
+                ...fresh,
+                messages: existing.messages,
+                allMessages: existing.allMessages,
+                isRunning: existing.isRunning,
+              }
+            }
+            return fresh
+          })
+
+          // Keep activeThreadId if the thread still exists in the new list
+          const activeStillExists =
+            state.activeThreadId != null &&
+            merged.some((t) => t.id === state.activeThreadId)
+
+          return {
+            threads: merged,
+            activeThreadId: activeStillExists ? state.activeThreadId : null,
+            isLoading: false,
+            participationRequired: false,
+            participationMessage: null,
+          }
         })
       } catch (error) {
         console.error('Failed to load threads:', error)
@@ -191,6 +306,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param threadId - The ID of the thread to switch to
      */
     switchToThread: async (chatbotId: string, threadId: string) => {
+      const previousActiveThreadId = get().activeThreadId
       try {
         set({ isLoading: true })
 
@@ -201,7 +317,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         if (existingThread && existingThread.allMessages.length > 0) {
           set({ isLoading: false })
-          return
+          return true
         }
 
         // Load all messages for the thread from the server
@@ -209,6 +325,22 @@ export const useChatStore = create<ChatState>((set, get) => {
           `/chatbots/${chatbotId}/threads/${threadId}/messages`
         )
         const allMessages = apiMessages.map(convertApiMessageToMessage)
+
+        if (allMessages.length === 0) {
+          set((state) => ({
+            threads: state.threads.map((thread) =>
+              thread.id === threadId
+                ? {
+                    ...thread,
+                    allMessages: [],
+                    messages: [],
+                  }
+                : thread
+            ),
+            isLoading: false,
+          }))
+          return true
+        }
 
         // find most recent leaf message to set as current conversation branch
         const leafMessages = findLeafMessages(allMessages)
@@ -237,10 +369,12 @@ export const useChatStore = create<ChatState>((set, get) => {
           ),
           isLoading: false,
         }))
+        return true
       } catch (error) {
         console.error('Failed to switch to thread:', error)
         handleApiError(error)
-        set({ isLoading: false })
+        set({ activeThreadId: previousActiveThreadId, isLoading: false })
+        return false
       }
     },
 
@@ -259,9 +393,7 @@ export const useChatStore = create<ChatState>((set, get) => {
           const filteredThreads = state.threads.filter((t) => t.id !== threadId)
           const newActiveThreadId =
             state.activeThreadId === threadId
-              ? filteredThreads.length > 0
-                ? filteredThreads[0].id
-                : null
+              ? (filteredThreads[0]?.id ?? null)
               : state.activeThreadId
 
           return {
@@ -269,9 +401,11 @@ export const useChatStore = create<ChatState>((set, get) => {
             activeThreadId: newActiveThreadId,
           }
         })
+        return true
       } catch (error) {
         console.error('Failed to delete thread:', error)
         handleApiError(error)
+        return false
       }
     },
 
@@ -315,10 +449,10 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param message - The message to add to the conversation
      * @returns Promise<string | null> The ID of the thread the message was added to
      */
-    addMessage: async (chatbotId: string, message) => {
+    addMessage: async (chatbotId: string, message, targetThreadId?: string) => {
       const state = get()
 
-      let currentThreadId = state.activeThreadId
+      let currentThreadId = targetThreadId ?? state.activeThreadId
 
       // create a new thread if none is active
       if (!currentThreadId) {
@@ -350,6 +484,7 @@ export const useChatStore = create<ChatState>((set, get) => {
                 ...thread,
                 messages: [...thread.messages, message],
                 allMessages: [...thread.allMessages, message],
+                updatedAt: new Date(),
               }
             : thread
         ),
@@ -389,6 +524,242 @@ export const useChatStore = create<ChatState>((set, get) => {
       return currentThreadId
     },
 
+    ensureFullImageAttachments: async (
+      chatbotId,
+      threadId,
+      messageId,
+      sourceMessageId
+    ) => {
+      const state = get()
+      const thread = state.threads.find(
+        (candidate) => candidate.id === threadId
+      )
+      const fetchMessageId = sourceMessageId ?? messageId
+
+      if (!thread) {
+        return undefined
+      }
+
+      const cachedMessage = thread.allMessages.find(
+        (message) => message.id === messageId
+      )
+      const activePathMessage = thread.messages.find(
+        (message) => message.id === messageId
+      )
+      const sourceCachedMessage = thread.allMessages.find(
+        (message) => message.id === fetchMessageId
+      )
+      const sourceActivePathMessage = thread.messages.find(
+        (message) => message.id === fetchMessageId
+      )
+
+      const cachedIsHydrated = hasAllImageAttachmentsHydrated(
+        cachedMessage?.imageAttachments
+      )
+      const activeIsHydrated = hasAllImageAttachmentsHydrated(
+        activePathMessage?.imageAttachments
+      )
+      const sourceCachedIsHydrated = hasAllImageAttachmentsHydrated(
+        sourceCachedMessage?.imageAttachments
+      )
+      const sourceActiveIsHydrated = hasAllImageAttachmentsHydrated(
+        sourceActivePathMessage?.imageAttachments
+      )
+
+      const attachmentTargetIds =
+        fetchMessageId === messageId ? [messageId] : [messageId, fetchMessageId]
+
+      if (cachedIsHydrated && cachedMessage) {
+        if (activePathMessage && !activeIsHydrated) {
+          const hydratedAttachments =
+            (cachedMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+            []
+
+          set((currentState) => ({
+            threads: currentState.threads.map((candidate) =>
+              candidate.id === threadId
+                ? {
+                    ...candidate,
+                    messages: updateMessageInCollection(
+                      candidate.messages,
+                      messageId,
+                      hydratedAttachments
+                    ),
+                  }
+                : candidate
+            ),
+          }))
+
+          return mergeMessageAttachments(activePathMessage, hydratedAttachments)
+        }
+
+        return cachedMessage
+      }
+
+      if (
+        sourceCachedIsHydrated &&
+        sourceCachedMessage?.imageAttachments?.length
+      ) {
+        const hydratedAttachments =
+          (sourceCachedMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+          []
+
+        set((currentState) => ({
+          threads: currentState.threads.map((candidate) =>
+            candidate.id === threadId
+              ? {
+                  ...candidate,
+                  allMessages: updateMessageIdsInCollection(
+                    candidate.allMessages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                  messages: updateMessageIdsInCollection(
+                    candidate.messages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                }
+              : candidate
+          ),
+        }))
+
+        return (
+          mergeMessageAttachments(
+            activePathMessage ?? cachedMessage ?? sourceCachedMessage,
+            hydratedAttachments
+          ) ?? sourceCachedMessage
+        )
+      }
+
+      if (activeIsHydrated && activePathMessage) {
+        const hydratedAttachments =
+          (activePathMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+          []
+
+        set((currentState) => ({
+          threads: currentState.threads.map((candidate) =>
+            candidate.id === threadId
+              ? {
+                  ...candidate,
+                  allMessages: updateMessageInCollection(
+                    candidate.allMessages,
+                    messageId,
+                    hydratedAttachments
+                  ),
+                }
+              : candidate
+          ),
+        }))
+
+        return activePathMessage
+      }
+
+      if (
+        sourceActiveIsHydrated &&
+        sourceActivePathMessage?.imageAttachments?.length
+      ) {
+        const hydratedAttachments =
+          (sourceActivePathMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+          []
+
+        set((currentState) => ({
+          threads: currentState.threads.map((candidate) =>
+            candidate.id === threadId
+              ? {
+                  ...candidate,
+                  allMessages: updateMessageIdsInCollection(
+                    candidate.allMessages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                  messages: updateMessageIdsInCollection(
+                    candidate.messages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                }
+              : candidate
+          ),
+        }))
+
+        return mergeMessageAttachments(
+          activePathMessage ?? cachedMessage ?? sourceActivePathMessage,
+          hydratedAttachments
+        )
+      }
+
+      if (
+        !cachedMessage?.imageAttachments?.length &&
+        !activePathMessage?.imageAttachments?.length &&
+        !sourceCachedMessage?.imageAttachments?.length &&
+        !sourceActivePathMessage?.imageAttachments?.length
+      ) {
+        return cachedMessage ?? activePathMessage
+      }
+
+      const hydrationRequestKey = `${chatbotId}:${threadId}:${messageId}:${fetchMessageId}`
+      const inFlightRequest =
+        attachmentHydrationRequests.get(hydrationRequestKey)
+
+      if (inFlightRequest) {
+        return inFlightRequest
+      }
+
+      const hydrationRequest = (async () => {
+        try {
+          const hydratedAttachments = await apiCall<
+            ApiHydratedImageAttachment[]
+          >(
+            `/chatbots/${chatbotId}/threads/${threadId}/messages/${fetchMessageId}/attachments`
+          )
+
+          set((currentState) => ({
+            threads: currentState.threads.map((candidate) =>
+              candidate.id === threadId
+                ? {
+                    ...candidate,
+                    allMessages: updateMessageIdsInCollection(
+                      candidate.allMessages,
+                      attachmentTargetIds,
+                      hydratedAttachments
+                    ),
+                    messages: updateMessageIdsInCollection(
+                      candidate.messages,
+                      attachmentTargetIds,
+                      hydratedAttachments
+                    ),
+                  }
+                : candidate
+            ),
+          }))
+
+          const updatedThread = get().threads.find(
+            (candidate) => candidate.id === threadId
+          )
+
+          return (
+            updatedThread?.messages.find(
+              (message) => message.id === messageId
+            ) ??
+            updatedThread?.allMessages.find(
+              (message) => message.id === messageId
+            )
+          )
+        } catch (error) {
+          console.error('Failed to hydrate message attachments:', error)
+          handleApiError(error)
+          return cachedMessage ?? activePathMessage
+        } finally {
+          attachmentHydrationRequests.delete(hydrationRequestKey)
+        }
+      })()
+
+      attachmentHydrationRequests.set(hydrationRequestKey, hydrationRequest)
+
+      return hydrationRequest
+    },
+
     /**
      * Sets current conversation messages
      * Used when switching between different conversation branches
@@ -415,6 +786,18 @@ export const useChatStore = create<ChatState>((set, get) => {
           thread.id === state.activeThreadId ? { ...thread, isRunning } : thread
         ),
       }))
+    },
+
+    /**
+     * Clears local chat session state.
+     * Used by embedded mode to avoid preloading existing chat history in UI.
+     */
+    resetSession: () => {
+      set({
+        threads: [],
+        activeThreadId: null,
+        isLoading: false,
+      })
     },
 
     /**
@@ -449,24 +832,6 @@ export const useChatStore = create<ChatState>((set, get) => {
             : thread
         ),
       }))
-    },
-
-    /**
-     * Gets all alternative responses (branches) for a specific message
-     * Used to show users different response options at any point in the conversation
-     *
-     * @param messageId - The ID of the message to find alternatives for
-     * @returns Array of alternative messages (including the original)
-     */
-    getMessageBranches: (messageId) => {
-      const state = get()
-      const activeThread = state.threads.find(
-        (t) => t.id === state.activeThreadId
-      )
-
-      if (!activeThread) return []
-
-      return getBranches(activeThread.allMessages, messageId)
     },
   }
 })

@@ -126,6 +126,7 @@ services:
     image: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa:v3
     environment:
       APP_SECRET: abcd
+      ALLOWED_FRAME_ANCESTORS: 'https://*.klicker.com'
     ports:
       - 3001:3000
     networks:
@@ -186,6 +187,13 @@ services:
       POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
       POSTGRES_DB: klicker-prod
+    command:
+      - 'postgres'
+      # Auto-kill sessions stuck "idle in transaction" after 5 minutes.
+      # Prevents cascading cypress failures when a run is interrupted mid-seed
+      # and leaves a BEGIN transaction holding locks on klicker-prod.
+      - '-c'
+      - 'idle_in_transaction_session_timeout=300000'
     ports:
       - 5432:5432
     networks:
@@ -249,6 +257,29 @@ services:
       SERVER_DEFAULT_ENGINE_VERSION: 'V1'
     volumes:
       - 'hatchet_lite_config:/config'
+    networks:
+      - klicker
+
+  litellm:
+    image: ghcr.io/berriai/litellm-database:main-1.80.15-stable.1
+    ports:
+      - '4000:4000'
+    environment:
+      - UPSTREAM_OPENAI_API_KEY
+      - UPSTREAM_OPENAI_BASE_URL
+    volumes:
+      - './util/litellm/config.yaml:/app/config.yaml'
+    command: ['--config', '/app/config.yaml', '--port', '4000']
+    healthcheck:
+      test:
+        - 'CMD'
+        - 'python'
+        - '-c'
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness').status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - klicker
 
