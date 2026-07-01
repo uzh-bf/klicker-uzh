@@ -648,40 +648,40 @@ test.describe('Chatbot Message Actions & Branching', () => {
 
   // KNOWN BUG: editing the ROOT user message does not create a branch (the
   // branch picker never appears), unlike editing a non-root message above.
-  //
-  // test('Editing the ROOT user message creates a new branch', async ({
-  //   page,
-  // }) => {
-  //   await visitChat(page)
-  //   await sendMessage(page, 'Root prompt')
-  //   await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
-  //     timeout: 15_000,
-  //   })
-  //
-  //   const rootMessage = page.getByTestId('chat-user-message').first()
-  //   await rootMessage.hover()
-  //   await rootMessage.getByTestId('chat-edit-message-button').click()
-  //
-  //   const editInput = page.getByTestId('chat-edit-composer-input')
-  //   await expect(editInput).toBeVisible()
-  //   await editInput.fill('Root edited')
-  //   await page.getByTestId('chat-edit-send-button').click()
-  //
-  //   await expect(
-  //     page
-  //       .getByTestId('chat-user-message-content')
-  //       .filter({ hasText: 'Root edited' })
-  //   ).toBeVisible()
-  //
-  //   await page
-  //     .getByTestId('chat-user-message')
-  //     .filter({ hasText: 'Root edited' })
-  //     .hover()
-  //   await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
-  //   await expect(
-  //     page.getByTestId('chat-branch-indicator').first()
-  //   ).toContainText('/ 2')
-  // })
+  test.fixme(
+    'Editing the ROOT user message creates a new branch',
+    async ({ page }) => {
+      await visitChat(page)
+      await sendMessage(page, 'Root prompt')
+      await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+        timeout: 15_000,
+      })
+
+      const rootMessage = page.getByTestId('chat-user-message').first()
+      await rootMessage.hover()
+      await rootMessage.getByTestId('chat-edit-message-button').click()
+
+      const editInput = page.getByTestId('chat-edit-composer-input')
+      await expect(editInput).toBeVisible()
+      await editInput.fill('Root edited')
+      await page.getByTestId('chat-edit-send-button').click()
+
+      await expect(
+        page
+          .getByTestId('chat-user-message-content')
+          .filter({ hasText: 'Root edited' })
+      ).toBeVisible()
+
+      await page
+        .getByTestId('chat-user-message')
+        .filter({ hasText: 'Root edited' })
+        .hover()
+      await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
+      await expect(
+        page.getByTestId('chat-branch-indicator').first()
+      ).toContainText('/ 2')
+    }
+  )
 })
 
 // ===========================================================================
@@ -973,15 +973,35 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
-  test('Model selection dropdown appears when modelSelection is enabled', async ({
+  test('Model selection dropdown changes the model used for messages', async ({
     page,
   }) => {
     await setModelSelection(participantId, true)
+    await mockChatStream(page)
     await visitChat(page)
     await openSettings(page)
 
-    await expect(page.getByTestId('chat-model-selection')).toBeVisible()
+    const modelSection = page.getByTestId('chat-model-selection')
+    await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
+
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1 Mini')
+    await expect(modelSection).toContainText('GPT-4.1 Mini')
+
+    const chatRequestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+    await sendMessage(page, 'Selected model check')
+
+    const chatRequest = await chatRequestPromise
+    const payload = chatRequest.postDataJSON() as { selectedModel?: string }
+    expect(payload.selectedModel).toBe('gpt-4.1-mini')
+    await expect(page.getByTestId('chat-assistant-message')).toContainText(
+      'assistant reply #1',
+      { timeout: 15_000 }
+    )
   })
 
   test('Reasoning effort selector is wired up when model selection is enabled', async ({
