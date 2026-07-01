@@ -94,6 +94,7 @@ export const URL_STUDENT = 'http://127.0.0.1:3001'
 export const URL_STUDENT_LOGIN = 'http://127.0.0.1:3001/login'
 export const URL_MANAGE = 'http://127.0.0.1:3002'
 export const URL_CONTROL = 'http://127.0.0.1:3003'
+export const URL_CHAT = 'http://127.0.0.1:3004'
 export const URL_AUTH = 'http://127.0.0.1:3010'
 
 // Lecturer accounts
