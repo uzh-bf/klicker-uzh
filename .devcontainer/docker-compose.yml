@@ -138,6 +138,8 @@ services:
       - 'control.klicker.localhost:host-gateway'
       - 'olat-api.klicker.localhost:host-gateway'
       - 'response-api.klicker.localhost:host-gateway'
+      - 'lti.klicker.localhost:host-gateway'
+      - 'chat.klicker.localhost:host-gateway'
     networks:
       default: {}
       devnet:
@@ -168,3 +170,17 @@ volumes:
   node_modules_root:
   hatchet_lite_config:
   hatchet_token:
+
+  # --- LiteLLM for Chat (Tier 3) ---
+  litellm:
+    image: ghcr.io/berriai/litellm:main-v1.61.12
+    volumes:
+      - ../util/litellm/config.yaml:/app/config.yaml:ro
+    command:
+      - --config=/app/config.yaml
+      - --port=4000
+    networks:
+      default: {}
+    environment:
+      # Supplied by the user in their local env or .devcontainer.env to enable chat
+      - UPSTREAM_OPENAI_API_KEY=${UPSTREAM_OPENAI_API_KEY:-}

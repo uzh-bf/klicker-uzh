@@ -43,7 +43,7 @@ pnpm install --no-frozen-lockfile
 # (compile on the fly) so they are NOT pre-built. (GOTCHAS: build the graph
 # before any dev server.)
 echo "[post-create] Building workspace packages + backend (turbo)..."
-pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-docker
+pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/lti-service
 
 # Prepare the database. klicker's prisma:reset prompts (and the non-interactive
 # variants wrap Infisical), so call prisma directly with --force. A brand-new
