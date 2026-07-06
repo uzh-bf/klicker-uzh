@@ -20,22 +20,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Check for changes
         id: check
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin ${{ github.base_ref }} --depth=1
-            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          else
-            diff=$(git diff --name-only HEAD~1...HEAD || true)
-          fi
-          echo "Files changed:"
-          echo "$diff"
-
-          if echo "$diff" | grep -qE '^(packages/graphql/|packages/prisma/|packages/grading/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml)'; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -244,3 +231,21 @@ jobs:
           APP_ORIGIN_CONTROL: http://control.klicker.com
           APP_ORIGIN_ASSESSMENT_API: http://assessment-api.klicker.com
           APP_ORIGIN_ASSESSMENT_PWA: http://assessment.klicker.com
+
+  # Always reports a status even when the tests are skipped by the path filter,
+  # so this job can be used as a required check in branch protection.
+  test-graphql-status:
+    needs: [filter, test-graphql]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          if [ "${{ needs.filter.outputs.should_run }}" \!= "true" ]; then
+            echo "Tests skipped by path filter."
+            exit 0
+          fi
+          if [ "${{ needs.test-graphql.result }}" \!= "success" ]; then
+            echo "test-graphql result: ${{ needs.test-graphql.result }}"
+            exit 1
+          fi

@@ -23,22 +23,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Check for changes
         id: check
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin ${{ github.base_ref }} --depth=1
-            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          else
-            diff=$(git diff --name-only HEAD~1...HEAD || true)
-          fi
-          echo "Files changed:"
-          echo "$diff"
-
-          if echo "$diff" | grep -qE '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|playwright/package\.json|util/_create_hatchet_token_cypress\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/actions/changed-paths/|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_cypress\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
 
   test-playwright:
     needs: filter
@@ -276,3 +263,21 @@ jobs:
             service.log
           if-no-files-found: ignore
           retention-days: 1
+
+  # Always reports a status even when the tests are skipped by the path filter,
+  # so this job can be used as a required check in branch protection.
+  test-playwright-status:
+    needs: [filter, test-playwright]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          if [ "${{ needs.filter.outputs.should_run }}" \!= "true" ]; then
+            echo "Tests skipped by path filter."
+            exit 0
+          fi
+          if [ "${{ needs.test-playwright.result }}" \!= "success" ]; then
+            echo "test-playwright result: ${{ needs.test-playwright.result }}"
+            exit 1
+          fi

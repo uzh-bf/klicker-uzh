@@ -23,22 +23,9 @@ jobs:
 
       - name: Check for changes
         id: filter
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin ${{ github.base_ref }} --depth=1
-            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          else
-            diff=$(git diff --name-only HEAD~1...HEAD || true)
-          fi
-          echo "Files changed:"
-          echo "$diff"
-
-          if echo "$diff" | grep -qE '^(packages/grading/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-grading\.yml)'; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(packages/grading/|packages/prisma/|packages/types/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-grading\.yml|\.github/actions/changed-paths/)'
 
       - uses: pnpm/action-setup@v4
         if: steps.filter.outputs.should_run == 'true'

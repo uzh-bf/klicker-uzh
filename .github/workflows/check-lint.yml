@@ -21,16 +21,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/|packages/|cypress/|playwright/|util/|AGENTS\.md|CLAUDE\.md|package\.json|pnpm-lock\.yaml|\.eslintrc|\.github/workflows/check-lint\.yml|\.github/actions/changed-paths/)'
+
       - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
         with:
           version: 11.5.0
           run_install: true
+
       - name: Check linting
+        if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
           pnpm run lint
+
       - name: Check Prisma schema sync drift
+        if: steps.filter.outputs.should_run == 'true'
         run: pnpm run check:prisma-sync
+
       - name: Check AGENTS.md command smoke
+        if: steps.filter.outputs.should_run == 'true'
         run: pnpm run check:agents-md

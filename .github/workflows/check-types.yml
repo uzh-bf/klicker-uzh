@@ -21,25 +21,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # full history so the change-based turbo --filter below can find a merge base
+          fetch-depth: 0
 
       - name: Check for changes
         id: filter
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin ${{ github.base_ref }} --depth=1
-            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          else
-            diff=$(git diff --name-only HEAD~1...HEAD || true)
-          fi
-          echo "Files changed:"
-          echo "$diff"
-
-          if echo "$diff" | grep -qE '^(apps/|packages/|package\.json|pnpm-lock\.yaml|tsconfig\.json|.*/tsconfig\.json|\.github/workflows/check-types\.yml)'; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/|packages/|package\.json|pnpm-lock\.yaml|tsconfig\.json|.*/tsconfig\.json|\.github/workflows/check-types\.yml|\.github/actions/changed-paths/)'
 
       - uses: pnpm/action-setup@v4
         if: steps.filter.outputs.should_run == 'true'
@@ -51,9 +41,10 @@ jobs:
         if: steps.filter.outputs.should_run == 'true'
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
             pnpm exec turbo run build --filter="...[origin/${{ github.base_ref }}...HEAD]"
           else
-            pnpm exec turbo run build --filter="...[HEAD~1...HEAD]" || pnpm exec turbo run build
+            pnpm exec turbo run build --filter="...[HEAD~1...HEAD]"
           fi
 
       - name: Check the typescript types of all packages and apps

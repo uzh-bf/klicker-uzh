@@ -4,6 +4,9 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    # Align with pnpm minimumReleaseAge (14 days) in pnpm-workspace.yaml
+    cooldown:
+      default-days: 14
     # Group minor and patch updates to reduce noise
     groups:
       dependencies:
@@ -22,3 +25,5 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    cooldown:
+      default-days: 14

@@ -24,22 +24,9 @@ jobs:
 
       - name: Check for changes
         id: filter
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin ${{ github.base_ref }} --depth=1
-            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          else
-            diff=$(git diff --name-only HEAD~1...HEAD || true)
-          fi
-          echo "Files changed:"
-          echo "$diff"
-
-          if echo "$diff" | grep -qE '^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.github/workflows/check-syncpack\.yml|.*/package\.json)'; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.github/workflows/check-syncpack\.yml|\.github/actions/changed-paths/|.*/package\.json)'
 
       - uses: pnpm/action-setup@v4
         if: steps.filter.outputs.should_run == 'true'

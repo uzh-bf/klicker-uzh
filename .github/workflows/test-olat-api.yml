@@ -22,27 +22,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Check for changes
         id: filter
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin ${{ github.base_ref }} --depth=1
-            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          else
-            diff=$(git diff --name-only HEAD~1...HEAD || true)
-          fi
-          echo "Files changed:"
-          echo "$diff"
-
-          if echo "$diff" | grep -qE '^(apps/olat-api/|packages/prisma/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-olat-api\.yml)'; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/olat-api/|packages/prisma/|packages/grading/|packages/util/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-olat-api\.yml|\.github/actions/changed-paths/)'
 
       - name: Set up Docker Buildx
         if: steps.filter.outputs.should_run == 'true'
