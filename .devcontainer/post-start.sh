@@ -37,6 +37,8 @@ DEV_CMD='pnpm exec turbo run dev \
   --filter=@klicker-uzh/frontend-control \
   --filter=@klicker-uzh/olat-api \
   --filter=@klicker-uzh/response-api \
+  --filter=@klicker-uzh/lti-service \
+  --filter=@klicker-uzh/chat \
   --filter=@klicker-uzh/hatchet-worker-general \
   --filter=@klicker-uzh/hatchet-worker-response-processor \
   --concurrency 30'
@@ -52,7 +54,9 @@ cat <<'EOF'
 [post-start]   Control      -> https://control.klicker.localhost
 [post-start]   OLAT API     -> https://olat-api.klicker.localhost  (/health, /api-docs; bearer OLAT_API_KEY)
 [post-start]   Response API -> https://response-api.klicker.localhost
+[post-start]   LTI Service  -> https://lti.klicker.localhost
+[post-start]   Chat         -> https://chat.klicker.localhost (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Routes  -> on the host: for a in api auth pwa manage control olat-api response-api db; do dev app run "$a"; done
+[post-start] Routes  -> on the host: for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
 [post-start] Logs    -> tail -f /tmp/dev.log
 EOF

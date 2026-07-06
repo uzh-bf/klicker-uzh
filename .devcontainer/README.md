@@ -29,7 +29,7 @@ dev up && dev tls install   # Traefik + the shared `devnet` + mkcert CA
 
 ```bash
 devpod up . --ide none         # builds image, starts infra, installs, builds, seeds
-for a in api auth pwa manage control olat-api response-api db; do dev app run "$a"; done   # register routes
+for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done   # register routes
 ```
 
 Open <https://manage.klicker.localhost> and log in as **`lecturer` / `abcd`**
@@ -51,6 +51,8 @@ container's internal port — no published host ports.
 | Control           | `https://control.klicker.localhost`      | `klicker-app:3003` |
 | OLAT API          | `https://olat-api.klicker.localhost`     | `klicker-app:3030` |
 | Response API      | `https://response-api.klicker.localhost` | `klicker-app:7078` |
+| LTI Service       | `https://lti.klicker.localhost`          | `klicker-app:4000` |
+| Chat App          | `https://chat.klicker.localhost`         | `klicker-app:3004` |
 | Postgres          | `db.klicker.localhost:5432`              | `klicker-db:5432`  |
 
 The two Hatchet workers (`hatchet-worker-general`, `hatchet-worker-response-processor`)
@@ -79,6 +81,7 @@ every app is served under `*.klicker.localhost` and the cookie domain resolves t
 
 `backend` needs a `HATCHET_CLIENT_TOKEN`, minted per Hatchet instance. The
 `hatchet_token` sidecar mints one to a shared volume; `post-create` writes it to
+| `litellm` | `ghcr.io/berriai/litellm` | LLM proxy for chat (port 4000 intra-net) |
 `.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The
 backend **requires** it to boot — its `HatchetClient.init` runs at module load
 (not lazy), so without the token the API crashes at startup and never serves.
@@ -101,6 +104,7 @@ hatchet DB migrations finishing. If the API is down, check
 | `mailhog`                           | `mailhog/mailhog`                           | dev SMTP sink                                          |
 | `hatchet`                           | `hatchet-lite:v0.73.1`                      | workflow engine (gRPC :7077)                           |
 | `hatchet_token`                     | `hatchet-lite:v0.73.1`                      | one-shot: mint the client token                        |
+| `litellm`                           | `ghcr.io/berriai/litellm`                   | LLM proxy for chat (port 4000 intra-net)               |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
@@ -114,4 +118,4 @@ Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 - `response-api` + both workers run `tsx --watch --env-file=.env`; node 20 errors
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
   (the container env from `devcontainer.env` is what actually applies).
-- Tier 2 (`lti`) and Tier 3 (`chat` + LiteLLM, needs an upstream LLM key) are still pending.
+- Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
