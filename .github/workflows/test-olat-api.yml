@@ -3,10 +3,6 @@ name: Test OLAT-API functionalities
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'packages/prisma/**'
-      - 'apps/olat-api/**'
-      - '.github/workflows/test-olat-api.yml'
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
@@ -16,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-olat-api:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
@@ -26,16 +22,40 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        id: filter
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }} --depth=1
+            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            diff=$(git diff --name-only HEAD~1...HEAD || true)
+          fi
+          echo "Files changed:"
+          echo "$diff"
+
+          if echo "$diff" | grep -qE '^(apps/olat-api/|packages/prisma/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-olat-api\.yml)'; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up Docker Buildx
+        if: steps.filter.outputs.should_run == 'true'
         uses: docker/setup-buildx-action@v3
 
       - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
         with:
           version: 11.5.0
           run_install: true
 
       - name: Run tests using Docker
+        if: steps.filter.outputs.should_run == 'true'
         run: |
           cd packages/prisma
           pnpm run build

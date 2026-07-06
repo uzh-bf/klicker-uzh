@@ -5,18 +5,6 @@ on:
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - apps/**
-      - packages/**
-      - playwright/**
-      - .github/workflows/playwright-testing.yml
-      - .github/scripts/wait-for-services.sh
-      - package.json
-      - pnpm-lock.yaml
-      - playwright/package.json
-      - util/_create_hatchet_token_cypress.sh
-      - util/_with_local_test_origins.sh
-      - util/_run_with_infisical.sh
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -26,7 +14,35 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  playwright-run:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }} --depth=1
+            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            diff=$(git diff --name-only HEAD~1...HEAD || true)
+          fi
+          echo "Files changed:"
+          echo "$diff"
+
+          if echo "$diff" | grep -qE '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|playwright/package\.json|util/_create_hatchet_token_cypress\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+  test-playwright:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble

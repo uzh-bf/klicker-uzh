@@ -3,23 +3,9 @@ name: Check linting
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - apps/**
-      - packages/**
-      - util/**
-      - .github/workflows/**
-      - AGENTS.md
-      - project/2026-07-06-agent-readiness-improvement-plan.md
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
-    paths:
-      - apps/**
-      - packages/**
-      - util/**
-      - .github/workflows/**
-      - AGENTS.md
-      - project/2026-07-06-agent-readiness-improvement-plan.md
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -31,7 +17,7 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  lint:
+  check-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

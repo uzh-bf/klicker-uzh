@@ -3,21 +3,43 @@ name: Test graphql package logic functionalities
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }} --depth=1
+            diff=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            diff=$(git diff --name-only HEAD~1...HEAD || true)
+          fi
+          echo "Files changed:"
+          echo "$diff"
+
+          if echo "$diff" | grep -qE '^(packages/graphql/|packages/prisma/|packages/grading/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml)'; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+  test-graphql:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
