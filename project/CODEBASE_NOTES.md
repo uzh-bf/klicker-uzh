@@ -9,6 +9,7 @@ This is a **living document**: when you discover such a pattern during a task, a
 - **Prisma Decimal nullish check**: `Decimal` fields are objects, not numbers. `Decimal(0)` is truthy, so never use truthy checks for Decimal-to-number conversions -- always use `!= null`. (`packages/graphql/src/`)
 - **Analytics Python Prisma Decimal support**: `apps/analytics` copies the shared Prisma schema into its Python client generation; keep `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` whenever shared schema Decimal fields are present.
 - **Participant email uniqueness across auth modes**: Prisma enforces `Participant @@unique([email, isSSOAccount])`, so the same normalized email can exist once as manual and once as SSO. To block new cross-mode duplicates, account creation must explicitly check normalized email collisions in service logic. (`packages/graphql/src/services/accounts.ts`)
+- **Course duplication permission contract**: Course duplication copies direct course and selected-activity permissions, then recomputes derived permissions for the new course and its activities/elements. Activity instances are duplicated but still reference the same underlying elements; element objects and their direct permissions are not cloned. (`packages/graphql/src/services/courses.ts`)
 
 ## Export package
 
