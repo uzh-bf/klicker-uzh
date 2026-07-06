@@ -3253,6 +3253,16 @@ export async function duplicateCourse(
   )
   if (!hasDuplicationAccess) return null
 
+  await recomputeDerivedPermissions(
+    { courseId: id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+  const hasRefreshedDuplicationAccess = await checkAccess(
+    [{ courseId: id, minimumPermissionLevel: DB.PermissionLevel.ADMIN }],
+    ctx
+  )
+  if (!hasRefreshedDuplicationAccess) return null
+
   const oldCourse = await ctx.prisma.course.findUnique({
     where: { id },
     include: courseDuplicationInclude,
