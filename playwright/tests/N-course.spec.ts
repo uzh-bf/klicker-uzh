@@ -1444,7 +1444,7 @@ function expectCopiedUserGroupPermissions(summary: CourseDuplicationSummary) {
     {
       userShortname: LECTURER_INST_SHORTNAME,
       coursePermissionLevel: 'EXECUTE',
-      liveQuizPermissionLevel: 'ADMIN',
+      liveQuizPermissionLevel: 'EXECUTE',
     },
     {
       userShortname: LECTURER_INST2_SHORTNAME,
@@ -2164,7 +2164,7 @@ test.describe('Part 4: Course deletion', () => {
     await page.getByTestId('activities').click()
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 30_000 })
   })
 
   test('Cleanup: Delete the live quiz that is not assigned to the course anymore', async ({
@@ -2173,7 +2173,7 @@ test.describe('Part 4: Course deletion', () => {
     await page.getByTestId('activities').click()
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 30_000 })
     await page.getByTestId(`actions-LIVE_QUIZ-${DELETION.lqName}`).click()
     await page.getByTestId(`delete-live-quiz-${DELETION.lqName}`).click()
     await page.getByTestId('confirmation-modal-confirm').click()

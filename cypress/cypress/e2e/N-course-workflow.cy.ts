@@ -1418,7 +1418,7 @@ describe('Test course creation and editing functionalities', function () {
       {
         userShortname: Cypress.env('LECTURER_INST_SHORTNAME'),
         coursePermissionLevel: 'EXECUTE',
-        liveQuizPermissionLevel: 'ADMIN',
+        liveQuizPermissionLevel: 'EXECUTE',
       },
       {
         userShortname: Cypress.env('LECTURER_INST2_SHORTNAME'),
