@@ -7,6 +7,7 @@ import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
+import * as ElementImportExportService from '../services/elementImportExport.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
@@ -54,6 +55,7 @@ import {
 import {
   Element,
   ElementDownloadLink,
+  ElementExportPackagePreview,
   ElementInstance,
   ElementInstanceVersionInfo,
   ElementSummary,
@@ -871,10 +873,38 @@ export const Query = builder.queryType({
           elementIds: t.arg.intList({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          console.log('ElementService', ElementService)
-          const res = await ElementService.getElementDownloadLink(args, ctx)
-          console.log(res)
-          return res
+          return await ElementImportExportService.getElementExportPackageLink(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getElementExportPackageLink: t.withAuth(asUser).field({
+        nullable: true,
+        type: ElementDownloadLink,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementImportExportService.getElementExportPackageLink(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getElementExportPackagePreview: t.withAuth(asUser).field({
+        nullable: true,
+        type: ElementExportPackagePreview,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementImportExportService.getElementExportPackagePreview(
+            args,
+            ctx
+          )
         },
       }),
 

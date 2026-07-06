@@ -1,4 +1,3 @@
-import { BlobServiceClient } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityLogModificationFieldType,
@@ -17,7 +16,7 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { getFileUploadSas } from './elements.js'
+import { uploadPrivateImportExportBlob } from './packageStorage.js'
 
 // ! Helper functions
 // #region
@@ -6909,9 +6908,21 @@ export async function getAnswerCollectionDownloadLink(
   { answerCollectionId }: { answerCollectionId: number },
   ctx: ContextWithUser
 ) {
+  const acceptedPermissionLevels = [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ]
   const answerCollection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: answerCollectionId,
+      isDeleted: false,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: { in: acceptedPermissionLevels },
+        },
+      },
     },
     select: {
       id: true,
@@ -6922,56 +6933,33 @@ export async function getAnswerCollectionDownloadLink(
       // createdAt: true,
       // updatedAt: true,
       // isDeleted: true,
-      originalId: true,
+      // originalId: true,
       entries: {
         select: {
           id: true,
           value: true,
         },
       },
-      catalogAssignments: {
-        select: {
-          id: true,
-          access: true,
-          catalogCollectionId: true,
-          // answerCollectionId: true,
-          // elementId: true,
-          // courseId: true,
-          // liveQuizId: true,
-          // practiceQuizId: true,
-          // microLearningId: true,
-          // groupActivityId: true,
-          // createdAt: true,
-          // updatedAt: true,
-        },
-      },
+      // catalogAssignments: true,
     },
   })
+
+  if (!answerCollection) {
+    throw new Error('Answer collection could not be exported.')
+  }
 
   const fileID = randomUUID()
   const filename = `answercollection-export-${fileID}.json`
   const json = JSON.stringify(answerCollection, null, 2)
   const buffer = Buffer.from(json, 'utf8')
 
-  const data = await getFileUploadSas(
-    { fileName: filename, contentType: 'application/json' },
+  const data = await uploadPrivateImportExportBlob(
+    { filename, buffer, contentType: 'application/json' },
     ctx
   )
 
-  const blobServiceClient = new BlobServiceClient(data.uploadSasURL)
-  const containerClient = blobServiceClient.getContainerClient(
-    data.containerName
-  )
-  const blobClient = containerClient.getBlobClient(data.fileName)
-  const blockBlobClient = blobClient.getBlockBlobClient()
-  await blockBlobClient.uploadData(buffer, {
-    blobHTTPHeaders: {
-      blobContentType: 'application/json',
-    },
-  })
-
   return {
-    downloadLink: data.uploadHref,
+    downloadLink: data.downloadLink,
   }
 }
 // #endregion

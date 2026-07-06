@@ -1,0 +1,37 @@
+mutation ValidateElementImportPackage($blobName: String!) {
+  validateElementImportPackage(blobName: $blobName) {
+    importToken
+    warnings
+    errors
+    answerCollections {
+      ref
+      name
+      description
+      entries {
+        id
+        value
+      }
+    }
+    elements {
+      ref
+      name
+      content
+      type
+      options
+      pointsMultiplier
+      basePoints
+      explanation
+      status
+      answerCollectionId
+      answerCollectionRef
+      answerCollectionItems {
+        id
+        value
+      }
+      answerCollectionEntries {
+        id
+        value
+      }
+    }
+  }
+}

@@ -1,108 +1,117 @@
-import { useLazyQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import {
-  ElementStatus,
   ElementType,
-  GetSingleAnswerCollectionDocument,
+  PrepareElementImportPackageUploadDocument,
+  ValidateElementImportPackageDocument,
+  ValidateElementImportPackageMutation,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ElementOptionsNumerical } from '@klicker-uzh/types'
-import { Modal, SelectField, toast } from '@uzh-bf/design-system'
+import { H4, Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import Dropzone from 'react-dropzone'
-import * as Yup from 'yup'
+import { MediaUploadDropzone } from '../../common/MediaLibrary'
 import ImportedElementsOverviewTable from '../details/ImportedElementsOverviewTable'
+import PackageAnswerCollectionOverview from './PackageAnswerCollectionOverview'
 import { ElementFormTypes } from './types'
 
-async function validateElements(content: any) {
-  try {
-    const schema = Yup.array()
-      .of(
-        Yup.object({
-          // id: Yup.number().required(),
-          // isArchived: Yup.boolean().required(),
-          name: Yup.string().required(),
-          content: Yup.string().required(),
-          options: Yup.object().required(),
-          type: Yup.string().required(),
-          pointsMultiplier: Yup.number().required(),
-          explanation: Yup.string().nullable(),
-          // originalId: Yup.string().nullable(),
-          version: Yup.number().required(),
-          status: Yup.string().required(),
-          answerCollectionId: Yup.number().nullable(),
-          answerCollectionItems: Yup.array(
-            Yup.object({
-              id: Yup.number().required(),
-              value: Yup.string().required(),
-            })
-          ).nullable(),
-          basePoints: Yup.boolean().required(),
-        })
-          .noUnknown(true)
-          .strict(true)
-      )
-      .required()
-    return await schema.validate(content, { strict: true })
-  } catch (err: any) {
-    const elementIndex = Number(err.path.match(/\[(\d+)\]/)?.[1]) + 1
-    switch (err.type) {
-      case 'required':
-        throw new Error(`Missing field(s) in ${elementIndex}. element.`)
-      case 'noUnknown':
-        throw new Error(`Unknown field(s) in ${elementIndex}. element.`)
-      case 'typeError':
-        throw new Error(`Wrong field type(s) in ${elementIndex}. element.`)
-      default:
-        throw new Error(`Invalid element(s).`)
-    }
+type AnswerCollectionPreviewEntry = {
+  id: number
+  value: string
+}
+
+type PackagePreview = NonNullable<
+  ValidateElementImportPackageMutation['validateElementImportPackage']
+>
+type PackagePreviewElement = PackagePreview['elements'][number]
+type PackagePreviewAnswerCollection =
+  PackagePreview['answerCollections'][number]
+
+function convertPackagePreviewElementToFormValues(
+  element: PackagePreviewElement
+): ElementFormTypes {
+  const sharedQuestionForm = {
+    name: element.name,
+    status: element.status,
+    content: element.content,
+    pointsMultiplier: String(element.pointsMultiplier),
+    basePoints: element.basePoints,
+    tags: [],
   }
+
+  const typeSpecificForm = {
+    type: element.type,
+    explanation: element.explanation ?? '',
+    options: {
+      ...(element.options as Record<string, any>),
+    },
+  }
+
+  if (element.type === ElementType.Numerical) {
+    const solutionType = (element.options as ElementOptionsNumerical)
+      .solutionRanges
+      ? 'range'
+      : (element.options as ElementOptionsNumerical).exactSolutions
+        ? 'exact'
+        : undefined
+    Object.assign(typeSpecificForm.options, { solutionType })
+  } else if (element.type === ElementType.Selection) {
+    Object.assign(typeSpecificForm.options, {
+      itemSelectionMode: 'existing',
+      answerCollection:
+        typeof element.answerCollectionId === 'number'
+          ? String(element.answerCollectionId)
+          : undefined,
+      correctAnswers:
+        element.answerCollectionItems?.map((item: any) => item.id) ?? [],
+    })
+  } else if (element.type === ElementType.CaseStudy) {
+    const hasSampleSolution = element.options.hasSampleSolution ?? false
+
+    Object.assign(typeSpecificForm.options, {
+      itemSelectionMode: 'existing',
+      answerCollection:
+        typeof element.answerCollectionId === 'number'
+          ? String(element.answerCollectionId)
+          : undefined,
+      selectedItems:
+        element.answerCollectionItems?.map((item: any) => item.id) ?? [],
+      manuallyCreatedItems: [],
+      criteria:
+        element.options.criteria?.map((criterion: any) => ({
+          ...criterion,
+          mode: criterion.labels ? 'steps' : 'range',
+          step: String(criterion.step),
+        })) ?? [],
+      cases:
+        element.options.cases?.map((caseItem: any) => ({
+          ...caseItem,
+          solutions:
+            hasSampleSolution && Array.isArray(caseItem.solutions)
+              ? Object.fromEntries(
+                  caseItem.solutions.map((solution: any) => [
+                    `itemId-${solution.itemId}`,
+                    Object.fromEntries(
+                      solution.criteriaSolutions.map((criterion: any) => [
+                        criterion.criterionId,
+                        {
+                          min: String(criterion.min),
+                          max: String(criterion.max),
+                        },
+                      ])
+                    ),
+                  ])
+                )
+              : caseItem.solutions,
+        })) ?? [],
+    })
+  }
+
+  return {
+    ...sharedQuestionForm,
+    ...typeSpecificForm,
+  } as ElementFormTypes
 }
 
-// async function validateAnswerCollections(content: any) {
-//   try {
-//     const schema = Yup.object({
-//       id: Yup.number().required(),
-//       name: Yup.string().required(),
-//       description: Yup.string().required(),
-//       version: Yup.number().required(),
-//       originalId: Yup.number().nullable(),
-//       entries: Yup.array(
-//         Yup.object({
-//           id: Yup.number().required(),
-//           value: Yup.string().required(),
-//         })
-//       ),
-//       catalogAssignments: Yup.array(
-//         Yup.object({
-//           id: Yup.number().required(),
-//           access: Yup.string().required(),
-//           catalogCollectionId: Yup.string().required(),
-//         })
-//       ).required(),
-//     })
-//       .noUnknown(true)
-//       .strict(true)
-
-//     return await schema.validate(content)
-//   } catch (err: any) {
-//     switch (err.type) {
-//       case 'required':
-//         throw new Error(`Missing field(s).`)
-//       case 'noUnknown':
-//         throw new Error(`Unknown field(s).`)
-//       case 'typeError':
-//         throw new Error(`Wrong field type(s).`)
-//       default:
-//         throw new Error(`Invalid answer collection.`)
-//     }
-//   }
-// }
-
-const enum ImportType {
-  ELEMENTS = 'ELEMENTS',
-  // ANSWER_COLLECTION = 'ANSWER_COLLECTION',
-}
 function UploadModal({
   onClose,
   refetchElements,
@@ -113,187 +122,258 @@ function UploadModal({
   const t = useTranslations()
 
   const [isUploading, setIsUploading] = useState(false)
-  const [importType, setImportType] = useState<ImportType>(ImportType.ELEMENTS)
-
-  // const elements: ElementImportInput[] = []
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
+  const [importToken, setImportToken] = useState<string | null>(null)
+  const [packageWarnings, setPackageWarnings] = useState<string[]>([])
+  const [uploadError, setUploadError] = useState('')
   const [elementsForPreview, setElementsForPreview] = useState<
     Record<string, ElementFormTypes>
   >({})
+  const [
+    answerCollectionEntriesForPreview,
+    setAnswerCollectionEntriesForPreview,
+  ] = useState<Record<string, AnswerCollectionPreviewEntry[]>>({})
+  const [answerCollectionsForOverview, setAnswerCollectionsForOverview] =
+    useState<PackagePreviewAnswerCollection[]>([])
 
-  const [fetchAnswerCollection, { loading: answerCollectionLoading, error }] =
-    useLazyQuery(GetSingleAnswerCollectionDocument)
+  const [preparePackageUpload, { loading: preparingUpload }] = useMutation(
+    PrepareElementImportPackageUploadDocument
+  )
+  const [validatePackageUpload, { loading: validatingPackage }] = useMutation(
+    ValidateElementImportPackageDocument
+  )
+
+  const resetPreview = () => {
+    setImportToken(null)
+    setPackageWarnings([])
+    setUploadError('')
+    setElementsForPreview({})
+    setAnswerCollectionEntriesForPreview({})
+    setAnswerCollectionsForOverview([])
+  }
 
   const handleFileUpload = async (files: File[]) => {
+    const file = files[0]
+    if (!file) {
+      return
+    }
+
     setIsUploading(true)
-    const contents: any[] = []
+    setUploadedFileName(file.name)
+    setUploadError('')
+    resetPreview()
+
     try {
-      for (const file of files) {
-        // so far only single file upload is supported
-        const contentTxt = await file.text()
-        const content = JSON.parse(contentTxt)
-        contents.push(content)
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        throw new Error(t('manage.elements.elementImportInvalidFile'))
       }
+
+      const uploadResult = await preparePackageUpload({
+        variables: { filename: file.name },
+      })
+      const upload =
+        uploadResult.data?.prepareElementImportPackageUpload ?? null
+
+      if (!upload) {
+        throw new Error(t('manage.elements.elementImportInvalidFile'))
+      }
+
+      const response = await fetch(upload.uploadSasURL, {
+        method: 'PUT',
+        headers: {
+          'x-ms-blob-type': 'BlockBlob',
+          'Content-Type': 'application/zip',
+        },
+        body: file,
+      })
+
+      if (!response.ok) {
+        throw new Error(t('manage.elements.elementImportUploadFailed'))
+      }
+
+      const validationResult = await validatePackageUpload({
+        variables: { blobName: upload.blobName },
+      })
+      const preview =
+        validationResult.data?.validateElementImportPackage ?? null
+
+      if (!preview || preview.errors.length > 0) {
+        throw new Error(
+          preview?.errors[0] ?? t('manage.elements.elementImportInvalidFile')
+        )
+      }
+
+      const nextElementsForPreview: Record<string, ElementFormTypes> = {}
+      const nextAnswerCollectionEntriesForPreview: Record<
+        string,
+        AnswerCollectionPreviewEntry[]
+      > = {}
+
+      for (const element of preview.elements) {
+        nextElementsForPreview[element.ref] =
+          convertPackagePreviewElementToFormValues(element)
+        nextAnswerCollectionEntriesForPreview[element.ref] =
+          element.answerCollectionEntries ?? []
+      }
+
+      setImportToken(preview.importToken)
+      setPackageWarnings(preview.warnings)
+      setElementsForPreview(nextElementsForPreview)
+      setAnswerCollectionEntriesForPreview(
+        nextAnswerCollectionEntriesForPreview
+      )
+      setAnswerCollectionsForOverview([...preview.answerCollections])
+      toast({
+        type: 'success',
+        message: t('manage.elements.elementImportValidationSuccess', {
+          number: preview.elements.length,
+        }),
+        options: { duration: 3000 },
+      })
     } catch (err: any) {
+      setUploadedFileName(null)
+      resetPreview()
+      const message =
+        err.message === t('manage.elements.elementImportUploadFailed')
+          ? err.message
+          : t('manage.elements.elementImportInvalidFile')
+      setUploadError(message)
       toast({
         type: 'error',
-        message: 'Error while parsing file.',
-        options: { duration: 4000 },
+        message,
+        options: { duration: 5000 },
       })
+    } finally {
+      setIsUploading(false)
     }
-    const content = contents[0]
-    try {
-      if (importType === ImportType.ELEMENTS) {
-        const els = await validateElements(content)
-        let elementFormTypeIndex = 0
-        let newElementsForPreview: Record<string, ElementFormTypes> = {}
-        for (const el of els) {
-          const { options, type, status, ...rest } = el
-
-          const sharedQuestionForm = {
-            name: el.name,
-            status: el.status as ElementStatus,
-            content: el.content,
-            pointsMultiplier: String(el.pointsMultiplier),
-            basePoints: el.basePoints,
-            tags: [], // TODO: import tags?
-          }
-
-          const typeSpecificForm = {
-            type: el.type as ElementType,
-            explanation: el.explanation ?? '',
-            options: {
-              ...el.options,
-            },
-          }
-          if ((el.type as ElementType) === ElementType.Numerical) {
-            const solutionType = (el.options as ElementOptionsNumerical)
-              .solutionRanges
-              ? 'range'
-              : (el.options as ElementOptionsNumerical).exactSolutions
-                ? 'exact'
-                : undefined
-            Object.assign(typeSpecificForm.options, { solutionType })
-          } else if ((el.type as ElementType) === ElementType.Selection) {
-            Object.assign(typeSpecificForm.options, {
-              answerCollection: el.answerCollectionId ?? null,
-              correctAnswers:
-                el.answerCollectionItems?.map((item: any) => item.id) ?? [],
-            })
-          } else if ((el.type as ElementType) === ElementType.CaseStudy) {
-            Object.assign(typeSpecificForm.options, {
-              answerCollection: el.answerCollectionId ?? null,
-              selectedItems:
-                el.answerCollectionItems?.map((item: any) => item.id) ?? [],
-            })
-          }
-
-          const elementFormType = {
-            ...sharedQuestionForm,
-            ...typeSpecificForm,
-          } as ElementFormTypes
-
-          newElementsForPreview[elementFormTypeIndex] = elementFormType
-          elementFormTypeIndex++
-
-          if (el.answerCollectionId) {
-            const answerCollection = await fetchAnswerCollection({
-              variables: { id: el.answerCollectionId },
-            })
-            if (!answerCollection.data?.getSingleAnswerCollection) {
-              throw new Error(
-                `Answer collection with id ${el.answerCollectionId} not found.`
-              )
-            }
-          }
-        }
-        setElementsForPreview(newElementsForPreview)
-      }
-    } catch (err: any) {
-      toast({
-        type: 'error',
-        message: err.message,
-        options: { duration: 4000 },
-      })
-    }
-    setIsUploading(false)
   }
+
+  const hasElementsForPreview =
+    Boolean(importToken) && Object.keys(elementsForPreview).length > 0
+  const processingFile = isUploading || preparingUpload || validatingPackage
+  const renderUploadDropzone = ({
+    compact = false,
+  }: { compact?: boolean } = {}) => (
+    <MediaUploadDropzone
+      accept={{
+        'application/zip': ['.zip'],
+        'application/x-zip-compressed': ['.zip'],
+      }}
+      title={t('manage.elements.uploadElementsFile')}
+      description={
+        <>
+          <p>{t('manage.elements.uploadElementsZipDescription')}</p>
+          {uploadedFileName ? (
+            <div
+              className="mt-2 break-all text-xs text-slate-600"
+              data-cy="element-import-file-name"
+            >
+              {uploadedFileName}
+            </div>
+          ) : null}
+        </>
+      }
+      activeDescription={t('manage.elements.dropElementsZip')}
+      compact={compact}
+      isUploading={processingFile}
+      inputAriaLabel={t('manage.elements.uploadElementsFile')}
+      onDropAccepted={handleFileUpload}
+      data={{ cy: 'element-import-dropzone' }}
+      className={{
+        root: compact
+          ? 'h-10 rounded-md border border-solid bg-white px-3 text-sm'
+          : 'min-h-40 rounded-md border border-solid bg-white px-4 py-6 text-sm',
+        title: compact ? 'w-full truncate text-center' : undefined,
+        description: 'text-slate-600',
+      }}
+    />
+  )
+
   return (
     <Modal
       open
       onClose={onClose}
-      title={t('shared.generic.upload')}
+      title={t('manage.elements.importElements')}
       className={{
         content:
-          'xl:w-320 h-[calc(100%-2rem)] w-[calc(100%-2rem)] overflow-hidden',
+          'xl:w-300 max-h-[calc(100%-2rem)] w-[calc(100%-2rem)] overflow-hidden',
       }}
-      dataCloseButton={{ cy: 'close-element-download-modal' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataCloseButton={{ cy: 'close-element-upload-modal' }}
+      dataSecondaryAction={{ cy: 'cancel-element-upload-modal' }}
     >
-      <div className="flex h-full w-full flex-col gap-6 md:flex-row md:gap-6 lg:h-full lg:max-h-full">
-        <div className="divide-yo flex h-full w-full flex-1 flex-col gap-4">
-          <div className="flex flex-1 flex-row gap-6 p-2">
-            <SelectField
-              required
-              label="Import Type" // t('manage.elements.importElementsOrAnswerCollection')
-              items={[
-                {
-                  value: ImportType.ELEMENTS,
-                  label: t('shared.generic.elements'),
-                },
-                // {
-                //   value: ImportType.ANSWER_COLLECTION,
-                //   label: t('shared.generic.answerCollection'),
-                // },
-              ]}
-              value={importType}
-              onChange={(value) => setImportType(value as ImportType)}
-              className={{
-                root: 'w-full flex-1',
-                select: { root: 'w-full', trigger: 'w-full' },
-              }}
-            />
-            <Dropzone
-              onDropAccepted={handleFileUpload}
-              multiple={false}
-              accept={{
-                'application/image': ['.json'],
-              }}
-            >
-              {({ getRootProps, getInputProps }) => (
-                <>
-                  {/* <Suspense fallback={<Loader />}></Suspense> */}
+      <div className="flex max-h-[calc(100vh-8rem)] min-h-0 flex-col gap-4">
+        <UserNotification type="info" className={{ root: 'text-sm' }}>
+          {t('manage.elements.importElementsInfo')}
+        </UserNotification>
 
+        {hasElementsForPreview && importToken ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <H4>{t('manage.elements.reviewElementsBeforeImport')}</H4>
+                {uploadedFileName ? (
                   <div
-                    className="flex-1 p-2 hover:cursor-pointer hover:bg-slate-100"
-                    {...getRootProps()}
+                    className="mt-1 truncate text-sm text-slate-600"
+                    data-cy="element-import-file-name"
                   >
-                    <div className="m-2">
-                      {isUploading ? (
-                        <Loader />
-                      ) : (
-                        <p>{t('manage.elements.uploadImageDescription')}</p>
-                      )}
-                    </div>
-                    <input type="file" {...getInputProps()} />
+                    {uploadedFileName}
                   </div>
-                </>
-              )}
-            </Dropzone>
-          </div>
-          <div className="flex w-full flex-1 flex-col">
-            {Object.entries(elementsForPreview).length > 0 ? (
-              <div className="flex flex-1 flex-col gap-2 p-4">
-                <h3 className="m-0 p-0 font-bold">
-                  {t('shared.generic.elements')}
-                </h3>
-                <ImportedElementsOverviewTable
-                  elements={elementsForPreview}
-                  refetchElements={refetchElements}
-                  onClose={onClose}
-                />
+                ) : null}
               </div>
+              <div className="w-full sm:w-56">
+                {renderUploadDropzone({ compact: true })}
+              </div>
+            </div>
+
+            {packageWarnings.length > 0 ? (
+              <UserNotification
+                type="warning"
+                message={packageWarnings.join(' ')}
+                className={{ root: 'text-sm' }}
+              />
             ) : null}
+
+            <PackageAnswerCollectionOverview
+              mode="import"
+              collections={answerCollectionsForOverview}
+              dataCy="element-import-answer-collections-overview"
+            />
+
+            <ImportedElementsOverviewTable
+              elements={elementsForPreview}
+              answerCollectionEntries={answerCollectionEntriesForPreview}
+              importToken={importToken}
+              refetchElements={refetchElements}
+              onClose={onClose}
+            />
           </div>
-        </div>
+        ) : (
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(18rem,0.85fr)_minmax(0,1.15fr)]">
+            <div className="flex min-h-0 flex-col gap-3 overflow-auto">
+              <H4>{t('manage.elements.uploadElementsFile')}</H4>
+              {renderUploadDropzone()}
+              {uploadError ? (
+                <div data-cy="element-import-package-error">
+                  <UserNotification
+                    type="error"
+                    message={uploadError}
+                    className={{ root: 'text-sm' }}
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
+              <H4>{t('manage.elements.reviewElementsBeforeImport')}</H4>
+              <UserNotification
+                message={t('manage.elements.elementImportEmptyState')}
+                className={{ root: 'text-sm' }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </Modal>
   )

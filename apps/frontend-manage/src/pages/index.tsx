@@ -70,7 +70,6 @@ function Index() {
   const [updatedElementsForDownload, setUpdatedElementsForDownload] =
     useState(false)
   const seenElementIds = useRef<Record<string, string>>({})
-  const seenAnswerCollections = useRef<Record<string, string>>({})
 
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
@@ -543,7 +542,6 @@ function Index() {
         <DownloadModal
           selectedElements={Object.values(selectedElements)}
           seenElementIds={seenElementIds}
-          seenAnswerCollections={seenAnswerCollections}
           onClose={() => {
             setUpdatedElementsForDownload(false)
             setDownloadElements(false)

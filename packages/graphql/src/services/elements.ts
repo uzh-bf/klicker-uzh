@@ -10,11 +10,6 @@ import {
   ActivityLogModificationFieldType,
   ActivityType,
   ElementManipulationInput,
-  OptionsCaseStudyInput,
-  OptionsChoicesInput,
-  OptionsFreeTextInput,
-  OptionsNumericalInput,
-  OptionsSelectionInput,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
@@ -27,9 +22,7 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
-import isEqual from 'lodash/isEqual.js'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
-import type { ElementExistsInfo } from 'src/ops.js'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -39,25 +32,6 @@ import validateElementInputs from '../lib/validateElementInputs.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
-
-type ElementImportInput = {
-  id: number
-  isArchived: boolean
-  name: string
-  content: string
-  type: DB.ElementType
-  optionsChoices?: OptionsChoicesInput | null
-  optionsNumerical?: OptionsNumericalInput | null
-  optionsFreeText?: OptionsFreeTextInput | null
-  optionsSelection?: OptionsSelectionInput | null
-  optionsCaseStudy?: OptionsCaseStudyInput | null
-  pointsMultiplier: number
-  explanation?: string | null
-  version: number
-  status: DB.ElementStatus
-  answerCollectionId?: number | null
-  basePoints: boolean
-}
 
 export async function getUserElements(
   {
@@ -1538,204 +1512,6 @@ export async function getOutdatedElementInstances(
   )
 
   return outdatedInstances
-}
-
-export async function getElementDownloadLink(
-  { elementIds }: { elementIds: number[] },
-  ctx: ContextWithUser
-) {
-  const elements = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: elementIds },
-    },
-    select: {
-      // id: true,
-      // isArchived: true,
-      // isDeleted: true,
-      name: true,
-      content: true,
-      options: true,
-      type: true,
-      // ownerId: true,
-      // createdAt: true,
-      // updatedAt: true,
-      pointsMultiplier: true,
-      explanation: true,
-      // originalId: true,
-      version: true,
-      status: true,
-      answerCollectionId: true,
-      answerCollectionItems: {
-        select: {
-          id: true,
-          value: true,
-        },
-      },
-      basePoints: true,
-    },
-  })
-
-  const fileID = randomUUID()
-  const filename = `elements-export-${fileID}.json`
-  const json = JSON.stringify(elements, null, 2)
-  const buffer = Buffer.from(json, 'utf8')
-
-  const data = await getFileUploadSas(
-    { fileName: filename, contentType: 'application/json' },
-    ctx
-  )
-
-  const blobServiceClient = new BlobServiceClient(data.uploadSasURL)
-  const containerClient = blobServiceClient.getContainerClient(
-    data.containerName
-  )
-  const blobClient = containerClient.getBlobClient(data.fileName)
-  const blockBlobClient = blobClient.getBlockBlobClient()
-  await blockBlobClient.uploadData(buffer, {
-    blobHTTPHeaders: {
-      blobContentType: 'application/json',
-    },
-  })
-
-  return {
-    downloadLink: data.uploadHref,
-  }
-}
-
-function areImportedElementsValid(elements: ElementImportInput[]) {
-  for (const element of elements) {
-    // check if options are set correctly for the element type
-    const isChoicesOptionNotSet =
-      (element.type === DB.ElementType.SC ||
-        element.type === DB.ElementType.MC ||
-        element.type === DB.ElementType.KPRIM) &&
-      !element.optionsChoices
-    const isNumericalOptionNotSet =
-      element.type === DB.ElementType.NUMERICAL && !element.optionsNumerical
-    const isFreeTextOptionNotSet =
-      element.type === DB.ElementType.FREE_TEXT && !element.optionsFreeText
-    const isSelectionOptionNotSet =
-      element.type === DB.ElementType.SELECTION && !element.optionsSelection
-    const isCaseStudyOptionNotSet =
-      element.type === DB.ElementType.CASE_STUDY && !element.optionsCaseStudy
-
-    if (
-      isChoicesOptionNotSet ||
-      isNumericalOptionNotSet ||
-      isFreeTextOptionNotSet ||
-      isSelectionOptionNotSet ||
-      isCaseStudyOptionNotSet
-    ) {
-      return false
-    }
-
-    // TODO: add more validation as required
-  }
-  return true
-}
-
-function getOptionsOfImportedElement(element: ElementImportInput) {
-  if (
-    element.type === DB.ElementType.SC ||
-    element.type === DB.ElementType.MC ||
-    element.type === DB.ElementType.KPRIM
-  ) {
-    return element.optionsChoices
-  }
-  if (element.type === DB.ElementType.NUMERICAL) {
-    return element.optionsNumerical
-  }
-  if (element.type === DB.ElementType.FREE_TEXT) {
-    return element.optionsFreeText
-  }
-  if (element.type === DB.ElementType.SELECTION) {
-    return element.optionsSelection
-  }
-  if (element.type === DB.ElementType.CASE_STUDY) {
-    return element.optionsCaseStudy
-  }
-  return {}
-}
-/**
- * TODO
- */
-export async function checkExistingImportedElements(
-  { elements }: { elements: ElementImportInput[] },
-  ctx: ContextWithUser
-) {
-  // check if any of the imported elements is invalid
-  if (!areImportedElementsValid(elements)) {
-    return []
-  }
-  const subscriptionId = ctx.user.sub
-  const elementsExist: ElementExistsInfo[] = []
-  for (const element of elements) {
-    // primarily check if an element with the same id exists for the user
-    const existingElement = await ctx.prisma.element.findUnique({
-      where: {
-        id: element.id,
-        ownerId: subscriptionId,
-        isArchived: element.isArchived,
-        isDeleted: false,
-        type: element.type,
-      },
-    })
-
-    const mismatches = {
-      isNameMismatch: true,
-      isContentMismatch: true,
-      isOptionsMismatch: true,
-      isPointsMultiplierMismatch: true,
-      isExplanationMismatch: true,
-      isVersionMismatch: true, // version is just for us to keep track. we simply ignore this and check every other field instead. when importing, set version to 1
-      isStatusMismatch: true,
-      isAnswerCollectionIdMismatch: true,
-      isBasePointsMismatch: true,
-    }
-    if (!existingElement) {
-      elementsExist.push({
-        id: element.id,
-        name: element.name,
-        exists: false,
-        ...mismatches,
-      })
-      continue
-    }
-
-    // check for mismatches (but don't leak existing information)
-    const isNameMismatch = element.name !== existingElement.name
-    const isContentMismatch = element.content !== existingElement.content
-    const optionsElement = getOptionsOfImportedElement(element)
-    const isOptionsMismatch = !isEqual(optionsElement, existingElement.options)
-    const isPointsMultiplierMismatch =
-      element.pointsMultiplier !== existingElement.pointsMultiplier
-    const isExplanationMismatch =
-      element.explanation !== existingElement.explanation
-    const isVersionMismatch = element.version !== existingElement.version
-    const isStatusMismatch = element.status !== existingElement.status
-    const isAnswerCollectionIdMismatch =
-      element.answerCollectionId !== existingElement.answerCollectionId
-    const isBasePointsMismatch =
-      element.basePoints !== existingElement.basePoints
-
-    mismatches.isNameMismatch = isNameMismatch
-    mismatches.isContentMismatch = isContentMismatch
-    mismatches.isOptionsMismatch = isOptionsMismatch
-    mismatches.isPointsMultiplierMismatch = isPointsMultiplierMismatch
-    mismatches.isExplanationMismatch = isExplanationMismatch
-    mismatches.isVersionMismatch = isVersionMismatch
-    mismatches.isStatusMismatch = isStatusMismatch
-    mismatches.isAnswerCollectionIdMismatch = isAnswerCollectionIdMismatch
-    mismatches.isBasePointsMismatch = isBasePointsMismatch
-
-    elementsExist.push({
-      id: element.id,
-      name: element.name,
-      exists: true,
-      ...mismatches,
-    })
-  }
-  return elementsExist
 }
 
 export async function updateElementInstances(

@@ -1,0 +1,7 @@
+mutation PrepareElementImportPackageUpload($filename: String!) {
+  prepareElementImportPackageUpload(filename: $filename) {
+    uploadSasURL
+    blobName
+    expiresAt
+  }
+}

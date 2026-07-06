@@ -905,6 +905,8 @@ export const UserElementList = builder.objectType(UserElementListRef, {
 })
 export interface IElementDownloadLink {
   downloadLink: string
+  filename?: string
+  expiresAt?: Date
 }
 export const ElementDownloadLinkRef = builder.objectRef<IElementDownloadLink>(
   'ElementDownloadLink'
@@ -912,76 +914,230 @@ export const ElementDownloadLinkRef = builder.objectRef<IElementDownloadLink>(
 export const ElementDownloadLink = ElementDownloadLinkRef.implement({
   fields: (t) => ({
     downloadLink: t.exposeString('downloadLink'),
+    filename: t.exposeString('filename', { nullable: true }),
+    expiresAt: t.expose('expiresAt', { type: 'Date', nullable: true }),
   }),
 })
 
-export const ElementImportInput = builder.inputType('ElementImportInput', {
-  fields: (t) => ({
-    id: t.int({ required: true }),
-    isArchived: t.boolean({ required: true }),
-    name: t.string({ required: true }),
-    content: t.string({ required: true }),
-    type: t.field({ type: ElementType, required: true }),
-    optionsChoices: t.field({ type: OptionsChoicesInputRef, required: false }),
-    optionsNumerical: t.field({
-      type: OptionsNumericalInputRef,
-      required: false,
-    }),
-    optionsFreeText: t.field({
-      type: OptionsFreeTextInputRef,
-      required: false,
-    }),
-    optionsSelection: t.field({
-      type: OptionsSelectionInputRef,
-      required: false,
-    }),
-    optionsCaseStudy: t.field({
-      type: OptionsCaseStudyInputRef,
-      required: false,
-    }),
-    pointsMultiplier: t.float({ required: true }),
-    explanation: t.string(),
-    // originalId: t.string(),
-    version: t.int({ required: true }),
-    status: t.field({ type: ElementStatus, required: true }),
-    answerCollectionId: t.int(),
-    basePoints: t.boolean({ required: true }),
-  }),
-})
-export interface IElementExistsInfo {
+export interface IElementExportPackagePreviewElement {
   id: number
   name: string
-  exists: boolean
-  isNameMismatch: boolean
-  isContentMismatch: boolean
-  isOptionsMismatch: boolean
-  isPointsMultiplierMismatch: boolean
-  isExplanationMismatch: boolean
-  isVersionMismatch: boolean
-  isStatusMismatch: boolean
-  isAnswerCollectionIdMismatch: boolean
-  isBasePointsMismatch: boolean
+  type: DB.ElementType
+  answerCollectionRef?: string | null
 }
-export const ElementExistsInfoRef =
-  builder.objectRef<IElementExistsInfo>('ElementExistsInfo')
-export const ElementExistsInfo = ElementExistsInfoRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    exists: t.exposeBoolean('exists'),
-    isNameMismatch: t.exposeBoolean('isNameMismatch'),
-    isContentMismatch: t.exposeBoolean('isContentMismatch'),
-    isOptionsMismatch: t.exposeBoolean('isOptionsMismatch'),
-    isPointsMultiplierMismatch: t.exposeBoolean('isPointsMultiplierMismatch'),
-    isExplanationMismatch: t.exposeBoolean('isExplanationMismatch'),
-    isVersionMismatch: t.exposeBoolean('isVersionMismatch'),
-    isStatusMismatch: t.exposeBoolean('isStatusMismatch'),
-    isAnswerCollectionIdMismatch: t.exposeBoolean(
-      'isAnswerCollectionIdMismatch'
-    ),
-    isBasePointsMismatch: t.exposeBoolean('isBasePointsMismatch'),
-  }),
-})
+export const ElementExportPackagePreviewElementRef =
+  builder.objectRef<IElementExportPackagePreviewElement>(
+    'ElementExportPackagePreviewElement'
+  )
+export const ElementExportPackagePreviewElement =
+  ElementExportPackagePreviewElementRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      name: t.exposeString('name'),
+      type: t.expose('type', { type: ElementType }),
+      answerCollectionRef: t.exposeString('answerCollectionRef', {
+        nullable: true,
+      }),
+    }),
+  })
+
+export interface IElementExportPackagePreviewEntry {
+  id: number
+  value: string
+}
+export const ElementExportPackagePreviewEntryRef =
+  builder.objectRef<IElementExportPackagePreviewEntry>(
+    'ElementExportPackagePreviewEntry'
+  )
+export const ElementExportPackagePreviewEntry =
+  ElementExportPackagePreviewEntryRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      value: t.exposeString('value'),
+    }),
+  })
+
+export interface IElementExportPackagePreviewAnswerCollection {
+  ref: string
+  name: string
+  description: string
+  entries: IElementExportPackagePreviewEntry[]
+  elementNames: string[]
+}
+export const ElementExportPackagePreviewAnswerCollectionRef =
+  builder.objectRef<IElementExportPackagePreviewAnswerCollection>(
+    'ElementExportPackagePreviewAnswerCollection'
+  )
+export const ElementExportPackagePreviewAnswerCollection =
+  ElementExportPackagePreviewAnswerCollectionRef.implement({
+    fields: (t) => ({
+      ref: t.exposeString('ref'),
+      name: t.exposeString('name'),
+      description: t.exposeString('description'),
+      entries: t.expose('entries', {
+        type: [ElementExportPackagePreviewEntry],
+      }),
+      elementNames: t.exposeStringList('elementNames'),
+    }),
+  })
+
+export interface IElementExportPackagePreview {
+  elements: IElementExportPackagePreviewElement[]
+  answerCollections: IElementExportPackagePreviewAnswerCollection[]
+  errors: string[]
+}
+export const ElementExportPackagePreviewRef =
+  builder.objectRef<IElementExportPackagePreview>('ElementExportPackagePreview')
+export const ElementExportPackagePreview =
+  ElementExportPackagePreviewRef.implement({
+    fields: (t) => ({
+      elements: t.expose('elements', {
+        type: [ElementExportPackagePreviewElement],
+      }),
+      answerCollections: t.expose('answerCollections', {
+        type: [ElementExportPackagePreviewAnswerCollection],
+      }),
+      errors: t.exposeStringList('errors'),
+    }),
+  })
+
+export interface IElementImportPackageUpload {
+  uploadSasURL: string
+  blobName: string
+  expiresAt: Date
+}
+export const ElementImportPackageUploadRef =
+  builder.objectRef<IElementImportPackageUpload>('ElementImportPackageUpload')
+export const ElementImportPackageUpload =
+  ElementImportPackageUploadRef.implement({
+    fields: (t) => ({
+      uploadSasURL: t.exposeString('uploadSasURL'),
+      blobName: t.exposeString('blobName'),
+      expiresAt: t.expose('expiresAt', { type: 'Date' }),
+    }),
+  })
+
+export interface IElementImportPackagePreviewEntry {
+  id: number
+  value: string
+}
+export const ElementImportPackagePreviewEntryRef =
+  builder.objectRef<IElementImportPackagePreviewEntry>(
+    'ElementImportPackagePreviewEntry'
+  )
+export const ElementImportPackagePreviewEntry =
+  ElementImportPackagePreviewEntryRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      value: t.exposeString('value'),
+    }),
+  })
+
+export interface IElementImportPackagePreviewAnswerCollection {
+  ref: string
+  name: string
+  description: string
+  entries: IElementImportPackagePreviewEntry[]
+}
+export const ElementImportPackagePreviewAnswerCollectionRef =
+  builder.objectRef<IElementImportPackagePreviewAnswerCollection>(
+    'ElementImportPackagePreviewAnswerCollection'
+  )
+export const ElementImportPackagePreviewAnswerCollection =
+  ElementImportPackagePreviewAnswerCollectionRef.implement({
+    fields: (t) => ({
+      ref: t.exposeString('ref'),
+      name: t.exposeString('name'),
+      description: t.exposeString('description'),
+      entries: t.expose('entries', {
+        type: [ElementImportPackagePreviewEntry],
+      }),
+    }),
+  })
+
+export interface IElementImportPackagePreviewElement {
+  ref: string
+  name: string
+  content: string
+  type: DB.ElementType
+  options: Record<string, unknown>
+  pointsMultiplier: number
+  basePoints: boolean
+  explanation?: string | null
+  status: DB.ElementStatus
+  answerCollectionId?: number | null
+  answerCollectionRef?: string | null
+  answerCollectionItems: IElementImportPackagePreviewEntry[]
+  answerCollectionEntries: IElementImportPackagePreviewEntry[]
+}
+export const ElementImportPackagePreviewElementRef =
+  builder.objectRef<IElementImportPackagePreviewElement>(
+    'ElementImportPackagePreviewElement'
+  )
+export const ElementImportPackagePreviewElement =
+  ElementImportPackagePreviewElementRef.implement({
+    fields: (t) => ({
+      ref: t.exposeString('ref'),
+      name: t.exposeString('name'),
+      content: t.exposeString('content'),
+      type: t.expose('type', { type: ElementType }),
+      options: t.expose('options', { type: 'Json' }),
+      pointsMultiplier: t.exposeInt('pointsMultiplier'),
+      basePoints: t.exposeBoolean('basePoints'),
+      explanation: t.exposeString('explanation', { nullable: true }),
+      status: t.expose('status', { type: ElementStatus }),
+      answerCollectionId: t.exposeInt('answerCollectionId', {
+        nullable: true,
+      }),
+      answerCollectionRef: t.exposeString('answerCollectionRef', {
+        nullable: true,
+      }),
+      answerCollectionItems: t.expose('answerCollectionItems', {
+        type: [ElementImportPackagePreviewEntry],
+      }),
+      answerCollectionEntries: t.expose('answerCollectionEntries', {
+        type: [ElementImportPackagePreviewEntry],
+      }),
+    }),
+  })
+
+export interface IElementImportPackagePreview {
+  importToken: string
+  elements: IElementImportPackagePreviewElement[]
+  answerCollections: IElementImportPackagePreviewAnswerCollection[]
+  warnings: string[]
+  errors: string[]
+}
+export const ElementImportPackagePreviewRef =
+  builder.objectRef<IElementImportPackagePreview>('ElementImportPackagePreview')
+export const ElementImportPackagePreview =
+  ElementImportPackagePreviewRef.implement({
+    fields: (t) => ({
+      importToken: t.exposeString('importToken'),
+      elements: t.expose('elements', {
+        type: [ElementImportPackagePreviewElement],
+      }),
+      answerCollections: t.expose('answerCollections', {
+        type: [ElementImportPackagePreviewAnswerCollection],
+      }),
+      warnings: t.exposeStringList('warnings'),
+      errors: t.exposeStringList('errors'),
+    }),
+  })
+
+export interface IElementImportPackageResult {
+  importedElements: number
+  importedAnswerCollections: number
+}
+export const ElementImportPackageResultRef =
+  builder.objectRef<IElementImportPackageResult>('ElementImportPackageResult')
+export const ElementImportPackageResult =
+  ElementImportPackageResultRef.implement({
+    fields: (t) => ({
+      importedElements: t.exposeInt('importedElements'),
+      importedAnswerCollections: t.exposeInt('importedAnswerCollections'),
+    }),
+  })
 
 interface IElementSummary {
   sharedElementActivityUse: boolean // = true if the element is used in an activity by a user with shared access

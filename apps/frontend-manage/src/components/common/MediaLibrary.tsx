@@ -9,11 +9,90 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import { Suspense, useCallback, useState } from 'react'
+import { ReactNode, Suspense, useCallback, useState } from 'react'
 import Dropzone from 'react-dropzone'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   onImageClick: (href: string, name: string) => void
+}
+
+interface MediaUploadDropzoneProps {
+  accept: Record<string, string[]>
+  title: ReactNode
+  description?: ReactNode
+  activeDescription?: ReactNode
+  inputAriaLabel?: string
+  compact?: boolean
+  isUploading?: boolean
+  multiple?: boolean
+  onDropAccepted: (files: File[]) => void | Promise<void>
+  data?: {
+    cy?: string
+  }
+  className?: {
+    root?: string
+    title?: string
+    description?: string
+  }
+}
+
+export function MediaUploadDropzone({
+  accept,
+  title,
+  description,
+  activeDescription,
+  inputAriaLabel,
+  compact = false,
+  isUploading = false,
+  multiple = false,
+  onDropAccepted,
+  data,
+  className,
+}: MediaUploadDropzoneProps) {
+  return (
+    <Dropzone
+      onDropAccepted={onDropAccepted}
+      multiple={multiple}
+      accept={accept}
+    >
+      {({ getRootProps, getInputProps, isDragActive }) => (
+        <div
+          {...getRootProps({
+            className: twMerge(
+              'flex-1 p-2 hover:cursor-pointer hover:bg-slate-100',
+              compact ? 'flex min-h-10 items-center' : 'flex min-h-32 flex-col',
+              className?.root
+            ),
+            'data-cy': data?.cy,
+          })}
+        >
+          <div className={twMerge('font-bold', className?.title)}>
+            {compact && isDragActive && activeDescription
+              ? activeDescription
+              : title}
+          </div>
+          {!compact && (
+            <div className={twMerge('mt-2', className?.description)}>
+              {isUploading ? (
+                <Loader />
+              ) : isDragActive && activeDescription ? (
+                activeDescription
+              ) : (
+                description
+              )}
+            </div>
+          )}
+          <input
+            type="file"
+            {...getInputProps({
+              'aria-label': inputAriaLabel,
+            })}
+          />
+        </div>
+      )}
+    </Dropzone>
+  )
 }
 
 function SuspendedMediaFiles({ onImageClick }: Props) {
@@ -55,73 +134,57 @@ function MediaLibrary({ onImageClick }: Props) {
       if (!file) return
 
       setIsUploading(true)
+      try {
+        const { data } = await getFileUploadSAS({
+          variables: {
+            fileName: file.name,
+            contentType: file.type,
+          },
+        })
+        if (!data?.getFileUploadSas) return
 
-      const { data } = await getFileUploadSAS({
-        variables: {
-          fileName: file.name,
-          contentType: file.type,
-        },
-      })
-      if (!data?.getFileUploadSas) return
+        const blobServiceClient = new BlobServiceClient(
+          data.getFileUploadSas.uploadSasURL
+        )
+        const containerClient = blobServiceClient.getContainerClient(
+          data.getFileUploadSas.containerName
+        )
+        const blobClient = containerClient.getBlobClient(
+          data.getFileUploadSas.fileName
+        )
+        const blockBlobClient = blobClient.getBlockBlobClient()
+        await blockBlobClient.uploadData(file, {
+          blockSize: 4 * 1024 * 1024, // 4MB block size
+        })
 
-      const blobServiceClient = new BlobServiceClient(
-        data.getFileUploadSas.uploadSasURL
-      )
-      const containerClient = blobServiceClient.getContainerClient(
-        data.getFileUploadSas.containerName
-      )
-      const blobClient = containerClient.getBlobClient(
-        data.getFileUploadSas.fileName
-      )
-      const blockBlobClient = blobClient.getBlockBlobClient()
-      const result = await blockBlobClient.uploadData(file, {
-        blockSize: 4 * 1024 * 1024, // 4MB block size
-      })
+        client.refetchQueries({
+          include: ['GetUserMediaFiles'],
+        })
 
-      client.refetchQueries({
-        include: ['GetUserMediaFiles'],
-      })
-
-      onImageClick(data.getFileUploadSas.uploadHref, file.name)
-
-      setIsUploading(false)
+        onImageClick(data.getFileUploadSas.uploadHref, file.name)
+      } finally {
+        setIsUploading(false)
+      }
     },
     [client, getFileUploadSAS, onImageClick]
   )
 
   return (
-    <Dropzone
-      onDrop={handleFileFieldChange}
-      multiple={false}
-      accept={{
-        'application/image': ['.png', '.jpg', '.jpeg', '.gif'],
-      }}
-    >
-      {({ getRootProps, getInputProps }) => (
-        <>
-          <Suspense fallback={<Loader />}>
-            <SuspendedMediaFiles onImageClick={onImageClick} />
-          </Suspense>
+    <>
+      <Suspense fallback={<Loader />}>
+        <SuspendedMediaFiles onImageClick={onImageClick} />
+      </Suspense>
 
-          <div
-            className="flex-1 p-2 hover:cursor-pointer hover:bg-slate-100"
-            {...getRootProps()}
-          >
-            <div className="font-bold">
-              {t('manage.elements.uploadImageHeader')}
-            </div>
-            <div className="mt-2">
-              {isUploading ? (
-                <Loader />
-              ) : (
-                <p>{t('manage.elements.uploadImageDescription')}</p>
-              )}
-            </div>
-            <input type="file" {...getInputProps()} />
-          </div>
-        </>
-      )}
-    </Dropzone>
+      <MediaUploadDropzone
+        accept={{
+          'application/image': ['.png', '.jpg', '.jpeg', '.gif'],
+        }}
+        title={t('manage.elements.uploadImageHeader')}
+        description={<p>{t('manage.elements.uploadImageDescription')}</p>}
+        isUploading={isUploading}
+        onDropAccepted={handleFileFieldChange}
+      />
+    </>
   )
 }
 

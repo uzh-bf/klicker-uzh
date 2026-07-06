@@ -1,0 +1,7 @@
+query GetElementExportPackageLink($elementIds: [Int!]!) {
+  getElementExportPackageLink(elementIds: $elementIds) {
+    downloadLink
+    filename
+    expiresAt
+  }
+}

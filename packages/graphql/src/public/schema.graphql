@@ -1086,21 +1086,34 @@ enum ElementDisplayMode {
 
 type ElementDownloadLink {
   downloadLink: String!
+  expiresAt: Date
+  filename: String
 }
 
-type ElementExistsInfo {
-  exists: Boolean!
-  id: Int!
-  isAnswerCollectionIdMismatch: Boolean!
-  isBasePointsMismatch: Boolean!
-  isContentMismatch: Boolean!
-  isExplanationMismatch: Boolean!
-  isNameMismatch: Boolean!
-  isOptionsMismatch: Boolean!
-  isPointsMultiplierMismatch: Boolean!
-  isStatusMismatch: Boolean!
-  isVersionMismatch: Boolean!
+type ElementExportPackagePreview {
+  answerCollections: [ElementExportPackagePreviewAnswerCollection!]!
+  elements: [ElementExportPackagePreviewElement!]!
+  errors: [String!]!
+}
+
+type ElementExportPackagePreviewAnswerCollection {
+  description: String!
+  elementNames: [String!]!
+  entries: [ElementExportPackagePreviewEntry!]!
   name: String!
+  ref: String!
+}
+
+type ElementExportPackagePreviewElement {
+  answerCollectionRef: String
+  id: Int!
+  name: String!
+  type: ElementType!
+}
+
+type ElementExportPackagePreviewEntry {
+  id: Int!
+  value: String!
 }
 
 type ElementFeedback {
@@ -1111,23 +1124,51 @@ type ElementFeedback {
   upvote: Boolean!
 }
 
-input ElementImportInput {
+type ElementImportPackagePreview {
+  answerCollections: [ElementImportPackagePreviewAnswerCollection!]!
+  elements: [ElementImportPackagePreviewElement!]!
+  errors: [String!]!
+  importToken: String!
+  warnings: [String!]!
+}
+
+type ElementImportPackagePreviewAnswerCollection {
+  description: String!
+  entries: [ElementImportPackagePreviewEntry!]!
+  name: String!
+  ref: String!
+}
+
+type ElementImportPackagePreviewElement {
+  answerCollectionEntries: [ElementImportPackagePreviewEntry!]!
   answerCollectionId: Int
+  answerCollectionItems: [ElementImportPackagePreviewEntry!]!
+  answerCollectionRef: String
   basePoints: Boolean!
   content: String!
   explanation: String
-  id: Int!
-  isArchived: Boolean!
   name: String!
-  optionsCaseStudy: OptionsCaseStudyInput
-  optionsChoices: OptionsChoicesInput
-  optionsFreeText: OptionsFreeTextInput
-  optionsNumerical: OptionsNumericalInput
-  optionsSelection: OptionsSelectionInput
-  pointsMultiplier: Float!
+  options: Json!
+  pointsMultiplier: Int!
+  ref: String!
   status: ElementStatus!
   type: ElementType!
-  version: Int!
+}
+
+type ElementImportPackagePreviewEntry {
+  id: Int!
+  value: String!
+}
+
+type ElementImportPackageResult {
+  importedAnswerCollections: Int!
+  importedElements: Int!
+}
+
+type ElementImportPackageUpload {
+  blobName: String!
+  expiresAt: Date!
+  uploadSasURL: String!
 }
 
 type ElementInstance {
@@ -1827,7 +1868,6 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
-  checkExistingImportedElements(elements: [ElementImportInput!]!): [ElementExistsInfo!]
   copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   correctAssessmentPointsInstance(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, instanceId: Int!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
   correctAssessmentPointsLiveQuiz(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, liveQuizId: String!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
@@ -1887,6 +1927,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
+  importElementPackage(importToken: String!, selectedElementRefs: [String!]!): ElementImportPackageResult
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1914,6 +1955,7 @@ type Mutation {
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
+  prepareElementImportPackageUpload(filename: String!): ElementImportPackageUpload
   promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
@@ -1958,6 +2000,7 @@ type Mutation {
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  validateElementImportPackage(blobName: String!): ElementImportPackagePreview
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
@@ -2421,6 +2464,8 @@ type Query {
   getDerivedObjectPermissions(objectId: String!, objectType: ObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
   getElementDownloadLink(elementIds: [Int!]!): ElementDownloadLink
+  getElementExportPackageLink(elementIds: [Int!]!): ElementDownloadLink
+  getElementExportPackagePreview(elementIds: [Int!]!): ElementExportPackagePreview
   getElementSummary(id: Int!): ElementSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary

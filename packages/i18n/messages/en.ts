@@ -1771,6 +1771,69 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       optionsImportDescription: 'Options',
       elementExists: 'Exists',
       elementImport: 'Import',
+      importElements: 'Import elements',
+      exportElements: 'Export elements',
+      importElementsInfo:
+        'Imported packages are created as new elements and answer collections in your question pool. Original IDs, permissions, activity results, and private metadata are not preserved.',
+      exportElementsInfo:
+        'Exports contain reusable element content only. Owner, permissions, activity results, and private metadata are not included.',
+      exportElementsPackageInfo:
+        'Linked answer collections are included automatically if you have edit permissions on them.',
+      packageAnswerCollections: 'Answer collections',
+      packageAnswerCollectionsExportDescription:
+        '{numCollections} linked answer collections will be included in the ZIP package.',
+      packageAnswerCollectionsImportDescription:
+        '{numCollections} answer collections will be created before the selected elements.',
+      packageAnswerCollectionsEmpty:
+        'No answer collections are included in this package.',
+      packageAnswerCollectionEntries: '{count} entries',
+      packageAnswerCollectionUsedBy: 'Used by: {elements}',
+      packageAnswerCollectionMoreEntries: '+{count} more',
+      packagePreviewLoading: 'Checking package contents...',
+      packagePreviewError:
+        'The package contents could not be checked. Please review your permissions.',
+      packageElementExportPermissionError:
+        'Some selected elements cannot be exported. You need edit permission on every selected element.',
+      packageAnswerCollectionExportPermissionError:
+        'Export blocked because at least one linked answer collection cannot be included. You need edit permission on all linked answer collections.',
+      uploadElementsFile: 'Upload ZIP package',
+      uploadElementsZipDescription:
+        'Drag a KlickerUZH elements ZIP package here or click to choose a file.',
+      dropElementsZip: 'Drop the ZIP package to validate it.',
+      reviewElementsBeforeImport: 'Review elements',
+      elementImportEmptyState:
+        'Upload a valid element package to review its contents.',
+      elementImportPreviewEmptyState:
+        'Select a preview to inspect an element before importing.',
+      elementImportPreview: 'Preview',
+      elementImportSelectionSummary:
+        '{selected}/{total} elements selected for import',
+      importSelectedElements: 'Import selected elements',
+      elementImportValidationSuccess: '{number} elements are ready to import.',
+      elementImportUploadFailed:
+        'The package could not be uploaded. Please try again.',
+      elementImportParseError:
+        'The package could not be parsed. Please upload a valid ZIP file.',
+      elementImportInvalidFile:
+        'The file does not match the KlickerUZH element package format.',
+      elementImportAnswerCollectionRequired:
+        'Element "{name}" needs an answer collection. Export and import the required answer collection first.',
+      elementImportAnswerCollectionMissing:
+        'Answer collection {id} is missing or not accessible. Import or share the answer collection before importing these elements.',
+      elementImportAnswerCollectionItemsMissing:
+        'Answer collection {id} does not contain the required entries. Please use the matching answer collection before importing these elements.',
+      elementImportNoElementsSelected: 'Select at least one element to import.',
+      elementImportSuccess: '{number} elements imported successfully.',
+      elementImportPartialError:
+        '{number} elements were imported, but the remaining import failed. Please review the file and try again.',
+      elementImportError:
+        'The elements could not be imported. Please review the file and try again.',
+      elementDownloadFailed: 'The elements could not be exported.',
+      answerCollectionDownloadFailed:
+        'The answer collection could not be exported.',
+      downloadElementsPackage: 'Download elements package',
+      downloadElementsJson: 'Download elements JSON',
+      downloadAnswerCollectionJson: 'Download answer collection JSON',
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',

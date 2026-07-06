@@ -1779,6 +1779,71 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       optionsImportDescription: 'Optionen',
       elementExists: 'Vorhanden',
       elementImport: 'Importieren',
+      importElements: 'Elemente importieren',
+      exportElements: 'Elemente exportieren',
+      importElementsInfo:
+        'Importierte Pakete werden als neue Elemente und Antwort-Sammlungen in Ihrem Fragenpool erstellt. Ursprungs-IDs, Berechtigungen, Aktivitaetsresultate und private Metadaten werden nicht uebernommen.',
+      exportElementsInfo:
+        'Exporte enthalten nur wiederverwendbare Elementinhalte. Besitzer, Berechtigungen, Aktivitaetsresultate und private Metadaten werden nicht exportiert.',
+      exportElementsPackageInfo:
+        'Verknuepfte Antwort-Sammlungen werden automatisch eingeschlossen, wenn Sie Bearbeitungsrechte darauf haben.',
+      packageAnswerCollections: 'Antwort-Sammlungen',
+      packageAnswerCollectionsExportDescription:
+        '{numCollections} verknuepfte Antwort-Sammlungen werden in das ZIP-Paket aufgenommen.',
+      packageAnswerCollectionsImportDescription:
+        '{numCollections} Antwort-Sammlungen werden vor den ausgewaehlten Elementen erstellt.',
+      packageAnswerCollectionsEmpty:
+        'Dieses Paket enthaelt keine Antwort-Sammlungen.',
+      packageAnswerCollectionEntries: '{count} Eintraege',
+      packageAnswerCollectionUsedBy: 'Verwendet von: {elements}',
+      packageAnswerCollectionMoreEntries: '+{count} weitere',
+      packagePreviewLoading: 'Paketinhalt wird geprueft...',
+      packagePreviewError:
+        'Der Paketinhalt konnte nicht geprueft werden. Bitte pruefen Sie Ihre Berechtigungen.',
+      packageElementExportPermissionError:
+        'Einige ausgewaehlte Elemente koennen nicht exportiert werden. Sie benoetigen Bearbeitungsrechte auf allen ausgewaehlten Elementen.',
+      packageAnswerCollectionExportPermissionError:
+        'Der Export wurde blockiert, weil mindestens eine verknuepfte Antwort-Sammlung nicht eingeschlossen werden kann. Sie benoetigen Bearbeitungsrechte auf allen verknuepften Antwort-Sammlungen.',
+      uploadElementsFile: 'ZIP-Paket hochladen',
+      uploadElementsZipDescription:
+        'Ziehen Sie ein KlickerUZH Elemente-ZIP-Paket hierher oder klicken Sie, um eine Datei auszuwaehlen.',
+      dropElementsZip: 'Legen Sie das ZIP-Paket hier ab.',
+      reviewElementsBeforeImport: 'Elemente pruefen',
+      elementImportEmptyState:
+        'Laden Sie ein gueltiges Elementpaket hoch, um den Inhalt zu pruefen.',
+      elementImportPreviewEmptyState:
+        'Waehlen Sie eine Vorschau, um ein Element vor dem Import zu pruefen.',
+      elementImportPreview: 'Vorschau',
+      elementImportSelectionSummary:
+        '{selected}/{total} Elemente fuer den Import ausgewaehlt',
+      importSelectedElements: 'Ausgewaehlte Elemente importieren',
+      elementImportValidationSuccess:
+        '{number} Elemente sind bereit fuer den Import.',
+      elementImportUploadFailed:
+        'Das Paket konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut.',
+      elementImportParseError:
+        'Das Paket konnte nicht gelesen werden. Bitte laden Sie eine gueltige ZIP-Datei hoch.',
+      elementImportInvalidFile:
+        'Die Datei entspricht nicht dem KlickerUZH Elementpaket-Format.',
+      elementImportAnswerCollectionRequired:
+        'Das Element "{name}" benoetigt eine Antwort-Sammlung. Exportieren und importieren Sie zuerst die benoetigte Antwort-Sammlung.',
+      elementImportAnswerCollectionMissing:
+        'Die Antwort-Sammlung {id} fehlt oder ist nicht zugaenglich. Importieren oder teilen Sie die Antwort-Sammlung, bevor Sie diese Elemente importieren.',
+      elementImportAnswerCollectionItemsMissing:
+        'Die Antwort-Sammlung {id} enthaelt nicht die benoetigten Eintraege. Bitte verwenden Sie die passende Antwort-Sammlung, bevor Sie diese Elemente importieren.',
+      elementImportNoElementsSelected:
+        'Waehlen Sie mindestens ein Element fuer den Import aus.',
+      elementImportSuccess: '{number} Elemente wurden erfolgreich importiert.',
+      elementImportPartialError:
+        '{number} Elemente wurden importiert, der restliche Import ist jedoch fehlgeschlagen. Bitte pruefen Sie die Datei und versuchen Sie es erneut.',
+      elementImportError:
+        'Die Elemente konnten nicht importiert werden. Bitte pruefen Sie die Datei und versuchen Sie es erneut.',
+      elementDownloadFailed: 'Die Elemente konnten nicht exportiert werden.',
+      answerCollectionDownloadFailed:
+        'Die Antwort-Sammlung konnte nicht exportiert werden.',
+      downloadElementsPackage: 'Elementpaket herunterladen',
+      downloadElementsJson: 'Elemente-JSON herunterladen',
+      downloadAnswerCollectionJson: 'Antwort-Sammlung-JSON herunterladen',
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',

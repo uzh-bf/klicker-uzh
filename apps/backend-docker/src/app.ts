@@ -3,7 +3,14 @@ import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import {
+  decodeLocalImportExportPackageBlobName,
+  enhanceContext,
+  isLocalImportExportPackageStorageEnabled,
+  readLocalImportExportPackageBlob,
+  schema,
+  writeLocalImportExportPackageBlob,
+} from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -190,6 +197,40 @@ function prepareApp({
   app.use('/healthz', function (req, res) {
     res.send('OK')
   })
+
+  if (isLocalImportExportPackageStorageEnabled()) {
+    app.put(
+      '/api/import-export-packages/:blobName',
+      express.raw({ type: '*/*', limit: '12mb' }),
+      async (req, res) => {
+        try {
+          const blobName = decodeLocalImportExportPackageBlobName(
+            req.params.blobName
+          )
+          await writeLocalImportExportPackageBlob(blobName, req.body)
+          res.status(201).send('OK')
+        } catch (error) {
+          console.error('Local import/export package upload failed:', error)
+          res.status(400).send('Invalid package reference.')
+        }
+      }
+    )
+
+    app.get('/api/import-export-packages/:blobName', async (req, res) => {
+      try {
+        const blobName = decodeLocalImportExportPackageBlobName(
+          req.params.blobName
+        )
+        const buffer = await readLocalImportExportPackageBlob(blobName)
+        res.setHeader('Content-Type', 'application/zip')
+        res.setHeader('Cache-Control', 'no-store')
+        res.send(buffer)
+      } catch (error) {
+        console.error('Local import/export package download failed:', error)
+        res.status(404).send('Package not found.')
+      }
+    })
+  }
 
   app.use('/api/graphql', yogaApp as any)
 

@@ -1,6 +1,12 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
+export {
+  decodeLocalImportExportPackageBlobName,
+  isLocalImportExportPackageStorageEnabled,
+  readLocalImportExportPackageBlob,
+  writeLocalImportExportPackageBlob,
+} from './services/packageStorage.js'
 
 import builder from './builder.js'
 

@@ -1,7 +1,12 @@
-import { Page } from '@playwright/test'
+import { Page, TestInfo } from '@playwright/test'
+import { writeFile } from 'node:fs/promises'
 import dmQuestionsData from '../../cypress/cypress/fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
-import { chooseActivityAction } from '../util/actions.js'
+import {
+  chooseActionByTestId,
+  chooseActivityAction,
+  openActionMenuByTestId,
+} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -10,6 +15,7 @@ import {
   LECTURER_INST_EMAIL,
   LECTURER_INST_SHORTNAME,
   LECTURER_SHORTNAME,
+  URL_MANAGE,
 } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -412,6 +418,265 @@ async function confirmDeletionModal(page: Page, confirmationTestIds: string[]) {
 
   await expect(confirmButton).toBeEnabled()
   await confirmButton.click()
+}
+
+const packageEntries = ['Package Alpha', 'Package Beta', 'Package Gamma']
+const packageChoices: Choice[] = [
+  { value: 'Package answer A', correct: true },
+  { value: 'Package answer B', correct: false },
+]
+
+function packageNames(suffix: string) {
+  return {
+    collection: `PW Package Collection ${suffix}`,
+    singleChoice: `PW Package SC ${suffix}`,
+    selection: `PW Package SE ${suffix}`,
+  }
+}
+
+async function seedPackageElements({
+  page,
+  suffix,
+  userId = LECTURER_ID,
+}: {
+  page: Page
+  suffix: string
+  userId?: string
+}) {
+  const names = packageNames(suffix)
+
+  await createAnswerCollection({
+    name: names.collection,
+    description: `Answer collection for ${suffix}`,
+    entries: packageEntries,
+    userId,
+  })
+  await createQuestionSC({
+    name: names.singleChoice,
+    content: `Single choice package content ${suffix}`,
+    choices: packageChoices,
+    userId,
+  })
+  await createQuestionSE({
+    name: names.selection,
+    content: `Selection package content ${suffix}`,
+    numberOfInputs: 1,
+    collectionName: names.collection,
+    correctAnswers: [packageEntries[0]],
+    userId,
+  })
+
+  await page.goto(process.env.URL_MANAGE ?? URL_MANAGE, { waitUntil: 'commit' })
+  await expect(page.getByTestId('elements-search-input')).toBeVisible()
+  await validateElement(page, names.singleChoice)
+  await validateElement(page, names.selection)
+
+  return names
+}
+
+async function selectElementForPackage(page: Page, elementName: string) {
+  await page.getByTestId('elements-search-input').clear()
+  await page.getByTestId('elements-search-input').fill(elementName)
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId(`element-item-${elementName}`)).toBeVisible()
+  await page.getByTestId(`element-checkbox-${elementName}`).click()
+}
+
+function getSharedSearchTerm(elementNames: string[]) {
+  if (elementNames.length <= 1) {
+    return elementNames[0]
+  }
+
+  let suffix = elementNames[0]
+  for (const elementName of elementNames.slice(1)) {
+    while (suffix && !elementName.endsWith(suffix)) {
+      suffix = suffix.slice(1)
+    }
+  }
+
+  return suffix.trim() || elementNames[0]
+}
+
+async function selectElementsForPackage(page: Page, elementNames: string[]) {
+  await page.getByTestId('elements-search-input').clear()
+  await page
+    .getByTestId('elements-search-input')
+    .fill(getSharedSearchTerm(elementNames))
+  await page.keyboard.press('Enter')
+
+  for (const elementName of elementNames) {
+    await expect(page.getByTestId(`element-item-${elementName}`)).toBeVisible()
+    await page.getByTestId(`element-checkbox-${elementName}`).click()
+  }
+}
+
+async function expectElementSearchResultCount(
+  page: Page,
+  elementName: string,
+  count: number
+) {
+  await page.getByTestId('elements-search-input').clear()
+  await page.getByTestId('elements-search-input').fill(elementName)
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId(`element-item-${elementName}`)).toHaveCount(
+    count
+  )
+  await page.getByTestId('elements-search-input').clear()
+}
+
+async function openExportPackageModal(page: Page, elementNames: string[]) {
+  if (elementNames.length === 1) {
+    await selectElementForPackage(page, elementNames[0])
+  } else {
+    await selectElementsForPackage(page, elementNames)
+  }
+
+  await page.getByTestId('elements-download').click()
+  await expect(
+    page.getByTestId('download-selected-elements-package')
+  ).toBeVisible()
+}
+
+async function openElementsLibraryPage(page: Page) {
+  await page.getByTestId('library').click()
+  await expect(page.getByTestId('elements-search-input')).toBeVisible()
+}
+
+async function openAnswerCollectionsPage(page: Page) {
+  await page.getByTestId('resources').click()
+  await page.getByTestId('answer-collections').click()
+  await expect(page.getByTestId('answer-collection-list')).toBeVisible()
+}
+
+async function shareAnswerCollectionWithUser(
+  page: Page,
+  {
+    collectionName,
+    shortnameOrEmail,
+    expectedPermissionKey = shortnameOrEmail,
+    permission,
+  }: {
+    collectionName: string
+    shortnameOrEmail: string
+    expectedPermissionKey?: string
+    permission: string
+  }
+) {
+  await openAnswerCollectionsPage(page)
+  await chooseActionByTestId(
+    page,
+    `answer-collection-actions-${collectionName}`,
+    'share-answer-collection'
+  )
+  await shareElementWithUser(page, {
+    shortnameOrEmail,
+    expectedPermissionKey,
+    permission,
+  })
+  await page.getByTestId('close-share-object').click()
+}
+
+async function verifyReadOnlyAnswerCollectionVisible(
+  page: Page,
+  collectionName: string,
+  entries: string[]
+) {
+  await openAnswerCollectionsPage(page)
+  await expect(
+    page.getByTestId(`answer-collection-${collectionName}`)
+  ).toBeVisible()
+  await openActionMenuByTestId(
+    page,
+    `answer-collection-actions-${collectionName}`,
+    'view-answer-collection'
+  )
+  await expect(page.getByTestId('view-answer-collection')).toBeVisible()
+  await expect(page.getByTestId('edit-answer-collection')).not.toBeVisible()
+  await page.getByTestId('view-answer-collection').click()
+  await page.getByTestId('open-collection-options').click()
+
+  for (const [index, entry] of entries.entries()) {
+    await expect(
+      page.getByTestId(`viewing-collection-answer-${index}`)
+    ).toContainText(entry)
+  }
+
+  await page.getByTestId('close-viewing-collection-modal').click()
+  await expect(
+    page.getByTestId('close-viewing-collection-modal')
+  ).not.toBeAttached()
+}
+
+async function downloadElementPackage({
+  page,
+  testInfo,
+  elementNames,
+}: {
+  page: Page
+  testInfo: TestInfo
+  elementNames: string[]
+}) {
+  await openExportPackageModal(page, elementNames)
+
+  await expect(
+    page.getByTestId('download-selected-elements-package')
+  ).toBeEnabled()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByTestId('download-selected-elements-package').click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toMatch(/\.zip$/)
+
+  const zipPath = testInfo.outputPath(download.suggestedFilename())
+  await download.saveAs(zipPath)
+  await page.getByTestId('close-element-download-modal').click()
+  await expect(
+    page.getByTestId('download-selected-elements-package')
+  ).not.toBeAttached()
+
+  return zipPath
+}
+
+async function openImportPackageModal(page: Page) {
+  await page.getByTestId('elements-upload').click()
+  await expect(page.getByTestId('element-import-dropzone')).toBeVisible()
+}
+
+async function uploadPackageFile(page: Page, filePath: string) {
+  await page
+    .getByTestId('element-import-dropzone')
+    .locator('input[type="file"]')
+    .setInputFiles(filePath)
+}
+
+async function importPackageFile(page: Page, filePath: string) {
+  await openImportPackageModal(page)
+  await uploadPackageFile(page, filePath)
+  await expect(page.getByTestId('element-import-preview-panel')).toBeVisible()
+  await expect(page.getByTestId('confirm-element-import')).toBeEnabled()
+  await page.getByTestId('confirm-element-import').click()
+  await expect(
+    page.getByTestId('element-import-preview-panel')
+  ).not.toBeAttached({
+    timeout: 30000,
+  })
+}
+
+async function expectAnswerCollectionCount(
+  page: Page,
+  collectionName: string,
+  count: number
+) {
+  await openAnswerCollectionsPage(page)
+  await expect(
+    page.getByTestId(`answer-collection-${collectionName}`)
+  ).toHaveCount(count)
+}
+
+async function expectNoPackageDownload(page: Page) {
+  const download = await page
+    .waitForEvent('download', { timeout: 2000 })
+    .catch(() => null)
+  expect(download).toBeNull()
 }
 
 test.describe('Create different types of elements (with and without sample solution) and edit them', () => {
@@ -2308,6 +2573,282 @@ test.describe('Create different types of elements (with and without sample solut
         canEdit: true,
         canOpenActions: true,
       })
+    })
+  })
+
+  test.describe('Part 7: Element import/export packages', () => {
+    test.beforeEach(async ({ loginLecturer }) => {
+      await loginLecturer()
+    })
+
+    test('Owner can export selected elements as a ZIP package', async ({
+      page,
+    }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `export ${testInfo.workerIndex}`,
+      })
+
+      await openExportPackageModal(page, [names.singleChoice, names.selection])
+      await expect(
+        page.getByTestId('element-export-answer-collections-overview')
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('element-package-answer-collection-0')
+      ).toContainText(names.collection)
+      await expect(
+        page.getByTestId('download-selected-elements-package')
+      ).toBeEnabled()
+      const downloadPromise = page.waitForEvent('download')
+      await page.getByTestId('download-selected-elements-package').click()
+      const download = await downloadPromise
+
+      expect(download.suggestedFilename()).toMatch(/\.zip$/)
+    })
+
+    test('Downloaded package can be imported back with inline preview in the same modal', async ({
+      page,
+    }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `roundtrip ${testInfo.workerIndex}`,
+      })
+      const zipPath = await downloadElementPackage({
+        page,
+        testInfo,
+        elementNames: [names.singleChoice, names.selection],
+      })
+
+      await openImportPackageModal(page)
+      await uploadPackageFile(page, zipPath)
+
+      const dialog = page.getByRole('dialog')
+      const previewPanel = page.getByTestId('element-import-preview-panel')
+      await expect(dialog).toHaveCount(1)
+      await expect(
+        page.getByTestId('element-import-answer-collections-overview')
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('element-package-answer-collection-0')
+      ).toContainText(names.collection)
+      await expect(previewPanel).toBeVisible()
+      await expect(page.getByTestId('element-import-0')).toBeVisible()
+
+      const modalBefore = await dialog.first().boundingBox()
+      const panelBefore = await previewPanel.boundingBox()
+      await page.getByTestId('preview-imported-element-0').click()
+      await expect(
+        page.getByTestId('element-import-preview-content')
+      ).toBeVisible()
+      await expect(dialog).toHaveCount(1)
+      await expect(previewPanel).toBeVisible()
+
+      const modalAfter = await dialog.first().boundingBox()
+      const panelAfter = await previewPanel.boundingBox()
+      expect(
+        Math.abs((modalAfter?.width ?? 0) - (modalBefore?.width ?? 0))
+      ).toBeLessThan(40)
+      expect(
+        Math.abs((modalAfter?.height ?? 0) - (modalBefore?.height ?? 0))
+      ).toBeLessThan(40)
+      expect(
+        Math.abs((panelAfter?.width ?? 0) - (panelBefore?.width ?? 0))
+      ).toBeLessThan(80)
+      expect(
+        Math.abs((panelAfter?.height ?? 0) - (panelBefore?.height ?? 0))
+      ).toBeLessThan(80)
+
+      await page.getByTestId('confirm-element-import').click()
+      await expect(
+        page.getByTestId('element-import-preview-panel')
+      ).not.toBeAttached({
+        timeout: 30000,
+      })
+
+      await page.getByTestId('elements-search-input').clear()
+      await page.getByTestId('elements-search-input').fill(names.singleChoice)
+      await page.keyboard.press('Enter')
+      await expect(
+        page.getByTestId(`element-item-${names.singleChoice}`)
+      ).toHaveCount(2)
+
+      await page.getByTestId('elements-search-input').clear()
+      await page.getByTestId('elements-search-input').fill(names.selection)
+      await page.keyboard.press('Enter')
+      await expect(
+        page.getByTestId(`element-item-${names.selection}`)
+      ).toHaveCount(2)
+    })
+
+    test('Package import creates private copies without carrying shared permissions', async ({
+      page,
+      loginLecturer,
+      loginInstitutionalCatalyst,
+      loginInstitutionalCatalyst2,
+      logoutUser,
+    }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `permission isolation ${testInfo.workerIndex}`,
+      })
+
+      await openShareModalForElement(page, names.selection)
+      await shareElementWithUser(page, {
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsWRITE,
+      })
+      await page.getByTestId('close-share-object').click()
+
+      await shareAnswerCollectionWithUser(page, {
+        collectionName: names.collection,
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsWRITE,
+      })
+
+      await openElementsLibraryPage(page)
+      const zipPath = await downloadElementPackage({
+        page,
+        testInfo,
+        elementNames: [names.selection],
+      })
+
+      await logoutUser()
+      await loginInstitutionalCatalyst()
+      await openElementsLibraryPage(page)
+      await expectElementSearchResultCount(page, names.selection, 1)
+      await expectAnswerCollectionCount(page, names.collection, 1)
+
+      await logoutUser()
+      await loginInstitutionalCatalyst2()
+      await openElementsLibraryPage(page)
+      await importPackageFile(page, zipPath)
+      await expectElementSearchResultCount(page, names.selection, 1)
+      await expectAnswerCollectionCount(page, names.collection, 1)
+
+      await logoutUser()
+      await loginLecturer()
+      await openElementsLibraryPage(page)
+      await expectElementSearchResultCount(page, names.selection, 1)
+      await expectAnswerCollectionCount(page, names.collection, 1)
+
+      await logoutUser()
+      await loginInstitutionalCatalyst()
+      await openElementsLibraryPage(page)
+      await expectElementSearchResultCount(page, names.selection, 1)
+      await expectAnswerCollectionCount(page, names.collection, 1)
+    })
+
+    test('Invalid package upload is rejected before import confirmation', async ({
+      page,
+    }, testInfo) => {
+      const invalidPackage = testInfo.outputPath('invalid-elements.zip')
+      await writeFile(invalidPackage, Buffer.from('not a zip package'))
+
+      await openImportPackageModal(page)
+      await uploadPackageFile(page, invalidPackage)
+
+      await expect(
+        page.getByTestId('element-import-package-error')
+      ).toContainText(messages.manage.elements.elementImportInvalidFile, {
+        timeout: 30000,
+      })
+      await expect(
+        page.getByTestId('element-import-preview-panel')
+      ).not.toBeAttached()
+      await expect(
+        page.getByTestId('element-import-answer-collections-overview')
+      ).not.toBeAttached()
+      await expect(
+        page.getByTestId('confirm-element-import')
+      ).not.toBeAttached()
+    })
+
+    test('READ permission cannot export an element package', async ({
+      page,
+      loginInstitutionalCatalyst,
+      logoutUser,
+    }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `read blocked ${testInfo.workerIndex}`,
+      })
+
+      await openShareModalForElement(page, names.singleChoice)
+      await shareElementWithUser(page, {
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsREAD,
+      })
+      await page.getByTestId('close-share-object').click()
+
+      await logoutUser()
+      await loginInstitutionalCatalyst()
+      await openExportPackageModal(page, [names.singleChoice])
+      await expect(
+        page.getByTestId('element-export-answer-collections-overview')
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('download-selected-elements-package')
+      ).toBeDisabled()
+      await expectNoPackageDownload(page)
+      await expect(
+        page.getByTestId('element-export-package-error')
+      ).toBeVisible()
+    })
+
+    test('READ access to a linked answer collection is visible but cannot be exported in a package', async ({
+      page,
+      loginInstitutionalCatalyst,
+      logoutUser,
+    }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `collection read blocked ${testInfo.workerIndex}`,
+      })
+
+      await openShareModalForElement(page, names.selection)
+      await shareElementWithUser(page, {
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsWRITE,
+      })
+      await page.getByTestId('close-share-object').click()
+
+      await shareAnswerCollectionWithUser(page, {
+        collectionName: names.collection,
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsREAD,
+      })
+
+      await logoutUser()
+      await loginInstitutionalCatalyst()
+      await verifyReadOnlyAnswerCollectionVisible(
+        page,
+        names.collection,
+        packageEntries
+      )
+      await openElementsLibraryPage(page)
+      await openExportPackageModal(page, [names.selection])
+
+      const overview = page.getByTestId(
+        'element-export-answer-collections-overview'
+      )
+      await expect(overview).toBeVisible()
+      await expect(overview).toContainText(
+        messages.manage.elements.packageAnswerCollectionExportPermissionError
+      )
+      await expect(overview).not.toContainText(names.collection)
+      for (const entry of packageEntries) {
+        await expect(overview).not.toContainText(entry)
+      }
+
+      await expect(
+        page.getByTestId('download-selected-elements-package')
+      ).toBeDisabled()
+      await expectNoPackageDownload(page)
+      await expect(
+        page.getByTestId('element-export-package-error')
+      ).toContainText(
+        messages.manage.elements.packageAnswerCollectionExportPermissionError
+      )
     })
   })
 })
