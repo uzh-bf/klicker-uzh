@@ -87,6 +87,7 @@ MR/PR: unknown
 
 * **2026-07-06**: Plan written, reviewed, simplified, and committed to project directory.
 * **2026-07-06**: Slice 1 completed. Added `VerifiableCredential` model and `CredentialType` enum, ran dev database migrations, synced schemas, and verified successful compilation.
+* **2026-07-06**: Slice 2 completed. Created backend verification services and GraphQL resolvers/queries/mutations for issuing, resolving, listing, and revoking credentials. Added and verified comprehensive Vitest unit tests.
 
 ---
 
