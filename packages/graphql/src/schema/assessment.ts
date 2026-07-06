@@ -3,6 +3,7 @@ import {
   ActivityStudentPerformance as ActivityStudentPerformanceType,
   AssessmentResultsCourse as AssessmentResultsCourseType,
   AssessmentResultsLiveQuiz as AssessmentResultsLiveQuizType,
+  HistogramBin as HistogramBinType,
   StudentAssessmentBlockResponse as StudentAssessmentBlockResponseType,
   StudentAssessmentInstanceResponse as StudentAssessmentInstanceResponseType,
   StudentAssessmentResultsItem as StudentAssessmentResultsItemType,
@@ -24,7 +25,22 @@ export interface IStudentAssessmentResults {
   practiceQuizzes: ActivityStudentPerformanceType[]
   microLearnings: ActivityStudentPerformanceType[]
   groupActivities: ActivityStudentPerformanceType[]
+  percentile?: number | null
+  histogram?: HistogramBinType[] | null
+  hasEnoughData?: boolean | null
+  participantEmail?: string | null
+  courseName?: string | null
 }
+export const HistogramBinRef =
+  builder.objectRef<HistogramBinType>('HistogramBin')
+export const HistogramBin = HistogramBinRef.implement({
+  fields: (t) => ({
+    binStart: t.exposeFloat('binStart'),
+    binEnd: t.exposeFloat('binEnd'),
+    count: t.exposeInt('count'),
+  }),
+})
+
 export const StudentAssessmentResultsRef =
   builder.objectRef<IStudentAssessmentResults>('StudentAssessmentResults')
 export const StudentAssessmentResults = StudentAssessmentResultsRef.implement({
@@ -41,6 +57,14 @@ export const StudentAssessmentResults = StudentAssessmentResultsRef.implement({
     groupActivities: t.expose('groupActivities', {
       type: [ActivityStudentPerformanceRef],
     }),
+    percentile: t.exposeFloat('percentile', { nullable: true }),
+    histogram: t.expose('histogram', {
+      type: [HistogramBinRef],
+      nullable: true,
+    }),
+    hasEnoughData: t.exposeBoolean('hasEnoughData', { nullable: true }),
+    participantEmail: t.exposeString('participantEmail', { nullable: true }),
+    courseName: t.exposeString('courseName', { nullable: true }),
   }),
 })
 

@@ -1119,6 +1119,27 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noPointsCorrection: '+ 0 Points (no change): {reason}',
       nonZeroPointCorrection:
         '{points} Points ({basePoints} base points, {correctnessPoints} correctness points, {bonusPoints} bonus points): {reason}',
+      performanceInsightsTitle: 'Performance Insights & Peer Comparison',
+      percentileText: 'You are in the {percentile}th percentile.',
+      percentileExplanation:
+        'The percentile indicates the percentage of participants who achieved a score less than or equal to yours. For example, a percentile of 75% means your performance was equal to or better than 75% of the peer group.',
+      histogramTitle: 'Score Distribution',
+      histogramDescription:
+        'The chart below shows the distribution of overall points achieved by students in this course. Your position is highlighted.',
+      notEnoughDataForComparison:
+        'At least 5 participants with results are required for a peer comparison. This section will be enabled once enough data is available.',
+      exportReportButton: 'Export Performance Report (HTML)',
+      exportReportExplanation:
+        'Download a detailed, didactically structured report with your points overview and peer comparison as an HTML file.',
+      privacyAndTransparencyNotice:
+        'Privacy & Transparency Notice: All peer data is fully anonymized and aggregated into bins. No individual scores or identifiers of other students are transmitted or displayed.',
+      courseNameLabel: 'Course',
+      studentEmailLabel: 'Student',
+      pointsSummaryLabel: 'Points Summary',
+      yourScoreLabel: 'You',
+      countLabel: 'Count',
+      binLabel: 'Points Range',
+      privacyNoticeTitle: 'Privacy & Transparency',
     },
   },
   manage: {

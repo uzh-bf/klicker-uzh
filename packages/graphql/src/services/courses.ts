@@ -4,6 +4,7 @@ import {
   ActivityType,
   AssessmentResultsCourse,
   AssessmentResultsLiveQuiz,
+  HistogramBin,
   PointCorrectionType,
   SharingType,
   StudentAssessmentBlockResponse,
@@ -664,6 +665,9 @@ export async function getStudentAssessmentResults(
       practiceQuizzes: [],
       microLearnings: [],
       groupActivities: [],
+      percentile: null,
+      histogram: null,
+      hasEnoughData: false,
     }
   }
 
@@ -675,11 +679,92 @@ export async function getStudentAssessmentResults(
     return acc.concat(quizResults)
   }, [])
 
+  const allStudentResults = await calculateCourseScoresInternal(
+    { courseId },
+    ctx
+  )
+
+  let percentile: number | null = null
+  let histogram: HistogramBin[] | null = null
+  let hasEnoughData = false
+
+  if (allStudentResults && allStudentResults.studentResults.length >= 5) {
+    hasEnoughData = true
+    const scores = allStudentResults.studentResults.map(
+      (r) => r.basePoints + r.correctnessPoints + r.bonusPoints
+    )
+
+    // Find user's score in allStudentResults
+    const userResult = allStudentResults.studentResults.find(
+      (r) => r.participantId === participantId
+    )
+
+    if (userResult) {
+      const userScore =
+        userResult.basePoints +
+        userResult.correctnessPoints +
+        userResult.bonusPoints
+
+      // Calculate percentile: number of students with score <= userScore / total students
+      const countLessThanOrEqual = scores.filter((s) => s <= userScore).length
+      percentile = Math.round((countLessThanOrEqual / scores.length) * 100)
+    }
+
+    // Calculate histogram
+    // max possible score across all ended live quizzes
+    const maxPossiblePoints =
+      allStudentResults.availableBasePoints +
+      allStudentResults.availableCorrectnessPoints +
+      allStudentResults.availableBonusPoints
+
+    if (maxPossiblePoints > 0) {
+      const numBins = 10
+      const binWidth = maxPossiblePoints / numBins
+      histogram = []
+
+      for (let i = 0; i < numBins; i++) {
+        const binStart = i * binWidth
+        const binEnd =
+          i === numBins - 1 ? maxPossiblePoints : (i + 1) * binWidth
+
+        // Count how many scores fall in this bin
+        const count = scores.filter((s) => {
+          if (i === numBins - 1) {
+            return s >= binStart && s <= binEnd
+          }
+          return s >= binStart && s < binEnd
+        }).length
+
+        histogram.push({
+          binStart: Math.round(binStart * 100) / 100,
+          binEnd: Math.round(binEnd * 100) / 100,
+          count,
+        })
+      }
+    }
+  }
+
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: participantId },
+    include: {
+      accounts: {
+        where: { ssoType: 'uzh' },
+      },
+    },
+  })
+  const email =
+    participant?.accounts[0]?.ssoEmail ?? participant?.email ?? 'Missing E-Mail'
+
   return {
     liveQuizzes: liveQuizResults,
     practiceQuizzes: [],
     microLearnings: [],
     groupActivities: [],
+    percentile,
+    histogram,
+    hasEnoughData,
+    participantEmail: email,
+    courseName: course.name,
   }
 }
 
@@ -852,12 +937,12 @@ export async function getAssessmentResultsLiveQuiz(
   }
 }
 
-export async function getAssessmentResultsCourse(
+export async function calculateCourseScoresInternal(
   {
     courseId,
     preferredAffiliation = 'uzh',
   }: { courseId: string; preferredAffiliation?: string },
-  ctx: ContextWithUser
+  ctx: { prisma: DB.PrismaClient }
 ): Promise<AssessmentResultsCourse | null> {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, isAssessmentEnabled: true },
@@ -1007,6 +1092,19 @@ export async function getAssessmentResultsCourse(
     ...courseResults,
     studentResults: Object.values(courseResults.studentResults),
   }
+}
+
+export async function getAssessmentResultsCourse(
+  {
+    courseId,
+    preferredAffiliation = 'uzh',
+  }: { courseId: string; preferredAffiliation?: string },
+  ctx: ContextWithUser
+): Promise<AssessmentResultsCourse | null> {
+  return await calculateCourseScoresInternal(
+    { courseId, preferredAffiliation },
+    ctx
+  )
 }
 
 export async function getLiveQuizStudentAssessmentResponses(

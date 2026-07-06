@@ -12,5 +12,14 @@ query GetStudentAssessmentResults($courseId: String!) {
     groupActivities {
       ...ActivityStudentPerformanceData
     }
+    percentile
+    hasEnoughData
+    histogram {
+      binStart
+      binEnd
+      count
+    }
+    participantEmail
+    courseName
   }
 }

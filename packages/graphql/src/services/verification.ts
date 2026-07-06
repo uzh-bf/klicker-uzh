@@ -37,7 +37,6 @@ export async function getCredentialByToken({
   return await prisma.verifiableCredential.findUnique({
     where: {
       token,
-      isRevoked: false,
     },
     include: {
       course: true,

@@ -1,0 +1,11 @@
+query QGetCourseVerificationRecords($courseId: String!) {
+  courseVerificationRecords(courseId: $courseId) {
+    id
+    token
+    type
+    metadata
+    isRevoked
+    issuedAt
+    expiresAt
+  }
+}

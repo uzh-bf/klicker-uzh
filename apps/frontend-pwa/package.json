@@ -43,6 +43,7 @@
     "react": "19.1.2",
     "react-confetti-explosion": "3.0.3",
     "react-dom": "19.1.2",
+    "react-qrcode-logo": "3.0.0",
     "react-select": "5.10.2",
     "recharts": "3.0.2",
     "remeda": "2.15.0",

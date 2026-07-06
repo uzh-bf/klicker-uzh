@@ -1005,6 +1005,12 @@ export type StudentAssessmentResultsItem = {
   correctnessPoints: number
   bonusPoints: number
 }
+export type HistogramBin = {
+  binStart: number
+  binEnd: number
+  count: number
+}
+
 export type AssessmentResultsLiveQuiz = {
   name: string
   quizBasePoints: number

@@ -1008,6 +1008,11 @@ type CourseSummary {
   numOfPracticeQuizzes: Int!
 }
 
+enum CredentialType {
+  COURSE_ASSESSMENT_INSIGHTS
+  COURSE_COMPLETION_CERTIFICATE
+}
+
 enum CreditResetPeriod {
   BIWEEKLY
   DAILY
@@ -1549,6 +1554,12 @@ type GroupMessage {
   updatedAt: Date!
 }
 
+type HistogramBin {
+  binEnd: Float!
+  binStart: Float!
+  count: Int!
+}
+
 union InstanceEvaluation = CaseStudyInstanceEvaluation | ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
 
 type InstanceFeedback {
@@ -1837,6 +1848,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
+  issueCredential(courseId: String!, metadata: Json!, type: CredentialType!): VerifiableCredential!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1881,6 +1893,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
+  revokeCredential(id: String!): VerifiableCredential!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
@@ -2333,6 +2346,7 @@ type Query {
   countCatalogSharingRequests: Int!
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
+  courseVerificationRecords(courseId: String!): [VerifiableCredential!]!
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   feedbacks(quizId: String!): [Feedback!]
@@ -2430,6 +2444,7 @@ type Query {
   userScope: UserLoginScope
   userTags: [Tag!]
   validateAvailableLiveQuiz(courseId: String!, quizId: String!): Boolean
+  verifiableCredential(token: String!): VerifiableCredential
 }
 
 type QuestionFeedback {
@@ -2732,9 +2747,14 @@ type StudentAssessmentInstanceResponse {
 }
 
 type StudentAssessmentResults {
+  courseName: String
   groupActivities: [ActivityStudentPerformance!]!
+  hasEnoughData: Boolean
+  histogram: [HistogramBin!]
   liveQuizzes: [ActivityStudentPerformance!]!
   microLearnings: [ActivityStudentPerformance!]!
+  participantEmail: String
+  percentile: Float
   practiceQuizzes: [ActivityStudentPerformance!]!
 }
 
@@ -2917,6 +2937,17 @@ enum UserRole {
   PARTICIPANT
   TEMPORARY_PARTICIPANT
   USER
+}
+
+type VerifiableCredential {
+  course: Course!
+  expiresAt: Date
+  id: ID!
+  isRevoked: Boolean!
+  issuedAt: Date!
+  metadata: Json!
+  token: String!
+  type: CredentialType!
 }
 
 type WeekdayActivityAnalytics {

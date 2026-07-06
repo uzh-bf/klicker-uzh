@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
-import { faListCheck } from '@fortawesome/free-solid-svg-icons'
+import { faAward, faListCheck } from '@fortawesome/free-solid-svg-icons'
 import { GetAssessmentResultsCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useState } from 'react'
 import Layout from '../../../../components/Layout'
+import CourseVerifiableCredentialsModal from '../../../../components/courses/CourseVerifiableCredentialsModal'
 import PointCorrectionsModal from '../../../../components/courses/PointCorrectionsModal'
 import PreviousCorrectionsListModal from '../../../../components/courses/pointCorrections/PreviousCorrectionsListModal'
 import AssessmentStudentResultsTable, {
@@ -24,6 +25,7 @@ function CourseAssessmentResults() {
   const [pageSizeOption, setPageSizeOption] = useState<PageSizeOption>('15')
   const [previousCorrectionsModal, setPreviousCorrectionsModal] =
     useState(false)
+  const [credentialsModal, setCredentialsModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<{
     id: string
     email: string
@@ -66,6 +68,16 @@ function CourseAssessmentResults() {
         <H2>{`${t('manage.assessment.assessmentResults')} - ${t('shared.generic.course')}: ${course.name}`}</H2>
 
         <div className="flex flex-row gap-2">
+          <Button
+            onClick={() => setCredentialsModal(true)}
+            className={{
+              root: 'bg-uzh-blue h-8 border-none text-white hover:bg-opacity-95',
+            }}
+            data={{ cy: 'assessment-quiz-credentials' }}
+          >
+            <Button.Icon icon={faAward} />
+            <Button.Label>Zertifikate / Credentials</Button.Label>
+          </Button>
           {course.numberOfCorrections > 0 && (
             <Button
               onClick={() => setPreviousCorrectionsModal(true)}
@@ -132,6 +144,13 @@ function CourseAssessmentResults() {
         <PreviousCorrectionsListModal
           courseId={router.query.id as string}
           onClose={() => setPreviousCorrectionsModal(false)}
+        />
+      ) : null}
+
+      {credentialsModal && router.query.id ? (
+        <CourseVerifiableCredentialsModal
+          courseId={router.query.id as string}
+          onClose={() => setCredentialsModal(false)}
         />
       ) : null}
     </Layout>

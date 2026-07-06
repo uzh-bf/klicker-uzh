@@ -1120,6 +1120,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noPointsCorrection: '+ 0 Punkte (keine Änderung): {reason}',
       nonZeroPointCorrection:
         '{points} Punkte ({basePoints} Basispunkte, {correctnessPoints} Korrektheitspunkte, {bonusPoints} Bonuspunkte): {reason}',
+      performanceInsightsTitle: 'Performance-Insights & Peer-Vergleich',
+      percentileText: 'Du befindest dich im {percentile}. Perzentil.',
+      percentileExplanation:
+        'Das Perzentil gibt an, wie viel Prozent der Teilnehmenden eine tiefere oder gleiche Punktzahl als du erreicht haben. Ein Perzentil von 75% bedeutet beispielsweise, dass deine Leistung gleich gut oder besser als 75% der Peer-Gruppe war.',
+      histogramTitle: 'Punkteverteilung im Kurs',
+      histogramDescription:
+        'Das folgende Diagramm zeigt die Verteilung der erreichten Gesamtpunktzahlen aller Studierenden in diesem Kurs. Dein Standpunkt ist hervorgehoben.',
+      notEnoughDataForComparison:
+        'Für einen Peer-Vergleich sind mindestens 5 Teilnehmende mit Resultaten erforderlich. Sobald genügend Daten vorliegen, wird diese Übersicht freigeschaltet.',
+      exportReportButton: 'Performance-Bericht exportieren (HTML)',
+      exportReportExplanation:
+        'Lade einen detaillierten, didaktisch aufbereiteten Bericht mit deiner Punkteübersicht und dem Peer-Vergleich als HTML-Datei herunter.',
+      privacyAndTransparencyNotice:
+        'Hinweis zu Datenschutz & Transparenz: Alle Peer-Daten sind vollständig anonymisiert und in grössere Bänder (Klassen) aggregiert. Es werden zu keinem Zeitpunkt einzelne Punktzahlen oder persönliche Identifikatoren anderer Studierender übertragen oder angezeigt.',
+      courseNameLabel: 'Kurs',
+      studentEmailLabel: 'Studierende/r',
+      pointsSummaryLabel: 'Punkteübersicht',
+      yourScoreLabel: 'Du',
+      countLabel: 'Anzahl',
+      binLabel: 'Punktebereich',
+      privacyNoticeTitle: 'Datenschutz & Transparenz',
     },
   },
   manage: {

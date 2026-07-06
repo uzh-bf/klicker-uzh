@@ -74,7 +74,7 @@ builder.queryFields((t) => ({
       }
       const hasWriteAccess = await checkAccess(
         [{ courseId, minimumPermissionLevel: DB.PermissionLevel.WRITE }],
-        ctx
+        ctx as any
       )
       if (!hasWriteAccess) {
         throw new Error('Not authorized')
@@ -128,7 +128,7 @@ builder.mutationFields((t) => ({
             minimumPermissionLevel: DB.PermissionLevel.WRITE,
           },
         ],
-        ctx
+        ctx as any
       )
       if (!hasWriteAccess) {
         throw new Error('Not authorized')
