@@ -75,17 +75,21 @@ export function reduceCatalyst(acc: boolean, affiliation: string): boolean {
  */
 export function generateRandomString(length: number): string {
   let result = ''
-  let characters: string
-  for (let i = 0; i < length; i++) {
-    if (i === 0 || i === length - 1) {
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    } else {
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const characters =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const charactersLength = characters.length
+
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const randomValues = new Uint32Array(length)
+    crypto.getRandomValues(randomValues)
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(randomValues[i]! % charactersLength)
     }
-    const charactersLength = characters.length
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
+  } else {
+    // Fallback if Web Crypto is somehow unavailable
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength))
+    }
   }
   return result
 }
