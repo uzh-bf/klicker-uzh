@@ -6,7 +6,7 @@ import {
   checkMcpHealth,
   envFlag,
   envSource,
-} from '../../../util/mcpSmokeClient.js'
+} from '../../../util/mcpSmokeClient.mjs'
 
 const DEFAULT_URL = 'http://localhost:7080/mcp'
 const DEFAULT_PARTICIPANT_ID = '6f45065c-667f-4259-818c-c6f6b477eb48'

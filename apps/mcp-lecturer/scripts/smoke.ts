@@ -5,7 +5,7 @@ import {
   assertTools,
   checkMcpHealth,
   envSource,
-} from '../../../util/mcpSmokeClient.js'
+} from '../../../util/mcpSmokeClient.mjs'
 
 const DEFAULT_URL = 'http://localhost:7081/mcp'
 const DEFAULT_USER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
