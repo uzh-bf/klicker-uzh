@@ -200,9 +200,14 @@ Each PR: branch from `v3`, conventional-commit title, fill the PR template, run 
 
 - 2026-07-06: Plan created from readiness report + 6-PR review + multi-agent audit.
 - 2026-07-06: **PR A — Quick Wins** implemented and verified. All linting, formatting, typechecking, syncpack, check:prisma-sync, and check:agents-md pass successfully.
+- 2026-07-06: **PR B — CI context integrity** committed (`c5ced11a80`): job renames + job-level path filtering; `playwright-testing.yml` → `test-playwright.yml`. Note: branch-protection contexts on `v3` still need updating to the renamed jobs (settings change, owner action).
+- 2026-07-06: **Devcontainer consolidation** done on `feat/devcontainer-devnet`: #5120 + #5138 merged in, devrouter made optional via `docker-compose.devrouter.yml` overlay + localhost port publishing + post-start fallback (covers 2.1 stack + 2.4–2.6). #5119 is MERGEABLE but held per owner instruction.
+- 2026-07-06: **PR C — CI scoping** (handoff takeover): check-types.yml serial builds → turbo-filtered build (1.4); playwright shards 5→8 (1.5). `pnpm run check:all` passes. Pending: commit+push, close #4901 (1.6) and #3928 (2.2).
 
 ## Next Steps
 
-1. Review and submit PR A changes.
-2. Owner review/decisions for PR B (CI context integrity and branch-protection settings update).
+1. Commit + push PR C changes on `agent-readiness`; open the PR.
+2. Close superseded PRs #4901 (act) and #3928 (old devcontainer) with pointer comments.
+3. Owner: update branch-protection required contexts on `v3` to the renamed job names (PR B follow-through); decide merge timing for #5119.
+4. Continue with PR E (testing feedback loops, WS3) — WS1/WS2 items then largely done.
 3. Start PR B.

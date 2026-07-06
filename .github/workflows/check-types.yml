@@ -47,25 +47,14 @@ jobs:
           version: 11.5.0
           run_install: true
 
-      - name: Build relevant packages
+      - name: Build packages (turbo)
         if: steps.filter.outputs.should_run == 'true'
         run: |
-          cd packages/markdown
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../graphql
-          pnpm run build
-          cd ../hatchet
-          pnpm run build
-          cd ../word-cloud
-          pnpm run build
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm exec turbo run build --filter="...[origin/${{ github.base_ref }}...HEAD]"
+          else
+            pnpm exec turbo run build --filter="...[HEAD~1...HEAD]" || pnpm exec turbo run build
+          fi
 
       - name: Check the typescript types of all packages and apps
         if: steps.filter.outputs.should_run == 'true'
