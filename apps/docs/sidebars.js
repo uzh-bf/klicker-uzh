@@ -3,6 +3,7 @@ module.exports = {
     'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
+      'getting_started/graphql_schema',
     ],
     'Lecturer - Content': [
       'tutorials/supported_element_types',

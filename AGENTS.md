@@ -107,7 +107,7 @@ cypress/                   # E2E tests
 
 ## GraphQL Workflow
 
-Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment.
+Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment. The public schema definition is generated at [packages/graphql/src/public/schema.graphql](packages/graphql/src/public/schema.graphql).
 
 ## Database Workflow
 
@@ -149,6 +149,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Important Notes
 
+- **Task tracking**: ClickUp is the source of truth; GitHub Issues are not actively used.
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
 - If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
 - Never commit secrets, `.env` files, or credentials.

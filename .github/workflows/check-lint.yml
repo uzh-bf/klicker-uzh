@@ -6,12 +6,20 @@ on:
     paths:
       - apps/**
       - packages/**
+      - util/**
+      - .github/workflows/**
+      - AGENTS.md
+      - project/2026-07-06-agent-readiness-improvement-plan.md
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
     paths:
       - apps/**
       - packages/**
+      - util/**
+      - .github/workflows/**
+      - AGENTS.md
+      - project/2026-07-06-agent-readiness-improvement-plan.md
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -36,3 +44,7 @@ jobs:
         shell: bash
         run: |
           pnpm run lint
+      - name: Check Prisma schema sync drift
+        run: pnpm run check:prisma-sync
+      - name: Check AGENTS.md command smoke
+        run: pnpm run check:agents-md

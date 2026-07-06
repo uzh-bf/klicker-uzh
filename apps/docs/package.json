@@ -44,9 +44,9 @@
     "typescript": "~5.6.3"
   },
   "scripts": {
-    "build:docs": "docusaurus build",
+    "build:docs": "mkdir -p static && cp ../../packages/graphql/src/public/schema.graphql static/schema.graphql && docusaurus build",
     "deploy": "docusaurus deploy",
-    "dev:docs": "docusaurus start --port 5500",
+    "dev:docs": "mkdir -p static && cp ../../packages/graphql/src/public/schema.graphql static/schema.graphql && docusaurus start --port 5500",
     "docusaurus": "docusaurus",
     "examples": "docusaurus-examples",
     "rename-version": "docusaurus-rename-version",
