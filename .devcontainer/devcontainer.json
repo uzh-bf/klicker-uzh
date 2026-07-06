@@ -1,6 +1,9 @@
 {
   "name": "klicker-uzh",
   "dockerComposeFile": ["docker-compose.yml"],
+  "forwardPorts": [
+    3000, 3001, 3002, 3003, 3004, 3010, 3030, 4000, 7078, 8025, 8888, 5432
+  ],
   "service": "app",
   "workspaceFolder": "/workspaces/klicker-uzh",
   "overrideCommand": false,

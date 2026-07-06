@@ -3,14 +3,14 @@
 # the legacy per-repo Traefik + the `full`-profile prebuilt images). A single compose
 # project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
 #
-# Routing is delegated to devrouter over the shared external `devnet` network: NO
-# published host ports. The monorepo runs ALL apps in the ONE `app` container via
-# `turbo dev`; devrouter routes each hostname to that container's internal port
-# (api->3000, auth->3010, pwa->3001, manage->3002, control->3003, olat-api->3030,
-# response-api->7078; the 2 hatchet workers have no port). Infra (postgres, redis
-# x3, mailhog, hatchet) is reached BY COMPOSE DNS from the app container — only
-# postgres also joins devnet (for host tooling via db.*.localhost). `dev up` must
-# run before this stack starts so `devnet` exists. (GOTCHAS #11, #15)
+# By default, this stack runs in self-contained localhost port-based mode:
+# - postgres on db.klicker.localhost -> host port 5432
+# - mailhog UI -> host port 8025
+# - hatchet dashboard -> host port 8888
+# - all web applications published on localhost ports (3000-3010, 3030, 7078)
+#
+# To route through Traefik devrouter (https://*.klicker.localhost), use the
+# overlay file: `docker-compose.devrouter.yml`.
 services:
   # --- main database (klicker-prod + shadow/lti/qa/hatchet DBs via init.sql) ---
   postgres:
@@ -24,11 +24,10 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    ports:
+      - '5432:5432'
     networks:
-      default: {}
-      # devrouter SNI-routes db.klicker.localhost:5432 to this alias.
-      devnet:
-        aliases: [klicker-db]
+      - default
     volumes:
       # init.sql creates shadow + lti + qa + hatchet DBs and roles.
       - ../util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -50,6 +49,8 @@ services:
   # --- fake SMTP for dev email ---
   mailhog:
     image: mailhog/mailhog:latest
+    ports:
+      - '8025:8025'
     networks: [default]
 
   # --- Hatchet workflow engine (gRPC :7077, http :8888). Reached at hatchet:7077
@@ -68,6 +69,9 @@ services:
       SERVER_URL: http://hatchet:8888
       SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
       SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+    ports:
+      - '8888:8888'
+      - '7077:7077'
     volumes:
       - hatchet_lite_config:/config
     networks: [default]
@@ -122,28 +126,17 @@ services:
     init: true # tini PID1 reaps the dev servers' zombie children (GOTCHAS #10)
     env_file:
       - devcontainer.env
-    # No published ports: devrouter routes the five https://*.klicker.localhost
-    # hosts over devnet to this container's internal ports.
-    #
-    # Server-side reachability of the routed hosts: most app->app calls go via
-    # localhost:<port> intra-container (API_URL_SSR), but map the hosts to the
-    # host gateway + trust the mkcert CA so ANY server-side https fetch to a
-    # *.klicker.localhost host resolves and verifies cleanly. Never disable TLS
-    # verification. (GOTCHAS #3, #16)
-    extra_hosts:
-      - 'api.klicker.localhost:host-gateway'
-      - 'auth.klicker.localhost:host-gateway'
-      - 'pwa.klicker.localhost:host-gateway'
-      - 'manage.klicker.localhost:host-gateway'
-      - 'control.klicker.localhost:host-gateway'
-      - 'olat-api.klicker.localhost:host-gateway'
-      - 'response-api.klicker.localhost:host-gateway'
-      - 'lti.klicker.localhost:host-gateway'
-      - 'chat.klicker.localhost:host-gateway'
+    ports:
+      - '3000:3000' # api / assessment-api
+      - '3001:3001' # pwa / assessment-pwa
+      - '3002:3002' # manage
+      - '3003:3003' # control
+      - '3004:3004' # chat
+      - '3010:3010' # auth
+      - '3030:3030' # olat-api
+      - '7078:7078' # response-api
     networks:
-      default: {}
-      devnet:
-        aliases: [klicker-app]
+      - default
     volumes:
       - ..:/workspaces/klicker-uzh:cached
       # Named volume shadows host node_modules so Linux-native binaries (Prisma
@@ -153,27 +146,16 @@ services:
       - node_modules_root:/workspaces/klicker-uzh/node_modules
       # Hatchet client token minted by the hatchet_token sidecar (read in post-create).
       - hatchet_token:/hatchet-token:ro
-      # Local mkcert root CA (created by `dev tls install`) for server-side TLS trust.
-      - '${DEVROUTER_MKCERT_CAROOT:-${HOME}/Library/Application Support/mkcert}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
     command: sleep infinity
     depends_on:
       postgres:
         condition: service_healthy
 
-networks:
-  # Created by `dev up` (devrouter). Must exist before this stack starts.
-  devnet:
-    external: true
-
-volumes:
-  pgdata:
-  node_modules_root:
-  hatchet_lite_config:
-  hatchet_token:
-
   # --- LiteLLM for Chat (Tier 3) ---
   litellm:
     image: ghcr.io/berriai/litellm:main-v1.61.12
+    ports:
+      - '4000:4000'
     volumes:
       - ../util/litellm/config.yaml:/app/config.yaml:ro
     command:
@@ -184,3 +166,9 @@ volumes:
     environment:
       # Supplied by the user in their local env or .devcontainer.env to enable chat
       - UPSTREAM_OPENAI_API_KEY=${UPSTREAM_OPENAI_API_KEY:-}
+
+volumes:
+  pgdata:
+  node_modules_root:
+  hatchet_lite_config:
+  hatchet_token:

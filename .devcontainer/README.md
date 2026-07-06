@@ -16,14 +16,45 @@ Hatchet, install + build + seed, `turbo dev`);
 > toolchain). The legacy host-based stack (`docker-compose.yml`, `util/traefik`,
 > Infisical, `/etc/hosts` + mkcert `*.klicker.com`) is untouched.
 
-## Prerequisites
+## How to Run
 
-devrouter **≥ 0.0.21**. One-time host setup, **before** the container starts
-(the stack joins devrouter's external `devnet` network, which must pre-exist):
+You can run the devcontainer in two modes:
 
-```bash
-dev up && dev tls install   # Traefik + the shared `devnet` + mkcert CA
-```
+### Mode 1: Plain localhost (Default & Self-Contained)
+
+Use this if you are running in a headless cloud server or want to avoid installing Traefik/mkcert on your host:
+
+1. Ensure `.devcontainer/devcontainer.json` specifies only `docker-compose.yml` (default).
+2. Start the devcontainer (`devpod up .` or via VS Code).
+3. The applications are exposed directly on your host's ports:
+   - Student PWA: `http://localhost:3001`
+   - Lecturer UI (Manage): `http://localhost:3002` (login: `lecturer` / `abcd`)
+   - Mobile Controller: `http://localhost:3003`
+   - Chat Assistant: `http://localhost:3004`
+   - API Backend: `http://localhost:3000`
+   - Auth Service: `http://localhost:3010`
+   - MailHog UI: `http://localhost:8025`
+   - Hatchet Dashboard: `http://localhost:8888`
+   - Postgres DB: `localhost:5432`
+
+### Mode 2: devrouter (Routed HTTPS domains)
+
+Use this to mirror production domain behaviors and test cookie-sharing over HTTPS:
+
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.21) and start it:
+   ```bash
+   dev up && dev tls install   # Traefik + the shared `devnet` + mkcert CA
+   ```
+2. Edit `.devcontainer/devcontainer.json` to include the devrouter overlay:
+   ```json
+   "dockerComposeFile": ["docker-compose.yml", "docker-compose.devrouter.yml"]
+   ```
+3. Start the devcontainer (`devpod up .` or via VS Code).
+4. Run the routing registrar command on your host:
+   ```bash
+   for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+   ```
+5. Open `https://manage.klicker.localhost` (credentials: `lecturer` / `abcd`).
 
 ## Run with DevPod
 
@@ -81,7 +112,6 @@ every app is served under `*.klicker.localhost` and the cookie domain resolves t
 
 `backend` needs a `HATCHET_CLIENT_TOKEN`, minted per Hatchet instance. The
 `hatchet_token` sidecar mints one to a shared volume; `post-create` writes it to
-| `litellm` | `ghcr.io/berriai/litellm` | LLM proxy for chat (port 4000 intra-net) |
 `.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The
 backend **requires** it to boot — its `HatchetClient.init` runs at module load
 (not lazy), so without the token the API crashes at startup and never serves.
