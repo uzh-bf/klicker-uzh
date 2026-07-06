@@ -1,0 +1,23 @@
+enum CredentialType {
+  COURSE_ASSESSMENT_INSIGHTS
+  COURSE_COMPLETION_CERTIFICATE
+}
+
+model VerifiableCredential {
+  id            String         @id @default(uuid()) @db.Uuid
+  token         String         @unique // Secure 64-char hex token
+  type          CredentialType
+  
+  participantId String      @db.Uuid
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  courseId      String      @db.Uuid
+  course        Course      @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  metadata      Json        // Snapshot payload (defined by type)
+  isRevoked     Boolean     @default(false)
+  issuedAt      DateTime    @default(now())
+  expiresAt     DateTime?
+
+  @@index([token])
+}

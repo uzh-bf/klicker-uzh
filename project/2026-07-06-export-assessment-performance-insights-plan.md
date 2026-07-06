@@ -86,6 +86,7 @@ MR/PR: unknown
 ## Progress
 
 * **2026-07-06**: Plan written, reviewed, simplified, and committed to project directory.
+* **2026-07-06**: Slice 1 completed. Added `VerifiableCredential` model and `CredentialType` enum, ran dev database migrations, synced schemas, and verified successful compilation.
 
 ---
 
