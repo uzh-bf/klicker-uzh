@@ -1387,6 +1387,16 @@ function expectCopiedIndividualPermissions(summary: CourseDuplicationSummary) {
 }
 
 function expectCopiedUserGroupPermissions(summary: CourseDuplicationSummary) {
+  const copiedLiveQuiz = getActivityReference({
+    summary,
+    collection: 'liveQuizzes',
+    activityName: SHARING.liveQuiz,
+  })
+
+  if (!copiedLiveQuiz) {
+    throw new Error(`Missing live quiz ${SHARING.liveQuiz}`)
+  }
+
   const groupDirectPermissions = [
     {
       userGroupName: SHARING.group1,
@@ -1422,6 +1432,54 @@ function expectCopiedUserGroupPermissions(summary: CourseDuplicationSummary) {
       objectType: 'COURSE',
       objectId: summary.courseId,
       ...permission,
+    })
+  })
+
+  const groupMemberDerivedPermissions = [
+    {
+      userShortname: LECTURER_IND_SHORTNAME,
+      coursePermissionLevel: 'READ',
+      liveQuizPermissionLevel: 'READ',
+    },
+    {
+      userShortname: LECTURER_INST_SHORTNAME,
+      coursePermissionLevel: 'EXECUTE',
+      liveQuizPermissionLevel: 'ADMIN',
+    },
+    {
+      userShortname: LECTURER_INST2_SHORTNAME,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'EXECUTE',
+    },
+    {
+      userShortname: LECTURER_INST3_SHORTNAME,
+      coursePermissionLevel: 'WRITE',
+      liveQuizPermissionLevel: 'WRITE',
+    },
+    {
+      userShortname: LECTURER_INST4_SHORTNAME,
+      coursePermissionLevel: 'ADMIN',
+      liveQuizPermissionLevel: 'ADMIN',
+    },
+  ]
+
+  groupMemberDerivedPermissions.forEach((permission) => {
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'derivedPermissionDetails',
+      objectType: 'COURSE',
+      objectId: summary.courseId,
+      userShortname: permission.userShortname,
+      permissionLevel: permission.coursePermissionLevel,
+      derived: false,
+    })
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'derivedPermissionDetails',
+      objectType: 'LIVE_QUIZ',
+      objectId: copiedLiveQuiz.id,
+      userShortname: permission.userShortname,
+      permissionLevel: permission.liveQuizPermissionLevel,
     })
   })
 }
@@ -3480,9 +3538,20 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     ).toContainText(PERM_OWNER)
   })
 
-  test('Modify one referenced element and verify it updates both same-name live quizzes', async () => {
+  test('Modify one referenced element and verify it updates both same-name live quizzes', async ({
+    loginLecturer,
+    page,
+  }) => {
     const copyName = `${SHARING.course} Copy`
     const updatedLiveQuizElementContent = `Updated sharing live quiz question content ${Date.now()}`
+
+    await deleteCourseWithActivitiesByName({
+      courseName: copyName,
+      ownerId: LECTURER_ID,
+    })
+    await loginLecturer()
+    await openCourseInManage(page, SHARING.course)
+    await submitCourseDuplication(page, copyName)
 
     const result = await updateElementContentAndInstances({
       elementName: SCML.title,

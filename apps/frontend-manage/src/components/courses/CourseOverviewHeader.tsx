@@ -46,6 +46,19 @@ interface CourseOverviewHeaderProps {
   containsGroups: boolean
 }
 
+function getCourseDuplicationGroupSize(
+  value: number | string | null | undefined,
+  fallback: number
+) {
+  if (typeof value === 'undefined' || value === null || value === '') {
+    return fallback
+  }
+
+  const parsedValue = Number(value)
+
+  return Number.isFinite(parsedValue) ? parsedValue : fallback
+}
+
 function CourseOverviewHeader({
   course,
   earliestGroupDeadline,
@@ -245,6 +258,14 @@ function CourseOverviewHeader({
               const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
                 .utc()
                 .toISOString()
+              const maxGroupSize = getCourseDuplicationGroupSize(
+                values.maxGroupSize,
+                course.maxGroupSize
+              )
+              const preferredGroupSize = getCourseDuplicationGroupSize(
+                values.preferredGroupSize,
+                course.preferredGroupSize
+              )
 
               const result = await createCourse({
                 variables: {
@@ -263,10 +284,8 @@ function CourseOverviewHeader({
                   isGamificationEnabled: course.isGamificationEnabled,
                   isGroupCreationEnabled: values.isGroupCreationEnabled,
                   groupDeadlineDate: groupDeadlineDateUTC,
-                  maxGroupSize: parseInt(String(values.maxGroupSize)),
-                  preferredGroupSize: parseInt(
-                    String(values.preferredGroupSize)
-                  ),
+                  maxGroupSize,
+                  preferredGroupSize,
                   id: course.id,
                   duplicateLiveQuizzes: values.copyLiveQuizzes,
                   duplicatePracticeQuizzes: values.copyPracticeQuizzes,
@@ -300,7 +319,7 @@ function CourseOverviewHeader({
             } catch (error) {
               onError()
               setSubmitting(false)
-              console.log(error)
+              console.error(error)
             }
           }}
         />

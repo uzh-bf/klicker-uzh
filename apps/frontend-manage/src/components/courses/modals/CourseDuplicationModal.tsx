@@ -163,9 +163,7 @@ function CourseDuplicationModal({
     }
   )
 
-  // check if initialValues.startDate is in the past
-  const startDatePast =
-    initialValues?.startDate && new Date(initialValues.startDate) < new Date()
+  // keep past source courses duplicatable without forcing the old end date forward
   const endDatePast =
     initialValues?.endDate && new Date(initialValues.endDate) < new Date()
 
@@ -232,14 +230,17 @@ function CourseDuplicationModal({
             yup.ref('startDate'),
             t('manage.courseList.groupDeadlineAfterStart')
           )
-          .when('isGroupCreationEnabled', {
-            is: true,
-            then: (schema) =>
-              schema.max(
-                yup.ref('endDate'),
-                t('manage.courseList.groupDeadlineBeforeEnd')
-              ),
-            otherwise: (schema) => schema,
+          .when('isGroupCreationEnabled', (isGroupCreationEnabled, schema) => {
+            const isEnabled = Array.isArray(isGroupCreationEnabled)
+              ? isGroupCreationEnabled[0]
+              : isGroupCreationEnabled
+
+            return isEnabled
+              ? schema.max(
+                  yup.ref('endDate'),
+                  t('manage.courseList.groupDeadlineBeforeEnd')
+                )
+              : schema
           })
           .test(
             'isBeforeFirstGroupActivity',
@@ -255,14 +256,17 @@ function CourseDuplicationModal({
       : yup
           .date()
           .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
-          .when('isGroupCreationEnabled', {
-            is: true,
-            then: (schema) =>
-              schema.max(
-                yup.ref('endDate'),
-                t('manage.courseList.groupDeadlineBeforeEnd')
-              ),
-            otherwise: (schema) => schema,
+          .when('isGroupCreationEnabled', (isGroupCreationEnabled, schema) => {
+            const isEnabled = Array.isArray(isGroupCreationEnabled)
+              ? isGroupCreationEnabled[0]
+              : isGroupCreationEnabled
+
+            return isEnabled
+              ? schema.max(
+                  yup.ref('endDate'),
+                  t('manage.courseList.groupDeadlineBeforeEnd')
+                )
+              : schema
           })
           .required(t('manage.courseList.groupDeadlineReq')),
     maxGroupSize: yup
@@ -478,7 +482,9 @@ function CourseDuplicationModal({
                       dataNextMonth={{ cy: 'course-end-date-next-month' }}
                     />
                     <span className="text-uzh-darkgreen-100 mt-1 w-full">
-                      {'Fixed Date Interval: ' + descriptionCourseDuration}
+                      {t('manage.courseList.fixedDateInterval', {
+                        duration: descriptionCourseDuration,
+                      })}
                     </span>
                   </div>
 

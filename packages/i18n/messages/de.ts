@@ -2994,19 +2994,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
       changeAvailabilityDateMicrolearnings:
-        'Die Verfügbarkeit der Microlearnings werden basierend auf den ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
+        'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       changeAvailabilityDateGroupActivities:
         'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       courseDatesForCourseDuplicationTooltip:
-        'Aus technischen Gründen sind die Kursdaten auf einen fixen Intervall festgelegt, der durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschließend ändern.',
+        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschließend ändern.',
+      fixedDateInterval: 'Fixes Datumsintervall: {duration}',
       groupCreationDeadlineForCourseDuplicationTooltip:
-        'Aus technischen Gründen ist die Deadline für die Gruppenbildung basierend auf das Kursstartdatum festgelegt. Sie können diese Deadline in den Kurseinstellungen anpassen.',
+        'Aus technischen Gründen ist die Deadline für die Gruppenbildung basierend auf dem Kursstartdatum festgelegt. Sie können diese Deadline in den Kurseinstellungen anpassen.',
       copyLiveQuizzesTooltip:
         'Wenn Sie diese Einstellung aktivieren, werden alle Live-Quizzes im Kurs in den neuen Kurs kopiert.',
       copyPracticeQuizzesTooltip:
         'Wenn Sie diese Einstellung aktivieren, werden alle Übungs-Quizzes im Kurs in den neuen Kurs kopiert.',
       copyMicroLearningsTooltip:
-        'Wenn Sie diese Einstellung aktivieren, werden alle Micro-Learnings im Kurs in den neuen Kurs kopiert.',
+        'Wenn Sie diese Einstellung aktivieren, werden alle Microlearnings im Kurs in den neuen Kurs kopiert.',
       copyGroupActivitiesTooltip:
         'Wenn Sie diese Einstellung aktivieren, werden alle Gruppenaktivitäten im Kurs in den neuen Kurs kopiert. Wenn die Gruppenbildung-Einstellung deaktiviert wird, wird diese Einstellung deaktiviert.',
       courseDuplicationCopyInfo:

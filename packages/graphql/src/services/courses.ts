@@ -2676,15 +2676,95 @@ type CourseDuplicationPermissionTarget =
 function getPermissionTargetObjectId(
   target: CourseDuplicationPermissionTarget
 ) {
-  return 'courseId' in target
-    ? target.courseId
-    : 'liveQuizId' in target
-      ? target.liveQuizId
-      : 'practiceQuizId' in target
-        ? target.practiceQuizId
-        : 'microLearningId' in target
-          ? target.microLearningId
-          : target.groupActivityId
+  if ('courseId' in target) return target.courseId
+  if ('liveQuizId' in target) return target.liveQuizId
+  if ('practiceQuizId' in target) return target.practiceQuizId
+  if ('microLearningId' in target) return target.microLearningId
+  return target.groupActivityId
+}
+
+const courseDuplicationInclude = {
+  directPermissions: true,
+  practiceQuizzes: {
+    where: { isDeleted: false },
+    include: {
+      directPermissions: true,
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  },
+  liveQuizzes: {
+    where: { isDeleted: false },
+    include: {
+      directPermissions: true,
+      blocks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  },
+  microLearnings: {
+    where: { isDeleted: false },
+    include: {
+      directPermissions: true,
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  },
+  groupActivities: {
+    where: { isDeleted: false },
+    include: {
+      directPermissions: true,
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+      clues: true,
+    },
+  },
+} satisfies DB.Prisma.CourseInclude
+
+type CourseDuplicationSourceCourse = DB.Prisma.CourseGetPayload<{
+  include: typeof courseDuplicationInclude
+}>
+
+type CourseDuplicationLiveQuiz =
+  CourseDuplicationSourceCourse['liveQuizzes'][number]
+type CourseDuplicationPracticeQuiz =
+  CourseDuplicationSourceCourse['practiceQuizzes'][number]
+type CourseDuplicationMicroLearning =
+  CourseDuplicationSourceCourse['microLearnings'][number]
+type CourseDuplicationGroupActivity =
+  CourseDuplicationSourceCourse['groupActivities'][number]
+
+type CourseDuplicationActivityIds = {
+  liveQuizIds: Map<string, string>
+  practiceQuizIds: Map<string, string>
+  microLearningIds: Map<string, string>
+  groupActivityIds: Map<string, string>
+}
+
+function getDuplicatedActivityElements(
+  elements: { elementId: number; order: number; id: number }[]
+) {
+  return elements.map((element) => ({
+    elementId: element.elementId,
+    order: element.order,
+    existingInstanceId: element.id,
+    duplicateInstance: true,
+  }))
+}
+
+function applyCourseStartDelta(date: Date, deltaCourseStart: number) {
+  return dayjs(date).add(deltaCourseStart, 'day').toDate()
 }
 
 async function copyCourseDuplicationDirectPermissions({
@@ -2794,6 +2874,353 @@ async function grantDuplicatedCourseAccessToSourceOwner({
   })
 }
 
+async function copyCourseLiveQuizzes({
+  liveQuizzes,
+  newCourseId,
+  ctx,
+  prisma,
+}: {
+  liveQuizzes: CourseDuplicationLiveQuiz[]
+  newCourseId: string
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  const copiedLiveQuizIdBySourceId = new Map<string, string>()
+
+  for (const oldLiveQuiz of liveQuizzes) {
+    const copiedLiveQuiz = await manipulateLiveQuiz(
+      {
+        name: oldLiveQuiz.name,
+        displayName: oldLiveQuiz.displayName,
+        description: oldLiveQuiz.description,
+        blocks: oldLiveQuiz.blocks.map((block) => ({
+          order: block.order,
+          timeLimit: block.timeLimit,
+          elements: getDuplicatedActivityElements(block.elements),
+        })),
+        courseId: newCourseId,
+        multiplier: oldLiveQuiz.pointsMultiplier,
+        defaultPoints: oldLiveQuiz.defaultPoints,
+        defaultCorrectPoints: oldLiveQuiz.defaultCorrectPoints,
+        maxBonusPoints: oldLiveQuiz.maxBonusPoints,
+        timeToZeroBonus: oldLiveQuiz.timeToZeroBonus,
+        isGamificationEnabled: oldLiveQuiz.isGamificationEnabled,
+        isPinProtected: !!oldLiveQuiz.pinCode,
+        isConfusionFeedbackEnabled: oldLiveQuiz.isConfusionFeedbackEnabled,
+        isLiveQAEnabled: oldLiveQuiz.isLiveQAEnabled,
+        isModerationEnabled: oldLiveQuiz.isModerationEnabled,
+      },
+      ctx,
+      prisma
+    )
+
+    copiedLiveQuizIdBySourceId.set(oldLiveQuiz.id, copiedLiveQuiz.id)
+
+    await prisma.liveQuiz.update({
+      where: { id: copiedLiveQuiz.id },
+      data: { accessMode: oldLiveQuiz.accessMode },
+    })
+  }
+
+  return copiedLiveQuizIdBySourceId
+}
+
+async function copyCoursePracticeQuizzes({
+  practiceQuizzes,
+  newCourseId,
+  ctx,
+  prisma,
+}: {
+  practiceQuizzes: CourseDuplicationPracticeQuiz[]
+  newCourseId: string
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  const copiedPracticeQuizIdBySourceId = new Map<string, string>()
+
+  for (const oldPracticeQuiz of practiceQuizzes) {
+    const copiedPracticeQuiz = await manipulatePracticeQuiz(
+      {
+        name: oldPracticeQuiz.name,
+        displayName: oldPracticeQuiz.displayName,
+        description: oldPracticeQuiz.description,
+        stacks: oldPracticeQuiz.stacks.map((stack) => ({
+          order: stack.order,
+          elements: getDuplicatedActivityElements(stack.elements),
+        })),
+        courseId: newCourseId,
+        multiplier: oldPracticeQuiz.pointsMultiplier,
+        order: oldPracticeQuiz.orderType,
+        resetTimeDays: oldPracticeQuiz.resetTimeDays,
+      },
+      ctx,
+      prisma
+    )
+
+    copiedPracticeQuizIdBySourceId.set(
+      oldPracticeQuiz.id,
+      copiedPracticeQuiz.id
+    )
+  }
+
+  return copiedPracticeQuizIdBySourceId
+}
+
+async function copyCourseMicroLearnings({
+  microLearnings,
+  newCourseId,
+  deltaCourseStart,
+  ctx,
+  prisma,
+}: {
+  microLearnings: CourseDuplicationMicroLearning[]
+  newCourseId: string
+  deltaCourseStart: number
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  const copiedMicroLearningIdBySourceId = new Map<string, string>()
+
+  for (const oldMicroLearning of microLearnings) {
+    const copiedMicroLearning = await manipulateMicroLearning(
+      {
+        name: oldMicroLearning.name,
+        displayName: oldMicroLearning.displayName,
+        description: oldMicroLearning.description,
+        stacks: oldMicroLearning.stacks.map((stack) => ({
+          order: stack.order,
+          elements: getDuplicatedActivityElements(stack.elements),
+        })),
+        courseId: newCourseId,
+        multiplier: oldMicroLearning.pointsMultiplier,
+        startDate: applyCourseStartDelta(
+          oldMicroLearning.scheduledStartAt,
+          deltaCourseStart
+        ),
+        endDate: applyCourseStartDelta(
+          oldMicroLearning.scheduledEndAt,
+          deltaCourseStart
+        ),
+      },
+      ctx,
+      prisma
+    )
+
+    copiedMicroLearningIdBySourceId.set(
+      oldMicroLearning.id,
+      copiedMicroLearning.id
+    )
+  }
+
+  return copiedMicroLearningIdBySourceId
+}
+
+async function copyCourseGroupActivities({
+  groupActivities,
+  newCourseId,
+  deltaCourseStart,
+  ctx,
+  prisma,
+}: {
+  groupActivities: CourseDuplicationGroupActivity[]
+  newCourseId: string
+  deltaCourseStart: number
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  const copiedGroupActivityIdBySourceId = new Map<string, string>()
+
+  for (const oldGroupActivity of groupActivities) {
+    const stack = oldGroupActivity.stacks[0]
+
+    if (!stack) {
+      throw new Error(
+        `Group activity ${oldGroupActivity.id} is missing required stack data`
+      )
+    }
+
+    const copiedGroupActivity = await manipulateGroupActivity(
+      {
+        name: oldGroupActivity.name,
+        displayName: oldGroupActivity.displayName,
+        description: oldGroupActivity.description,
+        stack: {
+          order: stack.order,
+          elements: getDuplicatedActivityElements(stack.elements),
+        },
+        courseId: newCourseId,
+        multiplier: oldGroupActivity.pointsMultiplier,
+        clues: oldGroupActivity.clues,
+        startDate: applyCourseStartDelta(
+          oldGroupActivity.scheduledStartAt,
+          deltaCourseStart
+        ),
+        endDate: applyCourseStartDelta(
+          oldGroupActivity.scheduledEndAt,
+          deltaCourseStart
+        ),
+      },
+      ctx,
+      prisma
+    )
+
+    copiedGroupActivityIdBySourceId.set(
+      oldGroupActivity.id,
+      copiedGroupActivity.id
+    )
+  }
+
+  return copiedGroupActivityIdBySourceId
+}
+
+async function duplicateSelectedCourseActivities({
+  oldCourse,
+  newCourseId,
+  startDate,
+  duplicateLiveQuizzes,
+  duplicatePracticeQuizzes,
+  duplicateMicrolearnings,
+  shouldDuplicateGroupActivities,
+  ctx,
+  prisma,
+}: {
+  oldCourse: CourseDuplicationSourceCourse
+  newCourseId: string
+  startDate: Date
+  duplicateLiveQuizzes?: boolean | null
+  duplicatePracticeQuizzes?: boolean | null
+  duplicateMicrolearnings?: boolean | null
+  shouldDuplicateGroupActivities: boolean
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}): Promise<CourseDuplicationActivityIds> {
+  const deltaCourseStart = dayjs(startDate).diff(
+    dayjs(oldCourse.startDate),
+    'day'
+  )
+
+  return {
+    liveQuizIds: duplicateLiveQuizzes
+      ? await copyCourseLiveQuizzes({
+          liveQuizzes: oldCourse.liveQuizzes,
+          newCourseId,
+          ctx,
+          prisma,
+        })
+      : new Map(),
+    practiceQuizIds: duplicatePracticeQuizzes
+      ? await copyCoursePracticeQuizzes({
+          practiceQuizzes: oldCourse.practiceQuizzes,
+          newCourseId,
+          ctx,
+          prisma,
+        })
+      : new Map(),
+    microLearningIds: duplicateMicrolearnings
+      ? await copyCourseMicroLearnings({
+          microLearnings: oldCourse.microLearnings,
+          newCourseId,
+          deltaCourseStart,
+          ctx,
+          prisma,
+        })
+      : new Map(),
+    groupActivityIds: shouldDuplicateGroupActivities
+      ? await copyCourseGroupActivities({
+          groupActivities: oldCourse.groupActivities,
+          newCourseId,
+          deltaCourseStart,
+          ctx,
+          prisma,
+        })
+      : new Map(),
+  }
+}
+
+async function copyMappedActivityPermissions<
+  TSourceActivity extends { id: string; directPermissions: DB.Permission[] },
+>({
+  sourceActivities,
+  copiedIdBySourceId,
+  sourceObjectType,
+  targetObjectType,
+  targetFromId,
+  ctx,
+  prisma,
+}: {
+  sourceActivities: TSourceActivity[]
+  copiedIdBySourceId: Map<string, string>
+  sourceObjectType: DB.ObjectType
+  targetObjectType: DB.ObjectType
+  targetFromId: (id: string) => CourseDuplicationPermissionTarget
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  for (const sourceActivity of sourceActivities) {
+    const copiedActivityId = copiedIdBySourceId.get(sourceActivity.id)
+    if (!copiedActivityId) continue
+
+    await copyCourseDuplicationDirectPermissions({
+      sourcePermissions: sourceActivity.directPermissions,
+      sourceObjectType,
+      sourceObjectId: sourceActivity.id,
+      targetObjectType,
+      target: targetFromId(copiedActivityId),
+      ctx,
+      prisma,
+    })
+  }
+}
+
+async function copyDuplicatedActivityPermissions({
+  oldCourse,
+  copiedActivityIds,
+  ctx,
+  prisma,
+}: {
+  oldCourse: CourseDuplicationSourceCourse
+  copiedActivityIds: CourseDuplicationActivityIds
+  ctx: ContextWithUser
+  prisma: PrismaTransactionClient
+}) {
+  await copyMappedActivityPermissions({
+    sourceActivities: oldCourse.liveQuizzes,
+    copiedIdBySourceId: copiedActivityIds.liveQuizIds,
+    sourceObjectType: DB.ObjectType.LIVE_QUIZ,
+    targetObjectType: DB.ObjectType.LIVE_QUIZ,
+    targetFromId: (liveQuizId) => ({ liveQuizId }),
+    ctx,
+    prisma,
+  })
+  await copyMappedActivityPermissions({
+    sourceActivities: oldCourse.practiceQuizzes,
+    copiedIdBySourceId: copiedActivityIds.practiceQuizIds,
+    sourceObjectType: DB.ObjectType.PRACTICE_QUIZ,
+    targetObjectType: DB.ObjectType.PRACTICE_QUIZ,
+    targetFromId: (practiceQuizId) => ({ practiceQuizId }),
+    ctx,
+    prisma,
+  })
+  await copyMappedActivityPermissions({
+    sourceActivities: oldCourse.microLearnings,
+    copiedIdBySourceId: copiedActivityIds.microLearningIds,
+    sourceObjectType: DB.ObjectType.MICRO_LEARNING,
+    targetObjectType: DB.ObjectType.MICRO_LEARNING,
+    targetFromId: (microLearningId) => ({ microLearningId }),
+    ctx,
+    prisma,
+  })
+  await copyMappedActivityPermissions({
+    sourceActivities: oldCourse.groupActivities,
+    copiedIdBySourceId: copiedActivityIds.groupActivityIds,
+    sourceObjectType: DB.ObjectType.GROUP_ACTIVITY,
+    targetObjectType: DB.ObjectType.GROUP_ACTIVITY,
+    targetFromId: (groupActivityId) => ({ groupActivityId }),
+    ctx,
+    prisma,
+  })
+}
+
 export async function duplicateCourse(
   {
     name,
@@ -2828,54 +3255,7 @@ export async function duplicateCourse(
 
   const oldCourse = await ctx.prisma.course.findUnique({
     where: { id },
-    include: {
-      directPermissions: true,
-      practiceQuizzes: {
-        where: { isDeleted: false },
-        include: {
-          directPermissions: true,
-          stacks: {
-            include: {
-              elements: true,
-            },
-          },
-        },
-      },
-      liveQuizzes: {
-        where: { isDeleted: false },
-        include: {
-          directPermissions: true,
-          blocks: {
-            include: {
-              elements: true,
-            },
-          },
-        },
-      },
-      microLearnings: {
-        where: { isDeleted: false },
-        include: {
-          directPermissions: true,
-          stacks: {
-            include: {
-              elements: true,
-            },
-          },
-        },
-      },
-      groupActivities: {
-        where: { isDeleted: false },
-        include: {
-          directPermissions: true,
-          stacks: {
-            include: {
-              elements: true,
-            },
-          },
-          clues: true,
-        },
-      },
-    },
+    include: courseDuplicationInclude,
   })
 
   if (!oldCourse) return null
@@ -3002,187 +3382,17 @@ export async function duplicateCourse(
         prisma
       )
 
-      const copiedLiveQuizIdBySourceId = new Map<string, string>()
-      const copiedPracticeQuizIdBySourceId = new Map<string, string>()
-      const copiedMicroLearningIdBySourceId = new Map<string, string>()
-      const copiedGroupActivityIdBySourceId = new Map<string, string>()
-
-      // date computation for micro learnings and group activities
-      const startDateOldCourse = oldCourse.startDate
-      const startDateNewCourse = startDate
-      const deltaCourseStart = dayjs(startDateNewCourse).diff(
-        dayjs(startDateOldCourse),
-        'day'
-      )
-
-      if (duplicateLiveQuizzes) {
-        for (const oldLiveQuiz of oldCourse.liveQuizzes) {
-          const copiedLiveQuiz = await manipulateLiveQuiz(
-            {
-              name: oldLiveQuiz.name,
-              displayName: oldLiveQuiz.displayName,
-              description: oldLiveQuiz.description,
-              blocks: oldLiveQuiz.blocks.map((block) => {
-                return {
-                  order: block.order,
-                  timeLimit: block.timeLimit,
-                  elements: block.elements.map((element) => {
-                    return {
-                      elementId: element.elementId,
-                      order: element.order,
-                      existingInstanceId: element.id,
-                      duplicateInstance: true,
-                    }
-                  }),
-                }
-              }),
-              courseId: newCourse.id,
-              multiplier: oldLiveQuiz.pointsMultiplier,
-              defaultPoints: oldLiveQuiz.defaultPoints,
-              defaultCorrectPoints: oldLiveQuiz.defaultCorrectPoints,
-              maxBonusPoints: oldLiveQuiz.maxBonusPoints,
-              timeToZeroBonus: oldLiveQuiz.timeToZeroBonus,
-              isGamificationEnabled: oldLiveQuiz.isGamificationEnabled,
-              isPinProtected: !!oldLiveQuiz.pinCode,
-              isConfusionFeedbackEnabled:
-                oldLiveQuiz.isConfusionFeedbackEnabled,
-              isLiveQAEnabled: oldLiveQuiz.isLiveQAEnabled,
-              isModerationEnabled: oldLiveQuiz.isModerationEnabled,
-            },
-            ctx,
-            prisma
-          )
-          copiedLiveQuizIdBySourceId.set(oldLiveQuiz.id, copiedLiveQuiz.id)
-
-          await prisma.liveQuiz.update({
-            where: { id: copiedLiveQuiz.id },
-            data: { accessMode: oldLiveQuiz.accessMode },
-          })
-        }
-      }
-      if (duplicatePracticeQuizzes) {
-        for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
-          const copiedPracticeQuiz = await manipulatePracticeQuiz(
-            {
-              name: oldPracticeQuiz.name,
-              displayName: oldPracticeQuiz.displayName,
-              description: oldPracticeQuiz.description,
-              stacks: oldPracticeQuiz.stacks.map((stack) => {
-                return {
-                  order: stack.order,
-                  elements: stack.elements.map((element) => {
-                    return {
-                      elementId: element.elementId,
-                      order: element.order,
-                      existingInstanceId: element.id,
-                      duplicateInstance: true,
-                    }
-                  }),
-                }
-              }),
-              courseId: newCourse.id,
-              multiplier: oldPracticeQuiz.pointsMultiplier,
-              order: oldPracticeQuiz.orderType,
-              resetTimeDays: oldPracticeQuiz.resetTimeDays,
-            },
-            ctx,
-            prisma
-          )
-          copiedPracticeQuizIdBySourceId.set(
-            oldPracticeQuiz.id,
-            copiedPracticeQuiz.id
-          )
-        }
-      }
-      if (duplicateMicrolearnings) {
-        for (const oldMicroLearning of oldCourse.microLearnings) {
-          // compute delta
-          const startDateNewMicroLearning = dayjs(
-            oldMicroLearning.scheduledStartAt
-          )
-            .add(deltaCourseStart, 'day')
-            .toDate()
-          const endDateNewMicroLearning = dayjs(oldMicroLearning.scheduledEndAt)
-            .add(deltaCourseStart, 'day')
-            .toDate()
-
-          const copiedMicroLearning = await manipulateMicroLearning(
-            {
-              name: oldMicroLearning.name,
-              displayName: oldMicroLearning.displayName,
-              description: oldMicroLearning.description,
-              stacks: oldMicroLearning.stacks.map((stack) => {
-                return {
-                  order: stack.order,
-                  elements: stack.elements.map((element) => {
-                    return {
-                      elementId: element.elementId,
-                      order: element.order,
-                      existingInstanceId: element.id,
-                      duplicateInstance: true,
-                    }
-                  }),
-                }
-              }),
-              courseId: newCourse.id,
-              multiplier: oldMicroLearning.pointsMultiplier,
-              startDate: startDateNewMicroLearning,
-              endDate: endDateNewMicroLearning,
-            },
-            ctx,
-            prisma
-          )
-          copiedMicroLearningIdBySourceId.set(
-            oldMicroLearning.id,
-            copiedMicroLearning.id
-          )
-        }
-      }
-      if (shouldDuplicateGroupActivities) {
-        for (const oldGroupActivity of oldCourse.groupActivities) {
-          const stack = oldGroupActivity.stacks[0]!
-
-          // compute delta
-          const startDateNewGroupActivity = dayjs(
-            oldGroupActivity.scheduledStartAt
-          )
-            .add(deltaCourseStart, 'day')
-            .toDate()
-          const endDateNewGroupActivity = dayjs(oldGroupActivity.scheduledEndAt)
-            .add(deltaCourseStart, 'day')
-            .toDate()
-
-          const copiedGroupActivity = await manipulateGroupActivity(
-            {
-              name: oldGroupActivity.name,
-              displayName: oldGroupActivity.displayName,
-              description: oldGroupActivity.description,
-              stack: {
-                order: stack.order,
-                elements: stack.elements.map((element) => {
-                  return {
-                    elementId: element.elementId,
-                    order: element.order,
-                    existingInstanceId: element.id,
-                    duplicateInstance: true,
-                  }
-                }),
-              },
-              courseId: newCourse.id,
-              multiplier: oldGroupActivity.pointsMultiplier,
-              clues: oldGroupActivity.clues,
-              startDate: startDateNewGroupActivity,
-              endDate: endDateNewGroupActivity,
-            },
-            ctx,
-            prisma
-          )
-          copiedGroupActivityIdBySourceId.set(
-            oldGroupActivity.id,
-            copiedGroupActivity.id
-          )
-        }
-      }
+      const copiedActivityIds = await duplicateSelectedCourseActivities({
+        oldCourse,
+        newCourseId: newCourse.id,
+        startDate,
+        duplicateLiveQuizzes,
+        duplicatePracticeQuizzes,
+        duplicateMicrolearnings,
+        shouldDuplicateGroupActivities,
+        ctx,
+        prisma,
+      })
 
       await prisma.course.update({
         where: { id: newCourse.id },
@@ -3214,79 +3424,12 @@ export async function duplicateCourse(
         prisma,
       })
 
-      for (const oldLiveQuiz of oldCourse.liveQuizzes) {
-        const copiedLiveQuizId = copiedLiveQuizIdBySourceId.get(oldLiveQuiz.id)
-        if (!copiedLiveQuizId) continue
-
-        await copyCourseDuplicationDirectPermissions({
-          sourcePermissions: oldLiveQuiz.directPermissions,
-          sourceObjectType: DB.ObjectType.LIVE_QUIZ,
-          sourceObjectId: oldLiveQuiz.id,
-          targetObjectType: DB.ObjectType.LIVE_QUIZ,
-          target: {
-            liveQuizId: copiedLiveQuizId,
-          },
-          ctx,
-          prisma,
-        })
-      }
-
-      for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
-        const copiedPracticeQuizId = copiedPracticeQuizIdBySourceId.get(
-          oldPracticeQuiz.id
-        )
-        if (!copiedPracticeQuizId) continue
-
-        await copyCourseDuplicationDirectPermissions({
-          sourcePermissions: oldPracticeQuiz.directPermissions,
-          sourceObjectType: DB.ObjectType.PRACTICE_QUIZ,
-          sourceObjectId: oldPracticeQuiz.id,
-          targetObjectType: DB.ObjectType.PRACTICE_QUIZ,
-          target: {
-            practiceQuizId: copiedPracticeQuizId,
-          },
-          ctx,
-          prisma,
-        })
-      }
-
-      for (const oldMicroLearning of oldCourse.microLearnings) {
-        const copiedMicroLearningId = copiedMicroLearningIdBySourceId.get(
-          oldMicroLearning.id
-        )
-        if (!copiedMicroLearningId) continue
-
-        await copyCourseDuplicationDirectPermissions({
-          sourcePermissions: oldMicroLearning.directPermissions,
-          sourceObjectType: DB.ObjectType.MICRO_LEARNING,
-          sourceObjectId: oldMicroLearning.id,
-          targetObjectType: DB.ObjectType.MICRO_LEARNING,
-          target: {
-            microLearningId: copiedMicroLearningId,
-          },
-          ctx,
-          prisma,
-        })
-      }
-
-      for (const oldGroupActivity of oldCourse.groupActivities) {
-        const copiedGroupActivityId = copiedGroupActivityIdBySourceId.get(
-          oldGroupActivity.id
-        )
-        if (!copiedGroupActivityId) continue
-
-        await copyCourseDuplicationDirectPermissions({
-          sourcePermissions: oldGroupActivity.directPermissions,
-          sourceObjectType: DB.ObjectType.GROUP_ACTIVITY,
-          sourceObjectId: oldGroupActivity.id,
-          targetObjectType: DB.ObjectType.GROUP_ACTIVITY,
-          target: {
-            groupActivityId: copiedGroupActivityId,
-          },
-          ctx,
-          prisma,
-        })
-      }
+      await copyDuplicatedActivityPermissions({
+        oldCourse,
+        copiedActivityIds,
+        ctx,
+        prisma,
+      })
 
       await recomputeDerivedPermissions({ courseId: newCourse.id }, prisma)
 

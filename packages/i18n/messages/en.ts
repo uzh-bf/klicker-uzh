@@ -2949,11 +2949,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
       changeAvailabilityDateMicrolearnings:
-        'The availability of micro learnings will be adjusted according to the new course dates based on the offset to the original course start date.',
+        'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
       changeAvailabilityDateGroupActivities:
         'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
       courseDatesForCourseDuplicationTooltip:
         'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
+      fixedDateInterval: 'Fixed date interval: {duration}',
       groupCreationDeadlineForCourseDuplicationTooltip:
         'Due to technical reasons, the group creation deadline is fixed based on the course start date. You can adjust this deadline in the course settings.',
       copyLiveQuizzesTooltip:
@@ -2961,7 +2962,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       copyPracticeQuizzesTooltip:
         'If you activate this setting, all practice quizzes in the course will be copied to the new course.',
       copyMicroLearningsTooltip:
-        'If you activate this setting, all micro learnings in the course will be copied to the new course.',
+        'If you activate this setting, all microlearnings in the course will be copied to the new course.',
       copyGroupActivitiesTooltip:
         'If you activate this setting, all group activities in the course will be copied to the new course. When disabling group creation, this setting is disabled.',
       courseDuplicationCopyInfo:
