@@ -130,16 +130,16 @@ devpod up .            # builds image, starts services, installs, builds, seeds,
 devpod ssh klicker-uzh # shell inside the container
 ```
 
-The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. Phase 1 covers the core apps (backend, auth, frontend-pwa/manage/control); see `.devcontainer/README.md`.
+The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. Covers the core apps (backend, auth, frontend-pwa/manage/control) plus olat-api, response-api, and the two Hatchet workers (Phase 2 Tier 1; workers have no port/route); `lti` and `chat` are still pending. See `.devcontainer/README.md`.
 
 **Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.21) fronts the stack over the shared `devnet` network and routes each `*.klicker.localhost` host to the one container's internal port. One-time host setup **before** the container starts:
 
 ```bash
 dev up && dev tls install                                       # Traefik + devnet + mkcert CA
-for a in api auth pwa manage control db; do dev app run "$a"; done
+for a in api auth pwa manage control olat-api response-api db; do dev app run "$a"; done
 ```
 
-Apps at `https://{api,auth,pwa,manage,control}.klicker.localhost`; Postgres for host tooling at `db.klicker.localhost:5432` (`sslmode=require sslnegotiation=direct`). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.localhost`; Postgres for host tooling at `db.klicker.localhost:5432` (`sslmode=require sslnegotiation=direct`). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
 
 ### Legacy host-based stack
 
