@@ -78,10 +78,14 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
   const hasNext = currentIndex < branches.length - 1
 
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div
+      data-cy="chat-branch-picker"
+      className={`flex items-center gap-1 ${className}`}
+    >
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            data-cy="chat-branch-previous"
             disabled={!hasPrevious}
             onClick={goToPrevious}
             className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
@@ -93,13 +97,17 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
         <TooltipContent>Previous branch</TooltipContent>
       </Tooltip>
 
-      <span className="flex items-center whitespace-nowrap px-1 text-xs">
+      <span
+        data-cy="chat-branch-indicator"
+        className="flex items-center whitespace-nowrap px-1 text-xs"
+      >
         {currentIndex + 1} / {branches.length}
       </span>
 
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            data-cy="chat-branch-next"
             disabled={!hasNext}
             onClick={goToNext}
             className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
