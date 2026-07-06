@@ -755,7 +755,47 @@ $$GourmetValue = Tastiness^2 \\times \\sqrt{Presentation} \\times (1+Uniqueness)
     collectionName: ANSWER_COLLECTIONS[0]!.name,
     answerCollectionItems: ['Apple', 'Date'],
   },
+  {
+    originalId: '11',
+    name: 'Testfrage FREE_TEXT (Finance)',
+    content:
+      'Describe the role of portfolio diversification in your own words.',
+    explanation: 'FT generische Erklärung, warum diese Frage richtig ist.',
+    type: ElementType.FREE_TEXT,
+    options: {
+      hasSampleSolution: true,
+      restrictions: {
+        maxLength: 500,
+      },
+      solutions: [
+        'diversification',
+        'portfolio risk',
+        'asset allocation',
+        'correlation',
+        'expected return',
+        'volatility',
+        'systematic risk',
+        'idiosyncratic risk',
+        'risk-adjusted return',
+        'rebalancing',
+      ],
+    },
+  },
 ]
+
+// uncomment question ids with anonymous responses
+export type QUESTION_ID_TYPE =
+  // | '1'
+  // | '2'
+  // | '3'
+  // | '4'
+  | '5'
+  // | '6'
+  // | '7'
+  // | '8'
+  // | '9'
+  // | '10'
+  | '11'
 
 export const LIVE_QUIZZES = [
   {
@@ -903,6 +943,252 @@ export const LIVE_QUIZZES = [
         timeLimit: 30,
       },
     ],
+  },
+  {
+    id: 'a9e6f3c1-2d1e-4f0b-8f4b-5c6e7d8f9a0b',
+    name: 'Test Live Quiz (Wordcloud)',
+    displayName: 'Test Live Quiz (Wordcloud)',
+    isModerationEnabled: true,
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: true,
+    isGamificationEnabled: true,
+    isAssessmentEnabled: false,
+    status: PublicationStatus.ENDED,
+    blocks: [
+      {
+        questions: [5, 11],
+        timeLimit: undefined,
+      },
+    ],
+    anonymousResults: {
+      '11': {
+        total: 30,
+        responses: {
+          // topic related texts (mostly correct)
+          '8b4fc0755c2c002245255d951e6ff742': {
+            count: 1,
+            value:
+              'Portfolio diversification means spreading investments across different assets, sectors, or regions to reduce exposure to any single source of risk. It can lower idiosyncratic risk because losses in one holding may be offset by gains in another. The benefit depends strongly on correlations between assets.',
+            correct: true,
+          },
+          c4ca4238a0b923820dcc509a6f75849b: {
+            count: 1,
+            value:
+              'Diversification does not guarantee a profit, but it helps manage portfolio volatility. Combining equities, bonds, cash, and alternative assets can produce a smoother return path than holding only one security. Investors still remain exposed to broad market or systematic risk.',
+            correct: true,
+          },
+          c81e728d9d4c2f636f067f89cc14862c: {
+            count: 1,
+            value:
+              'Diversification means putting all available capital into the stock with the highest recent return. Concentrating in one winner removes risk because strong past performance reliably predicts future gains. Rebalancing is unnecessary once the best asset has been selected.',
+            correct: false,
+          },
+          eccbc87e4b5ce2fe28308fd9f2a7baf3: {
+            count: 1,
+            value:
+              'The key idea is that assets with imperfect correlation do not move exactly together. A portfolio can therefore achieve a better risk-return tradeoff than its individual components alone. This is why asset allocation is central to modern portfolio theory.',
+            correct: true,
+          },
+          a87ff679a2f3e71d9181a67b7542122c: {
+            count: 1,
+            value:
+              'Investors diversify by holding instruments with different risk drivers, such as government bonds, corporate credit, broad equity indexes, and foreign assets. The portfolio should be reviewed over time because market movements change target weights. Rebalancing can restore the intended risk profile.',
+            correct: true,
+          },
+          e4da3b7fbbce3765c8a6f2cfa1b3f3: {
+            count: 1,
+            value:
+              'Diversification eliminates every type of financial risk, including inflation, recession, interest-rate shocks, and market crashes. A diversified portfolio therefore cannot lose money. The expected return is always higher than the return of every individual asset.',
+            correct: false,
+          },
+          '1679091c5a880faf6fb5e6087eb1b2dc': {
+            count: 1,
+            value:
+              'A well-diversified portfolio reduces company-specific or sector-specific shocks. For example, a decline in one industry may have less impact when the investor also holds assets from other industries and regions. The remaining risk is mainly the market-wide component that cannot be diversified away.',
+            correct: true,
+          },
+          '8f14e45fceea167a5a36dedd4bea2543': {
+            count: 1,
+            value:
+              'Diversification should be connected to the investor goals, horizon, liquidity needs, and risk tolerance. A short-term investor may hold more cash or bonds, while a long-term investor may accept more equity volatility. The right mix is therefore context dependent.',
+            correct: true,
+          },
+          c9f0f895fb98ab9159f51fd0297e236d: {
+            count: 1,
+            value:
+              'Portfolio diversification is mainly an accounting rule for calculating taxes on dividends. It is unrelated to risk, correlation, or asset allocation. Investors use it only to decide which brokerage statement should be filed first.',
+            correct: false,
+          },
+          d3d9446802a44259755d38e6d163e820: {
+            count: 1,
+            value:
+              'Diversification can be implemented with individual securities, mutual funds, or exchange-traded funds. Broad index funds are a simple way to gain exposure to many firms at low cost. However, investors should still monitor fees, concentration, and currency exposure.',
+            correct: true,
+          },
+          // random texts (all incorrect)
+          b1d9446802a44259755d38e6d163e820: {
+            count: 1,
+            value:
+              'The curious fox jumped quickly over silent hills before dawn.',
+            correct: false,
+          },
+          a87ff679a2f3e7b1d9446802a4425975: {
+            count: 1,
+            value:
+              'Bright stars shimmered softly above the calm sea at midnight.',
+            correct: false,
+          },
+          e4da3b7fbbce3765c8a6f2cfa1b3f3a3: {
+            count: 1,
+            value:
+              'A gentle breeze carried laughter through the quiet summer evening.',
+            correct: false,
+          },
+          '7c6a180b36896a0a8c02787eeafb0e4c': {
+            count: 1,
+            value:
+              'Children built sandcastles while waves danced along the golden shore.',
+            correct: false,
+          },
+          '45c48cce2e2d7fbdea1afc51c7c6ad26': {
+            count: 1,
+            value:
+              'An old clock ticked steadily inside the dimly lit wooden cabin.',
+            correct: false,
+          },
+          '6512bd43d9caa6e02c990b0a82652dca': {
+            count: 1,
+            value:
+              'Raindrops tapped gently against the windowpane as thunder rolled faintly.',
+            correct: false,
+          },
+          '98f13708210194c475687be6106a3b84': {
+            count: 1,
+            value:
+              'A paper airplane drifted across the room and landed perfectly upright.',
+            correct: false,
+          },
+          '8277e0910d750195b448797616e091ad': {
+            count: 1,
+            value:
+              'Snowflakes settled quietly on the railing outside the old mountain house.',
+            correct: false,
+          },
+          e1671797c52e15f763380b45e841ec32: {
+            count: 1,
+            value:
+              'Lanterns illuminated the narrow street as music echoed from afar.',
+            correct: false,
+          },
+          aab3238922bcc25a6f606eb525ffdc56: {
+            count: 1,
+            value:
+              'The cat watched carefully while the candle flame flickered in silence.',
+            correct: false,
+          },
+          '9bf31c7ff062936a96d3c8bd1f8f2ff3': {
+            count: 1,
+            value:
+              'Fog wrapped the forest trees in silver mist and muted sound.',
+            correct: false,
+          },
+          c20ad4d76fe97759aa27a0c99bff6710: {
+            count: 1,
+            value:
+              'Morning sunlight spilled softly through the curtains onto the wooden floor.',
+            correct: false,
+          },
+          c51ce410c124a10e0db5e4b97fc2af39: {
+            count: 1,
+            value:
+              'An artist painted dreams with colors borrowed from twilight and dawn.',
+            correct: false,
+          },
+          aab3b5de3de36c9e1b1a0afcbbcbf0a1: {
+            count: 1,
+            value:
+              'Travelers rested beside the campfire as stars shimmered high above.',
+            correct: false,
+          },
+          '7b61d2313db5cbe1c59ab9c29d8b6aaf': {
+            count: 1,
+            value:
+              'The library smelled of old paper, ink, and whispered forgotten stories.',
+            correct: false,
+          },
+          c0cb5f0fcf2c30b28e08c706f52f8d85: {
+            count: 1,
+            value:
+              'A silver key glinted under the moonlight near the quiet garden gate.',
+            correct: false,
+          },
+          '70efdf2ec9b086079795c442636b55fb': {
+            count: 1,
+            value:
+              'Birds gathered on telephone wires waiting for the morning sun to rise.',
+            correct: false,
+          },
+          '6f4922f45568161a8cdf4ad2299f6d23': {
+            count: 1,
+            value:
+              'The violinist played softly while raindrops pattered gently on cobblestones.',
+            correct: false,
+          },
+          '1f0e3dad99908345f7439f8ffabdffc4': {
+            count: 1,
+            value:
+              'Candles flickered beside photographs that told stories of distant travels.',
+            correct: false,
+          },
+          '92debb6b5e70c378336763e26db8590c': {
+            count: 1,
+            value:
+              'Leaves rustled quietly as twilight descended upon the sleeping village.',
+            correct: false,
+          },
+        },
+      },
+      '5': {
+        total: 8,
+        responses: {
+          '98f13708210194c475687be6106a3b84': {
+            count: 2,
+            value: '20',
+            correct: true,
+          },
+          c4ca4238a0b923820dcc509a6f75849b: {
+            count: 1,
+            value: '1',
+            correct: false,
+          },
+          d3d9446802a44259755d38e6d163e820: {
+            count: 1,
+            value: '10',
+            correct: false,
+          },
+          '8e296a067a37563370ded05f5a3bf3ec': {
+            count: 1,
+            value: '25',
+            correct: false,
+          },
+          a5bfc9e07964f8dddeb95fc584cd965d: {
+            count: 1,
+            value: '37',
+            correct: false,
+          },
+          cf3e481a44141cabd4e9d46cfbb1f899: {
+            count: 1,
+            value: '12.5',
+            correct: false,
+          },
+          f899139df5e1059396431415e770c6dd: {
+            count: 1,
+            value: '100',
+            correct: true,
+          },
+        },
+      },
+    },
   },
 ]
 

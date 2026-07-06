@@ -240,6 +240,7 @@ export function useThreadManagement(
                 ...thread,
                 messages: newCurrentPath,
                 allMessages: updatedAllMessages,
+                updatedAt: new Date(),
               }
             : thread
         ),
@@ -291,6 +292,7 @@ export function useThreadManagement(
             ? {
                 ...thread,
                 messages: truncatedPath,
+                updatedAt: new Date(),
               }
             : thread
         ),

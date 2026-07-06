@@ -25,6 +25,8 @@ hatchet:
     general:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
@@ -45,6 +47,8 @@ hatchet:
     responseProcessor:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -65,6 +69,8 @@ hatchet:
     responseProcessorAssessment:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -97,6 +103,8 @@ hatchet:
 
 auth:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -150,16 +158,38 @@ auth:
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
     storeResponses: true
 
+  telemetry:
+    enabled: false
+
   automaticModels:
-    primaryId: gpt-5.1
+    primaryId: gpt-5.5
     fallbackId: gpt-4.1-mini
 
   modelRegistry:
+    # "Auto" routes through the LiteLLM complexity-router, which self-selects the
+    # tier per request (SIMPLE=gpt-4.1, MEDIUM=gpt-5.4-low, COMPLEX=gpt-5.4-medium,
+    # REASONING=gpt-5.5-low). It is a normal selectable model (fallback: false), so
+    # it does NOT change automatic selection for existing chatbots — they still
+    # default to gpt-5.5. A chatbot can be pinned to Auto-only via its DB columns
+    # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
+    # cost mirrors the gpt-5.4 tier (the typical COMPLEX route); REASONING (gpt-5.5)
+    # is rare. Tune if the routed mix shifts.
+    - id: auto
+      deploymentId: klickeruzh/azure/complexity-router
+      name: Auto
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
     - id: gpt-4.1
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
@@ -215,8 +245,8 @@ chat:
         - xhigh
       fallback: false
       cost:
-        input: 1.25
-        output: 10.0
+        input: 5.0
+        output: 30.0
     - id: gpt-4.1-mini
       deploymentId: klickeruzh/azure/gpt-4.1-mini
       name: GPT-4.1 Mini
@@ -279,6 +309,8 @@ chat:
 frontendPWA:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -330,6 +362,8 @@ frontendPWA:
 
 frontendManage:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -382,6 +416,8 @@ frontendManage:
 frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -433,6 +469,8 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -500,6 +538,8 @@ backendGraphql:
 
 olatApi:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -551,6 +591,8 @@ olatApi:
 
 lti:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
   replicaCount: 1
 
   affinity:
@@ -597,6 +639,9 @@ responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.stg.df-app.ch'
 
   priorityClassName: staging-workload
+
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -649,6 +694,8 @@ responseApi:
 assessment:
   frontendPWA:
     priorityClassName: staging-workload
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -711,6 +758,8 @@ assessment:
 
   backendGraphql:
     priorityClassName: staging-workload
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -787,6 +836,8 @@ assessment:
 
     priorityClassName: staging-workload
 
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
     replicaCount: 1
 
     autoscaling:
