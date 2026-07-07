@@ -97,15 +97,36 @@ jobs:
         with:
           name: playwright-build-artifact
           path: |
-            apps/**/.next
-            !apps/**/.next/cache/**
-            !apps/**/.next/standalone/**
-            apps/**/dist
-            apps/**/build
-            apps/**/out
-            packages/**/dist
-            packages/**/build
-            packages/**/out
+            apps/auth/.next
+            !apps/auth/.next/cache/**
+            !apps/auth/.next/standalone/**
+            apps/chat/.next
+            !apps/chat/.next/cache/**
+            !apps/chat/.next/standalone/**
+            apps/frontend-control/.next
+            !apps/frontend-control/.next/cache/**
+            !apps/frontend-control/.next/standalone/**
+            apps/frontend-manage/.next
+            !apps/frontend-manage/.next/cache/**
+            !apps/frontend-manage/.next/standalone/**
+            apps/frontend-pwa/.next
+            !apps/frontend-pwa/.next/cache/**
+            !apps/frontend-pwa/.next/standalone/**
+            apps/backend-docker/dist
+            apps/hatchet-worker-general/dist
+            apps/hatchet-worker-response-processor/dist
+            apps/lti/dist
+            apps/mcp-lecturer/dist
+            apps/olat-api/dist
+            apps/response-api/dist
+            packages/export/dist
+            packages/grading/dist
+            packages/graphql/dist
+            packages/hatchet/dist
+            packages/markdown/dist
+            packages/prisma/dist
+            packages/types/dist
+            packages/util/dist
           retention-days: 1
 
   playwright-run:
