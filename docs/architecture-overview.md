@@ -9,6 +9,8 @@ tags:
 
 # Architecture Overview
 
+> **Migrations in flight (2026-07):** GraphQL→tRPC (PR #5132) and AI-SDK→Mastra (PRs #5126/#5129) are open but unmerged — this page describes current reality until they land. If you touch the API layer or the chat platform, check those PRs' status first. Staged doc/skill changes: `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
+
 **The one thing to internalize: the GraphQL codegen artifacts are part of the API contract.** Outside dev/test, the backend executes only _persisted_ operations — it looks incoming hashes up in `@klicker-uzh/graphql/dist/server.json` and rejects unknown ones (`apps/backend-docker/src/app.ts:usePersistedOperations`, `allowArbitraryOperations` only under `NODE_ENV development|test`). Clients send hashes from the sibling `client.json`. Both files (plus `src/ops.ts`) are **git-tracked codegen outputs**: every change to a `.graphql` op or the schema must rerun `pnpm --filter @klicker-uzh/graphql generate` and commit the results, or production-mode requests fail.
 
 ## System map

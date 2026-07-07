@@ -22,9 +22,9 @@ Adjacent open PRs that will also invalidate wiki pages (watchlist, not planned h
 
 ## 1. GraphQL → tRPC
 
-### Phase T0 — now (before #5132 merges)
+### Phase T0 — now (before #5132 merges) — DONE 2026-07-07
 
-- Add a short status banner to `docs/graphql-api-layer.md` and `docs/architecture-overview.md`: "A dual GraphQL/tRPC migration is in flight (PR #5132); verify which API surface your target app uses before extending either."
+- ~~Add a short status banner to `docs/graphql-api-layer.md` and `docs/architecture-overview.md`~~ Done (banners on both pages).
 - **Coordination risk:** #5132 edits `AGENTS.md` and `.agents/skills/klicker-playwright-e2e/SKILL.md` → conflicts with #5145. Recommend merging #5145 (docs-only) first and rebasing #5132 onto it — the migration PR then gains a wiki to document itself in.
 
 ### Phase T1 — trigger: #5132 merges (dual API, GraphQL still primary for pwa/manage)
@@ -57,9 +57,9 @@ Skills:
 
 ## 2. AI SDK → Mastra
 
-### Phase M0 — now
+### Phase M0 — now — DONE 2026-07-07
 
-- No wiki edits (prototype PRs are draft). `chat-platform.md` already documents current AI-SDK reality — correct until #5126 merges.
+- No content rewrites (prototype PRs are draft); `chat-platform.md` keeps documenting current AI-SDK reality. Added a migration-in-flight banner (per principle 1) pointing at #5126/#5129.
 
 ### Phase M1 — trigger: #5126 merges (chat-api service beside chat app)
 
@@ -78,9 +78,9 @@ Skills:
 
 ## 3. Cypress → Playwright
 
-### Phase P0 — now (decision made, both suites still in repo)
+### Phase P0 — now (decision made, both suites still in repo) — DONE 2026-07-07
 
-Small honest edits — reality is "both run, Playwright is where investment goes":
+Small honest edits — reality is "both run, Playwright is where investment goes" (all three landed, plus the `docs/index.md` routing line):
 
 - `testing.md` — reframe: Playwright = primary/growing suite (new specs land there), Cypress = frozen parity suite pending removal; keep the dual-stack table until removal actually happens.
 - `klicker-testing-verification` — routing row: new e2e specs → Playwright only; touch Cypress only to keep legacy green.
