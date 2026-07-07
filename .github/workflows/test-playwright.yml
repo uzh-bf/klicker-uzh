@@ -358,11 +358,15 @@ jobs:
     steps:
       - name: Check result
         run: |
-          if [ "${{ needs.filter.outputs.should_run }}" \!= "true" ]; then
+          if [ "${{ needs.filter.result }}" != "success" ]; then
+            echo "Filter job failed: ${{ needs.filter.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.filter.outputs.should_run }}" != "true" ]; then
             echo "Tests skipped by path filter."
             exit 0
           fi
-          if [ "${{ needs.test-playwright.result }}" \!= "success" ]; then
+          if [ "${{ needs.test-playwright.result }}" != "success" ]; then
             echo "test-playwright result: ${{ needs.test-playwright.result }}"
             exit 1
           fi
