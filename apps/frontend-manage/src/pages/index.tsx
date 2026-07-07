@@ -304,7 +304,7 @@ function Index() {
         </>
       )}
 
-      <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto md:flex-row">
         <div>
           <FilterList
             key={creationMode}
