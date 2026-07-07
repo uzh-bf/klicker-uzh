@@ -99,6 +99,7 @@ jobs:
           path: |
             apps/**/.next
             !apps/**/.next/cache/**
+            !apps/**/.next/standalone/**
             apps/**/dist
             apps/**/build
             apps/**/out
