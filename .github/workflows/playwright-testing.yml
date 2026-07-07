@@ -98,7 +98,7 @@ jobs:
           name: playwright-build-artifact
           path: |
             apps/**/.next
-            !apps/**/.next/cache
+            !apps/**/.next/cache/**
             apps/**/dist
             apps/**/build
             apps/**/out
