@@ -49,7 +49,8 @@ for (const [, text, target] of agentsContent.matchAll(
 )) {
   const link = target.split('#')[0]
   if (link === '' || /^(https?:|mailto:|file:)/.test(link)) continue
-  if (!fs.existsSync(path.resolve(ROOT_DIR, link))) {
+  const cleanLink = link.startsWith('/') ? link.slice(1) : link
+  if (!fs.existsSync(path.resolve(ROOT_DIR, cleanLink))) {
     warn(`Broken link: "${text}" -> "${link}" does not exist.`)
   }
 }

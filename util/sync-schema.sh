@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+shopt -s nullglob
 
 SOURCE_DIR="${1:-./packages/prisma/src/prisma/schema}"
 DEST_DIR="${2:-./apps/analytics/prisma/schema}"
