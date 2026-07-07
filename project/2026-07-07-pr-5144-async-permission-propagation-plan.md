@@ -2,10 +2,10 @@
 
 ## Plan Identity
 
-- Plan: `project/2026-07-07-async-permission-propagation-plan.md`
+- Plan: `project/2026-07-07-pr-5144-async-permission-propagation-plan.md`
 - Branch: `permission-propagation-plan` (plan commit); implementation continues on this branch
 - Target: `v3`
-- PR: none yet (rename plan to `pr-<id>` form once opened)
+- PR: [#5144](https://github.com/uzh-bf/klicker-uzh/pull/5144) (draft)
 - History: [PR #4808](https://github.com/uzh-bf/klicker-uzh/pull/4808) `[CONCEPT] New suggested approach for asynchronous permission propagation` (branch `transaction-concept`, draft, unmerged) — earlier attempt at same problem, reviewed below.
 
 ## Goal
