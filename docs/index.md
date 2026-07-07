@@ -27,9 +27,15 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 
 Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki holds facts, skills hold workflows.
 
-- Cypress e2e work → `klicker-cypress-e2e`
-- Playwright e2e work → `klicker-playwright-e2e`
+- Environment broken / fresh clone / ports / stale codegen → `klicker-environment-doctor`
+- Designing a feature before coding → `klicker-feature-design`
+- GraphQL endpoint work (schema, service, ops, auth) → `klicker-graphql-api`
+- Prisma schema, migrations, seeds → `klicker-data-model`
+- UI in manage/pwa/control/auth → `klicker-frontend-ui`
+- Choosing test level + pre-PR verification → `klicker-testing-verification`
+- Cypress e2e work → `klicker-cypress-e2e`; Playwright e2e work → `klicker-playwright-e2e`
 - Browser-based verification of UI changes → `agent-browser` (invoke via `npx agent-browser`)
+- Updating this wiki → `klicker-wiki-maintenance`
 
 ## Maintenance
 
