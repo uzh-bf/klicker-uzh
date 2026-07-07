@@ -106,8 +106,10 @@ Integration: existing e2e/browser skills stay canonical for their domains; new s
 ## Progress
 
 - 2026-07-06: research done (inline fallback after 2× subagent rate-limit); plan drafted; Codex review integrated.
-- 2026-07-07: plan approved ("continue" with recommended D1–D5). S0 in progress; next: S1 Phase 0 bring-up.
+- 2026-07-07: plan approved ("continue" with recommended D1–D5). S0 committed (`a93185f8f`).
+- 2026-07-07: S1 done **with constraints**: user instructed "don't start the app" mid-slice; host ports 5432/6379/7077/8888 occupied by unrelated stacks. Verified: install/build/hook chain (pnpm 11.5.0, build 21 tasks no secrets), compose config w/o secrets, partial infra up+teardown. 5 exact failure signatures + agent-path traps captured → `project/docs/WIKI_BOOTSTRAP_BRINGUP.md`. App-layer bring-up NOT executed → all app-run commands in wiki/skills must carry `config-derived` label; doctor skill says "verify on your machine". Amendment: S1 gate satisfied at package+infra layer; app-layer verification deferred to dogfood run on a machine with free ports (S11) or explicit user go-ahead.
+- Next: S2 archaeology (read-only, no app start).
 
 ## Next steps
 
-- S1: environment inventory (non-destructive first), both bring-up paths, failure signatures, transcript commit.
+- S2: sequential subagent archaeology → inventory doc commit.
