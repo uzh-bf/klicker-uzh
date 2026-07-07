@@ -29,6 +29,10 @@ import MediaLibrary from './MediaLibrary'
 
 const lowlight = createLowlight(all)
 
+const normalizeMarkdown = (str: string) => {
+  return str.replace(/\r\n/g, '\n').replace(/\n+$/, '').trim()
+}
+
 export interface ContentInputClassName {
   root?: string
   toolbar?: string
@@ -110,9 +114,12 @@ function ContentInput({
     if (!editor) return
     if (editor.isFocused) return
 
-    const currentMarkdown = editor.getMarkdown()
-    if (content !== currentMarkdown) {
-      editor.commands.setContent(content)
+    const normalizedContent = content ?? ''
+    if (
+      normalizeMarkdown(normalizedContent) !==
+      normalizeMarkdown(editor.getMarkdown())
+    ) {
+      editor.commands.setContent(normalizedContent)
     }
   }, [content, editor])
 

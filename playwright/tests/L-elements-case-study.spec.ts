@@ -19,6 +19,22 @@ import {
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
 
+async function openAnswerCollectionOptions(page: Page) {
+  await page.locator('.ProseMirror').first().waitFor({ state: 'visible' })
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.getByTestId('open-answer-collection-options').click()
+    if (
+      await page
+        .getByTestId('search-answer-options')
+        .isVisible({ timeout: 1_000 })
+        .catch(() => false)
+    ) {
+      return
+    }
+  }
+  throw new Error('Failed to open answer collection options')
+}
+
 // ─── Type helpers ────────────────────────────────────────────────────────────
 
 type RangeCriterion = {
@@ -643,7 +659,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
 
     for (const sol of CS.items) {
       await expect(
@@ -674,7 +690,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       'data-disabled'
     )
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     await expect(page.getByText(MSG_ANSWER_OPTION_USED)).toBeVisible()
     await page.getByTestId('close-answer-collection-edit-modal').click()
   })
@@ -1118,7 +1134,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       page.getByTestId('delete-answer-collection')
     ).not.toHaveAttribute('data-disabled')
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...CS.items, ...CS.unselectedItems]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1138,7 +1154,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       'data-disabled'
     )
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of CS.itemsEdited) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1170,7 +1186,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     // Country Collection
     await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...CS.items, ...CS.unselectedItems]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1183,7 +1199,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       .getByTestId(`answer-collection-actions-${CS.collectionEdited}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...CS.itemsEdited, ...CS.unselectedItemsEdited]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1320,7 +1336,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       .getByTestId(`answer-collection-actions-${collectionName}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
 
     for (const sol of CS_INLINE.items) {
       await expect(

@@ -103,13 +103,10 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
 
     // 5. Test Syntax-Highlighted Code Block
     // Click outside of table area in the editor to append text
-    await editor.click()
-    const codeBlockBtn = page
-      .locator('button')
-      .filter({ has: page.locator('svg[data-icon="terminal"]') })
-    await codeBlockBtn.click()
+    await editor.locator('p').last().click()
 
-    // Write syntax-highlight code block contents
+    // Create code block via input rule: typing ```js followed by space/Enter
+    await page.keyboard.type('```js ')
     await page.keyboard.type('const count = 99;')
 
     // Verify Highlight.js token spans inside the editor

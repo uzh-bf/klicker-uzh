@@ -19,6 +19,22 @@ import {
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
 
+async function openAnswerCollectionOptions(page: Page) {
+  await page.locator('.ProseMirror').first().waitFor({ state: 'visible' })
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.getByTestId('open-answer-collection-options').click()
+    if (
+      await page
+        .getByTestId('search-answer-options')
+        .isVisible({ timeout: 1_000 })
+        .catch(() => false)
+    ) {
+      return
+    }
+  }
+  throw new Error('Failed to open answer collection options')
+}
+
 // Fixture data (mirrors cypress/cypress/fixtures/DM-questions.json SE section)
 const SE = {
   title: 'Selection Question Title',
@@ -269,8 +285,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...SE.solutions, ...SE.solutionsNotChosen]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -347,8 +362,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     await expect(
       page.getByText(MSG_ANSWER_OPTION_USED, { exact: false })
     ).toBeVisible()
@@ -504,7 +518,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
     // City collection: solutions are no longer in use → all deletable
     await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...SE.solutions, ...SE.solutionsNotChosen]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -520,7 +534,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
       .getByTestId(`answer-collection-actions-${SE.collectionEdited}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of SE.solutionsEdited) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -554,7 +568,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
     // City collection
     await page.getByTestId(`answer-collection-actions-${SE.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...SE.solutions, ...SE.solutionsNotChosen]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -570,7 +584,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
       .getByTestId(`answer-collection-actions-${SE.collectionEdited}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...SE.solutionsEdited, ...SE.solutionsNotChosenEdited]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -704,7 +718,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
       .getByTestId(`answer-collection-actions-${SE_INLINE.collection}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
 
     for (const sol of SE_INLINE.items) {
       const isCorrect = SE_INLINE.solutions.includes(sol)
@@ -785,7 +799,7 @@ test.describe('Test creation and editing functionalities for Selection elements'
       .getByTestId(`answer-collection-actions-${SE_INLINE.collection}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
 
     for (const sol of SE_INLINE.items) {
       await expect(
