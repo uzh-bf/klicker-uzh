@@ -8,7 +8,7 @@
 
 ## Verdict
 
-The PR is in good shape for a merge into `v3-ai`: auth design is sound, tests pass at the assertion level, Helm/CI deployment artifacts exist for both MCP servers, and the lecturer assistant is deliberately read/draft-only with a signed-proposal pattern for anything that touches data. It is **not yet production-ready**: a handful of small confirmed defects need fixing, runtime verification on staging has not happened, and several security and UX properties are asserted in code but have never been observed in a running environment. The ordered checklist in the last section is the remaining path to production; every step has exact commands.
+The PR is in good shape for a merge into `v3-ai`: auth design is sound, tests pass at the assertion level, Helm/CI deployment artifacts exist for both MCP servers, and the lecturer assistant is deliberately read/draft-only with a signed-proposal pattern for anything that touches data. It is **not yet production-ready**: a handful of confirmed defects need fixing — including one high-severity runtime bug (F5: the course-list tool is effectively unusable because the model passes a regex into a substring filter) — runtime verification on staging has not happened, and several security and UX properties are asserted in code but have never been observed in a running environment. Runtime feedback from manual testing (2026-07-07) is verified and incorporated below (F5–F9). The ordered checklist in the last section is the remaining path to production; every step has exact commands.
 
 ## How this review was done (and its limits)
 
@@ -63,6 +63,45 @@ pnpm --filter @klicker-uzh/chat test:run
 - **Evidence**: `apps/chat/src/hooks/usePwaEmbedTokenBootstrap.ts` mirrors the guest-token hook line-for-line (same `bootstrapTokenFromUrl` call, same try/catch cleanup, same `router.replace` effect).
 - **Fix**: fold both into one `useTokenBootstrap({ storageKey, queryKey, evictKeys })` hook when convenient; fine to bundle with F2's refactor ticket.
 
+## Junior runtime feedback — verified (2026-07-07)
+
+Five observations from manual runtime testing were verified against the code. All are real; each has a root cause and a concrete fix below. F5 and F6 should land before merge (small, high-impact); the rest are tracked follow-ups.
+
+### F5 — `klicker_lecturer_course_list` returns an empty list — **high (fix before merge)**
+
+- **Observed**: assistant calls the tool with `{"includeArchived":false,"limit":20,"query":".*"}` → `{"courses": []}`, even though the lecturer owns courses.
+- **Root cause (confirmed)**: the model passed a regex (`.*`) because the `query` parameter has no description (`apps/mcp-lecturer/src/service.ts:42` — `query: z.string().trim().min(1).max(120).optional()`), and the service applies it as a **literal substring** match (`contains`, `service.ts:687-704`). No course name contains the literal text `.*`, so the result is empty. Without `query`, the underlying data is fine: the test seed creates owner `DerivedPermission` rows for all test courses (`packages/prisma-data/src/data/seedTEST.ts:2443-2459`), and course creation recomputes them (`packages/graphql/src/services/courses.ts:2760`).
+- **Fix (junior-executable)**:
+  1. Add `.describe(...)` to **every** parameter of every tool schema in `apps/mcp-lecturer/src/service.ts` (and mirror in `apps/mcp-student`). For `query`: `"Case-insensitive substring filter on the course name. OMIT this parameter to list all courses. Not a regex."`
+  2. Defensive guard in `listCourses`: treat `query` values of `*`, `.*`, or `%` as "no filter" before building the `where` clause.
+  3. Add a unit test: `listCourses({ query: '.*' })` returns all courses (after the guard) — extend `apps/mcp-lecturer/test`.
+- **Production follow-up (staging checklist)**: `listCourses` and `getCourse` rely on `DerivedPermission` rows (`service.ts:665`, `:749`). Rows are created on course creation and sharing operations — **courses created before the sharing feature may have no rows**, which would reproduce the empty list for real lecturers even without the `query` bug. On staging, run the tool for an account with old courses; if empty, a one-off backfill (`recomputeDerivedPermissions({ courseId, userId: ownerId })` over all courses) must ship before production.
+
+### F6 — Assistant prints raw course IDs to the lecturer — **medium (one-line fix)**
+
+- **Observed**: "Start by summarizing the course with ID `7c12e44e-…`".
+- **Root cause (confirmed)**: the system prompt *invites* this — `apps/chat/src/services/manageAssistantRuntime.ts:14`: "…summarize results clearly with relevant names and IDs."
+- **Fix**: reword to "…summarize results clearly using human-readable names. Never show raw IDs (UUIDs) to the lecturer unless they explicitly ask for technical details." Adjust the corresponding assertion in `apps/chat/test` if one pins this string.
+
+### F7 — Chats are not persisted: closing the drawer or navigating starts a new chat — **medium (follow-up ticket)**
+
+- **Confirmed**: `apps/frontend-pwa/src/components/chatbot/CourseChatDrawer.tsx:194` renders the iframe only inside `{open && …}` — pressing X unmounts it, and every page navigation mounts a fresh iframe. The Manage assistant is stateless **by design** (commit `2cd7331c6` "keep manage assistant responses stateless").
+- **Fix, staged**:
+  1. *Cheap (same-page reopen)*: keep the iframe mounted when `open === false` and hide it with CSS (`hidden` / `invisible`) instead of unmounting. X then pauses the chat instead of destroying it.
+  2. *Cross-page*: persist the active thread id in `sessionStorage` keyed by `chatbotId+courseId`, and have the embedded chat rehydrate that thread on mount (the standalone chat already has thread persistence — see `thread-list.tsx`).
+  3. Add a "new chat" button to the embedded chat header (junior's suggestion — agreed) so users can reset explicitly.
+  4. Decide separately whether the Manage assistant should stay stateless; if yes, document that in the UI (e.g. tooltip on close).
+
+### F8 — No answer context: "why is my answer wrong?" fails after submitting — **medium (follow-up ticket)**
+
+- **Confirmed**: the page context sent to the chat contains only `stackId`, element `type`, `contentPreview` (question text, 500 chars) and step counters — no student response (`apps/frontend-pwa/src/lib/chatbot/chatContext.ts`, `buildQuestionContext`). Note this is partly deliberate: the context was designed **answer-safe** so the bot cannot leak solutions before submission (see plan, slice 1).
+- **Fix (simpler than the Prisma route the junior explored)**: no DB change needed. Extend `KlickerChatContext['question']` (`packages/types/src/chatContext.ts`) with optional post-submission fields, e.g. `studentResponse` (sanitized preview) and `evaluation` (`correct | partial | incorrect`, achieved points). Populate them from local `ElementStack` state **only after submission**, and re-send the context via the existing `postContext` postMessage path (`CourseChatDrawer.tsx:141` already re-posts on context change). Keep pre-submission context unchanged to preserve answer-safety.
+
+### F9 — "Save generated content directly" — partially exists; discoverability problem — **low**
+
+- The direct-save path **is implemented**: `klicker_lecturer_element_create_draft_proposal` returns a signed proposal, rendered as a confirm card (`apps/chat/src/components/manage-proposal-card.tsx`), and confirmation persists a DRAFT question via GraphQL (`apps/chat/src/services/manageProposals.ts:177`, `confirmManageProposal`). The junior saw plain text because the model used the draft-only tools (`question_draft` / `choices_draft` / `feedback_draft`), which never persist.
+- **Fix**: steer routing — in the tool descriptions and the manage system prompt, state that when the lecturer wants a question **created**, the assistant must use `element_create_draft_proposal`; the plain draft tools are for iterating on wording only. Verify in the browser pass (checklist step 5) that "create this question for me" reliably produces a proposal card.
+
 ## Security spot-check (manual, code-level)
 
 What was checked and found **sound**:
@@ -111,8 +150,10 @@ Work through these in order. Steps 1–3 are local; 4–6 need the dev stack; 7�
 
 - [ ] F1: add `"MCP_LECTURER_SCHEME"` and `"MCP_STUDENT_SCHEME"` to `globalEnv` in `turbo.json`.
 - [ ] F3: type the Prisma delegates in `apps/mcp-lecturer/src/service.ts:244-252` (use `Prisma.*Args` types).
-- [ ] Commit both as `fix(mcp): address production readiness review findings`.
-- [ ] File one follow-up issue for F2 + F4 (shared MCP package + merged bootstrap hook), linking this review.
+- [ ] F5: add `.describe()` to all MCP tool parameters, add the `.*`/`*`/`%` no-filter guard in `listCourses`, add the unit test (see F5 above for exact wording).
+- [ ] F6: reword the "names and IDs" instruction in `apps/chat/src/services/manageAssistantRuntime.ts:14`.
+- [ ] Commit as `fix(mcp): address production readiness review findings`.
+- [ ] File follow-up issues for: F2 + F4 (shared MCP package + merged bootstrap hook), F7 (embedded chat persistence + new-chat button), F8 (post-submission answer context), F9 (proposal-tool routing) — each linking this review.
 
 ### 2. Clean local test signal (≈15 min)
 
@@ -157,6 +198,8 @@ Start the full dev stack (`pnpm run dev` with Infisical), then use `npx agent-br
 - [ ] Student: embedded mode (`?embed=true`) on mobile viewport (375px) → drawer full-width, not overlapped by sticky submit button.
 - [ ] Student: course without chatbot → `noCourseChatbot` empty state, no broken button.
 - [ ] Lecturer: Manage → assistant drawer opens; run one read tool (course list) and one draft proposal; confirm the proposal card requires explicit confirmation and creates a DRAFT question only.
+- [ ] Lecturer: course list tool returns the seeded courses after the F5 fix (ask "list my courses"); no raw UUIDs appear in the assistant's prose after the F6 fix.
+- [ ] Lecturer: "create this question for me" produces a **proposal card** (not plain text) — verifies F9 routing.
 - [ ] Both: keyboard — Escape closes drawer, focus returns to trigger button; tab order inside drawer sane.
 - [ ] Expiry: with the drawer open, delete the embed session cookie in devtools, send a message → user sees a recoverable error (fallback link / re-auth), not a silent hang.
 - [ ] Kill the mcp-lecturer dev server, send an assistant message in Manage → chat degrades gracefully with a visible error, chat itself keeps working.
@@ -174,6 +217,7 @@ Start the full dev stack (`pnpm run dev` with Infisical), then use `npx agent-br
 - [ ] Verify deployed CSP: from the staging LMS/OLAT context, the embed loads; from an unrelated origin, framing is blocked.
 - [ ] Confirm (or create) the kill switch: how do we disable the assistant per environment if the LLM misbehaves? If the only lever is deleting the deployment, add a values-level enable flag before production.
 - [ ] Decide on rate limiting for the MCP endpoints (ingress annotation or app-level) — currently none in app code.
+- [ ] Legacy-data check (see F5): run `klicker_lecturer_course_list` (no `query`) for a staging account with courses created **before** the sharing feature. If it returns empty, ship a one-off backfill that runs `recomputeDerivedPermissions({ courseId, userId: ownerId })` for all existing courses before production.
 
 ### 8. Production gate
 
