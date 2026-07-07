@@ -2,10 +2,10 @@
 
 ## Plan Identity
 
-- Plan: `project/2026-07-07-escape-room-quiz-mode-plan.md`
+- Plan: `project/2026-07-07-pr-5143-escape-room-quiz-mode-plan.md`
 - Branch: `escape-room-quiz-mode-plan` (plan-only; implementation branches off `v3` later, one branch per slice group or single branch per workflow)
 - Target branch: `v3`
-- PR: draft PR carries this plan; ID added to filename once known
+- PR: [#5143](https://github.com/uzh-bf/klicker-uzh/pull/5143) (draft)
 - Audience: junior engineer + coding agent. Follow `df-sliced-development-workflow` (dated plan, one slice at a time, review + simplification + commit per slice).
 
 ## Goal
