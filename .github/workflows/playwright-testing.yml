@@ -96,6 +96,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-build-artifact
+          include-hidden-files: true
           path: |
             apps/auth/.next
             !apps/auth/.next/cache/**
