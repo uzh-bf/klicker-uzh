@@ -523,7 +523,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     return acc
   }, [])
 
+  const startedAtLiveQuiz = new Date()
+  const endedAtLiveQuiz = new Date(startedAtLiveQuiz.getTime() + 60 * 60 * 1000)
   for (const data of DATA_TEST.LIVE_QUIZZES) {
+    const isEnded = data.status == Prisma.PublicationStatus.ENDED
+
     const liveQuiz = await prisma.liveQuiz.upsert({
       where: { id: data.id },
       create: {
@@ -543,10 +547,23 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         defaultCorrectPoints: data.defaultCorrectPoints,
         maxBonusPoints: data.maxBonusPoints,
         timeToZeroBonus: data.timeToZeroBonus,
+        ...(isEnded
+          ? {
+              startedAt: startedAtLiveQuiz,
+              finishedAt: endedAtLiveQuiz,
+            }
+          : {}),
         blocks: {
           create: data.blocks.map((block, ix) => ({
             order: ix,
             timeLimit: block.timeLimit,
+            ...(isEnded
+              ? {
+                  startedAt: startedAtLiveQuiz,
+                  closedAt: endedAtLiveQuiz,
+                  status: Prisma.ElementBlockStatus.EXECUTED,
+                }
+              : {}),
             elements: {
               create: block.questions.map((elementId, elementIx) => {
                 const el = questionsTest.find(
@@ -560,7 +577,12 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
                 const elementData = processElementData(el)
                 const initialResults = getInitialInstanceResults(elementData)
-
+                const anonymousResultIndex = String(
+                  elementId
+                ) as DATA_TEST.QUESTION_ID_TYPE
+                const anonymousResults = isEnded
+                  ? data.anonymousResults[anonymousResultIndex]
+                  : initialResults
                 return {
                   order: elementIx,
                   type: Prisma.ElementInstanceType.LIVE_QUIZ,
@@ -572,7 +594,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                       (data.pointsMultiplier ?? 1) * el.pointsMultiplier,
                   },
                   results: initialResults,
-                  anonymousResults: initialResults,
+                  anonymousResults: anonymousResults,
                   instanceStatistics: {
                     create: getInitialInstanceStatistics(
                       Prisma.ElementInstanceType.LIVE_QUIZ

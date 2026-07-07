@@ -1,5 +1,7 @@
 name: Klicker automated testing with playwright
 on:
+  push:
+    branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
@@ -9,7 +11,12 @@ on:
       - playwright/**
       - .github/workflows/playwright-testing.yml
       - .github/scripts/wait-for-services.sh
+      - package.json
+      - pnpm-lock.yaml
+      - playwright/package.json
       - util/_create_hatchet_token_cypress.sh
+      - util/_with_local_test_origins.sh
+      - util/_run_with_infisical.sh
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -19,10 +26,16 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  playwright-run-draft:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+  playwright-run:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4, 5]
+        shardTotal: [5]
     services:
       postgres:
         image: postgres:15
@@ -31,7 +44,7 @@ jobs:
           POSTGRES_PASSWORD: klicker
           POSTGRES_DB: klicker-prod
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -85,21 +98,21 @@ jobs:
           - '7077:7077'
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
-          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
           SERVER_AUTH_COOKIE_INSECURE: 't'
           SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
           SERVER_GRPC_INSECURE: 't'
-          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
-          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
           SERVER_GRPC_PORT: '7077'
-          SERVER_URL: http://localhost:8888
+          SERVER_URL: http://hatchet:8888
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
           SERVER_LOGGER_LEVEL: debug
           SERVER_LOGGER_FORMAT: console
 
     steps:
-      - run: echo "Running Playwright PoC tests for draft PR"
+      - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
 
       - name: Define node version
         uses: actions/setup-node@v4
@@ -107,7 +120,7 @@ jobs:
           node-version: 24
 
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
@@ -124,7 +137,6 @@ jobs:
         with:
           path: |
             ${{ env.STORE_PATH }}
-            ~/.cache/ms-playwright
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
@@ -144,64 +156,104 @@ jobs:
 
       - name: Build all packages and apps
         run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
-
-      - name: Prepare .env files
-        run: |
-          ./util/_create_hatchet_token_cypress.sh
-
-      - name: Apply migrations and reset database
-        run: |
-          cd packages/prisma
-          pnpm run prisma:reset:raw -f
-        env:
-          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
-
-      - name: Seed test participants for Playwright
-        run: pnpm --filter @klicker-uzh/prisma-data seed:test
-        env:
-          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
-
-      - name: Install Playwright browsers
-        run: pnpm --filter @klicker-uzh/playwright exec playwright install --with-deps chromium firefox webkit
-
-      - name: Start services and wait for readiness
-        run: |
-          chmod +x .github/scripts/wait-for-services.sh
-          .github/scripts/wait-for-services.sh
         env:
           APP_SECRET: abcd
-          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
-          NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
-          TIMEOUT_SECONDS: '300'
-          CHECK_INTERVAL: '5'
-          REDIS_HOST: localhost
+          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+          NODE_ENV: test
+          REDIS_HOST: redis_exec
           REDIS_PASS: ''
           REDIS_PORT: 6379
-          REDIS_ASSESSMENT_PORT: 6381
+          REDIS_CACHE_HOST: redis_cache
+          REDIS_CACHE_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6379
           REDIS_ASSESSMENT_PASS: ''
-          REDIS_ASSESSMENT_HOST: localhost
+          REDIS_ASSESSMENT_HOST: redis_assessment_exec
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
-          APP_ORIGIN_LTI: http://127.0.0.1:3005
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
           APP_ORIGIN_PWA: http://127.0.0.1:3001
           APP_ORIGIN_MANAGE: http://127.0.0.1:3002
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
-      - name: Run Playwright tests
-        run: pnpm --filter @klicker-uzh/playwright test:run
+      - name: Prepare .env files
+        run: |
+          ./util/_create_hatchet_token_cypress.sh
         env:
+          HATCHET_API_URL: http://hatchet:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+
+      - name: Apply migrations and reset database
+        run: |
+          cd packages/prisma
+          pnpm run prisma:reset:raw -f
+        env:
+          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+
+      - name: Seed test participants for Playwright
+        run: pnpm --filter @klicker-uzh/prisma-data seed:test
+        env:
+          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+
+      - name: Start services, wait for readiness, and run Playwright tests
+        timeout-minutes: 120
+        run: |
+          chmod +x .github/scripts/wait-for-services.sh
+          .github/scripts/wait-for-services.sh -- \
+            env NODE_ENV=test \
+            pnpm --filter @klicker-uzh/playwright exec playwright test \
+              --project=chromium \
+              --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+          NODE_ENV: production
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
-          PW_STUDENT_USERNAME: testuser1
-          PW_STUDENT_PASSWORD: abcdabcd
+          URL_AUTH: http://127.0.0.1:3010
+          URL_CONTROL: http://127.0.0.1:3003
+          URL_MANAGE: http://127.0.0.1:3002
+          URL_STUDENT: http://127.0.0.1:3001
+          URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
+          URL_CHAT: http://127.0.0.1:3004
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3004/noLogin http://127.0.0.1:3010'
+          SERVICE_START_SCRIPT: start:playwright:ci
+          TIMEOUT_SECONDS: '300'
+          CHECK_INTERVAL: '5'
+          POSTGRES_CHECK_HOST: postgres
+          POSTGRES_CHECK_PORT: 5432
+          POSTGRES_CHECK_USER: klicker-prod
+          POSTGRES_CHECK_DATABASE: klicker-prod
+          REDIS_HOST: redis_exec
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
+          REDIS_CACHE_HOST: redis_cache
+          REDIS_CACHE_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6379
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_HOST: redis_assessment_exec
+          HATCHET_CHECK_HOST: hatchet
+          HATCHET_HTTP_PORT: 8888
+          HATCHET_GRPC_PORT: 7077
+          HATCHET_API_URL: http://hatchet:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_CLIENT_HOST_PORT: hatchet:7077
+          HATCHET_HOST_PORT: hatchet:7077
+          HATCHET_CLIENT_TLS_STRATEGY: none
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-draft
+          name: playwright-artifacts-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
           path: |
             playwright/playwright-report
             playwright/test-results

@@ -3,7 +3,7 @@ import { Prisma } from '@klicker-uzh/prisma/client'
 import { open } from 'fs/promises'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import type { WorkbookSheet } from './lib/simpleWorkbook.js'
+import type { SheetValue, WorkbookSheet } from './lib/simpleWorkbook.js'
 import {
   formatDate,
   sanitizeFilename,
@@ -13,6 +13,9 @@ import {
 type CliOptions = {
   all: boolean
   query?: string
+  chatbotId?: string
+  courseId?: string
+  scopeLabel: string
   semester: string
   from: Date
   to: Date
@@ -158,6 +161,8 @@ const repoRoot = resolve(scriptDir, '../../../..')
 const todayPrefix = new Date().toISOString().slice(0, 10)
 const XLSX_CELL_TEXT_LIMIT = 32767
 const WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT = 2000
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const DEFAULT_MODEL_REGISTRY: ModelConfig[] = [
   {
@@ -570,11 +575,16 @@ function usage() {
   return [
     'Usage:',
     '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --all',
+    '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --chatbotId <uuid>',
+    '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --courseId <uuid>',
     '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --query MAT183',
     '',
     'Options:',
     '  --all                      Analyze all chatbots with activity in the date window.',
+    '  --chatbotId <uuid>          Analyze one chatbot by database ID.',
+    '  --courseId <uuid>           Analyze all chatbots for one course by database ID.',
     '  --query, --course <text>    Restrict to matching course/chatbot names.',
+    '                              UUID values also match chatbotId/courseId.',
     '  --semester <current|fs26>   Date window when --from/--to are omitted. Default: current.',
     '  --from YYYY-MM-DD           Inclusive start date.',
     '  --to YYYY-MM-DD             Inclusive end date.',
@@ -588,11 +598,48 @@ function usage() {
 
 function getArgValue(args: string[], name: string) {
   const index = args.indexOf(name)
-  return index >= 0 ? args[index + 1] : undefined
+  if (index < 0) return undefined
+
+  const value = args[index + 1]
+  if (!value || value.startsWith('--')) {
+    throw new Error(`Missing value for ${name}.`)
+  }
+  return value
 }
 
 function hasFlag(args: string[], name: string) {
   return args.includes(name)
+}
+
+function validateArgs(args: string[]) {
+  const knownFlags = new Set([
+    '--help',
+    '--all',
+    '--query',
+    '--course',
+    '--chatbotId',
+    '--courseId',
+    '--semester',
+    '--from',
+    '--to',
+    '--outDir',
+    '--filePrefix',
+    '--minTopicMessages',
+    '--minTopicParticipants',
+    '--includeMessageContent',
+  ])
+
+  for (const arg of args) {
+    if (arg.startsWith('--') && !knownFlags.has(arg)) {
+      throw new Error(`Unknown option: ${arg}.`)
+    }
+  }
+}
+
+function assertUuid(name: string, value: string | undefined) {
+  if (value && !UUID_PATTERN.test(value)) {
+    throw new Error(`Invalid UUID for ${name}: ${value}.`)
+  }
 }
 
 function parseDate(value: string | undefined, endOfDay = false) {
@@ -686,13 +733,31 @@ function parseArgs(): CliOptions {
     process.exit(0)
   }
 
+  validateArgs(args)
+
   const all = hasFlag(args, '--all')
   const query = getArgValue(args, '--query') ?? getArgValue(args, '--course')
-  if (!all && !query) {
+  const chatbotId = getArgValue(args, '--chatbotId')
+  const courseId = getArgValue(args, '--courseId')
+  const selectors = [
+    all ? 'all' : undefined,
+    query,
+    chatbotId,
+    courseId,
+  ].filter(Boolean)
+  if (selectors.length === 0) {
     throw new Error(
-      'Pass either --all or --query. No course is selected by default.'
+      'Pass one selector: --all, --chatbotId, --courseId, or --query. No course is selected by default.'
     )
   }
+  if (selectors.length > 1) {
+    throw new Error(
+      'Pass only one selector: --all, --chatbotId, --courseId, or --query.'
+    )
+  }
+
+  assertUuid('--chatbotId', chatbotId)
+  assertUuid('--courseId', courseId)
 
   const now = new Date()
   const semester = getArgValue(args, '--semester') ?? 'current'
@@ -705,7 +770,14 @@ function parseArgs(): CliOptions {
     )
   }
 
-  const scope = query ? sanitizeFilename(query) : 'all_chatbots'
+  const scopeLabel = all
+    ? 'all_chatbots'
+    : chatbotId
+      ? `chatbot:${chatbotId}`
+      : courseId
+        ? `course:${courseId}`
+        : `query:${query}`
+  const scope = sanitizeFilename(scopeLabel.replace(':', '_'))
   const windowLabel = getArgValue(args, '--semester') ?? defaultWindow.label
   const filePrefix =
     getArgValue(args, '--filePrefix') ??
@@ -714,6 +786,9 @@ function parseArgs(): CliOptions {
   return {
     all,
     query,
+    chatbotId,
+    courseId,
+    scopeLabel,
     semester: defaultWindow.label,
     from,
     to,
@@ -761,6 +836,30 @@ function toolNames(value: Prisma.JsonValue) {
 
 function toolCallCount(value: Prisma.JsonValue) {
   return asArray(value).filter((item) => item.type === 'tool-call').length
+}
+
+function toolCallDetailRows(message: MessageRecord): SheetValue[][] {
+  return asArray(message.content)
+    .filter((item) => item.type === 'tool-call')
+    .map((item) => {
+      const result =
+        item.result && typeof item.result === 'object'
+          ? (item.result as Record<string, unknown>)
+          : null
+
+      return [
+        message.courseName,
+        message.chatbotKey,
+        message.chatbotName,
+        message.threadKey,
+        message.messageKey,
+        message.participantKey,
+        message.messageCreatedAt,
+        typeof item.toolName === 'string' ? item.toolName : null,
+        typeof item.toolCallId === 'string' ? item.toolCallId : null,
+        typeof result?.isError === 'boolean' ? result.isError : null,
+      ]
+    })
 }
 
 function decimalToNumber(value: unknown): number | null {
@@ -1764,40 +1863,49 @@ function buildTopicAnalysis(
 }
 
 async function loadChatbots(options: CliOptions) {
-  const activeWindowFilter = {
-    threads: {
-      some: {
-        messages: {
-          some: {
-            createdAt: {
-              gte: options.from,
-              lte: options.to,
-            },
-          },
-        },
-      },
-    },
-  }
-  const queryFilter = options.query
+  const activeWindowFilter: Prisma.ChatbotWhereInput = options.all
     ? {
-        OR: [
-          { name: { contains: options.query, mode: 'insensitive' as const } },
-          {
-            course: {
-              name: { contains: options.query, mode: 'insensitive' as const },
-            },
-          },
-          {
-            course: {
-              displayName: {
-                contains: options.query,
-                mode: 'insensitive' as const,
+        threads: {
+          some: {
+            messages: {
+              some: {
+                createdAt: {
+                  gte: options.from,
+                  lte: options.to,
+                },
               },
             },
           },
-        ],
+        },
       }
     : {}
+  const queryFilter: Prisma.ChatbotWhereInput = options.chatbotId
+    ? { id: options.chatbotId }
+    : options.courseId
+      ? { courseId: options.courseId }
+      : options.query
+        ? {
+            OR: [
+              { name: { contains: options.query, mode: 'insensitive' } },
+              ...(UUID_PATTERN.test(options.query)
+                ? [{ id: options.query }, { courseId: options.query }]
+                : []),
+              {
+                course: {
+                  name: { contains: options.query, mode: 'insensitive' },
+                },
+              },
+              {
+                course: {
+                  displayName: {
+                    contains: options.query,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            ],
+          }
+        : {}
 
   return prisma.chatbot.findMany({
     where: {
@@ -2066,6 +2174,13 @@ function buildSheets(
       credit,
     ])
   )
+  const participantKeyById = createKeyMap(
+    [
+      ...messages.map((message) => message.participantId),
+      ...creditRows.map((credit) => credit.participantId),
+    ],
+    'participant'
+  )
   const topicAssignmentByMessageKey = new Map(
     topicAnalysis.assignments.map((assignment) => [
       assignment.messageKey,
@@ -2098,7 +2213,7 @@ function buildSheets(
         ['semester', options.semester],
         ['from', formatDate(options.from)],
         ['to', formatDate(options.to)],
-        ['scope', options.query ? `query:${options.query}` : 'all chatbots'],
+        ['scope', options.scopeLabel],
         ['chatbots', chatbots.length],
         [
           'privacy',
@@ -2592,6 +2707,43 @@ function buildSheets(
     ),
   })
 
+  sheets.push({
+    name: 'Credits',
+    headers: [
+      'courseName',
+      'chatbotKey',
+      'chatbotName',
+      'participantKey',
+      'current',
+      'total',
+      'resetCount',
+      'periodStartedAt',
+      'lastResetAt',
+      'disclaimerAcceptedAt',
+      'disclaimerDeclined',
+      'createdAt',
+      'updatedAt',
+    ],
+    rows: creditRows.map((credit) => {
+      const chatbot = chatbotById.get(credit.chatbotId)
+      return [
+        chatbot?.course.name,
+        chatbot ? chatbotKeyById.get(chatbot.id) : null,
+        chatbot?.name,
+        participantKeyById.get(credit.participantId),
+        credit.current.toNumber(),
+        credit.total.toNumber(),
+        credit.resetCount,
+        credit.periodStartedAt,
+        credit.lastResetAt,
+        credit.disclaimerAcceptedAt,
+        credit.disclaimerDeclined,
+        credit.createdAt,
+        credit.updatedAt,
+      ]
+    }),
+  })
+
   const dailyGroups = groupBy(
     messages,
     (message) => `${toDateKey(message.messageCreatedAt)}:${message.chatbotId}`
@@ -2781,6 +2933,23 @@ function buildSheets(
       row.participants.size,
       row.threads.size,
     ]),
+  })
+
+  sheets.push({
+    name: 'Tool Call Details',
+    headers: [
+      'courseName',
+      'chatbotKey',
+      'chatbotName',
+      'threadKey',
+      'messageKey',
+      'participantKey',
+      'messageCreatedAt',
+      'toolName',
+      'toolCallId',
+      'isError',
+    ],
+    rows: messages.flatMap(toolCallDetailRows),
   })
 
   sheets.push({
@@ -3029,7 +3198,9 @@ async function main() {
 
   if (chatbots.length === 0) {
     throw new Error(
-      `No chatbot activity found for the selected scope between ${formatDate(options.from)} and ${formatDate(options.to)}.`
+      options.all
+        ? `No chatbot activity found between ${formatDate(options.from)} and ${formatDate(options.to)}.`
+        : `No chatbot/course found for ${options.scopeLabel}.`
     )
   }
 
@@ -3120,6 +3291,12 @@ async function main() {
 
 try {
   await main()
+} catch (error) {
+  console.error(
+    `ERROR: ${error instanceof Error ? error.message : String(error)}`
+  )
+  console.error('Run with --help to see valid selectors and options.')
+  process.exitCode = 1
 } finally {
   await prisma.$disconnect()
 }
