@@ -204,11 +204,11 @@ Each PR: branch from `v3`, conventional-commit title, fill the PR template, run 
 - 2026-07-06: **Devcontainer consolidation** done on `feat/devcontainer-devnet`: #5120 + #5138 merged in, devrouter made optional via `docker-compose.devrouter.yml` overlay + localhost port publishing + post-start fallback (covers 2.1 stack + 2.4–2.6). #5119 is MERGEABLE but held per owner instruction.
 - 2026-07-06: **PR C — CI scoping** (handoff takeover): check-types.yml serial builds → turbo-filtered build (1.4); playwright shards 5→8 (1.5). `pnpm run check:all` passes. Pending: commit+push, close #4901 (1.6) and #3928 (2.2).
 - 2026-07-06: **/simplify pass** over the branch: extracted the 7× duplicated path-filter bash into `.github/actions/changed-paths` (fixes the shallow-clone bug — the old three-dot diff has no merge base on `fetch-depth: 1` checkouts and would have failed every PR run; push events now deepen by 1 and fail open instead of silently skipping); added `test-graphql-status` / `test-playwright-status` always-reporting gate jobs so those workflows are usable as required checks despite path-filter skips; restored path gating on check-lint; check-types got `fetch-depth: 0` (turbo change-filter needs a merge base) and lost the silent `|| full build` fallback; `check-agents-md.mjs` slimmed 180→~75 lines (dead machine-specific `file://` branch and lifecycle allowlist removed); `check-prisma-sync.sh` now reuses `sync-schema.sh`; dependabot `cooldown: 14` added (aligned with pnpm `minimumReleaseAge`). Kept 8 playwright shards (justified by measured shard imbalance 36m50s vs 14–17m); check-format left ungated (prettier covers nearly all file types, a filter would be near-universal).
+- 2026-07-08: PR 5140 changes (CI integrity, path-filtered checks, and tooling quick wins) fully implemented and polished, including all outstanding reviews and quality improvements (B1 setup-uv, B2 check-types scoping, B3 analytics schema tracking, M2 status check hardening, M3 setup-node integration, M5 CODEOWNERS). Pushed to GitHub and triggered CI.
+- 2026-07-08: Pulled latest `v3` into the branch, resolved all merges cleanly, and updated the engineering wiki documentation (`docs/ci-and-deployment.md`, `docs/testing.md`) to align with the changes.
 
 ## Next Steps
 
-1. Commit + push PR C changes on `agent-readiness`; open the PR.
-2. Close superseded PRs #4901 (act) and #3928 (old devcontainer) with pointer comments.
-3. Owner: update branch-protection required contexts on `v3` — use `test-graphql-status` and `test-playwright-status` (not the raw test jobs, which report "skipped" on filtered runs) plus the renamed check jobs from PR B; decide merge timing for #5119.
-4. Graduate `util/check-agents-md.mjs` from warn-only to failing (exit 1 on warnings) once it has been quiet for a few weeks.
-5. Continue with PR E (testing feedback loops, WS3) — WS1/WS2 items then largely done.
+1. Wait for PR 5140 checks to finish and merge it into `v3`.
+2. Update branch-protection required contexts on `v3` to point to the renamed/hardened contexts (settings change, owner action).
+3. Proceed with the devcontainer landing (WS2) and subsequent workstreams (WS3 testing feedback loops, WS4 observability).
