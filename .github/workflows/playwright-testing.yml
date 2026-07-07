@@ -200,11 +200,13 @@ jobs:
         timeout-minutes: 120
         run: |
           chmod +x .github/scripts/wait-for-services.sh
+          TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }})
+          echo "Running tests for shard ${{ matrix.shardIndex }}: $TEST_FILES"
           .github/scripts/wait-for-services.sh -- \
             env NODE_ENV=test \
             pnpm --filter @klicker-uzh/playwright exec playwright test \
               --project=chromium \
-              --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+              $TEST_FILES
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
