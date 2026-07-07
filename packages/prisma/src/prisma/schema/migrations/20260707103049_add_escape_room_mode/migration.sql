@@ -1,6 +1,45 @@
 -- CreateEnum
 CREATE TYPE "public"."EscapeRoomStatus" AS ENUM ('IN_PROGRESS', 'COMPLETED', 'EXPIRED');
 
+-- CreateTable
+CREATE TABLE "public"."EscapeRoomConfig" (
+    "id" UUID NOT NULL,
+    "timeLimit" INTEGER NOT NULL,
+    "hintPenalty" INTEGER NOT NULL DEFAULT 30,
+    "lockoutSeconds" INTEGER NOT NULL DEFAULT 5,
+    "introText" TEXT,
+    "practiceQuizId" UUID,
+    "microLearningId" UUID,
+    "groupActivityId" UUID,
+    "elementBlockId" INTEGER,
+
+    CONSTRAINT "EscapeRoomConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EscapeRoomConfig_practiceQuizId_key" ON "public"."EscapeRoomConfig"("practiceQuizId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EscapeRoomConfig_microLearningId_key" ON "public"."EscapeRoomConfig"("microLearningId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EscapeRoomConfig_groupActivityId_key" ON "public"."EscapeRoomConfig"("groupActivityId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EscapeRoomConfig_elementBlockId_key" ON "public"."EscapeRoomConfig"("elementBlockId");
+
+-- AddForeignKey
+ALTER TABLE "public"."EscapeRoomConfig" ADD CONSTRAINT "EscapeRoomConfig_practiceQuizId_fkey" FOREIGN KEY ("practiceQuizId") REFERENCES "public"."PracticeQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."EscapeRoomConfig" ADD CONSTRAINT "EscapeRoomConfig_microLearningId_fkey" FOREIGN KEY ("microLearningId") REFERENCES "public"."MicroLearning"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."EscapeRoomConfig" ADD CONSTRAINT "EscapeRoomConfig_groupActivityId_fkey" FOREIGN KEY ("groupActivityId") REFERENCES "public"."GroupActivity"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."EscapeRoomConfig" ADD CONSTRAINT "EscapeRoomConfig_elementBlockId_fkey" FOREIGN KEY ("elementBlockId") REFERENCES "public"."ElementBlock"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- AlterTable
 ALTER TABLE "public"."GroupActivity" ADD COLUMN     "escapeRoomHintPenalty" INTEGER NOT NULL DEFAULT 120,
 ADD COLUMN     "escapeRoomTimeLimit" INTEGER NOT NULL DEFAULT 3600,

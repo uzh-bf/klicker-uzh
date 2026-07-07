@@ -35,9 +35,14 @@ export async function getMicroLearningData(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: {
           elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+                ? { responses: { where: { participantId: ctx.user.sub } } }
+                : undefined,
             orderBy: {
               order: 'asc',
             },
@@ -50,17 +55,56 @@ export async function getMicroLearningData(
     },
   })
 
-  return microLearning
-    ? {
-        ...microLearning,
-        isOwner:
-          ctx.user?.sub &&
-          (ctx.user.role === DB.UserRole.USER ||
-            ctx.user.role === DB.UserRole.ADMIN)
-            ? ctx.user.sub === microLearning.ownerId
-            : false,
+  if (!microLearning) return null
+  const isOwner =
+    ctx.user?.sub &&
+    (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
+      ? ctx.user.sub === microLearning.ownerId
+      : false
+
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
+    const orderedStacks = microLearning.stacks
+
+    let filteredStacks = orderedStacks
+    if (microLearning.escapeRoomConfig) {
+      const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          participantId_microLearningId: {
+            participantId: ctx.user.sub,
+            microLearningId: microLearning.id,
+          },
+        },
+      })
+      if (!attempt || attempt.status === DB.EscapeRoomStatus.EXPIRED) {
+        filteredStacks = []
+      } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
+        const firstUnclearedIx = orderedStacks.findIndex(
+          (stack) =>
+            !stack.elements.every((elem: any) =>
+              elem.responses?.some(
+                (resp: any) =>
+                  resp.lastResponseCorrectness ===
+                  DB.ResponseCorrectness.CORRECT
+              )
+            )
+        )
+        if (firstUnclearedIx !== -1) {
+          filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)
+        }
       }
-    : null
+    }
+
+    return {
+      ...microLearning,
+      isOwner,
+      stacks: filteredStacks,
+    }
+  }
+
+  return {
+    ...microLearning,
+    isOwner,
+  }
 }
 
 export async function getMicroLearningEvaluation(

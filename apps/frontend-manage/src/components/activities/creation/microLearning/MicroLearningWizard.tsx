@@ -259,7 +259,7 @@ function MicroLearningWizard({
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
-              id: parseInt(elementId),
+              id: parseInt(elementId, 10),
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:

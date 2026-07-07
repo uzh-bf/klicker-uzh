@@ -37,6 +37,7 @@ export async function getPracticeQuizData(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: {
           elements: {
@@ -70,10 +71,39 @@ export async function getPracticeQuizData(
         ? orderStacks(quiz.stacks)
         : quiz.stacks
 
+    let filteredStacks = orderedStacks
+    if (quiz.escapeRoomConfig) {
+      const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          participantId_practiceQuizId: {
+            participantId: ctx.user.sub,
+            practiceQuizId: quiz.id,
+          },
+        },
+      })
+      if (!attempt || attempt.status === DB.EscapeRoomStatus.EXPIRED) {
+        filteredStacks = []
+      } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
+        const firstUnclearedIx = orderedStacks.findIndex(
+          (stack) =>
+            !stack.elements.every((elem: any) =>
+              elem.responses?.some(
+                (resp: any) =>
+                  resp.lastResponseCorrectness ===
+                  DB.ResponseCorrectness.CORRECT
+              )
+            )
+        )
+        if (firstUnclearedIx !== -1) {
+          filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)
+        }
+      }
+    }
+
     return {
       ...quiz,
       isOwner,
-      stacks: orderedStacks,
+      stacks: filteredStacks,
       numOfStacks: orderedStacks.length,
     }
   }
@@ -976,7 +1006,8 @@ export async function startEscapeRoomAttempt(
       const elapsed =
         (Date.now() - new Date(existingAttempt.startedAt).getTime()) / 1000
       const currentPenalty = existingAttempt.penaltySeconds
-      if (elapsed > existingAttempt.timeLimit + currentPenalty + 5) {
+      const totalLimit = existingAttempt.timeLimit - currentPenalty
+      if (elapsed > totalLimit + 5) {
         // Expired! Update status
         return await ctx.prisma.escapeRoomAttempt.update({
           where: { id: existingAttempt.id },
@@ -1031,24 +1062,13 @@ export async function resetEscapeRoomAttempt(
   let finalGroupId = groupId
 
   if (!isLecturer) {
+    if (groupActivityId) {
+      throw new GraphQLError('Only lecturers can reset group activity attempts')
+    }
     if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
       throw new GraphQLError('Not authenticated')
     }
     finalParticipantId = ctx.user.sub
-    if (groupActivityId) {
-      const ga = await ctx.prisma.groupActivity.findUnique({
-        where: { id: groupActivityId },
-        select: { courseId: true },
-      })
-      if (!ga) throw new GraphQLError('Group activity not found')
-      const pg = await ctx.prisma.participantGroup.findFirst({
-        where: {
-          courseId: ga.courseId,
-          participants: { some: { id: ctx.user.sub } },
-        },
-      })
-      if (pg) finalGroupId = pg.id
-    }
   }
 
   const attemptWhere =

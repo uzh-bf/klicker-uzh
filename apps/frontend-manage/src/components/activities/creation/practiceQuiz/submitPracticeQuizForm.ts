@@ -80,16 +80,16 @@ async function submitPracticeQuizForm({
           }),
         }
       }),
-      multiplier: parseInt(values.multiplier),
+      multiplier: parseInt(values.multiplier, 10),
       courseId: values.courseId!,
       order: values.order,
-      resetTimeDays: parseInt(values.resetTimeDays),
+      resetTimeDays: parseInt(values.resetTimeDays, 10),
       isEscapeRoom: values.isEscapeRoom ?? false,
       escapeRoomTimeLimit: values.isEscapeRoom
-        ? parseInt(values.escapeRoomTimeLimit ?? '60') * 60
+        ? parseInt(values.escapeRoomTimeLimit ?? '60', 10) * 60
         : undefined,
       escapeRoomHintPenalty: values.isEscapeRoom
-        ? parseInt(values.escapeRoomHintPenalty ?? '0')
+        ? parseInt(values.escapeRoomHintPenalty ?? '0', 10)
         : undefined,
     }
 

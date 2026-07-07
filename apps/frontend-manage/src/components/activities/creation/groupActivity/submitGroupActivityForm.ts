@@ -62,7 +62,7 @@ async function submitGroupActivityForm({
           description: values.description,
           startDate: dayjs(values.startDate).utc().format(),
           endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
+          multiplier: parseInt(values.multiplier, 10),
           courseId: values.courseId!,
           clues: values.clues,
           stack: {
@@ -76,10 +76,10 @@ async function submitGroupActivityForm({
           },
           isEscapeRoom: values.isEscapeRoom ?? false,
           escapeRoomTimeLimit: values.isEscapeRoom
-            ? parseInt(values.escapeRoomTimeLimit ?? '60') * 60
+            ? parseInt(values.escapeRoomTimeLimit ?? '60', 10) * 60
             : undefined,
           escapeRoomHintPenalty: values.isEscapeRoom
-            ? parseInt(values.escapeRoomHintPenalty ?? '0')
+            ? parseInt(values.escapeRoomHintPenalty ?? '0', 10)
             : undefined,
         },
         update: (cache, { data: res }) => {
@@ -144,7 +144,7 @@ async function submitGroupActivityForm({
           description: values.description,
           startDate: dayjs(values.startDate).utc().format(),
           endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
+          multiplier: parseInt(values.multiplier, 10),
           courseId: values.courseId!,
           clues: values.clues,
           stack: {
@@ -158,10 +158,10 @@ async function submitGroupActivityForm({
           },
           isEscapeRoom: values.isEscapeRoom ?? false,
           escapeRoomTimeLimit: values.isEscapeRoom
-            ? parseInt(values.escapeRoomTimeLimit ?? '60') * 60
+            ? parseInt(values.escapeRoomTimeLimit ?? '60', 10) * 60
             : undefined,
           escapeRoomHintPenalty: values.isEscapeRoom
-            ? parseInt(values.escapeRoomHintPenalty ?? '0')
+            ? parseInt(values.escapeRoomHintPenalty ?? '0', 10)
             : undefined,
         },
         update: (cache, { data: res }) => {
