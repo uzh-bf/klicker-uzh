@@ -17,7 +17,13 @@ import {
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Dropdown,
+  H1,
+  toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -26,6 +32,7 @@ import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
 import CourseDuplicationModal, {
+  CourseDuplicationErrorType,
   CourseDuplicationFormData,
 } from './modals/CourseDuplicationModal'
 import CourseManipulationModal, {
@@ -50,13 +57,33 @@ function getCourseDuplicationGroupSize(
   value: number | string | null | undefined,
   fallback: number
 ) {
-  if (typeof value === 'undefined' || value === null || value === '') {
+  if (value === undefined || value === null || value === '') {
     return fallback
   }
 
   const parsedValue = Number(value)
 
   return Number.isFinite(parsedValue) ? parsedValue : fallback
+}
+
+function getCourseDuplicationErrorType(
+  error: unknown
+): CourseDuplicationErrorType {
+  const message = error instanceof Error ? error.message : String(error)
+  const normalizedMessage = message.toLowerCase()
+
+  if (normalizedMessage.includes('not all')) {
+    return 'partial'
+  }
+
+  if (
+    normalizedMessage.includes('access') ||
+    normalizedMessage.includes('permission')
+  ) {
+    return 'access'
+  }
+
+  return 'generic'
 }
 
 function CourseOverviewHeader({
@@ -242,15 +269,12 @@ function CourseOverviewHeader({
       {duplicationModal && (
         <CourseDuplicationModal
           initialValues={course}
-          containsActivities={containsActivities}
-          containsGroups={containsGroups}
           onModalClose={() => setDuplicationModal(false)}
           onSubmit={async (
             values: CourseDuplicationFormData,
             setSubmitting,
             onError
           ) => {
-            // TODO: take over functionality of createCourse
             try {
               // convert dates to UTC
               const startDateUTC = dayjs(values.startDate).utc().toISOString()
@@ -310,14 +334,23 @@ function CourseOverviewHeader({
                 },
               })
 
-              if (result.data?.createCourse) {
+              const duplicatedCourse = result.data?.createCourse
+
+              if (duplicatedCourse) {
+                toast({
+                  type: 'success',
+                  message: t('manage.courseList.courseDuplicationSucceeded', {
+                    name: duplicatedCourse.name,
+                  }),
+                })
                 setDuplicationModal(false)
+                await router.push(`/courses/${duplicatedCourse.id}`)
               } else {
-                onError()
+                onError('access')
                 setSubmitting(false)
               }
             } catch (error) {
-              onError()
+              onError(getCourseDuplicationErrorType(error))
               setSubmitting(false)
               console.error(error)
             }

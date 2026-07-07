@@ -2518,9 +2518,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="course-list-button-${sourceName}"]`).click()
     cy.get('[data-cy="course-duplicate-button"]').click()
     cy.get('[data-cy="manipulate-course-submit"]').click()
-    cy.findByText(messages.manage.courseList.courseCreationFailed).should(
-      'exist'
-    )
+    cy.findByText(
+      messages.manage.courseList.courseDuplicationPartialFailure
+    ).should('exist')
     cy.task('getCourseDuplicationSummary', {
       courseName: copyName,
       ownerId: Cypress.env('LECTURER_ID'),
