@@ -126,15 +126,15 @@ hatchet DB migrations finishing. If the API is down, check
 
 ## What's inside
 
-| Service                             | Image                                       | Purpose                                                |
-| ----------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 20 + pnpm 10.15.0) | runs `turbo dev` for the core + Tier-1 apps + workers  |
-| `postgres`                          | `postgres:15`                               | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
-| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                   | live-quiz exec / assessment / cache + pub/sub          |
-| `mailhog`                           | `mailhog/mailhog`                           | dev SMTP sink                                          |
-| `hatchet`                           | `hatchet-lite:v0.73.1`                      | workflow engine (gRPC :7077)                           |
-| `hatchet_token`                     | `hatchet-lite:v0.73.1`                      | one-shot: mint the client token                        |
-| `litellm`                           | `ghcr.io/berriai/litellm`                   | LLM proxy for chat (port 4000 intra-net)               |
+| Service                             | Image                                      | Purpose                                                |
+| ----------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs `turbo dev` for the core + Tier-1 apps + workers  |
+| `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub          |
+| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                          |
+| `hatchet`                           | `hatchet-lite:v0.73.1`                     | workflow engine (gRPC :7077)                           |
+| `hatchet_token`                     | `hatchet-lite:v0.73.1`                     | one-shot: mint the client token                        |
+| `litellm`                           | `ghcr.io/berriai/litellm`                  | LLM proxy for chat (port 4000 intra-net)               |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then

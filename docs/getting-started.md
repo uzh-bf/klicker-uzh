@@ -14,13 +14,36 @@ tags:
 
 ## Toolchain (verified 2026-07-07)
 
-Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`. Ignore the "Node.js 20" claim in [AGENTS.md](../AGENTS.md) — it is stale. `packages/word-cloud` pins `engines.node = 20` and prints a warning under Node 24; harmless today.
+Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
 
-## First-time setup (verified)
+## Onboarding Paths
+
+You can set up the environment in two ways:
+
+### Path A: Self-contained Devcontainer (Recommended)
+
+Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs all core apps via `turbo dev` and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
+
+1. **Start the container:**
+   ```bash
+   devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
+   devpod ssh klicker-uzh # shell inside the container
+   ```
+2. **Accessing the apps:**
+   - **Mode 1 (Plain localhost - default):** Exposed directly on host ports: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
+   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost`. Requires installing `devrouter` on host and running route registration:
+     ```bash
+     for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+     ```
+3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
+
+### Path B: Host-based Setup (Legacy)
+
+Runs all services on your host machine. Needs Traefik (`*.klicker.com` reverse proxy), mkcert, `/etc/hosts` configurations, and Infisical for secret injection.
 
 ```bash
-pnpm --version        # must print 11.x — see lead paragraph
-pnpm install          # ~20s cold; peer warnings in apps/docs + packages/prisma are pre-existing
+pnpm --version        # must print 11.x
+pnpm install          # ~20s cold; peer warnings are pre-existing
 pnpm run build        # 21 turbo tasks, ~1.5min; needs NO secrets
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
