@@ -64,18 +64,6 @@ export function getKalturaId(url: string): string | null {
   return null
 }
 
-export function getKalturaHost(url: string): string | null {
-  try {
-    const parsedUrl = new URL(url)
-    const host = parsedUrl.hostname.toLowerCase()
-    const isKalturaHost =
-      host.endsWith('kaltura.com') || host.endsWith('cast.switch.ch')
-    return isKalturaHost ? parsedUrl.hostname : null
-  } catch {
-    return null
-  }
-}
-
 export function getKalturaUiConfId(url: string): string | null {
   try {
     const pathMatch = url.match(/\/uiConfId\/(\d+)/i)
@@ -93,23 +81,40 @@ export function getKalturaUiConfId(url: string): string | null {
   return null
 }
 
+export function getKalturaPartnerId(url: string): string | null {
+  try {
+    const pathMatch = url.match(/\/partner_id\/(\d+)/i)
+    if (pathMatch && pathMatch[1]) {
+      return pathMatch[1]
+    }
+    const parsedUrl = new URL(url)
+    const queryId = parsedUrl.searchParams.get('partner_id')
+    if (queryId && /^\d+$/.test(queryId)) {
+      return queryId
+    }
+  } catch {
+    // Ignore URL parse error
+  }
+  return null
+}
+
 interface VideoEmbedProps {
   provider: 'youtube' | 'kaltura'
   videoId: string
-  host?: string | null
+  partnerId?: string | null
   uiConfId?: string | null
 }
 
 export function VideoEmbed({
   provider,
   videoId,
-  host,
+  partnerId,
   uiConfId,
 }: VideoEmbedProps): React.ReactElement {
   const src =
     provider === 'youtube'
       ? `https://www.youtube.com/embed/${videoId}`
-      : `https://${host || 'uzh.mediaspace.cast.switch.ch'}/embed/secure/iframe/entryId/${videoId}/uiConfId/${uiConfId || '23449004'}/st/0`
+      : `https://api.cast.switch.ch/p/${partnerId || '106'}/embedPlaykitJs/uiconf_id/${uiConfId || '23449004'}/partner_id/${partnerId || '106'}?iframeembed=true&playerId=kaltura_player&entry_id=${videoId}`
 
   return (
     <div className="my-4 aspect-video w-full overflow-hidden rounded-md border border-slate-200">

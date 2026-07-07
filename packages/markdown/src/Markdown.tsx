@@ -17,8 +17,8 @@ import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
 import {
   VideoEmbed,
-  getKalturaHost,
   getKalturaId,
+  getKalturaPartnerId,
   getKalturaUiConfId,
   getYoutubeId,
 } from './VideoEmbed.js'
@@ -155,7 +155,9 @@ function Markdown({
                     children.toLowerCase() === 'embed')
                 const youtubeId = isVideoLabel ? getYoutubeId(href) : null
                 const kalturaId = isVideoLabel ? getKalturaId(href) : null
-                const kalturaHost = kalturaId ? getKalturaHost(href) : null
+                const kalturaPartnerId = kalturaId
+                  ? getKalturaPartnerId(href)
+                  : null
                 const kalturaUiConfId = kalturaId
                   ? getKalturaUiConfId(href)
                   : null
@@ -168,7 +170,7 @@ function Markdown({
                     <VideoEmbed
                       provider="kaltura"
                       videoId={kalturaId}
-                      host={kalturaHost}
+                      partnerId={kalturaPartnerId}
                       uiConfId={kalturaUiConfId}
                     />
                   )
