@@ -47,6 +47,13 @@ export function getKalturaId(url: string): string | null {
       return mediaSpaceMatch[1]
     }
 
+    const entryIdPathMatch = url.match(
+      /\/entryId\/([01]_[a-zA-Z0-9]{8})(?:[/?#]|$)/i
+    )
+    if (entryIdPathMatch && entryIdPathMatch[1]) {
+      return entryIdPathMatch[1]
+    }
+
     const entryId = parsedUrl.searchParams.get('entry_id')
     if (entryId && /^[01]_[a-zA-Z0-9]{8}$/.test(entryId)) {
       return entryId
@@ -57,19 +64,52 @@ export function getKalturaId(url: string): string | null {
   return null
 }
 
+export function getKalturaHost(url: string): string | null {
+  try {
+    const parsedUrl = new URL(url)
+    const host = parsedUrl.hostname.toLowerCase()
+    const isKalturaHost =
+      host.endsWith('kaltura.com') || host.endsWith('cast.switch.ch')
+    return isKalturaHost ? parsedUrl.hostname : null
+  } catch {
+    return null
+  }
+}
+
+export function getKalturaUiConfId(url: string): string | null {
+  try {
+    const pathMatch = url.match(/\/uiConfId\/(\d+)/i)
+    if (pathMatch && pathMatch[1]) {
+      return pathMatch[1]
+    }
+    const parsedUrl = new URL(url)
+    const queryId = parsedUrl.searchParams.get('uiconf_id')
+    if (queryId && /^\d+$/.test(queryId)) {
+      return queryId
+    }
+  } catch {
+    // Ignore URL parse error
+  }
+  return null
+}
+
 interface VideoEmbedProps {
   provider: 'youtube' | 'kaltura'
   videoId: string
+  host?: string | null
+  uiConfId?: string | null
 }
 
 export function VideoEmbed({
   provider,
   videoId,
+  host,
+  uiConfId,
 }: VideoEmbedProps): React.ReactElement {
   const src =
     provider === 'youtube'
       ? `https://www.youtube.com/embed/${videoId}`
-      : `https://api.cast.switch.ch/p/106/embedPlaykitJs/uiconf_id/23449027/partner_id/106?iframeembed=true&entry_id=${videoId}`
+      : `https://${host || 'uzh.mediaspace.cast.switch.ch'}/embed/secure/iframe/entryId/${videoId}/uiConfId/${uiConfId || '23449004'}/st/0`
 
   return (
     <div className="my-4 aspect-video w-full overflow-hidden rounded-md border border-slate-200">

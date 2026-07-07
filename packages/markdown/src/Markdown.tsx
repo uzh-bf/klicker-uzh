@@ -15,7 +15,13 @@ import remarkRehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
-import { VideoEmbed, getKalturaId, getYoutubeId } from './VideoEmbed.js'
+import {
+  VideoEmbed,
+  getKalturaHost,
+  getKalturaId,
+  getKalturaUiConfId,
+  getYoutubeId,
+} from './VideoEmbed.js'
 
 export interface MarkdownProps {
   className?: {
@@ -149,12 +155,23 @@ function Markdown({
                     children.toLowerCase() === 'embed')
                 const youtubeId = isVideoLabel ? getYoutubeId(href) : null
                 const kalturaId = isVideoLabel ? getKalturaId(href) : null
+                const kalturaHost = kalturaId ? getKalturaHost(href) : null
+                const kalturaUiConfId = kalturaId
+                  ? getKalturaUiConfId(href)
+                  : null
 
                 if (youtubeId) {
                   return <VideoEmbed provider="youtube" videoId={youtubeId} />
                 }
                 if (kalturaId) {
-                  return <VideoEmbed provider="kaltura" videoId={kalturaId} />
+                  return (
+                    <VideoEmbed
+                      provider="kaltura"
+                      videoId={kalturaId}
+                      host={kalturaHost}
+                      uiConfId={kalturaUiConfId}
+                    />
+                  )
                 }
 
                 if (withLinkButtons) {
