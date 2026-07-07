@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-- **Monorepo**: pnpm 10.x + Turborepo, Node.js 20 (Volta-pinned)
+- **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
@@ -155,15 +155,15 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
-- **Keep this file high-level.** Project-specific gotchas, non-obvious patterns, and architectural decisions live in [project/CODEBASE_NOTES.md](project/CODEBASE_NOTES.md) — add to it (and prune it) as you work, rather than growing this overview.
+- **Keep this file high-level.** Facts, gotchas, and architectural decisions live in the engineering wiki at [docs/index.md](docs/index.md) — update the matching page as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
 
-## Codebase Notes
+## Engineering Wiki
 
-Non-obvious patterns, per-area gotchas, and architectural decisions are collected in **[project/CODEBASE_NOTES.md](project/CODEBASE_NOTES.md)**. Check it before working in an unfamiliar area, and keep it current.
+Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — any PR that changes documented behavior updates the affected pages in the same PR. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
 ## AI Assistance (Skills)
 
-Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync.
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-cypress-e2e`, `klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
