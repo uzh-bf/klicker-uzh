@@ -15,6 +15,7 @@ import remarkRehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
+import { VideoEmbed, getKalturaId, getYoutubeId } from './VideoEmbed.js'
 
 export interface MarkdownProps {
   className?: {
@@ -135,32 +136,48 @@ function Markdown({
                   withModal={withModal}
                 />
               ),
-              a: withLinkButtons
-                ? ({
-                    href,
-                    children,
-                  }: {
-                    href: string
-                    children: React.ReactNode
-                  }) => {
-                    const isExcel = href.includes('.xls')
-                    const isPDF = href.includes('.pdf')
-                    return (
-                      <a
-                        className={twMerge(
-                          'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
-                        )}
-                        href={href}
-                      >
-                        <div>
-                          {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
-                          {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
-                        </div>
-                        <div>{children}</div>
-                      </a>
-                    )
-                  }
-                : 'a',
+              a: ({
+                href,
+                children,
+              }: {
+                href: string
+                children: React.ReactNode
+              }) => {
+                const isVideoLabel =
+                  typeof children === 'string' &&
+                  (children.toLowerCase() === 'video' ||
+                    children.toLowerCase() === 'embed')
+                const youtubeId = isVideoLabel ? getYoutubeId(href) : null
+                const kalturaId = isVideoLabel ? getKalturaId(href) : null
+
+                if (youtubeId) {
+                  return <VideoEmbed provider="youtube" videoId={youtubeId} />
+                }
+                if (kalturaId) {
+                  return <VideoEmbed provider="kaltura" videoId={kalturaId} />
+                }
+
+                if (withLinkButtons) {
+                  const isExcel = href.includes('.xls')
+                  const isPDF = href.includes('.pdf')
+                  return (
+                    <a
+                      className={twMerge(
+                        'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
+                      )}
+                      href={href}
+                    >
+                      <div>
+                        {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
+                        {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
+                      </div>
+                      <div>{children}</div>
+                    </a>
+                  )
+                }
+
+                return <a href={href}>{children}</a>
+              },
               ...components,
             },
           })
