@@ -11,17 +11,19 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 1. **Service function** — `packages/graphql/src/services/<area>.ts`. All logic, Prisma, Redis, pubSub here. Signature `(args, ctx: ContextWithUser) => …`. Errors: `GraphQLError` with `extensions.code` (grep `LIVE_QUIZ_PIN_INVALID` for the pattern) — not bare `Error`.
 2. **Schema field** — `packages/graphql/src/schema/query.ts` / `mutation.ts` / `subscription.ts` (+ new object types in the area file). The resolver is a **one-liner** delegating to the service.
-3. **Auth on the field** — copy the existing composition exactly:
+3. **Auth on the field** — copy the existing composition exactly (real shape from `deleteCourse` in `mutation.ts`; `withPermission` WRAPS the resolver):
 
    ```ts
-   t.withAuth(asUser).field({
+   deleteCourse: t.withAuth(asUser).field({
      // asUser | asParticipant | asUserFullAccess | asUserSessionExec | asUserOwner | asUserWithCatalyst | asAdmin
-     resolve: (_, args, ctx) =>
-       withPermission(
-         () => ({ courseId: args.courseId }), // -> PermissionCheck key for the target object
-         PermissionLevel.ADMIN, // READ | EXECUTE | WRITE | ADMIN, per operation severity
-         () => CourseService.doThing(args, ctx)
-       ),
+     nullable: true,
+     type: Course,
+     args: { id: t.arg.string({ required: true }) },
+     resolve: withPermission(
+       (args) => ({ courseId: args.id }), // -> PermissionCheck key for the target object
+       DB.PermissionLevel.ADMIN, // READ | EXECUTE | WRITE | ADMIN, per operation severity
+       async (_, args, ctx) => CourseService.deleteCourse(args, ctx)
+     ),
    })
    ```
 
