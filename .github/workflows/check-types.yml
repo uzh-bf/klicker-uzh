@@ -57,4 +57,8 @@ jobs:
         if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
-          pnpm run check
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm exec turbo run check --filter="...[origin/${{ github.base_ref }}...HEAD]"
+          else
+            pnpm exec turbo run check --filter="...[HEAD~1...HEAD]"
+          fi
