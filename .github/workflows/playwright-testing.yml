@@ -98,7 +98,12 @@ jobs:
           name: playwright-build-artifact
           path: |
             apps/**/.next
+            apps/**/dist
+            apps/**/build
+            apps/**/out
             packages/**/dist
+            packages/**/build
+            packages/**/out
           retention-days: 1
 
   playwright-run:
