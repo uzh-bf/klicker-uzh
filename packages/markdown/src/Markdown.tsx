@@ -145,22 +145,24 @@ function Markdown({
               a: ({
                 href,
                 children,
-              }: {
-                href: string
-                children: React.ReactNode
-              }) => {
+                target,
+                rel,
+                ...rest
+              }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
+                const labelText =
+                  typeof children === 'string'
+                    ? children.trim().toLowerCase()
+                    : ''
                 const isVideoLabel =
-                  typeof children === 'string' &&
-                  (children.toLowerCase() === 'video' ||
-                    children.toLowerCase() === 'embed')
-                const youtubeId = isVideoLabel ? getYoutubeId(href) : null
-                const kalturaId = isVideoLabel ? getKalturaId(href) : null
-                const kalturaPartnerId = kalturaId
-                  ? getKalturaPartnerId(href)
-                  : null
-                const kalturaUiConfId = kalturaId
-                  ? getKalturaUiConfId(href)
-                  : null
+                  labelText === 'video' || labelText === 'embed'
+                const youtubeId =
+                  href && isVideoLabel ? getYoutubeId(href) : null
+                const kalturaId =
+                  href && isVideoLabel ? getKalturaId(href) : null
+                const kalturaPartnerId =
+                  href && kalturaId ? getKalturaPartnerId(href) : null
+                const kalturaUiConfId =
+                  href && kalturaId ? getKalturaUiConfId(href) : null
 
                 if (youtubeId) {
                   return <VideoEmbed provider="youtube" videoId={youtubeId} />
@@ -177,14 +179,17 @@ function Markdown({
                 }
 
                 if (withLinkButtons) {
-                  const isExcel = href.includes('.xls')
-                  const isPDF = href.includes('.pdf')
+                  const isExcel = href?.includes('.xls')
+                  const isPDF = href?.includes('.pdf')
                   return (
                     <a
                       className={twMerge(
                         'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
                       )}
                       href={href}
+                      target={target}
+                      rel={rel}
+                      {...rest}
                     >
                       <div>
                         {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
@@ -195,7 +200,11 @@ function Markdown({
                   )
                 }
 
-                return <a href={href}>{children}</a>
+                return (
+                  <a href={href} target={target} rel={rel} {...rest}>
+                    {children}
+                  </a>
+                )
               },
               ...components,
             },
