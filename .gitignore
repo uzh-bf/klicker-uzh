@@ -60,5 +60,7 @@ output/
 
 .claude/worktrees
 
+# Devcontainer: runtime-minted Hatchet client token (post-create writes it)
+.devcontainer/.hatchet.env
 playwright/playwright-report/
 playwright/test-results/
