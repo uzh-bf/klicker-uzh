@@ -9,18 +9,25 @@ import {
   faRotateLeft,
   faRotateRight,
   faSuperscript,
+  faTable,
+  faTerminal,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
+import { TableKit } from '@tiptap/extension-table'
 import { Markdown } from '@tiptap/markdown'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Tooltip } from '@uzh-bf/design-system'
+import { all, createLowlight } from 'lowlight'
 import { useTranslations } from 'next-intl'
 import React, { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MediaLibrary from './MediaLibrary'
+
+const lowlight = createLowlight(all)
 
 export interface ContentInputClassName {
   root?: string
@@ -62,12 +69,22 @@ function ContentInput({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        codeBlock: false,
+      }),
       Image,
       Markdown,
       Placeholder.configure({
         placeholder: placeholder,
         emptyEditorClass: 'is-editor-empty',
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+      }),
+      TableKit.configure({
+        table: {
+          resizable: true,
+        },
       }),
     ],
     content: content,
@@ -335,7 +352,124 @@ function ContentInput({
               </div>
             </ToolbarButton>
           </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.codeBlock')}
+            className={{
+              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={editor.isActive('codeBlock')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().toggleCodeBlock().run()
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faTerminal}
+                color={editor.isActive('codeBlock') ? 'black' : 'grey'}
+              />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.table')}
+            className={{
+              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={editor.isActive('table')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                if (!editor.isActive('table')) {
+                  editor
+                    .chain()
+                    .focus()
+                    .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                    .run()
+                }
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faTable}
+                color={editor.isActive('table') ? 'black' : 'grey'}
+              />
+            </ToolbarButton>
+          </Tooltip>
         </div>
+
+        {editor.isActive('table') && (
+          <div className="border-uzh-grey-40 mr-3 flex flex-row items-center gap-1 border-l pl-2">
+            <Tooltip tooltip={t('shared.contentInput.addRow')}>
+              <ToolbarButton
+                active={false}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault()
+                  editor.chain().focus().addRowAfter().run()
+                }}
+              >
+                <span className="text-[10px] font-bold">+R</span>
+              </ToolbarButton>
+            </Tooltip>
+            <Tooltip tooltip={t('shared.contentInput.deleteRow')}>
+              <ToolbarButton
+                active={false}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault()
+                  editor.chain().focus().deleteRow().run()
+                }}
+              >
+                <span className="text-[10px] font-bold text-red-500">-R</span>
+              </ToolbarButton>
+            </Tooltip>
+            <Tooltip tooltip={t('shared.contentInput.addColumn')}>
+              <ToolbarButton
+                active={false}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault()
+                  editor.chain().focus().addColumnAfter().run()
+                }}
+              >
+                <span className="text-[10px] font-bold">+C</span>
+              </ToolbarButton>
+            </Tooltip>
+            <Tooltip tooltip={t('shared.contentInput.deleteColumn')}>
+              <ToolbarButton
+                active={false}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault()
+                  editor.chain().focus().deleteColumn().run()
+                }}
+              >
+                <span className="text-[10px] font-bold text-red-500">-C</span>
+              </ToolbarButton>
+            </Tooltip>
+            <Tooltip tooltip={t('shared.contentInput.mergeCells')}>
+              <ToolbarButton
+                active={false}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault()
+                  editor.chain().focus().mergeOrSplit().run()
+                }}
+              >
+                <span className="text-[10px] font-bold">M/S</span>
+              </ToolbarButton>
+            </Tooltip>
+            <Tooltip tooltip={t('shared.contentInput.deleteTable')}>
+              <ToolbarButton
+                active={false}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault()
+                  editor.chain().focus().deleteTable().run()
+                }}
+              >
+                <span className="text-[10px] font-bold text-red-700">Del</span>
+              </ToolbarButton>
+            </Tooltip>
+          </div>
+        )}
 
         <ToolbarButton
           active={false}

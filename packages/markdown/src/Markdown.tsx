@@ -3,12 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, { useMemo } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import rehypeKatex from 'rehype-katex'
-// import rehypePrism from 'rehype-prism-plus'
+import rehypePrism from 'rehype-prism-plus'
 import rehypeReact from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 // import remarkDirective from 'remark-directive'
-// import remarkGfm from 'remark-gfm'
 import * as runtime from 'react/jsx-runtime'
+import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
 import remarkRehype from 'remark-rehype'
@@ -79,7 +79,7 @@ function Markdown({
         unified()
           .use(remarkParse)
           .use(remarkMath, { singleDollarTextMath })
-          // .use(remarkGfm)
+          .use(remarkGfm)
           // .use(remarkDirective)
           .use(remarkRehype, { allowDangerousHtml: false })
           .use(rehypeSanitize, {
@@ -102,9 +102,13 @@ function Markdown({
                 ...(defaultSchema?.attributes?.a || []),
                 ['className', 'href', 'target', 'rel'],
               ],
+              code: [
+                ...(defaultSchema?.attributes?.code || []),
+                ['className', /^language-/],
+              ],
             },
           })
-          // .use(rehypePrism)
+          .use(rehypePrism)
           .use(rehypeExternalLinks, {
             target: '_blank',
             rel: ['noopener', 'noreferrer', 'nofollow'],
