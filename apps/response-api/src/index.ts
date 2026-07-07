@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { handleEscapeRoomValidation } from './escapeRoom.js'
 
 const redis = new Redis({
   family: 4,
@@ -128,6 +129,22 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     if (forwarded.length > 0) {
       cookie = forwarded.join('; ')
     }
+  }
+
+  // Synchronous Escape Room Lockout & Correctness Check
+  const instanceKey = `lq:${liveQuizId}:i:${instanceId}`
+  const instanceInfo = await redis.hgetall(`${instanceKey}:info`)
+
+  if (instanceInfo) {
+    const isHandled = await handleEscapeRoomValidation(
+      req,
+      res,
+      payload,
+      cookie,
+      instanceInfo,
+      redis
+    )
+    if (isHandled) return
   }
 
   const responseTimestamp = Date.now()

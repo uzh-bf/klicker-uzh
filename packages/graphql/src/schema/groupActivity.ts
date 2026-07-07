@@ -15,6 +15,7 @@ import {
   SingleQuestionResponseCaseStudyCase,
 } from './element.js'
 import { ElementType } from './elementData.js'
+import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
 import {
   type IParticipant,
   type IParticipantGroup,
@@ -24,6 +25,7 @@ import {
 import {
   type IElementStack,
   ElementStackRef,
+  EscapeRoomAttemptRef,
   PublicationStatus,
 } from './practiceQuiz.js'
 
@@ -44,6 +46,8 @@ export interface IGroupActivity extends DB.GroupActivity {
   activityInstances?: IGroupActivityInstance[]
   course?: ICourse
   clues?: DB.GroupActivityClue[]
+  escapeRoomConfig?: DB.EscapeRoomConfig | null
+  escapeRoomAttempts?: DB.EscapeRoomAttempt[] | null
 }
 export const GroupActivityRef =
   builder.objectRef<IGroupActivity>('GroupActivity')
@@ -60,6 +64,24 @@ export const GroupActivity = GroupActivityRef.implement({
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
+
+    escapeRoomConfig: t.expose('escapeRoomConfig', {
+      type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    escapeRoomAttempts: t.field({
+      type: [EscapeRoomAttemptRef],
+      nullable: true,
+      resolve: async (parent, _args, ctx) => {
+        if (!ctx.user?.sub) return null
+        return await ctx.prisma.escapeRoomAttempt.findMany({
+          where: {
+            groupActivityId: parent.id,
+            participantId: ctx.user.sub,
+          },
+        })
+      },
+    }),
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
@@ -234,6 +256,7 @@ export interface IGroupActivityDetails {
   activityInstance?: DB.GroupActivityInstance | null
   clues: DB.GroupActivityClue[]
   stacks: IElementStack[]
+  escapeRoomConfig?: DB.EscapeRoomConfig | null
 }
 export const GroupActivityDetailsRef = builder.objectRef<IGroupActivityDetails>(
   'GroupActivityDetails'
@@ -275,6 +298,24 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
 
     group: t.expose('group', {
       type: ParticipantGroupRef,
+    }),
+
+    escapeRoomConfig: t.expose('escapeRoomConfig', {
+      type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    escapeRoomAttempts: t.field({
+      type: [EscapeRoomAttemptRef],
+      nullable: true,
+      resolve: async (parent, _args, ctx) => {
+        if (!ctx.user?.sub) return null
+        return await ctx.prisma.escapeRoomAttempt.findMany({
+          where: {
+            groupActivityId: parent.id,
+            participantId: ctx.user.sub,
+          },
+        })
+      },
     }),
   }),
 })

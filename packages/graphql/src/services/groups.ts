@@ -833,6 +833,9 @@ interface CreateGroupActivityArgs {
   endDate: Date
   clues: ClueInput[]
   stack: ElementStackInput
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
 }
 
 export async function manipulateGroupActivity(
@@ -847,6 +850,9 @@ export async function manipulateGroupActivity(
     endDate,
     clues,
     stack,
+    isEscapeRoom,
+    escapeRoomTimeLimit,
+    escapeRoomHintPenalty,
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
@@ -917,7 +923,7 @@ export async function manipulateGroupActivity(
   }
 
   const newId = uuidv4()
-  const createOrUpdateJSON = {
+  const createOrUpdateJSON: any = {
     id: id ?? newId,
     name: name,
     displayName: displayName,
@@ -978,6 +984,22 @@ export async function manipulateGroupActivity(
     course: { connect: { id: courseId } },
   }
 
+  if (isEscapeRoom) {
+    createOrUpdateJSON.escapeRoomConfig = {
+      upsert: {
+        create: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+          lockoutSeconds: 5,
+        },
+        update: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+        },
+      },
+    }
+  }
+
   // Use a transaction to ensure atomicity of all database operations
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
@@ -1012,6 +1034,14 @@ export async function manipulateGroupActivity(
       await prisma.elementStack.deleteMany({
         where: { id: { in: stacksToDelete } },
       })
+
+      if (!isEscapeRoom && id) {
+        await prisma.escapeRoomConfig
+          .delete({
+            where: { groupActivityId: id },
+          })
+          .catch(() => {})
+      }
 
       const upsertedActivity = await prisma.groupActivity.upsert({
         where: { id: id ?? newId },
@@ -1442,7 +1472,7 @@ export async function submitGroupActivityDecisions(
     await ctx.prisma.groupActivityInstance.findUnique({
       where: { id: activityId },
       include: {
-        groupActivity: true,
+        groupActivity: { include: { escapeRoomConfig: true } },
         group: { include: { participants: { where: { id: ctx.user.sub } } } },
       },
     })
@@ -1468,6 +1498,31 @@ export async function submitGroupActivityDecisions(
     dayjs().isAfter(groupActivityInstance.groupActivity.scheduledEndAt)
   ) {
     return null
+  }
+
+  if (groupActivityInstance.groupActivity.escapeRoomConfig) {
+    const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+      where: {
+        groupId_groupActivityId: {
+          groupId: groupActivityInstance.groupId,
+          groupActivityId: groupActivityInstance.groupActivityId,
+        },
+      },
+    })
+    if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+      throw new GraphQLError(
+        'No active escape room attempt found for this activity'
+      )
+    }
+    const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
+    const totalLimit = attempt.timeLimit - attempt.penaltySeconds
+    if (elapsed > totalLimit + 5) {
+      await ctx.prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: { status: DB.EscapeRoomStatus.EXPIRED },
+      })
+      throw new GraphQLError('Escape room time has expired')
+    }
   }
 
   // save answers on instances in aggregated form
@@ -1563,6 +1618,23 @@ export async function submitGroupActivityDecisions(
       },
     }
   )
+
+  if (groupActivityInstance.groupActivity.escapeRoomConfig) {
+    await ctx.prisma.escapeRoomAttempt
+      .update({
+        where: {
+          groupId_groupActivityId: {
+            groupId: groupActivityInstance.groupId,
+            groupActivityId: groupActivityInstance.groupActivityId,
+          },
+        },
+        data: {
+          status: DB.EscapeRoomStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+      })
+      .catch(() => {})
+  }
 
   // return updatedActivityInstance
   return updatedActivityInstance.id

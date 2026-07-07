@@ -74,6 +74,13 @@ async function submitGroupActivityForm({
             })),
             order: 0,
           },
+          isEscapeRoom: values.isEscapeRoom ?? false,
+          escapeRoomTimeLimit: values.isEscapeRoom
+            ? parseInt(values.escapeRoomTimeLimit ?? '60') * 60
+            : undefined,
+          escapeRoomHintPenalty: values.isEscapeRoom
+            ? parseInt(values.escapeRoomHintPenalty ?? '0')
+            : undefined,
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
@@ -149,6 +156,13 @@ async function submitGroupActivityForm({
             })),
             order: 0,
           },
+          isEscapeRoom: values.isEscapeRoom ?? false,
+          escapeRoomTimeLimit: values.isEscapeRoom
+            ? parseInt(values.escapeRoomTimeLimit ?? '60') * 60
+            : undefined,
+          escapeRoomHintPenalty: values.isEscapeRoom
+            ? parseInt(values.escapeRoomHintPenalty ?? '0')
+            : undefined,
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early

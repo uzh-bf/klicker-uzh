@@ -10,11 +10,14 @@ import { Progress, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
+import { useEscapeRoom } from '../../../../../components/hooks/useEscapeRoom'
 import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 import ElementStack from '../../../../../components/practiceQuiz/ElementStack'
+import EscapeRoomOverlay from '../../../../../components/practiceQuiz/EscapeRoomOverlay'
 
 function MicrolearningInstance() {
   const t = useTranslations()
@@ -22,7 +25,7 @@ function MicrolearningInstance() {
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
 
-  const { loading, data, error, subscribeToMore } = useQuery(
+  const { loading, data, error, subscribeToMore, refetch } = useQuery(
     GetMicroLearningDocument,
     {
       variables: { id },
@@ -32,6 +35,47 @@ function MicrolearningInstance() {
   const { data: selfData } = useQuery(SelfDocument, {
     skip: data?.microLearning?.isOwner ?? false,
   })
+
+  const hookActivity = data?.microLearning
+  const previewMode = hookActivity?.isOwner ?? undefined
+  const courseId = hookActivity?.course?.id
+
+  const isEscapeRoom = !!hookActivity?.escapeRoomConfig
+  const {
+    isStarted,
+    isCompleted,
+    isExpired,
+    remainingSeconds,
+    startAttempt,
+    resetAttempt,
+    loading: attemptLoading,
+  } = useEscapeRoom({
+    activity: hookActivity,
+    activityType: 'microLearning',
+    refetch: refetch ?? (() => {}),
+  })
+
+  // Prevent skipping ahead by checking first uncleared stack index
+  useEffect(() => {
+    if (isEscapeRoom && !previewMode && hookActivity?.stacks) {
+      const activeFirstUncleared = hookActivity.stacks.findIndex(
+        (stack) => !stack.isCorrect
+      )
+      if (activeFirstUncleared !== -1 && ix > activeFirstUncleared) {
+        router.replace(
+          `/course/${courseId}/microLearnings/${id}/${activeFirstUncleared}`
+        )
+      }
+    }
+  }, [
+    isEscapeRoom,
+    previewMode,
+    hookActivity?.stacks,
+    ix,
+    courseId,
+    id,
+    router,
+  ])
 
   if (loading) {
     return <Loader />
@@ -60,8 +104,6 @@ function MicrolearningInstance() {
   }
 
   const currentStack = microLearning.stacks[ix]
-  const previewMode = microLearning.isOwner ?? undefined
-  const courseId = microLearning.course?.id
 
   if (!currentStack) {
     throw new Error('Stack not found')
@@ -77,6 +119,26 @@ function MicrolearningInstance() {
         microLearningName={microLearning.displayName}
         subscribeToMore={subscribeToMore}
       />
+      {isEscapeRoom && !previewMode && (
+        <EscapeRoomOverlay
+          isStarted={isStarted}
+          isCompleted={isCompleted}
+          isExpired={isExpired}
+          remainingSeconds={remainingSeconds}
+          timeLimit={microLearning.escapeRoomConfig?.timeLimit ?? 3600}
+          hintPenalty={microLearning.escapeRoomConfig?.hintPenalty ?? 120}
+          onStart={async () => {
+            await startAttempt()
+            await refetch()
+          }}
+          onReset={async () => {
+            await resetAttempt()
+            await refetch()
+            router.push(`/course/${courseId}/microLearnings/${id}/0`)
+          }}
+          loading={attemptLoading}
+        />
+      )}
       <div className="flex-1">
         <div
           className={twMerge(

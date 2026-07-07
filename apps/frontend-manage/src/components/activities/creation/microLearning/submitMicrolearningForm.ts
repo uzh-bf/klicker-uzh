@@ -84,6 +84,13 @@ async function submitMicrolearningForm({
       endDate: dayjs(values.endDate).utc().format(),
       multiplier: parseInt(values.multiplier),
       courseId: values.courseId!,
+      isEscapeRoom: values.isEscapeRoom ?? false,
+      escapeRoomTimeLimit: values.isEscapeRoom
+        ? parseInt(values.escapeRoomTimeLimit ?? '60') * 60
+        : undefined,
+      escapeRoomHintPenalty: values.isEscapeRoom
+        ? parseInt(values.escapeRoomHintPenalty ?? '0')
+        : undefined,
     }
 
     if (editMode && id) {

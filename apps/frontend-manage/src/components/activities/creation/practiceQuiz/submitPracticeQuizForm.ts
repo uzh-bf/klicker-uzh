@@ -84,6 +84,13 @@ async function submitPracticeQuizForm({
       courseId: values.courseId!,
       order: values.order,
       resetTimeDays: parseInt(values.resetTimeDays),
+      isEscapeRoom: values.isEscapeRoom ?? false,
+      escapeRoomTimeLimit: values.isEscapeRoom
+        ? parseInt(values.escapeRoomTimeLimit ?? '60') * 60
+        : undefined,
+      escapeRoomHintPenalty: values.isEscapeRoom
+        ? parseInt(values.escapeRoomHintPenalty ?? '0')
+        : undefined,
     }
 
     if (editMode && id) {

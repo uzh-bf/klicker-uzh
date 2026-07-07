@@ -10,10 +10,13 @@ import {
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
+import { useEscapeRoom } from '../hooks/useEscapeRoom'
 import ElementStack from './ElementStack'
+import EscapeRoomOverlay from './EscapeRoomOverlay'
 import PracticeQuizOverview from './PracticeQuizOverview'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
@@ -45,6 +48,7 @@ interface PracticeQuizProps {
   showResetLocalStorage?: boolean
   embedded?: boolean
   previewOnly?: boolean
+  refetch?: () => void
 }
 
 function PracticeQuiz({
@@ -56,6 +60,7 @@ function PracticeQuiz({
   showResetLocalStorage = false,
   embedded = false,
   previewOnly = false,
+  refetch,
 }: PracticeQuizProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -96,6 +101,76 @@ function PracticeQuiz({
     )
   )
 
+  const isEscapeRoom = !!quiz.escapeRoomConfig
+  const {
+    isStarted,
+    isCompleted,
+    isExpired,
+    remainingSeconds,
+    startAttempt,
+    resetAttempt,
+    loading: attemptLoading,
+  } = useEscapeRoom({
+    activity: quiz,
+    activityType: 'practiceQuiz',
+    refetch: refetch ?? (() => {}),
+  })
+
+  // Synchronize localStorage progress state with server's isCorrect fields if they differ
+  useEffect(() => {
+    if (isEscapeRoom && quiz.stacks) {
+      setProgressState((prev) => {
+        let changed = false
+        const next = { ...prev }
+        for (const stack of quiz.stacks!) {
+          const currentStatus = next[stack.id]?.status
+          if (
+            stack.isCorrect &&
+            currentStatus !== StackFeedbackStatus.Correct
+          ) {
+            next[stack.id] = {
+              status: StackFeedbackStatus.Correct,
+              score: next[stack.id]?.score ?? null,
+            }
+            changed = true
+          }
+        }
+        return changed ? next : prev
+      })
+    }
+  }, [isEscapeRoom, quiz.stacks, setProgressState])
+
+  const handleSetCurrentIx = (ix: number) => {
+    if (isEscapeRoom && ix >= 0) {
+      const activeFirstUncleared =
+        quiz.stacks?.findIndex(
+          (stack) =>
+            progressState?.[stack.id]?.status !== StackFeedbackStatus.Correct
+        ) ?? 0
+
+      if (activeFirstUncleared !== -1 && ix > activeFirstUncleared) {
+        setCurrentIx(activeFirstUncleared)
+        return
+      }
+    }
+    setCurrentIx(ix)
+  }
+
+  const handleStartQuiz = async () => {
+    if (isEscapeRoom) {
+      if (!isStarted) {
+        await startAttempt()
+      }
+      // Trigger a direct refetch to make sure isCorrect fields are up-to-date
+      if (refetch) {
+        await refetch()
+      }
+      handleSetCurrentIx(0)
+    } else {
+      setCurrentIx(0)
+    }
+  }
+
   const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
     variables: {
       courseId: router.query.courseId as string,
@@ -110,6 +185,19 @@ function PracticeQuiz({
 
   return (
     <div className="flex-1">
+      {isEscapeRoom && !previewOnly && (
+        <EscapeRoomOverlay
+          isStarted={isStarted}
+          isCompleted={isCompleted}
+          isExpired={isExpired}
+          remainingSeconds={remainingSeconds}
+          timeLimit={quiz.escapeRoomConfig?.timeLimit ?? 3600}
+          hintPenalty={quiz.escapeRoomConfig?.hintPenalty ?? 120}
+          onStart={startAttempt}
+          onReset={resetAttempt}
+          loading={attemptLoading}
+        />
+      )}
       <div
         className={twMerge(
           'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
@@ -134,7 +222,7 @@ function PracticeQuiz({
             }) || []
           }
           currentIx={currentIx}
-          setCurrentIx={setCurrentIx}
+          setCurrentIx={handleSetCurrentIx}
           resetLocalStorage={
             showResetLocalStorage
               ? () => {
@@ -163,7 +251,7 @@ function PracticeQuiz({
             // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
             // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
             pointsMultiplier={quiz.pointsMultiplier}
-            setCurrentIx={setCurrentIx}
+            setCurrentIx={handleStartQuiz}
             previewOnly={previewOnly}
           />
         )}

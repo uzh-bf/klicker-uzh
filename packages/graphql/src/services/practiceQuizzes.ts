@@ -165,6 +165,9 @@ interface ManipulatePracticeQuizArgs {
   multiplier: number
   order: DB.ElementOrderType
   resetTimeDays: number
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
 }
 
 export async function manipulatePracticeQuiz(
@@ -178,9 +181,16 @@ export async function manipulatePracticeQuiz(
     multiplier,
     order,
     resetTimeDays,
+    isEscapeRoom,
+    escapeRoomTimeLimit,
+    escapeRoomHintPenalty,
   }: ManipulatePracticeQuizArgs,
   ctx: ContextWithUser
 ) {
+  if (isEscapeRoom && order !== DB.ElementOrderType.SEQUENTIAL) {
+    throw new GraphQLError('Escape room quizzes must have sequential order')
+  }
+
   // in EDIT mode - validate that the practice quiz exists and is not published
   let existingActivity: DB.PracticeQuiz | null = null
   if (id) {
@@ -237,13 +247,12 @@ export async function manipulatePracticeQuiz(
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
-  const createOrUpdateJSON = {
+  const createOrUpdateJSON: any = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
     orderType: order,
-    resetTimeDays: resetTimeDays,
     areInstancesOutdated: anyInstanceOutdated,
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
@@ -278,6 +287,22 @@ export async function manipulatePracticeQuiz(
     course: { connect: { id: courseId } },
   }
 
+  if (isEscapeRoom) {
+    createOrUpdateJSON.escapeRoomConfig = {
+      upsert: {
+        create: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+          lockoutSeconds: 5,
+        },
+        update: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+        },
+      },
+    }
+  }
+
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
       // delete all instances that are not used anymore
@@ -310,6 +335,14 @@ export async function manipulatePracticeQuiz(
       await prisma.elementStack.deleteMany({
         where: { id: { in: stacksToDelete } },
       })
+
+      if (!isEscapeRoom && id) {
+        await prisma.escapeRoomConfig
+          .delete({
+            where: { practiceQuizId: id },
+          })
+          .catch(() => {})
+      }
 
       const upsertedQuiz = await prisma.practiceQuiz.upsert({
         where: { id: id ?? uuidv4() },
@@ -829,3 +862,259 @@ export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishS
       throw error // rethrow to allow Hatchet to handle retries
     }
   }
+
+interface StartEscapeRoomAttemptArgs {
+  practiceQuizId?: string | null
+  microLearningId?: string | null
+  groupActivityId?: string | null
+  elementBlockId?: number | null
+}
+
+export async function startEscapeRoomAttempt(
+  {
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    elementBlockId,
+  }: StartEscapeRoomAttemptArgs,
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    throw new GraphQLError('Only participants can start escape room attempts')
+  }
+
+  const participantId = ctx.user.sub
+
+  // 1. Identify active settings
+  let isEscapeRoom = false
+  let timeLimit = 3600
+  let groupId: string | null = null
+
+  if (practiceQuizId) {
+    const pq = await ctx.prisma.practiceQuiz.findUnique({
+      where: { id: practiceQuizId, isDeleted: false },
+      include: { escapeRoomConfig: true },
+    })
+    if (!pq) throw new GraphQLError('Practice quiz not found')
+    isEscapeRoom = !!pq.escapeRoomConfig
+    timeLimit = pq.escapeRoomConfig?.timeLimit ?? 3600
+  } else if (microLearningId) {
+    const ml = await ctx.prisma.microLearning.findUnique({
+      where: { id: microLearningId, isDeleted: false },
+      include: { escapeRoomConfig: true },
+    })
+    if (!ml) throw new GraphQLError('Microlearning not found')
+    isEscapeRoom = !!ml.escapeRoomConfig
+    timeLimit = ml.escapeRoomConfig?.timeLimit ?? 3600
+  } else if (groupActivityId) {
+    const ga = await ctx.prisma.groupActivity.findUnique({
+      where: { id: groupActivityId, isDeleted: false },
+      include: { escapeRoomConfig: true },
+    })
+    if (!ga) throw new GraphQLError('Group activity not found')
+    isEscapeRoom = !!ga.escapeRoomConfig
+    timeLimit = ga.escapeRoomConfig?.timeLimit ?? 3600
+
+    // For group activities, find the participant's group for this course
+    const participantGroup = await ctx.prisma.participantGroup.findFirst({
+      where: {
+        courseId: ga.courseId,
+        participants: { some: { id: participantId } },
+      },
+    })
+    if (!participantGroup) {
+      throw new GraphQLError('Participant is not in a group for this course')
+    }
+    groupId = participantGroup.id
+  } else if (elementBlockId) {
+    const block = await ctx.prisma.elementBlock.findUnique({
+      where: { id: elementBlockId },
+      include: { escapeRoomConfig: true },
+    })
+    if (!block) throw new GraphQLError('Block not found')
+    isEscapeRoom = !!block.escapeRoomConfig
+    timeLimit = block.escapeRoomConfig?.timeLimit ?? 300
+  } else {
+    throw new GraphQLError('Invalid request: must specify an activity ID')
+  }
+
+  if (!isEscapeRoom) {
+    throw new GraphQLError(
+      'This activity is not configured for escape room mode'
+    )
+  }
+
+  // 2. Query for existing attempt (check if running or complete)
+  const existingAttempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+    where: groupId
+      ? {
+          groupId_groupActivityId: {
+            groupId,
+            groupActivityId: groupActivityId!,
+          },
+        }
+      : practiceQuizId
+        ? { participantId_practiceQuizId: { participantId, practiceQuizId } }
+        : microLearningId
+          ? {
+              participantId_microLearningId: {
+                participantId,
+                microLearningId: microLearningId!,
+              },
+            }
+          : {
+              participantId_elementBlockId: {
+                participantId,
+                elementBlockId: elementBlockId!,
+              },
+            },
+  })
+
+  if (existingAttempt) {
+    if (existingAttempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
+      // Check expiration (plus 5 seconds grace period)
+      const elapsed =
+        (Date.now() - new Date(existingAttempt.startedAt).getTime()) / 1000
+      const currentPenalty = existingAttempt.penaltySeconds
+      if (elapsed > existingAttempt.timeLimit + currentPenalty + 5) {
+        // Expired! Update status
+        return await ctx.prisma.escapeRoomAttempt.update({
+          where: { id: existingAttempt.id },
+          data: { status: DB.EscapeRoomStatus.EXPIRED },
+        })
+      }
+    }
+    return existingAttempt
+  }
+
+  // 3. Create new attempt
+  return await ctx.prisma.escapeRoomAttempt.create({
+    data: {
+      timeLimit,
+      penaltySeconds: 0,
+      hintsUsed: [],
+      status: DB.EscapeRoomStatus.IN_PROGRESS,
+      participantId: groupId ? null : participantId,
+      groupId,
+      practiceQuizId,
+      microLearningId,
+      groupActivityId,
+      elementBlockId,
+    },
+  })
+}
+
+interface ResetEscapeRoomAttemptArgs {
+  practiceQuizId?: string | null
+  microLearningId?: string | null
+  groupActivityId?: string | null
+  elementBlockId?: number | null
+  participantId?: string | null
+  groupId?: string | null
+}
+
+export async function resetEscapeRoomAttempt(
+  {
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    elementBlockId,
+    participantId,
+    groupId,
+  }: ResetEscapeRoomAttemptArgs,
+  ctx: ContextWithUser
+) {
+  const isLecturer =
+    ctx.user?.role === DB.UserRole.USER || ctx.user?.role === DB.UserRole.ADMIN
+
+  let finalParticipantId = participantId
+  let finalGroupId = groupId
+
+  if (!isLecturer) {
+    if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+      throw new GraphQLError('Not authenticated')
+    }
+    finalParticipantId = ctx.user.sub
+    if (groupActivityId) {
+      const ga = await ctx.prisma.groupActivity.findUnique({
+        where: { id: groupActivityId },
+        select: { courseId: true },
+      })
+      if (!ga) throw new GraphQLError('Group activity not found')
+      const pg = await ctx.prisma.participantGroup.findFirst({
+        where: {
+          courseId: ga.courseId,
+          participants: { some: { id: ctx.user.sub } },
+        },
+      })
+      if (pg) finalGroupId = pg.id
+    }
+  }
+
+  const attemptWhere =
+    finalGroupId && groupActivityId
+      ? { groupId_groupActivityId: { groupId: finalGroupId, groupActivityId } }
+      : practiceQuizId
+        ? {
+            participantId_practiceQuizId: {
+              participantId: finalParticipantId!,
+              practiceQuizId,
+            },
+          }
+        : microLearningId
+          ? {
+              participantId_microLearningId: {
+                participantId: finalParticipantId!,
+                microLearningId: microLearningId!,
+              },
+            }
+          : {
+              participantId_elementBlockId: {
+                participantId: finalParticipantId!,
+                elementBlockId: elementBlockId!,
+              },
+            }
+
+  // 1. Delete EscapeRoomAttempt
+  await ctx.prisma.escapeRoomAttempt
+    .delete({
+      where: attemptWhere as any,
+    })
+    .catch(() => {})
+
+  // 2. Clear responses / progress
+  if (finalGroupId && groupActivityId) {
+    await ctx.prisma.groupActivityInstance
+      .delete({
+        where: {
+          groupActivityId_groupId: {
+            groupActivityId,
+            groupId: finalGroupId,
+          },
+        },
+      })
+      .catch(() => {})
+  } else if (finalParticipantId) {
+    if (practiceQuizId) {
+      await ctx.prisma.questionResponse.deleteMany({
+        where: {
+          participantId: finalParticipantId,
+          elementInstance: {
+            elementStack: { practiceQuizId },
+          },
+        },
+      })
+    } else if (microLearningId) {
+      await ctx.prisma.questionResponse.deleteMany({
+        where: {
+          participantId: finalParticipantId,
+          elementInstance: {
+            elementStack: { microLearningId },
+          },
+        },
+      })
+    }
+  }
+
+  return true
+}

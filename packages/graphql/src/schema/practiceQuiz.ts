@@ -15,6 +15,7 @@ import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
+import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
 import { IStackFeedback } from './evaluation.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
@@ -170,6 +171,31 @@ export const ElementStack = ElementStackRef.implement({
       type: [ElementInstanceRef],
       nullable: true,
     }),
+    isCorrect: t.boolean({
+      nullable: true,
+      resolve: async (parent, _args, ctx) => {
+        if (!ctx.user?.sub) return false
+        const elements = await ctx.prisma.elementInstance.findMany({
+          where: {
+            elementStackId: parent.id,
+          },
+          include: {
+            responses: {
+              where: {
+                participantId: ctx.user.sub,
+              },
+            },
+          },
+        })
+        if (elements.length === 0) return false
+        return (elements as any[]).every((elem) =>
+          elem.responses?.some(
+            (resp: any) =>
+              resp.lastResponseCorrectness === DB.ResponseCorrectness.CORRECT
+          )
+        )
+      },
+    }),
   }),
 })
 
@@ -198,6 +224,8 @@ export interface IPracticeQuiz
   completedCount?: number
   repeatedCount?: number
   isOwner?: boolean
+  escapeRoomConfig?: DB.EscapeRoomConfig | null
+  escapeRoomAttempts?: DB.EscapeRoomAttempt[] | null
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -218,6 +246,24 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
     availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
 
+    escapeRoomConfig: t.expose('escapeRoomConfig', {
+      type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    escapeRoomAttempts: t.field({
+      type: [EscapeRoomAttemptRef],
+      nullable: true,
+      resolve: async (parent, _args, ctx) => {
+        if (!ctx.user?.sub) return null
+        return await ctx.prisma.escapeRoomAttempt.findMany({
+          where: {
+            practiceQuizId: parent.id,
+            participantId: ctx.user.sub,
+          },
+        })
+      },
+    }),
+
     // startedCount: t.exposeInt('startedCount', { nullable: true }),
     // completedCount: t.exposeInt('completedCount', { nullable: true }),
     // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
@@ -225,6 +271,36 @@ export const PracticeQuiz = PracticeQuizRef.implement({
 
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
+  }),
+})
+
+export const EscapeRoomStatus = builder.enumType('EscapeRoomStatus', {
+  values: Object.values(DB.EscapeRoomStatus),
+})
+
+export const EscapeRoomAttemptRef =
+  builder.objectRef<DB.EscapeRoomAttempt>('EscapeRoomAttempt')
+export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    startedAt: t.expose('startedAt', { type: 'Date' }),
+    timeLimit: t.exposeInt('timeLimit'),
+    penaltySeconds: t.exposeInt('penaltySeconds'),
+    hintsUsed: t.field({
+      type: ['String'],
+      resolve: (parent) => {
+        return (parent.hintsUsed as string[]) ?? []
+      },
+    }),
+    status: t.expose('status', { type: EscapeRoomStatus }),
+    completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
+    lockoutUntil: t.expose('lockoutUntil', { type: 'Date', nullable: true }),
+    participantId: t.exposeString('participantId', { nullable: true }),
+    groupId: t.exposeString('groupId', { nullable: true }),
+    practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
+    microLearningId: t.exposeString('microLearningId', { nullable: true }),
+    groupActivityId: t.exposeString('groupActivityId', { nullable: true }),
+    elementBlockId: t.exposeInt('elementBlockId', { nullable: true }),
   }),
 })
 

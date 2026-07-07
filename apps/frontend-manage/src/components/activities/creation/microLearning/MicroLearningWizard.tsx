@@ -137,6 +137,23 @@ function MicroLearningWizard({
     courseId: yup
       .string()
       .required(t('manage.activityWizard.microlearningCourse')),
+    isEscapeRoom: yup.boolean(),
+    escapeRoomTimeLimit: yup.string().when('isEscapeRoom', {
+      is: true,
+      then: (schema) =>
+        schema
+          .required('Time limit is required')
+          .matches(/^[1-9][0-9]*$/, 'Must be a positive number of minutes'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+    escapeRoomHintPenalty: yup.string().when('isEscapeRoom', {
+      is: true,
+      then: (schema) =>
+        schema
+          .required('Hint penalty is required')
+          .matches(/^[0-9]+$/, 'Must be a non-negative number of seconds'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   })
 
   const stackValiationSchema = yup.object().shape({
@@ -199,6 +216,9 @@ function MicroLearningWizard({
     courseEndDate: undefined,
     multiplier: '1',
     courseId: undefined,
+    isEscapeRoom: false,
+    escapeRoomTimeLimit: '60',
+    escapeRoomHintPenalty: '0',
   }
 
   const workflowItems = [
@@ -264,6 +284,15 @@ function MicroLearningWizard({
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
+    isEscapeRoom: !!initialValues?.escapeRoomConfig,
+    escapeRoomTimeLimit: initialValues?.escapeRoomConfig?.timeLimit
+      ? String(Math.round(initialValues.escapeRoomConfig.timeLimit / 60))
+      : formDefaultValues.escapeRoomTimeLimit,
+    escapeRoomHintPenalty:
+      typeof initialValues?.escapeRoomConfig?.hintPenalty !== 'undefined' &&
+      initialValues?.escapeRoomConfig?.hintPenalty !== null
+        ? String(initialValues.escapeRoomConfig.hintPenalty)
+        : formDefaultValues.escapeRoomHintPenalty,
   })
 
   const [createMicroLearning, { data: creationData }] = useMutation(

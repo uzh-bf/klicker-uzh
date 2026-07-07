@@ -131,6 +131,23 @@ function PracticeQuizWizard({
         /^[0-9]+$/,
         t('manage.activityWizard.practiceQuizValidResetDays')
       ),
+    isEscapeRoom: yup.boolean(),
+    escapeRoomTimeLimit: yup.string().when('isEscapeRoom', {
+      is: true,
+      then: (schema) =>
+        schema
+          .required('Time limit is required')
+          .matches(/^[1-9][0-9]*$/, 'Must be a positive number of minutes'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+    escapeRoomHintPenalty: yup.string().when('isEscapeRoom', {
+      is: true,
+      then: (schema) =>
+        schema
+          .required('Hint penalty is required')
+          .matches(/^[0-9]+$/, 'Must be a non-negative number of seconds'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   })
 
   const stackValiationSchema = yup.object().shape({
@@ -183,6 +200,9 @@ function PracticeQuizWizard({
     order: ElementOrderType.SpacedRepetition,
     courseStartDate: undefined,
     resetTimeDays: '6',
+    isEscapeRoom: false,
+    escapeRoomTimeLimit: '60',
+    escapeRoomHintPenalty: '0',
   }
 
   const workflowItems = [
@@ -246,6 +266,15 @@ function PracticeQuizWizard({
       typeof initialValues?.resetTimeDays !== 'undefined'
         ? String(initialValues?.resetTimeDays)
         : formDefaultValues.resetTimeDays,
+    isEscapeRoom: !!initialValues?.escapeRoomConfig,
+    escapeRoomTimeLimit: initialValues?.escapeRoomConfig?.timeLimit
+      ? String(Math.round(initialValues.escapeRoomConfig.timeLimit / 60))
+      : formDefaultValues.escapeRoomTimeLimit,
+    escapeRoomHintPenalty:
+      typeof initialValues?.escapeRoomConfig?.hintPenalty !== 'undefined' &&
+      initialValues?.escapeRoomConfig?.hintPenalty !== null
+        ? String(initialValues.escapeRoomConfig.hintPenalty)
+        : formDefaultValues.escapeRoomHintPenalty,
   })
 
   const [createPracticeQuiz, { data: creationData }] = useMutation(

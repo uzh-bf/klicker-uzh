@@ -129,7 +129,7 @@ function PracticeQuizPage({
     cookiesAvailable,
   })
 
-  const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
+  const { loading, error, data, refetch } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
   })
 
@@ -255,6 +255,7 @@ function PracticeQuizPage({
       <PracticeQuiz
         showResetLocalStorage
         embedded={embedded}
+        refetch={refetch}
         quiz={{
           ...data.practiceQuiz,
           course: data.practiceQuiz.course!,

@@ -56,6 +56,7 @@ import {
   PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
@@ -3171,12 +3172,18 @@ export async function respondToElementStack(
   }: RespondToElementStackInput,
   ctx: Context
 ) {
+  let isEscapeRoom = false
+  let attempt: DB.EscapeRoomAttempt | null = null
+  let finalStack: any = null
+  let allActivityStacks: any[] = []
+
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const stack = await ctx.prisma.elementStack.findUnique({
       where: { id: stackId },
       include: {
-        microLearning: true,
+        microLearning: { include: { escapeRoomConfig: true } },
+        practiceQuiz: { include: { escapeRoomConfig: true } },
         elements: {
           include: {
             responses: {
@@ -3188,6 +3195,7 @@ export async function respondToElementStack(
         },
       },
     })
+    finalStack = stack
 
     if (
       !isOwner &&
@@ -3196,6 +3204,91 @@ export async function respondToElementStack(
         dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
     ) {
       return null
+    }
+
+    const practiceQuiz = stack?.practiceQuiz
+    const microLearning = stack?.microLearning
+    isEscapeRoom = !!(
+      practiceQuiz?.escapeRoomConfig || microLearning?.escapeRoomConfig
+    )
+
+    if (isEscapeRoom && !isOwner) {
+      const attemptWhere = practiceQuiz
+        ? {
+            participantId_practiceQuizId: {
+              participantId: ctx.user.sub,
+              practiceQuizId: practiceQuiz.id,
+            },
+          }
+        : {
+            participantId_microLearningId: {
+              participantId: ctx.user.sub,
+              microLearningId: microLearning!.id,
+            },
+          }
+
+      attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: attemptWhere as any,
+      })
+
+      if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+        throw new GraphQLError(
+          'No active escape room attempt found for this activity'
+        )
+      }
+
+      if (
+        attempt.lockoutUntil &&
+        dayjs().isBefore(dayjs(attempt.lockoutUntil))
+      ) {
+        throw new GraphQLError(
+          'You are locked out from submitting answers due to a recent incorrect attempt'
+        )
+      }
+
+      const elapsed =
+        (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
+      const totalLimit = attempt.timeLimit - attempt.penaltySeconds
+      if (elapsed > totalLimit + 5) {
+        await ctx.prisma.escapeRoomAttempt.update({
+          where: { id: attempt.id },
+          data: { status: DB.EscapeRoomStatus.EXPIRED },
+        })
+        throw new GraphQLError('Escape room time has expired')
+      }
+
+      // Check sequential answer gating: all preceding stacks must be correctly answered
+      allActivityStacks = await ctx.prisma.elementStack.findMany({
+        where: practiceQuiz
+          ? { practiceQuizId: practiceQuiz.id }
+          : { microLearningId: microLearning!.id },
+        orderBy: { order: 'asc' },
+        include: {
+          elements: {
+            include: {
+              responses: {
+                where: { participantId: ctx.user.sub },
+              },
+            },
+          },
+        },
+      })
+
+      for (const s of allActivityStacks) {
+        if (s.order < stack!.order) {
+          const sCorrect = s.elements.every((elem) =>
+            elem.responses.some(
+              (resp) =>
+                resp.lastResponseCorrectness === DB.ResponseCorrectness.CORRECT
+            )
+          )
+          if (!sCorrect) {
+            throw new GraphQLError(
+              'You must answer all preceding questions correctly before attempting this step'
+            )
+          }
+        }
+      }
     }
   }
 
@@ -3233,6 +3326,55 @@ export async function respondToElementStack(
     // add evaluation to the array
     if (evaluation) {
       evaluationsArr.push(evaluation)
+    }
+  }
+
+  if (
+    isEscapeRoom &&
+    attempt &&
+    stackFeedback === StackFeedbackStatus.CORRECT &&
+    ctx.user?.sub &&
+    finalStack
+  ) {
+    const otherStacksCorrect = allActivityStacks
+      .filter((s) => s.id !== stackId)
+      .every((s) =>
+        s.elements.every((elem) =>
+          elem.responses.some(
+            (resp) =>
+              resp.lastResponseCorrectness === DB.ResponseCorrectness.CORRECT
+          )
+        )
+      )
+
+    if (otherStacksCorrect) {
+      await ctx.prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          status: DB.EscapeRoomStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+      })
+    }
+  }
+
+  // Apply lockout if answer was incorrect
+  if (
+    isEscapeRoom &&
+    attempt &&
+    !isOwner &&
+    stackFeedback !== StackFeedbackStatus.CORRECT
+  ) {
+    const config =
+      finalStack?.practiceQuiz?.escapeRoomConfig ||
+      finalStack?.microLearning?.escapeRoomConfig
+    if (config && config.lockoutSeconds > 0) {
+      await ctx.prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          lockoutUntil: dayjs().add(config.lockoutSeconds, 'second').toDate(),
+        },
+      })
     }
   }
 

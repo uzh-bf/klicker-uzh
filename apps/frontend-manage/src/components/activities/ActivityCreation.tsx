@@ -191,6 +191,7 @@ function ActivityCreation({
         | 'stacks'
         | 'pointsMultiplier'
         | 'course'
+        | 'escapeRoomConfig'
       > & {
         id?: string
         orderType?: string
@@ -212,6 +213,7 @@ function ActivityCreation({
       stacks: microData.stacks,
       pointsMultiplier: microData.pointsMultiplier,
       course: microData.course as Course,
+      escapeRoomConfig: microData.escapeRoomConfig,
     }
   }
 

@@ -180,6 +180,9 @@ interface ManipulateMicroLearningArgs {
   multiplier: number
   startDate: Date
   endDate: Date
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
 }
 
 export async function manipulateMicroLearning(
@@ -193,6 +196,9 @@ export async function manipulateMicroLearning(
     multiplier,
     startDate,
     endDate,
+    isEscapeRoom,
+    escapeRoomTimeLimit,
+    escapeRoomHintPenalty,
   }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser
 ) {
@@ -262,7 +268,7 @@ export async function manipulateMicroLearning(
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
-  const createOrUpdateJSON = {
+  const createOrUpdateJSON: any = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
@@ -304,6 +310,22 @@ export async function manipulateMicroLearning(
     course: { connect: { id: courseId } },
   }
 
+  if (isEscapeRoom) {
+    createOrUpdateJSON.escapeRoomConfig = {
+      upsert: {
+        create: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+          lockoutSeconds: 5,
+        },
+        update: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+        },
+      },
+    }
+  }
+
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
       // delete all instances that are not used anymore
@@ -341,6 +363,14 @@ export async function manipulateMicroLearning(
           id: { in: stacksToDelete },
         },
       })
+
+      if (!isEscapeRoom && id) {
+        await prisma.escapeRoomConfig
+          .delete({
+            where: { microLearningId: id },
+          })
+          .catch(() => {})
+      }
 
       const upsertedMicrolearning = await prisma.microLearning.upsert({
         where: { id: id ?? uuidv4() },
