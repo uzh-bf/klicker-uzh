@@ -1,5 +1,10 @@
 # Log
 
+## 2026-07-08
+
+- **Update**: editor technology updated to Tiptap (v3) in Tech Stack overview ([AGENTS.md](../AGENTS.md)).
+- **Update**: added Tiptap editor-testing guidelines and stabilization gotchas to [klicker-playwright-e2e](../../.agents/skills/klicker-playwright-e2e/SKILL.md) skill.
+
 ## 2026-07-07
 
 - **Update**: migration-in-flight banners added to [graphql-api-layer](./graphql-api-layer.md), [architecture-overview](./architecture-overview.md) (GraphQL→tRPC, PR #5132), and [chat-platform](./chat-platform.md) (AI-SDK→Mastra, PRs #5126/#5129) — pages stay authoritative until those PRs merge.

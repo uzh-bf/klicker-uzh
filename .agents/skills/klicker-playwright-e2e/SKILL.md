@@ -100,7 +100,8 @@ Action menus:
 
 Editors and selects:
 
-- Use `fillEditorField` and `verifyEditorField` for Slate/rich-text fields.
+- Use `.ProseMirror` (with `.first()`/`.last()`) to target the Tiptap rich-text editor DOM.
+- For Slate/legacy rich-text fields, `fillEditorField` and `verifyEditorField` helpers remain.
 - Use direct `toHaveValue` for ordinary inputs; do not wrap simple fields just for symmetry.
 - Use `switchElementType` and `setElementStatus` for element modal dropdowns when applicable.
 - Prefer `selectOption` from repo helpers for design-system selects.
@@ -129,6 +130,9 @@ Cleanup dialogs:
 - **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — Cypress `.type()` works on the wrapper, Playwright does not. (`playwright/tests/K-elements-selection.spec.ts`)
 - **localforage parity**: Playwright creates a fresh context per test (Cypress keeps IndexedDB across `it` blocks). Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
 - **PIN-cookie bridges**: clear test-side PIN cookie bridges whenever the Cypress source clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
+- **Tiptap Editor Layout Shifts & Accordion Clicks**: The Tiptap editor mounts asynchronously and shifts the surrounding layout (toolbar rendering, element height). When clicking accordion triggers (such as `open-answer-collection-options`) shortly after mounting or element modal opening, always wait for the `.ProseMirror` element to be visible first and implement a retry loop to click the accordion.
+- **Tiptap Auto-Save / False Dirty States**: Empty questions or initial content sync can trigger false-positive form dirty-states (and "Data Recovery" prompts) due to trivial formatting differences (carriage returns, trailing newlines). Use `normalizeMarkdown` (in `ContentInput.tsx`) to trim and sanitize before comparing the external string against `editor.getMarkdown()`.
+- **Tiptap Code Block Language Selection**: To assert correct syntax highlighting (Highlight.js in the editor, Prism.js in the preview `/questions/[id]`), do not use toolbar button terminal clicks (which omit the language tag). Instead, type the markdown input rule (e.g. ` ```js ` followed by a space/Enter) directly into the editor.
 
 ## CI Notes
 

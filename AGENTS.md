@@ -94,6 +94,7 @@ cypress/                   # E2E tests
 | Layer                  | Technology                                            |
 | ---------------------- | ----------------------------------------------------- |
 | Frontend framework     | Next.js 15, React, TypeScript                         |
+| Rich text editor       | Tiptap (v3) (Markdown-native)                         |
 | Styling                | TailwindCSS, @uzh-bf/design-system                    |
 | GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
 | GraphQL client         | Apollo Client                                         |
