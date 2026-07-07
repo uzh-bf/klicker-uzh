@@ -32,6 +32,10 @@ const MAX_CONTENT_LENGTH = 200_000
 const MAX_DESCRIPTION_LENGTH = 20_000
 const MAX_OPTIONS_BYTES = 200_000
 const IMPORT_TOKEN_TTL_MS = 60 * 60 * 1000
+const RATE_LIMIT_WINDOW_SECONDS_ENV =
+  'IMPORT_EXPORT_PACKAGE_RATE_LIMIT_WINDOW_SECONDS'
+const RATE_LIMIT_ERROR =
+  'Too many import/export package requests. Please try again later.'
 
 const EXPORT_PERMISSION_LEVELS = [
   DB.PermissionLevel.WRITE,
@@ -41,6 +45,27 @@ const EXPORT_PERMISSION_LEVELS = [
 const EXPORT_PREVIEW_ERROR_ELEMENT_PERMISSION = 'ELEMENT_EXPORT_PERMISSION'
 const EXPORT_PREVIEW_ERROR_ANSWER_COLLECTION_PERMISSION =
   'ANSWER_COLLECTION_EXPORT_PERMISSION'
+
+const RATE_LIMITS = {
+  export: {
+    limitEnv: 'IMPORT_EXPORT_PACKAGE_EXPORT_RATE_LIMIT',
+    defaultLimit: 30,
+  },
+  upload: {
+    limitEnv: 'IMPORT_EXPORT_PACKAGE_UPLOAD_RATE_LIMIT',
+    defaultLimit: 30,
+  },
+  validate: {
+    limitEnv: 'IMPORT_EXPORT_PACKAGE_VALIDATE_RATE_LIMIT',
+    defaultLimit: 30,
+  },
+  import: {
+    limitEnv: 'IMPORT_EXPORT_PACKAGE_IMPORT_RATE_LIMIT',
+    defaultLimit: 10,
+  },
+} as const
+
+type RateLimitedOperation = keyof typeof RATE_LIMITS
 
 function exportPermissionFilter(userId: string) {
   return {
@@ -165,6 +190,90 @@ type PreviewEntry = {
 function assertOptionsSize(options: Record<string, unknown>) {
   if (Buffer.byteLength(JSON.stringify(options), 'utf8') > MAX_OPTIONS_BYTES) {
     throw new Error('Element options are too large.')
+  }
+}
+
+function readPositiveIntegerEnv(name: string, fallback: number) {
+  const value = Number(process.env[name])
+  return Number.isInteger(value) && value > 0 ? value : fallback
+}
+
+async function assertImportExportRateLimit(
+  ctx: ContextWithUser,
+  operation: RateLimitedOperation
+) {
+  const windowSeconds = readPositiveIntegerEnv(
+    RATE_LIMIT_WINDOW_SECONDS_ENV,
+    15 * 60
+  )
+  const limit = readPositiveIntegerEnv(
+    RATE_LIMITS[operation].limitEnv,
+    RATE_LIMITS[operation].defaultLimit
+  )
+  const bucket = Math.floor(Date.now() / (windowSeconds * 1000))
+  const key = `rate-limit:import-export-package:${operation}:${ctx.user.sub}:${bucket}`
+
+  try {
+    const count = await ctx.redisExec.incr(key)
+
+    if (count === 1) {
+      await ctx.redisExec.expire(key, windowSeconds)
+    }
+
+    if (count > limit) {
+      throw new Error(RATE_LIMIT_ERROR)
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === RATE_LIMIT_ERROR) {
+      throw error
+    }
+
+    throw new Error(RATE_LIMIT_ERROR)
+  }
+}
+
+function assertUniqueRefs(refs: string[], label: string) {
+  const seenRefs = new Set<string>()
+
+  for (const ref of refs) {
+    if (seenRefs.has(ref)) {
+      throw new Error(`${label} must be unique.`)
+    }
+
+    seenRefs.add(ref)
+  }
+}
+
+function assertGloballyUniquePackageRefs({
+  answerCollections,
+  elements,
+}: {
+  answerCollections: PackageAnswerCollection[]
+  elements: PackageElement[]
+}) {
+  const refs = new Map<string, string>()
+
+  function addRef(ref: string, label: string) {
+    const existingLabel = refs.get(ref)
+    if (existingLabel) {
+      throw new Error(
+        `Package references must be globally unique. Reference ${ref} is used for ${existingLabel} and ${label}.`
+      )
+    }
+
+    refs.set(ref, label)
+  }
+
+  for (const element of elements) {
+    addRef(element.ref, 'element')
+  }
+
+  for (const collection of answerCollections) {
+    addRef(collection.ref, 'answer collection')
+
+    for (const entry of collection.entries) {
+      addRef(entry.ref, 'answer collection entry')
+    }
   }
 }
 
@@ -319,6 +428,15 @@ function parseElementImportPackage(buffer: Buffer): NormalizedImportPackage {
     manifestSchema,
     'Import package manifest'
   )
+  assertUniqueRefs(
+    manifest.elements.map((element) => element.ref),
+    'Element references'
+  )
+  assertUniqueRefs(
+    manifest.answerCollections.map((collection) => collection.ref),
+    'Answer collection references'
+  )
+
   const expectedPaths = new Set(['manifest.json'])
 
   const answerCollections = manifest.answerCollections.map((entry) => {
@@ -392,27 +510,38 @@ function validatePackageDependencies({
   answerCollections: PackageAnswerCollection[]
   elements: PackageElement[]
 }) {
-  const collectionRefs = new Set(
-    answerCollections.map((collection) => collection.ref)
+  assertUniqueRefs(
+    elements.map((element) => element.ref),
+    'Element references'
   )
+  assertUniqueRefs(
+    answerCollections.map((collection) => collection.ref),
+    'Answer collection references'
+  )
+  assertGloballyUniquePackageRefs({ answerCollections, elements })
+
+  const collectionRefs = new Set<string>()
   const entryRefsByCollectionRef = new Map<string, Set<string>>()
-  const entryRefs = new Set(
-    answerCollections.flatMap((collection) =>
-      collection.entries.map((entry) => entry.ref)
-    )
-  )
+  const entryRefs = new Set<string>()
 
   for (const collection of answerCollections) {
     const values = new Set<string>()
     const refs = new Set<string>()
+
+    collectionRefs.add(collection.ref)
 
     for (const entry of collection.entries) {
       if (values.has(entry.value) || refs.has(entry.ref)) {
         throw new Error('Answer collection contains duplicate entries.')
       }
 
+      if (entryRefs.has(entry.ref)) {
+        throw new Error('Answer collection entry references must be unique.')
+      }
+
       values.add(entry.value)
       refs.add(entry.ref)
+      entryRefs.add(entry.ref)
     }
 
     entryRefsByCollectionRef.set(collection.ref, refs)
@@ -870,6 +999,8 @@ export async function getElementExportPackageLink(
   { elementIds }: { elementIds: number[] },
   ctx: ContextWithUser
 ) {
+  await assertImportExportRateLimit(ctx, 'export')
+
   const { filename, buffer } = await createElementExportPackage(
     { elementIds },
     ctx
@@ -974,6 +1105,8 @@ export async function prepareElementImportPackageUpload(
   { filename }: { filename: string },
   ctx: ContextWithUser
 ) {
+  await assertImportExportRateLimit(ctx, 'upload')
+
   if (!filename.toLowerCase().endsWith('.zip')) {
     throw new Error('Only ZIP import packages are supported.')
   }
@@ -985,6 +1118,8 @@ export async function validateElementImportPackage(
   { blobName }: { blobName: string },
   ctx: ContextWithUser
 ) {
+  await assertImportExportRateLimit(ctx, 'validate')
+
   const buffer = await downloadElementImportPackage({ blobName }, ctx)
   const normalizedPackage = parseElementImportPackage(buffer)
   const preview = buildPreview(normalizedPackage)
@@ -1092,6 +1227,8 @@ export async function importElementPackage(
   }: { importToken: string; selectedElementRefs: string[] },
   ctx: ContextWithUser
 ) {
+  await assertImportExportRateLimit(ctx, 'import')
+
   const selectedRefs = new Set(selectedElementRefs)
   if (selectedRefs.size === 0) {
     throw new Error('Select at least one element to import.')

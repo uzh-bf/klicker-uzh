@@ -3,10 +3,20 @@ import {
   BlobServiceClient,
   generateBlobSASQueryParameters,
   StorageSharedKeyCredential,
+  type ContainerClient,
 } from '@azure/storage-blob'
+import type { HatchetHandlers } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rmdir,
+  stat,
+  unlink,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { ContextWithUser } from '../lib/context.js'
@@ -14,6 +24,8 @@ import type { ContextWithUser } from '../lib/context.js'
 const PACKAGE_CONTAINER_NAME = 'klicker-import-export'
 const ZIP_CONTENT_TYPE = 'application/zip'
 const LOCAL_PACKAGE_ROUTE = '/api/import-export-packages'
+const PACKAGE_TTL_HOURS_ENV = 'IMPORT_EXPORT_PACKAGE_TTL_HOURS'
+const PACKAGE_PREFIXES = ['imports/', 'exports/'] as const
 
 export function isLocalImportExportPackageStorageEnabled() {
   return (
@@ -70,6 +82,117 @@ export async function readLocalImportExportPackageBlob(blobName: string) {
   return await readFile(getLocalPackagePath(blobName))
 }
 
+async function cleanupLocalDirectory(directory: string, cutoffMs: number) {
+  let entries
+
+  try {
+    entries = await readdir(directory, { withFileTypes: true })
+  } catch (error: any) {
+    if (error?.code === 'ENOENT') {
+      return 0
+    }
+
+    throw error
+  }
+
+  let deleted = 0
+
+  for (const entry of entries) {
+    const entryPath = path.join(directory, entry.name)
+
+    if (entry.isDirectory()) {
+      deleted += await cleanupLocalDirectory(entryPath, cutoffMs)
+      await rmdir(entryPath).catch(() => undefined)
+      continue
+    }
+
+    if (!entry.isFile()) {
+      continue
+    }
+
+    const stats = await stat(entryPath)
+    if (stats.mtimeMs < cutoffMs) {
+      await unlink(entryPath)
+      deleted++
+    }
+  }
+
+  return deleted
+}
+
+async function cleanupLocalImportExportPackages(cutoffMs: number) {
+  const root = getLocalPackageRoot()
+  let deleted = 0
+
+  for (const prefix of PACKAGE_PREFIXES) {
+    deleted += await cleanupLocalDirectory(
+      path.join(root, prefix.replace(/\/$/, '')),
+      cutoffMs
+    )
+  }
+
+  return deleted
+}
+
+async function cleanupAzureImportExportPackages(
+  containerClient: ContainerClient,
+  cutoffMs: number
+) {
+  let deleted = 0
+
+  for (const prefix of PACKAGE_PREFIXES) {
+    for await (const blob of containerClient.listBlobsFlat({ prefix })) {
+      const lastModified = blob.properties.lastModified
+      if (!lastModified || lastModified.getTime() >= cutoffMs) {
+        continue
+      }
+
+      await containerClient.deleteBlob(blob.name)
+      deleted++
+    }
+  }
+
+  return deleted
+}
+
+export async function cleanupImportExportPackages({
+  now = new Date(),
+  ttlHours = getImportExportPackageTtlHours(),
+}: {
+  now?: Date
+  ttlHours?: number
+} = {}) {
+  const cutoffMs = dayjs(now).subtract(ttlHours, 'hours').valueOf()
+
+  if (isLocalImportExportPackageStorageEnabled()) {
+    return {
+      deletedPackages: await cleanupLocalImportExportPackages(cutoffMs),
+    }
+  }
+
+  const containerClient = await getExistingPackageContainerClient()
+  if (!containerClient) {
+    return { deletedPackages: 0 }
+  }
+
+  return {
+    deletedPackages: await cleanupAzureImportExportPackages(
+      containerClient,
+      cutoffMs
+    ),
+  }
+}
+
+export const handleCleanupImportExportPackages: HatchetHandlers['handleCleanupImportExportPackages'] =
+  async (_, __, executionCtx) => {
+    const result = await cleanupImportExportPackages()
+    executionCtx.logger.info(
+      `[INFO] [CleanupImportExportPackages] Deleted ${result.deletedPackages} temporary import/export packages`
+    )
+
+    return true
+  }
+
 function getStorageAccount() {
   return `https://${
     process.env.BLOB_STORAGE_ACCOUNT_NAME as string
@@ -83,11 +206,12 @@ function getSharedKeyCredential() {
   )
 }
 
+function getPackageBlobServiceClient() {
+  return new BlobServiceClient(getStorageAccount(), getSharedKeyCredential())
+}
+
 async function getPackageContainerClient() {
-  const client = new BlobServiceClient(
-    getStorageAccount(),
-    getSharedKeyCredential()
-  )
+  const client = getPackageBlobServiceClient()
   const containerClient = client.getContainerClient(PACKAGE_CONTAINER_NAME)
 
   if (!(await containerClient.exists())) {
@@ -95,6 +219,27 @@ async function getPackageContainerClient() {
   }
 
   return containerClient
+}
+
+async function getExistingPackageContainerClient() {
+  const containerClient = getPackageBlobServiceClient().getContainerClient(
+    PACKAGE_CONTAINER_NAME
+  )
+
+  if (!(await containerClient.exists())) {
+    return null
+  }
+
+  return containerClient
+}
+
+function readPositiveIntegerEnv(name: string, fallback: number) {
+  const value = Number(process.env[name])
+  return Number.isInteger(value) && value > 0 ? value : fallback
+}
+
+function getImportExportPackageTtlHours() {
+  return readPositiveIntegerEnv(PACKAGE_TTL_HOURS_ENV, 24)
 }
 
 function sanitizeFilename(filename: string) {

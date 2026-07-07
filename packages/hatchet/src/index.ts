@@ -274,6 +274,23 @@ export function prepareHatchetTasks({
     },
   })
 
+  const cleanupImportExportPackages = hatchet.task({
+    name: 'cleanup-import-export-packages',
+    retries: 3,
+    defaultPriority: Priority.LOW,
+    onCrons: [
+      '30 0 * * *', // running daily at 00:30 (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleCleanupImportExportPackages(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -293,6 +310,7 @@ export function prepareHatchetTasks({
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
     updateWeeklyTimelineEntries,
+    cleanupImportExportPackages,
     sendPushNotifications,
     publishScheduledGroupActivity,
     publishScheduledLiveQuiz,

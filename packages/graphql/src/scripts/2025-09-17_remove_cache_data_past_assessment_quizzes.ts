@@ -24,6 +24,7 @@ import {
   handleSendPushNotifications,
   handleSendTeamsNotification,
 } from '../services/notifications.js'
+import { handleCleanupImportExportPackages } from '../services/packageStorage.js'
 import { handleUpdateWeeklyTimelineEntries } from '../services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from '../services/practiceQuizzes.js'
 
@@ -61,6 +62,7 @@ async function run() {
       handleSendPushNotifications,
       handleSendTeamsNotification,
       handleUpdateWeeklyTimelineEntries,
+      handleCleanupImportExportPackages,
       handleEndExpiredGroupActivity,
       handleEndExpiredMicroLearning,
       handlePublishScheduledLiveQuiz,

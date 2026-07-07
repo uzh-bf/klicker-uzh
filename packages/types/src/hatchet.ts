@@ -45,6 +45,11 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleCleanupImportExportPackages: (
+    {},
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleSendPushNotifications: (
     {},
     globalCtx: HatchetHandlerGlobalContext,
@@ -135,4 +140,5 @@ export interface PreparedHatchetTasks {
     { liveQuizId: string; blockId: number },
     { success: boolean }
   >
+  cleanupImportExportPackages: TaskWorkflowDeclaration<{}, { success: boolean }>
 }

@@ -2,7 +2,9 @@ import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
 export {
+  cleanupImportExportPackages,
   decodeLocalImportExportPackageBlobName,
+  handleCleanupImportExportPackages,
   isLocalImportExportPackageStorageEnabled,
   readLocalImportExportPackageBlob,
   writeLocalImportExportPackageBlob,
@@ -63,6 +65,7 @@ import {
   handleSendPushNotifications,
   handleSendTeamsNotification,
 } from './services/notifications.js'
+import { handleCleanupImportExportPackages } from './services/packageStorage.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
 
@@ -79,6 +82,7 @@ export const handlers: HatchetHandlers = {
   handleSendPushNotifications,
   handleSendTeamsNotification,
   handleUpdateWeeklyTimelineEntries,
+  handleCleanupImportExportPackages,
   handleEndExpiredGroupActivity,
   handleEndExpiredMicroLearning,
   handlePublishScheduledLiveQuiz,

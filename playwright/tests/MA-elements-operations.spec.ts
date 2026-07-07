@@ -319,7 +319,7 @@ async function publishSetOfActivities(
     await expect(dialog).toBeHidden({ timeout: 30000 })
   }
 
-  await page.getByTestId('activities').click()
+  await openActivitiesOverview(page)
   await page.getByTestId('activities-search-input').fill(liveQuiz)
   await page.keyboard.press('Enter')
   await Promise.all([
@@ -394,6 +394,14 @@ async function openStudentLiveQuiz(page: Page, displayName: string) {
 async function returnToStudentHome(page: Page) {
   await page.goto('/', { waitUntil: 'commit' })
   await expect(page.getByTestId('homepage')).toBeVisible()
+}
+
+async function openActivitiesOverview(page: Page) {
+  await page.goto(
+    new URL('/activities', process.env.URL_MANAGE ?? URL_MANAGE).toString(),
+    { waitUntil: 'commit' }
+  )
+  await expect(page.getByTestId('activities-search-input')).toBeVisible()
 }
 
 async function confirmDeletionModal(page: Page, confirmationTestIds: string[]) {
@@ -1409,7 +1417,7 @@ test.describe('Create different types of elements (with and without sample solut
 
       await deleteElement(page, data.update.title3)
 
-      await page.getByTestId('activities').click()
+      await openActivitiesOverview(page)
       for (const quiz of [
         data.update.liveQuiz1,
         data.update.liveQuiz2,
@@ -1427,8 +1435,7 @@ test.describe('Create different types of elements (with and without sample solut
         await page.getByTestId('next-block-timeline').click()
         await page.waitForTimeout(500)
         await page.reload()
-        await page.getByTestId('activities').click()
-        await expect(page.getByTestId('activities-search-input')).toBeVisible()
+        await openActivitiesOverview(page)
         await page.getByTestId('activities-search-input').fill(quiz)
         await page.keyboard.press('Enter')
         await chooseActivityAction(

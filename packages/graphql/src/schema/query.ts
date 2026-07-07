@@ -132,6 +132,7 @@ export const Query = builder.queryType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
 
     return {
@@ -866,7 +867,7 @@ export const Query = builder.queryType({
         ),
       }),
 
-      getElementDownloadLink: t.withAuth(asUser).field({
+      getElementDownloadLink: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ElementDownloadLink,
         args: {
@@ -880,7 +881,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getElementExportPackageLink: t.withAuth(asUser).field({
+      getElementExportPackageLink: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ElementDownloadLink,
         args: {
@@ -894,7 +895,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getElementExportPackagePreview: t.withAuth(asUser).field({
+      getElementExportPackagePreview: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ElementExportPackagePreview,
         args: {

@@ -46,6 +46,7 @@ import {
   handleEndExpiredMicroLearning,
   handlePublishScheduledMicroLearning,
 } from 'src/services/microLearning.js'
+import { handleCleanupImportExportPackages } from 'src/services/packageStorage.js'
 import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
@@ -278,6 +279,17 @@ export async function testInitialization(
         return { success }
       },
     }),
+    cleanupImportExportPackages: hatchet.task({
+      name: 'cleanup-import-export-packages',
+      fn: async (_, executionContext) => {
+        const success = await handleCleanupImportExportPackages(
+          {},
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
   }
 
   // mock context with user including all required properties
@@ -337,6 +349,10 @@ export async function testInitialization(
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
 export async function testCleanup(prisma: PrismaClient) {
+  // audit logs do not carry foreign keys, so they need explicit cleanup between
+  // tests that reuse deterministic object ids.
+  await prisma.auditLogEntry.deleteMany()
+
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
