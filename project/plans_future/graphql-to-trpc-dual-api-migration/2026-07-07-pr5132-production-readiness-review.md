@@ -159,6 +159,40 @@ Steps 1–6 to make the PR mergeable; 7–10 to make the cutover production-read
 9. **Staging dual-API smoke** per the plan's deployability checklist: deploy backend first, verify `/api/graphql` AND a concrete `/api/trpc` procedure (not the bare base path — it 404s by design) in the same instance, WS subscription probe through the real ingress, then the frontend test-switch. Write the tester script (what should hit which API, and the rollback switch) into the PR body.
 10. **S06 (GraphQL removal) stays gated** — do not start until steps 1–9 are done and the cleanup gate is explicitly approved.
 
-## 9. Review coverage disclosure
+## 9. Playwright-primary strategy and E2E hardening
+
+Added 2026-07-07 after the decision to treat Playwright as the primary E2E suite. Everything below verified on head `e17d663a6`.
+
+### 9.1 What Playwright-primary changes about this review
+
+B1 (ConfirmationItem, section 3) was introduced **to stabilize Playwright** (`d93fa403d`, `fe62869b5`) and broke Cypress — a direct cost of running two suites with diverging selector semantics. Consequences:
+
+- **Short term:** fix ConfirmationItem compatibly anyway (the fix in section 3 satisfies both suites). Cypress is a required PR check today; it cannot stay red.
+- **Medium term (decision for Roland):** demote Cypress to nightly/on-demand after a burn-in of consecutive green Playwright runs, then retire it. Dual maintenance already produced one production-adjacent regression and costs ~1h35m CI per push (`cypress-run-cloud`). One suite must be the source of truth.
+
+### 9.2 What is already solid
+
+- **Parity:** 26/26 specs mirror Cypress 1:1 with 761/761 tests, and this branch changed zero Playwright spec files vs `v3` (only `playwright/README.md`) — coverage was not weakened to make the migration pass.
+- **CI realism:** 5-shard matrix with real postgres + 3 redis instances + hatchet-lite, `build:test` rebuilds the instrumented backend (so `/api/trpc` is always fresh — the stale-instrumentation trap is guarded), DB reset + seed per shard, retries 1, trace/screenshot/video retained and uploaded `if: always()`.
+- **Config:** `testIdAttribute: 'data-cy'` (selector parity with the app and Cypress), `test.describe.serial` for dependent chains (a retry restarts the whole chain), `forbidOnly` in CI.
+
+### 9.3 Gaps toward "bulletproof", ranked
+
+1. **Playwright never exercises the production navigation path.** `usesLocalTestOrigin = NEXT_PUBLIC_API_URL?.startsWith('http://127.0.0.1:')` is true in every Playwright environment — locally via `apps/*/.env.test` and in CI. Gated forks run the test-only branch everywhere Playwright looks: `apps/frontend-manage/src/components/common/Header.tsx:37` (hard `window.location.assign` instead of `router.push`), `apps/frontend-manage/src/components/liveQuiz/cockpit/CancelLiveQuizModal.tsx:118` (skips the production `router.push` + `onClose` sequence), `_document.tsx` in all three frontends (skips external stylesheets). The workaround targets dev-server first-hit route compilation, but CI serves a prebuilt app (`start:test`) where it is unnecessary. **Fix:** gate these forks on dev-mode serving instead of API origin (or warm the routes once in `playwright/global-setup.ts` and delete the forks), so CI runs the real `router.push` branches. This is test-driven production-code drift — the highest-value fix in this section.
+2. **542 fixed sleeps.** `waitForTimeout` per file: `O-live-quiz` 125, `X-review` 107, `P-microlearning` 72, `Q-practice-quiz` 53, `V-template` 47. Each is latent flake or dead time. Burn down file-by-file (replace with `expect(...).toPass()` / condition waits, largest file first) and add the `playwright/no-wait-for-timeout` eslint rule so no new ones land.
+3. **Realtime push coverage unproven.** Migrated realtime uses tRPC WebSockets, but specs mostly assert cross-role state after a navigation (fresh query), which passes even if WS push is dead. Verify or add ~3 assertions on an already-open page: cockpit counter increments while a student answers, feedback appears live on the open lecturer panel, evaluation updates without reload. Otherwise a broken WS auth/upgrade path ships green (pairs with the staging WS smoke in step 9 of section 8).
+4. **Chromium-only.** `firefox`/`webkit` are commented out in `playwright/playwright.config.ts`; students are mobile-Safari-heavy. Add a webkit + iPhone-viewport project for student-facing specs (A, P, Q, R, student half of O), scheduled weekly — not per-PR.
+5. **Flakes are invisible.** `retries: 1` plus unread per-shard HTML reports means flakes accumulate silently (Cypress Cloud tracked 3; Playwright has no equivalent). Cheap fix: a CI step parsing the junit XML for retried/flaky tests with a warning threshold; later, merge shard blob reports into one report.
+6. **Shard imbalance** (15–26 min spread) — rebalance spec files across shards; minor.
+
+### 9.4 Suggested order (extends section 8)
+
+1. ConfirmationItem fix (section 3, B1) — unblocks both suites.
+2. Test-origin fork removal for CI mode (gap 1) — makes every later green run mean more.
+3. Realtime push assertions (gap 3) — riskiest untested migration surface.
+4. Sleep burn-down starting with `O-live-quiz` + lint rule (gap 2).
+5. Cypress demotion decision, then gaps 4–6.
+
+## 10. Review coverage disclosure
 
 Completed with adversarial verification: manage UX/cache audit, Cypress triage, branch hygiene. Completed manually: CI ledger, conflict analysis, deploy/link spot-checks (`/api/trpc` mount, Dockerfile, superjson/wsLink). **Not covered:** the five dimensions in section 7. Findings in sections 3–5 marked "verified" were independently re-read by a second reviewer pass; line numbers checked against head `d1daf0b8`.
