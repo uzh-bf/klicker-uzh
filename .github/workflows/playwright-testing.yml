@@ -26,7 +26,83 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  build-and-compile:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Cache turbo build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+          key: ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
+            ${{ runner.os }}-turbo-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages and apps
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+          NODE_ENV: test
+          REDIS_HOST: localhost
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
+          REDIS_CACHE_HOST: localhost
+          REDIS_CACHE_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6379
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_HOST: localhost
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+      - name: Upload Playwright build outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-build-artifact
+          path: |
+            apps/**/.next
+            packages/**/dist
+          retention-days: 1
+
   playwright-run:
+    needs: build-and-compile
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
@@ -141,41 +217,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Cache turbo build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            .turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
-            ${{ runner.os }}-turbo-
-
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+      - name: Download Playwright build outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-build-artifact
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @klicker-uzh/prisma generate
         env:
-          APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
-          NODE_ENV: test
-          REDIS_HOST: redis_exec
-          REDIS_PASS: ''
-          REDIS_PORT: 6379
-          REDIS_CACHE_HOST: redis_cache
-          REDIS_CACHE_PORT: 6379
-          REDIS_ASSESSMENT_PORT: 6379
-          REDIS_ASSESSMENT_PASS: ''
-          REDIS_ASSESSMENT_HOST: redis_assessment_exec
-          APP_ORIGIN_API: http://127.0.0.1:3000
-          APP_ORIGIN_AUTH: http://127.0.0.1:3010
-          APP_ORIGIN_LTI: http://127.0.0.1:4000
-          APP_ORIGIN_PWA: http://127.0.0.1:3001
-          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
-          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
-          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
-          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Prepare .env files
         run: |
