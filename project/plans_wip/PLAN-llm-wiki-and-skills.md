@@ -116,8 +116,13 @@ Integration: existing e2e/browser skills stay canonical for their domains; new s
 - 2026-07-07: S7 done (`b8589199a`): klicker-graphql-api (8-step build order, auth composition, debugging table), klicker-data-model (3-step ritual, incident rules, 3-seed-path table).
 - 2026-07-07: S8 done (`3675e1828`): klicker-feature-design (8 design questions, plan-file convention), klicker-frontend-ui (work loop w/ mandatory agent-browser verification + server-start authorization, chat exclusion), klicker-wiki-maintenance (same-change-set rule, change-type→page map, house conventions). index.md skill routing expanded to full roster.
 - 2026-07-07: S9 reconciliation: caught + fixed wrong `withPermission` code sketch in klicker-graphql-api (it WRAPS the resolver — verified against `mutation.ts:deleteCourse` and `sharing.ts:withPermission`). Doctor check-number cross-refs verified (check 7/8 referenced by graphql/data-model skills match).
-- Next: S9 independent review (Codex), then S10 AGENTS.md updates.
+- 2026-07-07: S9 in progress: withPermission fix committed (`1bb0b5fca`); link sweep over docs/ + skills clean; Codex independent review running (background).
+- 2026-07-07: S10 done (`cf9811eaf`): AGENTS.md → wiki pointer (Engineering Wiki section replaces Codebase Notes), stale "pnpm 10.x / Node 20" fixed to 11.x/24, klicker-* skill roster added to AI Assistance. (CODEBASE_NOTES stub already landed with S5.)
+- 2026-07-07: S9 independent review DEFERRED by user ("proceed without waiting, we will do a review later") — Codex background run stopped before output. Inline verification (this session) stands: 3 factual errors caught+fixed, link sweeps clean. S11 dogfood also deferred (app start prohibited this session).
+- 2026-07-07: S12 security pass done: secret-pattern scan over full branch diff clean; seeded-credential-value scan over new/changed docs clean.
+- Next: draft PR to `v3`.
 
 ## Next steps
 
-- S9: independent Codex review of wiki+skills (wrong-runtime-assumptions brief) → integrate/defer findings → commit.
+- Post-merge / later per user: independent review of wiki+skills (S9 brief: factual errors, wrong-runtime assumptions, wiki↔skill inconsistencies, secrets) and S11 dogfood run (fresh agent, separate worktree, D5 feature, pass/fail contract in plan).
+- Open wiki questions to resolve with maintainer knowledge: deploy trigger for `helm upgrade`, `prisma migrate deploy` invocation point, achievement-award trigger + LiveQuiz bonus formula (marked "unmapped" in domain page).
