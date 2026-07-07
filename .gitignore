@@ -38,6 +38,7 @@ tsconfig.tsbuildinfo
 *.log
 
 AzuriteConfig
+
 # Backup dumps and archives
 dumps/**/latest
 dumps/**/*.tar
