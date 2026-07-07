@@ -8,13 +8,12 @@ Hatchet, install + build + seed, `turbo dev`);
 `:443` / `:5432` so many projects coexist with **zero host-port collisions**
 (nothing is published on the host).
 
-> **Scope:** the core apps — **backend, auth, frontend-pwa, frontend-manage,
-> frontend-control** (Phase 1) — plus **olat-api, response-api, and the two
-> Hatchet workers** (Phase 2 Tier 1). All run in the one `app` container; the
-> workers have no port/route. Still deferred: `lti` (Tier 2) and `chat`/LiteLLM
-> (Tier 3); `analytics`/`office-addin`/`docs` are skipped (no `dev` task / extra
-> toolchain). The legacy host-based stack (`docker-compose.yml`, `util/traefik`,
-> Infisical, `/etc/hosts` + mkcert `*.klicker.com`) is untouched.
+> **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
+> frontend-control, olat-api, response-api, lti-service, chat**, and the **two
+> Hatchet workers**. All run in the one `app` container; the workers have no
+> port/route. Still skipped: `analytics` (Python), `office-addin`, and `docs`
+> (no `dev` task / extra toolchain). The legacy host-based stack (`docker-compose.yml`,
+> `util/traefik`, Infisical, `/etc/hosts` + mkcert `*.klicker.com`) is untouched.
 
 ## How to Run
 
@@ -145,7 +144,7 @@ Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 - `node_modules` is a named volume (pnpm hoists natives into the root
   `node_modules/.pnpm`, so one root volume covers the monorepo).
 - Reset the DB: `pnpm --filter @klicker-uzh/prisma exec prisma migrate reset --skip-seed --force`.
-- `response-api` + both workers run `tsx --watch --env-file=.env`; node 20 errors
+- `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
   (the container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.

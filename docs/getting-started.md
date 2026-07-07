@@ -31,10 +31,16 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
    ```
 2. **Accessing the apps:**
    - **Mode 1 (Plain localhost - default):** Exposed directly on host ports: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
-   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost`. Requires installing `devrouter` on host and running route registration:
-     ```bash
-     for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
-     ```
+   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost`. Requires:
+     1. Edit `.devcontainer/devcontainer.json` to include the devrouter overlay:
+        ```json
+        "dockerComposeFile": ["docker-compose.yml", "docker-compose.devrouter.yml"]
+        ```
+     2. Start the devcontainer (`devpod up .`).
+     3. Install `devrouter` on host and register the application routes:
+        ```bash
+        for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+        ```
 3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
 
 ### Path B: Host-based Setup (Legacy)
