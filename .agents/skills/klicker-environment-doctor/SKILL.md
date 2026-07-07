@@ -55,7 +55,24 @@ lsof -nP -iTCP:5432 -sTCP:LISTEN   # repeat for 6379 6380 6381 7077 8888 80 443
 
 `Bind for :::5432 failed: port is already allocated` means another stack holds the port — stop it or don't start the colliding service. Worktrees get **parallel compose projects** (project name = directory name) but fight over the same host ports; only one stack variant runs per machine.
 
-## Check 6 — infra bring-up (headless-safe)
+## Check 6 — infra bring-up / server status (headless-safe)
+
+Depending on your environment path:
+
+### Path A: Inside Devcontainer
+
+The container manages infra services and app servers automatically in the background. Check logs and process status:
+
+```bash
+pgrep -f "turbo run dev" >/dev/null && echo "Dev servers running" || echo "Dev servers NOT running"
+tail -n 50 /tmp/dev.log   # inspect server startup logs
+```
+
+If servers are down, restart them: `bash .devcontainer/post-start.sh`.
+
+### Path B: Host-based Setup
+
+Manually boot the compose infrastructure:
 
 ```bash
 docker compose config --quiet                       # resolves WITHOUT secrets (verified)
@@ -63,7 +80,7 @@ docker compose up -d postgres redis_exec redis_assessment redis_cache mailhog ha
 docker compose ps                                   # everything Started/healthy?
 ```
 
-Config-derived continuation for app work: `.github/scripts/wait-for-infra.sh`, then `./util/_create_hatchet_token.sh`, then `pnpm run prisma:push`. Traefik path (`*.klicker.com`) additionally needs `/etc/hosts` entries, mkcert certs (`util/_create_ssl_certificates.sh`), and the `reverse_proxy_<os>` service.
+Continuation for app work: `.github/scripts/wait-for-infra.sh`, then `./util/_create_hatchet_token.sh`, then `pnpm run --filter @klicker-uzh/prisma prisma:push`. Traefik path (`*.klicker.com`) additionally needs `/etc/hosts` entries, mkcert certs (`util/_create_ssl_certificates.sh`), and the `reverse_proxy_<os>` service.
 
 ## Check 7 — Hatchet and workers (config-derived)
 
