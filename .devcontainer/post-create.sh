@@ -58,7 +58,7 @@ echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)...
 retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
 
 # response-api + both hatchet workers run `tsx --watch --env-file=.env`, and node
-# 20 HARD-ERRORS if .env is missing (it's --env-file, not --env-file-if-exists).
+# 24 HARD-ERRORS if .env is missing (it's --env-file, not --env-file-if-exists).
 # We keep no per-app .env in the container — every var comes from the inherited
 # container env (devcontainer.env). Seed an EMPTY .env in each dir so the flag
 # resolves; empty adds nothing, so the container env wins. (Copying .env.example

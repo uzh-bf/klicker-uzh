@@ -123,7 +123,7 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 20 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
 
 ```bash
 devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
