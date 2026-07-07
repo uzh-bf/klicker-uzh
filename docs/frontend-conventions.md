@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-07'
+timestamp: '2026-07-08'
 tags:
   - frontend
 ---
@@ -19,6 +19,12 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 - **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
+
+## Markdown and Video Embeds
+
+- **Link Interception for Videos**: Links in markdown fields (`@klicker-uzh/markdown`) with a label of `video` or `embed` (case-insensitive, trimmed) targeting YouTube or UZH Kaltura (SWITCHcast) are automatically intercepted and rendered as responsive `<iframe />` players via `VideoEmbed`.
+- **Kaltura PlaykitJs Bypass**: To prevent frame-based third-party cookie login loops, Kaltura embeds resolve the video's `entryId` and parse `partnerId` (defaults to `106`) and `uiConfId` (defaults to `23449004`) to render using the PlaykitJs secure embed structure:
+  `https://api.cast.switch.ch/p/${partnerId}/embedPlaykitJs/uiconf_id/${uiConfId}/partner_id/${partnerId}?iframeembed=true&playerId=kaltura_player&entry_id=${entryId}`
 
 ## Data fetching
 
