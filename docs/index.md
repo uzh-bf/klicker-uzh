@@ -33,7 +33,7 @@ Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki h
 - Prisma schema, migrations, seeds → `klicker-data-model`
 - UI in manage/pwa/control/auth → `klicker-frontend-ui`
 - Choosing test level + pre-PR verification → `klicker-testing-verification`
-- Cypress e2e work → `klicker-cypress-e2e`; Playwright e2e work → `klicker-playwright-e2e`
+- New e2e specs → `klicker-playwright-e2e` (primary suite); legacy Cypress maintenance only → `klicker-cypress-e2e`
 - Browser-based verification of UI changes → `agent-browser` (invoke via `npx agent-browser`)
 - Updating this wiki → `klicker-wiki-maintenance`
 

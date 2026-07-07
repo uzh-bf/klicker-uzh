@@ -13,7 +13,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud, or chat app logic | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                          |
 | `packages/graphql` services/schema                              | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize |
-| UI or user flows                                                | e2e — route to `klicker-cypress-e2e` or `klicker-playwright-e2e` (authoring, running, triage live THERE, not here)                       |
+| UI or user flows                                                | e2e — new specs go to `klicker-playwright-e2e` (primary suite); use `klicker-cypress-e2e` only to keep the frozen legacy suite green     |
 | React component appearance/behavior only                        | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                 |
 
 Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress, which needs a running seeded stack.
