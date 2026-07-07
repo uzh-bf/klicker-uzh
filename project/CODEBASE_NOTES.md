@@ -41,10 +41,8 @@ This is a **living document**: when you discover such a pattern during a task, a
 
 ## Infra, deploy & config
 
-- **Infisical + Turbo env sync**: Any Infisical-managed env var used by tasks must be listed in `turbo.json` `globalEnv`; otherwise task runs/cache behavior can become stale or inconsistent across environments.
 - **Helm v3 secrets are external**: `deploy/charts/klicker-uzh-v3/` deployments reference `envFrom.secretRef` names, but the chart currently defines no `Secret` manifests; secrets must be provisioned out-of-band with matching names. (`deploy/charts/klicker-uzh-v3/templates/`)
 - **Production rollout strategy**: Do not use `Recreate` for production web/API Deployments; PDBs do not protect against Deployment-driven scale-downs, so slow image pulls can leave services with zero endpoints. Use `RollingUpdate` in `deploy/env-uzh-prd/values.yaml`, with `maxUnavailable: 0` only for singleton services and `1` for multi-replica services.
-- **Turborepo persistent dev tasks**: Persistent dev tasks must set `"cache": false`; otherwise Turbo can replay stale `EADDRINUSE` logs from previous failed `dev:test` runs while no process is actually listening on that port. (`turbo.json`)
 
 ## Testing & CI
 
@@ -73,4 +71,3 @@ This is a **living document**: when you discover such a pattern during a task, a
 ## Process & tooling
 
 - **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
-- **agent-browser via npx**: Always use `npx agent-browser` instead of bare `agent-browser`. Global install conflicts with Volta's Node shim and fails with "Could not execute command".
