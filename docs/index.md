@@ -12,8 +12,13 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 
 - [Getting Started](./getting-started.md) - Toolchain, first-time setup, infrastructure, dev-server paths, and the failure signatures you will hit on a fresh clone.
 - [Architecture Overview](./architecture-overview.md) - System map, request flow from browser to resolver, the async response pipeline, and where business logic lives.
+- [Domain Model](./domain-model.md) - Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
+- [GraphQL API Layer](./graphql-api-layer.md) - Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
+- [Data & Migrations](./data-and-migrations.md) - Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
+- [Async & Workers](./async-and-workers.md) - The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
+- [Auth Model](./auth-model.md) - Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
 
-Further pages (backend domain, API layer, data, workers, auth, frontend, chat, testing, CI/deploy, feature lifecycle) are being added — missing links mark knowledge not yet written.
+Further pages (frontend, chat, testing, CI/deploy, feature lifecycle) are being added — missing links mark knowledge not yet written.
 
 ## Skill routing
 

@@ -4,18 +4,6 @@ Non-obvious patterns, gotchas, and architectural decisions discovered while work
 
 This is a **living document**: when you discover such a pattern during a task, add it here (under the right area, 1-2 sentences, with the file path) before marking the task complete, and remove entries that become outdated. Keep [AGENTS.md](../AGENTS.md) itself a high-level overview — detail lives here.
 
-## GraphQL & data
-
-- **Prisma Decimal nullish check**: `Decimal` fields are objects, not numbers. `Decimal(0)` is truthy, so never use truthy checks for Decimal-to-number conversions -- always use `!= null`. (`packages/graphql/src/`)
-- **Analytics Python Prisma Decimal support**: `apps/analytics` copies the shared Prisma schema into its Python client generation; keep `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` whenever shared schema Decimal fields are present.
-- **Participant email uniqueness across auth modes**: Prisma enforces `Participant @@unique([email, isSSOAccount])`, so the same normalized email can exist once as manual and once as SSO. To block new cross-mode duplicates, account creation must explicitly check normalized email collisions in service logic. (`packages/graphql/src/services/accounts.ts`)
-
-## Export package
-
-- **Prisma row typing**: `packages/export` selects nested `ElementInstance` / `ElementBlock` relations through Prisma, but generated relation inference can collapse those nested fields to `never`; keep explicit row DTOs at the query boundary and cast the read result there instead of spreading casts through transforms. (`packages/export/src/`)
-- **ExcelJS sheet-name collisions are case-insensitive**: When generating workbook sheet names, enforce uniqueness on a normalized lowercase key and keep the full name within Excel's 31-character limit; distinct casing alone is not enough to avoid collisions. (`packages/export/src/exportCourse.ts`)
-- **ExcelJS autoFilter must span data rows**: Setting `worksheet.autoFilter` to a header-only range (`to.row === 1`) or on an empty sheet makes Excel (esp. macOS) flag the workbook as "needs repair" on open even though the XML is well-formed. Set the range to the last data row (`to.row = rows.length + 1`) and skip autoFilter on header-only sheets. (`packages/export/src/exportCourse.ts` `addSheet`)
-
 ## Chat app
 
 - **Auth guard pattern**: Route handlers in `apps/chat/src/app/api/chatbots/` use a 3-step auth pattern: `getParticipantId` -> `getChatbotOr404` -> `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` in `apps/chat/src/lib/server/apiGuards.ts` handles the standard `{ courseId: true }` case. Use it for new routes; only fall back to individual guards when you need a custom chatbot `select`.
@@ -34,10 +22,6 @@ This is a **living document**: when you discover such a pattern during a task, a
 - **CSP frame-ancestors via ingress, not middleware**: Pages Router apps (manage, pwa, control) must NOT use Next.js middleware for CSP -- it breaks `_next/data` routes in production builds (known Next.js bug). CSP `frame-ancestors` is set at the reverse proxy layer: HAProxy ingress annotations in K8s (`haproxy.org/response-set-header`), Traefik `customResponseHeaders` middleware in local dev. (`deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`, `util/traefik/rules_docker.yaml`)
 - **Embedded PWA messaging trust boundary**: For embedded PWA pages, use a parent-initiated `postMessage` handshake to capture `event.origin` and avoid `'*'` target origins; do not add a second per-platform messaging allowlist in page code. Embedding permission remains enforced separately by ingress `frame-ancestors`. (`apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/[id].tsx`, `deploy/charts/klicker-uzh-v3/templates/ingress-frontend-pwa.yaml`)
 - **Local embed harness target**: `util/embed-harness/` is for local verification only and should target the branch-local PWA (`http://127.0.0.1:3101/...`), not `https://pwa.klicker.com/...`, because production CSP / `frame-ancestors` blocks localhost embedding. (`util/embed-harness/`)
-
-## Auth / LTI
-
-- **LTI launch target resolver contract**: Launch targets are resolved in strict precedence `custom claim (klicker_redirect_to)` -> `query redirectTo`; no env fallback is used in resolver logic. Validation fails closed on the first present invalid source and enforces URL hostname exact/subdomain checks against `COOKIE_DOMAIN` and `DF_DOMAIN` (never substring matching). (`apps/lti/src/launchTarget.ts`)
 
 ## Infra, deploy & config
 
