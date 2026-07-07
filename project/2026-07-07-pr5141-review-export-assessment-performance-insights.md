@@ -3,7 +3,7 @@
 - **PR**: https://github.com/uzh-bf/klicker-uzh/pull/5141
 - **Branch**: `export-assessment-performance-insights` → `v3`
 - **Reviewed**: 2026-07-07 (full branch diff `v3...HEAD`, all 32 files)
-- **Verdict**: **Not production-ready.** Good feature direction and a clean schema/UI skeleton, but the core trust model is broken (credentials are forgeable), and both verification claims in the PR description are false: the shipped unit test **fails when actually run**, and the shipped E2E test **cannot pass** against the seeded database. Concrete evidence and a step-by-step fix plan below.
+- **Verdict**: **Not production-ready.** Good feature direction and a clean schema/UI skeleton, but the core trust model is broken and a hands-on security pass (§7) confirmed the escape hatches don't hold: credentials are **forgeable in production** (persisted operations do not protect the client-supplied payload — verified, not assumed), issuance has **no authorization** (any authenticated principal, including anonymous accounts, can mint), and the public credential query exposes the **course join PIN and lecturer email** in dev/test. On top of that, both verification claims in the PR description are false: the shipped unit test **fails when actually run**, and the shipped E2E test **cannot pass** against the seeded database. Concrete evidence and a step-by-step fix plan below; a security sign-off gate is in §6.
 
 This document is written so a junior engineer can execute it top-to-bottom. Each finding has evidence (file:line) and a "Fix" with acceptance criteria. Work through the Blockers in order; they are sequenced so later fixes build on earlier ones.
 
@@ -46,7 +46,7 @@ Tests  1 failed | 3 passed (4)
 - `issueCredential` mutation accepts `metadata: Json!` from the client and stores it verbatim: [packages/graphql/src/schema/verification.ts:87-108](../packages/graphql/src/schema/verification.ts), [packages/graphql/src/services/verification.ts:4-28](../packages/graphql/src/services/verification.ts).
 - The client computes all scores locally and sends them: `handleExport` in [SuspendedAssessmentResults.tsx](../apps/frontend-pwa/src/components/insights/assessmentResults/SuspendedAssessmentResults.tsx) (the `metadata: { …aggregated points… }` object).
 - The public verify portal renders `credential.metadata.*` as officially verified data: [apps/frontend-pwa/src/pages/verify/[token].tsx:276-452](../apps/frontend-pwa/src/pages/verify/%5Btoken%5D.tsx).
-- Production's persisted-operations allow-list does **not** prevent this: `usePersistedOperations` only pins the operation *document*, not the variables ([apps/backend-docker/src/app.ts:149-156](../apps/backend-docker/src/app.ts)). A student replays the persisted `MIssueCredential` hash with inflated numbers in the `metadata` variable and gets a green "Verifiziert" page for fabricated scores. The plan's tamper-proofing claim ("Any modification of the printed HTML/PDF values by the student is detected") is exactly inverted: the database itself contains attacker-chosen values.
+- Production's persisted-operations allow-list does **not** prevent this, and this was verified concretely in round 2 (see §7): `usePersistedOperations` pins only the operation *document*, not its variables ([apps/backend-docker/src/app.ts:149-156](../apps/backend-docker/src/app.ts)). The persisted `MIssueCredential` document declares `$courseId`, `$type`, **and `$metadata`** all as free variables ([MIssueCredential.graphql](../packages/graphql/src/graphql/ops/MIssueCredential.graphql)), and the operation hash is a plain `sha256` of the document text that ships in the client bundle (`packages/graphql/src/public/{client,server}.json` are a name→hash / hash→query manifest, 287 entries, `issueCredential` among them). A logged-in student replays that exact persisted hash with `{ courseId: <any>, type: COURSE_ASSESSMENT_INSIGHTS, metadata: { totalPoints: 9999, … } }` and gets a green "Verifiziert" page for fabricated scores **on production**, not just dev. The plan's tamper-proofing claim ("Any modification of the printed HTML/PDF values by the student is detected") is exactly inverted: the database itself is made to contain attacker-chosen values. **Persisted operations are not a mitigating control here — do not rely on them.**
 
 **Fix (architectural, do this first — several later fixes fall out of it):**
 
@@ -66,12 +66,15 @@ Tests  1 failed | 3 passed (4)
   - No check that the participant is **enrolled** in `courseId`, and no check that the course has `isAssessmentEnabled: true`. Any participant can mint credentials for any course UUID they discover.
   - The codebase has established guards for exactly this: `t.withAuth(asParticipant)` (see `studentAssessmentResults` in [packages/graphql/src/schema/query.ts:914-925](../packages/graphql/src/schema/query.ts)) — the new resolvers hand-roll `if (!ctx.user)` instead.
 
+Round-2 confirmation: the scope machinery to prevent the lecturer-JWT case already exists and is used by the neighbouring `studentAssessmentResults` query — `const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }` + `t.withAuth(asParticipant)` ([query.ts:914](../packages/graphql/src/schema/query.ts), definition at [query.ts:128](../packages/graphql/src/schema/query.ts)). The new resolver simply doesn't use it. With `maskedErrors: !process.env.DEBUG` on in production ([app.ts:186](../apps/backend-docker/src/app.ts)), the resulting Prisma `P2003` foreign-key error is masked to a generic "Unexpected error" — so the failure mode is an opaque 500 to the client and a noisy stack in the logs, not a clean rejection.
+
 **Fix:**
 
 1. Declare the mutation as `t.withAuth(asParticipant).field(…)`; same for the lecturer-side query/mutation with the appropriate scope (`asUser` + the existing `checkAccess`/`withPermission` course check is fine there and already present).
 2. Inside the resolver, verify an active `Participation` exists for `(ctx.user.sub, courseId)` and that the course has `isAssessmentEnabled: true`; throw a GraphQL error otherwise. Note: after fix 2.1 this comes almost for free — `getStudentAssessmentResults` already returns null/empty for non-enabled courses ([courses.ts:630](../packages/graphql/src/services/courses.ts)); treat that as "refuse to issue".
+3. **Explicitly reject temporary/anonymous participants.** `role === PARTICIPANT` is *also* true for anonymous "temporary" participant accounts (KlickerUZH's anonymous login), so `asParticipant` alone still lets a throwaway account mint an official-looking credential. Add a check that the participant is a real, identified account (e.g. has an `ssoEmail`/non-temporary flag) before issuing, or the "verified" report can be minted by an anonymous user with no institutional identity.
 
-**Acceptance criteria**: lecturer JWT → clean auth error, not 500; participant not enrolled → auth error; course without assessment → error. Add one unit test per case.
+**Acceptance criteria**: lecturer JWT → clean auth error, not masked 500; participant not enrolled → auth error; course without assessment → error; temporary/anonymous participant → refused. Add one unit test per case.
 
 ### 2.3 Shipped unit test fails; its expectation is also wrong for the product
 
@@ -137,6 +140,25 @@ The portal renders course, type, issue date, token, and scores — but never who
 
 **Acceptance criteria**: student results page issues no query that scales with cohort size on every view (verify via Prisma query logs), or the cached path is demonstrably hit.
 
+### 2.8 Public unauthenticated credential query exposes the full `Course` type (join PIN + lecturer email)
+
+**Severity: high (latent in prod, live in dev/test) — found in round-2 security pass.**
+
+The public, unauthenticated `verifiableCredential(token)` query has no auth scope ([verification.ts:55-65](../packages/graphql/src/schema/verification.ts)) and its `course` field resolves to the **full `Course` object type** (`CourseRef`) via `findUniqueOrThrow` ([verification.ts:43-50](../packages/graphql/src/schema/verification.ts)). The `Course` type exposes sensitive fields:
+
+- `pinCode` — the course **join secret** (used as `/course/{id}/join?pin={pinCode}`, [CourseOverviewHeader.tsx:157](../apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx)); anyone who can read it can enrol in the course.
+- `notificationEmail` — lecturer email ([course.ts:93](../packages/graphql/src/schema/course.ts)).
+- `owner → User.email` — lecturer PII, **non-nullable** ([course.ts:177](../packages/graphql/src/schema/course.ts) → [user.ts:26](../packages/graphql/src/schema/user.ts)).
+
+**Why it's not "critical" but still must be fixed:** in production the persisted-operations boundary pins the *document*, and the only persisted operation reaching this field (`QGetVerifiableCredential`) selects just `course { id name displayName }`, so `pinCode`/`owner.email` are not selectable via that op in prod. **But**:
+
+1. In dev/test the server sets `allowArbitraryOperations` ([app.ts:150-152](../apps/backend-docker/src/app.ts)), so any client holding a token can select `course { pinCode owner { email } }` today.
+2. The schema *surface* is wrong regardless of the runtime guard: a public, unauthenticated entry point should never return a type that carries a join secret and owner PII. This is one persisted-ops-config change (or one new persisted query that happens to select those fields) away from a live leak, and `graphql-armor` depth/cost limits are disabled (§3.5) so nothing else constrains traversal.
+
+**Fix:** give the public `verifiableCredential.course` field a **minimal projection type** (`id`, `name`, `displayName` only) instead of `CourseRef` — define a small `PublicCourseInfo` object ref and resolve into it, so the sensitive fields are unreachable from the unauthenticated surface by construction. Do the same for anything else this public query can traverse into.
+
+**Acceptance criteria**: querying `verifiableCredential(token){ course { pinCode owner { email } } }` against a dev server returns a schema/validation error (field does not exist on the returned type), not data.
+
 ---
 
 ## 3. High-priority issues (fix before or immediately after merge)
@@ -159,7 +181,15 @@ Report footer and verify page claim the document is "digital signiert / digitall
 
 ### 3.4 HTML injection in the exported report
 
-`exportReport.ts` interpolates `courseName`, `studentEmail`, and i18n texts into an HTML string without escaping ([exportReport.ts:85-415](../apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts)). Course names are lecturer-controlled → a malicious/compromised lecturer account can inject markup/script into files students download and open locally. **Fix**: add a tiny `escapeHtml()` for every interpolated value (5 entities), and keep the SVG generator numeric-only.
+`exportReport.ts` interpolates `courseName`, `studentEmail`, and i18n texts into an HTML string without escaping ([exportReport.ts:85-415](../apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts)). Course names are lecturer-controlled → a malicious/compromised lecturer account can inject markup/script into files students download and open locally. **Fix**: add a tiny `escapeHtml()` for every interpolated value (5 entities), and keep the SVG generator numeric-only. Note: after 2.1, `studentEmail` becomes server-sourced, but `courseName` is still lecturer-authored free text, so escaping remains required.
+
+### 3.5 GraphQL query depth and cost limits are disabled
+
+**Severity: medium (defense-in-depth) — round-2 finding.** `graphql-armor` is initialised with **both** `maxDepth` and `costLimit` disabled ([app.ts:30-36](../apps/backend-docker/src/app.ts)). With a public, unauthenticated entry point (`verifiableCredential`) now traversing into the rich, recursive `Course` graph (§2.8), there is no depth/cost ceiling protecting that surface if the persisted-ops boundary is ever relaxed or bypassed in a non-prod environment. This is pre-existing config, not introduced by this PR, but this PR is what adds the unauthenticated deep-traversal entry point, which changes the risk calculus. **Fix (follow-up, coordinate with maintainers):** don't block this PR on re-enabling armor globally, but pair the §2.8 minimal-projection fix with it, and file a follow-up to re-evaluate enabling `maxDepth`/`costLimit`.
+
+### 3.6 Resolvers throw generic `Error`, which prod masking turns into "Unexpected error"
+
+**Severity: low.** The new resolvers throw `new Error('Not authenticated' | 'Not authorized' | 'Credential not found')` ([verification.ts:96,120-123,133-134](../packages/graphql/src/schema/verification.ts)). With `maskedErrors` on in production ([app.ts:186](../apps/backend-docker/src/app.ts)) these collapse to a generic "Unexpected error", so the student/lecturer UIs (which already swallow errors, §4.3) can't show anything meaningful. Use typed `GraphQLError` with stable `extensions.code` values like the rest of the codebase, so the client can distinguish "not authorized" from a real server fault. (Most of these throws also disappear once the resolvers move to `withAuth`/`withPermission` per §2.2.)
 
 ---
 
@@ -192,20 +222,53 @@ Report footer and verify page claim the document is "digital signiert / digitall
 
 ## 6. Execution order for the fix pass (junior checklist)
 
-Work on the PR branch; one commit per numbered step; run the listed verification each time.
+Work on the PR branch; one commit per numbered step; run the listed verification each time. **Do steps 1 and 2 first — they neutralise the two critical trust holes; everything else is downstream.**
 
-1. **Server-side snapshot** (§2.1) + **auth/enrollment** (§2.2) — one slice; they touch the same resolver. Verify: new unit tests + manual GraphQL calls (lecturer JWT, non-enrolled participant, valid participant).
-2. **Fix unit test expectation** (§2.3) and add tests from steps 1. Verify: `./run-tests-local.sh verification.test.ts` green; paste output in PR.
-3. **Idempotent issuance + revocation policy** (§2.6, needs product-owner decision — ask before coding). Verify: unit tests.
-4. **Public exposure hardening** (§3.1: revoked-metadata stripping, expiry decision, histogram/privacy-notice wording) + **crash-hardening** (§3.3) + **HTML escaping** (§3.4). Verify: unit test with malformed legacy metadata; manual verify-page check.
-5. **Perf decision** (§2.7) — discuss the two options in the PR thread first; implement the chosen one. Verify: Prisma query logs on the student page.
-6. **Identity on verify page** (§2.5) + **wording fixes** (§3.2). Verify: screenshot pair (report vs. verify page).
-7. **UX/i18n batch** (§4.1–4.10). Verify: agent-browser walkthrough with screenshots (repo rule for UI changes), DE + EN locales, mobile + desktop viewports.
-8. **Fix and actually run the E2E spec** (§2.4). Verify: green Playwright output in PR.
-9. Re-run the full loop: `CI=true pnpm run check:all && pnpm run build`, unit tests, E2E, then update the PR description's Verification section with real outputs/screenshots.
+1. **Server-side snapshot** (§2.1) + **auth/enrollment/temporary-account rejection** (§2.2) — one slice; they touch the same resolver. This is the security core: after it, scores can't be forged and only real enrolled participants can issue. Verify: new unit tests + manual GraphQL calls (lecturer JWT → clean error not masked 500, non-enrolled participant → error, temporary/anonymous participant → error, valid participant → server-computed snapshot). **Also replay the persisted `MIssueCredential` hash with a tampered `metadata` variable and confirm it is now rejected/ignored** (this is the exact prod attack from §2.1).
+2. **Minimal public course projection** (§2.8) — replace `verifiableCredential.course: CourseRef` with a 3-field `PublicCourseInfo` type. Verify: `verifiableCredential(token){ course { pinCode owner { email } } }` against a dev server returns a schema error, not data.
+3. **Fix unit test expectation** (§2.3) and add the tests from steps 1–2. Verify: `./run-tests-local.sh verification.test.ts` green; paste output in PR.
+4. **Idempotent issuance + revocation policy** (§2.6, needs product-owner decision — ask before coding) + **typed GraphQL errors** (§3.6). Verify: unit tests.
+5. **Public exposure hardening** (§3.1: revoked-metadata stripping, expiry decision, histogram/privacy-notice wording) + **crash-hardening** (§3.3) + **HTML escaping** (§3.4). Verify: unit test with malformed legacy metadata; manual verify-page check. File the §3.5 armor follow-up.
+6. **Perf decision** (§2.7) — discuss the two options in the PR thread first; implement the chosen one. Verify: Prisma query logs on the student page.
+7. **Identity on verify page** (§2.5) + **wording fixes** (§3.2). Verify: screenshot pair (report vs. verify page).
+8. **UX/i18n batch** (§4.1–4.13). Verify: agent-browser walkthrough with screenshots (repo rule for UI changes), DE + EN locales, mobile + desktop viewports.
+9. **Fix and actually run the E2E spec** (§2.4). Verify: green Playwright output in PR.
+10. Re-run the full loop: `CI=true pnpm run check:all && pnpm run build`, unit tests, E2E, then update the PR description's Verification section with real outputs/screenshots.
 
-Estimated effort: steps 1–4 ≈ 1–2 days, 5–8 ≈ 1–2 days including verification.
+Estimated effort: steps 1–5 (security + correctness) ≈ 2–3 days, 6–9 ≈ 1–2 days including verification.
+
+### Security sign-off gate (must all be true before merge)
+
+- [ ] Scores on the verify page are server-computed; a tampered persisted `MIssueCredential` replay cannot change them (§2.1).
+- [ ] `issueCredential` rejects lecturer JWTs, non-enrolled participants, and temporary/anonymous participants (§2.2).
+- [ ] The public credential query cannot reach `Course.pinCode` / `owner.email` on any environment (§2.8).
+- [ ] Revoked credentials do not serve metadata publicly; revocation cannot be silently undone by re-export (§3.1, §2.6).
+- [ ] Exported HTML escapes all lecturer/user-controlled strings (§3.4).
+- [ ] The committed unit + E2E suites actually run green (§2.3, §2.4), with output attached to the PR.
 
 ---
 
-*Review produced with multi-agent verification: every load-bearing claim was either executed (build/typecheck/unit test/codegen) or independently re-verified against the code with file:line evidence; findings that could not be confirmed were dropped or downgraded (e.g. the i18n `.replace` pattern was tested and works; the earlier "lockfile broken" suspicion was traced to a local pnpm-version mismatch and discarded).*
+## 7. Security re-verification (round 2) — method and evidence
+
+This section records the hands-on second pass focused solely on security, so the findings above are auditable rather than asserted.
+
+**Method.** Read the backend GraphQL server wiring end-to-end ([apps/backend-docker/src/app.ts](../apps/backend-docker/src/app.ts)), the auth-scope builder ([packages/graphql/src/builder.ts:56-90](../packages/graphql/src/builder.ts)), the full `Course`/`User` type field exposure ([course.ts](../packages/graphql/src/schema/course.ts), [user.ts](../packages/graphql/src/schema/user.ts)), and the persisted-operation manifests. Each finding was chased to the point where the escape hatch (persisted ops, prod masking, scope guards) was either confirmed to close the hole or confirmed **not** to.
+
+**Key confirmations:**
+
+| Claim | Verified how | Result |
+| --- | --- | --- |
+| Persisted ops don't stop score forgery | `MIssueCredential.graphql` declares `$courseId/$type/$metadata` as free variables; `server.json`/`client.json` are a sha256(doc)→query / name→hash manifest (287 entries incl. `issueCredential`) that ships to the client; `allowArbitraryOperations` only true in dev/test ([app.ts:150-152](../apps/backend-docker/src/app.ts)) | **Forgery works in production** — persisted ops pin the document, not the attacker-controlled variables (§2.1) |
+| `issueCredential` has no scope guard | Resolver uses `if (!ctx.user)` ([verification.ts:95-99](../packages/graphql/src/schema/verification.ts)); neighbouring `studentAssessmentResults` uses `t.withAuth(asParticipant)` ([query.ts:914,128](../packages/graphql/src/schema/query.ts)) | Confirmed; lecturer JWT → `participantId = User uuid` → Prisma P2003, masked to generic 500 in prod (§2.2) |
+| `role: PARTICIPANT` includes anonymous accounts | `authScopes.role` in [builder.ts:63-76](../packages/graphql/src/builder.ts) matches any `PARTICIPANT`, including temporary logins | Even the correct `asParticipant` guard is insufficient — must additionally reject temporary/anonymous accounts (§2.2 step 3) |
+| Public credential query leaks course PII | `verifiableCredential` has no auth ([verification.ts:55-65](../packages/graphql/src/schema/verification.ts)) and returns `course: CourseRef`; `Course` exposes `pinCode` (join secret), `notificationEmail`, and `owner → User.email` (non-null) | Latent in prod (persisted-op field pinning), live in dev/test (§2.8) |
+| Query depth/cost unbounded | `EnvelopArmor({ maxDepth:{enabled:false}, costLimit:{enabled:false} })` ([app.ts:30-36](../apps/backend-docker/src/app.ts)) | Confirmed; no ceiling on the new public deep-traversal surface (§3.5) |
+| Revoked credential still returns metadata | `getCredentialByToken` does `findUnique` with no `isRevoked` filter ([verification.ts:30-45](../packages/graphql/src/services/verification.ts)); public op selects `metadata` | Confirmed; email + scores + cohort histogram served publicly forever, even post-revocation (§3.1) |
+
+**What held up as safe (no change):** token entropy (32 random bytes) makes enumeration infeasible; lecturer-side `courseVerificationRecords`/`revokeCredential` correctly gate on course WRITE access via `checkAccess`/`withPermission`; `maskedErrors` is on in production; CSRF-prevention and CORS-with-credentials are configured. These are genuine strengths — the problem is specifically the unauthenticated issue/verify surface and the client-trusted payload, not the lecturer path.
+
+**Net security posture:** two **critical** issues (forgeable scores §2.1, no issuance authz §2.2) plus one **high** latent PII exposure (§2.8) and several supporting mediums. None are mitigated by the existing persisted-ops / masking controls in the way one might assume — that assumption was tested and disproven. The feature must not ship until steps 1–2 of §6 land and the security sign-off gate is green.
+
+---
+
+*Review produced with multi-agent verification plus a hands-on round-2 security pass: every load-bearing claim was either executed (build/typecheck/unit test/codegen) or independently re-verified against the code with file:line evidence, and each security escape hatch was tested rather than assumed. Findings that could not be confirmed were dropped or downgraded (e.g. the i18n `.replace` pattern was tested and works; the earlier "lockfile broken" suspicion was traced to a local pnpm-version mismatch and discarded).*
