@@ -2954,7 +2954,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
       courseDatesForCourseDuplicationTooltip:
         'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
-      fixedDateInterval: 'Fixed date interval: {duration}',
+      fixedDateInterval:
+        'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
         'Due to technical reasons, the group creation deadline is fixed based on the course start date. You can adjust this deadline in the course settings.',
       copyLiveQuizzesTooltip:
@@ -2967,6 +2968,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'If you activate this setting, all group activities in the course will be copied to the new course. When disabling group creation, this setting is disabled.',
       courseDuplicationCopyInfo:
         'Duplicating a course creates independent activity copies and preserves direct sharing permissions. The copied activity instances still reference the same underlying elements.',
+      courseDuplicationFailed: 'Failed to duplicate course.',
+      courseDuplicationNoAccess:
+        'You no longer have sufficient permissions to duplicate this course.',
+      courseDuplicationPartialFailure:
+        'Not all selected activities or activity instances could be duplicated. No partial course was created.',
+      courseDuplicationInProgress:
+        'Duplicating large courses can take a while.',
+      courseDuplicationSucceeded:
+        'Course "{name}" has been duplicated successfully.',
       noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',

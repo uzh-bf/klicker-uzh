@@ -3221,6 +3221,173 @@ async function copyDuplicatedActivityPermissions({
   })
 }
 
+type CourseDuplicationSelection = {
+  duplicateLiveQuizzes?: boolean | null
+  duplicatePracticeQuizzes?: boolean | null
+  duplicateMicrolearnings?: boolean | null
+  shouldDuplicateGroupActivities: boolean
+}
+
+function getCourseDuplicationActivityAccessChecks({
+  oldCourse,
+  selection,
+}: {
+  oldCourse: CourseDuplicationSourceCourse
+  selection: CourseDuplicationSelection
+}): PermissionCheck[] {
+  const checks: PermissionCheck[] = []
+
+  if (selection.duplicateLiveQuizzes) {
+    checks.push(
+      ...oldCourse.liveQuizzes.map((liveQuiz) => ({
+        liveQuizId: liveQuiz.id,
+        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+      }))
+    )
+  }
+
+  if (selection.duplicatePracticeQuizzes) {
+    checks.push(
+      ...oldCourse.practiceQuizzes.map((practiceQuiz) => ({
+        practiceQuizId: practiceQuiz.id,
+        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+      }))
+    )
+  }
+
+  if (selection.duplicateMicrolearnings) {
+    checks.push(
+      ...oldCourse.microLearnings.map((microLearning) => ({
+        microLearningId: microLearning.id,
+        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+      }))
+    )
+  }
+
+  if (selection.shouldDuplicateGroupActivities) {
+    checks.push(
+      ...oldCourse.groupActivities.map((groupActivity) => ({
+        groupActivityId: groupActivity.id,
+        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+      }))
+    )
+  }
+
+  return checks
+}
+
+function getCourseDuplicationInstanceIds({
+  oldCourse,
+  selection,
+}: {
+  oldCourse: CourseDuplicationSourceCourse
+  selection: CourseDuplicationSelection
+}) {
+  const instanceIds: number[] = []
+
+  if (selection.duplicateLiveQuizzes) {
+    instanceIds.push(
+      ...oldCourse.liveQuizzes.flatMap((liveQuiz) =>
+        liveQuiz.blocks.flatMap((block) =>
+          block.elements.map((element) => element.id)
+        )
+      )
+    )
+  }
+
+  if (selection.duplicatePracticeQuizzes) {
+    instanceIds.push(
+      ...oldCourse.practiceQuizzes.flatMap((practiceQuiz) =>
+        practiceQuiz.stacks.flatMap((stack) =>
+          stack.elements.map((element) => element.id)
+        )
+      )
+    )
+  }
+
+  if (selection.duplicateMicrolearnings) {
+    instanceIds.push(
+      ...oldCourse.microLearnings.flatMap((microLearning) =>
+        microLearning.stacks.flatMap((stack) =>
+          stack.elements.map((element) => element.id)
+        )
+      )
+    )
+  }
+
+  if (selection.shouldDuplicateGroupActivities) {
+    instanceIds.push(
+      ...oldCourse.groupActivities.flatMap((groupActivity) =>
+        groupActivity.stacks.flatMap((stack) =>
+          stack.elements.map((element) => element.id)
+        )
+      )
+    )
+  }
+
+  return [...new Set(instanceIds)]
+}
+
+async function assertCourseDuplicationActivityAccess({
+  oldCourse,
+  selection,
+  ctx,
+}: {
+  oldCourse: CourseDuplicationSourceCourse
+  selection: CourseDuplicationSelection
+  ctx: ContextWithUser
+}) {
+  const checks = getCourseDuplicationActivityAccessChecks({
+    oldCourse,
+    selection,
+  })
+
+  if (checks.length > 0 && !(await checkAccess(checks, ctx))) {
+    throw new Error('Not all selected activities could be duplicated')
+  }
+
+  if (
+    selection.shouldDuplicateGroupActivities &&
+    oldCourse.groupActivities.some((activity) => activity.stacks.length === 0)
+  ) {
+    throw new Error('Not all group activities could be duplicated')
+  }
+}
+
+async function assertCourseDuplicationInstanceAccess({
+  oldCourse,
+  selection,
+  ctx,
+}: {
+  oldCourse: CourseDuplicationSourceCourse
+  selection: CourseDuplicationSelection
+  ctx: ContextWithUser
+}) {
+  const instanceIds = getCourseDuplicationInstanceIds({ oldCourse, selection })
+
+  if (instanceIds.length === 0) return
+
+  const accessibleInstanceCount = await ctx.prisma.elementInstance.count({
+    where: {
+      id: { in: instanceIds },
+      element: {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (accessibleInstanceCount !== instanceIds.length) {
+    throw new Error('Not all activity instances could be duplicated')
+  }
+}
+
 export async function duplicateCourse(
   {
     name,
@@ -3273,101 +3440,15 @@ export async function duplicateCourse(
   const shouldDuplicateGroupActivities = Boolean(
     duplicateGroupActivities && isGroupCreationEnabled
   )
-
-  const selectedActivityAccessChecks: PermissionCheck[] = [
-    ...(duplicateLiveQuizzes
-      ? oldCourse.liveQuizzes.map((liveQuiz) => ({
-          liveQuizId: liveQuiz.id,
-          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-        }))
-      : []),
-    ...(duplicatePracticeQuizzes
-      ? oldCourse.practiceQuizzes.map((practiceQuiz) => ({
-          practiceQuizId: practiceQuiz.id,
-          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-        }))
-      : []),
-    ...(duplicateMicrolearnings
-      ? oldCourse.microLearnings.map((microLearning) => ({
-          microLearningId: microLearning.id,
-          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-        }))
-      : []),
-    ...(shouldDuplicateGroupActivities
-      ? oldCourse.groupActivities.map((groupActivity) => ({
-          groupActivityId: groupActivity.id,
-          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-        }))
-      : []),
-  ]
-
-  if (
-    selectedActivityAccessChecks.length > 0 &&
-    !(await checkAccess(selectedActivityAccessChecks, ctx))
-  ) {
-    throw new Error('Not all selected activities could be duplicated')
+  const selection = {
+    duplicateLiveQuizzes,
+    duplicatePracticeQuizzes,
+    duplicateMicrolearnings,
+    shouldDuplicateGroupActivities,
   }
 
-  if (
-    shouldDuplicateGroupActivities &&
-    oldCourse.groupActivities.some((activity) => activity.stacks.length === 0)
-  ) {
-    throw new Error('Not all group activities could be duplicated')
-  }
-
-  const duplicatedInstanceIds = [
-    ...(duplicateLiveQuizzes
-      ? oldCourse.liveQuizzes.flatMap((liveQuiz) =>
-          liveQuiz.blocks.flatMap((block) =>
-            block.elements.map((element) => element.id)
-          )
-        )
-      : []),
-    ...(duplicatePracticeQuizzes
-      ? oldCourse.practiceQuizzes.flatMap((practiceQuiz) =>
-          practiceQuiz.stacks.flatMap((stack) =>
-            stack.elements.map((element) => element.id)
-          )
-        )
-      : []),
-    ...(duplicateMicrolearnings
-      ? oldCourse.microLearnings.flatMap((microLearning) =>
-          microLearning.stacks.flatMap((stack) =>
-            stack.elements.map((element) => element.id)
-          )
-        )
-      : []),
-    ...(shouldDuplicateGroupActivities
-      ? oldCourse.groupActivities.flatMap((groupActivity) =>
-          groupActivity.stacks.flatMap((stack) =>
-            stack.elements.map((element) => element.id)
-          )
-        )
-      : []),
-  ]
-  const uniqueDuplicatedInstanceIds = [...new Set(duplicatedInstanceIds)]
-
-  if (uniqueDuplicatedInstanceIds.length > 0) {
-    const accessibleInstanceCount = await ctx.prisma.elementInstance.count({
-      where: {
-        id: { in: uniqueDuplicatedInstanceIds },
-        element: {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionLevel: {
-                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (accessibleInstanceCount !== uniqueDuplicatedInstanceIds.length) {
-      throw new Error('Not all activity instances could be duplicated')
-    }
-  }
+  await assertCourseDuplicationActivityAccess({ oldCourse, selection, ctx })
+  await assertCourseDuplicationInstanceAccess({ oldCourse, selection, ctx })
 
   return await ctx.prisma.$transaction(
     async (prisma) => {

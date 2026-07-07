@@ -2617,7 +2617,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await page.getByTestId('course-duplicate-button').click()
     await submitCourseFormAndWaitForCreateCourse(page, { expectSuccess: false })
     await expect(
-      page.getByText(messages.manage.courseList.courseCreationFailed)
+      page.getByText(messages.manage.courseList.courseDuplicationPartialFailure)
     ).toBeVisible()
     await expect(async () => {
       const summary = await getCourseDuplicationSummary({

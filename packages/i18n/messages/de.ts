@@ -2999,7 +2999,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       courseDatesForCourseDuplicationTooltip:
         'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschließend ändern.',
-      fixedDateInterval: 'Fixes Datumsintervall: {duration}',
+      fixedDateInterval:
+        'Fixes Datumsintervall: {years, plural, =0 {} one {# Jahr } other {# Jahre }}{months, plural, =0 {} one {# Monat } other {# Monate }}{days, plural, =0 {} one {# Tag} other {# Tage}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
         'Aus technischen Gründen ist die Deadline für die Gruppenbildung basierend auf dem Kursstartdatum festgelegt. Sie können diese Deadline in den Kurseinstellungen anpassen.',
       copyLiveQuizzesTooltip:
@@ -3012,6 +3013,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie diese Einstellung aktivieren, werden alle Gruppenaktivitäten im Kurs in den neuen Kurs kopiert. Wenn die Gruppenbildung-Einstellung deaktiviert wird, wird diese Einstellung deaktiviert.',
       courseDuplicationCopyInfo:
         'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt und direkte Freigabeberechtigungen beibehalten. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente.',
+      courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
+      courseDuplicationNoAccess:
+        'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',
+      courseDuplicationPartialFailure:
+        'Nicht alle ausgewählten Aktivitäten oder Aktivitätsinstanzen konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
+      courseDuplicationInProgress:
+        'Das Duplizieren grosser Kurse kann einen Moment dauern.',
+      courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
