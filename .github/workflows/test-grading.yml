@@ -27,6 +27,12 @@ jobs:
         with:
           pattern: '^(packages/grading/|packages/prisma/|packages/types/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-grading\.yml|\.github/actions/changed-paths/)'
 
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
       - uses: pnpm/action-setup@v4
         if: steps.filter.outputs.should_run == 'true'
         with:
