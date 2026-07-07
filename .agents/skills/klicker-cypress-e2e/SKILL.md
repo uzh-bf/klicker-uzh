@@ -1,16 +1,18 @@
 ---
 name: klicker-cypress-e2e
-description: Create, run, and debug Cypress E2E tests for KlickerUZH (including GitHub Actions debugging via gh) and keep @uzh-bf/design-system UIs testable.
+description: Maintain and debug the LEGACY Cypress E2E suite for KlickerUZH (frozen pending removal — write NEW specs with klicker-playwright-e2e instead), including GitHub Actions debugging via gh.
 metadata:
-  version: '1.1.0'
+  version: '1.2.0'
   argument-hint: <spec-path|pr-number|run-id>
 ---
 
 # KlickerUZH Cypress E2E
 
+**The Cypress suite is legacy** — the repo has switched to Playwright as the primary e2e framework, and this suite is frozen pending removal. Do NOT add new specs here; write them with `klicker-playwright-e2e`. Use this skill only to keep the existing suite green.
+
 Use this skill when you need to:
 
-- write or extend Cypress specs under `cypress/`
+- fix or stabilize existing Cypress specs under `cypress/`
 - stabilize flaky E2E interactions
 - reproduce and debug GitHub Actions Cypress failures using `gh`
 - make UI code testable when using `@uzh-bf/design-system`

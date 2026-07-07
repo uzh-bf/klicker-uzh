@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-- **Monorepo**: pnpm 10.x + Turborepo, Node.js 20 (Volta-pinned)
+- **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
@@ -121,7 +121,42 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 
 ## Local Dev Setup
 
+### Self-contained devcontainer (recommended)
+
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 20 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+
+```bash
+devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
+devpod ssh klicker-uzh # shell inside the container
+```
+
+The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. Covers the core apps (backend, auth, frontend-pwa/manage/control) plus olat-api, response-api, and the two Hatchet workers (Phase 2 Tier 1; workers have no port/route); All runnable apps are included (no analytics/office-addin/docs). See `.devcontainer/README.md`.
+
+**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.21) fronts the stack over the shared `devnet` network and routes each `*.klicker.localhost` host to the one container's internal port. One-time host setup **before** the container starts:
+
+```bash
+dev up && dev tls install                                       # Traefik + devnet + mkcert CA
+for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+```
+
+Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.localhost`; Postgres for host tooling at `db.klicker.localhost:5432` (`sslmode=require sslnegotiation=direct`). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+
+### Legacy host-based stack
+
 Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/hosts` entries + mkcert certs; Docker Compose runs Postgres, Redis, Traefik, Hatchet-lite). Without Traefik, hit `http://localhost:<port>` directly — per-app ports are in [Repo Layout](#repo-layout). The `*.klicker.com` domains better mirror production cookie/domain behavior.
+
+| URL                                         | App                          | Port |
+| ------------------------------------------- | ---------------------------- | ---: |
+| https://pwa.klicker.com                     | Student PWA                  | 3001 |
+| https://manage.klicker.com                  | Lecturer UI                  | 3002 |
+| https://control.klicker.com                 | Controller                   | 3003 |
+| https://chat.klicker.com                    | Chat                         | 3004 |
+| https://auth.klicker.com                    | Auth                         | 3010 |
+| https://api.klicker.com                     | Backend/GraphQL              | 3000 |
+| https://assessment.klicker.com              | Assessment PWA (same as PWA) | 3001 |
+| https://assessment-api.klicker.com          | Assessment API (same as API) | 3000 |
+| https://response-api.klicker.com            | Response API                 | 7078 |
+| https://response-api-assessment.klicker.com | Response API (assessment)    | 7078 |
 
 ### Test credentials (local seeded DB only)
 
@@ -155,15 +190,15 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
-- **Keep this file high-level.** Project-specific gotchas, non-obvious patterns, and architectural decisions live in [project/CODEBASE_NOTES.md](project/CODEBASE_NOTES.md) — add to it (and prune it) as you work, rather than growing this overview.
+- **Keep this file high-level.** Facts, gotchas, and architectural decisions live in the engineering wiki at [docs/index.md](docs/index.md) — update the matching page as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
 
-## Codebase Notes
+## Engineering Wiki
 
-Non-obvious patterns, per-area gotchas, and architectural decisions are collected in **[project/CODEBASE_NOTES.md](project/CODEBASE_NOTES.md)**. Check it before working in an unfamiliar area, and keep it current.
+Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — any PR that changes documented behavior updates the affected pages in the same PR. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
 ## AI Assistance (Skills)
 
-Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync.
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-cypress-e2e`, `klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
