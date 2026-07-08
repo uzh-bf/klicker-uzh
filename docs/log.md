@@ -3,7 +3,7 @@
 ## 2026-07-08
 
 - **Update**: [testing](./testing.md) guide updated to document `Z-escape-room.spec.ts` in Playwright E2E spec list.
-- **Update**: [domain-model](./domain-model.md) updated to document the generalized Escape Room Mode and configuration attributes for practice quizzes and microlearnings.
+- **Update**: [domain-model](./domain-model.md) updated to document the generalized Escape Room Mode, configuration attributes, group activity correctness checks, reset permissions, and average stats aggregation.
 
 ## 2026-07-07
 
