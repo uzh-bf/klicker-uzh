@@ -44,6 +44,7 @@ The KlickerUZH project is publicly managed and documented in this repository. A 
 The following resources might be of special interest to you:
 
 - [User Documentation](https://www.klicker.uzh.ch/getting_started/welcome)
+- [Engineering Wiki](docs/index.md) (agent-facing, for working on this codebase)
 - [Frequently Asked Questions](https://www.klicker.uzh.ch/faq)
 - [Community and Discussions](https://community.klicker.uzh.ch/)
 - [Roadmap](https://klicker-uzh.feedbear.com)

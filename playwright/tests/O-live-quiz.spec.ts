@@ -6610,7 +6610,6 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page
       .getByTestId(`live-quiz-cockpit-${data.liveQuizWordCloud.name}`)
       .click()
-    await openNextBlockFromCockpit(page)
     await visitEvaluationFromCockpit(page)
     await selectWordCloudChart(page)
 

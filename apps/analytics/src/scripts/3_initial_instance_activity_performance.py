@@ -1,11 +1,7 @@
 # This script computes the instance activity performance analytics
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-import os
-import json
-from datetime import datetime
 from prisma import Prisma
-import pandas as pd
 import sys
 
 # set the python path correctly for module imports to work
@@ -42,7 +38,7 @@ df_courses = get_running_past_courses(db)
 # Iterate over the course and fetch all question responses linked to it
 for idx, course in df_courses.iterrows():
     course_id = course["id"]
-    print(f"Processing course", idx, "of", len(df_courses), "with id", course_id)
+    print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
     # fetch all practice quizzes and microlearnings linked to the course
     pqs, mls = get_course_activities(db, course_id)
@@ -62,9 +58,7 @@ for idx, course in df_courses.iterrows():
         save_instance_performances(db, df_instance_performance, course_id)
 
         # save activity performance data
-        save_activity_performance(
-            db, activity_performance, course_id, practice_quiz_id=quiz["id"]
-        )
+        save_activity_performance(db, activity_performance, course_id, practice_quiz_id=quiz["id"])
 
     for ml in mls:
         # compute instance performances
@@ -78,14 +72,10 @@ for idx, course in df_courses.iterrows():
         activity_performance = agg_activity_performance(df_instance_performance)
 
         # save instance performance data
-        save_instance_performances(
-            db, df_instance_performance, course_id, total_only=True
-        )
+        save_instance_performances(db, df_instance_performance, course_id, total_only=True)
 
         # save activity performance data
-        save_activity_performance(
-            db, activity_performance, course_id, microlearning_id=ml["id"]
-        )
+        save_activity_performance(db, activity_performance, course_id, microlearning_id=ml["id"])
 
 # Disconnect from the database
 db.disconnect()
