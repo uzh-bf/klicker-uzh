@@ -96,7 +96,7 @@ jobs:
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Upload Playwright build outputs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-build-artifact
           include-hidden-files: true
@@ -339,7 +339,7 @@ jobs:
 
       - name: Upload Playwright artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-artifacts-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
           path: |

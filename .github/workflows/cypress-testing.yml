@@ -222,7 +222,7 @@ jobs:
           SPLIT_FILE: timings.json
 
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cypress-artifacts-draft-${{ matrix.containers }}
           path: |
@@ -399,7 +399,7 @@ jobs:
 
       - name: Upload service logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: service-logs
           # path: service-${{ matrix.containers }}.log
@@ -439,7 +439,7 @@ jobs:
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # name: cypress-artifacts-cloud-${{ matrix.containers }}
           name: cypress-artifacts-cloud
