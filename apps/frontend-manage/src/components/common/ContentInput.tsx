@@ -23,9 +23,9 @@ import StarterKit from '@tiptap/starter-kit'
 import { Tooltip } from '@uzh-bf/design-system'
 import { all, createLowlight } from 'lowlight'
 import { useTranslations } from 'next-intl'
-import React, { PropsWithChildren, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import MediaLibrary from './MediaLibrary'
+import MediaLibrary from '~/components/common/MediaLibrary'
 
 const lowlight = createLowlight(all)
 
@@ -92,6 +92,7 @@ function ContentInput({
       }),
     ],
     content: content,
+    contentType: 'markdown',
     autofocus: autoFocus ? 'end' : false,
     editable: !disabled,
     onUpdate: ({ editor }) => {
@@ -119,7 +120,10 @@ function ContentInput({
       normalizeMarkdown(normalizedContent) !==
       normalizeMarkdown(editor.getMarkdown())
     ) {
-      editor.commands.setContent(normalizedContent)
+      editor.commands.setContent(normalizedContent, {
+        emitUpdate: false,
+        contentType: 'markdown',
+      })
     }
   }, [content, editor])
 
@@ -156,16 +160,6 @@ function ContentInput({
         className?.root
       )}
     >
-      <style>{`
-        .ProseMirror p.is-editor-empty:first-child::before {
-          color: #a3adb7;
-          content: attr(data-placeholder);
-          float: left;
-          height: 0;
-          pointer-events: none;
-        }
-      `}</style>
-
       <div className={twMerge('p-3', className?.content)}>
         <EditorContent editor={editor} />
       </div>
@@ -387,6 +381,7 @@ function ContentInput({
             }}
           >
             <ToolbarButton
+              data-testid="toolbar-table"
               active={editor.isActive('table')}
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault()
@@ -411,6 +406,7 @@ function ContentInput({
           <div className="border-uzh-grey-40 mr-3 flex flex-row items-center gap-1 border-l pl-2">
             <Tooltip tooltip={t('shared.contentInput.addRow')}>
               <ToolbarButton
+                data-testid="table-add-row"
                 active={false}
                 onClick={(e: React.MouseEvent) => {
                   e.preventDefault()
@@ -520,28 +516,33 @@ function ContentInput({
   )
 }
 
-const ToolbarButton = React.forwardRef<
-  HTMLSpanElement,
-  PropsWithChildren<{
-    active: boolean
-    onClick?: (e: React.MouseEvent<HTMLElement>) => void
-    className?: string
-    [key: string]: any
-  }>
->(({ className, active, onClick, children, ...props }, ref) => (
-  <span
-    {...props}
-    onClick={onClick}
-    className={twMerge(
-      className,
-      'hover:bg-uzh-grey-20 my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
-      active && 'bg-uzh-grey-40'
-    )}
-    ref={ref}
-  >
-    {children}
-  </span>
-))
+interface ToolbarButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  active: boolean
+}
+
+const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
+  function ToolbarButton(
+    { className, active, children, onClick, ...props },
+    ref
+  ) {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        onClick={onClick}
+        className={twMerge(
+          'hover:bg-uzh-grey-20 outline-hidden my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0',
+          active && 'bg-uzh-grey-40',
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </button>
+    )
+  }
+)
 ToolbarButton.displayName = 'ToolbarButton'
 
 export default ContentInput

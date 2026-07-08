@@ -1,6 +1,4 @@
-def save_activity_performance(
-    db, activity_performance, course_id, practice_quiz_id=None, microlearning_id=None
-):
+def save_activity_performance(db, activity_performance, course_id, practice_quiz_id=None, microlearning_id=None):
     values = {
         "totalErrorRate": activity_performance.totalErrorRate,
         "totalPartialRate": activity_performance.totalPartialRate,

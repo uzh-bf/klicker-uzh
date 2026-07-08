@@ -3,15 +3,9 @@ name: Check file formatting
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - apps/**
-      - packages/**
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
-    paths:
-      - apps/**
-      - packages/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -23,11 +17,15 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  format:
+  check-format:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
       - uses: pnpm/action-setup@v4
         with:
           version: 11.5.0

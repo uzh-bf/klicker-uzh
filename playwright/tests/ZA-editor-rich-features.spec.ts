@@ -76,9 +76,7 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     await expect(editor.locator('em')).toHaveText('Italic')
 
     // 4. Test Table Creation & Contextual Toolbar
-    const tableBtn = page
-      .locator('button')
-      .filter({ has: page.locator('svg[data-icon="table"]') })
+    const tableBtn = page.getByTestId('toolbar-table')
     await tableBtn.click()
 
     // Verify 3x3 table is rendered inside the editor
@@ -92,7 +90,7 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     await cellA1.pressSequentially('CellA1')
 
     // Focused in a cell: verify contextual toolbar actions (+R, +C, M/S, Del) show up
-    const addRowBtn = page.locator('button').filter({ hasText: '+R' })
+    const addRowBtn = page.getByTestId('table-add-row')
     await expect(addRowBtn).toBeVisible()
 
     // Click Add Row
@@ -130,7 +128,7 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     // Navigate to the direct element details preview page
     await page.goto(`/questions/${questionId}`)
 
-    const previewContainer = page.locator('.w-256')
+    const previewContainer = page.getByTestId('question-preview-container')
     await expect(previewContainer).toBeVisible()
 
     // Assert that the GFM table is styled and matches input text

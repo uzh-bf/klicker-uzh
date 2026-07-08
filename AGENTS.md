@@ -130,6 +130,7 @@ Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.loc
 
 ## Important Notes
 
+- **Task tracking**: ClickUp is the source of truth; GitHub Issues are not actively used.
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
 - If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
 - Never commit secrets, `.env` files, or credentials.
@@ -140,7 +141,7 @@ Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.loc
 
 ## Engineering Wiki
 
-Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — any PR that changes documented behavior updates the affected pages in the same PR. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
+Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
 ## AI Assistance (Skills)
 
