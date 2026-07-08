@@ -1,5 +1,11 @@
 # Log
 
+## 2026-07-08
+
+- **Update**: [getting-started](./getting-started.md) documents parallel devrouter worktrees. The base devcontainer compose file no longer publishes host ports; devrouter mode uses `${WORKSPACE}`-scoped app/DB aliases, while fixed localhost ports moved to a dedicated fallback overlay.
+
+- **Update**: devcontainer docs now call out direct Azure Blob media uploads as a storage-account CORS concern. Parallel devrouter worktrees need the dev Blob service to allow local origins such as `https://manage.klicker.<workspace>.localhost`; production accounts should keep exact origin rules.
+
 ## 2026-07-07
 
 - **Update**: migration-in-flight banners added to [graphql-api-layer](./graphql-api-layer.md), [architecture-overview](./architecture-overview.md) (GraphQL→tRPC, PR #5132), and [chat-platform](./chat-platform.md) (AI-SDK→Mastra, PRs #5126/#5129) — pages stay authoritative until those PRs merge.

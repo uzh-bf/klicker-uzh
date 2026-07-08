@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-07'
+timestamp: '2026-07-08'
 tags:
   - environment
   - onboarding
@@ -30,17 +30,32 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
    devpod ssh klicker-uzh # shell inside the container
    ```
 2. **Accessing the apps:**
-   - **Mode 1 (Plain localhost - default):** Exposed directly on host ports: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
-   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost`. Requires:
-     1. Edit `.devcontainer/devcontainer.json` to include the devrouter overlay:
+   - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after editing `.devcontainer/devcontainer.json` to use `["docker-compose.yml", "docker-compose.localhost.yml"]`: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
+   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost` for the primary checkout and `https://manage.klicker.<workspace>.localhost` for linked worktrees. Requires:
+     1. Ensure `.devcontainer/devcontainer.json` includes the devrouter overlay:
         ```json
         "dockerComposeFile": ["docker-compose.yml", "docker-compose.devrouter.yml"]
         ```
-     2. Start the devcontainer (`devpod up .`).
-     3. Install `devrouter` on host and register the application routes:
+     2. Start devrouter on the host (`devrouter up && devrouter tls install`).
+     3. Start the devcontainer (`devpod up .`) or, for a parallel worktree, start it with a stable token (`WORKSPACE=<slug> devpod up .`).
+     4. Register the application routes with the same workspace token:
         ```bash
-        for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
+        # linked worktree variant:
+        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a" --workspace <slug>; done
         ```
+     5. If you use Azure Blob media uploads in manage, configure the **dev** storage account's Blob service CORS for local devrouter origins. The browser uploads directly to Blob Storage via SAS, so a storage rule that only allows `https://manage.klicker.com` will reject `https://manage.klicker.localhost` and `https://manage.klicker.<workspace>.localhost`. For a dedicated dev account, allow local devrouter origins with:
+        ```bash
+        az storage account blob-service-properties cors-rule add \
+          --account-name <dev-storage-account> \
+          --resource-group <resource-group> \
+          --allowed-origins "https://*.localhost" \
+          --allowed-methods PUT GET HEAD \
+          --allowed-headers "*" \
+          --exposed-headers "*" \
+          --max-age 3600
+        ```
+        Keep production storage accounts on exact production/staging origins; if wildcard localhost is not allowed by policy, add the exact active worktree origin instead.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
 
 ### Path B: Host-based Setup (Legacy)
@@ -83,7 +98,7 @@ Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `p
 
 Two traps:
 
-- **The compose project name derives from the directory name.** A git worktree therefore gets its own parallel container/volume set — but the same host ports. Only one stack variant can run per machine.
+- **The legacy/localhost paths publish fixed host ports.** A git worktree gets its own parallel container/volume set, but these modes still fight over host ports. Use the devrouter overlay for parallel worktrees: it keeps host ports unpublished and routes through `${WORKSPACE}-app` / `${WORKSPACE}-db` aliases on `devnet`.
 - **`_run_app_dependencies.sh` is interactive and self-destructing for agents.** It has two `confirm` prompts, a foreground `docker compose logs -f`, and `trap cleanup INT TERM HUP EXIT` that runs `./_down.sh` — a headless agent running it will hang, then tear down the stack it just started on shell exit. Headless path: run its steps individually (`./util/sync-schema.sh` → certs on macOS → `docker compose up -d <services>` → `.github/scripts/wait-for-infra.sh` → hatchet token → `prisma:push`).
 
 ## Running the apps (config-derived — not executed in the wiki engagement; verify on your machine)

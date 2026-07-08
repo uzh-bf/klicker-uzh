@@ -1,0 +1,32 @@
+# Fallback overlay for running the devcontainer without devrouter.
+# This publishes fixed host ports, so only one localhost-mode stack can run per
+# machine. For parallel worktrees, use docker-compose.devrouter.yml instead.
+
+services:
+  postgres:
+    ports:
+      - '5432:5432'
+
+  mailhog:
+    ports:
+      - '8025:8025'
+
+  hatchet:
+    ports:
+      - '8888:8888'
+      - '7077:7077'
+
+  app:
+    ports:
+      - '3000:3000' # api / assessment-api
+      - '3001:3001' # pwa / assessment-pwa
+      - '3002:3002' # manage
+      - '3003:3003' # control
+      - '3004:3004' # chat
+      - '3010:3010' # auth
+      - '3030:3030' # olat-api
+      - '7078:7078' # response-api
+
+  litellm:
+    ports:
+      - '4000:4000'

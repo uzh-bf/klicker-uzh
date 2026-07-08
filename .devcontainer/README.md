@@ -19,11 +19,11 @@ Hatchet, install + build + seed, `turbo dev`);
 
 You can run the devcontainer in two modes:
 
-### Mode 1: Plain localhost (Default & Self-Contained)
+### Mode 1: Plain localhost (Fallback)
 
 Use this if you are running in a headless cloud server or want to avoid installing Traefik/mkcert on your host:
 
-1. Ensure `.devcontainer/devcontainer.json` specifies only `docker-compose.yml` (default).
+1. Edit `.devcontainer/devcontainer.json` to use `["docker-compose.yml", "docker-compose.localhost.yml"]`.
 2. Start the devcontainer (`devpod up .` or via VS Code).
 3. The applications are exposed directly on your host's ports:
    - Student PWA: `http://localhost:3001`
@@ -36,30 +36,45 @@ Use this if you are running in a headless cloud server or want to avoid installi
    - Hatchet Dashboard: `http://localhost:8888`
    - Postgres DB: `localhost:5432`
 
-### Mode 2: devrouter (Routed HTTPS domains)
+### Mode 2: devrouter (Default Routed HTTPS domains)
 
 Use this to mirror production domain behaviors and test cookie-sharing over HTTPS:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.21) and start it:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.23 recommended; ≥ 0.0.21 required) and start it:
    ```bash
-   dev up && dev tls install   # Traefik + the shared `devnet` + mkcert CA
+   devrouter up && devrouter tls install   # Traefik + the shared `devnet` + mkcert CA
    ```
-2. Edit `.devcontainer/devcontainer.json` to include the devrouter overlay:
+2. Ensure `.devcontainer/devcontainer.json` includes the devrouter overlay:
    ```json
    "dockerComposeFile": ["docker-compose.yml", "docker-compose.devrouter.yml"]
    ```
 3. Start the devcontainer (`devpod up .` or via VS Code).
 4. Run the routing registrar command on your host:
    ```bash
-   for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+   for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
    ```
 5. Open `https://manage.klicker.localhost` (credentials: `lecturer` / `abcd`).
+
+For a parallel git worktree, use one workspace token consistently so Docker
+aliases, devrouter upstreams, and public hostnames line up:
+
+```bash
+WORKSPACE=my-branch devpod up . --ide none
+for a in api auth pwa manage control olat-api response-api lti chat db; do
+  devrouter app run "$a" --workspace my-branch
+done
+```
+
+That worktree is then served at
+`https://manage.klicker.my-branch.localhost`, with API/auth/PWA/control using the
+same inserted workspace label. `devrouter workspace up <branch>` performs the
+same token plumbing when you let devrouter create/start the worktree.
 
 ## Run with DevPod
 
 ```bash
 devpod up . --ide none         # builds image, starts infra, installs, builds, seeds
-for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done   # register routes
+for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done   # register routes
 ```
 
 Open <https://manage.klicker.localhost> and log in as **`lecturer` / `abcd`**
@@ -68,22 +83,26 @@ Open <https://manage.klicker.localhost> and log in as **`lecturer` / `abcd`**
 
 ## How routing works
 
-The monorepo runs **all apps in the one `klicker-app` container** via
-`turbo dev`; devrouter's Traefik (on `devnet`) routes each hostname to that
-container's internal port — no published host ports.
+The monorepo runs **all apps in one `app` container** via `turbo dev`;
+devrouter's Traefik (on `devnet`) routes each hostname to that container's
+internal port — no published host ports. The devrouter overlay exposes
+`${WORKSPACE:-klicker-uzh}-app` and `${WORKSPACE:-klicker-uzh}-db` aliases.
+`.devrouter.yml` uses `${WORKSPACE}` in each proxy upstream, so the primary
+checkout routes to `klicker-uzh-app` / `klicker-uzh-db`, while a worktree with
+`WORKSPACE=my-branch` routes to `my-branch-app` / `my-branch-db`.
 
-| What              | Host                                     | Upstream (devnet)  |
-| ----------------- | ---------------------------------------- | ------------------ |
-| API (GraphQL)     | `https://api.klicker.localhost`          | `klicker-app:3000` |
-| Auth              | `https://auth.klicker.localhost`         | `klicker-app:3010` |
-| PWA (student)     | `https://pwa.klicker.localhost`          | `klicker-app:3001` |
-| Manage (lecturer) | `https://manage.klicker.localhost`       | `klicker-app:3002` |
-| Control           | `https://control.klicker.localhost`      | `klicker-app:3003` |
-| OLAT API          | `https://olat-api.klicker.localhost`     | `klicker-app:3030` |
-| Response API      | `https://response-api.klicker.localhost` | `klicker-app:7078` |
-| LTI Service       | `https://lti.klicker.localhost`          | `klicker-app:4000` |
-| Chat App          | `https://chat.klicker.localhost`         | `klicker-app:3004` |
-| Postgres          | `db.klicker.localhost:5432`              | `klicker-db:5432`  |
+| What              | Host                                                   | Upstream (devnet)       |
+| ----------------- | ------------------------------------------------------ | ----------------------- |
+| API (GraphQL)     | `https://api.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:3000` |
+| Auth              | `https://auth.klicker[.<workspace>].localhost`         | `${WORKSPACE}-app:3010` |
+| PWA (student)     | `https://pwa.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:3001` |
+| Manage (lecturer) | `https://manage.klicker[.<workspace>].localhost`       | `${WORKSPACE}-app:3002` |
+| Control           | `https://control.klicker[.<workspace>].localhost`      | `${WORKSPACE}-app:3003` |
+| OLAT API          | `https://olat-api.klicker[.<workspace>].localhost`     | `${WORKSPACE}-app:3030` |
+| Response API      | `https://response-api.klicker[.<workspace>].localhost` | `${WORKSPACE}-app:7078` |
+| LTI Service       | `https://lti.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:4000` |
+| Chat App          | `https://chat.klicker[.<workspace>].localhost`         | `${WORKSPACE}-app:3004` |
+| Postgres          | `db.klicker[.<workspace>].localhost:5432`              | `${WORKSPACE}-db:5432`  |
 
 The two Hatchet workers (`hatchet-worker-general`, `hatchet-worker-response-processor`)
 also run in the `app` container but have **no port/route** — they consume the
@@ -103,9 +122,41 @@ psql "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker \
 EduID is replaced by klicker's own **credentials login** (no OIDC mock needed).
 Seeded users (`packages/prisma-data`): `lecturer`/`abcd` (ADMIN), `free`/`abcd`,
 `pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd`. Cross-app sessions work because
-every app is served under `*.klicker.localhost` and the cookie domain resolves to
-`klicker.localhost` (from `NEXTAUTH_URL`); the `AUTH_*_ALLOWED_HOSTS` env adds the
-`*.klicker.localhost` hosts that the hardcoded defaults (only `klicker.com`) miss.
+every app is served under the same `klicker*.localhost` parent and the cookie
+domain resolves to that parent (`klicker.localhost` for the primary checkout,
+`klicker.<workspace>.localhost` for linked worktrees). `post-start.sh` rewrites
+the public origins and `AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because
+the hardcoded defaults only know `klicker.com`.
+
+## Azure Blob CORS for media uploads
+
+The manage media library uploads images directly from the browser to Azure Blob
+Storage via a SAS URL. That browser request is evaluated by the storage
+account's Blob service CORS rules, not by the Klicker backend. If a dev storage
+account only allows production origins such as `https://manage.klicker.com`, an
+upload from `https://manage.klicker.localhost` or
+`https://manage.klicker.<workspace>.localhost` will fail before the PUT request
+is sent.
+
+For a dedicated development storage account, add a Blob service CORS rule that
+covers local devrouter origins. Azure Storage requires exact origin matches, but
+also supports `*` as an origin wildcard or subdomain wildcard:
+
+```bash
+az storage account blob-service-properties cors-rule add \
+  --account-name <dev-storage-account> \
+  --resource-group <resource-group> \
+  --allowed-origins "https://*.localhost" \
+  --allowed-methods PUT GET HEAD \
+  --allowed-headers "*" \
+  --exposed-headers "*" \
+  --max-age 3600
+```
+
+Keep production storage accounts on exact production/staging origins. If policy
+does not allow the `*.localhost` wildcard even on a dev account, add the exact
+worktree origin currently in use, for example
+`https://manage.klicker.my-branch.localhost`.
 
 ## Hatchet token
 

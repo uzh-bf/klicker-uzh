@@ -3,11 +3,9 @@
 # the legacy per-repo Traefik + the `full`-profile prebuilt images). A single compose
 # project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
 #
-# By default, this stack runs in self-contained localhost port-based mode:
-# - postgres on db.klicker.localhost -> host port 5432
-# - mailhog UI -> host port 8025
-# - hatchet dashboard -> host port 8888
-# - all web applications published on localhost ports (3000-3010, 3030, 7078)
+# The base stack publishes no host ports. Add exactly one routing overlay:
+# - docker-compose.devrouter.yml: HTTPS/TCP routing through devrouter/devnet
+# - docker-compose.localhost.yml: fixed localhost ports for fallback use
 #
 # To route through Traefik devrouter (https://*.klicker.localhost), use the
 # overlay file: `docker-compose.devrouter.yml`.
@@ -24,8 +22,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    ports:
-      - '5432:5432'
     networks:
       - default
     volumes:
@@ -49,8 +45,6 @@ services:
   # --- fake SMTP for dev email ---
   mailhog:
     image: mailhog/mailhog:latest
-    ports:
-      - '8025:8025'
     networks: [default]
 
   # --- Hatchet workflow engine (gRPC :7077, http :8888). Reached at hatchet:7077
@@ -69,9 +63,6 @@ services:
       SERVER_URL: http://hatchet:8888
       SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
       SERVER_DEFAULT_ENGINE_VERSION: 'V1'
-    ports:
-      - '8888:8888'
-      - '7077:7077'
     volumes:
       - hatchet_lite_config:/config
     networks: [default]
@@ -126,15 +117,6 @@ services:
     init: true # tini PID1 reaps the dev servers' zombie children (GOTCHAS #10)
     env_file:
       - devcontainer.env
-    ports:
-      - '3000:3000' # api / assessment-api
-      - '3001:3001' # pwa / assessment-pwa
-      - '3002:3002' # manage
-      - '3003:3003' # control
-      - '3004:3004' # chat
-      - '3010:3010' # auth
-      - '3030:3030' # olat-api
-      - '7078:7078' # response-api
     networks:
       - default
     volumes:
@@ -154,8 +136,6 @@ services:
   # --- LiteLLM for Chat (Tier 3) ---
   litellm:
     image: ghcr.io/berriai/litellm:main-v1.61.12
-    ports:
-      - '4000:4000'
     volumes:
       - ../util/litellm/config.yaml:/app/config.yaml:ro
     command:
