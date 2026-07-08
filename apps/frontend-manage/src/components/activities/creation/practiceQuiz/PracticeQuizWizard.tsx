@@ -132,20 +132,22 @@ function PracticeQuizWizard({
         t('manage.activityWizard.practiceQuizValidResetDays')
       ),
     isEscapeRoom: yup.boolean(),
-    escapeRoomTimeLimit: yup.string().when('isEscapeRoom', {
+    escapeRoomTimeLimit: yup.number().when('isEscapeRoom', {
       is: true,
       then: (schema) =>
         schema
           .required('Time limit is required')
-          .matches(/^[1-9][0-9]*$/, 'Must be a positive number of minutes'),
+          .integer('Must be an integer')
+          .positive('Must be a positive number of minutes'),
       otherwise: (schema) => schema.notRequired(),
     }),
-    escapeRoomHintPenalty: yup.string().when('isEscapeRoom', {
+    escapeRoomHintPenalty: yup.number().when('isEscapeRoom', {
       is: true,
       then: (schema) =>
         schema
           .required('Hint penalty is required')
-          .matches(/^[0-9]+$/, 'Must be a non-negative number of seconds'),
+          .integer('Must be an integer')
+          .min(0, 'Must be a non-negative number of seconds'),
       otherwise: (schema) => schema.notRequired(),
     }),
   })
