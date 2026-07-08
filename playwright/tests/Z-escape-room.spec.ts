@@ -42,7 +42,6 @@ test.describe.serial('Escape Room Quiz E2E Workflows', () => {
     await page.getByTestId('next-or-submit').click()
 
     // 4. Create stacks with at least one question
-    await page.getByTestId('create-stack').click()
     await page.getByTestId('insert-stack-display-name-0').fill('Stack 1')
     await page.getByTestId('add-element-0').click()
 
