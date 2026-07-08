@@ -3,38 +3,42 @@ import React from 'react'
 export function getYoutubeId(url: string): string | null {
   try {
     const parsed = new URL(url)
-    if (
-      parsed.hostname === 'youtube.com' ||
-      parsed.hostname.endsWith('.youtube.com') ||
-      parsed.hostname === 'youtu.be' ||
-      parsed.hostname.endsWith('.youtu.be')
-    ) {
-      if (parsed.hostname.endsWith('youtu.be')) {
-        const id = parsed.pathname.slice(1)
-        if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
-          return id
-        }
-      }
-      if (parsed.pathname.startsWith('/embed/')) {
-        const id = parsed.pathname.split('/')[2]
-        if (id && /^[a-zA-Z0-9_-]{11}$/.test(id)) {
-          return id
-        }
-      }
-      const v = parsed.searchParams.get('v')
-      if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
-        return v
+    const host = parsed.hostname.toLowerCase()
+    const isYoutubeHost =
+      host === 'youtube.com' ||
+      host.endsWith('.youtube.com') ||
+      host === 'youtu.be' ||
+      host.endsWith('.youtu.be')
+    if (!isYoutubeHost) {
+      return null
+    }
+
+    if (host.endsWith('youtu.be')) {
+      const id = parsed.pathname.slice(1)
+      if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+        return id
       }
     }
+    if (parsed.pathname.startsWith('/embed/')) {
+      const id = parsed.pathname.split('/')[2]
+      if (id && /^[a-zA-Z0-9_-]{11}$/.test(id)) {
+        return id
+      }
+    }
+    const v = parsed.searchParams.get('v')
+    if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
+      return v
+    }
+
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
+    const match = url.match(regExp)
+    const id = match?.[2]
+    return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null
   } catch {
     // Ignore URL parse error for relative/broken URLs
+    return null
   }
-
-  const regExp =
-    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
-  const match = url.match(regExp)
-  const id = match?.[2]
-  return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null
 }
 
 export function getKalturaId(url: string): string | null {
