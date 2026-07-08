@@ -6,7 +6,7 @@ services:
     networks:
       devnet:
         aliases:
-          - '${WORKSPACE:-klicker}-db'
+          - '${WORKSPACE:-klicker-uzh}-db'
 
   app:
     extra_hosts:
@@ -19,10 +19,19 @@ services:
       - 'response-api.klicker.localhost:host-gateway'
       - 'lti.klicker.localhost:host-gateway'
       - 'chat.klicker.localhost:host-gateway'
+      - 'api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'auth.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'pwa.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'manage.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'control.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'olat-api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'response-api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'lti.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'chat.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
     networks:
       devnet:
         aliases:
-          - '${WORKSPACE:-klicker}-app'
+          - '${WORKSPACE:-klicker-uzh}-app'
     volumes:
       # Local mkcert root CA (created by `dev tls install`) for server-side TLS trust.
       - '${DEVROUTER_MKCERT_CAROOT:-${HOME}/Library/Application Support/mkcert}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'

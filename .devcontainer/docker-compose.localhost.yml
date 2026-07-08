@@ -1,5 +1,7 @@
-# Host port bindings for klicker-uzh devcontainer services (plain localhost mode / Mode 1).
-# Bound to 127.0.0.1 for security. (PR #5119 / B2 blocker fix)
+# Fallback overlay for running the devcontainer without devrouter.
+# This publishes fixed host ports (bound to 127.0.0.1 for security), so only one
+# localhost-mode stack can run per machine. For parallel worktrees, use
+# docker-compose.devrouter.yml instead.
 version: '3.8'
 
 services:
