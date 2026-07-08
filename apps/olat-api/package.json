@@ -47,7 +47,7 @@
     "validate:openapi": "redocly lint static/openapi.yaml"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

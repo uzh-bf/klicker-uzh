@@ -56,7 +56,7 @@
     "write-translations": "docusaurus-write-translations"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

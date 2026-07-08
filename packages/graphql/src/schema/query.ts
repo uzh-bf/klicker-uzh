@@ -4,7 +4,6 @@ import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
-import * as AdaptiveLearningService from '../services/adaptiveLearning.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
@@ -24,15 +23,6 @@ import {
   CourseActivityList,
   UserActivityList,
 } from './activities.js'
-import {
-  AdaptiveAssessment,
-  AdaptiveAssessmentResults,
-  AdaptiveAttemptState,
-  AdaptiveItemPoolPreviewRow,
-  AdaptiveOverviewAttemptMode,
-  AdaptiveStudentStanding,
-  PublishedAdaptiveAssessmentInfo,
-} from './adaptiveLearning.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -190,119 +180,6 @@ export const Query = builder.queryType({
         },
         resolve: async (__, args, ctx) => {
           return await CourseService.getBasicCourseInformation(args, ctx)
-        },
-      }),
-
-      adaptiveAssessments: t.withAuth(asUser).field({
-        nullable: true,
-        type: [AdaptiveAssessment],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getAdaptiveAssessments(args, ctx)
-        },
-      }),
-
-      adaptiveAssessment: t.withAuth(asUser).field({
-        nullable: true,
-        type: AdaptiveAssessment,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getAdaptiveAssessment(args, ctx)
-        },
-      }),
-
-      adaptiveAssessmentItemPoolPreview: t.withAuth(asUser).field({
-        nullable: true,
-        type: [AdaptiveItemPoolPreviewRow],
-        args: {
-          assessmentId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getAdaptiveAssessmentItemPoolPreview(
-            args,
-            ctx
-          )
-        },
-      }),
-
-      adaptiveAssessmentResults: t.withAuth(asUser).field({
-        nullable: true,
-        type: AdaptiveAssessmentResults,
-        args: {
-          assessmentId: t.arg.string({ required: true }),
-          attemptMode: t.arg({
-            type: AdaptiveOverviewAttemptMode,
-            required: false,
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getAdaptiveAssessmentResults(
-            {
-              assessmentId: args.assessmentId,
-              attemptMode: args.attemptMode ?? undefined,
-            },
-            ctx
-          )
-        },
-      }),
-
-      publishedAdaptiveAssessments: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: [AdaptiveAssessment],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getPublishedAdaptiveAssessments(
-            args,
-            ctx
-          )
-        },
-      }),
-
-      publishedAdaptiveAssessmentInfos: t.field({
-        nullable: true,
-        type: [PublishedAdaptiveAssessmentInfo],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getPublishedAdaptiveAssessmentInfos(
-            args,
-            ctx
-          )
-        },
-      }),
-
-      adaptiveAttemptState: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: AdaptiveAttemptState,
-        args: {
-          attemptId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getAdaptiveAttemptState(
-            args,
-            ctx
-          )
-        },
-      }),
-
-      adaptiveStudentStanding: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: AdaptiveStudentStanding,
-        args: {
-          assessmentId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AdaptiveLearningService.getAdaptiveStudentStanding(
-            args,
-            ctx
-          )
         },
       }),
 

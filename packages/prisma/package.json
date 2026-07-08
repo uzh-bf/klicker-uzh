@@ -61,7 +61,7 @@
     "prisma:studio:raw": "prisma studio"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

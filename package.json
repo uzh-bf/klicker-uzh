@@ -96,10 +96,10 @@
     "test:watch": "run-p test dev:test"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
-    "node": "20.19.4",
+    "node": "24.16.0",
     "pnpm": "10.15.0"
   },
   "packageManager": "pnpm@10.15.0"

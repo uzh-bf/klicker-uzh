@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-- **Monorepo**: pnpm 10.x + Turborepo, Node.js 20 (Volta-pinned)
+- **Monorepo**: pnpm 10.x + Turborepo, Node.js 24 (Volta-pinned)
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
@@ -223,6 +223,8 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Chat PWA login redirects**: `apps/chat/src/app/noLogin/page.tsx` must pass an absolute chat URL to the PWA login `redirect_to`; a relative chatbot path makes the PWA redirect to its own domain and 404. Local chat dev also needs ignored local env values for the backend `APP_SECRET` and `DATABASE_URL` so participant cookies verify and Prisma can load chatbot data.
 - **Chat Vitest alias resolution**: `apps/chat/vitest.config.ts` mirrors the app `@/*` alias from `apps/chat/tsconfig.json`; keep this in sync when adding client tests for modules that import from `@/src/...`.
 - **Adaptive SE-stop reachability**: a 3PL item answered at its own difficulty carries information I = a²(1−c)/(4(1+c)), so the minimum reachable standard error after n items is 1/√(n·I); for 4-choice SC items (c=0.25) SE thresholds below ~1/√(0.34·n) can never fire and the stop silently degrades to the question cap. Validate any `standardErrorThreshold` against the item pool's guessing parameters. (`packages/adaptive-learning/`, `packages/graphql/src/services/adaptiveLearning.ts`; analysis in `project/2026-07-07-adaptive-learning-consolidated-review.md`)
+- **Adaptive v2 direction**: Future adaptive-learning work should target cross-course reusable competence trees plus an `ADAPTIVE` practice quiz mode, not a standalone adaptive activity. The implementation plan is in `project/PLAN-adaptive-learning-v2.md`.
+- **Node runtime pins**: Runtime bumps need to update the root Volta pin, per-package `engines.node`, and app Docker base images together; otherwise pnpm and container builds drift. (`package.json`, `apps/*/package.json`, `packages/*/package.json`, app `Dockerfile`s)
 
 ## Factory Skills (AI Assistance)
 

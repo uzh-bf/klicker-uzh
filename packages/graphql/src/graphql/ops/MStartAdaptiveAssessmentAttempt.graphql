@@ -1,5 +1,0 @@
-mutation MStartAdaptiveAssessmentAttempt($assessmentId: String!) {
-  startAdaptiveAssessmentAttempt(assessmentId: $assessmentId) {
-    ...FAdaptiveAttemptState
-  }
-}

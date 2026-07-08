@@ -1,5 +1,0 @@
-mutation MPublishAdaptiveAssessment($id: String!) {
-  publishAdaptiveAssessment(id: $id) {
-    ...FAdaptiveAssessmentConfig
-  }
-}

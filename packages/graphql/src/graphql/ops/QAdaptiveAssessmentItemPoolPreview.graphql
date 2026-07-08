@@ -1,8 +1,0 @@
-query QAdaptiveAssessmentItemPoolPreview($assessmentId: String!) {
-  adaptiveAssessmentItemPoolPreview(assessmentId: $assessmentId) {
-    competenceName
-    subCompetenceName
-    levelLabel
-    count
-  }
-}

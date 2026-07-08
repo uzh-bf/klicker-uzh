@@ -237,7 +237,7 @@ async function seedTestkursAdaptiveAssessment(
       displayName: 'English CEFR Adaptive Learning',
       description:
         'Seeded English CEFR adaptive learning setup for reading, writing, and grammar.',
-      status: Prisma.PublicationStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.DRAFT,
       thetaMin: ADAPTIVE_THETA_RANGE.min,
       thetaMax: ADAPTIVE_THETA_RANGE.max,
       discrimination: 1.2,
@@ -247,7 +247,7 @@ async function seedTestkursAdaptiveAssessment(
       showTimer: true,
       showCompetenceNames: true,
       showFinalResult: true,
-      showSolutions: true,
+      showSolutions: false,
       course: { connect: { id: COURSE_ID_TEST } },
       owner: { connect: { id: USER_ID_TEST } },
     },
@@ -256,7 +256,7 @@ async function seedTestkursAdaptiveAssessment(
       displayName: 'English CEFR Adaptive Learning',
       description:
         'Seeded English CEFR adaptive learning setup for reading, writing, and grammar.',
-      status: Prisma.PublicationStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.DRAFT,
       isDeleted: false,
       thetaMin: ADAPTIVE_THETA_RANGE.min,
       thetaMax: ADAPTIVE_THETA_RANGE.max,
@@ -267,7 +267,7 @@ async function seedTestkursAdaptiveAssessment(
       showTimer: true,
       showCompetenceNames: true,
       showFinalResult: true,
-      showSolutions: true,
+      showSolutions: false,
     },
   })
 
@@ -1560,10 +1560,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     questionsTest.push(newElement)
   }
 
-  const adaptiveSeedElements = await seedTestkursAdaptiveElements(prisma)
-  questionsTest.push(...adaptiveSeedElements)
-  await seedTestkursAdaptiveAssessment(prisma, adaptiveSeedElements)
-
   const answerCollectionItems = answerCollections.reduce<
     { id: number; name: string }[]
   >((acc, collection) => {
@@ -1888,8 +1884,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
-
-  await seedTestkursAdaptiveAssessmentAttempts(prisma)
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

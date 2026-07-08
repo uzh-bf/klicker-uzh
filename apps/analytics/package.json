@@ -14,7 +14,7 @@
     "script:qa": "../../util/_run_with_infisical.sh --env stg poetry run python -m"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

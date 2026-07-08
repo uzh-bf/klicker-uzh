@@ -56,6 +56,7 @@ model Course {
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
   adaptiveAssessments        AdaptiveAssessment[]
+  competenceTreeLinks        CompetenceTreeCourse[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

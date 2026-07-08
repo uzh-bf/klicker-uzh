@@ -104,7 +104,7 @@ jobs:
       - name: Define node version
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Check out repository code
         uses: actions/checkout@v3

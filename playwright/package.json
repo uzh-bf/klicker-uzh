@@ -14,7 +14,7 @@
     "test:ui": "playwright test --ui"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../package.json"

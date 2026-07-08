@@ -1,0 +1,334 @@
+enum PracticeQuizMode {
+  STANDARD
+  ADAPTIVE
+}
+
+enum AdaptiveLevelMappingRule {
+  NEAREST
+  MASTERY
+}
+
+enum AdaptiveNodeKind {
+  COMPETENCE
+  SUBCOMPETENCE
+}
+
+enum AdaptiveEstimateNodeKind {
+  OVERALL
+  COMPETENCE
+  SUBCOMPETENCE
+}
+
+enum AdaptivePracticeQuizAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+model CompetenceTree {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  displayName String
+  description String?
+  isDeleted   Boolean @default(false)
+
+  maxDepth Int   @default(5)
+  thetaMin Float @default(-3)
+  thetaMax Float @default(3)
+
+  defaultDiscrimination Float                    @default(1.2)
+  levelMappingRule      AdaptiveLevelMappingRule @default(NEAREST)
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  courseLinks                 CompetenceTreeCourse[]
+  levels                      CompetenceTreeLevel[]
+  nodes                       CompetenceTreeNode[]
+  levelCoverages              CompetenceTreeLeafLevelCoverage[]
+  elementAssignments          CompetenceTreeElementAssignment[]
+  adaptivePracticeQuizConfigs PracticeQuizAdaptiveConfig[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId], map: "ct_owner_idx")
+}
+
+model CompetenceTreeCourse {
+  id Int @id @default(autoincrement())
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  linkedBy   User?   @relation("CompetenceTreeCourseLinkedBy", fields: [linkedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  linkedById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([treeId, courseId], map: "ctc_tree_course_key")
+  @@index([courseId], map: "ctc_course_idx")
+  @@index([linkedById], map: "ctc_linked_by_idx")
+}
+
+model CompetenceTreeLevel {
+  id Int @id @default(autoincrement())
+
+  label String
+  order Int
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  elementAssignments CompetenceTreeElementAssignment[]
+  levelCoverages     CompetenceTreeLeafLevelCoverage[]
+  estimates          AdaptivePracticeQuizEstimate[]
+
+  finalAttempts AdaptivePracticeQuizAttempt[] @relation("AdaptivePracticeQuizAttemptFinalLevel")
+
+  @@unique([treeId, label], map: "ctl_tree_label_key")
+  @@unique([treeId, order], map: "ctl_tree_order_key")
+}
+
+model CompetenceTreeNode {
+  id Int @id @default(autoincrement())
+
+  kind        AdaptiveNodeKind
+  name        String
+  description String?
+  order       Int
+  depth       Int
+  weight      Float            @default(1)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  parent   CompetenceTreeNode?  @relation("CompetenceTreeNodeChildren", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parentId Int?
+  children CompetenceTreeNode[] @relation("CompetenceTreeNodeChildren")
+
+  elementAssignments CompetenceTreeElementAssignment[]
+  levelCoverages     CompetenceTreeLeafLevelCoverage[]
+  quizNodeOverrides  PracticeQuizAdaptiveNodeOverride[]
+  estimates          AdaptivePracticeQuizEstimate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, parentId, order], map: "ctn_tree_parent_order_key")
+  @@index([treeId, order], map: "ctn_tree_order_idx")
+  @@index([treeId, parentId], map: "ctn_tree_parent_idx")
+}
+
+model CompetenceTreeLeafLevelCoverage {
+  id Int @id @default(autoincrement())
+
+  targetItemCount Int     @default(5)
+  enabled         Boolean @default(true)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  leafNode   CompetenceTreeNode @relation(fields: [leafNodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  leafNodeId Int
+
+  level   CompetenceTreeLevel @relation(fields: [levelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  levelId Int
+
+  @@unique([treeId, leafNodeId, levelId], map: "ctlc_tree_leaf_level_key")
+}
+
+model CompetenceTreeElementAssignment {
+  id Int @id @default(autoincrement())
+
+  enabled            Boolean @default(true)
+  discrimination     Float?
+  enablePercentInput Boolean @default(false)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  element   Element @relation(fields: [elementId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  elementId Int
+
+  leafNode   CompetenceTreeNode @relation(fields: [leafNodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  leafNodeId Int
+
+  level   CompetenceTreeLevel @relation(fields: [levelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  levelId Int
+
+  quizElementOverrides PracticeQuizAdaptiveElementOverride[]
+  nextAttempts         AdaptivePracticeQuizAttempt[]         @relation("AdaptivePracticeQuizAttemptNextAssignment")
+  responses            AdaptivePracticeQuizResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, elementId], map: "ctea_tree_element_key")
+  @@index([elementId], map: "ctea_element_idx")
+  @@index([treeId, leafNodeId, enabled], map: "ctea_tree_leaf_enabled_idx")
+}
+
+model PracticeQuizAdaptiveConfig {
+  id String @id @default(uuid()) @db.Uuid
+
+  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String       @unique(map: "pqac_practice_quiz_key") @db.Uuid
+
+  competenceTree   CompetenceTree @relation(fields: [competenceTreeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  competenceTreeId String         @db.Uuid
+
+  totalQuestionCap       Int                      @default(50)
+  perLeafQuestionCap     Int?
+  minQuestionsPerLeaf    Int                      @default(2)
+  classificationZ        Float                    @default(1.28)
+  standardErrorThreshold Float?
+  topInformationRatio    Float                    @default(0.8)
+  defaultDiscrimination  Float                    @default(1.2)
+  levelMappingRule       AdaptiveLevelMappingRule @default(NEAREST)
+
+  showTimer                  Boolean @default(true)
+  showFinalResult            Boolean @default(true)
+  showLiveEstimate           Boolean @default(false)
+  enableSelfAssessmentWarmup Boolean @default(false)
+
+  nodeOverrides    PracticeQuizAdaptiveNodeOverride[]
+  elementOverrides PracticeQuizAdaptiveElementOverride[]
+  attempts         AdaptivePracticeQuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([competenceTreeId], map: "pqac_tree_idx")
+}
+
+model PracticeQuizAdaptiveNodeOverride {
+  id Int @id @default(autoincrement())
+
+  enabled     Boolean @default(true)
+  weight      Float?
+  questionCap Int?
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  configId String                     @db.Uuid
+
+  node   CompetenceTreeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  nodeId Int
+
+  @@unique([configId, nodeId], map: "pqan_config_node_key")
+}
+
+model PracticeQuizAdaptiveElementOverride {
+  id Int @id @default(autoincrement())
+
+  enabled        Boolean @default(true)
+  discrimination Float?
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  configId String                     @db.Uuid
+
+  assignment   CompetenceTreeElementAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assignmentId Int
+
+  @@unique([configId, assignmentId], map: "pqae_config_assignment_key")
+}
+
+model AdaptivePracticeQuizAttempt {
+  id String @id @default(uuid()) @db.Uuid
+
+  status               AdaptivePracticeQuizAttemptStatus @default(IN_PROGRESS)
+  currentTheta         Float                             @default(0)
+  currentStandardError Float?
+  finalTheta           Float?
+  finalStandardError   Float?
+  finalLevelId         Int?
+  elapsedSeconds       Int?
+  nextAssignmentId     Int?
+  thetaHistory         Json?
+  standardErrorHistory Json?
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  configId String                     @db.Uuid
+
+  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String       @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  finalLevel CompetenceTreeLevel? @relation("AdaptivePracticeQuizAttemptFinalLevel", fields: [finalLevelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  nextAssignment CompetenceTreeElementAssignment? @relation("AdaptivePracticeQuizAttemptNextAssignment", fields: [nextAssignmentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  responses AdaptivePracticeQuizResponse[]
+  estimates AdaptivePracticeQuizEstimate[]
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([practiceQuizId, participantId, status], map: "apqa_quiz_participant_status_idx")
+  @@index([participationId, practiceQuizId], map: "apqa_participation_quiz_idx")
+  @@index([finalLevelId], map: "apqa_final_level_idx")
+  @@index([nextAssignmentId], map: "apqa_next_assignment_idx")
+}
+
+model AdaptivePracticeQuizResponse {
+  id Int @id @default(autoincrement())
+
+  order              Int
+  response           Json
+  normalizedResponse Json?
+  correct            Boolean
+  thetaBefore        Float
+  thetaAfter         Float
+  standardErrorAfter Float
+  elapsedSeconds     Int?
+
+  attempt   AdaptivePracticeQuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attemptId String                      @db.Uuid
+
+  assignment   CompetenceTreeElementAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  assignmentId Int
+
+  elementId       Int
+  elementSnapshot Json?
+
+  createdAt DateTime @default(now())
+
+  @@unique([attemptId, order], map: "apqr_attempt_order_key")
+  @@unique([attemptId, assignmentId], map: "apqr_attempt_assignment_key")
+  @@index([assignmentId], map: "apqr_assignment_idx")
+}
+
+model AdaptivePracticeQuizEstimate {
+  id Int @id @default(autoincrement())
+
+  nodeKind      AdaptiveEstimateNodeKind
+  theta         Float
+  standardError Float?
+  responseCount Int
+  stopReason    String?
+
+  attempt   AdaptivePracticeQuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attemptId String                      @db.Uuid
+
+  node   CompetenceTreeNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  nodeId Int?
+
+  level   CompetenceTreeLevel? @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  levelId Int?
+
+  createdAt DateTime @default(now())
+
+  @@unique([attemptId, nodeKind, nodeId], map: "apqe_attempt_kind_node_key")
+  @@index([nodeKind, levelId], map: "apqe_kind_level_idx")
+}

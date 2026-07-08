@@ -50,7 +50,7 @@
     "seed:test": "ENV=development tsx src/data/seedTEST.ts"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

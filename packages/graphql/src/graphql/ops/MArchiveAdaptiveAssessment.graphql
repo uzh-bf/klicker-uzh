@@ -1,5 +1,0 @@
-mutation MArchiveAdaptiveAssessment($id: String!) {
-  archiveAdaptiveAssessment(id: $id) {
-    id
-  }
-}

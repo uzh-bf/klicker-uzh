@@ -242,284 +242,6 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
-input AdaptiveAnswerInput {
-  choicesResponse: [AdaptiveChoiceResponseInput!]
-  freeTextResponse: String
-}
-
-type AdaptiveAssessment {
-  competences: [AdaptiveAssessmentCompetence!]!
-  courseId: String!
-  createdAt: Date!
-  description: String
-  discrimination: Float!
-  displayName: String!
-  elements: [AdaptiveAssessmentElement!]!
-  id: String!
-  isDeleted: Boolean!
-  levels: [AdaptiveAssessmentLevel!]!
-  name: String!
-  questionThreshold: Int!
-  resultMessages: [AdaptiveAssessmentResultMessage!]!
-  showCompetenceNames: Boolean!
-  showFinalResult: Boolean!
-  showSolutions: Boolean!
-  showTimer: Boolean!
-  standardErrorThreshold: Float!
-  status: PublicationStatus!
-  thetaMax: Float!
-  thetaMin: Float!
-  topInformationRatio: Float!
-  updatedAt: Date!
-}
-
-type AdaptiveAssessmentAttempt {
-  completedAt: Date
-  currentStandardError: Float
-  currentTheta: Float!
-  elapsedSeconds: Int
-  finalLevelLabel: String
-  finalStandardError: Float
-  finalTheta: Float
-  id: String!
-  startedAt: Date!
-  status: AdaptiveAssessmentAttemptStatus!
-}
-
-enum AdaptiveAssessmentAttemptStatus {
-  ABANDONED
-  COMPLETED
-  IN_PROGRESS
-}
-
-type AdaptiveAssessmentCompetence {
-  enabled: Boolean!
-  id: Int!
-  name: String!
-  order: Int!
-  questionThreshold: Int
-  standardErrorThreshold: Float
-  subCompetences: [AdaptiveAssessmentSubCompetence!]
-  tagName: String
-  weight: Float!
-}
-
-type AdaptiveAssessmentElement {
-  competence: AdaptiveAssessmentCompetence
-  discrimination: Float
-  element: Element
-  elementId: Int!
-  enabled: Boolean!
-  exposure: Int!
-  id: Int!
-  level: AdaptiveAssessmentLevel
-  subCompetence: AdaptiveAssessmentSubCompetence
-}
-
-type AdaptiveAssessmentLevel {
-  id: Int!
-  label: String!
-  order: Int!
-}
-
-type AdaptiveAssessmentResultMessage {
-  id: Int!
-  isFallback: Boolean!
-  level: AdaptiveAssessmentLevel
-  maxTheta: Float
-  message: String!
-  minTheta: Float
-  order: Int!
-}
-
-type AdaptiveAssessmentResults {
-  assessmentId: String!
-  attemptCount: Int!
-  averageAnsweredQuestions: Float
-  classMeanTheta: Float
-  competences: [AdaptiveCompetenceEstimate!]!
-  completedAttemptCount: Int!
-  completedCount: Int!
-  completionRate: Float!
-  distribution: [AdaptiveLevelDistributionBin!]!
-  inProgressCount: Int!
-  items: [AdaptiveItemResultRow!]!
-  meanStandardError: Float
-  participantCount: Int!
-  students: [AdaptiveStudentResultRow!]!
-}
-
-type AdaptiveAssessmentSubCompetence {
-  enabled: Boolean!
-  id: Int!
-  name: String!
-  order: Int!
-  questionThreshold: Int
-  standardErrorThreshold: Float
-  tagName: String
-}
-
-type AdaptiveAttemptProgress {
-  answeredQuestions: Int!
-  completed: Boolean!
-  elapsedSeconds: Int!
-  levelLabel: String
-  maxQuestions: Int!
-  message: String
-  messages: [String!]!
-  standardError: Float!
-  theta: Float!
-}
-
-type AdaptiveAttemptState {
-  assessment: AdaptiveAssessment!
-  attempt: AdaptiveAssessmentAttempt!
-  nextAdaptiveElementId: Int
-  nextCompetenceName: String
-  nextElement: Element
-  nextSubCompetenceName: String
-  progress: AdaptiveAttemptProgress!
-}
-
-input AdaptiveChoiceResponseInput {
-  ix: Int!
-  selected: Boolean!
-}
-
-type AdaptiveCompetenceEstimate {
-  answeredQuestions: Int!
-  competenceId: Int!
-  competenceName: String!
-  levelLabel: String
-  standardError: Float
-  subCompetences: [AdaptiveSubCompetenceEstimate!]!
-  theta: Float
-  weight: Float!
-}
-
-input AdaptiveCompetenceInput {
-  enabled: Boolean!
-  name: String!
-  order: Int!
-  questionThreshold: Int
-  standardErrorThreshold: Float
-  subCompetences: [AdaptiveSubCompetenceInput!]!
-  tagName: String
-  weight: Float
-}
-
-input AdaptiveElementInput {
-  competenceName: String!
-  discrimination: Float
-  elementId: Int!
-  enabled: Boolean!
-  levelLabel: String!
-  subCompetenceName: String!
-}
-
-type AdaptiveItemPoolPreviewRow {
-  competenceName: String!
-  count: Int!
-  levelLabel: String!
-  subCompetenceName: String!
-}
-
-type AdaptiveItemResultRow {
-  accuracy: Float
-  adaptiveElementId: Int!
-  competenceName: String!
-  correctCount: Int!
-  difficulty: Float!
-  discrimination: Float!
-  elementId: Int!
-  elementName: String!
-  exposure: Int!
-  guessing: Float!
-  levelLabel: String!
-  responseCount: Int!
-  subCompetenceName: String!
-}
-
-type AdaptiveLevelDistributionBin {
-  count: Int!
-  levelLabel: String!
-  maxTheta: Float!
-  minTheta: Float!
-}
-
-input AdaptiveLevelInput {
-  label: String!
-  order: Int!
-}
-
-enum AdaptiveOverviewAttemptMode {
-  BEST
-  LATEST
-}
-
-input AdaptiveResultMessageInput {
-  isFallback: Boolean!
-  levelLabel: String
-  maxTheta: Float
-  message: String!
-  minTheta: Float
-  order: Int!
-}
-
-type AdaptiveStudentResultRow {
-  answeredQuestions: Int!
-  assessmentId: String!
-  assessmentName: String!
-  attemptId: String
-  attemptNumber: Int!
-  competences: [AdaptiveCompetenceEstimate!]!
-  completedAt: Date
-  isLatestAttempt: Boolean!
-  levelLabel: String
-  message: String
-  messages: [String!]!
-  participantEmail: String
-  participantId: String!
-  participantUsername: String!
-  standardError: Float!
-  startedAt: Date
-  status: AdaptiveAssessmentAttemptStatus
-  theta: Float!
-}
-
-type AdaptiveStudentStanding {
-  answeredQuestions: Int!
-  assessmentId: String!
-  assessmentName: String!
-  attemptId: String
-  competences: [AdaptiveCompetenceEstimate!]!
-  completedAt: Date
-  levelLabel: String
-  message: String
-  messages: [String!]!
-  standardError: Float!
-  startedAt: Date
-  theta: Float!
-}
-
-type AdaptiveSubCompetenceEstimate {
-  answeredQuestions: Int!
-  levelLabel: String
-  standardError: Float
-  subCompetenceId: Int!
-  subCompetenceName: String!
-  theta: Float
-}
-
-input AdaptiveSubCompetenceInput {
-  enabled: Boolean!
-  name: String!
-  order: Int!
-  questionThreshold: Int
-  standardErrorThreshold: Float
-  tagName: String
-}
-
 type AnswerCollection {
   createdAt: Date
   description: String!
@@ -2040,7 +1762,6 @@ type Mutation {
   applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
-  archiveAdaptiveAssessment(id: String!): AdaptiveAssessment
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
@@ -2144,7 +1865,6 @@ type Mutation {
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
   promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
-  publishAdaptiveAssessment(id: String!): AdaptiveAssessment
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
@@ -2167,10 +1887,8 @@ type Mutation {
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
-  startAdaptiveAssessmentAttempt(assessmentId: String!): AdaptiveAttemptState
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
-  submitAdaptiveAssessmentAnswer(adaptiveElementId: Int!, attemptId: String!, response: AdaptiveAnswerInput!): AdaptiveAttemptState
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -2189,7 +1907,6 @@ type Mutation {
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
-  upsertAdaptiveAssessment(input: UpsertAdaptiveAssessmentInput!): AdaptiveAssessment
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -2592,17 +2309,6 @@ enum PublicationStatus {
   TEMPLATE
 }
 
-type PublishedAdaptiveAssessmentInfo {
-  courseName: String!
-  description: String
-  displayName: String!
-  id: String!
-  levels: [AdaptiveAssessmentLevel!]!
-  standardErrorThreshold: Float!
-  thetaMax: Float!
-  thetaMin: Float!
-}
-
 type PushSubscription {
   endpoint: String!
   id: Int!
@@ -2610,12 +2316,6 @@ type PushSubscription {
 
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
-  adaptiveAssessment(id: String!): AdaptiveAssessment
-  adaptiveAssessmentItemPoolPreview(assessmentId: String!): [AdaptiveItemPoolPreviewRow!]
-  adaptiveAssessmentResults(assessmentId: String!, attemptMode: AdaptiveOverviewAttemptMode): AdaptiveAssessmentResults
-  adaptiveAssessments(courseId: String!): [AdaptiveAssessment!]
-  adaptiveAttemptState(attemptId: String!): AdaptiveAttemptState
-  adaptiveStudentStanding(assessmentId: String!): AdaptiveStudentStanding
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
@@ -2713,8 +2413,6 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
-  publishedAdaptiveAssessmentInfos(courseId: String!): [PublishedAdaptiveAssessmentInfo!]
-  publishedAdaptiveAssessments(courseId: String!): [AdaptiveAssessment!]
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
@@ -3144,28 +2842,6 @@ input TemplateElementManipulationInput {
 
 type Title {
   id: Int!
-}
-
-input UpsertAdaptiveAssessmentInput {
-  competences: [AdaptiveCompetenceInput!]!
-  courseId: String!
-  description: String
-  discrimination: Float
-  displayName: String!
-  elements: [AdaptiveElementInput!]!
-  id: String
-  levels: [AdaptiveLevelInput!]!
-  name: String!
-  questionThreshold: Int
-  resultMessages: [AdaptiveResultMessageInput!]!
-  showCompetenceNames: Boolean
-  showFinalResult: Boolean
-  showSolutions: Boolean
-  showTimer: Boolean
-  standardErrorThreshold: Float
-  thetaMax: Float
-  thetaMin: Float
-  topInformationRatio: Float
 }
 
 type User {

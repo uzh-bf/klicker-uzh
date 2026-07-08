@@ -72,7 +72,7 @@
     "validate:taskpane": "office-addin-manifest validate src/manifest-taskpane.xml"
   },
   "volta": {
-    "node": "20.18.2",
+    "node": "24.16.0",
     "pnpm": "10.2.0"
   },
   "config": {

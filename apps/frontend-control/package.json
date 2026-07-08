@@ -73,7 +73,7 @@
     "start:test": "cross-env NODE_ENV=test pnpm start"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

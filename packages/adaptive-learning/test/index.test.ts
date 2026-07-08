@@ -2,13 +2,19 @@ import { describe, expect, it } from 'vitest'
 import {
   aggregateInverseVariance,
   aggregateWeightedEstimates,
+  classificationIntervalWithinLevelBand,
   computeSubCompetenceCoverageWeights,
   deriveGuessingParameter,
   information,
+  informationAtDifficulty,
+  isNearLevelBoundary,
   mapLevelsToTheta,
   mapThetaToLevel,
   matchResultMessage,
   matchResultMessages,
+  minimumReachableStandardError,
+  normalizeFreeTextResponse,
+  normalizeNumericalResponse,
   probability,
   selectNextItem,
   selectSubCompetence,
@@ -28,6 +34,13 @@ describe('adaptive-learning core', () => {
 
     expect(levels.map((level) => level.theta)).toEqual([-3, -1, 1, 3])
     expect(mapThetaToLevel(0.2, levels)?.label).toBe('B2')
+  })
+
+  it('maps a single level to the theta midpoint', () => {
+    const levels = mapLevelsToTheta([{ label: 'Complete', order: 0 }])
+
+    expect(levels[0]?.theta).toBe(0)
+    expect(mapThetaToLevel(2, levels)?.label).toBe('Complete')
   })
 
   it('computes 3PL probabilities and information', () => {
@@ -56,7 +69,31 @@ describe('adaptive-learning core', () => {
     expect(deriveGuessingParameter({ type: 'KPRIM', choiceCount: 4 })).toBe(
       1 / 16
     )
-    expect(deriveGuessingParameter({ type: 'FREE_TEXT' })).toBe(0.01)
+    expect(deriveGuessingParameter({ type: 'NUMERICAL' })).toBe(0)
+    expect(deriveGuessingParameter({ type: 'FREE_TEXT' })).toBe(0)
+  })
+
+  it('supports nearest and mastery level mapping rules', () => {
+    const levels = [
+      { label: 'A1', order: 0 },
+      { label: 'A2', order: 1 },
+      { label: 'B1', order: 2 },
+    ]
+
+    expect(mapThetaToLevel(2, levels)?.label).toBe('B1')
+    expect(mapThetaToLevel(0, levels, undefined, 'MASTERY')?.label).toBe('A2')
+    expect(mapThetaToLevel(2, levels, undefined, 'MASTERY')?.label).toBe('B1')
+    expect(
+      mapLevelsToTheta(levels, undefined, 'MASTERY').map((level) => [
+        level.label,
+        level.lowerBound,
+        level.upperBound,
+      ])
+    ).toEqual([
+      ['A1', Number.NEGATIVE_INFINITY, -1],
+      ['A2', -1, 1],
+      ['B1', 1, Number.POSITIVE_INFINITY],
+    ])
   })
 
   it('updates theta in the expected direction', () => {
@@ -78,6 +115,17 @@ describe('adaptive-learning core', () => {
     expect(correct.theta).toBeGreaterThan(0)
     expect(wrong.theta).toBeLessThan(0)
     expect(correct.standardError).toBeGreaterThan(0)
+  })
+
+  it('uses MAP prior precision in the returned standard error', () => {
+    const estimate = updateTheta({
+      responses: [{ item: { id: 1, a: 1.5, b: 0, c: 0.25 }, correct: true }],
+      usePrior: true,
+      priorSD: 1,
+    })
+
+    expect(Math.abs(estimate.theta)).toBeLessThan(1.5)
+    expect(estimate.standardError).toBeLessThan(1)
   })
 
   it('stops by standard error or question threshold', () => {
@@ -178,6 +226,103 @@ describe('adaptive-learning core', () => {
     })
 
     expect(item?.id).toBe(2)
+  })
+
+  it('supports randomesque top-information item selection', () => {
+    const item = selectNextItem({
+      theta: 0,
+      topInformationRatio: 0.7,
+      items: [
+        { id: 1, b: 0 },
+        { id: 2, b: 0.1 },
+        { id: 3, b: 3 },
+      ],
+      random: () => 0.75,
+    })
+
+    expect(item?.id).toBe(2)
+  })
+
+  it('keeps selecting when exposure penalties make all scores negative', () => {
+    const item = selectNextItem({
+      theta: 0,
+      topInformationRatio: 0.8,
+      exposurePenalty: 10,
+      items: [
+        { id: 1, b: 0, exposure: 1 },
+        { id: 2, b: 0, exposure: 2 },
+      ],
+    })
+
+    expect(item?.id).toBe(1)
+  })
+
+  it('computes stop feasibility and classification bands', () => {
+    const levels = [
+      { label: 'A1', order: 0 },
+      { label: 'A2', order: 1 },
+      { label: 'B1', order: 2 },
+    ]
+
+    expect(informationAtDifficulty({ a: 1.5, c: 0.25 })).toBeCloseTo(0.3375, 4)
+    expect(
+      minimumReachableStandardError({ itemCount: 8, a: 1.5, c: 0.25 })
+    ).toBeCloseTo(0.6086, 3)
+    expect(
+      classificationIntervalWithinLevelBand({
+        theta: 0,
+        standardError: 0.2,
+        levels,
+      })
+    ).toBe(true)
+    expect(
+      classificationIntervalWithinLevelBand({
+        theta: 1.45,
+        standardError: 0.2,
+        levels,
+      })
+    ).toBe(false)
+    expect(isNearLevelBoundary({ theta: 1.45, levels, margin: 0.1 })).toBe(true)
+    expect(
+      classificationIntervalWithinLevelBand({
+        theta: 2.5,
+        standardError: 0.2,
+        levels,
+        mappingRule: 'MASTERY',
+      })
+    ).toBe(true)
+  })
+
+  it('normalizes numerical adaptive responses', () => {
+    expect(normalizeNumericalResponse('1,5')).toEqual({
+      value: 1.5,
+      normalized: '1.5',
+    })
+    expect(normalizeNumericalResponse('−1 200')).toEqual({
+      value: -1200,
+      normalized: '-1200',
+    })
+    expect(normalizeNumericalResponse('1/4')).toEqual({
+      value: 0.25,
+      normalized: '0.25',
+    })
+    expect(normalizeNumericalResponse('1e-3')).toEqual({
+      value: 0.001,
+      normalized: '0.001',
+    })
+    expect(normalizeNumericalResponse('1,200').value).toBeNull()
+    expect(normalizeNumericalResponse('25%').value).toBeNull()
+    expect(
+      normalizeNumericalResponse('25%', { allowPercentInput: true })
+    ).toEqual({
+      value: 0.25,
+      normalized: '0.25',
+    })
+    expect(normalizeNumericalResponse('1,234.56').value).toBeNull()
+  })
+
+  it('normalizes free-text adaptive responses', () => {
+    expect(normalizeFreeTextResponse('  Está   BIEN  ')).toBe('esta bien')
   })
 
   it('aggregates estimates with inverse variance weighting', () => {

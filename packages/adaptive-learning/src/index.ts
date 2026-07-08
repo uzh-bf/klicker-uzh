@@ -1,17 +1,28 @@
 export const DEFAULT_THETA_RANGE = { min: -3, max: 3 } as const
-export const DEFAULT_DISCRIMINATION = 1.5
+export const DEFAULT_DISCRIMINATION = 1.2
 export const DEFAULT_STANDARD_ERROR_THRESHOLD = 0.4
 export const DEFAULT_QUESTION_THRESHOLD = 50
 export const DEFAULT_TOP_INFORMATION_RATIO = 0.8
+export const MAX_COMPETENCE_TREE_DEPTH = 5
 
 const EPSILON = 1e-9
+
+export const SUPPORTED_ADAPTIVE_ITEM_TYPES = [
+  'NUMERICAL',
+  'SC',
+  'MC',
+  'KPRIM',
+  'FREE_TEXT',
+] as const
 
 export type ThetaRange = {
   min: number
   max: number
 }
 
-export type AdaptiveItemType = 'SC' | 'MC' | 'KPRIM' | 'FREE_TEXT'
+export type AdaptiveItemType = (typeof SUPPORTED_ADAPTIVE_ITEM_TYPES)[number]
+
+export type LevelMappingRule = 'NEAREST' | 'MASTERY'
 
 export type LevelDefinition = {
   label: string
@@ -80,22 +91,35 @@ export function clamp(value: number, range: ThetaRange = DEFAULT_THETA_RANGE) {
 
 export function mapLevelsToTheta(
   levels: LevelDefinition[],
-  range: ThetaRange = DEFAULT_THETA_RANGE
+  range: ThetaRange = DEFAULT_THETA_RANGE,
+  mappingRule: LevelMappingRule = 'NEAREST'
 ): MappedLevel[] {
   const ordered = levels.slice().sort((a, b) => a.order - b.order)
   const span = range.max - range.min
 
   return ordered.map((level, index) => {
-    const denominator = Math.max(ordered.length - 1, 1)
-    const theta = range.min + (span * index) / denominator
+    const isMastery = mappingRule === 'MASTERY' && ordered.length > 1
+    const denominator = isMastery
+      ? ordered.length
+      : Math.max(ordered.length - 1, 1)
+    const theta =
+      ordered.length === 1
+        ? range.min + span / 2
+        : range.min + (span * index) / denominator
+    const previousTheta = range.min + (span * (index - 1)) / denominator
+    const nextTheta = range.min + (span * (index + 1)) / denominator
     const lowerBound =
       index === 0
         ? Number.NEGATIVE_INFINITY
-        : (theta + (range.min + (span * (index - 1)) / denominator)) / 2
+        : isMastery
+          ? theta
+          : (theta + previousTheta) / 2
     const upperBound =
       index === ordered.length - 1
         ? Number.POSITIVE_INFINITY
-        : (theta + (range.min + (span * (index + 1)) / denominator)) / 2
+        : isMastery
+          ? nextTheta
+          : (theta + nextTheta) / 2
 
     return {
       ...level,
@@ -109,9 +133,10 @@ export function mapLevelsToTheta(
 export function mapThetaToLevel(
   theta: number,
   levels: LevelDefinition[],
-  range: ThetaRange = DEFAULT_THETA_RANGE
+  range: ThetaRange = DEFAULT_THETA_RANGE,
+  mappingRule: LevelMappingRule = 'NEAREST'
 ) {
-  const mappedLevels = mapLevelsToTheta(levels, range)
+  const mappedLevels = mapLevelsToTheta(levels, range, mappingRule)
   return (
     mappedLevels.find(
       (level) => theta >= level.lowerBound && theta < level.upperBound
@@ -129,7 +154,7 @@ export function deriveGuessingParameter({
   if (type === 'SC') return 1 / Math.max(choiceCount ?? 4, 2)
   if (type === 'MC') return 1 / (Math.pow(2, Math.max(choiceCount ?? 4, 1)) - 1)
   if (type === 'KPRIM') return 1 / Math.pow(2, Math.max(choiceCount ?? 4, 1))
-  return 0.01
+  return 0
 }
 
 export function probability(
@@ -159,14 +184,20 @@ export function information(
 
 export function standardError(
   theta: number,
-  items: Array<Pick<AdaptiveItem, 'a' | 'b' | 'c'>>
+  items: Array<Pick<AdaptiveItem, 'a' | 'b' | 'c'>>,
+  priorSD?: number
 ) {
   const totalInformation = items.reduce(
     (sum, item) => sum + information(theta, item),
     0
   )
+  const priorInformation =
+    typeof priorSD === 'number' && priorSD > 0 ? 1 / Math.pow(priorSD, 2) : 0
+  const effectiveInformation = totalInformation + priorInformation
 
-  return totalInformation > 0 ? 1 / Math.sqrt(totalInformation) : Infinity
+  return effectiveInformation > 0
+    ? 1 / Math.sqrt(effectiveInformation)
+    : Infinity
 }
 
 export function updateTheta({
@@ -193,7 +224,11 @@ export function updateTheta({
   if (responses.length === 0) {
     return {
       theta: startTheta,
-      standardError: standardError(startTheta, []),
+      standardError: standardError(
+        startTheta,
+        [],
+        usePrior ? priorSD : undefined
+      ),
     }
   }
 
@@ -235,7 +270,11 @@ export function updateTheta({
 
   return {
     theta: roundedTheta,
-    standardError: standardError(roundedTheta, items),
+    standardError: standardError(
+      roundedTheta,
+      items,
+      usePrior ? priorSD : undefined
+    ),
   }
 }
 
@@ -320,11 +359,17 @@ export function selectNextItem({
   theta,
   items,
   answeredItemIds = new Set(),
+  topInformationRatio,
+  topK,
+  exposurePenalty = 0,
   random = Math.random,
 }: {
   theta: number
   items: AdaptiveItem[]
   answeredItemIds?: Set<number | string>
+  topInformationRatio?: number
+  topK?: number
+  exposurePenalty?: number
   random?: () => number
 }) {
   const activeItems = items.filter((item) => item.enabled !== false)
@@ -334,14 +379,157 @@ export function selectNextItem({
 
   const scored = pool.map((item) => ({
     item,
-    information: information(theta, item),
+    information:
+      information(theta, item) -
+      exposurePenalty * Math.max(item.exposure ?? 0, 0),
   }))
   const maxInformation = Math.max(...scored.map((entry) => entry.information))
-  const ties = scored
-    .filter((entry) => entry.information === maxInformation)
-    .map((entry) => entry.item)
+  const ratio = Math.min(Math.max(topInformationRatio ?? 1, 0), 1)
+  const sortedByInformation = scored.sort(
+    (a, b) => b.information - a.information
+  )
+  const sorted =
+    ratio < 1 && maxInformation > 0
+      ? sortedByInformation.filter(
+          (entry) => entry.information >= maxInformation * ratio
+        )
+      : sortedByInformation
+  const candidates =
+    typeof topK === 'number' && topK > 0
+      ? sorted.slice(0, topK)
+      : sorted.filter((entry) =>
+          ratio < 1 && maxInformation > 0
+            ? true
+            : entry.information === maxInformation
+        )
+  const ties = candidates.map((entry) => entry.item)
 
   return ties[Math.floor(random() * ties.length)] ?? null
+}
+
+export function informationAtDifficulty({
+  a = DEFAULT_DISCRIMINATION,
+  c = 0,
+}: {
+  a?: number
+  c?: number
+}) {
+  return (Math.pow(a, 2) * (1 - c)) / (4 * (1 + c))
+}
+
+export function minimumReachableStandardError({
+  itemCount,
+  a = DEFAULT_DISCRIMINATION,
+  c = 0,
+}: {
+  itemCount: number
+  a?: number
+  c?: number
+}) {
+  const totalInformation = itemCount * informationAtDifficulty({ a, c })
+  return totalInformation > 0 ? 1 / Math.sqrt(totalInformation) : Infinity
+}
+
+export function classificationIntervalWithinLevelBand({
+  theta,
+  standardError,
+  levels,
+  range = DEFAULT_THETA_RANGE,
+  mappingRule = 'NEAREST',
+  z = 1.28,
+}: {
+  theta: number
+  standardError: number
+  levels: LevelDefinition[]
+  range?: ThetaRange
+  mappingRule?: LevelMappingRule
+  z?: number
+}) {
+  if (!Number.isFinite(standardError) || standardError < 0) return false
+
+  const lower = theta - z * standardError
+  const upper = theta + z * standardError
+  const mappedLevels = mapLevelsToTheta(levels, range, mappingRule)
+
+  return mappedLevels.some(
+    (level) => lower >= level.lowerBound && upper < level.upperBound
+  )
+}
+
+export function isNearLevelBoundary({
+  theta,
+  levels,
+  range = DEFAULT_THETA_RANGE,
+  mappingRule = 'NEAREST',
+  margin,
+}: {
+  theta: number
+  levels: LevelDefinition[]
+  range?: ThetaRange
+  mappingRule?: LevelMappingRule
+  margin: number
+}) {
+  const boundaries = mapLevelsToTheta(levels, range, mappingRule)
+    .flatMap((level) => [level.lowerBound, level.upperBound])
+    .filter((boundary) => Number.isFinite(boundary))
+
+  return boundaries.some((boundary) => Math.abs(theta - boundary) <= margin)
+}
+
+export type NormalizeNumericalResponseResult =
+  | { value: number; normalized: string; error?: never }
+  | { value: null; normalized: null; error: string }
+
+export function normalizeNumericalResponse(
+  response: number | string,
+  { allowPercentInput = false }: { allowPercentInput?: boolean } = {}
+): NormalizeNumericalResponseResult {
+  if (typeof response === 'number') {
+    return Number.isFinite(response)
+      ? { value: response, normalized: String(response) }
+      : { value: null, normalized: null, error: 'Response is not finite.' }
+  }
+
+  const raw = response.trim()
+  if (raw.length === 0) {
+    return { value: null, normalized: null, error: 'Response is empty.' }
+  }
+
+  const minusNormalized = raw.replace(/[\u2212\u2012\u2013\u2014]/g, '-')
+  const withoutGrouping = minusNormalized.replace(/[\s']/g, '')
+  const hasPercent = withoutGrouping.endsWith('%')
+  const numericInput = hasPercent
+    ? withoutGrouping.slice(0, -1)
+    : withoutGrouping
+
+  if (hasPercent && !allowPercentInput) {
+    return {
+      value: null,
+      normalized: null,
+      error: 'Percent input is not enabled for this element.',
+    }
+  }
+
+  const parsed = parseNormalizedDecimalOrFraction(numericInput)
+  if (parsed == null) {
+    return {
+      value: null,
+      normalized: null,
+      error: 'Response is not an unambiguous number.',
+    }
+  }
+
+  const value = hasPercent ? parsed / 100 : parsed
+  return { value, normalized: String(value) }
+}
+
+export function normalizeFreeTextResponse(response: string) {
+  return response
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
 }
 
 export function aggregateInverseVariance(entries: EstimateEntry[]) {
@@ -510,6 +698,41 @@ function computeCoverage(candidate: SubCompetenceCandidate) {
 
 function clampProbability(value: number) {
   return Math.min(1 - EPSILON, Math.max(EPSILON, value))
+}
+
+function parseNormalizedDecimalOrFraction(input: string) {
+  const fractionParts = input.split('/')
+  if (fractionParts.length === 2) {
+    const numerator = parseNormalizedDecimal(fractionParts[0]!)
+    const denominator = parseNormalizedDecimal(fractionParts[1]!)
+
+    if (numerator == null || denominator == null || denominator === 0) {
+      return null
+    }
+
+    return numerator / denominator
+  }
+
+  if (fractionParts.length > 2) return null
+
+  return parseNormalizedDecimal(input)
+}
+
+function parseNormalizedDecimal(input: string) {
+  if (input.includes(',') && input.includes('.')) return null
+  if (hasAmbiguousSingleComma(input)) return null
+
+  const normalized = input.includes(',') ? input.replace(',', '.') : input
+  const decimalPattern = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[+-]?\d+)?$/i
+  if (!decimalPattern.test(normalized)) return null
+
+  const value = Number(normalized)
+  return Number.isFinite(value) ? value : null
+}
+
+function hasAmbiguousSingleComma(input: string) {
+  const commaCount = input.split(',').length - 1
+  return commaCount === 1 && /^[+-]?(?:\d+)?,\d{3}(?:e[+-]?\d+)?$/i.test(input)
 }
 
 function probabilityDerivative(

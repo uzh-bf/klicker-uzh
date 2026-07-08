@@ -37,7 +37,7 @@
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"
