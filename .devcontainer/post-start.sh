@@ -35,6 +35,33 @@ if [ ! -f /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
   export CORS_ALLOWED_ORIGINS=http://localhost:3001
   export NODE_EXTRA_CA_CERTS=""
+elif [ -n "${WORKSPACE:-}" ]; then
+  echo "[post-start] Namespacing URLs for workspace: $WORKSPACE"
+  export APP_ORIGIN_API=https://api.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_AUTH=https://auth.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_PWA=https://pwa.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_MANAGE=https://manage.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_CONTROL=https://control.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_ASSESSMENT_API=https://api.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_ASSESSMENT_PWA=https://pwa.klicker.${WORKSPACE}.localhost
+  export APP_MANAGE_SUBDOMAIN=manage.klicker.${WORKSPACE}.localhost
+  export APP_STUDENT_SUBDOMAIN=pwa.klicker.${WORKSPACE}.localhost
+  export APP_CONTROL_SUBDOMAIN=control.klicker.${WORKSPACE}.localhost
+  export NEXTAUTH_URL=https://auth.klicker.${WORKSPACE}.localhost
+  export COOKIE_DOMAIN=klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_API_URL=https://api.klicker.${WORKSPACE}.localhost/api/graphql
+  export NEXT_PUBLIC_AUTH_URL=https://auth.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_MANAGE_URL=https://manage.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_PWA_URL=https://pwa.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_ASSESSMENT_URL=https://pwa.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_CONTROL_URL=https://control.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost
+  export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
+  export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
+  export AUTH_STUDENT_ALLOWED_HOSTS=pwa.klicker.${WORKSPACE}.localhost,127.0.0.1:3001
+  export APP_ORIGIN_LTI=https://lti.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_CHAT_URL=https://chat.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_CHAT=https://chat.klicker.${WORKSPACE}.localhost
 fi
 
 # No-TTY pnpm hardening (see post-create.sh). (GOTCHAS #18)

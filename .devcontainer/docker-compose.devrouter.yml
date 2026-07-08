@@ -5,7 +5,8 @@ services:
   postgres:
     networks:
       devnet:
-        aliases: [klicker-db]
+        aliases:
+          - '${WORKSPACE:-klicker}-db'
 
   app:
     extra_hosts:
@@ -20,7 +21,8 @@ services:
       - 'chat.klicker.localhost:host-gateway'
     networks:
       devnet:
-        aliases: [klicker-app]
+        aliases:
+          - '${WORKSPACE:-klicker}-app'
     volumes:
       # Local mkcert root CA (created by `dev tls install`) for server-side TLS trust.
       - '${DEVROUTER_MKCERT_CAROOT:-${HOME}/Library/Application Support/mkcert}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
