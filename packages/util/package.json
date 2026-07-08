@@ -19,7 +19,7 @@
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.10.1",
     "@types/uuid": "^10.0.0",
     "cross-env": "~7.0.3",
     "ioredis": "~5.4.1",
@@ -29,11 +29,11 @@
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "run-s build:ts",
+    "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
-    "dev": "run-p dev:ts",
+    "dev": "run-p --npm-path pnpm dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
     "test": "vitest run",

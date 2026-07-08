@@ -39,6 +39,7 @@ export interface MarkdownProps {
   withModal?: boolean
   withLinkButtons?: boolean
   withProse?: boolean
+  singleDollarTextMath?: boolean
   data?: {
     cy?: string
     test?: string
@@ -52,6 +53,7 @@ function Markdown({
   withModal = true,
   withLinkButtons = true,
   withProse = false,
+  singleDollarTextMath = false,
   data,
 }: MarkdownProps): React.ReactElement {
   const parsedContent = useMemo(() => {
@@ -76,7 +78,7 @@ function Markdown({
       return (
         unified()
           .use(remarkParse)
-          .use(remarkMath, { singleDollarTextMath: false })
+          .use(remarkMath, { singleDollarTextMath })
           // .use(remarkGfm)
           // .use(remarkDirective)
           .use(remarkRehype, { allowDangerousHtml: false })
@@ -168,7 +170,7 @@ function Markdown({
       console.error(e)
       return 'Failed to parse content.'
     }
-  }, [content])
+  }, [content, singleDollarTextMath])
 
   if (withProse) {
     // sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl

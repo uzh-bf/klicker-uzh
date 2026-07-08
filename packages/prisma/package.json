@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.4.0-alpha.62",
+  "version": "3.4.0-alpha.64",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
     "typescript": "~5.6.3"
   },
   "scripts": {
-    "build": "run-s generate build:ts",
+    "build": "run-s --npm-path pnpm generate build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
@@ -52,9 +52,9 @@
     "prisma:resetCypress": "pnpm run prisma:reset:raw",
     "prisma:resolve:prod": "../../util/_run_with_infisical.sh --env prd prisma migrate resolve",
     "prisma:resolve:qa": "../../util/_run_with_infisical.sh --env stg prisma migrate resolve",
-    "prisma:setup": "run-s prisma:reset prisma:push",
-    "prisma:setup:raw": "run-s prisma:reset:raw prisma:push:raw",
-    "prisma:setup:yes": "run-s prisma:reset:yes prisma:push",
+    "prisma:setup": "run-s --npm-path pnpm prisma:reset prisma:push",
+    "prisma:setup:raw": "run-s --npm-path pnpm prisma:reset:raw prisma:push:raw",
+    "prisma:setup:yes": "run-s --npm-path pnpm prisma:reset:yes prisma:push",
     "prisma:studio": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:studio:raw",
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",

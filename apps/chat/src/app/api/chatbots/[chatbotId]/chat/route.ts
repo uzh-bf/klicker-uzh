@@ -3,6 +3,7 @@ import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
+  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
@@ -58,6 +59,7 @@ if (!process.env.OPENAI_API_KEY) {
 }
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
+const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
@@ -101,7 +103,16 @@ type ModelRouting = {
   baseUrl: string | undefined
 }
 
-function getModel(chatbot: Chatbot, modelId: string) {
+function getOpenAIModel(
+  provider: ReturnType<typeof createOpenAI>,
+  modelConfig: ChatModelConfig
+) {
+  return modelConfig.supportsReasoning
+    ? provider.responses(modelConfig.deploymentId)
+    : provider.chat(modelConfig.deploymentId)
+}
+
+function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
   // Use per-chatbot configuration if available
   const hasCustomKey =
     typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
@@ -136,11 +147,14 @@ function getModel(chatbot: Chatbot, modelId: string) {
     }
 
     return {
-      model: createOpenAI({
-        baseURL: baseUrl,
-        apiKey: apiKey || 'no-key',
-        fetch: responsesApiFetch,
-      })(modelId),
+      model: getOpenAIModel(
+        createOpenAI({
+          baseURL: baseUrl,
+          apiKey: apiKey || 'no-key',
+          fetch: responsesApiFetch,
+        }),
+        modelConfig
+      ),
       routing,
     }
   }
@@ -153,11 +167,14 @@ function getModel(chatbot: Chatbot, modelId: string) {
   }
 
   return {
-    model: createOpenAI({
-      baseURL: process.env.OPENAI_BASE_URL,
-      apiKey: process.env.OPENAI_API_KEY || 'no-key',
-      fetch: responsesApiFetch,
-    })(modelId),
+    model: getOpenAIModel(
+      createOpenAI({
+        baseURL: process.env.OPENAI_BASE_URL,
+        apiKey: process.env.OPENAI_API_KEY || 'no-key',
+        fetch: responsesApiFetch,
+      }),
+      modelConfig
+    ),
     routing,
   }
 }
@@ -525,6 +542,28 @@ const normalizeReasoningContent = (
   value: string | null | undefined
 ): string | null =>
   typeof value === 'string' && value.trim().length > 0 ? value : null
+
+const extractReasoningTextPart = (rawPart: unknown): string | null => {
+  if (!rawPart || typeof rawPart !== 'object') return null
+
+  const part = rawPart as { type?: unknown; text?: unknown }
+  if (part.type !== 'reasoning' || typeof part.text !== 'string') return null
+
+  return normalizeReasoningContent(part.text.trimEnd())
+}
+
+const joinReasoningFromSteps = (
+  steps: Array<{ content?: unknown[] }> | undefined
+): string =>
+  (steps ?? [])
+    .flatMap((step) =>
+      Array.isArray(step.content)
+        ? step.content
+            .map(extractReasoningTextPart)
+            .filter((value): value is string => value !== null)
+        : []
+    )
+    .join('\n\n')
 
 type PersistedAssistantContentPart =
   | { type: 'text'; text: string }
@@ -923,7 +962,7 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
+  const { model, routing } = getModel(chatbot, selectedModelConfig)
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1230,10 +1269,12 @@ export async function POST(
   const result = streamText({
     model,
     maxOutputTokens,
-    experimental_telemetry: { isEnabled: true },
+    experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
     providerOptions: {
       openai: {
-        store: getOpenAIResponsesStore(),
+        ...(selectedModelConfig.supportsReasoning && {
+          store: getOpenAIResponsesStore(),
+        }),
         ...(providerReasoningEffort && {
           reasoningEffort: providerReasoningEffort,
           reasoningSummary: 'auto',
@@ -1275,13 +1316,15 @@ export async function POST(
           ) + imageDescriptionCost
         : null
       const finishedReasoningContent =
+        normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
         normalizeReasoningContent(
           result.reasoningText ||
             result.steps
               .map((step) => step.reasoningText || '')
               .filter((value) => value.length > 0)
-              .join('')
-        ) ?? normalizeReasoningContent(partialReasoningContent)
+              .join('\n\n')
+        ) ??
+        normalizeReasoningContent(partialReasoningContent)
       assistantReasoningContent = finishedReasoningContent
       const providerReasoningTokens = extractReasoningTokens(
         asObject(result)?.providerMetadata
@@ -1463,13 +1506,17 @@ export async function POST(
 
       const abortedReasoningContent =
         normalizeReasoningContent(
+          Array.isArray(steps?.steps) ? joinReasoningFromSteps(steps.steps) : ''
+        ) ??
+        normalizeReasoningContent(
           Array.isArray(steps?.steps)
             ? steps.steps
                 .map((step) => step.reasoningText || '')
                 .filter((value) => value.length > 0)
-                .join('')
+                .join('\n\n')
             : ''
-        ) ?? normalizeReasoningContent(partialReasoningContent)
+        ) ??
+        normalizeReasoningContent(partialReasoningContent)
       assistantReasoningContent = abortedReasoningContent
 
       logEvent('stream.abort', {
@@ -1645,6 +1692,20 @@ export async function POST(
 
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
+    onError: (error) => {
+      const serializedError = serializeStreamError(error)
+      const classification = classifyStreamError(serializedError)
+
+      console.error('Error while streaming UI message response:', {
+        requestId,
+        error: serializedError,
+        classification: classification.classification,
+        retryable: classification.retryable,
+        suggestedAction: classification.suggestedAction,
+      })
+
+      return 'An error occurred while processing the request.'
+    },
     messageMetadata: ({ part }) => {
       if (part.type !== 'finish') {
         return undefined

@@ -1,4 +1,6 @@
 node_modules/
+.pnpm-store/
+**/.venv/
 .next/
 .turbo/
 .vercel/
@@ -9,6 +11,11 @@ email/
 .claude/
 .serena/
 project/
+.agents/skills/**/.agnix.toml
+
+# Symlinks
+.github/skills
+CLAUDE.md
 
 ops.schema.json
 ops.ts
@@ -49,3 +56,12 @@ pnpm-lock.yaml
 # Dumps
 *.tar
 *.gpg
+
+# Unsupported file types
+**/*.toml
+**/*.gitignore
+**/Dockerfile*
+**/*.prisma
+**/*.py
+**/*.txt
+**/.codex/
