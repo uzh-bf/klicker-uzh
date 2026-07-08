@@ -1797,6 +1797,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       packageAnswerCollectionEntries: '{count} Eintraege',
       packageAnswerCollectionUsedBy: 'Verwendet von: {elements}',
       packageAnswerCollectionMoreEntries: '+{count} weitere',
+      packageAnswerCollectionDuplicate: 'Bereits vorhanden',
+      packageAnswerCollectionDuplicateSummary:
+        '{count} Antwort-Sammlungen entsprechen bestehenden Inhalten. Sie werden trotzdem als neue Sammlungen erstellt, wenn Sie ausgewaehlte Elemente importieren, die sie benoetigen.',
       packagePreviewLoading: 'Paketinhalt wird geprueft...',
       packagePreviewError:
         'Der Paketinhalt konnte nicht geprueft werden. Bitte pruefen Sie Ihre Berechtigungen.',
@@ -1804,6 +1807,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Einige ausgewaehlte Elemente koennen nicht exportiert werden. Sie benoetigen Bearbeitungsrechte auf allen ausgewaehlten Elementen.',
       packageAnswerCollectionExportPermissionError:
         'Der Export wurde blockiert, weil mindestens eine verknuepfte Antwort-Sammlung nicht eingeschlossen werden kann. Sie benoetigen Bearbeitungsrechte auf allen verknuepften Antwort-Sammlungen.',
+      packageTooManyElementsError:
+        'Der Export wurde blockiert, weil ein Elementpaket hoechstens 100 Elemente enthalten kann.',
       uploadElementsFile: 'ZIP-Paket hochladen',
       uploadElementsZipDescription:
         'Ziehen Sie ein KlickerUZH Elemente-ZIP-Paket hierher oder klicken Sie, um eine Datei auszuwaehlen.',
@@ -1825,6 +1830,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Paket konnte nicht gelesen werden. Bitte laden Sie eine gueltige ZIP-Datei hoch.',
       elementImportInvalidFile:
         'Die Datei entspricht nicht dem KlickerUZH Elementpaket-Format.',
+      elementImportFileTooLarge:
+        'Das Paket ist zu gross. Laden Sie eine ZIP-Datei bis {size} hoch.',
+      elementImportPackageNotFound:
+        'Das hochgeladene Paket konnte nicht gefunden werden. Bitte laden Sie es erneut hoch.',
+      elementImportInvalidOptions:
+        'Das Paket enthaelt Elementoptionen, die in KlickerUZH nicht gueltig sind.',
+      elementImportTagsInManifest:
+        'Element-Tags muessen in der Element-JSON-Datei definiert werden, nicht in manifest.json.',
+      elementImportManifestNotAtRoot:
+        'Die ZIP-Datei muss manifest.json auf oberster Ebene enthalten. Komprimieren Sie den Paketinhalt, nicht den umschliessenden Ordner.',
+      elementImportStatusNormalizedWarning:
+        'Importierte Elemente werden vor der Verwendung auf den Status Pruefung gesetzt.',
+      elementImportTagsOmittedWarning:
+        'Persoenliche Tags werden fuer die Duplikaterkennung beruecksichtigt, aber nicht in Ihren Fragenpool importiert.',
+      elementImportDuplicatesWarning:
+        'Einige Paketinhalte entsprechen bestehenden Ressourcen in Ihrem Fragenpool.',
+      elementImportExternalMediaWarning:
+        'Externe Medienlinks bleiben als Links erhalten und werden nicht in Ihre Medienbibliothek kopiert.',
+      elementImportMediaMissingWarning:
+        'Einige KlickerUZH Medien konnten nicht eingeschlossen werden und bleiben mit dem urspruenglichen Ort verknuepft.',
       elementImportAnswerCollectionRequired:
         'Das Element "{name}" benoetigt eine Antwort-Sammlung. Exportieren und importieren Sie zuerst die benoetigte Antwort-Sammlung.',
       elementImportAnswerCollectionMissing:
@@ -1833,17 +1858,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Antwort-Sammlung {id} enthaelt nicht die benoetigten Eintraege. Bitte verwenden Sie die passende Antwort-Sammlung, bevor Sie diese Elemente importieren.',
       elementImportNoElementsSelected:
         'Waehlen Sie mindestens ein Element fuer den Import aus.',
+      elementImportTagsAvailableSummary:
+        '{count} Tag-Namen sind in diesem Paket verfuegbar.',
+      elementImportNoTagsAvailable:
+        'Dieses Paket enthaelt keine uebertragbaren Tag-Metadaten.',
+      elementImportDuplicate: 'Bereits importiert',
+      elementImportDuplicateSummary:
+        '{count} Elemente entsprechen bestehenden Inhalten. Sie bleiben auswaehlbar und werden als neue Elemente importiert, wenn sie ausgewaehlt sind.',
       elementImportSuccess: '{number} Elemente wurden erfolgreich importiert.',
       elementImportPartialError:
         '{number} Elemente wurden importiert, der restliche Import ist jedoch fehlgeschlagen. Bitte pruefen Sie die Datei und versuchen Sie es erneut.',
       elementImportError:
         'Die Elemente konnten nicht importiert werden. Bitte pruefen Sie die Datei und versuchen Sie es erneut.',
       elementDownloadFailed: 'Die Elemente konnten nicht exportiert werden.',
-      answerCollectionDownloadFailed:
-        'Die Antwort-Sammlung konnte nicht exportiert werden.',
+      downloadElementsDisabledNoSelection:
+        'Waehlen Sie mindestens ein Element aus, bevor Sie es herunterladen.',
       downloadElementsPackage: 'Elementpaket herunterladen',
-      downloadElementsJson: 'Elemente-JSON herunterladen',
-      downloadAnswerCollectionJson: 'Antwort-Sammlung-JSON herunterladen',
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',

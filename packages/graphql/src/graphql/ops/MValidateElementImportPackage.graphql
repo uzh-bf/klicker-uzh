@@ -7,6 +7,8 @@ mutation ValidateElementImportPackage($blobName: String!) {
       ref
       name
       description
+      alreadyImported
+      existingAnswerCollectionId
       entries {
         id
         value
@@ -22,6 +24,9 @@ mutation ValidateElementImportPackage($blobName: String!) {
       basePoints
       explanation
       status
+      tags
+      alreadyImported
+      existingElementId
       answerCollectionId
       answerCollectionRef
       answerCollectionItems {

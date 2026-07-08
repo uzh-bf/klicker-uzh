@@ -11,12 +11,14 @@ import {
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { uploadPrivateImportExportBlob } from './packageStorage.js'
+import {
+  computeAnswerCollectionImportFingerprint,
+  refreshElementImportFingerprint,
+} from './importExportFingerprints.js'
 
 // ! Helper functions
 // #region
@@ -4657,15 +4659,21 @@ export async function copyAnswerCollectionToAccount(
   })
 
   await ctx.prisma.$transaction(async (prisma) => {
+    const name =
+      importCount > 0 ? `${collection.name} (${importCount})` : collection.name
     // create new answer collection with the content of the original one
     const newCollection = await prisma.answerCollection.create({
       data: {
         originalId: collection.id,
-        name:
-          importCount > 0
-            ? `${collection.name} (${importCount})`
-            : collection.name,
+        name,
         description: collection.description,
+        version: collection.version,
+        importFingerprint: computeAnswerCollectionImportFingerprint({
+          name,
+          description: collection.description,
+          version: collection.version,
+          entries: collection.entries.map((entry) => ({ value: entry.value })),
+        }),
         owner: {
           connect: {
             id: ctx.user.sub,
@@ -4798,6 +4806,7 @@ export async function copyElementToAccount(
       { elementId: newElement.id, userId: ctx.user.sub },
       prisma
     )
+    await refreshElementImportFingerprint(newElement.id, prisma)
 
     // if an answer collection is linked to the element, recompute the corresponding derived permissions
     if (newElement.answerCollectionId !== null) {
@@ -6904,62 +6913,4 @@ export async function getObjectActivity(
   }))
 }
 
-export async function getAnswerCollectionDownloadLink(
-  { answerCollectionId }: { answerCollectionId: number },
-  ctx: ContextWithUser
-) {
-  const acceptedPermissionLevels = [
-    DB.PermissionLevel.WRITE,
-    DB.PermissionLevel.ADMIN,
-    DB.PermissionLevel.OWNER,
-  ]
-  const answerCollection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: answerCollectionId,
-      isDeleted: false,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: { in: acceptedPermissionLevels },
-        },
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      version: true,
-      // ownerId: true,
-      // createdAt: true,
-      // updatedAt: true,
-      // isDeleted: true,
-      // originalId: true,
-      entries: {
-        select: {
-          id: true,
-          value: true,
-        },
-      },
-      // catalogAssignments: true,
-    },
-  })
-
-  if (!answerCollection) {
-    throw new Error('Answer collection could not be exported.')
-  }
-
-  const fileID = randomUUID()
-  const filename = `answercollection-export-${fileID}.json`
-  const json = JSON.stringify(answerCollection, null, 2)
-  const buffer = Buffer.from(json, 'utf8')
-
-  const data = await uploadPrivateImportExportBlob(
-    { filename, buffer, contentType: 'application/json' },
-    ctx
-  )
-
-  return {
-    downloadLink: data.downloadLink,
-  }
-}
 // #endregion

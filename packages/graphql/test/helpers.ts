@@ -77,6 +77,39 @@ type TestInitializationResult = {
   userSixCtx: ContextWithUser
 }
 
+function isPrismaPermissionError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+
+  const maybePrismaError = error as { code?: string; message?: string }
+  return (
+    maybePrismaError.code === 'EPERM' ||
+    maybePrismaError.code === 'P1010' ||
+    /permission denied|eperm/i.test(maybePrismaError.message ?? '')
+  )
+}
+
+function createTestDatabasePermissionError(operation: string, error: unknown) {
+  const message =
+    `Test database user lacks permissions for ${operation}. ` +
+    'Use a writable test DATABASE_URL with INSERT/UPDATE/DELETE privileges on the Prisma schema before running DB-backed GraphQL tests.'
+  const wrapped = new Error(message)
+
+  Object.defineProperty(wrapped, 'cause', {
+    value: error,
+    enumerable: false,
+  })
+
+  return wrapped
+}
+
+function throwIfTestDatabasePermissionError(operation: string, error: unknown) {
+  if (isPrismaPermissionError(error)) {
+    throw createTestDatabasePermissionError(operation, error)
+  }
+
+  throw error
+}
+
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
 export async function testInitialization(
@@ -85,20 +118,24 @@ export async function testInitialization(
   emitter: EventEmitter
 ): Promise<TestInitializationResult> {
   // upsert all users in the database
-  await Promise.all(
-    [userOne, userTwo, userThree, userFour, userFive, userSix].map(
-      async (user) =>
-        await prisma.user.upsert({
-          where: { id: user.id },
-          update: {},
-          create: {
-            id: user.id,
-            email: user.email,
-            shortname: user.shortname,
-          },
-        })
+  try {
+    await Promise.all(
+      [userOne, userTwo, userThree, userFour, userFive, userSix].map(
+        async (user) =>
+          await prisma.user.upsert({
+            where: { id: user.id },
+            update: {},
+            create: {
+              id: user.id,
+              email: user.email,
+              shortname: user.shortname,
+            },
+          })
+      )
     )
-  )
+  } catch (error) {
+    throwIfTestDatabasePermissionError('User upsert test setup', error)
+  }
 
   // verify that users have been created correctly in the database
   const dbUsers = await prisma.user.findMany()
@@ -351,7 +388,11 @@ export async function testInitialization(
 export async function testCleanup(prisma: PrismaClient) {
   // audit logs do not carry foreign keys, so they need explicit cleanup between
   // tests that reuse deterministic object ids.
-  await prisma.auditLogEntry.deleteMany()
+  try {
+    await prisma.auditLogEntry.deleteMany()
+  } catch (error) {
+    throwIfTestDatabasePermissionError('AuditLogEntry cleanup', error)
+  }
 
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()

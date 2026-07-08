@@ -15,7 +15,14 @@ import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import DownloadModal from '~/components/elements/manipulation/DownloadModal'
 import UploadModal from '~/components/elements/manipulation/UploadModal'
 import ActivityCreation from '../components/activities/ActivityCreation'
@@ -66,10 +73,19 @@ function Index() {
 
   // export elements
   const [uploadElements, setUploadElements] = useState(false)
-  const [downloadElements, setDownloadElements] = useState(false)
-  const [updatedElementsForDownload, setUpdatedElementsForDownload] =
-    useState(false)
-  const seenElementIds = useRef<Record<string, string>>({})
+  const [downloadElements, setDownloadElements] = useState<Element[] | null>(
+    null
+  )
+  const seenElementIds = useRef<
+    Record<
+      string,
+      {
+        downloadLink: string
+        filename: string
+        expiresAt: string
+      }
+    >
+  >({})
 
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
@@ -156,7 +172,23 @@ function Index() {
     fetchPolicy: 'network-only',
   })
   const numOfElements = dataElements?.userElements?.numOfElements || 0
-  const elements = dataElements?.userElements?.elements ?? []
+  const elements = useMemo(
+    () => dataElements?.userElements?.elements ?? [],
+    [dataElements?.userElements?.elements]
+  )
+  const selectedElementCount = Object.keys(selectedElements).length
+
+  const openDownloadModal = useCallback(() => {
+    const nextSelection: Record<number, Element> = {}
+
+    for (const [id, element] of Object.entries(selectedElements)) {
+      const refreshedElement = elements.find((e) => e.id === Number(id))
+      nextSelection[Number(id)] = refreshedElement ?? element
+    }
+
+    setSelectedElements(nextSelection)
+    setDownloadElements(Object.values(nextSelection))
+  }, [elements, selectedElements])
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -273,25 +305,6 @@ function Index() {
     }
   }, [router.query.filterByCourse, router.query.filterByActivity])
 
-  // update selected elements for download
-  useEffect(() => {
-    if (updatedElementsForDownload) {
-      setSelectedElements((prev) => {
-        const copy = { ...prev }
-        const newSelection: Record<number, Element> = {}
-
-        for (const [id, el] of Object.entries(copy)) {
-          const newElement = elements.find((e) => e.id === Number(id))
-          newSelection[Number(id)] = newElement ?? el
-        }
-
-        return newSelection
-      })
-
-      setDownloadElements(true)
-    }
-  }, [updatedElementsForDownload])
-
   // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
   const filtersActiveExceptCourse = !!(
     filters.tags.length > 0 ||
@@ -381,7 +394,7 @@ function Index() {
               </div>
 
               <div className="flex flex-row items-center gap-2">
-                {!creationMode && Object.keys(selectedElements).length > 0 ? (
+                {!creationMode && selectedElementCount > 0 ? (
                   <Button
                     className={{
                       root: 'h-9 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
@@ -392,7 +405,7 @@ function Index() {
                     <Button.Icon icon={faListCheck} />
                     <Button.Label>
                       {t('manage.questionPool.batchOperations', {
-                        numElements: Object.keys(selectedElements).length,
+                        numElements: selectedElementCount,
                       })}
                     </Button.Label>
                   </Button>
@@ -401,7 +414,18 @@ function Index() {
                   className={{
                     root: 'h-9',
                   }}
-                  onClick={() => setUpdatedElementsForDownload(true)}
+                  onClick={openDownloadModal}
+                  disabled={selectedElementCount === 0}
+                  aria-label={
+                    selectedElementCount === 0
+                      ? t('manage.elements.downloadElementsDisabledNoSelection')
+                      : t('shared.generic.download')
+                  }
+                  title={
+                    selectedElementCount === 0
+                      ? t('manage.elements.downloadElementsDisabledNoSelection')
+                      : t('manage.elements.downloadElementsPackage')
+                  }
                   data={{ cy: 'elements-download' }}
                 >
                   <Button.Icon icon={faDownload} />
@@ -540,11 +564,10 @@ function Index() {
       )}
       {downloadElements && (
         <DownloadModal
-          selectedElements={Object.values(selectedElements)}
+          selectedElements={downloadElements}
           seenElementIds={seenElementIds}
           onClose={() => {
-            setUpdatedElementsForDownload(false)
-            setDownloadElements(false)
+            setDownloadElements(null)
           }}
         />
       )}

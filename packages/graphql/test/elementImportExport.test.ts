@@ -9,11 +9,13 @@ import {
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { graphql } from 'graphql/index.js'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { mkdtemp, utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
+  assertImportExportPackageStorageConfig,
+  assertImportExportTokenSecretConfig,
   cleanupImportExportPackages,
   readLocalImportExportPackageBlob,
   schema,
@@ -29,6 +31,10 @@ import {
   validateElementImportPackage,
   validateElementImportPackageBuffer,
 } from '../src/services/elementImportExport.js'
+import {
+  computeAnswerCollectionImportFingerprint,
+  computeElementImportFingerprint,
+} from '../src/services/importExportFingerprints.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFour, userThree, userTwo } from './userData.js'
 
@@ -37,7 +43,7 @@ describe('Secure element import/export packages', () => {
     const validPackage = createValidationPackage()
 
     expect(() => validateElementImportPackageBuffer(validPackage)).not.toThrow()
-    expect(() => parseZip(rewriteZipPath(validPackage))).toThrow(
+    expect(() => parseZip(createZipWithInvalidEntryPath())).toThrow(
       /invalid zip entry path/i
     )
     expect(() =>
@@ -58,6 +64,16 @@ describe('Secure element import/export packages', () => {
     expect(() =>
       validateElementImportPackageBuffer(Buffer.alloc(10 * 1024 * 1024 + 1))
     ).toThrow(/too large/i)
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { pointsMultiplier: 5 })
+      )
+    ).toThrow()
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { pointsMultiplier: 1.5 })
+      )
+    ).toThrow()
     expect(() =>
       validateElementImportPackageBuffer(
         createValidationPackage(
@@ -178,6 +194,952 @@ describe('Secure element import/export packages', () => {
         )
       )
     ).toThrow(/package references must be globally unique/i)
+  })
+
+  it('fingerprints answer collections from authored payload fields only', () => {
+    const collection = {
+      ref: 'collection-a',
+      name: 'Cities',
+      description: 'Capital city answers',
+      version: 2,
+      entries: [
+        { ref: 'entry-1', value: 'Zurich' },
+        { ref: 'entry-2', value: 'Bern' },
+      ],
+    } as any
+    const fingerprint = computeAnswerCollectionImportFingerprint(collection)
+
+    expect(
+      computeAnswerCollectionImportFingerprint({
+        ...collection,
+        ref: 'collection-b',
+        entries: [
+          { ref: 'different-entry-2', value: 'Bern' },
+          { ref: 'different-entry-1', value: 'Zurich' },
+        ],
+      })
+    ).toBe(fingerprint)
+    expect(
+      computeAnswerCollectionImportFingerprint({
+        ...collection,
+        version: 3,
+      })
+    ).not.toBe(fingerprint)
+    expect(
+      computeAnswerCollectionImportFingerprint({
+        ...collection,
+        entries: [
+          { ref: 'entry-1', value: 'Zurich' },
+          { ref: 'entry-2', value: 'Basel' },
+        ],
+      })
+    ).not.toBe(fingerprint)
+    expect(
+      computeAnswerCollectionImportFingerprint({
+        name: collection.name,
+        description: collection.description,
+        entries: collection.entries,
+      })
+    ).toBe(
+      computeAnswerCollectionImportFingerprint({
+        ...collection,
+        version: 1,
+      })
+    )
+  })
+
+  it('fingerprints element authored payloads while ignoring package wiring', () => {
+    const mediaIdentity = 'klicker-package-media-sha256:'.concat(
+      createHash('sha256').update('image').digest('hex')
+    )
+    const element = {
+      name: 'Swiss capital',
+      content: 'Choose the capital. klicker-package-media://media-1',
+      type: ElementType.SC,
+      options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
+        choices: [
+          { ix: 0, value: 'Zurich', correct: false },
+          { ix: 1, value: 'Bern', correct: true },
+        ],
+      },
+      pointsMultiplier: 2,
+      basePoints: true,
+      explanation: 'Bern is correct. klicker-package-media://media-1',
+      status: ElementStatus.READY,
+      tags: ['Geography', 'Basics'],
+      mediaIdentityByUrl: new Map([
+        ['klicker-package-media://media-1', mediaIdentity],
+      ]),
+    }
+    const fingerprint = computeElementImportFingerprint(element)
+
+    expect(
+      computeElementImportFingerprint({
+        ...element,
+        content: 'Choose the capital. klicker-package-media://renamed-media',
+        explanation: 'Bern is correct. klicker-package-media://renamed-media',
+        tags: ['Basics', 'Geography', 'Geography'],
+        mediaIdentityByUrl: new Map([
+          ['klicker-package-media://renamed-media', mediaIdentity],
+        ]),
+      })
+    ).toBe(fingerprint)
+    expect(
+      computeElementImportFingerprint({
+        ...element,
+        tags: ['Geography', 'Advanced'],
+      })
+    ).not.toBe(fingerprint)
+    expect(
+      computeElementImportFingerprint({
+        ...element,
+        status: ElementStatus.REVIEW,
+      })
+    ).not.toBe(fingerprint)
+    expect(
+      computeElementImportFingerprint({
+        ...element,
+        options: {
+          ...element.options,
+          choices: [
+            { ix: 0, value: 'Zurich', correct: false },
+            { ix: 1, value: 'Bern', correct: false },
+          ],
+        },
+      })
+    ).not.toBe(fingerprint)
+  })
+
+  it('fingerprints linked answer collection content, not package refs', () => {
+    const selectionElement = {
+      name: 'Select the capital',
+      content: 'Pick one',
+      type: ElementType.SELECTION,
+      options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
+        answerCollection: { id: -1, entries: [] },
+        correctAnswers: [-1],
+      },
+      pointsMultiplier: 1,
+      basePoints: true,
+      explanation: null,
+      status: ElementStatus.READY,
+      tags: [],
+      answerCollection: {
+        ref: 'collection-a',
+        name: 'Cities',
+        description: '',
+        version: 1,
+        entries: [
+          { ref: 'entry-a', value: 'Bern' },
+          { ref: 'entry-b', value: 'Zurich' },
+        ],
+      },
+      selectedAnswerCollectionValues: ['Bern'],
+    } as any
+    const fingerprint = computeElementImportFingerprint(selectionElement)
+
+    expect(
+      computeElementImportFingerprint({
+        ...selectionElement,
+        options: {
+          ...selectionElement.options,
+          answerCollection: { id: -99, entries: [] },
+          correctAnswers: [-99],
+        },
+        answerCollection: {
+          ...selectionElement.answerCollection,
+          ref: 'collection-b',
+          entries: [
+            { ref: 'different-entry-a', value: 'Bern' },
+            { ref: 'different-entry-b', value: 'Zurich' },
+          ],
+        },
+        selectedAnswerCollectionValues: ['Bern'],
+      })
+    ).toBe(fingerprint)
+    expect(
+      computeElementImportFingerprint({
+        ...selectionElement,
+        answerCollection: {
+          ...selectionElement.answerCollection,
+          entries: [
+            { ref: 'entry-a', value: 'Basel' },
+            { ref: 'entry-b', value: 'Zurich' },
+          ],
+        },
+        selectedAnswerCollectionValues: ['Basel'],
+      })
+    ).not.toBe(fingerprint)
+  })
+
+  it('collects media warnings from content, explanations, and nested option strings', async () => {
+    const firstPartyHref =
+      'https://testaccount.blob.core.windows.net/11111111-1111-1111-1111-111111111111/imported/missing.png'
+    const externalHref = 'https://example.com/external-media.png'
+
+    await withEnv(
+      {
+        BLOB_STORAGE_ACCOUNT_NAME: 'testaccount',
+      },
+      async () => {
+        const result = validateElementImportPackageBuffer(
+          createValidationPackage(
+            {},
+            {
+              content: `Content with ${externalHref}`,
+              explanation: `Explanation with ${firstPartyHref}`,
+              options: {
+                displayMode: 'LIST',
+                hasSampleSolution: false,
+                hasAnswerFeedbacks: false,
+                choices: [
+                  { ix: 0, value: `Nested external ${externalHref}` },
+                  { ix: 1, value: `Nested first-party ${firstPartyHref}` },
+                ],
+              },
+            }
+          )
+        )
+
+        expect(result.warnings).toEqual(
+          expect.arrayContaining([
+            'IMPORT_EXTERNAL_MEDIA_NOT_PACKAGED',
+            'IMPORT_MEDIA_NOT_INCLUDED',
+          ])
+        )
+      }
+    )
+  })
+
+  it('does not warn about first-party media that is included in the package', async () => {
+    const packageMediaHref = 'klicker-package-media://media-1'
+    const mediaData = Buffer.from('included media data')
+    const sha256 = createHash('sha256').update(mediaData).digest('hex')
+
+    await withEnv(
+      {
+        BLOB_STORAGE_ACCOUNT_NAME: 'testaccount',
+      },
+      async () => {
+        const result = validateElementImportPackageBuffer(
+          createValidationPackage(
+            {
+              media: [
+                {
+                  ref: 'media-1',
+                  file: 'media/media-1.png',
+                  filename: 'media-1.png',
+                  contentType: 'image/png',
+                  bytes: mediaData.length,
+                  sha256,
+                  sourceHref: packageMediaHref,
+                },
+              ],
+            },
+            {
+              content: `Content with ${packageMediaHref}`,
+              options: {
+                displayMode: 'LIST',
+                hasSampleSolution: false,
+                hasAnswerFeedbacks: false,
+                choices: [
+                  { ix: 0, value: `Nested packaged ${packageMediaHref}` },
+                  { ix: 1, value: 'Plain choice' },
+                ],
+              },
+            },
+            [{ path: 'media/media-1.png', data: mediaData }]
+          )
+        )
+
+        expect(result.warnings).not.toContain('IMPORT_MEDIA_NOT_INCLUDED')
+      }
+    )
+  })
+
+  it('exports anonymized refs and package-local media references', async () => {
+    const elementId = 987_654_321
+    const firstPartyHref =
+      'https://testaccount.blob.core.windows.net/source-owner/imported/source.png'
+    const mediaData = Buffer.from('exported media bytes')
+
+    vi.resetModules()
+    vi.doMock('../src/services/mediaStorage.js', () => ({
+      deleteImportedMediaFile: vi.fn(),
+      downloadKlickerMediaFile: vi.fn(async () => ({
+        buffer: mediaData,
+        contentType: 'image/png',
+        filename: 'original-source.png',
+        originalId: 'source-media-id',
+      })),
+      finalizeStagedImportedMediaFile: vi.fn(),
+      isKlickerMediaFileExportable: vi.fn(),
+      parseKlickerMediaUrl: vi.fn((href: string) =>
+        href === firstPartyHref
+          ? {
+              containerName: 'source-owner',
+              blobName: 'imported/source.png',
+            }
+          : null
+      ),
+      stageImportedMediaFile: vi.fn(),
+    }))
+
+    try {
+      const { createElementExportPackage: createWithMockedMedia } =
+        await import('../src/services/elementImportExport.js')
+      const exported = await createWithMockedMedia(
+        { elementIds: [elementId] },
+        {
+          user: { sub: 'owner-id' },
+          prisma: {
+            element: {
+              findMany: vi.fn(async () => [
+                {
+                  id: elementId,
+                  name: 'Exported element',
+                  content: `Question with ${firstPartyHref}`,
+                  options: {
+                    displayMode: 'LIST',
+                    hasSampleSolution: false,
+                    hasAnswerFeedbacks: false,
+                    choices: [
+                      { ix: 0, value: `Nested ${firstPartyHref}` },
+                      { ix: 1, value: 'Plain choice' },
+                    ],
+                  },
+                  type: ElementType.SC,
+                  pointsMultiplier: 1,
+                  explanation: `Explanation with ${firstPartyHref}`,
+                  version: 42,
+                  status: ElementStatus.READY,
+                  answerCollectionId: null,
+                  answerCollectionItems: [],
+                  tags: [],
+                  basePoints: true,
+                },
+              ]),
+            },
+          },
+        } as any
+      )
+
+      const entries = parseZip(exported.buffer)
+      const packageText = entries
+        .map((entry) =>
+          entry.path.endsWith('.json') ? entry.data.toString('utf8') : ''
+        )
+        .join('\n')
+      const manifest = JSON.parse(
+        entries
+          .find((entry) => entry.path === 'manifest.json')!
+          .data.toString('utf8')
+      )
+      const element = JSON.parse(
+        entries
+          .find((entry) => entry.path === 'elements/element-1.json')!
+          .data.toString('utf8')
+      )
+
+      expect(manifest.elements).toEqual([
+        { ref: 'element-1', file: 'elements/element-1.json' },
+      ])
+      expect(manifest.media).toMatchObject([
+        {
+          ref: 'media-1',
+          file: 'media/media-1.png',
+          filename: 'media-1.png',
+          sourceHref: 'klicker-package-media://media-1',
+        },
+      ])
+      expect(element.content).toContain('klicker-package-media://media-1')
+      expect(element.explanation).toContain('klicker-package-media://media-1')
+      expect(element.options.choices[0].value).toContain(
+        'klicker-package-media://media-1'
+      )
+      expect(packageText).not.toContain(firstPartyHref)
+      expect(packageText).not.toContain(String(elementId))
+      expect(packageText).not.toContain('source-media-id')
+      expect(packageText).not.toContain('"source"')
+    } finally {
+      vi.doUnmock('../src/services/mediaStorage.js')
+      vi.resetModules()
+    }
+  })
+
+  it('surfaces element-file package tags during validation preview', () => {
+    const result = validateElementImportPackageBuffer(
+      createValidationPackage({}, { tags: ['Hello 123', 'Week 1'] })
+    )
+
+    expect(result.preview.elements[0]?.tags).toEqual(['Hello 123', 'Week 1'])
+    expect(result.warnings).toContain('IMPORT_TAGS_OMITTED')
+  })
+
+  it('rejects macOS ZIP metadata and directory entries', () => {
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { tags: ['Hello 123'] }, [
+          { path: 'elements/', data: '' },
+        ])
+      )
+    ).toThrow(/unexpected files/i)
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { tags: ['Hello 123'] }, [
+          { path: '.DS_Store', data: 'metadata' },
+        ])
+      )
+    ).toThrow(/unexpected files/i)
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { tags: ['Hello 123'] }, [
+          { path: 'elements/.DS_Store', data: 'metadata' },
+        ])
+      )
+    ).toThrow(/unexpected files/i)
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { tags: ['Hello 123'] }, [
+          { path: '__MACOSX/._manifest.json', data: 'metadata' },
+        ])
+      )
+    ).toThrow(/unexpected files/i)
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { tags: ['Hello 123'] }, [
+          { path: '__MACOSX/elements/._element-1.json', data: 'metadata' },
+        ])
+      )
+    ).toThrow(/unexpected files/i)
+  })
+
+  it('rejects packages wrapped in a single enclosing folder', async () => {
+    const wrappedPackage = createZip([
+      {
+        path: 'klicker-elements-edited/manifest.json',
+        data: JSON.stringify({
+          type: 'klicker-element-package',
+          version: 3,
+          createdAt: new Date().toISOString(),
+          elements: [{ ref: 'element-1', file: 'elements/element-1.json' }],
+          answerCollections: [],
+          media: [],
+        }),
+      },
+      {
+        path: 'klicker-elements-edited/elements/element-1.json',
+        data: JSON.stringify({
+          ref: 'element-1',
+          name: 'Nested package element',
+          content: 'Imported content',
+          type: ElementType.SC,
+          options: {
+            displayMode: 'LIST',
+            hasSampleSolution: false,
+            hasAnswerFeedbacks: false,
+            choices: [
+              { ix: 0, value: 'A' },
+              { ix: 1, value: 'B' },
+            ],
+          },
+          pointsMultiplier: 1,
+          basePoints: true,
+          explanation: null,
+          status: ElementStatus.READY,
+          tags: ['Hello 123'],
+        }),
+      },
+    ])
+    const blobName = `imports/importer/${randomUUID()}-wrapped-package.zip`
+    const ctx = {
+      user: { sub: 'importer' },
+      redisExec: {
+        eval: vi.fn(async () => [1, 1]),
+      },
+    }
+
+    expect(() => validateElementImportPackageBuffer(wrappedPackage)).toThrow(
+      /manifest must be at the ZIP root/i
+    )
+
+    await withEnv(
+      {
+        IMPORT_EXPORT_PACKAGE_STORAGE: 'local',
+        NODE_ENV: 'test',
+      },
+      async () => {
+        await writeLocalImportExportPackageBlob(blobName, wrappedPackage)
+
+        await expect(
+          validateElementImportPackage({ blobName }, ctx as any)
+        ).resolves.toMatchObject({
+          importToken: null,
+          errors: ['IMPORT_MANIFEST_NOT_AT_ROOT'],
+        })
+      }
+    )
+  })
+
+  it('rejects packages containing all common macOS ZIP metadata entries', () => {
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { tags: ['Hello 123'] }, [
+          { path: 'elements/', data: '' },
+          { path: '.DS_Store', data: 'metadata' },
+          { path: 'elements/.DS_Store', data: 'metadata' },
+          { path: '__MACOSX/._manifest.json', data: 'metadata' },
+          { path: '__MACOSX/elements/._element-1.json', data: 'metadata' },
+        ])
+      )
+    ).toThrow(/unexpected files|too many files/i)
+  })
+
+  it('rejects manifest-level element tags with a stable validation error code', async () => {
+    const buffer = createValidationPackage({
+      elements: [
+        {
+          ref: 'element-1',
+          file: 'elements/element-1.json',
+          tags: ['Hello 123'],
+        },
+      ],
+    })
+    const blobName = `imports/importer/${randomUUID()}-package.zip`
+    const ctx = {
+      user: { sub: 'importer' },
+      redisExec: {
+        eval: vi.fn(async () => [1, 1]),
+      },
+    }
+
+    expect(() => validateElementImportPackageBuffer(buffer)).toThrow(
+      /unrecognized key/i
+    )
+
+    await withEnv(
+      {
+        IMPORT_EXPORT_PACKAGE_STORAGE: 'local',
+        NODE_ENV: 'test',
+      },
+      async () => {
+        await writeLocalImportExportPackageBlob(blobName, buffer)
+
+        await expect(
+          validateElementImportPackage({ blobName }, ctx as any)
+        ).resolves.toMatchObject({
+          importToken: null,
+          errors: ['IMPORT_ELEMENT_TAGS_IN_MANIFEST'],
+        })
+      }
+    )
+  })
+
+  it('rejects packages whose manifest is nested too deeply', async () => {
+    const nestedPackage = createZip([
+      {
+        path: 'outer/klicker-elements-edited/manifest.json',
+        data: JSON.stringify({
+          type: 'klicker-element-package',
+          version: 3,
+          createdAt: new Date().toISOString(),
+          elements: [{ ref: 'element-1', file: 'elements/element-1.json' }],
+          answerCollections: [],
+          media: [],
+        }),
+      },
+      {
+        path: 'outer/klicker-elements-edited/elements/element-1.json',
+        data: JSON.stringify({
+          ref: 'element-1',
+          name: 'Nested package element',
+          content: 'Imported content',
+          type: ElementType.SC,
+          options: {
+            displayMode: 'LIST',
+            hasSampleSolution: false,
+            hasAnswerFeedbacks: false,
+            choices: [
+              { ix: 0, value: 'A' },
+              { ix: 1, value: 'B' },
+            ],
+          },
+          pointsMultiplier: 1,
+          basePoints: true,
+          explanation: null,
+          status: ElementStatus.READY,
+          tags: ['Hello 123'],
+        }),
+      },
+    ])
+    const blobName = `imports/importer/${randomUUID()}-nested-package.zip`
+    const ctx = {
+      user: { sub: 'importer' },
+      redisExec: {
+        eval: vi.fn(async () => [1, 1]),
+      },
+    }
+
+    await withEnv(
+      {
+        IMPORT_EXPORT_PACKAGE_STORAGE: 'local',
+        NODE_ENV: 'test',
+      },
+      async () => {
+        await writeLocalImportExportPackageBlob(blobName, nestedPackage)
+
+        await expect(
+          validateElementImportPackage({ blobName }, ctx as any)
+        ).resolves.toMatchObject({
+          importToken: null,
+          errors: ['IMPORT_MANIFEST_NOT_AT_ROOT'],
+        })
+      }
+    )
+  })
+
+  it('rejects ZIP entries with mismatched checksums', () => {
+    const validPackage = createValidationPackage()
+    const corrupted = Buffer.from(validPackage)
+    const contentOffset = corrupted.indexOf(Buffer.from('Imported content'))
+
+    expect(contentOffset).toBeGreaterThan(-1)
+    corrupted[contentOffset] = corrupted[contentOffset]! ^ 0xff
+
+    expect(() => parseZip(corrupted)).toThrow(/checksum/i)
+  })
+
+  it('accepts ZIP data-descriptor flags used by platform archive tools', () => {
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createZipWithDataDescriptorFlags(createValidationPackage())
+      )
+    ).not.toThrow()
+  })
+
+  it('rejects malformed ZIP buffers without unsafe parsing behavior', () => {
+    const validPackage = createValidationPackage()
+    const corruptedCentralOffset = Buffer.from(validPackage)
+    corruptedCentralOffset.writeUInt32LE(
+      corruptedCentralOffset.length + 1024,
+      corruptedCentralOffset.length - 22 + 16
+    )
+
+    const malformedBuffers = [
+      Buffer.alloc(0),
+      Buffer.from('not a zip archive'),
+      validPackage.subarray(0, 10),
+      corruptedCentralOffset,
+      createZipWithCentralLocalPathMismatch(),
+      createZipWithHugeDeclaredSize(),
+      ...Array.from({ length: 16 }, (_, ix) =>
+        createDeterministicBuffer(ix + 1, 8 + ix * 17)
+      ),
+    ]
+
+    for (const buffer of malformedBuffers) {
+      expect(() =>
+        parseZip(buffer, { maxEntries: 5, maxUncompressedBytes: 1024 })
+      ).toThrow()
+    }
+  })
+
+  it('rejects local package storage in production', async () => {
+    await withEnv(
+      {
+        BLOB_STORAGE_ACCESS_KEY: 'test-key',
+        BLOB_STORAGE_ACCOUNT_NAME: 'testaccount',
+        IMPORT_EXPORT_PACKAGE_STORAGE: 'local',
+        IMPORT_EXPORT_TOKEN_SECRET: 'test-secret',
+        NODE_ENV: 'production',
+      },
+      async () => {
+        expect(() => assertImportExportPackageStorageConfig()).toThrow(
+          /outside development and test/i
+        )
+      }
+    )
+  })
+
+  it('rejects local package storage in production-like runtimes', async () => {
+    await withEnv(
+      {
+        BLOB_STORAGE_ACCESS_KEY: 'test-key',
+        BLOB_STORAGE_ACCOUNT_NAME: 'testaccount',
+        IMPORT_EXPORT_PACKAGE_STORAGE: 'local',
+        IMPORT_EXPORT_TOKEN_SECRET: 'test-secret',
+        NODE_ENV: 'stg',
+      },
+      async () => {
+        expect(() => assertImportExportPackageStorageConfig()).toThrow(
+          /outside development and test/i
+        )
+      }
+    )
+  })
+
+  it('requires Azure package storage credentials in production', async () => {
+    await withEnv(
+      {
+        BLOB_STORAGE_ACCESS_KEY: undefined,
+        BLOB_STORAGE_ACCOUNT_NAME: undefined,
+        IMPORT_EXPORT_PACKAGE_STORAGE: 'azure',
+        IMPORT_EXPORT_TOKEN_SECRET: 'test-secret',
+        NODE_ENV: 'production',
+      },
+      async () => {
+        expect(() => assertImportExportPackageStorageConfig()).toThrow(
+          /blob storage credentials/i
+        )
+      }
+    )
+  })
+
+  it('requires a dedicated import/export token secret in production', async () => {
+    await withEnv(
+      {
+        APP_SECRET: 'fallback-secret',
+        BLOB_STORAGE_ACCESS_KEY: 'fallback-key',
+        IMPORT_EXPORT_TOKEN_SECRET: undefined,
+        NEXTAUTH_SECRET: 'fallback-nextauth',
+        NODE_ENV: 'production',
+      },
+      async () => {
+        expect(() => assertImportExportTokenSecretConfig()).toThrow(
+          /IMPORT_EXPORT_TOKEN_SECRET/
+        )
+      }
+    )
+  })
+
+  it('requires a dedicated import/export token secret in production-like runtimes', async () => {
+    await withEnv(
+      {
+        APP_SECRET: 'fallback-secret',
+        BLOB_STORAGE_ACCESS_KEY: 'fallback-key',
+        IMPORT_EXPORT_TOKEN_SECRET: undefined,
+        NEXTAUTH_SECRET: 'fallback-nextauth',
+        NODE_ENV: 'stg',
+      },
+      async () => {
+        expect(() => assertImportExportTokenSecretConfig()).toThrow(
+          /IMPORT_EXPORT_TOKEN_SECRET/
+        )
+      }
+    )
+  })
+
+  it('separates rate-limit exhaustion from Redis outages', async () => {
+    await withEnv(
+      {
+        IMPORT_EXPORT_PACKAGE_UPLOAD_RATE_LIMIT: '1',
+        IMPORT_EXPORT_PACKAGE_RATE_LIMIT_WINDOW_SECONDS: '60',
+      },
+      async () => {
+        const unavailableCtx = {
+          user: { sub: 'rate-limit-user' },
+          redisExec: {
+            eval: vi.fn().mockRejectedValue(new Error('Redis unavailable')),
+          },
+        }
+        await expect(
+          prepareElementImportPackageUpload(
+            { filename: 'package.zip' },
+            unavailableCtx as any
+          )
+        ).rejects.toThrow(/temporarily unavailable/i)
+
+        const exceededCtx = {
+          user: { sub: 'rate-limit-user' },
+          redisExec: {
+            eval: vi.fn().mockResolvedValue([0, 1]),
+          },
+        }
+        await expect(
+          prepareElementImportPackageUpload(
+            { filename: 'package.zip' },
+            exceededCtx as any
+          )
+        ).rejects.toThrow(/try again later/i)
+      }
+    )
+  })
+
+  it('stages packaged media before opening the import transaction', async () => {
+    const calls: string[] = []
+    let manipulatedArgs: any
+    const sourceHref = 'klicker-package-media://media-1'
+    const importedHref =
+      'https://testaccount.blob.core.windows.net/importer/imported/staged.png'
+    const mediaData = Buffer.from('media staged before transaction')
+    const sha256 = createHash('sha256').update(mediaData).digest('hex')
+
+    vi.resetModules()
+    vi.doMock('../src/services/mediaStorage.js', () => ({
+      deleteImportedMediaFile: vi.fn(async () => {
+        calls.push('cleanup')
+      }),
+      downloadKlickerMediaFile: vi.fn(),
+      finalizeStagedImportedMediaFile: vi.fn(async () => {
+        calls.push('finalize')
+        return { href: importedHref, unusedStagedHref: null }
+      }),
+      isKlickerMediaFileExportable: vi.fn(),
+      parseKlickerMediaUrl: vi.fn(() => ({
+        containerName: 'source-owner',
+        blobName: 'imported/source.png',
+      })),
+      stageImportedMediaFile: vi.fn(async () => {
+        calls.push('stage')
+        return {
+          id: '11111111-1111-1111-1111-111111111111',
+          href: importedHref,
+          ownerId: 'importer',
+          contentType: 'image/png',
+          filename: 'source.png',
+          originalId: `import-media:${sha256}`,
+          createdBlob: true,
+        }
+      }),
+    }))
+    vi.doMock('../src/services/elements.js', () => ({
+      manipulateElement: vi.fn(async (args) => {
+        calls.push('manipulate')
+        manipulatedArgs = args
+        return { id: 123 }
+      }),
+    }))
+
+    try {
+      const { importElementPackageBuffer: importWithMockedMedia } =
+        await import('../src/services/elementImportExport.js')
+      const buffer = createValidationPackage(
+        {
+          media: [
+            {
+              ref: 'media-1',
+              file: 'media/media-1.png',
+              filename: 'source.png',
+              contentType: 'image/png',
+              bytes: mediaData.length,
+              sha256,
+              sourceHref,
+            },
+          ],
+        },
+        {
+          content: `Imported content ${sourceHref}`,
+          tags: ['Calculus', 'Week 1'],
+        },
+        [{ path: 'media/media-1.png', data: mediaData }]
+      )
+      const txPrisma = {
+        element: {
+          update: vi.fn(async () => ({})),
+        },
+      }
+      const ctx = {
+        user: { sub: 'importer' },
+        emitter: { emit: vi.fn() },
+        prisma: {
+          element: {
+            findMany: vi.fn(async () => []),
+          },
+          $transaction: vi.fn(async (fn) => {
+            calls.push('transaction-start')
+            return await fn(txPrisma)
+          }),
+        },
+      }
+
+      await expect(
+        importWithMockedMedia(
+          {
+            buffer,
+            selectedElementRefs: ['element-1'],
+          },
+          ctx as any
+        )
+      ).resolves.toEqual({
+        importedElements: 1,
+        importedAnswerCollections: 0,
+        skippedElements: 0,
+      })
+      expect(calls).toEqual([
+        'stage',
+        'transaction-start',
+        'finalize',
+        'manipulate',
+      ])
+      expect(manipulatedArgs.tags).toEqual([])
+    } finally {
+      vi.doUnmock('../src/services/mediaStorage.js')
+      vi.doUnmock('../src/services/elements.js')
+      vi.resetModules()
+    }
+  })
+
+  it('rejects source metadata in v3 packages', () => {
+    expect(() =>
+      validateElementImportPackageBuffer(
+        createValidationPackage({}, { source: { id: 'source-element-1' } })
+      )
+    ).toThrow(/source/i)
+  })
+
+  it('imports selected elements without duplicate skip behavior', async () => {
+    const calls: string[] = []
+
+    vi.resetModules()
+    vi.doMock('../src/services/elements.js', () => ({
+      manipulateElement: vi.fn(async () => {
+        calls.push('manipulate')
+        return { id: 123 }
+      }),
+    }))
+
+    try {
+      const { importElementPackageBuffer: importWithMockedElements } =
+        await import('../src/services/elementImportExport.js')
+      const txPrisma = {
+        element: {
+          update: vi.fn(async () => ({})),
+        },
+      }
+      const ctx = {
+        user: { sub: 'importer' },
+        emitter: { emit: vi.fn() },
+        prisma: {
+          $transaction: vi.fn(async (fn) => {
+            calls.push('transaction-start')
+            return await fn(txPrisma)
+          }),
+        },
+      }
+
+      await expect(
+        importWithMockedElements(
+          {
+            buffer: createValidationPackage(),
+            selectedElementRefs: ['element-1'],
+          },
+          ctx as any
+        )
+      ).resolves.toEqual({
+        importedElements: 1,
+        importedAnswerCollections: 0,
+        skippedElements: 0,
+      })
+      expect(calls).toEqual(['transaction-start', 'manipulate'])
+      expect(ctx.prisma.$transaction).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.doUnmock('../src/services/elements.js')
+      vi.resetModules()
+    }
   })
 
   describe('database-backed package operations', () => {
@@ -315,13 +1277,62 @@ describe('Secure element import/export packages', () => {
       expect(preview.preview.elements).toHaveLength(2)
       expect(preview.preview.answerCollections).toHaveLength(1)
 
+      const packageHash = createHash('sha256')
+        .update(exported.buffer)
+        .digest('hex')
+      const exportedEntries = parseZip(exported.buffer)
+      const exportedPaths = exportedEntries.map((entry) => entry.path)
+      expect(exportedPaths).toEqual(
+        expect.arrayContaining([
+          'manifest.json',
+          'elements/element-1.json',
+          'elements/element-2.json',
+          'answer-collections/answer-collection-1.json',
+        ])
+      )
+      expect(exportedPaths).not.toContain(
+        `elements/element-${selection.id}.json`
+      )
+      expect(exportedPaths).not.toContain(
+        `elements/element-${caseStudy.id}.json`
+      )
+      const exportedManifest = JSON.parse(
+        exportedEntries
+          .find((entry) => entry.path === 'manifest.json')!
+          .data.toString('utf8')
+      )
+      expect(exportedManifest.elements).toEqual([
+        {
+          ref: 'element-1',
+          file: 'elements/element-1.json',
+          answerCollectionRef: 'answer-collection-1',
+        },
+        {
+          ref: 'element-2',
+          file: 'elements/element-2.json',
+          answerCollectionRef: 'answer-collection-1',
+        },
+      ])
+      expect(exportedManifest.answerCollections).toEqual([
+        {
+          ref: 'answer-collection-1',
+          file: 'answer-collections/answer-collection-1.json',
+        },
+      ])
+      const exportedCollection = JSON.parse(
+        exportedEntries
+          .find(
+            (entry) =>
+              entry.path === 'answer-collections/answer-collection-1.json'
+          )!
+          .data.toString('utf8')
+      )
+      expect(exportedCollection.version).toBe(answerCollection.version)
+
       const result = await importElementPackageBuffer(
         {
           buffer: exported.buffer,
-          selectedElementRefs: [
-            `element-${selection.id}`,
-            `element-${caseStudy.id}`,
-          ],
+          selectedElementRefs: ['element-1', 'element-2'],
         },
         userTwoCtx
       )
@@ -329,6 +1340,7 @@ describe('Secure element import/export packages', () => {
       expect(result).toEqual({
         importedElements: 2,
         importedAnswerCollections: 1,
+        skippedElements: 0,
       })
 
       const importedCollection = await prisma.answerCollection.findFirstOrThrow(
@@ -341,6 +1353,9 @@ describe('Secure element import/export packages', () => {
         }
       )
       expect(importedCollection.id).not.toBe(answerCollection.id)
+      expect(importedCollection.originalId).toBeNull()
+      expect(importedCollection.version).toBe(answerCollection.version)
+      expect(importedCollection.importFingerprint).toEqual(expect.any(String))
 
       const entryIdsByValue = new Map(
         importedCollection.entries.map((entry) => [entry.value, entry.id])
@@ -350,6 +1365,11 @@ describe('Secure element import/export packages', () => {
         include: { answerCollectionItems: true },
       })
       expect(importedSelection.answerCollectionId).toBe(importedCollection.id)
+      expect(importedSelection.status).toBe(ElementStatus.REVIEW)
+      expect(importedSelection.originalId).toBe(
+        `import-package:${packageHash.slice(0, 16)}:element-1`
+      )
+      expect(importedSelection.importFingerprint).toEqual(expect.any(String))
       expect(
         importedSelection.answerCollectionItems.map((entry) => entry.id)
       ).toEqual([entryIdsByValue.get(entries[0]!.value)])
@@ -362,6 +1382,11 @@ describe('Secure element import/export packages', () => {
         include: { answerCollectionItems: true },
       })
       expect(importedCaseStudy.answerCollectionId).toBe(importedCollection.id)
+      expect(importedCaseStudy.status).toBe(ElementStatus.REVIEW)
+      expect(importedCaseStudy.originalId).toBe(
+        `import-package:${packageHash.slice(0, 16)}:element-2`
+      )
+      expect(importedCaseStudy.importFingerprint).toEqual(expect.any(String))
       expect(
         importedCaseStudy.answerCollectionItems.map((entry) => entry.id).sort()
       ).toEqual(
@@ -385,39 +1410,72 @@ describe('Secure element import/export packages', () => {
       )
     })
 
-    it('ignores spoofed source ids and imports only package-local refs', async () => {
-      const { answerCollection, selection, entries } =
+    it('shows advisory duplicate warnings without blocking duplicate imports', async () => {
+      const { answerCollection, selection } =
         await seedPackageFixture(userOneCtx)
-      const targetCollection = await prisma.answerCollection.create({
-        data: {
-          name: 'Do not attach source collection',
-          description: 'This collection id is spoofed in package metadata',
-          ownerId: userThree.id,
-          entries: {
-            create: [{ value: 'Target Alpha' }, { value: 'Target Beta' }],
-          },
+      const exported = await createElementExportPackage(
+        { elementIds: [selection.id] },
+        userOneCtx
+      )
+      const blobName = `imports/${userOneCtx.user.sub}/${randomUUID()}-package.zip`
+
+      await withEnv(
+        {
+          IMPORT_EXPORT_PACKAGE_STORAGE: 'local',
+          NODE_ENV: 'test',
         },
-        include: { entries: true },
-      })
-      const targetElement = await prisma.element.create({
-        data: {
-          type: ElementType.SC,
-          name: 'Do not update source element',
-          content: 'This element id is spoofed in package metadata',
-          explanation: null,
-          status: ElementStatus.READY,
-          options: {
-            displayMode: 'LIST',
-            hasSampleSolution: false,
-            hasAnswerFeedbacks: false,
-            choices: [
-              { ix: 0, value: 'A' },
-              { ix: 1, value: 'B' },
-            ],
-          },
-          ownerId: userThree.id,
-        },
-      })
+        async () => {
+          await writeLocalImportExportPackageBlob(blobName, exported.buffer)
+          await clearPackageRateLimitKeys(userOneCtx)
+
+          const validation = await validateElementImportPackage(
+            { blobName },
+            userOneCtx
+          )
+
+          expect(validation.errors).toEqual([])
+          expect(validation.elements).toHaveLength(1)
+          expect(validation.elements[0]!.alreadyImported).toBe(true)
+          expect(validation.elements[0]!.existingElementId).toBe(selection.id)
+          expect(validation.answerCollections).toHaveLength(1)
+          expect(validation.answerCollections[0]!.alreadyImported).toBe(true)
+          expect(
+            validation.answerCollections[0]!.existingAnswerCollectionId
+          ).toBe(answerCollection.id)
+
+          await expect(
+            importElementPackageBuffer(
+              {
+                buffer: exported.buffer,
+                selectedElementRefs: ['element-1'],
+              },
+              userOneCtx
+            )
+          ).resolves.toEqual({
+            importedElements: 1,
+            importedAnswerCollections: 1,
+            skippedElements: 0,
+          })
+
+          await expect(
+            prisma.element.count({
+              where: { ownerId: userOneCtx.user.sub, name: selection.name },
+            })
+          ).resolves.toBe(2)
+          await expect(
+            prisma.answerCollection.count({
+              where: {
+                ownerId: userOneCtx.user.sub,
+                name: answerCollection.name,
+              },
+            })
+          ).resolves.toBe(2)
+        }
+      )
+    })
+
+    it('rejects packages containing source ids', async () => {
+      const { selection } = await seedPackageFixture(userOneCtx)
       const exported = await createElementExportPackage(
         { elementIds: [selection.id] },
         userOneCtx
@@ -427,80 +1485,32 @@ describe('Secure element import/export packages', () => {
           ...manifest,
           elements: manifest.elements.map((element: any) => ({
             ...element,
-            source: { id: targetElement.id, version: 999 },
+            source: { id: 999_999, version: 999 },
           })),
           answerCollections: manifest.answerCollections.map(
             (collection: any) => ({
               ...collection,
-              source: { id: targetCollection.id, version: 999 },
+              source: { id: 999_999, version: 999 },
             })
           ),
         }),
-        [`elements/element-${selection.id}.json`]: (element: any) => ({
+        'elements/element-1.json': (element: any) => ({
           ...element,
-          source: { id: targetElement.id, version: 999 },
+          source: { id: 999_999, version: 999 },
         }),
-        [`answer-collections/answer-collection-${answerCollection.id}.json`]: (
-          collection: any
-        ) => ({
+        'answer-collections/answer-collection-1.json': (collection: any) => ({
           ...collection,
-          source: { id: targetCollection.id, version: 999 },
-          entries: collection.entries.map((entry: any, ix: number) => ({
+          source: { id: 999_999, version: 999 },
+          entries: collection.entries.map((entry: any) => ({
             ...entry,
-            source: {
-              id: targetCollection.entries[
-                ix % targetCollection.entries.length
-              ]!.id,
-            },
+            source: { id: 999_999 },
           })),
         }),
       })
 
-      expect(() =>
-        validateElementImportPackageBuffer(spoofedPackage)
-      ).not.toThrow()
-
-      const result = await importElementPackageBuffer(
-        {
-          buffer: spoofedPackage,
-          selectedElementRefs: [`element-${selection.id}`],
-        },
-        userTwoCtx
+      expect(() => validateElementImportPackageBuffer(spoofedPackage)).toThrow(
+        /source/i
       )
-
-      expect(result).toEqual({
-        importedElements: 1,
-        importedAnswerCollections: 1,
-      })
-
-      const importedCollection = await prisma.answerCollection.findFirstOrThrow(
-        {
-          where: {
-            ownerId: userTwo.id,
-            name: answerCollection.name,
-          },
-          include: { entries: true },
-        }
-      )
-      expect(importedCollection.id).not.toBe(answerCollection.id)
-      expect(importedCollection.id).not.toBe(targetCollection.id)
-
-      const targetEntryIds = targetCollection.entries.map((entry) => entry.id)
-      const originalEntryIds = entries.map((entry) => entry.id)
-      const importedSelection = await prisma.element.findFirstOrThrow({
-        where: { ownerId: userTwo.id, name: selection.name },
-        include: { answerCollectionItems: true },
-      })
-      expect(importedSelection.id).not.toBe(selection.id)
-      expect(importedSelection.id).not.toBe(targetElement.id)
-      expect(importedSelection.answerCollectionId).toBe(importedCollection.id)
-      expect(importedSelection.answerCollectionId).not.toBe(targetCollection.id)
-      expect(
-        importedSelection.answerCollectionItems.map((entry) => entry.id)
-      ).not.toEqual(expect.arrayContaining(originalEntryIds))
-      expect(
-        importedSelection.answerCollectionItems.map((entry) => entry.id)
-      ).not.toEqual(expect.arrayContaining(targetEntryIds))
     })
 
     it('rejects selected element refs that are not present in the package', async () => {
@@ -514,7 +1524,7 @@ describe('Secure element import/export packages', () => {
         importElementPackageBuffer(
           {
             buffer: exported.buffer,
-            selectedElementRefs: [`element-${selection.id}`, 'element-999999'],
+            selectedElementRefs: ['element-1', 'element-999999'],
           },
           userTwoCtx
         )
@@ -534,10 +1544,6 @@ describe('Secure element import/export packages', () => {
         },
       ]
       const queries = [
-        {
-          field: 'getElementDownloadLink',
-          selection: 'filename',
-        },
         {
           field: 'getElementExportPackageLink',
           selection: 'filename',
@@ -632,27 +1638,80 @@ describe('Secure element import/export packages', () => {
             { blobName },
             userTwoCtx
           )
+          expect(validation.importToken).toEqual(expect.any(String))
           await expect(
             importElementPackage(
               {
-                importToken: validation.importToken,
-                selectedElementRefs: [`element-${selection.id}`],
+                importToken: validation.importToken!,
+                selectedElementRefs: ['element-1'],
               },
               userTwoCtx
             )
           ).resolves.toEqual({
             importedElements: 1,
             importedAnswerCollections: 1,
+            skippedElements: 0,
           })
           await expect(
             importElementPackage(
               {
-                importToken: validation.importToken,
-                selectedElementRefs: [`element-${selection.id}`],
+                importToken: validation.importToken!,
+                selectedElementRefs: ['element-1'],
               },
               userTwoCtx
             )
           ).rejects.toThrow(/try again later/i)
+        }
+      )
+    })
+
+    it('returns validation error codes without an import token for invalid uploads', async () => {
+      const blobName = `imports/${userTwoCtx.user.sub}/${randomUUID()}-package.zip`
+      const missingBlobName = `imports/${userTwoCtx.user.sub}/${randomUUID()}-missing.zip`
+      const oversizedBlobName = `imports/${userTwoCtx.user.sub}/${randomUUID()}-oversized.zip`
+
+      await withEnv(
+        {
+          IMPORT_EXPORT_PACKAGE_STORAGE: 'local',
+          NODE_ENV: 'test',
+        },
+        async () => {
+          await writeLocalImportExportPackageBlob(
+            blobName,
+            createValidationPackage({}, { options: { choices: [] } })
+          )
+
+          await expect(
+            validateElementImportPackage({ blobName }, userTwoCtx)
+          ).resolves.toMatchObject({
+            importToken: null,
+            errors: ['IMPORT_INVALID_OPTIONS'],
+          })
+
+          await writeLocalImportExportPackageBlob(
+            oversizedBlobName,
+            Buffer.alloc(10 * 1024 * 1024 + 1)
+          )
+
+          await expect(
+            validateElementImportPackage(
+              { blobName: oversizedBlobName },
+              userTwoCtx
+            )
+          ).resolves.toMatchObject({
+            importToken: null,
+            errors: ['IMPORT_PACKAGE_TOO_LARGE'],
+          })
+
+          await expect(
+            validateElementImportPackage(
+              { blobName: missingBlobName },
+              userTwoCtx
+            )
+          ).resolves.toMatchObject({
+            importToken: null,
+            errors: ['IMPORT_PACKAGE_NOT_FOUND'],
+          })
         }
       )
     })
@@ -705,7 +1764,7 @@ describe('Secure element import/export packages', () => {
 
           await expect(
             cleanupImportExportPackages({ now, ttlHours: 24 })
-          ).resolves.toEqual({ deletedPackages: 2 })
+          ).resolves.toEqual({ deletedPackages: 2, deletedMediaFiles: 0 })
           await expect(
             readLocalImportExportPackageBlob(expiredImportBlob)
           ).rejects.toThrow()
@@ -754,7 +1813,7 @@ async function clearPackageRateLimitKeys(
 }
 
 async function withEnv<T>(
-  overrides: Record<string, string>,
+  overrides: Record<string, string | undefined>,
   fn: () => Promise<T>
 ) {
   const previousValues = new Map(
@@ -763,7 +1822,11 @@ async function withEnv<T>(
 
   try {
     for (const [key, value] of Object.entries(overrides)) {
-      process.env[key] = value
+      if (typeof value === 'undefined') {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
     }
 
     return await fn()
@@ -909,14 +1972,15 @@ async function seedPackageFixture(
 function createValidationPackage(
   manifestOverrides: Partial<Record<string, unknown>> = {},
   elementOverrides: Partial<Record<string, unknown>> = {},
-  extraFiles: { path: string; data: string }[] = []
+  extraFiles: { path: string; data: Buffer | string }[] = []
 ) {
   const manifest = {
     type: 'klicker-element-package',
-    version: 1,
+    version: 3,
     createdAt: new Date().toISOString(),
     elements: [{ ref: 'element-1', file: 'elements/element-1.json' }],
     answerCollections: [],
+    media: [],
     ...manifestOverrides,
   }
   const element = {
@@ -958,7 +2022,7 @@ function createSelectionValidationPackage({
 }) {
   const manifest = {
     type: 'klicker-element-package',
-    version: 1,
+    version: 3,
     createdAt: new Date().toISOString(),
     elements: [
       {
@@ -971,6 +2035,7 @@ function createSelectionValidationPackage({
       { ref: 'collection-1', file: 'answer-collections/collection-1.json' },
       { ref: 'collection-2', file: 'answer-collections/collection-2.json' },
     ],
+    media: [],
   }
   const collectionOne = {
     ref: 'collection-1',
@@ -1015,9 +2080,10 @@ function createSelectionValidationPackage({
   ])
 }
 
-function rewriteZipPath(buffer: Buffer) {
-  const from = Buffer.from('elements/element-1.json')
-  const to = Buffer.from('element/../entry-1.json')
+function createZipWithInvalidEntryPath() {
+  const buffer = createZip([{ path: 'safe/entry-file.json', data: 'content' }])
+  const from = Buffer.from('safe/entry-file.json')
+  const to = Buffer.from('safe/../entry-x.json')
   if (from.length !== to.length) {
     throw new Error('ZIP test path replacement must keep the same length.')
   }
@@ -1034,6 +2100,66 @@ function rewriteZipPath(buffer: Buffer) {
 
   expect(replacements).toBeGreaterThanOrEqual(2)
   return rewritten
+}
+
+function createZipWithCentralLocalPathMismatch() {
+  const buffer = createZip([{ path: 'safe/file-a.json', data: 'content' }])
+  const from = Buffer.from('safe/file-a.json')
+  const to = Buffer.from('safe/file-b.json')
+  if (from.length !== to.length) {
+    throw new Error('ZIP test path replacement must keep the same length.')
+  }
+
+  const rewritten = Buffer.from(buffer)
+  const offset = rewritten.indexOf(from)
+  expect(offset).toBeGreaterThan(-1)
+  to.copy(rewritten, offset)
+  return rewritten
+}
+
+function createZipWithHugeDeclaredSize() {
+  const buffer = createZip([{ path: 'small.txt', data: 'x' }])
+  const rewritten = Buffer.from(buffer)
+  const centralDirectoryOffset = rewritten.readUInt32LE(
+    rewritten.length - 22 + 16
+  )
+  rewritten.writeUInt32LE(0xffff_ffff, centralDirectoryOffset + 24)
+  return rewritten
+}
+
+function createZipWithDataDescriptorFlags(buffer: Buffer) {
+  const rewritten = Buffer.from(buffer)
+  const entryCount = rewritten.readUInt16LE(rewritten.length - 22 + 10)
+  let centralOffset = rewritten.readUInt32LE(rewritten.length - 22 + 16)
+
+  for (let ix = 0; ix < entryCount; ix++) {
+    const fileNameLength = rewritten.readUInt16LE(centralOffset + 28)
+    const extraLength = rewritten.readUInt16LE(centralOffset + 30)
+    const commentLength = rewritten.readUInt16LE(centralOffset + 32)
+    const localHeaderOffset = rewritten.readUInt32LE(centralOffset + 42)
+
+    rewritten.writeUInt16LE(0x0008, centralOffset + 8)
+    rewritten.writeUInt16LE(0x0008, localHeaderOffset + 6)
+    rewritten.writeUInt32LE(0, localHeaderOffset + 14)
+    rewritten.writeUInt32LE(0, localHeaderOffset + 18)
+    rewritten.writeUInt32LE(0, localHeaderOffset + 22)
+
+    centralOffset += 46 + fileNameLength + extraLength + commentLength
+  }
+
+  return rewritten
+}
+
+function createDeterministicBuffer(seed: number, length: number) {
+  const buffer = Buffer.alloc(length)
+  let value = seed >>> 0
+
+  for (let ix = 0; ix < length; ix++) {
+    value = (value * 1664525 + 1013904223) >>> 0
+    buffer[ix] = value & 0xff
+  }
+
+  return buffer
 }
 
 function rewritePackageJson(

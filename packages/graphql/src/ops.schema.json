@@ -3063,34 +3063,6 @@
       },
       {
         "kind": "OBJECT",
-        "name": "AnswerCollectionDownloadLink",
-        "description": null,
-        "isOneOf": null,
-        "fields": [
-          {
-            "name": "downloadLink",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "OBJECT",
         "name": "AnswerCollectionEntry",
         "description": null,
         "isOneOf": null,
@@ -12723,7 +12695,7 @@
       },
       {
         "kind": "OBJECT",
-        "name": "ElementDownloadLink",
+        "name": "ElementExportPackageLink",
         "description": null,
         "isOneOf": null,
         "fields": [
@@ -12829,6 +12801,30 @@
           },
           {
             "name": "errors",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "warnings",
             "description": null,
             "args": [],
             "type": {
@@ -13252,13 +13248,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -13300,6 +13292,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "alreadyImported",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "description",
             "description": null,
             "args": [],
@@ -13335,6 +13343,18 @@
                   }
                 }
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "existingAnswerCollectionId",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -13383,6 +13403,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "alreadyImported",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "answerCollectionEntries",
             "description": null,
@@ -13488,6 +13524,18 @@
             "deprecationReason": null
           },
           {
+            "name": "existingElementId",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "explanation",
             "description": null,
             "args": [],
@@ -13574,6 +13622,30 @@
                 "kind": "ENUM",
                 "name": "ElementStatus",
                 "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "tags",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                }
               }
             },
             "isDeprecated": false,
@@ -13669,6 +13741,22 @@
           },
           {
             "name": "importedElements",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "skippedElements",
             "description": null,
             "args": [],
             "type": {
@@ -36073,35 +36161,6 @@
             "deprecationReason": null
           },
           {
-            "name": "getAnswerCollectionDownloadLink",
-            "description": null,
-            "args": [
-              {
-                "name": "answerCollectionId",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "AnswerCollectionDownloadLink",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "getAnswerCollectionsElements",
             "description": null,
             "args": [
@@ -37029,43 +37088,6 @@
             "deprecationReason": null
           },
           {
-            "name": "getElementDownloadLink",
-            "description": null,
-            "args": [
-              {
-                "name": "elementIds",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "LIST",
-                    "name": null,
-                    "ofType": {
-                      "kind": "NON_NULL",
-                      "name": null,
-                      "ofType": {
-                        "kind": "SCALAR",
-                        "name": "Int",
-                        "ofType": null
-                      }
-                    }
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "ElementDownloadLink",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "getElementExportPackageLink",
             "description": null,
             "args": [
@@ -37096,7 +37118,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "ElementDownloadLink",
+              "name": "ElementExportPackageLink",
               "ofType": null
             },
             "isDeprecated": false,

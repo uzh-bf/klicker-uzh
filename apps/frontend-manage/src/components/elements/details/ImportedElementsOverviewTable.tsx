@@ -32,6 +32,12 @@ type AnswerCollectionPreviewEntry = {
   value: string
 }
 
+type PackagePreviewElementMeta = {
+  tags: string[]
+  alreadyImported: boolean
+  existingElementId?: number | null
+}
+
 const StatusColors: Record<ElementStatus, string> = {
   [ElementStatus.Draft]: 'bg-slate-400 hover:bg-slate-500',
   [ElementStatus.Review]: 'bg-violet-400 hover:bg-violet-500',
@@ -62,12 +68,14 @@ const getElementDataType = (elementType: ElementType) => {
 
 function ImportedElementsOverviewTable({
   elements,
+  elementMeta,
   answerCollectionEntries,
   importToken,
   refetchElements,
   onClose,
 }: {
   elements: Record<string, ElementFormTypes>
+  elementMeta: Record<string, PackagePreviewElementMeta>
   answerCollectionEntries: Record<string, AnswerCollectionPreviewEntry[]>
   importToken: string
   refetchElements: () => Promise<void>
@@ -140,7 +148,13 @@ function ImportedElementsOverviewTable({
       }}
     >
       {({ values, isSubmitting }) => {
-        const selectedCount = Object.values(values).filter(Boolean).length
+        const selectedElementKeys = Object.keys(elements).filter(
+          (element) => values[element]
+        )
+        const selectedCount = selectedElementKeys.length
+        const duplicateCount = Object.values(elementMeta).filter(
+          (meta) => meta.alreadyImported
+        ).length
         const previewedElement = previewedElementId
           ? elements[previewedElementId]
           : undefined
@@ -168,51 +182,79 @@ function ImportedElementsOverviewTable({
         return (
           <Form className="flex h-[34rem] max-h-[calc(100vh-18rem)] min-h-0 flex-col gap-4 overflow-auto pr-1 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:overflow-hidden lg:pr-0">
             <div className="flex min-h-[18rem] flex-col gap-3 overflow-hidden lg:min-h-0">
-              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto rounded-md border border-solid p-2 sm:hidden">
-                {Object.entries(elements).map(([key, element], index) => (
-                  <div
-                    key={`element-card-${key}`}
-                    className={twMerge(
-                      'bg-muted/30 rounded-md p-2',
-                      previewedElementId === key && 'bg-primary-20'
+              {duplicateCount > 0 ? (
+                <div data-cy="element-import-duplicate-summary">
+                  <UserNotification
+                    type="warning"
+                    message={t(
+                      'manage.elements.elementImportDuplicateSummary',
+                      {
+                        count: duplicateCount,
+                      }
                     )}
-                    data-cy={`element-import-${index}-mobile`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <FormikSwitchField
-                        name={`${key}`}
-                        id={`element-import-switch-${key}-mobile`}
-                        size="sm"
-                        data={{
-                          cy: `element-${index}-import-mobile`,
-                        }}
-                        className={{ root: 'mt-0.5 flex-none' }}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="line-clamp-2 break-words text-sm font-bold">
-                          {element.name}
+                    className={{ root: 'text-sm' }}
+                  />
+                </div>
+              ) : null}
+
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto rounded-md border border-solid p-2 sm:hidden">
+                {Object.entries(elements).map(([key, element], index) => {
+                  const meta = elementMeta[key]
+
+                  return (
+                    <div
+                      key={`element-card-${key}`}
+                      className={twMerge(
+                        'bg-muted/30 rounded-md p-2',
+                        previewedElementId === key && 'bg-primary-20'
+                      )}
+                      data-cy={`element-import-${index}-mobile`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <FormikSwitchField
+                          name={`${key}`}
+                          id={`element-import-switch-${key}-mobile`}
+                          size="sm"
+                          data={{
+                            cy: `element-${index}-import-mobile`,
+                          }}
+                          className={{ root: 'mt-0.5 flex-none' }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="line-clamp-2 break-words text-sm font-bold">
+                            {element.name}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                            <span>{t(`shared.${element.type}.typeLabel`)}</span>
+                            <Badge
+                              className={twMerge(
+                                'text-white',
+                                StatusColors[element.status]
+                              )}
+                            >
+                              {t(`shared.${element.status}.statusLabel`)}
+                            </Badge>
+                            {meta?.alreadyImported ? (
+                              <span
+                                data-cy={`element-import-duplicate-${index}-mobile`}
+                              >
+                                <Badge className="border-amber-300 bg-amber-50 text-amber-800">
+                                  {t('manage.elements.elementImportDuplicate')}
+                                </Badge>
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                          <span>{t(`shared.${element.type}.typeLabel`)}</span>
-                          <Badge
-                            className={twMerge(
-                              'text-white',
-                              StatusColors[element.status]
-                            )}
-                          >
-                            {t(`shared.${element.status}.statusLabel`)}
-                          </Badge>
+                        <div className="flex-none">
+                          {renderPreviewButton(
+                            key,
+                            `preview-imported-element-${index}-mobile`
+                          )}
                         </div>
-                      </div>
-                      <div className="flex-none">
-                        {renderPreviewButton(
-                          key,
-                          `preview-imported-element-${index}-mobile`
-                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
 
               <div className="hidden min-h-0 flex-1 overflow-auto rounded-md border border-solid sm:block">
@@ -237,55 +279,73 @@ function ImportedElementsOverviewTable({
                     </ShadcnTableRow>
                   </ShadcnTableHeader>
                   <ShadcnTableBody>
-                    {Object.entries(elements).map(([key, element], index) => (
-                      <ShadcnTableRow
-                        key={`element-${key}`}
-                        className={twMerge(
-                          'bg-muted/30 hover:bg-muted/80',
-                          previewedElementId === key &&
-                            'bg-primary-20 hover:bg-primary-20'
-                        )}
-                        data-cy={`element-import-${index}`}
-                      >
-                        <ShadcnTableCell className="w-16 py-1">
-                          <FormikSwitchField
-                            name={`${key}`}
-                            id={`element-import-switch-${key}`}
-                            size="sm"
-                            data={{
-                              cy: `element-${index}-import`,
-                            }}
-                            className={{ root: 'justify-center' }}
-                          />
-                        </ShadcnTableCell>
-                        <ShadcnTableCell className="min-w-0 py-1">
-                          <span className="line-clamp-2 break-words">
-                            {element.name}
-                          </span>
-                        </ShadcnTableCell>
-                        <ShadcnTableCell className="w-28 py-1">
-                          <span className="line-clamp-2">
-                            {t(`shared.${element.type}.typeLabel`)}
-                          </span>
-                        </ShadcnTableCell>
-                        <ShadcnTableCell className="w-24 py-1">
-                          <Badge
-                            className={twMerge(
-                              'text-white',
-                              StatusColors[element.status]
-                            )}
-                          >
-                            {t(`shared.${element.status}.statusLabel`)}
-                          </Badge>
-                        </ShadcnTableCell>
-                        <ShadcnTableCell className="w-14 py-1 text-center">
-                          {renderPreviewButton(
-                            key,
-                            `preview-imported-element-${index}`
+                    {Object.entries(elements).map(([key, element], index) => {
+                      const meta = elementMeta[key]
+
+                      return (
+                        <ShadcnTableRow
+                          key={`element-${key}`}
+                          className={twMerge(
+                            'bg-muted/30 hover:bg-muted/80',
+                            previewedElementId === key &&
+                              'bg-primary-20 hover:bg-primary-20'
                           )}
-                        </ShadcnTableCell>
-                      </ShadcnTableRow>
-                    ))}
+                          data-cy={`element-import-${index}`}
+                        >
+                          <ShadcnTableCell className="w-16 py-1">
+                            <FormikSwitchField
+                              name={`${key}`}
+                              id={`element-import-switch-${key}`}
+                              size="sm"
+                              data={{
+                                cy: `element-${index}-import`,
+                              }}
+                              className={{ root: 'justify-center' }}
+                            />
+                          </ShadcnTableCell>
+                          <ShadcnTableCell className="min-w-0 py-1">
+                            <div className="flex min-w-0 flex-col gap-1">
+                              <span className="line-clamp-2 break-words">
+                                {element.name}
+                              </span>
+                              {meta?.alreadyImported ? (
+                                <span
+                                  className="w-fit"
+                                  data-cy={`element-import-duplicate-${index}`}
+                                >
+                                  <Badge className="border-amber-300 bg-amber-50 text-amber-800">
+                                    {t(
+                                      'manage.elements.elementImportDuplicate'
+                                    )}
+                                  </Badge>
+                                </span>
+                              ) : null}
+                            </div>
+                          </ShadcnTableCell>
+                          <ShadcnTableCell className="w-28 py-1">
+                            <span className="line-clamp-2">
+                              {t(`shared.${element.type}.typeLabel`)}
+                            </span>
+                          </ShadcnTableCell>
+                          <ShadcnTableCell className="w-24 py-1">
+                            <Badge
+                              className={twMerge(
+                                'text-white',
+                                StatusColors[element.status]
+                              )}
+                            >
+                              {t(`shared.${element.status}.statusLabel`)}
+                            </Badge>
+                          </ShadcnTableCell>
+                          <ShadcnTableCell className="w-14 py-1 text-center">
+                            {renderPreviewButton(
+                              key,
+                              `preview-imported-element-${index}`
+                            )}
+                          </ShadcnTableCell>
+                        </ShadcnTableRow>
+                      )
+                    })}
                   </ShadcnTableBody>
                 </ShadcnTable>
               </div>

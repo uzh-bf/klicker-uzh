@@ -5,6 +5,10 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import {
+  computeAnswerCollectionImportFingerprint,
+  refreshAnswerCollectionImportFingerprint,
+} from './importExportFingerprints.js'
 import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
@@ -23,6 +27,7 @@ async function incrementCollectionVersion(
       },
     },
   })
+  await refreshAnswerCollectionImportFingerprint(collectionId, ctx.prisma)
 
   // invalidate the answer collection
   ctx.emitter.emit('invalidate', {
@@ -50,6 +55,12 @@ export async function createAnswerCollection(
       data: {
         name,
         description,
+        importFingerprint: computeAnswerCollectionImportFingerprint({
+          name,
+          description,
+          version: 1,
+          entries: answers.map((value) => ({ value })),
+        }),
         entries: {
           create: answers.map((answer) => ({
             value: answer,
@@ -106,10 +117,17 @@ export async function duplicateAnswerCollection(
 
   // create a new collection with the same entries
   const duplicatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    const name = `${collection.name} (Copy)`
     const newCollection = await prisma.answerCollection.create({
       data: {
-        name: `${collection.name} (Copy)`,
+        name,
         description: collection.description,
+        importFingerprint: computeAnswerCollectionImportFingerprint({
+          name,
+          description: collection.description,
+          version: 1,
+          entries: collection.entries.map((entry) => ({ value: entry.value })),
+        }),
         entries: {
           create: collection.entries.map((entry) => ({
             value: entry.value,
@@ -441,6 +459,13 @@ export async function modifyAnswerCollection(
         version: { increment: 1 },
       },
       include: { entries: true },
+    })
+    await tx.answerCollection.update({
+      where: { id },
+      data: {
+        importFingerprint:
+          computeAnswerCollectionImportFingerprint(updateResult),
+      },
     })
 
     // invalidate the answer collection

@@ -270,10 +270,6 @@ type AnswerCollectionBasic {
   version: Int!
 }
 
-type AnswerCollectionDownloadLink {
-  downloadLink: String!
-}
-
 type AnswerCollectionEntry {
   id: Int!
   numSolutionUsages: Int
@@ -1084,7 +1080,7 @@ enum ElementDisplayMode {
   LIST
 }
 
-type ElementDownloadLink {
+type ElementExportPackageLink {
   downloadLink: String!
   expiresAt: Date
   filename: String
@@ -1094,6 +1090,7 @@ type ElementExportPackagePreview {
   answerCollections: [ElementExportPackagePreviewAnswerCollection!]!
   elements: [ElementExportPackagePreviewElement!]!
   errors: [String!]!
+  warnings: [String!]!
 }
 
 type ElementExportPackagePreviewAnswerCollection {
@@ -1128,30 +1125,35 @@ type ElementImportPackagePreview {
   answerCollections: [ElementImportPackagePreviewAnswerCollection!]!
   elements: [ElementImportPackagePreviewElement!]!
   errors: [String!]!
-  importToken: String!
+  importToken: String
   warnings: [String!]!
 }
 
 type ElementImportPackagePreviewAnswerCollection {
+  alreadyImported: Boolean!
   description: String!
   entries: [ElementImportPackagePreviewEntry!]!
+  existingAnswerCollectionId: Int
   name: String!
   ref: String!
 }
 
 type ElementImportPackagePreviewElement {
+  alreadyImported: Boolean!
   answerCollectionEntries: [ElementImportPackagePreviewEntry!]!
   answerCollectionId: Int
   answerCollectionItems: [ElementImportPackagePreviewEntry!]!
   answerCollectionRef: String
   basePoints: Boolean!
   content: String!
+  existingElementId: Int
   explanation: String
   name: String!
   options: Json!
   pointsMultiplier: Int!
   ref: String!
   status: ElementStatus!
+  tags: [String!]!
   type: ElementType!
 }
 
@@ -1163,6 +1165,7 @@ type ElementImportPackagePreviewEntry {
 type ElementImportPackageResult {
   importedAnswerCollections: Int!
   importedElements: Int!
+  skippedElements: Int!
 }
 
 type ElementImportPackageUpload {
@@ -2433,7 +2436,6 @@ type Query {
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getActivityTemplate(templateId: String!): ActivityTemplate
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
-  getAnswerCollectionDownloadLink(answerCollectionId: Int!): AnswerCollectionDownloadLink
   getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getAnswerCollectionsInfoBasic: [AnswerCollectionBasic!]
@@ -2463,8 +2465,7 @@ type Query {
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getDerivedObjectPermissions(objectId: String!, objectType: ObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
-  getElementDownloadLink(elementIds: [Int!]!): ElementDownloadLink
-  getElementExportPackageLink(elementIds: [Int!]!): ElementDownloadLink
+  getElementExportPackageLink(elementIds: [Int!]!): ElementExportPackageLink
   getElementExportPackagePreview(elementIds: [Int!]!): ElementExportPackagePreview
   getElementSummary(id: Int!): ElementSummary
   getGradingGroupActivity(id: String!): GroupActivity

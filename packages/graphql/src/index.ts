@@ -1,7 +1,9 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
+export { assertImportExportTokenSecretConfig } from './services/elementImportExport.js'
 export {
+  assertImportExportPackageStorageConfig,
   cleanupImportExportPackages,
   decodeLocalImportExportPackageBlobName,
   handleCleanupImportExportPackages,

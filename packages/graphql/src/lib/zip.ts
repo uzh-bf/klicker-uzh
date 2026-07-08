@@ -17,6 +17,10 @@ const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50
 const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50
 const STORE = 0
 const DEFLATE = 8
+const DATA_DESCRIPTOR_FLAG = 0x0008
+const UTF8_FILENAME_FLAG = 0x0800
+const SUPPORTED_GENERAL_PURPOSE_FLAGS =
+  DATA_DESCRIPTOR_FLAG | UTF8_FILENAME_FLAG
 
 const crcTable = new Uint32Array(256)
 for (let n = 0; n < 256; n++) {
@@ -153,6 +157,8 @@ export function parseZip(
     }
 
     const compressionMethod = buffer.readUInt16LE(centralOffset + 10)
+    const generalPurposeBitFlag = buffer.readUInt16LE(centralOffset + 8)
+    const expectedChecksum = buffer.readUInt32LE(centralOffset + 16)
     const compressedSize = buffer.readUInt32LE(centralOffset + 20)
     const uncompressedSize = buffer.readUInt32LE(centralOffset + 24)
     const fileNameLength = buffer.readUInt16LE(centralOffset + 28)
@@ -170,6 +176,14 @@ export function parseZip(
 
     validateZipPath(path)
 
+    if ((generalPurposeBitFlag & ~SUPPORTED_GENERAL_PURPOSE_FLAGS) !== 0) {
+      throw new Error('Unsupported ZIP entry flags.')
+    }
+
+    if (compressionMethod !== STORE && compressionMethod !== DEFLATE) {
+      throw new Error('Unsupported ZIP compression method.')
+    }
+
     totalUncompressedBytes += uncompressedSize
     if (totalUncompressedBytes > maxUncompressedBytes) {
       throw new Error('ZIP archive is too large.')
@@ -184,6 +198,11 @@ export function parseZip(
 
     const localFileNameLength = buffer.readUInt16LE(localHeaderOffset + 26)
     const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28)
+    const localFlags = buffer.readUInt16LE(localHeaderOffset + 6)
+    const localCompressionMethod = buffer.readUInt16LE(localHeaderOffset + 8)
+    const localChecksum = buffer.readUInt32LE(localHeaderOffset + 14)
+    const localCompressedSize = buffer.readUInt32LE(localHeaderOffset + 18)
+    const localUncompressedSize = buffer.readUInt32LE(localHeaderOffset + 22)
     const localFileNameStart = localHeaderOffset + 30
     const localFileNameEnd = localFileNameStart + localFileNameLength
     const dataStart = localFileNameEnd + localExtraLength
@@ -201,6 +220,34 @@ export function parseZip(
       throw new Error('ZIP central and local paths do not match.')
     }
 
+    if (
+      localFlags !== generalPurposeBitFlag ||
+      localCompressionMethod !== compressionMethod
+    ) {
+      throw new Error('ZIP central and local metadata do not match.')
+    }
+
+    const usesDataDescriptor = Boolean(
+      generalPurposeBitFlag & DATA_DESCRIPTOR_FLAG
+    )
+    const localSizeMetadataMatches =
+      localChecksum === expectedChecksum &&
+      localCompressedSize === compressedSize &&
+      localUncompressedSize === uncompressedSize
+    const localSizeMetadataEmpty =
+      localChecksum === 0 &&
+      localCompressedSize === 0 &&
+      localUncompressedSize === 0
+
+    if (
+      (!usesDataDescriptor && !localSizeMetadataMatches) ||
+      (usesDataDescriptor &&
+        !localSizeMetadataMatches &&
+        !localSizeMetadataEmpty)
+    ) {
+      throw new Error('ZIP central and local metadata do not match.')
+    }
+
     if (dataEnd > buffer.length) {
       throw new Error('Invalid ZIP entry size.')
     }
@@ -209,16 +256,16 @@ export function parseZip(
     const data =
       compressionMethod === STORE
         ? Buffer.from(compressedData)
-        : compressionMethod === DEFLATE
-          ? inflateRawSync(compressedData)
-          : null
-
-    if (!data) {
-      throw new Error('Unsupported ZIP compression method.')
-    }
+        : inflateRawSync(compressedData, {
+            maxOutputLength: uncompressedSize,
+          })
 
     if (data.length !== uncompressedSize) {
       throw new Error('Invalid ZIP entry length.')
+    }
+
+    if (crc32(data) !== expectedChecksum) {
+      throw new Error('Invalid ZIP entry checksum.')
     }
 
     entries.push({

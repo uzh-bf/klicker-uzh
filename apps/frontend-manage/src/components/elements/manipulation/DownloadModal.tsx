@@ -16,9 +16,15 @@ import { RefObject, useMemo, useState } from 'react'
 import PackageAnswerCollectionOverview from './PackageAnswerCollectionOverview'
 import SelectedElementsList from './batchOperations/SelectedElementsList'
 
+type CachedDownloadPackage = {
+  downloadLink: string
+  filename: string
+  expiresAt: string
+}
+
 async function createDownload(downloadLink: string, filename: string) {
   const response = await fetch(downloadLink)
-  if (!response.ok) throw new Error('Failed to fetch download link.')
+  if (!response.ok) throw new Error('DOWNLOAD_FAILED')
 
   const blob = await response.blob()
   const blobUrl = URL.createObjectURL(blob)
@@ -30,9 +36,20 @@ async function createDownload(downloadLink: string, filename: string) {
   URL.revokeObjectURL(blobUrl)
 }
 
+function translateExportPackageMessage(t: any, code: string) {
+  switch (code) {
+    case 'IMPORT_EXTERNAL_MEDIA_NOT_PACKAGED':
+      return t('manage.elements.elementImportExternalMediaWarning')
+    case 'IMPORT_MEDIA_NOT_INCLUDED':
+      return t('manage.elements.elementImportMediaMissingWarning')
+    default:
+      return code
+  }
+}
+
 const DownloadSelectedElementsPackage: React.FC<{
   selectedElements: Element[]
-  seenElementIds: RefObject<Record<string, string>>
+  seenElementIds: RefObject<Record<string, CachedDownloadPackage>>
   onError: (message: string) => void
   disabled?: boolean
 }> = ({ selectedElements, seenElementIds, onError, disabled = false }) => {
@@ -51,9 +68,12 @@ const DownloadSelectedElementsPackage: React.FC<{
         .map((element) => `${element.id}:${element.version}`)
         .join('-')
 
-      const cachedLink = seenElementIds.current[elementsIdentifier]
-      const packageLink = cachedLink
-        ? { downloadLink: cachedLink, filename: 'klicker-elements.zip' }
+      const cachedPackage = seenElementIds.current[elementsIdentifier]
+      const cachedPackageValid =
+        cachedPackage &&
+        new Date(cachedPackage.expiresAt).getTime() - Date.now() > 60_000
+      const packageLink = cachedPackageValid
+        ? cachedPackage
         : await fetchDownloadLink({
             variables: { elementIds: selectedElementIds },
             fetchPolicy: 'network-only',
@@ -63,14 +83,20 @@ const DownloadSelectedElementsPackage: React.FC<{
         throw new Error('No download link received.')
       }
 
-      seenElementIds.current[elementsIdentifier] = packageLink.downloadLink
+      const downloadPackage = {
+        downloadLink: packageLink.downloadLink,
+        filename: packageLink.filename ?? 'klicker-elements.zip',
+        expiresAt: packageLink.expiresAt ?? new Date(0).toISOString(),
+      }
+
+      seenElementIds.current[elementsIdentifier] = downloadPackage
 
       await createDownload(
-        packageLink.downloadLink,
-        packageLink.filename ?? 'klicker-elements.zip'
+        downloadPackage.downloadLink,
+        downloadPackage.filename
       )
-    } catch (err: any) {
-      const message = err.message ?? t('manage.elements.elementDownloadFailed')
+    } catch {
+      const message = t('manage.elements.elementDownloadFailed')
       onError(message)
       toast({
         options: {
@@ -100,7 +126,7 @@ function DownloadModal({
   onClose,
 }: {
   selectedElements: Element[]
-  seenElementIds: RefObject<Record<string, string>>
+  seenElementIds: RefObject<Record<string, CachedDownloadPackage>>
   onClose: () => void
 }) {
   const t = useTranslations()
@@ -121,13 +147,16 @@ function DownloadModal({
   const exportPreview = exportPreviewData?.getElementExportPackagePreview
   const exportPreviewError = exportPreviewQueryError?.message ?? ''
   const exportPreviewErrors = exportPreview?.errors ?? []
+  const exportPreviewWarnings = exportPreview?.warnings ?? []
   const exportPreviewErrorMessage = exportPreviewError
     ? t('manage.elements.packageElementExportPermissionError')
-    : exportPreviewErrors.includes('ANSWER_COLLECTION_EXPORT_PERMISSION')
-      ? t('manage.elements.packageAnswerCollectionExportPermissionError')
-      : exportPreviewErrors.includes('ELEMENT_EXPORT_PERMISSION')
-        ? t('manage.elements.packageElementExportPermissionError')
-        : ''
+    : exportPreviewErrors.includes('TOO_MANY_ELEMENTS')
+      ? t('manage.elements.packageTooManyElementsError')
+      : exportPreviewErrors.includes('ANSWER_COLLECTION_EXPORT_PERMISSION')
+        ? t('manage.elements.packageAnswerCollectionExportPermissionError')
+        : exportPreviewErrors.includes('ELEMENT_EXPORT_PERMISSION')
+          ? t('manage.elements.packageElementExportPermissionError')
+          : ''
   const shownExportError = downloadError || exportPreviewErrorMessage
   const exportBlocked =
     Boolean(exportPreviewQueryError) || exportPreviewErrors.length > 0
@@ -184,6 +213,17 @@ function DownloadModal({
               />
             </div>
           )}
+          {exportPreviewWarnings.length > 0 ? (
+            <div data-cy="element-export-package-warning">
+              <UserNotification
+                type="warning"
+                message={exportPreviewWarnings
+                  .map((code: string) => translateExportPackageMessage(t, code))
+                  .join(' ')}
+                className={{ root: 'text-sm' }}
+              />
+            </div>
+          ) : null}
           <div className="flex justify-end">
             <DownloadSelectedElementsPackage
               selectedElements={selectedElements}

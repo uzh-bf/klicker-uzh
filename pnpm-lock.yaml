@@ -1972,9 +1972,6 @@ importers:
       '@types/express':
         specifier: ^4.17.23
         version: 4.17.23
-      '@types/lodash':
-        specifier: ^4.17.24
-        version: 4.17.24
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
@@ -2011,9 +2008,6 @@ importers:
       graphql-codegen-persisted-query-ids:
         specifier: ~0.2.0
         version: 0.2.0
-      lodash:
-        specifier: ~4.17.21
-        version: 4.17.21
       nodemon:
         specifier: ~3.1.14
         version: 3.1.14

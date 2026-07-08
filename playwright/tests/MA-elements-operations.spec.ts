@@ -1,3 +1,4 @@
+import { ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES } from '@klicker-uzh/types'
 import { Page, TestInfo } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
 import dmQuestionsData from '../../cypress/cypress/fixtures/DM-questions.json' with { type: 'json' }
@@ -654,6 +655,19 @@ async function uploadPackageFile(page: Page, filePath: string) {
     .getByTestId('element-import-dropzone')
     .locator('input[type="file"]')
     .setInputFiles(filePath)
+}
+
+function observePreparePackageUploadRequests(page: Page) {
+  let requests = 0
+
+  page.on('request', (request) => {
+    const postData = request.postData() ?? ''
+    if (postData.includes('PrepareElementImportPackageUpload')) {
+      requests++
+    }
+  })
+
+  return () => requests
 }
 
 async function importPackageFile(page: Page, filePath: string) {
@@ -2588,6 +2602,15 @@ test.describe('Create different types of elements (with and without sample solut
       await loginLecturer()
     })
 
+    test('Download action is disabled until at least one element is selected', async ({
+      page,
+    }) => {
+      await expect(page.getByTestId('elements-download')).toBeDisabled()
+      await expect(
+        page.getByTestId('download-selected-elements-package')
+      ).not.toBeAttached()
+    })
+
     test('Owner can export selected elements as a ZIP package', async ({
       page,
     }, testInfo) => {
@@ -2611,6 +2634,42 @@ test.describe('Create different types of elements (with and without sample solut
       const download = await downloadPromise
 
       expect(download.suggestedFilename()).toMatch(/\.zip$/)
+    })
+
+    test('Export preview warns about external media links without blocking download', async ({
+      page,
+    }, testInfo) => {
+      const elementName = `PW Package external media ${testInfo.workerIndex}`
+
+      await createQuestionSC({
+        name: elementName,
+        content: `External media package content https://example.com/media-${testInfo.workerIndex}.png`,
+        explanation: `External media explanation https://example.com/explanation-${testInfo.workerIndex}.jpg`,
+        choices: [
+          {
+            value: `Choice with https://example.com/choice-${testInfo.workerIndex}.webp`,
+            correct: true,
+          },
+          { value: 'Distractor', correct: false },
+        ],
+        userId: LECTURER_ID,
+      })
+
+      await page.goto(process.env.URL_MANAGE ?? URL_MANAGE, {
+        waitUntil: 'commit',
+      })
+      await expect(page.getByTestId('elements-search-input')).toBeVisible()
+      await validateElement(page, elementName)
+
+      await openExportPackageModal(page, [elementName])
+      await expect(
+        page.getByTestId('element-export-package-warning')
+      ).toContainText(
+        messages.manage.elements.elementImportExternalMediaWarning
+      )
+      await expect(
+        page.getByTestId('download-selected-elements-package')
+      ).toBeEnabled()
     })
 
     test('Downloaded package can be imported back with inline preview in the same modal', async ({
@@ -2768,6 +2827,34 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId('confirm-element-import')
       ).not.toBeAttached()
+    })
+
+    test('Non-ZIP and oversized uploads are rejected before SAS upload preparation', async ({
+      page,
+    }, testInfo) => {
+      const invalidTextPackage = testInfo.outputPath('invalid-elements.txt')
+      const oversizedPackage = testInfo.outputPath('oversized-elements.zip')
+
+      await writeFile(invalidTextPackage, Buffer.from('not a zip package'))
+      await writeFile(
+        oversizedPackage,
+        Buffer.alloc(ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES + 1)
+      )
+
+      await openImportPackageModal(page)
+      const getPrepareRequests = observePreparePackageUploadRequests(page)
+
+      await uploadPackageFile(page, invalidTextPackage)
+      await expect(
+        page.getByTestId('element-import-package-error')
+      ).toContainText(messages.manage.elements.elementImportInvalidFile)
+      expect(getPrepareRequests()).toBe(0)
+
+      await uploadPackageFile(page, oversizedPackage)
+      await expect(
+        page.getByTestId('element-import-package-error')
+      ).toContainText('10 MB')
+      expect(getPrepareRequests()).toBe(0)
     })
 
     test('READ permission cannot export an element package', async ({

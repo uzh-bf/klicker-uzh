@@ -23,6 +23,7 @@ model Element {
 
   version    Int     @default(1) // used to track question versions, incremented on each update
   originalId String?
+  importFingerprint String?
 
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
@@ -60,6 +61,8 @@ model Element {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([ownerId, importFingerprint])
 }
 
 enum ElementInstanceType {

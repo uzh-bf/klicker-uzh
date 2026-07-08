@@ -29,9 +29,21 @@ import type {
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { refreshElementImportFingerprint } from './importExportFingerprints.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
+
+async function refreshElementImportFingerprints(
+  elementIds: number[],
+  ctx: ContextWithUser
+) {
+  await Promise.all(
+    Array.from(new Set(elementIds)).map((elementId) =>
+      refreshElementImportFingerprint(elementId, ctx.prisma)
+    )
+  )
+}
 
 export async function getUserElements(
   {
@@ -690,6 +702,8 @@ export async function manipulateElement(
     })
   }
 
+  await refreshElementImportFingerprint(element.id, ctx.prisma)
+
   return {
     ...element,
     options: {
@@ -806,45 +820,45 @@ export async function applyElementBatchOperations(
   // needs to be sequential since element instance updates potentially include derived permission updates
   const updatedElements: DB.Element[] = []
   for (const element of dbElements) {
-    updatedElements.push(
-      await ctx.prisma.$transaction(async (tx) => {
-        // execute the element update
-        const updatedElement = await tx.element.update({
-          where: { id: element.id },
-          data: {
-            version: { increment: 1 },
-            isArchived: archive ? true : unarchive ? false : undefined,
-            status: status ?? undefined,
-            pointsMultiplier:
-              typeof multiplier !== 'undefined' && multiplier !== null
-                ? multiplier
-                : undefined,
-            basePoints:
-              typeof basePoints !== 'undefined' && basePoints !== null
-                ? element.type !== DB.ElementType.CONTENT &&
-                  element.type !== DB.ElementType.FLASHCARD
-                  ? basePoints
-                  : false
-                : undefined,
-          },
-        })
-
-        // if enabled, update the corresponding element instances
-        if (updateInstances) {
-          await updateElementInstances(
-            {
-              elementId: updatedElement.id,
-              includeTemplates: updateTemplateInstances,
-            },
-            tx,
-            ctx.emitter,
-            ctx.user.sub
-          )
-        }
-
-        return updatedElement
+    const updatedElement = await ctx.prisma.$transaction(async (tx) => {
+      // execute the element update
+      const updatedElement = await tx.element.update({
+        where: { id: element.id },
+        data: {
+          version: { increment: 1 },
+          isArchived: archive ? true : unarchive ? false : undefined,
+          status: status ?? undefined,
+          pointsMultiplier:
+            typeof multiplier !== 'undefined' && multiplier !== null
+              ? multiplier
+              : undefined,
+          basePoints:
+            typeof basePoints !== 'undefined' && basePoints !== null
+              ? element.type !== DB.ElementType.CONTENT &&
+                element.type !== DB.ElementType.FLASHCARD
+                ? basePoints
+                : false
+              : undefined,
+        },
       })
-    )
+
+      // if enabled, update the corresponding element instances
+      if (updateInstances) {
+        await updateElementInstances(
+          {
+            elementId: updatedElement.id,
+            includeTemplates: updateTemplateInstances,
+          },
+          tx,
+          ctx.emitter,
+          ctx.user.sub
+        )
+      }
+
+      return updatedElement
+    })
+    await refreshElementImportFingerprint(updatedElement.id, ctx.prisma)
+    updatedElements.push(updatedElement)
   }
 
   // return the number of successfully updated elements
@@ -867,6 +881,7 @@ export async function changeElementStatus(
     where: { id: elementId },
     data: { status },
   })
+  await refreshElementImportFingerprint(element.id, ctx.prisma)
 
   if (status && status !== previousElement.status) {
     const modificationDetails: ActivityLogModificationDetails = {
@@ -1042,22 +1057,38 @@ export async function editTag(
     return null
   }
 
-  // update the tag as requested
   const tag = await ctx.prisma.tag.update({
     where: { id, ownerId: ctx.user.sub },
     data: { name },
+    include: { questions: { select: { id: true } } },
   })
+  await refreshElementImportFingerprints(
+    tag.questions.map((element) => element.id),
+    ctx
+  )
 
   return tag
 }
 
 export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
+  const linkedElements = await ctx.prisma.element.findMany({
+    where: {
+      ownerId: ctx.user.sub,
+      tags: { some: { id } },
+    },
+    select: { id: true },
+  })
+
   const tag = await ctx.prisma.tag.delete({
     where: {
       id: id,
       ownerId: ctx.user.sub,
     },
   })
+  await refreshElementImportFingerprints(
+    linkedElements.map((element) => element.id),
+    ctx
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Tag',

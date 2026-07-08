@@ -4,6 +4,7 @@
 model AnswerCollection {
     id         Int  @id @default(autoincrement())
     originalId Int? // id of the original answer collection after import (copy)
+    importFingerprint String?
 
     name        String
     description String
@@ -29,6 +30,8 @@ model AnswerCollection {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@index([ownerId, importFingerprint])
 }
 
 model AnswerCollectionEntry {

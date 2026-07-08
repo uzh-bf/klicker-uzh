@@ -1,4 +1,4 @@
-import { H4, UserNotification } from '@uzh-bf/design-system'
+import { Badge, H4, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 type OverviewAnswerCollectionEntry = {
@@ -10,6 +10,8 @@ export type OverviewAnswerCollection = {
   ref: string
   name: string
   description?: string | null
+  alreadyImported?: boolean
+  existingAnswerCollectionId?: number | null
   entries: readonly OverviewAnswerCollectionEntry[]
   elementNames?: readonly string[]
 }
@@ -33,6 +35,9 @@ function PackageAnswerCollectionOverview({
     mode === 'export'
       ? 'manage.elements.packageAnswerCollectionsExportDescription'
       : 'manage.elements.packageAnswerCollectionsImportDescription'
+  const duplicateCount = collections.filter(
+    (collection) => collection.alreadyImported
+  ).length
 
   return (
     <section className="flex min-h-0 flex-col gap-2" data-cy={dataCy}>
@@ -44,6 +49,21 @@ function PackageAnswerCollectionOverview({
           {t(descriptionKey, { numCollections: collections.length })}
         </div>
       </div>
+
+      {mode === 'import' && duplicateCount > 0 ? (
+        <div data-cy="element-import-answer-collection-duplicate-summary">
+          <UserNotification
+            type="warning"
+            message={t(
+              'manage.elements.packageAnswerCollectionDuplicateSummary',
+              {
+                count: duplicateCount,
+              }
+            )}
+            className={{ root: 'text-sm' }}
+          />
+        </div>
+      ) : null}
 
       {loading ? (
         <UserNotification
@@ -84,6 +104,18 @@ function PackageAnswerCollectionOverview({
                       <div className="line-clamp-2 break-words text-xs text-slate-600">
                         {collection.description}
                       </div>
+                    ) : null}
+                    {mode === 'import' && collection.alreadyImported ? (
+                      <span
+                        className="mt-1 inline-block"
+                        data-cy={`element-import-answer-collection-duplicate-${index}`}
+                      >
+                        <Badge className="border-amber-300 bg-amber-50 text-amber-800">
+                          {t(
+                            'manage.elements.packageAnswerCollectionDuplicate'
+                          )}
+                        </Badge>
+                      </span>
                     ) : null}
                   </div>
                   <div className="flex-none text-xs text-slate-600">

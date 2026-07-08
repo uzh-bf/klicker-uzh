@@ -8,5 +8,6 @@ mutation ImportElementPackage(
   ) {
     importedElements
     importedAnswerCollections
+    skippedElements
   }
 }

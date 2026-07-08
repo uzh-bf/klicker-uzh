@@ -3539,7 +3539,10 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ElementImportExportService.importElementPackage(
-            args,
+            {
+              importToken: args.importToken,
+              selectedElementRefs: args.selectedElementRefs,
+            },
             ctx
           )
         },

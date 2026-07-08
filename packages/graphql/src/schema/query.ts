@@ -54,7 +54,7 @@ import {
 } from './course.js'
 import {
   Element,
-  ElementDownloadLink,
+  ElementExportPackageLink,
   ElementExportPackagePreview,
   ElementInstance,
   ElementInstanceVersionInfo,
@@ -98,7 +98,6 @@ import {
 } from './practiceQuiz.js'
 import {
   AnswerCollection,
-  AnswerCollectionDownloadLink,
   AnswerCollectionPreviewEntry,
   AnswerCollectionsInfoBasic,
   ChatModelCapability,
@@ -867,23 +866,9 @@ export const Query = builder.queryType({
         ),
       }),
 
-      getElementDownloadLink: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ElementDownloadLink,
-        args: {
-          elementIds: t.arg.intList({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ElementImportExportService.getElementExportPackageLink(
-            args,
-            ctx
-          )
-        },
-      }),
-
       getElementExportPackageLink: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: ElementDownloadLink,
+        type: ElementExportPackageLink,
         args: {
           elementIds: t.arg.intList({ required: true }),
         },
@@ -2173,17 +2158,6 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.getAnswerCollectionCatalogInfo(args, ctx)
-        },
-      }),
-
-      getAnswerCollectionDownloadLink: t.withAuth(asUser).field({
-        nullable: true,
-        type: AnswerCollectionDownloadLink,
-        args: {
-          answerCollectionId: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await SharingService.getAnswerCollectionDownloadLink(args, ctx)
         },
       }),
     }

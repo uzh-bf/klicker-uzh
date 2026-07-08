@@ -1789,6 +1789,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       packageAnswerCollectionEntries: '{count} entries',
       packageAnswerCollectionUsedBy: 'Used by: {elements}',
       packageAnswerCollectionMoreEntries: '+{count} more',
+      packageAnswerCollectionDuplicate: 'Already exists',
+      packageAnswerCollectionDuplicateSummary:
+        '{count} answer collections match existing content. They will still be created as new collections if you import selected elements that need them.',
       packagePreviewLoading: 'Checking package contents...',
       packagePreviewError:
         'The package contents could not be checked. Please review your permissions.',
@@ -1796,6 +1799,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Some selected elements cannot be exported. You need edit permission on every selected element.',
       packageAnswerCollectionExportPermissionError:
         'Export blocked because at least one linked answer collection cannot be included. You need edit permission on all linked answer collections.',
+      packageTooManyElementsError:
+        'Export blocked because an element package can contain at most 100 elements.',
       uploadElementsFile: 'Upload ZIP package',
       uploadElementsZipDescription:
         'Drag a KlickerUZH elements ZIP package here or click to choose a file.',
@@ -1816,6 +1821,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The package could not be parsed. Please upload a valid ZIP file.',
       elementImportInvalidFile:
         'The file does not match the KlickerUZH element package format.',
+      elementImportFileTooLarge:
+        'The package is too large. Upload a ZIP file up to {size}.',
+      elementImportPackageNotFound:
+        'The uploaded package could not be found. Please upload it again.',
+      elementImportInvalidOptions:
+        'The package contains element options that are not valid in KlickerUZH.',
+      elementImportTagsInManifest:
+        'Element tags must be defined in the element JSON file, not in manifest.json.',
+      elementImportManifestNotAtRoot:
+        'The ZIP must contain manifest.json at the top level. Compress the package contents, not the enclosing folder.',
+      elementImportStatusNormalizedWarning:
+        'Imported elements will be set to review status before use.',
+      elementImportTagsOmittedWarning:
+        'Personal tags are part of duplicate detection but are not imported into your question pool.',
+      elementImportDuplicatesWarning:
+        'Some package contents match existing resources in your question pool.',
+      elementImportExternalMediaWarning:
+        'External media links are kept as links and are not copied into your media library.',
+      elementImportMediaMissingWarning:
+        'Some KlickerUZH media could not be included and remains linked to its original location.',
       elementImportAnswerCollectionRequired:
         'Element "{name}" needs an answer collection. Export and import the required answer collection first.',
       elementImportAnswerCollectionMissing:
@@ -1823,17 +1848,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       elementImportAnswerCollectionItemsMissing:
         'Answer collection {id} does not contain the required entries. Please use the matching answer collection before importing these elements.',
       elementImportNoElementsSelected: 'Select at least one element to import.',
+      elementImportTagsAvailableSummary:
+        '{count} tag names are available in this package.',
+      elementImportNoTagsAvailable:
+        'This package does not contain transferable tag metadata.',
+      elementImportDuplicate: 'Already imported',
+      elementImportDuplicateSummary:
+        '{count} elements match existing content. They remain selectable and will be imported as new elements if selected.',
       elementImportSuccess: '{number} elements imported successfully.',
       elementImportPartialError:
         '{number} elements were imported, but the remaining import failed. Please review the file and try again.',
       elementImportError:
         'The elements could not be imported. Please review the file and try again.',
       elementDownloadFailed: 'The elements could not be exported.',
-      answerCollectionDownloadFailed:
-        'The answer collection could not be exported.',
+      downloadElementsDisabledNoSelection:
+        'Select at least one element before downloading.',
       downloadElementsPackage: 'Download elements package',
-      downloadElementsJson: 'Download elements JSON',
-      downloadAnswerCollectionJson: 'Download answer collection JSON',
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',

@@ -5,6 +5,7 @@ import {
   StorageSharedKeyCredential,
   type ContainerClient,
 } from '@azure/storage-blob'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { randomUUID } from 'node:crypto'
@@ -20,6 +21,12 @@ import {
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  isImportExportLocalRuntime,
+  MAX_IMPORT_EXPORT_PACKAGE_BYTES,
+  readPositiveIntegerEnv,
+} from '../lib/importExportPackageConfig.js'
+import { cleanupOrphanedImportedMediaFiles } from './mediaStorage.js'
 
 const PACKAGE_CONTAINER_NAME = 'klicker-import-export'
 const ZIP_CONTENT_TYPE = 'application/zip'
@@ -28,10 +35,37 @@ const PACKAGE_TTL_HOURS_ENV = 'IMPORT_EXPORT_PACKAGE_TTL_HOURS'
 const PACKAGE_PREFIXES = ['imports/', 'exports/'] as const
 
 export function isLocalImportExportPackageStorageEnabled() {
+  assertImportExportPackageStorageConfig()
+
   return (
-    process.env.NODE_ENV === 'test' &&
-    process.env.IMPORT_EXPORT_PACKAGE_STORAGE !== 'azure'
+    process.env.IMPORT_EXPORT_PACKAGE_STORAGE === 'local' ||
+    (process.env.NODE_ENV === 'test' &&
+      process.env.IMPORT_EXPORT_PACKAGE_STORAGE !== 'azure')
   )
+}
+
+export function assertImportExportPackageStorageConfig() {
+  if (isImportExportLocalRuntime()) {
+    return
+  }
+
+  if (
+    process.env.IMPORT_EXPORT_PACKAGE_STORAGE &&
+    process.env.IMPORT_EXPORT_PACKAGE_STORAGE !== 'azure'
+  ) {
+    throw new Error(
+      'Local import/export package storage must not be enabled outside development and test.'
+    )
+  }
+
+  if (
+    !process.env.BLOB_STORAGE_ACCOUNT_NAME ||
+    !process.env.BLOB_STORAGE_ACCESS_KEY
+  ) {
+    throw new Error(
+      'Azure blob storage credentials must be configured for import/export packages in production.'
+    )
+  }
 }
 
 function getLocalPackageRoot() {
@@ -80,6 +114,31 @@ export async function writeLocalImportExportPackageBlob(
 
 export async function readLocalImportExportPackageBlob(blobName: string) {
   return await readFile(getLocalPackagePath(blobName))
+}
+
+async function readStreamWithLimit(
+  stream: NodeJS.ReadableStream | undefined,
+  maxBytes: number
+) {
+  if (!stream) {
+    throw new Error('Import package could not be downloaded.')
+  }
+
+  const chunks: Buffer[] = []
+  let totalBytes = 0
+
+  for await (const chunk of stream) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    totalBytes += buffer.length
+
+    if (totalBytes > maxBytes) {
+      throw new Error('Import package is too large.')
+    }
+
+    chunks.push(buffer)
+  }
+
+  return Buffer.concat(chunks, totalBytes)
 }
 
 async function cleanupLocalDirectory(directory: string, cutoffMs: number) {
@@ -158,52 +217,66 @@ async function cleanupAzureImportExportPackages(
 export async function cleanupImportExportPackages({
   now = new Date(),
   ttlHours = getImportExportPackageTtlHours(),
+  prisma,
 }: {
   now?: Date
   ttlHours?: number
+  prisma?: PrismaClient
 } = {}) {
   const cutoffMs = dayjs(now).subtract(ttlHours, 'hours').valueOf()
+  let deletedPackages = 0
 
   if (isLocalImportExportPackageStorageEnabled()) {
-    return {
-      deletedPackages: await cleanupLocalImportExportPackages(cutoffMs),
+    deletedPackages = await cleanupLocalImportExportPackages(cutoffMs)
+  } else {
+    const containerClient = await getExistingPackageContainerClient()
+    if (containerClient) {
+      deletedPackages = await cleanupAzureImportExportPackages(
+        containerClient,
+        cutoffMs
+      )
     }
   }
 
-  const containerClient = await getExistingPackageContainerClient()
-  if (!containerClient) {
-    return { deletedPackages: 0 }
-  }
+  const { deletedMediaFiles } = prisma
+    ? await cleanupOrphanedImportedMediaFiles({ prisma, now, ttlHours })
+    : { deletedMediaFiles: 0 }
 
   return {
-    deletedPackages: await cleanupAzureImportExportPackages(
-      containerClient,
-      cutoffMs
-    ),
+    deletedPackages,
+    deletedMediaFiles,
   }
 }
 
 export const handleCleanupImportExportPackages: HatchetHandlers['handleCleanupImportExportPackages'] =
-  async (_, __, executionCtx) => {
-    const result = await cleanupImportExportPackages()
+  async (_, globalCtx, executionCtx) => {
+    const result = await cleanupImportExportPackages({
+      prisma: globalCtx.prisma,
+    })
     executionCtx.logger.info(
-      `[INFO] [CleanupImportExportPackages] Deleted ${result.deletedPackages} temporary import/export packages`
+      `[INFO] [CleanupImportExportPackages] Deleted ${result.deletedPackages} temporary import/export packages and ${result.deletedMediaFiles} orphaned imported media files`
     )
 
     return true
   }
 
 function getStorageAccount() {
-  return `https://${
-    process.env.BLOB_STORAGE_ACCOUNT_NAME as string
-  }.blob.core.windows.net`
+  const accountName = process.env.BLOB_STORAGE_ACCOUNT_NAME
+  if (!accountName) {
+    throw new Error('Blob storage account name is not configured.')
+  }
+
+  return `https://${accountName}.blob.core.windows.net`
 }
 
 function getSharedKeyCredential() {
-  return new StorageSharedKeyCredential(
-    process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
-    process.env.BLOB_STORAGE_ACCESS_KEY as string
-  )
+  const accountName = process.env.BLOB_STORAGE_ACCOUNT_NAME
+  const accessKey = process.env.BLOB_STORAGE_ACCESS_KEY
+  if (!accountName || !accessKey) {
+    throw new Error('Blob storage credentials are not configured.')
+  }
+
+  return new StorageSharedKeyCredential(accountName, accessKey)
 }
 
 function getPackageBlobServiceClient() {
@@ -231,11 +304,6 @@ async function getExistingPackageContainerClient() {
   }
 
   return containerClient
-}
-
-function readPositiveIntegerEnv(name: string, fallback: number) {
-  const value = Number(process.env[name])
-  return Number.isInteger(value) && value > 0 ? value : fallback
 }
 
 function getImportExportPackageTtlHours() {
@@ -401,6 +469,85 @@ export async function uploadElementExportPackage(
   )
 }
 
+export async function checkImportExportPackageStorageReadiness({
+  sasRoundTrip = false,
+}: {
+  sasRoundTrip?: boolean
+} = {}) {
+  assertImportExportPackageStorageConfig()
+
+  if (isLocalImportExportPackageStorageEnabled()) {
+    throw new Error(
+      'Import/export production readiness requires Azure package storage.'
+    )
+  }
+
+  const containerClient = await getPackageContainerClient()
+  const result = {
+    containerName: PACKAGE_CONTAINER_NAME,
+    sasRoundTrip,
+  }
+
+  if (!sasRoundTrip) {
+    return result
+  }
+
+  const blobName = `preflight/${randomUUID()}-import-export-preflight.txt`
+  const contentType = 'text/plain'
+  const body = 'klicker import/export preflight'
+  const expiresOn = dayjs().add(15, 'minutes').toDate()
+
+  const uploadUrl = createBlobSasUrl({
+    blobName,
+    permissions: 'cw',
+    contentType,
+    expiresOn,
+  })
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'x-ms-blob-type': 'BlockBlob',
+      'Content-Type': contentType,
+    },
+    body,
+  })
+
+  if (!uploadResponse.ok) {
+    throw new Error(
+      `Import/export package SAS upload preflight failed with HTTP ${uploadResponse.status}.`
+    )
+  }
+
+  try {
+    const downloadUrl = createBlobSasUrl({
+      blobName,
+      permissions: 'r',
+      contentType,
+      expiresOn,
+    })
+    const downloadResponse = await fetch(downloadUrl)
+
+    if (!downloadResponse.ok) {
+      throw new Error(
+        `Import/export package SAS download preflight failed with HTTP ${downloadResponse.status}.`
+      )
+    }
+
+    if ((await downloadResponse.text()) !== body) {
+      throw new Error('Import/export package SAS preflight payload mismatch.')
+    }
+  } finally {
+    await containerClient.deleteBlob(blobName).catch((error) => {
+      console.error(
+        '[ImportExportPackageStorage] Failed to delete package storage preflight blob',
+        error
+      )
+    })
+  }
+
+  return result
+}
+
 export async function downloadElementImportPackage(
   { blobName }: { blobName: string },
   ctx: ContextWithUser
@@ -408,16 +555,40 @@ export async function downloadElementImportPackage(
   assertUserPackageBlob(blobName, ctx)
 
   if (isLocalImportExportPackageStorageEnabled()) {
-    return await readLocalImportExportPackageBlob(blobName)
+    const buffer = await readLocalImportExportPackageBlob(blobName)
+    if (buffer.length > MAX_IMPORT_EXPORT_PACKAGE_BYTES) {
+      throw new Error('Import package is too large.')
+    }
+
+    return buffer
   }
 
   const containerClient = await getPackageContainerClient()
   const blobClient = containerClient.getBlobClient(blobName)
-  const exists = await blobClient.exists()
+  let properties
 
-  if (!exists) {
+  try {
+    properties = await blobClient.getProperties()
+  } catch {
     throw new Error('Import package could not be found.')
   }
 
-  return await blobClient.downloadToBuffer()
+  if (
+    typeof properties.contentLength === 'number' &&
+    properties.contentLength > MAX_IMPORT_EXPORT_PACKAGE_BYTES
+  ) {
+    await blobClient.deleteIfExists().catch((error) => {
+      console.error(
+        '[ImportExportPackageStorage] Failed to delete oversized import/export package blob',
+        error
+      )
+    })
+    throw new Error('Import package is too large.')
+  }
+
+  const response = await blobClient.download()
+  return await readStreamWithLimit(
+    response.readableStreamBody,
+    MAX_IMPORT_EXPORT_PACKAGE_BYTES
+  )
 }

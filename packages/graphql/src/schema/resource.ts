@@ -104,20 +104,6 @@ export const AnswerCollectionsInfoBasic =
     }),
   })
 
-interface IAnswerCollectionDownloadLink {
-  downloadLink: string
-}
-export const AnswerCollectionDownloadLinkRef =
-  builder.objectRef<IAnswerCollectionDownloadLink>(
-    'AnswerCollectionDownloadLink'
-  )
-export const AnswerCollectionDownloadLink =
-  AnswerCollectionDownloadLinkRef.implement({
-    fields: (t) => ({
-      downloadLink: t.exposeString('downloadLink'),
-    }),
-  })
-
 // #endregion
 
 // ----- CHATBOTS -----

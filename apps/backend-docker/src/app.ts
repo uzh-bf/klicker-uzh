@@ -4,6 +4,8 @@ import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import {
+  assertImportExportPackageStorageConfig,
+  assertImportExportTokenSecretConfig,
   decodeLocalImportExportPackageBlobName,
   enhanceContext,
   isLocalImportExportPackageStorageEnabled,
@@ -34,6 +36,9 @@ function prepareApp({
   hatchet,
   tasks,
 }: any) {
+  assertImportExportPackageStorageConfig()
+  assertImportExportTokenSecretConfig()
+
   const armor = new EnvelopArmor({
     maxDepth: {
       enabled: false,

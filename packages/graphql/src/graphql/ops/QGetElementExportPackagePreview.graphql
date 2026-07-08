@@ -17,5 +17,6 @@ query GetElementExportPackagePreview($elementIds: [Int!]!) {
       }
     }
     errors
+    warnings
   }
 }

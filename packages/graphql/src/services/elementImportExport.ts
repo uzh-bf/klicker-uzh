@@ -12,30 +12,68 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import {
+  IMPORT_EXPORT_PACKAGE_TYPE,
+  IMPORT_EXPORT_PACKAGE_VERSION,
+  isImportExportLocalRuntime,
+  MAX_ELEMENT_POINTS_MULTIPLIER,
+  MAX_IMPORT_EXPORT_ANSWER_COLLECTION_ENTRIES,
+  MAX_IMPORT_EXPORT_ANSWER_COLLECTIONS,
+  MAX_IMPORT_EXPORT_CONTENT_LENGTH,
+  MAX_IMPORT_EXPORT_DESCRIPTION_LENGTH,
+  MAX_IMPORT_EXPORT_ELEMENTS,
+  MAX_IMPORT_EXPORT_JSON_BYTES,
+  MAX_IMPORT_EXPORT_MEDIA_BYTES,
+  MAX_IMPORT_EXPORT_MEDIA_FILES,
+  MAX_IMPORT_EXPORT_NAME_LENGTH,
+  MAX_IMPORT_EXPORT_OPTIONS_BYTES,
+  MAX_IMPORT_EXPORT_PACKAGE_BYTES,
+  MAX_IMPORT_EXPORT_TAGS,
+  readPositiveIntegerEnv,
+} from '../lib/importExportPackageConfig.js'
+import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { createZip, parseZip } from '../lib/zip.js'
 import { manipulateElement } from './elements.js'
+import {
+  backfillMissingImportFingerprintsForOwner,
+  computeAnswerCollectionImportFingerprint,
+  computeElementImportFingerprint,
+  normalizeImportExportTags,
+} from './importExportFingerprints.js'
+import {
+  deleteImportedMediaFile,
+  downloadKlickerMediaFile,
+  finalizeStagedImportedMediaFile,
+  isKlickerMediaFileExportable,
+  parseKlickerMediaUrl,
+  stageImportedMediaFile,
+  type StagedImportedMediaFile,
+} from './mediaStorage.js'
 import {
   downloadElementImportPackage,
   prepareElementImportPackageUpload as preparePackageUpload,
   uploadElementExportPackage,
 } from './packageStorage.js'
 
-const PACKAGE_TYPE = 'klicker-element-package'
-const PACKAGE_VERSION = 1
-const MAX_PACKAGE_BYTES = 10 * 1024 * 1024
-const MAX_JSON_BYTES = 2 * 1024 * 1024
-const MAX_ELEMENTS = 100
-const MAX_ANSWER_COLLECTIONS = 50
-const MAX_ANSWER_COLLECTION_ENTRIES = 2000
-const MAX_NAME_LENGTH = 255
-const MAX_CONTENT_LENGTH = 200_000
-const MAX_DESCRIPTION_LENGTH = 20_000
-const MAX_OPTIONS_BYTES = 200_000
 const IMPORT_TOKEN_TTL_MS = 60 * 60 * 1000
+const IMPORT_EXPORT_TOKEN_SECRET_ENV = 'IMPORT_EXPORT_TOKEN_SECRET'
 const RATE_LIMIT_WINDOW_SECONDS_ENV =
   'IMPORT_EXPORT_PACKAGE_RATE_LIMIT_WINDOW_SECONDS'
 const RATE_LIMIT_ERROR =
   'Too many import/export package requests. Please try again later.'
+const RATE_LIMIT_UNAVAILABLE_ERROR =
+  'Import/export package rate limiting is temporarily unavailable.'
+const PACKAGE_MEDIA_HREF_PREFIX = 'klicker-package-media://'
+
+class ImportExportRateLimitError extends Error {
+  constructor(
+    readonly kind: 'exceeded' | 'unavailable',
+    message: string
+  ) {
+    super(message)
+    this.name = 'ImportExportRateLimitError'
+  }
+}
 
 const EXPORT_PERMISSION_LEVELS = [
   DB.PermissionLevel.WRITE,
@@ -45,6 +83,35 @@ const EXPORT_PERMISSION_LEVELS = [
 const EXPORT_PREVIEW_ERROR_ELEMENT_PERMISSION = 'ELEMENT_EXPORT_PERMISSION'
 const EXPORT_PREVIEW_ERROR_ANSWER_COLLECTION_PERMISSION =
   'ANSWER_COLLECTION_EXPORT_PERMISSION'
+const EXPORT_PREVIEW_ERROR_TOO_MANY_ELEMENTS = 'TOO_MANY_ELEMENTS'
+
+const IMPORT_ERROR_INVALID_PACKAGE = 'IMPORT_INVALID_PACKAGE'
+const IMPORT_ERROR_INVALID_OPTIONS = 'IMPORT_INVALID_OPTIONS'
+const IMPORT_ERROR_PACKAGE_TOO_LARGE = 'IMPORT_PACKAGE_TOO_LARGE'
+const IMPORT_ERROR_PACKAGE_NOT_FOUND = 'IMPORT_PACKAGE_NOT_FOUND'
+const IMPORT_ERROR_TAGS_IN_MANIFEST = 'IMPORT_ELEMENT_TAGS_IN_MANIFEST'
+const IMPORT_ERROR_MANIFEST_NOT_AT_ROOT = 'IMPORT_MANIFEST_NOT_AT_ROOT'
+const IMPORT_WARNING_STATUS_NORMALIZED = 'IMPORT_STATUS_NORMALIZED_TO_REVIEW'
+const IMPORT_WARNING_TAGS_OMITTED = 'IMPORT_TAGS_OMITTED'
+const IMPORT_WARNING_EXTERNAL_MEDIA = 'IMPORT_EXTERNAL_MEDIA_NOT_PACKAGED'
+const IMPORT_WARNING_INACCESSIBLE_MEDIA = 'IMPORT_MEDIA_NOT_INCLUDED'
+
+const SLIDING_WINDOW_RATE_LIMIT_SCRIPT = `
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local windowMs = tonumber(ARGV[2])
+local limit = tonumber(ARGV[3])
+local member = ARGV[4]
+redis.call('ZREMRANGEBYSCORE', key, 0, now - windowMs)
+local count = redis.call('ZCARD', key)
+if count >= limit then
+  redis.call('PEXPIRE', key, windowMs)
+  return {0, count}
+end
+redis.call('ZADD', key, now, member)
+redis.call('PEXPIRE', key, windowMs)
+return {1, count + 1}
+`
 
 const RATE_LIMITS = {
   export: {
@@ -96,17 +163,22 @@ const packageRefSchema = z
   .max(120)
   .regex(/^[A-Za-z0-9_-]+$/)
 
-const sourceSchema = z
+const mediaManifestEntrySchema = z
   .object({
-    id: z.number().int().positive().optional(),
-    version: z.number().int().positive().optional(),
+    ref: packageRefSchema,
+    file: z.string(),
+    filename: z.string().min(1).max(MAX_IMPORT_EXPORT_NAME_LENGTH),
+    contentType: z.string().min(1).max(120),
+    bytes: z.number().int().nonnegative().max(MAX_IMPORT_EXPORT_MEDIA_BYTES),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/),
+    sourceHref: z.string().url(),
   })
   .strict()
 
 const manifestSchema = z
   .object({
-    type: z.literal(PACKAGE_TYPE),
-    version: z.literal(PACKAGE_VERSION),
+    type: z.literal(IMPORT_EXPORT_PACKAGE_TYPE),
+    version: z.literal(IMPORT_EXPORT_PACKAGE_VERSION),
     createdAt: z.string().datetime(),
     elements: z
       .array(
@@ -115,71 +187,88 @@ const manifestSchema = z
             ref: packageRefSchema,
             file: z.string(),
             answerCollectionRef: packageRefSchema.optional(),
-            source: sourceSchema.optional(),
           })
           .strict()
       )
-      .max(MAX_ELEMENTS),
+      .max(MAX_IMPORT_EXPORT_ELEMENTS),
     answerCollections: z
       .array(
         z
           .object({
             ref: packageRefSchema,
             file: z.string(),
-            source: sourceSchema.optional(),
           })
           .strict()
       )
-      .max(MAX_ANSWER_COLLECTIONS),
+      .max(MAX_IMPORT_EXPORT_ANSWER_COLLECTIONS),
+    media: z.array(mediaManifestEntrySchema).max(MAX_IMPORT_EXPORT_MEDIA_FILES),
+    warnings: z.array(z.string().min(1).max(160)).optional(),
   })
   .strict()
 
 const answerCollectionEntrySchema = z
   .object({
     ref: packageRefSchema,
-    value: z.string().min(1).max(MAX_NAME_LENGTH),
-    source: sourceSchema.optional(),
+    value: z.string().min(1).max(MAX_IMPORT_EXPORT_NAME_LENGTH),
   })
   .strict()
 
 const answerCollectionSchema = z
   .object({
     ref: packageRefSchema,
-    name: z.string().min(1).max(MAX_NAME_LENGTH),
-    description: z.string().max(MAX_DESCRIPTION_LENGTH),
+    name: z.string().min(1).max(MAX_IMPORT_EXPORT_NAME_LENGTH),
+    description: z.string().max(MAX_IMPORT_EXPORT_DESCRIPTION_LENGTH),
+    version: z.number().int().positive().default(1),
     entries: z
       .array(answerCollectionEntrySchema)
       .min(1)
-      .max(MAX_ANSWER_COLLECTION_ENTRIES),
-    source: sourceSchema.optional(),
+      .max(MAX_IMPORT_EXPORT_ANSWER_COLLECTION_ENTRIES),
   })
   .strict()
 
 const elementSchema = z
   .object({
     ref: packageRefSchema,
-    name: z.string().min(1).max(MAX_NAME_LENGTH),
-    content: z.string().min(1).max(MAX_CONTENT_LENGTH),
+    name: z.string().min(1).max(MAX_IMPORT_EXPORT_NAME_LENGTH),
+    content: z.string().min(1).max(MAX_IMPORT_EXPORT_CONTENT_LENGTH),
     type: z.nativeEnum(DB.ElementType),
     options: z.record(z.unknown()),
-    pointsMultiplier: z.number().int().positive(),
+    pointsMultiplier: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_ELEMENT_POINTS_MULTIPLIER),
     basePoints: z.boolean(),
-    explanation: z.string().max(MAX_CONTENT_LENGTH).nullable().optional(),
+    explanation: z
+      .string()
+      .max(MAX_IMPORT_EXPORT_CONTENT_LENGTH)
+      .nullable()
+      .optional(),
     status: z.nativeEnum(DB.ElementStatus),
     answerCollectionRef: packageRefSchema.optional(),
     answerCollectionItemRefs: z.array(packageRefSchema).optional(),
-    source: sourceSchema.optional(),
+    tags: z
+      .array(z.string().min(1).max(MAX_IMPORT_EXPORT_NAME_LENGTH))
+      .max(MAX_IMPORT_EXPORT_TAGS)
+      .optional(),
   })
   .strict()
 
 type PackageManifest = z.infer<typeof manifestSchema>
+type PackageMediaManifestEntry = z.infer<typeof mediaManifestEntrySchema>
 type PackageAnswerCollection = z.infer<typeof answerCollectionSchema>
 type PackageElement = z.infer<typeof elementSchema>
+
+type PackageMedia = PackageMediaManifestEntry & {
+  data: Buffer
+}
 
 type NormalizedImportPackage = {
   manifest: PackageManifest
   answerCollections: PackageAnswerCollection[]
   elements: PackageElement[]
+  media: PackageMedia[]
+  warnings: string[]
 }
 
 type PreviewEntry = {
@@ -187,15 +276,26 @@ type PreviewEntry = {
   value: string
 }
 
-function assertOptionsSize(options: Record<string, unknown>) {
-  if (Buffer.byteLength(JSON.stringify(options), 'utf8') > MAX_OPTIONS_BYTES) {
-    throw new Error('Element options are too large.')
-  }
+function logImportExportPackageEvent(
+  event: string,
+  fields: Record<string, number | string | string[] | boolean | null>
+) {
+  console.info(
+    '[ImportExportPackageMetric]',
+    JSON.stringify({
+      event,
+      ...fields,
+    })
+  )
 }
 
-function readPositiveIntegerEnv(name: string, fallback: number) {
-  const value = Number(process.env[name])
-  return Number.isInteger(value) && value > 0 ? value : fallback
+function assertOptionsSize(options: Record<string, unknown>) {
+  if (
+    Buffer.byteLength(JSON.stringify(options), 'utf8') >
+    MAX_IMPORT_EXPORT_OPTIONS_BYTES
+  ) {
+    throw new Error('Element options are too large.')
+  }
 }
 
 async function assertImportExportRateLimit(
@@ -210,25 +310,57 @@ async function assertImportExportRateLimit(
     RATE_LIMITS[operation].limitEnv,
     RATE_LIMITS[operation].defaultLimit
   )
-  const bucket = Math.floor(Date.now() / (windowSeconds * 1000))
-  const key = `rate-limit:import-export-package:${operation}:${ctx.user.sub}:${bucket}`
+  const windowMs = windowSeconds * 1000
+  const key = `rate-limit:import-export-package:${operation}:${ctx.user.sub}`
 
   try {
-    const count = await ctx.redisExec.incr(key)
+    const rateLimitResult = await ctx.redisExec.eval(
+      SLIDING_WINDOW_RATE_LIMIT_SCRIPT,
+      1,
+      key,
+      Date.now(),
+      windowMs,
+      limit,
+      randomUUID()
+    )
+    const [allowed, count] = Array.isArray(rateLimitResult)
+      ? rateLimitResult.map((value) => Number(value))
+      : []
 
-    if (count === 1) {
-      await ctx.redisExec.expire(key, windowSeconds)
+    if (allowed !== 0 && allowed !== 1) {
+      throw new Error('Unexpected import/export rate-limit response.')
     }
 
-    if (count > limit) {
-      throw new Error(RATE_LIMIT_ERROR)
+    if (allowed === 0) {
+      logImportExportPackageEvent('rate_limit_exceeded', {
+        operation,
+        limit,
+        windowSeconds,
+        count: count ?? limit,
+      })
+      throw new ImportExportRateLimitError('exceeded', RATE_LIMIT_ERROR)
     }
   } catch (error) {
-    if (error instanceof Error && error.message === RATE_LIMIT_ERROR) {
+    if (
+      error instanceof ImportExportRateLimitError &&
+      error.kind === 'exceeded'
+    ) {
       throw error
     }
 
-    throw new Error(RATE_LIMIT_ERROR)
+    console.error(
+      `[ImportExportPackageRateLimit] ${operation} rate limit check failed`,
+      error
+    )
+    logImportExportPackageEvent('rate_limit_unavailable', {
+      operation,
+      limit,
+      windowSeconds,
+    })
+    throw new ImportExportRateLimitError(
+      'unavailable',
+      RATE_LIMIT_UNAVAILABLE_ERROR
+    )
   }
 }
 
@@ -247,9 +379,11 @@ function assertUniqueRefs(refs: string[], label: string) {
 function assertGloballyUniquePackageRefs({
   answerCollections,
   elements,
+  media = [],
 }: {
   answerCollections: PackageAnswerCollection[]
   elements: PackageElement[]
+  media?: PackageMediaManifestEntry[]
 }) {
   const refs = new Map<string, string>()
 
@@ -275,6 +409,10 @@ function assertGloballyUniquePackageRefs({
       addRef(entry.ref, 'answer collection entry')
     }
   }
+
+  for (const mediaEntry of media) {
+    addRef(mediaEntry.ref, 'media')
+  }
 }
 
 export type ElementImportPackagePreviewElement = {
@@ -287,6 +425,9 @@ export type ElementImportPackagePreviewElement = {
   basePoints: boolean
   explanation?: string | null
   status: DB.ElementStatus
+  tags: string[]
+  alreadyImported: boolean
+  existingElementId?: number | null
   answerCollectionId?: number | null
   answerCollectionRef?: string | null
   answerCollectionItems: PreviewEntry[]
@@ -297,6 +438,8 @@ export type ElementImportPackagePreviewAnswerCollection = {
   ref: string
   name: string
   description: string
+  alreadyImported: boolean
+  existingAnswerCollectionId?: number | null
   entries: PreviewEntry[]
 }
 
@@ -319,6 +462,7 @@ function emptyExportPackagePreview(errors: string[]) {
   return {
     elements: [],
     answerCollections: [],
+    warnings: [],
     errors,
   }
 }
@@ -330,12 +474,16 @@ type SignedImportToken = {
   expiresAt: number
 }
 
+function uniqueCodes(codes: string[]) {
+  return Array.from(new Set(codes))
+}
+
 function parseJsonBuffer<T>(
   buffer: Buffer,
   schema: z.ZodType<T>,
   label: string
 ) {
-  if (buffer.length > MAX_JSON_BYTES) {
+  if (buffer.length > MAX_IMPORT_EXPORT_JSON_BYTES) {
     throw new Error(`${label} is too large.`)
   }
 
@@ -343,13 +491,84 @@ function parseJsonBuffer<T>(
   return schema.parse(parsed)
 }
 
-function getTokenSecret() {
+function isManifestElementTagsError(error: unknown) {
   return (
-    process.env.APP_SECRET ??
-    process.env.NEXTAUTH_SECRET ??
-    process.env.BLOB_STORAGE_ACCESS_KEY ??
-    'development-import-export-secret'
+    error instanceof z.ZodError &&
+    error.issues.some((issue) => {
+      const keys =
+        'keys' in issue && Array.isArray(issue.keys) ? issue.keys : []
+
+      return (
+        issue.code === z.ZodIssueCode.unrecognized_keys &&
+        issue.path.length === 2 &&
+        issue.path[0] === 'elements' &&
+        typeof issue.path[1] === 'number' &&
+        keys.includes('tags')
+      )
+    })
   )
+}
+
+function getImportPackageErrorCode(error: unknown) {
+  if (!(error instanceof Error)) {
+    return IMPORT_ERROR_INVALID_PACKAGE
+  }
+
+  if (error.message === IMPORT_ERROR_INVALID_OPTIONS) {
+    return IMPORT_ERROR_INVALID_OPTIONS
+  }
+
+  if (isManifestElementTagsError(error)) {
+    return IMPORT_ERROR_TAGS_IN_MANIFEST
+  }
+
+  if (/manifest must be at the ZIP root/i.test(error.message)) {
+    return IMPORT_ERROR_MANIFEST_NOT_AT_ROOT
+  }
+
+  if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    return IMPORT_ERROR_PACKAGE_NOT_FOUND
+  }
+
+  if (/too large/i.test(error.message)) {
+    return IMPORT_ERROR_PACKAGE_TOO_LARGE
+  }
+
+  if (/could not be found|not found/i.test(error.message)) {
+    return IMPORT_ERROR_PACKAGE_NOT_FOUND
+  }
+
+  return IMPORT_ERROR_INVALID_PACKAGE
+}
+
+function getTokenSecret() {
+  const secret =
+    process.env[IMPORT_EXPORT_TOKEN_SECRET_ENV] ??
+    (!isImportExportLocalRuntime()
+      ? undefined
+      : (process.env.APP_SECRET ??
+        process.env.NEXTAUTH_SECRET ??
+        process.env.BLOB_STORAGE_ACCESS_KEY))
+
+  if (!secret) {
+    throw new Error('Import/export token secret is not configured.')
+  }
+
+  return secret
+}
+
+export function assertImportExportTokenSecretConfig() {
+  if (isImportExportLocalRuntime()) {
+    return
+  }
+
+  if (!process.env[IMPORT_EXPORT_TOKEN_SECRET_ENV]) {
+    throw new Error(
+      `${IMPORT_EXPORT_TOKEN_SECRET_ENV} must be configured in production.`
+    )
+  }
+
+  getTokenSecret()
 }
 
 function signImportToken(payload: SignedImportToken) {
@@ -396,18 +615,44 @@ function hashBuffer(buffer: Buffer) {
   return createHash('sha256').update(buffer).digest('hex')
 }
 
-function assertExpectedPackagePath(path: string, folder: string) {
-  return path.startsWith(`${folder}/`) && path.endsWith('.json')
+function createImportedElementOriginalId(packageHash: string, ref: string) {
+  return `import-package:${packageHash.slice(0, 16)}:${ref}`
+}
+
+function getElementImportOriginalId(
+  packageHash: string,
+  element: PackageElement
+) {
+  return createImportedElementOriginalId(packageHash, element.ref)
+}
+
+function normalizePackageTags(tags: string[] | undefined) {
+  return normalizeImportExportTags(tags)
+}
+
+function createPackageMediaHref(ref: string) {
+  return `${PACKAGE_MEDIA_HREF_PREFIX}${ref}`
+}
+
+function isExpectedPackagePath(path: string, folder: string) {
+  return (
+    path.startsWith(`${folder}/`) &&
+    (folder === 'media' || path.endsWith('.json'))
+  )
 }
 
 function parseElementImportPackage(buffer: Buffer): NormalizedImportPackage {
-  if (buffer.length > MAX_PACKAGE_BYTES) {
+  if (buffer.length > MAX_IMPORT_EXPORT_PACKAGE_BYTES) {
     throw new Error('Import package is too large.')
   }
 
   const entries = parseZip(buffer, {
-    maxEntries: MAX_ELEMENTS + MAX_ANSWER_COLLECTIONS + 1,
-    maxUncompressedBytes: MAX_PACKAGE_BYTES,
+    maxEntries:
+      MAX_IMPORT_EXPORT_ELEMENTS +
+      MAX_IMPORT_EXPORT_ANSWER_COLLECTIONS +
+      MAX_IMPORT_EXPORT_MEDIA_FILES +
+      1,
+    maxUncompressedBytes: MAX_IMPORT_EXPORT_PACKAGE_BYTES,
   })
   const files = new Map<string, Buffer>()
 
@@ -420,6 +665,12 @@ function parseElementImportPackage(buffer: Buffer): NormalizedImportPackage {
 
   const manifestBuffer = files.get('manifest.json')
   if (!manifestBuffer) {
+    if (
+      Array.from(files.keys()).some((path) => path.endsWith('/manifest.json'))
+    ) {
+      throw new Error('Import package manifest must be at the ZIP root.')
+    }
+
     throw new Error('Import package manifest is missing.')
   }
 
@@ -436,11 +687,15 @@ function parseElementImportPackage(buffer: Buffer): NormalizedImportPackage {
     manifest.answerCollections.map((collection) => collection.ref),
     'Answer collection references'
   )
+  assertUniqueRefs(
+    manifest.media.map((media) => media.ref),
+    'Media references'
+  )
 
   const expectedPaths = new Set(['manifest.json'])
 
   const answerCollections = manifest.answerCollections.map((entry) => {
-    if (!assertExpectedPackagePath(entry.file, 'answer-collections')) {
+    if (!isExpectedPackagePath(entry.file, 'answer-collections')) {
       throw new Error(
         'Import package contains an invalid answer collection file.'
       )
@@ -462,11 +717,14 @@ function parseElementImportPackage(buffer: Buffer): NormalizedImportPackage {
       throw new Error('Answer collection reference mismatch.')
     }
 
-    return collection
+    return {
+      ...collection,
+      version: collection.version ?? 1,
+    }
   })
 
   const elements = manifest.elements.map((entry) => {
-    if (!assertExpectedPackagePath(entry.file, 'elements')) {
+    if (!isExpectedPackagePath(entry.file, 'elements')) {
       throw new Error('Import package contains an invalid element file.')
     }
 
@@ -488,27 +746,52 @@ function parseElementImportPackage(buffer: Buffer): NormalizedImportPackage {
     return element
   })
 
+  const media = manifest.media.map((entry) => {
+    if (!isExpectedPackagePath(entry.file, 'media')) {
+      throw new Error('Import package contains an invalid media file.')
+    }
+
+    const file = files.get(entry.file)
+    if (!file) {
+      throw new Error('Import package is missing a media file.')
+    }
+
+    if (file.length !== entry.bytes || hashBuffer(file) !== entry.sha256) {
+      throw new Error('Import package media checksum mismatch.')
+    }
+
+    expectedPaths.add(entry.file)
+    return {
+      ...entry,
+      data: file,
+    }
+  })
+
   for (const path of files.keys()) {
     if (!expectedPaths.has(path)) {
       throw new Error('Import package contains unexpected files.')
     }
   }
 
-  validatePackageDependencies({ answerCollections, elements })
+  validatePackageDependencies({ answerCollections, elements, media })
 
   return {
     manifest,
     answerCollections,
     elements,
+    media,
+    warnings: uniqueCodes(manifest.warnings ?? []),
   }
 }
 
 function validatePackageDependencies({
   answerCollections,
   elements,
+  media,
 }: {
   answerCollections: PackageAnswerCollection[]
   elements: PackageElement[]
+  media: PackageMedia[]
 }) {
   assertUniqueRefs(
     elements.map((element) => element.ref),
@@ -518,7 +801,11 @@ function validatePackageDependencies({
     answerCollections.map((collection) => collection.ref),
     'Answer collection references'
   )
-  assertGloballyUniquePackageRefs({ answerCollections, elements })
+  assertUniqueRefs(
+    media.map((entry) => entry.sourceHref),
+    'Media package references'
+  )
+  assertGloballyUniquePackageRefs({ answerCollections, elements, media })
 
   const collectionRefs = new Set<string>()
   const entryRefsByCollectionRef = new Map<string, Set<string>>()
@@ -545,6 +832,12 @@ function validatePackageDependencies({
     }
 
     entryRefsByCollectionRef.set(collection.ref, refs)
+  }
+
+  for (const entry of media) {
+    if (entry.sourceHref !== createPackageMediaHref(entry.ref)) {
+      throw new Error('Media package reference mismatch.')
+    }
   }
 
   for (const element of elements) {
@@ -684,27 +977,259 @@ function mapCaseStudySolutionRefsToItemIds(
   return cloned
 }
 
-function buildPreview(normalizedPackage: NormalizedImportPackage) {
+const URL_PATTERN = /(?:https?:\/\/|klicker-package-media:\/\/)[^\s<>"')\]]+/g
+
+function collectStringValues(value: unknown, strings: string[]) {
+  if (typeof value === 'string') {
+    strings.push(value)
+    return
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectStringValues(entry, strings))
+    return
+  }
+
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach((entry) => collectStringValues(entry, strings))
+  }
+}
+
+function extractUrlsFromStrings(values: string[]) {
+  const urls = new Set<string>()
+
+  for (const value of values) {
+    for (const match of value.matchAll(URL_PATTERN)) {
+      urls.add(match[0]!.replace(/[.,;:!?]+$/, ''))
+    }
+  }
+
+  return Array.from(urls)
+}
+
+function collectElementUrls(element: {
+  content: string
+  explanation?: string | null
+  options: unknown
+}) {
+  const values = [element.content, element.explanation ?? '']
+  collectStringValues(element.options, values)
+  return extractUrlsFromStrings(values)
+}
+
+function rewriteStringValue(value: string, replacements: Map<string, string>) {
+  let rewritten = value
+  for (const [from, to] of replacements) {
+    rewritten = rewritten.split(from).join(to)
+  }
+
+  return rewritten
+}
+
+function rewriteUrlsInValue(value: unknown, replacements: Map<string, string>) {
+  if (typeof value === 'string') {
+    return rewriteStringValue(value, replacements)
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => rewriteUrlsInValue(entry, replacements))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        rewriteUrlsInValue(entry, replacements),
+      ])
+    )
+  }
+
+  return value
+}
+
+function rewriteElementMediaUrls(
+  element: PackageElement,
+  replacements: Map<string, string>
+) {
+  if (replacements.size === 0) return element
+
+  return {
+    ...element,
+    content: rewriteStringValue(element.content, replacements),
+    explanation:
+      typeof element.explanation === 'string'
+        ? rewriteStringValue(element.explanation, replacements)
+        : element.explanation,
+    options: rewriteUrlsInValue(element.options, replacements) as Record<
+      string,
+      unknown
+    >,
+  }
+}
+
+function buildElementOptionsForManipulation(
+  element: PackageElement,
+  entryIdByRef: Map<string, number>,
+  collectionIdByRef: Map<string, number>
+) {
+  const answerCollectionId = element.answerCollectionRef
+    ? collectionIdByRef.get(element.answerCollectionRef)
+    : undefined
+  const collectionItemIds = (element.answerCollectionItemRefs ?? []).map(
+    (ref) => {
+      const id = entryIdByRef.get(ref)
+      if (!id) {
+        throw new Error(
+          `Element "${element.name}" references an unknown entry.`
+        )
+      }
+
+      return id
+    }
+  )
+
+  if (element.type === DB.ElementType.SELECTION) {
+    if (!answerCollectionId) {
+      throw new Error(
+        `Element "${element.name}" is missing its answer collection.`
+      )
+    }
+
+    return {
+      ...element.options,
+      answerCollection: answerCollectionId,
+      correctAnswers: collectionItemIds,
+    } as Record<string, unknown>
+  }
+
+  if (element.type === DB.ElementType.CASE_STUDY) {
+    if (!answerCollectionId) {
+      throw new Error(
+        `Element "${element.name}" is missing its answer collection.`
+      )
+    }
+
+    return {
+      ...mapCaseStudySolutionRefsToItemIds(element.options, entryIdByRef),
+      answerCollection: answerCollectionId,
+      collectionItemIds,
+    } as Record<string, unknown>
+  }
+
+  return element.options
+}
+
+function assertValidElementOptions(
+  element: PackageElement,
+  options: Record<string, unknown>
+) {
+  const processedOptions = validateAndProcessElementOptions(
+    element.type,
+    options as any
+  )
+
+  if (processedOptions === null) {
+    throw new Error(IMPORT_ERROR_INVALID_OPTIONS)
+  }
+
+  return processedOptions as Record<string, unknown>
+}
+
+function buildImportWarnings(normalizedPackage: NormalizedImportPackage) {
+  const warnings = [...normalizedPackage.warnings]
+  if (
+    normalizedPackage.elements.some(
+      (element) => normalizePackageTags(element.tags).length > 0
+    )
+  ) {
+    warnings.push(IMPORT_WARNING_TAGS_OMITTED)
+  }
+
+  if (
+    normalizedPackage.elements.some(
+      (element) => element.status !== DB.ElementStatus.REVIEW
+    )
+  ) {
+    warnings.push(IMPORT_WARNING_STATUS_NORMALIZED)
+  }
+
+  const packagedUrls = new Set(
+    normalizedPackage.media.map((media) => media.sourceHref)
+  )
+  const unpackagedUrls = normalizedPackage.elements
+    .flatMap((element) => collectElementUrls(element))
+    .filter((url) => !packagedUrls.has(url))
+
+  if (unpackagedUrls.some((url) => parseKlickerMediaUrl(url))) {
+    warnings.push(IMPORT_WARNING_INACCESSIBLE_MEDIA)
+  }
+
+  if (unpackagedUrls.some((url) => !parseKlickerMediaUrl(url))) {
+    warnings.push(IMPORT_WARNING_EXTERNAL_MEDIA)
+  }
+
+  return uniqueCodes(warnings)
+}
+
+type ImportPackageDuplicateMatches = {
+  elementIdByFingerprint?: ReadonlyMap<string, number>
+  answerCollectionIdByFingerprint?: ReadonlyMap<string, number>
+}
+
+function buildPackageMediaIdentityByUrl(
+  normalizedPackage: NormalizedImportPackage
+) {
+  return new Map(
+    normalizedPackage.media.map((media) => [
+      media.sourceHref,
+      `klicker-package-media-sha256:${media.sha256}`,
+    ])
+  )
+}
+
+function buildPreviewModel(
+  normalizedPackage: NormalizedImportPackage,
+  duplicateMatches: ImportPackageDuplicateMatches = {}
+) {
   let nextPreviewEntryId = -1
   const previewIdByEntryRef = new Map<string, number>()
+  const previewEntryValueById = new Map<number, string>()
+  const previewCollectionIdByRef = new Map<string, number>()
   const previewCollectionsByRef = new Map<
     string,
     ElementImportPackagePreviewAnswerCollection
   >()
+  const answerCollectionsByRef = new Map(
+    normalizedPackage.answerCollections.map((collection) => [
+      collection.ref,
+      collection,
+    ])
+  )
+  const answerCollectionFingerprintByRef = new Map<string, string>()
+  const elementFingerprintByRef = new Map<string, string>()
+  const mediaIdentityByUrl = buildPackageMediaIdentityByUrl(normalizedPackage)
 
   normalizedPackage.answerCollections.forEach((collection) => {
+    const fingerprint = computeAnswerCollectionImportFingerprint(collection)
+    answerCollectionFingerprintByRef.set(collection.ref, fingerprint)
     const entries = collection.entries.map((entry) => {
       const id = nextPreviewEntryId--
       previewIdByEntryRef.set(entry.ref, id)
+      previewEntryValueById.set(id, entry.value)
       return { id, value: entry.value }
     })
+    const existingAnswerCollectionId =
+      duplicateMatches.answerCollectionIdByFingerprint?.get(fingerprint) ?? null
 
     previewCollectionsByRef.set(collection.ref, {
       ref: collection.ref,
       name: collection.name,
       description: collection.description,
+      alreadyImported: existingAnswerCollectionId !== null,
+      existingAnswerCollectionId,
       entries,
     })
+    previewCollectionIdByRef.set(collection.ref, -previewCollectionsByRef.size)
   })
 
   const answerCollections = Array.from(previewCollectionsByRef.values())
@@ -728,13 +1253,40 @@ function buildPreview(normalizedPackage: NormalizedImportPackage) {
       return { id, value }
     })
 
-    const options =
-      element.type === DB.ElementType.CASE_STUDY
-        ? mapCaseStudySolutionRefsToItemIds(
-            element.options,
-            previewIdByEntryRef
-          )
-        : structuredClone(element.options)
+    const manipulationOptions = buildElementOptionsForManipulation(
+      element,
+      previewIdByEntryRef,
+      previewCollectionIdByRef
+    )
+    const options = assertValidElementOptions(element, manipulationOptions)
+    const entryValueById = new Map(
+      Array.from(previewEntryValueById.entries()).filter(([id]) =>
+        previewCollection?.entries.some((entry) => entry.id === id)
+      )
+    )
+    const answerCollection = element.answerCollectionRef
+      ? answerCollectionsByRef.get(element.answerCollectionRef)
+      : undefined
+    const fingerprint = computeElementImportFingerprint({
+      name: element.name,
+      content: element.content,
+      type: element.type,
+      options,
+      pointsMultiplier: element.pointsMultiplier,
+      basePoints: element.basePoints,
+      explanation: element.explanation ?? null,
+      status: element.status,
+      tags: normalizePackageTags(element.tags),
+      answerCollection,
+      selectedAnswerCollectionValues: answerCollectionItems.map(
+        (entry) => entry.value
+      ),
+      entryValueById,
+      mediaIdentityByUrl,
+    })
+    elementFingerprintByRef.set(element.ref, fingerprint)
+    const existingElementId =
+      duplicateMatches.elementIdByFingerprint?.get(fingerprint) ?? null
 
     return {
       ref: element.ref,
@@ -745,7 +1297,10 @@ function buildPreview(normalizedPackage: NormalizedImportPackage) {
       pointsMultiplier: element.pointsMultiplier,
       basePoints: element.basePoints,
       explanation: element.explanation ?? null,
-      status: element.status,
+      status: DB.ElementStatus.REVIEW,
+      tags: normalizePackageTags(element.tags),
+      alreadyImported: existingElementId !== null,
+      existingElementId,
       answerCollectionId: element.answerCollectionRef
         ? -(
             normalizedPackage.answerCollections.findIndex(
@@ -760,16 +1315,271 @@ function buildPreview(normalizedPackage: NormalizedImportPackage) {
   })
 
   return {
-    answerCollections,
-    elements,
+    preview: {
+      answerCollections,
+      elements,
+    },
+    elementFingerprintByRef,
+    answerCollectionFingerprintByRef,
   }
 }
 
+function buildPreview(
+  normalizedPackage: NormalizedImportPackage,
+  duplicateMatches: ImportPackageDuplicateMatches = {}
+) {
+  return buildPreviewModel(normalizedPackage, duplicateMatches).preview
+}
+
+async function findImportPackageDuplicateMatches(
+  previewModel: ReturnType<typeof buildPreviewModel>,
+  ctx: ContextWithUser
+): Promise<ImportPackageDuplicateMatches> {
+  await backfillMissingImportFingerprintsForOwner(ctx)
+
+  const elementFingerprints = Array.from(
+    new Set(previewModel.elementFingerprintByRef.values())
+  )
+  const answerCollectionFingerprints = Array.from(
+    new Set(previewModel.answerCollectionFingerprintByRef.values())
+  )
+  const [existingElements, existingAnswerCollections] = await Promise.all([
+    elementFingerprints.length === 0
+      ? []
+      : ctx.prisma.element.findMany({
+          where: {
+            ownerId: ctx.user.sub,
+            isDeleted: false,
+            importFingerprint: { in: elementFingerprints },
+          },
+          select: {
+            id: true,
+            importFingerprint: true,
+          },
+          orderBy: {
+            id: 'asc',
+          },
+        }),
+    answerCollectionFingerprints.length === 0
+      ? []
+      : ctx.prisma.answerCollection.findMany({
+          where: {
+            ownerId: ctx.user.sub,
+            isDeleted: false,
+            importFingerprint: { in: answerCollectionFingerprints },
+          },
+          select: {
+            id: true,
+            importFingerprint: true,
+          },
+          orderBy: {
+            id: 'asc',
+          },
+        }),
+  ])
+
+  const elementIdByFingerprint = new Map<string, number>()
+  for (const element of existingElements) {
+    if (
+      element.importFingerprint &&
+      !elementIdByFingerprint.has(element.importFingerprint)
+    ) {
+      elementIdByFingerprint.set(element.importFingerprint, element.id)
+    }
+  }
+
+  const answerCollectionIdByFingerprint = new Map<string, number>()
+  for (const collection of existingAnswerCollections) {
+    if (
+      collection.importFingerprint &&
+      !answerCollectionIdByFingerprint.has(collection.importFingerprint)
+    ) {
+      answerCollectionIdByFingerprint.set(
+        collection.importFingerprint,
+        collection.id
+      )
+    }
+  }
+
+  return {
+    elementIdByFingerprint,
+    answerCollectionIdByFingerprint,
+  }
+}
+
+async function buildPreviewWithDuplicateWarnings(
+  normalizedPackage: NormalizedImportPackage,
+  ctx: ContextWithUser
+) {
+  const previewModel = buildPreviewModel(normalizedPackage)
+  const duplicateMatches = await findImportPackageDuplicateMatches(
+    previewModel,
+    ctx
+  )
+
+  return buildPreview(normalizedPackage, duplicateMatches)
+}
+
 function createPackageFilePath(
-  folder: 'elements' | 'answer-collections',
+  folder: 'elements' | 'answer-collections' | 'media',
   ref: string
 ) {
-  return `${folder}/${ref}.json`
+  return folder === 'media' ? `${folder}/${ref}` : `${folder}/${ref}.json`
+}
+
+function sanitizeMediaFilename(filename: string) {
+  const sanitized = filename
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  return sanitized || 'media.bin'
+}
+
+function createAnonymousMediaFilename(index: number, filename: string) {
+  const sanitized = sanitizeMediaFilename(filename)
+  const extension = sanitized.match(/\.([a-z0-9]{1,12})$/)?.[1]
+  return `media-${index}.${extension ?? 'bin'}`
+}
+
+type PackageZipFile = {
+  path: string
+  data: Buffer | string
+}
+
+function createJsonPackageFile(path: string, value: unknown, label: string) {
+  const data = Buffer.from(JSON.stringify(value, null, 2), 'utf8')
+  if (data.length > MAX_IMPORT_EXPORT_JSON_BYTES) {
+    throw new Error(`${label} is too large.`)
+  }
+
+  return { path, data }
+}
+
+function getPackageZipFileDataLength(data: Buffer | string) {
+  return Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data, 'utf8')
+}
+
+function assertStoredZipSize(files: PackageZipFile[]) {
+  let estimatedBytes = 22
+
+  for (const file of files) {
+    const fileNameBytes = Buffer.byteLength(file.path, 'utf8')
+    estimatedBytes +=
+      30 +
+      fileNameBytes +
+      getPackageZipFileDataLength(file.data) +
+      46 +
+      fileNameBytes
+
+    if (estimatedBytes > MAX_IMPORT_EXPORT_PACKAGE_BYTES) {
+      throw new Error('Export package is too large.')
+    }
+  }
+}
+
+async function buildExportMediaWarnings(
+  elements: Array<{
+    content: string
+    explanation?: string | null
+    options: Record<string, unknown>
+  }>,
+  ctx: ContextWithUser
+) {
+  const warnings: string[] = []
+  const urls = uniqueCodes(
+    elements.flatMap((element) => collectElementUrls(element))
+  )
+
+  for (const url of urls) {
+    if (!parseKlickerMediaUrl(url)) {
+      warnings.push(IMPORT_WARNING_EXTERNAL_MEDIA)
+      continue
+    }
+
+    if (!(await isKlickerMediaFileExportable(url, ctx))) {
+      warnings.push(IMPORT_WARNING_INACCESSIBLE_MEDIA)
+    }
+  }
+
+  return uniqueCodes(warnings)
+}
+
+async function createExportMediaFiles(
+  elements: PackageElement[],
+  ctx: ContextWithUser
+) {
+  const warnings: string[] = []
+  const urls = uniqueCodes(
+    elements.flatMap((element) => collectElementUrls(element))
+  )
+  const mediaEntries: PackageMediaManifestEntry[] = []
+  const mediaFiles: { path: string; data: Buffer }[] = []
+  const replacements = new Map<string, string>()
+  let totalMediaBytes = 0
+
+  for (const url of urls) {
+    if (!parseKlickerMediaUrl(url)) {
+      warnings.push(IMPORT_WARNING_EXTERNAL_MEDIA)
+      continue
+    }
+
+    try {
+      if (mediaEntries.length >= MAX_IMPORT_EXPORT_MEDIA_FILES) {
+        throw new Error('Export package contains too many media files.')
+      }
+
+      const mediaFile = await downloadKlickerMediaFile(url, ctx)
+      if (!mediaFile) {
+        warnings.push(IMPORT_WARNING_INACCESSIBLE_MEDIA)
+        continue
+      }
+
+      if (
+        totalMediaBytes + mediaFile.buffer.length >
+        MAX_IMPORT_EXPORT_PACKAGE_BYTES
+      ) {
+        throw new Error('Export package media is too large.')
+      }
+      totalMediaBytes += mediaFile.buffer.length
+
+      const sha256 = hashBuffer(mediaFile.buffer)
+      const index = mediaEntries.length + 1
+      const ref = `media-${index}`
+      const filename = createAnonymousMediaFilename(index, mediaFile.filename)
+      const file = createPackageFilePath('media', filename)
+      const sourceHref = createPackageMediaHref(ref)
+
+      mediaEntries.push({
+        ref,
+        file,
+        filename,
+        contentType: mediaFile.contentType,
+        bytes: mediaFile.buffer.length,
+        sha256,
+        sourceHref,
+      })
+      mediaFiles.push({ path: file, data: mediaFile.buffer })
+      replacements.set(url, sourceHref)
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /too many media files|media is too large/i.test(error.message)
+      ) {
+        throw error
+      }
+
+      warnings.push(IMPORT_WARNING_INACCESSIBLE_MEDIA)
+    }
+  }
+
+  return {
+    mediaEntries,
+    mediaFiles,
+    replacements,
+    warnings: uniqueCodes(warnings),
+  }
 }
 
 export async function createElementExportPackage(
@@ -779,6 +1589,9 @@ export async function createElementExportPackage(
   const uniqueElementIds = Array.from(new Set(elementIds))
   if (uniqueElementIds.length === 0) {
     throw new Error('No elements selected for export.')
+  }
+  if (uniqueElementIds.length > MAX_IMPORT_EXPORT_ELEMENTS) {
+    throw new Error('Too many elements selected for export.')
   }
 
   const elements = await ctx.prisma.element.findMany({
@@ -803,6 +1616,17 @@ export async function createElementExportPackage(
           id: true,
           value: true,
           collectionId: true,
+        },
+      },
+      tags: {
+        where: {
+          ownerId: ctx.user.sub,
+        },
+        select: {
+          name: true,
+        },
+        orderBy: {
+          order: 'asc',
         },
       },
       basePoints: true,
@@ -858,27 +1682,34 @@ export async function createElementExportPackage(
   const answerCollectionsById = new Map(
     answerCollections.map((collection) => [collection.id, collection])
   )
+  const orderedAnswerCollections = answerCollectionIds.map(
+    (id) => answerCollectionsById.get(id)!
+  )
+  const answerCollectionRefById = new Map(
+    orderedAnswerCollections.map((collection, index) => [
+      collection.id,
+      `answer-collection-${index + 1}`,
+    ])
+  )
   const entryRefById = new Map<number, string>()
-  const manifestAnswerCollections = answerCollections.map((collection) => {
-    const ref = `answer-collection-${collection.id}`
-    for (const entry of collection.entries) {
-      entryRefById.set(entry.id, `${ref}-entry-${entry.id}`)
-    }
+  const manifestAnswerCollections = orderedAnswerCollections.map(
+    (collection) => {
+      const ref = answerCollectionRefById.get(collection.id)!
+      for (const [entryIndex, entry] of collection.entries.entries()) {
+        entryRefById.set(entry.id, `${ref}-entry-${entryIndex + 1}`)
+      }
 
-    return {
-      ref,
-      file: createPackageFilePath('answer-collections', ref),
-      source: {
-        id: collection.id,
-        version: collection.version,
-      },
+      return {
+        ref,
+        file: createPackageFilePath('answer-collections', ref),
+      }
     }
-  })
+  )
 
-  const elementFiles = orderedElements.map((element) => {
-    const ref = `element-${element.id}`
+  const elementFiles = orderedElements.map((element, elementIndex) => {
+    const ref = `element-${elementIndex + 1}`
     const answerCollectionRef = element.answerCollectionId
-      ? `answer-collection-${element.answerCollectionId}`
+      ? answerCollectionRefById.get(element.answerCollectionId)
       : undefined
 
     if (
@@ -918,10 +1749,6 @@ export async function createElementExportPackage(
         ref,
         file: createPackageFilePath('elements', ref),
         answerCollectionRef,
-        source: {
-          id: element.id,
-          version: element.version,
-        },
       },
       content: {
         ref,
@@ -935,59 +1762,76 @@ export async function createElementExportPackage(
         status: element.status,
         answerCollectionRef,
         answerCollectionItemRefs,
-        source: {
-          id: element.id,
-          version: element.version,
-        },
+        tags: normalizePackageTags(element.tags.map((tag) => tag.name)),
       },
     }
   })
 
-  const collectionFiles = answerCollections.map((collection) => {
-    const ref = `answer-collection-${collection.id}`
-    return {
-      path: createPackageFilePath('answer-collections', ref),
-      data: JSON.stringify(
-        {
-          ref,
-          name: collection.name,
-          description: collection.description,
-          entries: collection.entries.map((entry) => ({
-            ref: entryRefById.get(entry.id),
-            value: entry.value,
-            source: { id: entry.id },
-          })),
-          source: {
-            id: collection.id,
-            version: collection.version,
-          },
-        },
-        null,
-        2
-      ),
-    }
+  const collectionFiles = orderedAnswerCollections.map((collection) => {
+    const ref = answerCollectionRefById.get(collection.id)!
+    return createJsonPackageFile(
+      createPackageFilePath('answer-collections', ref),
+      {
+        ref,
+        name: collection.name,
+        description: collection.description,
+        version: collection.version,
+        entries: collection.entries.map((entry) => ({
+          ref: entryRefById.get(entry.id),
+          value: entry.value,
+        })),
+      },
+      'Answer collection export file'
+    )
   })
 
+  const exportElements: PackageElement[] = elementFiles.map(
+    (file) => file.content
+  )
+  const { mediaEntries, mediaFiles, replacements, warnings } =
+    await createExportMediaFiles(exportElements, ctx)
+  const packagedElementFiles = elementFiles.map((file) => ({
+    ...file,
+    content: rewriteElementMediaUrls(file.content, replacements),
+  }))
+
   const manifest: PackageManifest = {
-    type: PACKAGE_TYPE,
-    version: PACKAGE_VERSION,
+    type: IMPORT_EXPORT_PACKAGE_TYPE,
+    version: IMPORT_EXPORT_PACKAGE_VERSION,
     createdAt: new Date().toISOString(),
     elements: elementFiles.map((file) => file.manifest),
     answerCollections: manifestAnswerCollections,
+    media: mediaEntries,
+    warnings,
   }
 
-  const buffer = createZip([
-    {
-      path: 'manifest.json',
-      data: JSON.stringify(manifest, null, 2),
-    },
+  const packageFiles: PackageZipFile[] = [
+    createJsonPackageFile('manifest.json', manifest, 'Export package manifest'),
     ...collectionFiles,
-    ...elementFiles.map((file) => ({
-      path: file.manifest.file,
-      data: JSON.stringify(file.content, null, 2),
-    })),
-  ])
+    ...packagedElementFiles.map((file) =>
+      createJsonPackageFile(
+        file.manifest.file,
+        file.content,
+        'Element export file'
+      )
+    ),
+    ...mediaFiles,
+  ]
+  assertStoredZipSize(packageFiles)
+
+  const buffer = createZip(packageFiles)
+  if (buffer.length > MAX_IMPORT_EXPORT_PACKAGE_BYTES) {
+    throw new Error('Export package is too large.')
+  }
   const filename = `klicker-elements-${randomUUID()}.zip`
+
+  logImportExportPackageEvent('export_created', {
+    packageBytes: buffer.length,
+    elements: orderedElements.length,
+    answerCollections: answerCollections.length,
+    mediaFiles: mediaEntries.length,
+    warnings,
+  })
 
   return {
     filename,
@@ -1017,6 +1861,9 @@ export async function getElementExportPackagePreview(
   if (uniqueElementIds.length === 0) {
     throw new Error('No elements selected for export.')
   }
+  if (uniqueElementIds.length > MAX_IMPORT_EXPORT_ELEMENTS) {
+    return emptyExportPackagePreview([EXPORT_PREVIEW_ERROR_TOO_MANY_ELEMENTS])
+  }
 
   const elements = await ctx.prisma.element.findMany({
     where: {
@@ -1027,7 +1874,10 @@ export async function getElementExportPackagePreview(
     select: {
       id: true,
       name: true,
+      content: true,
+      options: true,
       type: true,
+      explanation: true,
       answerCollectionId: true,
     },
   })
@@ -1097,6 +1947,14 @@ export async function getElementExportPackagePreview(
           .map((element) => element.name),
       }
     }),
+    warnings: await buildExportMediaWarnings(
+      orderedElements.map((element) => ({
+        content: element.content,
+        explanation: element.explanation,
+        options: element.options as Record<string, unknown>,
+      })),
+      ctx
+    ),
     errors: [],
   }
 }
@@ -1120,21 +1978,49 @@ export async function validateElementImportPackage(
 ) {
   await assertImportExportRateLimit(ctx, 'validate')
 
-  const buffer = await downloadElementImportPackage({ blobName }, ctx)
-  const normalizedPackage = parseElementImportPackage(buffer)
-  const preview = buildPreview(normalizedPackage)
-  const token = signImportToken({
-    blobName,
-    sha256: hashBuffer(buffer),
-    userId: ctx.user.sub,
-    expiresAt: Date.now() + IMPORT_TOKEN_TTL_MS,
+  let buffer: Buffer
+  let normalizedPackage: NormalizedImportPackage
+  let preview: ReturnType<typeof buildPreview>
+
+  try {
+    buffer = await downloadElementImportPackage({ blobName }, ctx)
+    normalizedPackage = parseElementImportPackage(buffer)
+    preview = await buildPreviewWithDuplicateWarnings(normalizedPackage, ctx)
+  } catch (error) {
+    const errorCode = getImportPackageErrorCode(error)
+    logImportExportPackageEvent('validation_failed', {
+      errorCode,
+    })
+
+    return {
+      importToken: null,
+      elements: [],
+      answerCollections: [],
+      warnings: [],
+      errors: [errorCode],
+    }
+  }
+
+  const packageHash = hashBuffer(buffer)
+  const warnings = buildImportWarnings(normalizedPackage)
+  logImportExportPackageEvent('validation_succeeded', {
+    packageBytes: buffer.length,
+    elements: normalizedPackage.elements.length,
+    answerCollections: normalizedPackage.answerCollections.length,
+    mediaFiles: normalizedPackage.media.length,
+    warnings,
   })
 
   return {
-    importToken: token,
+    importToken: signImportToken({
+      blobName,
+      sha256: packageHash,
+      userId: ctx.user.sub,
+      expiresAt: Date.now() + IMPORT_TOKEN_TTL_MS,
+    }),
     elements: preview.elements,
     answerCollections: preview.answerCollections,
-    warnings: [],
+    warnings,
     errors: [],
   }
 }
@@ -1144,87 +2030,99 @@ function buildElementManipulationArgs(
   entryIdByRef: Map<string, number>,
   collectionIdByRef: Map<string, number>
 ): ElementManipulationInput {
-  const answerCollectionId = element.answerCollectionRef
-    ? collectionIdByRef.get(element.answerCollectionRef)
-    : undefined
-
-  if (
-    (element.type === DB.ElementType.SELECTION ||
-      element.type === DB.ElementType.CASE_STUDY) &&
-    !answerCollectionId
-  ) {
-    throw new Error(
-      `Element "${element.name}" is missing its answer collection.`
-    )
-  }
-
-  const collectionItemIds = (element.answerCollectionItemRefs ?? []).map(
-    (ref) => {
-      const id = entryIdByRef.get(ref)
-      if (!id) {
-        throw new Error(
-          `Element "${element.name}" references an unknown entry.`
-        )
-      }
-
-      return id
-    }
+  const options = buildElementOptionsForManipulation(
+    element,
+    entryIdByRef,
+    collectionIdByRef
   )
-
-  if (element.type === DB.ElementType.SELECTION) {
-    return {
-      type: element.type,
-      status: element.status,
-      name: element.name,
-      content: element.content,
-      explanation: element.explanation ?? undefined,
-      basePoints: element.basePoints,
-      pointsMultiplier: element.pointsMultiplier,
-      tags: [],
-      options: {
-        ...element.options,
-        answerCollection: answerCollectionId,
-        correctAnswers: collectionItemIds,
-      } as any,
-    }
-  }
-
-  if (element.type === DB.ElementType.CASE_STUDY) {
-    return {
-      type: element.type,
-      status: element.status,
-      name: element.name,
-      content: element.content,
-      explanation: element.explanation ?? undefined,
-      basePoints: element.basePoints,
-      pointsMultiplier: element.pointsMultiplier,
-      tags: [],
-      options: {
-        ...mapCaseStudySolutionRefsToItemIds(element.options, entryIdByRef),
-        answerCollection: answerCollectionId,
-        collectionItemIds,
-      } as any,
-    }
-  }
+  assertValidElementOptions(element, options)
 
   return {
     type: element.type,
-    status: element.status,
+    status: DB.ElementStatus.REVIEW,
     name: element.name,
     content: element.content,
     explanation: element.explanation ?? undefined,
     basePoints: element.basePoints,
     pointsMultiplier: element.pointsMultiplier,
     tags: [],
-    options: element.options as any,
+    options: options as any,
   }
+}
+
+type StagedPackageMedia = PackageMedia & {
+  staged: StagedImportedMediaFile
+}
+
+async function stagePackageMediaFiles(
+  mediaFiles: PackageMedia[],
+  ctx: ContextWithUser,
+  createdStagedMediaHrefs: string[]
+) {
+  const stagedMediaFiles: StagedPackageMedia[] = []
+
+  for (const media of mediaFiles) {
+    const staged = await stageImportedMediaFile(
+      {
+        buffer: media.data,
+        contentType: media.contentType,
+        filename: media.filename,
+        originalId: `import-media:${media.sha256}`,
+      },
+      ctx
+    )
+    if (staged.createdBlob) {
+      createdStagedMediaHrefs.push(staged.href)
+    }
+    stagedMediaFiles.push({ ...media, staged })
+  }
+
+  return stagedMediaFiles
+}
+
+async function finalizePackageMediaFiles(
+  mediaFiles: StagedPackageMedia[],
+  ctx: PrismaTransactionContextWithUser
+) {
+  const replacements = new Map<string, string>()
+  const unusedStagedMediaHrefs: string[] = []
+
+  for (const media of mediaFiles) {
+    const finalized = await finalizeStagedImportedMediaFile(media.staged, ctx)
+    replacements.set(media.sourceHref, finalized.href)
+
+    if (finalized.unusedStagedHref) {
+      unusedStagedMediaHrefs.push(finalized.unusedStagedHref)
+    }
+  }
+
+  return {
+    replacements,
+    unusedStagedMediaHrefs,
+  }
+}
+
+async function cleanupCreatedImportedMedia(createdMediaHrefs: string[]) {
+  await Promise.all(
+    createdMediaHrefs.map((href) =>
+      deleteImportedMediaFile(href).catch((error) => {
+        console.error(
+          '[ImportExportMediaStorage] Failed to delete imported media blob after failed import',
+          error
+        )
+      })
+    )
+  )
 }
 
 export async function importElementPackage(
   {
     importToken,
     selectedElementRefs,
-  }: { importToken: string; selectedElementRefs: string[] },
+  }: {
+    importToken: string
+    selectedElementRefs: string[]
+  },
   ctx: ContextWithUser
 ) {
   await assertImportExportRateLimit(ctx, 'import')
@@ -1251,7 +2149,10 @@ export async function importElementPackageBuffer(
   {
     buffer,
     selectedElementRefs,
-  }: { buffer: Buffer; selectedElementRefs: string[] },
+  }: {
+    buffer: Buffer
+    selectedElementRefs: string[]
+  },
   ctx: ContextWithUser
 ) {
   const selectedRefs = new Set(selectedElementRefs)
@@ -1260,13 +2161,18 @@ export async function importElementPackageBuffer(
   }
 
   const normalizedPackage = parseElementImportPackage(buffer)
-  const elementsToImport = normalizedPackage.elements.filter((element) =>
+  const packageHash = hashBuffer(buffer)
+  const previewModel = buildPreviewModel(normalizedPackage)
+  const selectedElements = normalizedPackage.elements.filter((element) =>
     selectedRefs.has(element.ref)
   )
 
-  if (elementsToImport.length !== selectedRefs.size) {
+  if (selectedElements.length !== selectedRefs.size) {
     throw new Error('Selected import elements could not be found.')
   }
+
+  const elementsToImport = selectedElements
+  const skippedElements = 0
 
   const requiredCollectionRefs = new Set(
     elementsToImport.flatMap((element) =>
@@ -1274,80 +2180,162 @@ export async function importElementPackageBuffer(
     )
   )
 
-  const result = await ctx.prisma.$transaction(async (prisma) => {
-    const txCtx: PrismaTransactionContextWithUser = {
-      ...ctx,
-      prisma,
+  const createdStagedMediaHrefs: string[] = []
+  let stagedPackageMediaFiles: StagedPackageMedia[] = []
+  let unusedStagedMediaHrefs: string[] = []
+  let result: {
+    importedElements: number
+    importedAnswerCollections: number
+    skippedElements: number
+  }
+
+  if (elementsToImport.length === 0) {
+    result = {
+      importedElements: 0,
+      importedAnswerCollections: 0,
+      skippedElements,
     }
-    const collectionIdByRef = new Map<string, number>()
-    const entryIdByRef = new Map<string, number>()
-
-    for (const collection of normalizedPackage.answerCollections.filter(
-      (collection) => requiredCollectionRefs.has(collection.ref)
-    )) {
-      const created = await prisma.answerCollection.create({
-        data: {
-          name: collection.name,
-          description: collection.description,
-          entries: {
-            create: collection.entries.map((entry) => ({
-              value: entry.value,
-            })),
-          },
-          owner: {
-            connect: {
-              id: ctx.user.sub,
-            },
-          },
-        },
-        include: {
-          entries: true,
-        },
-      })
-
-      collectionIdByRef.set(collection.ref, created.id)
-      await recomputeDerivedPermissions(
-        { answerCollectionId: created.id, userId: ctx.user.sub },
-        prisma
+  } else {
+    try {
+      const selectedMediaUrls = new Set(
+        elementsToImport.flatMap((element) => collectElementUrls(element))
+      )
+      stagedPackageMediaFiles = await stagePackageMediaFiles(
+        normalizedPackage.media.filter((media) =>
+          selectedMediaUrls.has(media.sourceHref)
+        ),
+        ctx,
+        createdStagedMediaHrefs
       )
 
-      for (const entry of collection.entries) {
-        const createdEntry = created.entries.find(
-          (candidate) => candidate.value === entry.value
-        )
-        if (!createdEntry) {
-          throw new Error(
-            'Imported answer collection entry could not be mapped.'
+      result = await ctx.prisma.$transaction(
+        async (prisma) => {
+          const txCtx: PrismaTransactionContextWithUser = {
+            ...ctx,
+            prisma,
+          }
+          const collectionIdByRef = new Map<string, number>()
+          const entryIdByRef = new Map<string, number>()
+          const finalizedMedia = await finalizePackageMediaFiles(
+            stagedPackageMediaFiles,
+            txCtx
           )
+          unusedStagedMediaHrefs = finalizedMedia.unusedStagedMediaHrefs
+          const rewrittenElementsToImport = elementsToImport.map((element) =>
+            rewriteElementMediaUrls(element, finalizedMedia.replacements)
+          )
+
+          for (const collection of normalizedPackage.answerCollections.filter(
+            (collection) => requiredCollectionRefs.has(collection.ref)
+          )) {
+            const created = await prisma.answerCollection.create({
+              data: {
+                name: collection.name,
+                description: collection.description,
+                version: collection.version,
+                importFingerprint:
+                  previewModel.answerCollectionFingerprintByRef.get(
+                    collection.ref
+                  ),
+                entries: {
+                  create: collection.entries.map((entry) => ({
+                    value: entry.value,
+                  })),
+                },
+                owner: {
+                  connect: {
+                    id: ctx.user.sub,
+                  },
+                },
+              },
+              include: {
+                entries: true,
+              },
+            })
+
+            collectionIdByRef.set(collection.ref, created.id)
+            await recomputeDerivedPermissions(
+              { answerCollectionId: created.id, userId: ctx.user.sub },
+              prisma
+            )
+
+            const createdEntriesBySourceOrder = [...created.entries].sort(
+              (first, second) => first.id - second.id
+            )
+            for (const [index, entry] of collection.entries.entries()) {
+              const createdEntry = createdEntriesBySourceOrder[index]
+              if (!createdEntry) {
+                throw new Error(
+                  'Imported answer collection entry could not be mapped.'
+                )
+              }
+
+              entryIdByRef.set(entry.ref, createdEntry.id)
+            }
+
+            ctx.emitter.emit('invalidate', {
+              typename: 'AnswerCollection',
+              id: created.id,
+            })
+          }
+
+          let importedElements = 0
+          for (const element of rewrittenElementsToImport) {
+            const importedElement = await manipulateElement(
+              buildElementManipulationArgs(
+                element,
+                entryIdByRef,
+                collectionIdByRef
+              ),
+              txCtx
+            )
+
+            if (!importedElement) {
+              throw new Error(
+                `Element "${element.name}" could not be imported.`
+              )
+            }
+
+            await prisma.element.update({
+              where: { id: importedElement.id },
+              data: {
+                // Mark the element as imported without persisting exported DB IDs.
+                originalId: getElementImportOriginalId(packageHash, element),
+                importFingerprint: previewModel.elementFingerprintByRef.get(
+                  element.ref
+                ),
+              },
+            })
+
+            importedElements++
+          }
+
+          return {
+            importedElements,
+            importedAnswerCollections: collectionIdByRef.size,
+            skippedElements,
+          }
+        },
+        {
+          maxWait: 10_000,
+          timeout: 60_000,
         }
-
-        entryIdByRef.set(entry.ref, createdEntry.id)
-      }
-
-      ctx.emitter.emit('invalidate', {
-        typename: 'AnswerCollection',
-        id: created.id,
-      })
-    }
-
-    let importedElements = 0
-    for (const element of elementsToImport) {
-      const importedElement = await manipulateElement(
-        buildElementManipulationArgs(element, entryIdByRef, collectionIdByRef),
-        txCtx
       )
-
-      if (!importedElement) {
-        throw new Error(`Element "${element.name}" could not be imported.`)
-      }
-
-      importedElements++
+    } catch (error) {
+      await cleanupCreatedImportedMedia(createdStagedMediaHrefs)
+      throw error
     }
+  }
 
-    return {
-      importedElements,
-      importedAnswerCollections: collectionIdByRef.size,
-    }
+  await cleanupCreatedImportedMedia(unusedStagedMediaHrefs)
+
+  logImportExportPackageEvent('import_completed', {
+    packageBytes: buffer.length,
+    selectedElements: selectedRefs.size,
+    importedElements: result.importedElements,
+    importedAnswerCollections: result.importedAnswerCollections,
+    skippedElements: result.skippedElements,
+    mediaFiles: createdStagedMediaHrefs.length - unusedStagedMediaHrefs.length,
   })
 
   return result
@@ -1358,5 +2346,6 @@ export function validateElementImportPackageBuffer(buffer: Buffer) {
   return {
     normalizedPackage,
     preview: buildPreview(normalizedPackage),
+    warnings: buildImportWarnings(normalizedPackage),
   }
 }

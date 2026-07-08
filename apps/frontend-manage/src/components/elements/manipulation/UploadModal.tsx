@@ -5,7 +5,10 @@ import {
   ValidateElementImportPackageDocument,
   ValidateElementImportPackageMutation,
 } from '@klicker-uzh/graphql/dist/ops'
-import { ElementOptionsNumerical } from '@klicker-uzh/types'
+import {
+  ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES,
+  type ElementOptionsNumerical,
+} from '@klicker-uzh/types'
 import { H4, Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -25,32 +28,75 @@ type PackagePreview = NonNullable<
 type PackagePreviewElement = PackagePreview['elements'][number]
 type PackagePreviewAnswerCollection =
   PackagePreview['answerCollections'][number]
+type PackagePreviewElementMeta = {
+  tags: string[]
+  alreadyImported: boolean
+  existingElementId?: number | null
+}
+
+function formatPackageSize(bytes: number) {
+  return `${Math.round(bytes / 1024 / 1024)} MB`
+}
+
+function isRecord(value: unknown): value is Record<string, any> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function translatePackageMessage(t: any, code: string) {
+  switch (code) {
+    case 'IMPORT_STATUS_NORMALIZED_TO_REVIEW':
+      return t('manage.elements.elementImportStatusNormalizedWarning')
+    case 'IMPORT_TAGS_OMITTED':
+      return t('manage.elements.elementImportTagsOmittedWarning')
+    case 'IMPORT_EXTERNAL_MEDIA_NOT_PACKAGED':
+      return t('manage.elements.elementImportExternalMediaWarning')
+    case 'IMPORT_MEDIA_NOT_INCLUDED':
+      return t('manage.elements.elementImportMediaMissingWarning')
+    case 'IMPORT_INVALID_OPTIONS':
+      return t('manage.elements.elementImportInvalidOptions')
+    case 'IMPORT_ELEMENT_TAGS_IN_MANIFEST':
+      return t('manage.elements.elementImportTagsInManifest')
+    case 'IMPORT_MANIFEST_NOT_AT_ROOT':
+      return t('manage.elements.elementImportManifestNotAtRoot')
+    case 'IMPORT_PACKAGE_TOO_LARGE':
+      return t('manage.elements.elementImportFileTooLarge', {
+        size: formatPackageSize(ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES),
+      })
+    case 'IMPORT_PACKAGE_NOT_FOUND':
+      return t('manage.elements.elementImportPackageNotFound')
+    case 'IMPORT_INVALID_PACKAGE':
+      return t('manage.elements.elementImportInvalidFile')
+    default:
+      return code
+  }
+}
 
 function convertPackagePreviewElementToFormValues(
   element: PackagePreviewElement
 ): ElementFormTypes {
+  const options = isRecord(element.options) ? element.options : {}
   const sharedQuestionForm = {
     name: element.name,
     status: element.status,
     content: element.content,
     pointsMultiplier: String(element.pointsMultiplier),
     basePoints: element.basePoints,
-    tags: [],
+    tags: element.tags ?? [],
   }
 
   const typeSpecificForm = {
     type: element.type,
     explanation: element.explanation ?? '',
     options: {
-      ...(element.options as Record<string, any>),
+      ...options,
     },
   }
 
   if (element.type === ElementType.Numerical) {
-    const solutionType = (element.options as ElementOptionsNumerical)
-      .solutionRanges
+    const numericalOptions = options as ElementOptionsNumerical
+    const solutionType = numericalOptions.solutionRanges
       ? 'range'
-      : (element.options as ElementOptionsNumerical).exactSolutions
+      : numericalOptions.exactSolutions
         ? 'exact'
         : undefined
     Object.assign(typeSpecificForm.options, { solutionType })
@@ -65,7 +111,9 @@ function convertPackagePreviewElementToFormValues(
         element.answerCollectionItems?.map((item: any) => item.id) ?? [],
     })
   } else if (element.type === ElementType.CaseStudy) {
-    const hasSampleSolution = element.options.hasSampleSolution ?? false
+    const hasSampleSolution = options.hasSampleSolution ?? false
+    const criteria = Array.isArray(options.criteria) ? options.criteria : []
+    const cases = Array.isArray(options.cases) ? options.cases : []
 
     Object.assign(typeSpecificForm.options, {
       itemSelectionMode: 'existing',
@@ -77,13 +125,13 @@ function convertPackagePreviewElementToFormValues(
         element.answerCollectionItems?.map((item: any) => item.id) ?? [],
       manuallyCreatedItems: [],
       criteria:
-        element.options.criteria?.map((criterion: any) => ({
+        criteria.map((criterion: any) => ({
           ...criterion,
           mode: criterion.labels ? 'steps' : 'range',
           step: String(criterion.step),
         })) ?? [],
       cases:
-        element.options.cases?.map((caseItem: any) => ({
+        cases.map((caseItem: any) => ({
           ...caseItem,
           solutions:
             hasSampleSolution && Array.isArray(caseItem.solutions)
@@ -91,13 +139,15 @@ function convertPackagePreviewElementToFormValues(
                   caseItem.solutions.map((solution: any) => [
                     `itemId-${solution.itemId}`,
                     Object.fromEntries(
-                      solution.criteriaSolutions.map((criterion: any) => [
-                        criterion.criterionId,
-                        {
-                          min: String(criterion.min),
-                          max: String(criterion.max),
-                        },
-                      ])
+                      Array.isArray(solution.criteriaSolutions)
+                        ? solution.criteriaSolutions.map((criterion: any) => [
+                            criterion.criterionId,
+                            {
+                              min: String(criterion.min),
+                              max: String(criterion.max),
+                            },
+                          ])
+                        : []
                     ),
                   ])
                 )
@@ -129,6 +179,9 @@ function UploadModal({
   const [elementsForPreview, setElementsForPreview] = useState<
     Record<string, ElementFormTypes>
   >({})
+  const [elementMetaForPreview, setElementMetaForPreview] = useState<
+    Record<string, PackagePreviewElementMeta>
+  >({})
   const [
     answerCollectionEntriesForPreview,
     setAnswerCollectionEntriesForPreview,
@@ -148,6 +201,7 @@ function UploadModal({
     setPackageWarnings([])
     setUploadError('')
     setElementsForPreview({})
+    setElementMetaForPreview({})
     setAnswerCollectionEntriesForPreview({})
     setAnswerCollectionsForOverview([])
   }
@@ -166,6 +220,13 @@ function UploadModal({
     try {
       if (!file.name.toLowerCase().endsWith('.zip')) {
         throw new Error(t('manage.elements.elementImportInvalidFile'))
+      }
+      if (file.size > ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES) {
+        throw new Error(
+          t('manage.elements.elementImportFileTooLarge', {
+            size: formatPackageSize(ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES),
+          })
+        )
       }
 
       const uploadResult = await preparePackageUpload({
@@ -197,13 +258,25 @@ function UploadModal({
       const preview =
         validationResult.data?.validateElementImportPackage ?? null
 
-      if (!preview || preview.errors.length > 0) {
+      if (!preview) {
+        throw new Error(t('manage.elements.elementImportInvalidFile'))
+      }
+
+      if (preview.errors.length > 0 || !preview.importToken) {
+        const errorMessages = preview.errors.map((code: string) =>
+          translatePackageMessage(t, code)
+        )
         throw new Error(
-          preview?.errors[0] ?? t('manage.elements.elementImportInvalidFile')
+          errorMessages.join(' ') ||
+            t('manage.elements.elementImportInvalidFile')
         )
       }
 
       const nextElementsForPreview: Record<string, ElementFormTypes> = {}
+      const nextElementMetaForPreview: Record<
+        string,
+        PackagePreviewElementMeta
+      > = {}
       const nextAnswerCollectionEntriesForPreview: Record<
         string,
         AnswerCollectionPreviewEntry[]
@@ -212,13 +285,21 @@ function UploadModal({
       for (const element of preview.elements) {
         nextElementsForPreview[element.ref] =
           convertPackagePreviewElementToFormValues(element)
+        nextElementMetaForPreview[element.ref] = {
+          tags: element.tags ?? [],
+          alreadyImported: element.alreadyImported,
+          existingElementId: element.existingElementId,
+        }
         nextAnswerCollectionEntriesForPreview[element.ref] =
           element.answerCollectionEntries ?? []
       }
 
       setImportToken(preview.importToken)
-      setPackageWarnings(preview.warnings)
+      setPackageWarnings(
+        preview.warnings.map((code: string) => translatePackageMessage(t, code))
+      )
       setElementsForPreview(nextElementsForPreview)
+      setElementMetaForPreview(nextElementMetaForPreview)
       setAnswerCollectionEntriesForPreview(
         nextAnswerCollectionEntriesForPreview
       )
@@ -234,9 +315,7 @@ function UploadModal({
       setUploadedFileName(null)
       resetPreview()
       const message =
-        err.message === t('manage.elements.elementImportUploadFailed')
-          ? err.message
-          : t('manage.elements.elementImportInvalidFile')
+        err.message || t('manage.elements.elementImportInvalidFile')
       setUploadError(message)
       toast({
         type: 'error',
@@ -328,11 +407,13 @@ function UploadModal({
             </div>
 
             {packageWarnings.length > 0 ? (
-              <UserNotification
-                type="warning"
-                message={packageWarnings.join(' ')}
-                className={{ root: 'text-sm' }}
-              />
+              <div data-cy="element-import-package-warning">
+                <UserNotification
+                  type="warning"
+                  message={packageWarnings.join(' ')}
+                  className={{ root: 'text-sm' }}
+                />
+              </div>
             ) : null}
 
             <PackageAnswerCollectionOverview
@@ -343,6 +424,7 @@ function UploadModal({
 
             <ImportedElementsOverviewTable
               elements={elementsForPreview}
+              elementMeta={elementMetaForPreview}
               answerCollectionEntries={answerCollectionEntriesForPreview}
               importToken={importToken}
               refetchElements={refetchElements}

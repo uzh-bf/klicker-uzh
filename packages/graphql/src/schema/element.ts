@@ -903,15 +903,14 @@ export const UserElementList = builder.objectType(UserElementListRef, {
     elements: t.expose('elements', { type: [Element] }),
   }),
 })
-export interface IElementDownloadLink {
+export interface IElementExportPackageLink {
   downloadLink: string
   filename?: string
   expiresAt?: Date
 }
-export const ElementDownloadLinkRef = builder.objectRef<IElementDownloadLink>(
-  'ElementDownloadLink'
-)
-export const ElementDownloadLink = ElementDownloadLinkRef.implement({
+export const ElementExportPackageLinkRef =
+  builder.objectRef<IElementExportPackageLink>('ElementExportPackageLink')
+export const ElementExportPackageLink = ElementExportPackageLinkRef.implement({
   fields: (t) => ({
     downloadLink: t.exposeString('downloadLink'),
     filename: t.exposeString('filename', { nullable: true }),
@@ -984,6 +983,7 @@ export const ElementExportPackagePreviewAnswerCollection =
 export interface IElementExportPackagePreview {
   elements: IElementExportPackagePreviewElement[]
   answerCollections: IElementExportPackagePreviewAnswerCollection[]
+  warnings: string[]
   errors: string[]
 }
 export const ElementExportPackagePreviewRef =
@@ -997,6 +997,7 @@ export const ElementExportPackagePreview =
       answerCollections: t.expose('answerCollections', {
         type: [ElementExportPackagePreviewAnswerCollection],
       }),
+      warnings: t.exposeStringList('warnings'),
       errors: t.exposeStringList('errors'),
     }),
   })
@@ -1037,6 +1038,8 @@ export interface IElementImportPackagePreviewAnswerCollection {
   ref: string
   name: string
   description: string
+  alreadyImported: boolean
+  existingAnswerCollectionId?: number | null
   entries: IElementImportPackagePreviewEntry[]
 }
 export const ElementImportPackagePreviewAnswerCollectionRef =
@@ -1049,6 +1052,10 @@ export const ElementImportPackagePreviewAnswerCollection =
       ref: t.exposeString('ref'),
       name: t.exposeString('name'),
       description: t.exposeString('description'),
+      alreadyImported: t.exposeBoolean('alreadyImported'),
+      existingAnswerCollectionId: t.exposeInt('existingAnswerCollectionId', {
+        nullable: true,
+      }),
       entries: t.expose('entries', {
         type: [ElementImportPackagePreviewEntry],
       }),
@@ -1065,6 +1072,9 @@ export interface IElementImportPackagePreviewElement {
   basePoints: boolean
   explanation?: string | null
   status: DB.ElementStatus
+  tags: string[]
+  alreadyImported: boolean
+  existingElementId?: number | null
   answerCollectionId?: number | null
   answerCollectionRef?: string | null
   answerCollectionItems: IElementImportPackagePreviewEntry[]
@@ -1086,6 +1096,11 @@ export const ElementImportPackagePreviewElement =
       basePoints: t.exposeBoolean('basePoints'),
       explanation: t.exposeString('explanation', { nullable: true }),
       status: t.expose('status', { type: ElementStatus }),
+      tags: t.exposeStringList('tags'),
+      alreadyImported: t.exposeBoolean('alreadyImported'),
+      existingElementId: t.exposeInt('existingElementId', {
+        nullable: true,
+      }),
       answerCollectionId: t.exposeInt('answerCollectionId', {
         nullable: true,
       }),
@@ -1102,7 +1117,7 @@ export const ElementImportPackagePreviewElement =
   })
 
 export interface IElementImportPackagePreview {
-  importToken: string
+  importToken?: string | null
   elements: IElementImportPackagePreviewElement[]
   answerCollections: IElementImportPackagePreviewAnswerCollection[]
   warnings: string[]
@@ -1113,7 +1128,7 @@ export const ElementImportPackagePreviewRef =
 export const ElementImportPackagePreview =
   ElementImportPackagePreviewRef.implement({
     fields: (t) => ({
-      importToken: t.exposeString('importToken'),
+      importToken: t.exposeString('importToken', { nullable: true }),
       elements: t.expose('elements', {
         type: [ElementImportPackagePreviewElement],
       }),
@@ -1128,6 +1143,7 @@ export const ElementImportPackagePreview =
 export interface IElementImportPackageResult {
   importedElements: number
   importedAnswerCollections: number
+  skippedElements: number
 }
 export const ElementImportPackageResultRef =
   builder.objectRef<IElementImportPackageResult>('ElementImportPackageResult')
@@ -1136,6 +1152,7 @@ export const ElementImportPackageResult =
     fields: (t) => ({
       importedElements: t.exposeInt('importedElements'),
       importedAnswerCollections: t.exposeInt('importedAnswerCollections'),
+      skippedElements: t.exposeInt('skippedElements'),
     }),
   })
 
