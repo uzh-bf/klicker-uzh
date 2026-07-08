@@ -217,6 +217,7 @@ function ActivityCreation({
     }
   }
 
+  // Trigger CI workflow
   return (
     <div className="print-hidden md:min-h-73 mb-3 flex flex-col justify-center md:h-auto">
       <div className="h-full w-full">
