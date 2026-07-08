@@ -32,13 +32,13 @@ jobs:
     if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-24.04
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
       - name: Define node version
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
-
-      - name: Check out repository code
-        uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
@@ -223,13 +223,13 @@ jobs:
     steps:
       - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
 
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
       - name: Define node version
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
-
-      - name: Check out repository code
-        uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
