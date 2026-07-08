@@ -40,20 +40,6 @@ ALTER TABLE "public"."EscapeRoomConfig" ADD CONSTRAINT "EscapeRoomConfig_groupAc
 -- AddForeignKey
 ALTER TABLE "public"."EscapeRoomConfig" ADD CONSTRAINT "EscapeRoomConfig_elementBlockId_fkey" FOREIGN KEY ("elementBlockId") REFERENCES "public"."ElementBlock"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AlterTable
-ALTER TABLE "public"."GroupActivity" ADD COLUMN     "escapeRoomHintPenalty" INTEGER NOT NULL DEFAULT 120,
-ADD COLUMN     "escapeRoomTimeLimit" INTEGER NOT NULL DEFAULT 3600,
-ADD COLUMN     "isEscapeRoom" BOOLEAN NOT NULL DEFAULT false;
-
--- AlterTable
-ALTER TABLE "public"."MicroLearning" ADD COLUMN     "escapeRoomHintPenalty" INTEGER NOT NULL DEFAULT 120,
-ADD COLUMN     "escapeRoomTimeLimit" INTEGER NOT NULL DEFAULT 3600,
-ADD COLUMN     "isEscapeRoom" BOOLEAN NOT NULL DEFAULT false;
-
--- AlterTable
-ALTER TABLE "public"."PracticeQuiz" ADD COLUMN     "escapeRoomHintPenalty" INTEGER NOT NULL DEFAULT 120,
-ADD COLUMN     "escapeRoomTimeLimit" INTEGER NOT NULL DEFAULT 3600,
-ADD COLUMN     "isEscapeRoom" BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateTable
 CREATE TABLE "public"."EscapeRoomAttempt" (

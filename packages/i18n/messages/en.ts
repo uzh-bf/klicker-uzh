@@ -849,6 +849,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       correctAnswerOptions: 'Correct answer options',
       topNAnswers: 'Top {number} answers',
+      escapeRoomStartTitle: 'Escape Room Mode',
+      escapeRoomStartDesc:
+        'Unlock questions sequentially by answering correctly before the timer runs out!',
+      escapeRoomTimeLimitLabel: 'Time Limit',
+      escapeRoomPenaltyLabel: 'Hint Penalty',
+      escapeRoomStartButton: 'Start Attempt',
+      escapeRoomExpiredTitle: "Time's Up!",
+      escapeRoomExpiredDesc: 'You ran out of time! This attempt has expired.',
+      escapeRoomResetButton: 'Restart Escape Room',
+      escapeRoomCompletedTitle: 'Escaped successfully!',
+      escapeRoomCompletedDesc:
+        'Congratulations! You answered all questions correctly and completed the escape room.',
+      escapeRoomTitle: 'Escape Room',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

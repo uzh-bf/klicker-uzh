@@ -128,9 +128,15 @@ export async function handleEscapeRoomValidation(
   // Grade response
   let pointsPercentage = 0
   const type = instanceInfo.type
-  const parsedSolutions = instanceInfo.solutions
-    ? JSON.parse(instanceInfo.solutions)
-    : undefined
+  let parsedSolutions: any = undefined
+  if (instanceInfo.solutions) {
+    try {
+      parsedSolutions = JSON.parse(instanceInfo.solutions)
+    } catch (e) {
+      sendJson(res, 400, { error: 'invalid_solutions_json' })
+      return true
+    }
+  }
 
   if (type === 'SC') {
     pointsPercentage =
@@ -154,17 +160,22 @@ export async function handleEscapeRoomValidation(
         solution: parsedSolutions || [],
       }) || 0
   } else if (type === 'NUMERICAL') {
-    const exactSolutionsDefined =
-      typeof parsedSolutions !== 'undefined' &&
-      parsedSolutions.length > 0 &&
-      (typeof parsedSolutions[0] === 'number' ||
-        typeof parsedSolutions[0] === 'string')
-    pointsPercentage =
-      gradeQuestionNumerical({
-        response: Number(response.value),
-        solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-        exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
-      }) || 0
+    const numValue = Number(response.value)
+    if (isNaN(numValue)) {
+      pointsPercentage = 0
+    } else {
+      const exactSolutionsDefined =
+        typeof parsedSolutions !== 'undefined' &&
+        parsedSolutions.length > 0 &&
+        (typeof parsedSolutions[0] === 'number' ||
+          typeof parsedSolutions[0] === 'string')
+      pointsPercentage =
+        gradeQuestionNumerical({
+          response: numValue,
+          solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
+          exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
+        }) || 0
+    }
   } else if (type === 'FREE_TEXT') {
     pointsPercentage =
       gradeQuestionFreeText({

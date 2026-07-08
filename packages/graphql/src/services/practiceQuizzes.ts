@@ -17,6 +17,7 @@ import { orderStacks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
+import { checkAccess } from './sharing.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getPracticeQuizData(
@@ -920,6 +921,7 @@ export async function startEscapeRoomAttempt(
   let isEscapeRoom = false
   let timeLimit = 3600
   let groupId: string | null = null
+  let courseId: string | null = null
 
   if (practiceQuizId) {
     const pq = await ctx.prisma.practiceQuiz.findUnique({
@@ -929,6 +931,7 @@ export async function startEscapeRoomAttempt(
     if (!pq) throw new GraphQLError('Practice quiz not found')
     isEscapeRoom = !!pq.escapeRoomConfig
     timeLimit = pq.escapeRoomConfig?.timeLimit ?? 3600
+    courseId = pq.courseId
   } else if (microLearningId) {
     const ml = await ctx.prisma.microLearning.findUnique({
       where: { id: microLearningId, isDeleted: false },
@@ -937,6 +940,7 @@ export async function startEscapeRoomAttempt(
     if (!ml) throw new GraphQLError('Microlearning not found')
     isEscapeRoom = !!ml.escapeRoomConfig
     timeLimit = ml.escapeRoomConfig?.timeLimit ?? 3600
+    courseId = ml.courseId
   } else if (groupActivityId) {
     const ga = await ctx.prisma.groupActivity.findUnique({
       where: { id: groupActivityId, isDeleted: false },
@@ -945,6 +949,7 @@ export async function startEscapeRoomAttempt(
     if (!ga) throw new GraphQLError('Group activity not found')
     isEscapeRoom = !!ga.escapeRoomConfig
     timeLimit = ga.escapeRoomConfig?.timeLimit ?? 3600
+    courseId = ga.courseId
 
     // For group activities, find the participant's group for this course
     const participantGroup = await ctx.prisma.participantGroup.findFirst({
@@ -960,11 +965,12 @@ export async function startEscapeRoomAttempt(
   } else if (elementBlockId) {
     const block = await ctx.prisma.elementBlock.findUnique({
       where: { id: elementBlockId },
-      include: { escapeRoomConfig: true },
+      include: { escapeRoomConfig: true, liveQuiz: true },
     })
     if (!block) throw new GraphQLError('Block not found')
     isEscapeRoom = !!block.escapeRoomConfig
     timeLimit = block.escapeRoomConfig?.timeLimit ?? 300
+    courseId = block.liveQuiz.courseId
   } else {
     throw new GraphQLError('Invalid request: must specify an activity ID')
   }
@@ -973,6 +979,23 @@ export async function startEscapeRoomAttempt(
     throw new GraphQLError(
       'This activity is not configured for escape room mode'
     )
+  }
+
+  // Verify course enrollment (participation)
+  if (courseId) {
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId,
+        },
+      },
+    })
+    if (!participation) {
+      throw new GraphQLError(
+        'You are not enrolled in the course associated with this activity'
+      )
+    }
   }
 
   // 2. Query for existing attempt (check if running or complete)
@@ -1058,6 +1081,47 @@ export async function resetEscapeRoomAttempt(
 ) {
   const isLecturer =
     ctx.user?.role === DB.UserRole.USER || ctx.user?.role === DB.UserRole.ADMIN
+
+  if (isLecturer) {
+    const checks: any[] = []
+    if (practiceQuizId) {
+      checks.push({
+        practiceQuizId,
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+      })
+    }
+    if (microLearningId) {
+      checks.push({
+        microLearningId,
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+      })
+    }
+    if (groupActivityId) {
+      checks.push({
+        groupActivityId,
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+      })
+    }
+    if (elementBlockId) {
+      const block = await ctx.prisma.elementBlock.findUnique({
+        where: { id: elementBlockId },
+        select: { liveQuizId: true },
+      })
+      if (block) {
+        checks.push({
+          liveQuizId: block.liveQuizId,
+          minimumPermissionLevel: DB.PermissionLevel.WRITE,
+        })
+      }
+    }
+
+    if (checks.length > 0) {
+      const hasAccess = await checkAccess(checks, ctx)
+      if (!hasAccess) {
+        throw new GraphQLError('You do not have write access to this activity')
+      }
+    }
+  }
 
   let finalParticipantId = participantId
   let finalGroupId = groupId

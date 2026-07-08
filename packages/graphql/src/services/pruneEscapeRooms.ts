@@ -71,32 +71,55 @@ export async function handlePruneEscapeRooms(
         1 + hintsUsedCount + Math.floor(attempt.penaltySeconds / 60)
 
       for (const instance of instances) {
-        await globalContext.prisma.instanceStatistics
-          .upsert({
-            where: { elementInstanceId: instance.id },
-            create: {
-              elementInstanceId: instance.id,
-              uniqueParticipantCount: 1,
-              correctCount: isSuccess ? 1 : 0,
-              wrongCount: isSuccess ? Math.max(0, triesCount - 1) : triesCount,
-              averageTimeSpent: timeSpent,
-            },
-            update: {
-              uniqueParticipantCount: { increment: 1 },
-              correctCount: isSuccess ? { increment: 1 } : undefined,
-              wrongCount: {
-                increment: isSuccess ? Math.max(0, triesCount - 1) : triesCount,
+        const stats = await globalContext.prisma.instanceStatistics.findUnique({
+          where: { elementInstanceId: instance.id },
+        })
+
+        if (stats) {
+          const newParticipantCount = stats.uniqueParticipantCount + 1
+          const newAverageTimeSpent =
+            ((stats.averageTimeSpent ?? 0) * stats.uniqueParticipantCount +
+              timeSpent) /
+            newParticipantCount
+
+          await globalContext.prisma.instanceStatistics
+            .update({
+              where: { elementInstanceId: instance.id },
+              data: {
+                uniqueParticipantCount: newParticipantCount,
+                correctCount: isSuccess
+                  ? stats.correctCount + 1
+                  : stats.correctCount,
+                wrongCount:
+                  stats.wrongCount +
+                  (isSuccess ? Math.max(0, triesCount - 1) : triesCount),
+                averageTimeSpent: newAverageTimeSpent,
               },
-              averageTimeSpent: {
-                set: timeSpent,
+            })
+            .catch((err) => {
+              executionContext.logger.error(
+                `Failed to update stats for instance ${instance.id}: ${err}`
+              )
+            })
+        } else {
+          await globalContext.prisma.instanceStatistics
+            .create({
+              data: {
+                elementInstanceId: instance.id,
+                uniqueParticipantCount: 1,
+                correctCount: isSuccess ? 1 : 0,
+                wrongCount: isSuccess
+                  ? Math.max(0, triesCount - 1)
+                  : triesCount,
+                averageTimeSpent: timeSpent,
               },
-            },
-          })
-          .catch((err) => {
-            executionContext.logger.error(
-              `Failed to update stats for instance ${instance.id}: ${err}`
-            )
-          })
+            })
+            .catch((err) => {
+              executionContext.logger.error(
+                `Failed to create stats for instance ${instance.id}: ${err}`
+              )
+            })
+        }
       }
     }
 

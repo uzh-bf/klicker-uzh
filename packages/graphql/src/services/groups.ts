@@ -34,6 +34,11 @@ import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import {
+  evaluateCaseStudyAnswerCorrectness,
+  evaluateChoicesAnswerCorrectness,
+  evaluateFreeTextAnswerCorrectness,
+  evaluateNumericalAnswerCorrectness,
+  evaluateSelectionAnswerCorrectness,
   type RespondToElementStackInput,
   updateCaseStudyResults,
   updateChoicesResults,
@@ -1609,31 +1614,108 @@ export async function submitGroupActivityDecisions(
     })
   )
 
+  let allCorrect = true
+  if (groupActivityInstance.groupActivity.escapeRoomConfig && responses) {
+    for (const resp of responses) {
+      if (resp.type === DB.ElementType.CONTENT) continue
+
+      const instance = await ctx.prisma.elementInstance.findUnique({
+        where: { id: resp.instanceId },
+      })
+      if (!instance || !instance.elementData) continue
+
+      const elementData = instance.elementData as any
+      if (!elementData.options?.hasSampleSolution) continue
+
+      let correctness: number | null = null
+      if (
+        resp.type === DB.ElementType.SC ||
+        resp.type === DB.ElementType.MC ||
+        resp.type === DB.ElementType.KPRIM
+      ) {
+        correctness = evaluateChoicesAnswerCorrectness({
+          elementData,
+          response: { choices: resp.choicesResponse },
+        })
+      } else if (resp.type === DB.ElementType.NUMERICAL) {
+        correctness = evaluateNumericalAnswerCorrectness({
+          elementData,
+          response: { value: String(resp.numericalResponse) },
+        })
+      } else if (resp.type === DB.ElementType.FREE_TEXT) {
+        correctness = evaluateFreeTextAnswerCorrectness({
+          elementData,
+          response: { value: resp.freeTextResponse },
+        })
+      } else if (resp.type === DB.ElementType.SELECTION) {
+        correctness = evaluateSelectionAnswerCorrectness({
+          elementData,
+          response: { selection: resp.selectionResponse },
+        })
+      } else if (resp.type === DB.ElementType.CASE_STUDY) {
+        correctness = evaluateCaseStudyAnswerCorrectness({
+          elementData,
+          response: { assessment: resp.caseStudyResponse },
+        })
+      }
+
+      if (correctness !== 1) {
+        allCorrect = false
+        break
+      }
+    }
+  }
+
+  const isEscapeRoom = !!groupActivityInstance.groupActivity.escapeRoomConfig
+  const shouldSubmitDecisions = !isEscapeRoom || allCorrect
+
   const updatedActivityInstance = await ctx.prisma.groupActivityInstance.update(
     {
       where: { id: activityId },
       data: {
         decisions: responses,
-        decisionsSubmittedAt: new Date(),
+        decisionsSubmittedAt: shouldSubmitDecisions ? new Date() : undefined,
       },
     }
   )
 
-  if (groupActivityInstance.groupActivity.escapeRoomConfig) {
-    await ctx.prisma.escapeRoomAttempt
-      .update({
-        where: {
-          groupId_groupActivityId: {
-            groupId: groupActivityInstance.groupId,
-            groupActivityId: groupActivityInstance.groupActivityId,
+  if (isEscapeRoom) {
+    if (allCorrect) {
+      await ctx.prisma.escapeRoomAttempt
+        .update({
+          where: {
+            groupId_groupActivityId: {
+              groupId: groupActivityInstance.groupId,
+              groupActivityId: groupActivityInstance.groupActivityId,
+            },
           },
-        },
-        data: {
-          status: DB.EscapeRoomStatus.COMPLETED,
-          completedAt: new Date(),
-        },
-      })
-      .catch(() => {})
+          data: {
+            status: DB.EscapeRoomStatus.COMPLETED,
+            completedAt: new Date(),
+          },
+        })
+        .catch(() => {})
+    } else {
+      const config = groupActivityInstance.groupActivity.escapeRoomConfig
+      const lockoutSeconds = config?.lockoutSeconds ?? 5
+      const lockoutUntil = dayjs().add(lockoutSeconds, 'second').toDate()
+
+      await ctx.prisma.escapeRoomAttempt
+        .update({
+          where: {
+            groupId_groupActivityId: {
+              groupId: groupActivityInstance.groupId,
+              groupActivityId: groupActivityInstance.groupActivityId,
+            },
+          },
+          data: {
+            lockoutUntil,
+          },
+        })
+        .catch(() => {})
+
+      throw new GraphQLError('Some answers are incorrect. You are locked out.')
+    }
   }
 
   // return updatedActivityInstance
