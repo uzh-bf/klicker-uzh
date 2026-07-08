@@ -74,10 +74,17 @@ export const GroupActivity = GroupActivityRef.implement({
       nullable: true,
       resolve: async (parent, _args, ctx) => {
         if (!ctx.user?.sub) return null
+        const participantGroup = await ctx.prisma.participantGroup.findFirst({
+          where: {
+            courseId: parent.courseId,
+            participants: { some: { id: ctx.user.sub } },
+          },
+        })
+        if (!participantGroup) return []
         return await ctx.prisma.escapeRoomAttempt.findMany({
           where: {
             groupActivityId: parent.id,
-            participantId: ctx.user.sub,
+            groupId: participantGroup.id,
           },
         })
       },
@@ -308,11 +315,11 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
       type: [EscapeRoomAttemptRef],
       nullable: true,
       resolve: async (parent, _args, ctx) => {
-        if (!ctx.user?.sub) return null
+        if (!parent.group?.id) return null
         return await ctx.prisma.escapeRoomAttempt.findMany({
           where: {
             groupActivityId: parent.id,
-            participantId: ctx.user.sub,
+            groupId: parent.group.id,
           },
         })
       },

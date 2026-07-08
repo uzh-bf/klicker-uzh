@@ -64,11 +64,13 @@ CREATE TABLE "public"."EscapeRoomAttempt" (
     "hintsUsed" JSONB NOT NULL DEFAULT '[]',
     "status" "public"."EscapeRoomStatus" NOT NULL DEFAULT 'IN_PROGRESS',
     "completedAt" TIMESTAMP(3),
+    "lockoutUntil" TIMESTAMP(3),
     "participantId" UUID,
     "groupId" UUID,
     "practiceQuizId" UUID,
     "microLearningId" UUID,
     "groupActivityId" UUID,
+    "elementBlockId" INTEGER,
 
     CONSTRAINT "EscapeRoomAttempt_pkey" PRIMARY KEY ("id")
 );
@@ -96,3 +98,6 @@ ALTER TABLE "public"."EscapeRoomAttempt" ADD CONSTRAINT "EscapeRoomAttempt_micro
 
 -- AddForeignKey
 ALTER TABLE "public"."EscapeRoomAttempt" ADD CONSTRAINT "EscapeRoomAttempt_groupActivityId_fkey" FOREIGN KEY ("groupActivityId") REFERENCES "public"."GroupActivity"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."EscapeRoomAttempt" ADD CONSTRAINT "EscapeRoomAttempt_elementBlockId_fkey" FOREIGN KEY ("elementBlockId") REFERENCES "public"."ElementBlock"("id") ON DELETE CASCADE ON UPDATE CASCADE;

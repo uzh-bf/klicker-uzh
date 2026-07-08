@@ -283,6 +283,7 @@ export async function manipulatePracticeQuiz(
     description,
     pointsMultiplier: multiplier,
     orderType: order,
+    resetTimeDays,
     areInstancesOutdated: anyInstanceOutdated,
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
