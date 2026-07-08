@@ -1,5 +1,10 @@
 # Log
 
+## 2026-07-08
+
+- **Update**: [testing](./testing.md) guide updated to document `Z-escape-room.spec.ts` in Playwright E2E spec list.
+- **Update**: [domain-model](./domain-model.md) updated to document the generalized Escape Room Mode and configuration attributes for practice quizzes and microlearnings.
+
 ## 2026-07-07
 
 - **Update**: migration-in-flight banners added to [graphql-api-layer](./graphql-api-layer.md), [architecture-overview](./architecture-overview.md) (GraphQL→tRPC, PR #5132), and [chat-platform](./chat-platform.md) (AI-SDK→Mastra, PRs #5126/#5129) — pages stay authoritative until those PRs merge.
