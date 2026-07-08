@@ -100,8 +100,8 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     await expect(tableElement.locator('tr')).toHaveCount(4)
 
     // 5. Test Syntax-Highlighted Code Block
-    // Click outside of table area in the editor to append text
-    await editor.locator('p').last().click()
+    // Click outside of table area in the editor to append text (target only top-level paragraphs)
+    await editor.locator('> p').last().click()
 
     // Create code block via input rule: typing ```js followed by space/Enter
     await page.keyboard.type('```js ')

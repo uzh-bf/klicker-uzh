@@ -183,7 +183,7 @@ function Markdown({
         data-cy={data?.cy}
         data-test={data?.test}
         className={twMerge(
-          'prose prose-p:mt-0 prose-heading:mt-0 hover:prose-a:text-primary-100 max-w-none',
+          'markdown-content prose prose-p:mt-0 prose-heading:mt-0 hover:prose-a:text-primary-100 max-w-none',
           className?.root
         )}
       >
@@ -194,7 +194,7 @@ function Markdown({
 
   return (
     <div
-      className={twMerge('max-w-none', className?.root)}
+      className={twMerge('markdown-content max-w-none', className?.root)}
       data-cy={data?.cy}
       data-test={data?.test}
     >

@@ -461,6 +461,8 @@ export default {
       deleteColumn: 'Spalte löschen',
       mergeCells: 'Zellen verbinden oder teilen',
       deleteTable: 'Tabelle löschen',
+      undo: 'Rückgängig machen',
+      redo: 'Wiederholen',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',

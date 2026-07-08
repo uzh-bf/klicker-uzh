@@ -310,8 +310,8 @@
   }
 }
 
-/* Table & Code Highlighting styles (GFM / Prism / Lowlight) */
-table {
+/* Table & Code Highlighting styles (GFM / Prism / Lowlight) scoped to markdown-content */
+.markdown-content table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
@@ -319,8 +319,8 @@ table {
   overflow: hidden;
 }
 
-td,
-th {
+.markdown-content td,
+.markdown-content th {
   min-width: 1em;
   border: 1px solid #ced4da;
   padding: 8px 12px;
@@ -329,22 +329,22 @@ th {
   position: relative;
 }
 
-th {
+.markdown-content th {
   font-weight: bold;
   text-align: left;
   background-color: #f8f9fa;
 }
 
-/* Code block & syntax highlighting theme (Lowlight & Prism) */
-pre,
-pre.language-css,
-pre.language-js,
-pre.language-html,
-pre.language-ts,
-pre.language-typescript,
-pre.language-javascript,
-pre.language-python,
-pre.language-sql {
+/* Code block & syntax highlighting theme (Lowlight & Prism) scoped to markdown-content */
+.markdown-content pre,
+.markdown-content pre.language-css,
+.markdown-content pre.language-js,
+.markdown-content pre.language-html,
+.markdown-content pre.language-ts,
+.markdown-content pre.language-typescript,
+.markdown-content pre.language-javascript,
+.markdown-content pre.language-python,
+.markdown-content pre.language-sql {
   background-color: #f6f8fa;
   border: 1px solid #e1e4e8;
   border-radius: 6px;

@@ -458,6 +458,8 @@ export default {
       deleteColumn: 'Delete column',
       mergeCells: 'Merge or split cells',
       deleteTable: 'Delete table',
+      undo: 'Undo',
+      redo: 'Redo',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
