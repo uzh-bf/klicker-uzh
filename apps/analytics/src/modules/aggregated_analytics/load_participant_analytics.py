@@ -17,12 +17,9 @@ def load_participant_analytics(db, timestamp, analytics_type, verbose=False):
 
     if verbose:
         # Print the first participant analytics
-        print(
-            "Found {} analytics for the timespan from {} to {}".format(
-                len(participant_analytics), start_date, end_date
-            )
-        )
-        print(participant_analytics[0])
+        print("Found {} analytics for timestamp {}".format(len(participant_analytics), timestamp))
+        if len(participant_analytics) > 0:
+            print(participant_analytics[0])
 
     # convert the analytics to a dataframe
     df_loaded_analytics = convert_to_df(participant_analytics)

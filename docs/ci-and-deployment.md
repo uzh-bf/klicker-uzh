@@ -14,7 +14,13 @@ tags:
 
 ## PR gates
 
-Per-commit workflows: `check-format`, `check-lint`, `check-syncpack`, `check-types` (the last builds packages in dependency order before `pnpm run check`). All use pnpm 11.5.0 and the Turbo remote cache. Test workflows: see [Testing](./testing.md). Extra automation: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside. `knip` exists as a manual script only — dead-code drift is not CI-enforced. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
+Per-commit workflows: `check-format`, `check-lint`, `check-syncpack`, `check-types` (which change-scopes package checking via Turbo). All use pnpm 11.5.0, pin Node 24 via the root Volta configuration (`package.json`), and utilize the Turbo remote cache.
+
+- **Path filtering**: A custom composite action `.github/actions/changed-paths` executes on PR events. Heavy test suites (e.g. `test-graphql` and `test-playwright`) run path-scoped filters to only build and spawn backing services (Postgres, Redis, Hatchet) when relevant files are changed.
+- **Required status contexts**: To safely mark path-filtered workflows as required in branch protection, they include dedicated status checkers (e.g. `test-graphql-status`, `test-playwright-status`) that always execute and fail-open.
+- **Prisma Schema Drift**: A custom `check:prisma-sync` smoke check compares schema structures in the monorepo against mirrored schemas in `apps/analytics` to enforce database integrity.
+- **Markdown Linter**: `check:agents-md` validates links and command script correctness inside the codebase guide.
+- **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside. `knip` is manual only. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 
 ## Image builds
 
