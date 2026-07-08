@@ -1,5 +1,4 @@
 # Overlay to enable devrouter routing (https://*.klicker.localhost) and local trust of mkcert root CA.
-version: '3.8'
 
 services:
   postgres:

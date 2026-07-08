@@ -1,8 +1,9 @@
-# Proxy-only routing over the shared external `devnet` network by container name
-# (NO published host ports). The monorepo runs every app in the ONE `klicker-app`
-# container via `turbo dev`; each hostname routes to that container's internal
-# port. devrouter's Traefik fronts everything on the shared :443 / :5432, so
-# klicker coexists with the other devcontainers with zero collisions.
+# Proxy-only routing over the shared external `devnet` network by container
+# alias (NO published host ports in devrouter mode). The monorepo runs every app
+# in one container via `turbo dev`; each hostname routes to that container's
+# internal port. ${WORKSPACE} is substituted by devrouter at runtime so
+# parallel worktrees target distinct aliases (`<workspace>-app` / `<workspace>-db`)
+# instead of all sharing one `klicker-app`.
 # Full walkthrough: devrouter docs/DEVCONTAINER.md.
 #
 # Usage: `dev up` + `dev tls install` (creates devnet + the mkcert CA), THEN

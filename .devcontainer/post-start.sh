@@ -99,19 +99,26 @@ setsid bash -c "$DEV_CMD" >/tmp/dev.log 2>&1 </dev/null &
 disown 2>/dev/null || true
 
 if [ -f /etc/devrouter/mkcert-rootCA.pem ]; then
-  cat <<'EOF'
+  cat <<EOF
 [post-start] Apps (via devrouter; first compile can take a minute):
-[post-start]   API          -> https://api.klicker.localhost
-[post-start]   Auth         -> https://auth.klicker.localhost
-[post-start]   PWA          -> https://pwa.klicker.localhost
-[post-start]   Manage       -> https://manage.klicker.localhost   (login: lecturer / abcd)
-[post-start]   Control      -> https://control.klicker.localhost
-[post-start]   OLAT API     -> https://olat-api.klicker.localhost  (/health, /api-docs; bearer OLAT_API_KEY)
-[post-start]   Response API -> https://response-api.klicker.localhost
-[post-start]   LTI Service  -> https://lti.klicker.localhost
-[post-start]   Chat         -> https://chat.klicker.localhost (requires UPSTREAM_OPENAI_API_KEY)
+[post-start]   API          -> ${APP_ORIGIN_API}
+[post-start]   Auth         -> ${APP_ORIGIN_AUTH}
+[post-start]   PWA          -> ${APP_ORIGIN_PWA}
+[post-start]   Manage       -> ${APP_ORIGIN_MANAGE}   (login: lecturer / abcd)
+[post-start]   Control      -> ${APP_ORIGIN_CONTROL}
+[post-start]   OLAT API     -> https://olat-api.${COOKIE_DOMAIN}  (/health, /api-docs; bearer OLAT_API_KEY)
+[post-start]   Response API -> ${NEXT_PUBLIC_ADD_RESPONSE_URL}
+[post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
+[post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Routes  -> on the host: for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+[post-start] Routes  -> on the host:
+EOF
+  if [ -n "${WORKSPACE:-}" ]; then
+    echo "[post-start]   for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run \"\$a\" --workspace ${WORKSPACE}; done"
+  else
+    echo "[post-start]   for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run \"\$a\"; done"
+  fi
+  cat <<EOF
 [post-start] Logs    -> tail -f /tmp/dev.log
 EOF
 else
