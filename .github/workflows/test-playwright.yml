@@ -286,7 +286,7 @@ jobs:
         timeout-minutes: 120
         run: |
           chmod +x .github/scripts/wait-for-services.sh
-          TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }})
+          TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
           echo "Running tests for shard ${{ matrix.shardIndex }}: $TEST_FILES"
           .github/scripts/wait-for-services.sh -- \
             env NODE_ENV=test \

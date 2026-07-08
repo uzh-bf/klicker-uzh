@@ -40,6 +40,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.12'
+          enable-cache: false
 
       - uses: pnpm/action-setup@v4
         if: steps.filter.outputs.should_run == 'true'
