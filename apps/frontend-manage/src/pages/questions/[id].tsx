@@ -61,7 +61,7 @@ function QuestionDetails() {
           })}
         </H2>
         <div
-          data-testid="question-preview-container"
+          data-cy="question-preview-container"
           className="w-256 max-w-full rounded-lg border border-solid p-5"
         >
           <StudentElement

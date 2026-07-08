@@ -381,7 +381,7 @@ function ContentInput({
             }}
           >
             <ToolbarButton
-              data-testid="toolbar-table"
+              data-cy="toolbar-table"
               active={editor.isActive('table')}
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault()
@@ -406,7 +406,7 @@ function ContentInput({
           <div className="border-uzh-grey-40 mr-3 flex flex-row items-center gap-1 border-l pl-2">
             <Tooltip tooltip={t('shared.contentInput.addRow')}>
               <ToolbarButton
-                data-testid="table-add-row"
+                data-cy="table-add-row"
                 active={false}
                 onClick={(e: React.MouseEvent) => {
                   e.preventDefault()
