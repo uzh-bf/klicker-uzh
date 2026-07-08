@@ -78,38 +78,42 @@ export function getKalturaId(url: string): string | null {
   return null
 }
 
-export function getKalturaUiConfId(url: string): string | null {
+export function getKalturaUiConfId(url: string): string {
   try {
     const pathMatch = url.match(/\/uiConfId\/(\d+)/i)
     if (pathMatch && pathMatch[1]) {
       return pathMatch[1]
     }
     const parsedUrl = new URL(url)
-    const queryId = parsedUrl.searchParams.get('uiconf_id')
+    const queryId =
+      parsedUrl.searchParams.get('uiconf_id') ||
+      parsedUrl.searchParams.get('uiConfId')
     if (queryId && /^\d+$/.test(queryId)) {
       return queryId
     }
   } catch {
     // Ignore URL parse error
   }
-  return null
+  return '23449004'
 }
 
-export function getKalturaPartnerId(url: string): string | null {
+export function getKalturaPartnerId(url: string): string {
   try {
     const pathMatch = url.match(/\/partner_id\/(\d+)/i)
     if (pathMatch && pathMatch[1]) {
       return pathMatch[1]
     }
     const parsedUrl = new URL(url)
-    const queryId = parsedUrl.searchParams.get('partner_id')
+    const queryId =
+      parsedUrl.searchParams.get('partner_id') ||
+      parsedUrl.searchParams.get('partnerId')
     if (queryId && /^\d+$/.test(queryId)) {
       return queryId
     }
   } catch {
     // Ignore URL parse error
   }
-  return null
+  return '106'
 }
 
 interface VideoEmbedProps {

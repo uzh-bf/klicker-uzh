@@ -22,8 +22,8 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 
 ## Markdown and Video Embeds
 
-- **Link Interception for Videos**: Links in markdown fields (`@klicker-uzh/markdown`) with a label of `video` or `embed` (case-insensitive, trimmed) targeting YouTube or UZH Kaltura (SWITCHcast) are automatically intercepted and rendered as responsive `<iframe />` players via `VideoEmbed`.
-- **Kaltura PlaykitJs Bypass**: To prevent frame-based third-party cookie login loops, Kaltura embeds resolve the video's `entryId` and parse `partnerId` (defaults to `106`) and `uiConfId` (defaults to `23449004`) to render using the PlaykitJs secure embed structure:
+- **Link Interception for Videos**: Links in markdown fields (`@klicker-uzh/markdown`) with a plain, unformatted text label of `video` or `embed` (case-insensitive, trimmed) targeting YouTube or UZH Kaltura (SWITCHcast) are automatically intercepted and rendered as responsive `<iframe />` players via `VideoEmbed`.
+- **Kaltura PlaykitJs Bypass**: To prevent frame-based third-party cookie login loops, Kaltura embeds resolve the video's `entryId` (requires the standard `0_` or `1_` prefix followed by 8 alphanumeric characters) and parse `partnerId` (defaults to `106`) and `uiConfId` (defaults to `23449004`) to render using the PlaykitJs secure embed structure:
   `https://api.cast.switch.ch/p/${partnerId}/embedPlaykitJs/uiconf_id/${uiConfId}/partner_id/${partnerId}?iframeembed=true&playerId=kaltura_player&entry_id=${entryId}`
 
 ## Data fetching
