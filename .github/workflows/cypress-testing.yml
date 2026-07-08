@@ -116,7 +116,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.5.0
           run_install: false
@@ -329,7 +329,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.5.0
           run_install: false
