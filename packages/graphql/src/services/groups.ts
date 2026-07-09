@@ -30,7 +30,7 @@ import {
 } from '../lib/randomizedGroups.js'
 import { shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { getPermissionBooleans } from './activities.js'
+import { persistActivityWithPermissions } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -1067,14 +1067,10 @@ export async function manipulateGroupActivity(
     return upsertedActivity
   }
 
-  const activity = transactionPrisma
-    ? await persistGroupActivity(transactionPrisma)
-    : await ctx.prisma.$transaction(persistGroupActivity, { timeout: 60000 })
-
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
   const {
+    activity,
+    permissionLevel,
+    derived,
     isOwner,
     isManager,
     isEditor,
@@ -1082,12 +1078,10 @@ export async function manipulateGroupActivity(
     isShared,
     isRemovable,
     sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+  } = await persistActivityWithPermissions({
+    persist: persistGroupActivity,
+    ctx,
+    transactionPrisma,
   })
 
   return {

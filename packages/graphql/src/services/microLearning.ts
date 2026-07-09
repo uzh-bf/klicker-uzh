@@ -14,7 +14,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { getPermissionBooleans } from './activities.js'
+import { persistActivityWithPermissions } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -398,19 +398,10 @@ export async function manipulateMicroLearning(
     return upsertedMicrolearning
   }
 
-  const activity = transactionPrisma
-    ? await persistMicroLearning(transactionPrisma)
-    : await ctx.prisma.$transaction(persistMicroLearning, { timeout: 60000 })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'MicroLearning',
-    id,
-  })
-
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
   const {
+    activity,
+    permissionLevel,
+    derived,
     isOwner,
     isManager,
     isEditor,
@@ -418,12 +409,12 @@ export async function manipulateMicroLearning(
     isShared,
     isRemovable,
     sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+  } = await persistActivityWithPermissions({
+    persist: persistMicroLearning,
+    invalidateTypename: 'MicroLearning',
+    invalidateId: id,
+    ctx,
+    transactionPrisma,
   })
 
   return {
