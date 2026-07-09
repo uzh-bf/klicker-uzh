@@ -191,7 +191,7 @@ jobs:
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Cypress run parallel with cypress-split
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@v7.4.0
         timeout-minutes: 120
         with:
           install: false
@@ -408,7 +408,7 @@ jobs:
           retention-days: 7
 
       - name: Cypress run with Cloud recording
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@v7.4.0
         timeout-minutes: 120
         with:
           install: false
