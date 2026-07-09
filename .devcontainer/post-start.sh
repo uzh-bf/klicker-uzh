@@ -12,7 +12,7 @@ set -a
 set +a
 
 # Detect if devrouter routing is active (via mkcert CA mount) or fallback to plain localhost ports
-if [ ! -f /etc/devrouter/mkcert-rootCA.pem ]; then
+if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   echo "[post-start] devrouter not detected (no cert mount). Falling back to localhost port-based URLs."
   export APP_ORIGIN_API=http://localhost:3000
   export APP_ORIGIN_AUTH=http://localhost:3010
@@ -98,7 +98,7 @@ DEV_CMD='pnpm exec turbo run dev \
 setsid bash -c "$DEV_CMD" >/tmp/dev.log 2>&1 </dev/null &
 disown 2>/dev/null || true
 
-if [ -f /etc/devrouter/mkcert-rootCA.pem ]; then
+if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF
 [post-start] Apps (via devrouter; first compile can take a minute):
 [post-start]   API          -> ${APP_ORIGIN_API}
@@ -111,14 +111,7 @@ if [ -f /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
 [post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Routes  -> on the host:
-EOF
-  if [ -n "${WORKSPACE:-}" ]; then
-    echo "[post-start]   for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run \"\$a\" --workspace ${WORKSPACE}; done"
-  else
-    echo "[post-start]   for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run \"\$a\"; done"
-  fi
-  cat <<EOF
+[post-start] Routes  -> on the host: for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "\$a"${WORKSPACE:+ --workspace ${WORKSPACE}}; done
 [post-start] Logs    -> tail -f /tmp/dev.log
 EOF
 else

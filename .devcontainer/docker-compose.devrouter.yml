@@ -32,8 +32,8 @@ services:
         aliases:
           - '${WORKSPACE:-klicker-uzh}-app'
     volumes:
-      # Local mkcert root CA (created by `dev tls install`) for server-side TLS trust.
-      - '${DEVROUTER_MKCERT_CAROOT:-${HOME}/Library/Application Support/mkcert}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
+      # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
+      - '${DEVROUTER_MKCERT_CAROOT:-./certs}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
 
 networks:
   devnet:
