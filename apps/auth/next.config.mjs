@@ -1,5 +1,6 @@
 import { getNextBaseConfig } from '@klicker-uzh/next-config'
 import createNextIntlPlugin from 'next-intl/plugin'
+// Trigger CI build
 
 const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 
