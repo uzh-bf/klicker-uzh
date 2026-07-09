@@ -2440,6 +2440,18 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await verifyCourseDuplicationModalUi(page)
     await submitCourseFormAndWaitForCreateCourse(page)
 
+    await expect(
+      page.getByText(
+        messages.manage.courseList.courseDuplicationSucceeded.replace(
+          '{name}',
+          copyName
+        )
+      )
+    ).toBeVisible()
+    await expect(page).toHaveURL(/\/courses\/[0-9a-f-]{36}/, {
+      timeout: 30_000,
+    })
+
     await page.getByTestId('courses').click()
     await expect(
       page.getByTestId(`course-list-button-${copyName}`)
@@ -2612,24 +2624,51 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     })
     await createCourseDuplicationFailureFixture(sourceName)
 
-    await loginLecturer()
-    await openCourseInManage(page, sourceName)
-    await page.getByTestId('course-duplicate-button').click()
-    await submitCourseFormAndWaitForCreateCourse(page, { expectSuccess: false })
-    await expect(
-      page.getByText(messages.manage.courseList.courseDuplicationPartialFailure)
-    ).toBeVisible()
-    await expect(async () => {
-      const summary = await getCourseDuplicationSummary({
+    try {
+      await loginLecturer()
+      await openCourseInManage(page, sourceName)
+      await page.getByTestId('course-duplicate-button').click()
+      await page.getByTestId('course-name').fill(copyName)
+      await page.getByTestId('course-display-name').fill(copyName)
+      const errorMessages = [
+        messages.manage.courseList.courseDuplicationPartialFailure,
+        messages.manage.courseList.courseDuplicationNoAccess,
+        messages.manage.courseList.courseDuplicationFailed,
+      ]
+      const visibleErrorToast = Promise.race(
+        errorMessages.map(async (message) => {
+          await page
+            .getByText(message)
+            .waitFor({ state: 'visible', timeout: 15_000 })
+          return message
+        })
+      )
+      const [errorMessage] = await Promise.all([
+        visibleErrorToast,
+        submitCourseFormAndWaitForCreateCourse(page, {
+          expectSuccess: false,
+        }),
+      ])
+      expect(errorMessage).toBe(
+        messages.manage.courseList.courseDuplicationPartialFailure
+      )
+      await expect(async () => {
+        const summary = await getCourseDuplicationSummary({
+          courseName: copyName,
+          ownerId: LECTURER_ID,
+        })
+        expect(summary).toBeNull()
+      }).toPass()
+    } finally {
+      await deleteCourseWithActivitiesByName({
+        courseName: sourceName,
+        ownerId: LECTURER_ID,
+      })
+      await deleteCourseWithActivitiesByName({
         courseName: copyName,
         ownerId: LECTURER_ID,
       })
-      expect(summary).toBeNull()
-    }).toPass()
-    await deleteCourseWithActivitiesByName({
-      courseName: sourceName,
-      ownerId: LECTURER_ID,
-    })
+    }
   })
 
   test('Allows assessment courses to be duplicated as assessment courses', async ({

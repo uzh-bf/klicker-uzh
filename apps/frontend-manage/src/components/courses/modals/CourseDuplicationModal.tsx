@@ -56,7 +56,9 @@ type CourseDuplicationTranslationKey =
   | 'manage.courseList.changeAvailabilityDateGroupActivities'
   | 'manage.courseList.changeAvailabilityDateMicrolearnings'
   | 'manage.courseList.courseColorReq'
+  | 'manage.courseList.courseCopySuffix'
   | 'manage.courseList.courseDisplayNameReq'
+  | 'manage.courseList.courseDuplicationEndDateInPast'
   | 'manage.courseList.courseDuplicationFailed'
   | 'manage.courseList.courseDuplicationNoAccess'
   | 'manage.courseList.courseDuplicationPartialFailure'
@@ -125,8 +127,10 @@ function getCourseDuplicationDurationParts(startDate: Date, endDate: Date) {
   return { years, months, days }
 }
 
-function getCourseDuplicationCopyName(value?: string | null) {
-  return value ? `${value} Copy` : 'Course Copy'
+function getCourseDuplicationCopyName(t: TranslationFn, value?: string | null) {
+  const suffix = t('manage.courseList.courseCopySuffix')
+
+  return value ? `${value} ${suffix}` : suffix
 }
 
 function getNativeDateInputValue(value?: Date | string | null) {
@@ -309,15 +313,21 @@ function getCourseDuplicationWarningNotifications({
   groupDeadlineDateInit: Date
   t: TranslationFn
 }) {
+  const warnings: string[] = []
+
   if (
     initialValues?.groupDeadlineDate &&
-    values.groupCreationDeadline !== groupDeadlineDateInit &&
+    !dayjs(values.groupCreationDeadline).isSame(dayjs(groupDeadlineDateInit)) &&
     dayjs(values.groupCreationDeadline).isBefore(dayjs())
   ) {
-    return [t('manage.courseList.groupDeadlineChangedToPast')]
+    warnings.push(t('manage.courseList.groupDeadlineChangedToPast'))
   }
 
-  return []
+  if (dayjs(values.endDate).isBefore(dayjs())) {
+    warnings.push(t('manage.courseList.courseDuplicationEndDateInPast'))
+  }
+
+  return warnings
 }
 
 function FormikNativeDateInput({
@@ -345,6 +355,7 @@ function FormikNativeDateInput({
   return (
     <div className="flex w-[280px] flex-col">
       <FormLabel
+        id={inputId}
         required={required}
         label={label}
         labelType="small"
@@ -394,7 +405,12 @@ function FormikNativeColorInput({
 
   return (
     <div className="flex w-[280px] flex-col">
-      <FormLabel required={required} label={label} labelType="small" />
+      <FormLabel
+        id={inputId}
+        required={required}
+        label={label}
+        labelType="small"
+      />
       <div className="flex items-center gap-2">
         <input
           id={inputId}
@@ -455,6 +471,7 @@ function FormikNativeSelect({
   return (
     <div className="flex w-full flex-col">
       <FormLabel
+        id={inputId}
         required={required}
         label={label}
         labelType="small"
@@ -518,6 +535,7 @@ function FormikNativeSwitch({
   return (
     <div className="flex min-h-16 flex-col">
       <FormLabel
+        id={inputId}
         required={required}
         label={label}
         labelType="small"
@@ -594,8 +612,9 @@ function CourseDuplicationModal({
     'day'
   )
 
-  const nameCopy = getCourseDuplicationCopyName(initialValues?.name)
+  const nameCopy = getCourseDuplicationCopyName(t, initialValues?.name)
   const displayNameCopy = getCourseDuplicationCopyName(
+    t,
     initialValues?.displayName
   )
 
@@ -647,7 +666,7 @@ function CourseDuplicationModal({
         }
         validationSchema={schema}
       >
-        {({ values, errors, isValid, isSubmitting, setFieldValue }) => {
+        {({ values, isValid, isSubmitting, setFieldValue }) => {
           const infoNotifications = getCourseDuplicationInfoNotifications({
             values,
             t,
@@ -836,6 +855,7 @@ function CourseDuplicationModal({
                         <div className="flex flex-col gap-2 md:mt-3 md:grid md:grid-cols-3">
                           <div className="flex w-[280px] flex-col">
                             <FormLabel
+                              id="course-duplication-group-deadline"
                               required
                               label={t(
                                 'manage.courseList.groupCreationDeadline'
@@ -852,6 +872,7 @@ function CourseDuplicationModal({
                               }
                             />
                             <output
+                              id="course-duplication-group-deadline"
                               aria-readonly="true"
                               className="border-input bg-uzh-grey-20 w-36 rounded-md border px-3 py-2 text-base text-gray-600"
                               data-cy="group-creation-deadline"
@@ -931,14 +952,6 @@ function CourseDuplicationModal({
                   </div>
                 </div>
               </div>
-              <div className="mt-1 flex flex-row justify-between">
-                {errors && (
-                  <div className="text-sm text-red-700">
-                    {errors.description}
-                  </div>
-                )}
-              </div>
-
               {infoNotifications.length > 0 && (
                 <UserNotification type="info" className={{ root: 'mt-2' }}>
                   <ul className="pl-3">

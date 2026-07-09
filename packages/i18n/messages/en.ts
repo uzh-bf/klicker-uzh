@@ -2967,7 +2967,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       copyGroupActivitiesTooltip:
         'If you activate this setting, all group activities in the course will be copied to the new course. When disabling group creation, this setting is disabled.',
       courseDuplicationCopyInfo:
-        'Duplicating a course creates independent activity copies and preserves direct sharing permissions. The copied activity instances still reference the same underlying elements.',
+        'Duplicating a course creates independent activity copies and preserves direct sharing permissions. The copied activity instances still reference the same underlying elements. If you duplicate a course owned by somebody else, the original owner keeps administrative access to the copy.',
+      courseCopySuffix: 'Copy',
+      courseDuplicationEndDateInPast:
+        'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
       courseDuplicationFailed: 'Failed to duplicate course.',
       courseDuplicationNoAccess:
         'You no longer have sufficient permissions to duplicate this course.',

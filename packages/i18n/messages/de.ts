@@ -2998,7 +2998,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       changeAvailabilityDateGroupActivities:
         'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       courseDatesForCourseDuplicationTooltip:
-        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschließend ändern.',
+        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
       fixedDateInterval:
         'Fixes Datumsintervall: {years, plural, =0 {} one {# Jahr } other {# Jahre }}{months, plural, =0 {} one {# Monat } other {# Monate }}{days, plural, =0 {} one {# Tag} other {# Tage}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
@@ -3012,7 +3012,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       copyGroupActivitiesTooltip:
         'Wenn Sie diese Einstellung aktivieren, werden alle Gruppenaktivitäten im Kurs in den neuen Kurs kopiert. Wenn die Gruppenbildung-Einstellung deaktiviert wird, wird diese Einstellung deaktiviert.',
       courseDuplicationCopyInfo:
-        'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt und direkte Freigabeberechtigungen beibehalten. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente.',
+        'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt und direkte Freigabeberechtigungen beibehalten. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente. Wenn Sie einen Kurs duplizieren, der einer anderen Person gehört, behält diese Administratorzugriff auf die Kopie.',
+      courseCopySuffix: 'Kopie',
+      courseDuplicationEndDateInPast:
+        'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
       courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
       courseDuplicationNoAccess:
         'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',

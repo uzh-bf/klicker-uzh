@@ -1554,6 +1554,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId('abort-live-quiz-cockpit'),
       'exist'
     )
+    await expect(page.getByTestId('live-quiz-display-name')).toContainText(
+      data.protected.gamifiedCourse.liveQuiz
+    )
     await page.getByTestId('next-block-timeline').click()
     await page.waitForTimeout(500)
     await page.getByTestId('activities').click()

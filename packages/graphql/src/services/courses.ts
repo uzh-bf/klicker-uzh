@@ -19,6 +19,7 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -39,6 +40,14 @@ dayjs.extend(customParseFormat)
 
 const CREATE_COURSE_TRANSACTION_TIMEOUT = 60000
 const DUPLICATE_COURSE_TRANSACTION_TIMEOUT = 120000
+const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
+  'COURSE_DUPLICATION_PARTIAL_FAILURE'
+
+function courseDuplicationPartialFailure(message: string) {
+  return new GraphQLError(message, {
+    extensions: { code: COURSE_DUPLICATION_PARTIAL_FAILURE_CODE },
+  })
+}
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -2763,8 +2772,15 @@ function getDuplicatedActivityElements(
   }))
 }
 
-function applyCourseStartDelta(date: Date, deltaCourseStart: number) {
+export function applyCourseStartDelta(date: Date, deltaCourseStart: number) {
   return dayjs(date).add(deltaCourseStart, 'day').toDate()
+}
+
+// round the day delta instead of truncating it: course start dates are
+// local-midnight instants, so DST transitions and legacy non-midnight
+// timestamps make the exact difference deviate from whole days
+export function getCourseStartDayDelta(newStartDate: Date, oldStartDate: Date) {
+  return Math.round(dayjs(newStartDate).diff(dayjs(oldStartDate), 'day', true))
 }
 
 async function copyCourseDuplicationDirectPermissions({
@@ -3034,8 +3050,8 @@ async function copyCourseGroupActivities({
     const stack = oldGroupActivity.stacks[0]
 
     if (!stack) {
-      throw new Error(
-        `Group activity ${oldGroupActivity.id} is missing required stack data`
+      throw courseDuplicationPartialFailure(
+        'Not all group activities could be duplicated'
       )
     }
 
@@ -3094,9 +3110,9 @@ async function duplicateSelectedCourseActivities({
   ctx: ContextWithUser
   prisma: PrismaTransactionClient
 }): Promise<CourseDuplicationActivityIds> {
-  const deltaCourseStart = dayjs(startDate).diff(
-    dayjs(oldCourse.startDate),
-    'day'
+  const deltaCourseStart = getCourseStartDayDelta(
+    startDate,
+    oldCourse.startDate
   )
 
   return {
@@ -3343,14 +3359,18 @@ async function assertCourseDuplicationActivityAccess({
   })
 
   if (checks.length > 0 && !(await checkAccess(checks, ctx))) {
-    throw new Error('Not all selected activities could be duplicated')
+    throw courseDuplicationPartialFailure(
+      'Not all selected activities could be duplicated'
+    )
   }
 
   if (
     selection.shouldDuplicateGroupActivities &&
     oldCourse.groupActivities.some((activity) => activity.stacks.length === 0)
   ) {
-    throw new Error('Not all group activities could be duplicated')
+    throw courseDuplicationPartialFailure(
+      'Not all group activities could be duplicated'
+    )
   }
 }
 
@@ -3384,7 +3404,9 @@ async function assertCourseDuplicationInstanceAccess({
   })
 
   if (accessibleInstanceCount !== instanceIds.length) {
-    throw new Error('Not all activity instances could be duplicated')
+    throw courseDuplicationPartialFailure(
+      'Not all activity instances could be duplicated'
+    )
   }
 }
 
