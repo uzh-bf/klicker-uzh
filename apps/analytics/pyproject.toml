@@ -20,6 +20,7 @@ dependencies = [
 dev = [
   "ipykernel==6.29.5",
   "pyright==1.1.376",
+  "ruff>=0.15.18",
 ]
 
 [tool.uv]
@@ -28,3 +29,10 @@ exclude-newer = "14d"
 
 [tool.pyright]
 typeCheckingMode = "strict"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]

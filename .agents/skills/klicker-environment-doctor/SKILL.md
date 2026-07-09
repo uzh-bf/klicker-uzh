@@ -57,7 +57,6 @@ lsof -nP -iTCP:5432 -sTCP:LISTEN   # repeat for 6379 6380 6381 7077 8888 80 443
 
 If manage media uploads fail with an Azure Blob CORS error while GraphQL auth still works, check the storage account before changing app CORS. The media library uploads directly from the browser to Azure Blob Storage via SAS, so the Blob service CORS rule must allow the actual devrouter origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`). Use exact origins for production/staging accounts; for a dedicated dev storage account, a dev-only `https://*.localhost` rule keeps parallel worktrees usable.
 
-
 ## Check 6 — infra bring-up / server status (headless-safe)
 
 Depending on your environment path:
