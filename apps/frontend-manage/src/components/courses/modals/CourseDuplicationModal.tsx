@@ -337,7 +337,7 @@ function FormikNativeDateInput({
   required = false,
   data,
   onDateChange,
-}: {
+}: Readonly<{
   name: keyof Pick<
     CourseDuplicationFormData,
     'startDate' | 'endDate' | 'groupCreationDeadline'
@@ -347,7 +347,7 @@ function FormikNativeDateInput({
   required?: boolean
   data?: FormikNativeInputData
   onDateChange?: (date?: Date) => Promise<void> | void
-}) {
+}>) {
   const [field, meta, helpers] = useField<Date | undefined>(name)
   const inputId = useId()
   const showError = Boolean(meta.error && meta.touched)
