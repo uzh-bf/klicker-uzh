@@ -164,6 +164,8 @@ Fixes applied (drops the metric to ~62/2440 ≈ 2.5%):
 2. Extracted the identical post-persist tail of all four activity services into `packages/graphql/src/services/activities.ts:persistActivityWithPermissions` (persist in own transaction or reuse the provided transaction client, optional cache invalidation, permission-view derivation). `liveQuizzes`, `practiceQuizzes`, `microLearning`, and `groups` now share one implementation — removes the 8 counted lines and the four-way clone the earlier reviews called a maintenance smell.
 3. The en/de 62 lines are structural and untouched: translation catalogs are parallel by design. **Recommendation for the maintainer:** add `sonar.cpd.exclusions=packages/i18n/messages/*.ts` to `sonar-project.properties` — otherwise every i18n-heavy PR will trip this gate. Not applied without sign-off (per the earlier review's ground rule).
 
+**Outcome (verified on commit `6325d6d0b`):** the SonarCloud quality gate is **OK** — duplication on new code dropped from 4.3% to **2.8%** (≤ 3%), and all other conditions (reliability, security, maintainability ratings, hotspots) pass. Note the margin is thin: because en/de catalogs are whole-file clones, roughly ten more added i18n lines would flip the gate again — the `sonar.cpd.exclusions` recommendation below stands for future PRs. Of 36 check runs on that commit, GitGuardian is the only failure.
+
 ### GitGuardian: "3 secrets uncovered" — false positives, dashboard triage required
 
 All three findings are **dev-only credentials that entered this branch via `v3` merge commits** (`1af0602ca`, `cb7488c9e`) — nothing this branch authored, and all three are already public on the default branch:

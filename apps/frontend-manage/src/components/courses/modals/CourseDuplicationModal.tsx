@@ -456,14 +456,14 @@ function FormikNativeSelect({
   items,
   required = false,
   data,
-}: {
+}: Readonly<{
   name: keyof Pick<CourseDuplicationFormData, 'language'>
   label: string
   tooltip?: string
   items: { value: LocaleType; label: string }[]
   required?: boolean
   data?: FormikNativeInputData
-}) {
+}>) {
   const [field, meta, helpers] = useField<LocaleType>(name)
   const inputId = useId()
   const showError = Boolean(meta.error && meta.touched)
@@ -511,7 +511,7 @@ function FormikNativeSwitch({
   disabled = false,
   data,
   onCheckedChange,
-}: {
+}: Readonly<{
   name: keyof Pick<
     CourseDuplicationFormData,
     | 'isGroupCreationEnabled'
@@ -526,7 +526,7 @@ function FormikNativeSwitch({
   disabled?: boolean
   data?: FormikNativeInputData
   onCheckedChange?: (checked: boolean) => Promise<void> | void
-}) {
+}>) {
   const [field, meta, helpers] = useField<boolean>(name)
   const inputId = useId()
   const showError = Boolean(meta.error && meta.touched)
