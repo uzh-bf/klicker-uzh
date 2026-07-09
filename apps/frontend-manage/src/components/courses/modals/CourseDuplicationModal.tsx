@@ -390,13 +390,13 @@ function FormikNativeColorInput({
   required = false,
   dataColor,
   dataHex,
-}: {
+}: Readonly<{
   name: keyof Pick<CourseDuplicationFormData, 'color'>
   label: string
   required?: boolean
   dataColor?: FormikNativeInputData
   dataHex?: FormikNativeInputData
-}) {
+}>) {
   const [field, meta, helpers] = useField<string>(name)
   const inputId = useId()
   const hexInputId = useId()
