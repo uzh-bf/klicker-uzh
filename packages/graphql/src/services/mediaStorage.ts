@@ -10,20 +10,13 @@ import type {
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import { MAX_IMPORT_EXPORT_MEDIA_BYTES } from '../lib/importExportPackageConfig.js'
+import {
+  DEFAULT_MEDIA_CONTENT_TYPE,
+  inferMediaFileExtension,
+} from '../lib/mediaContentTypes.js'
 
 const PACKAGE_CONTAINER_NAME = 'klicker-import-export'
 const IMPORTED_MEDIA_PREFIX = 'imported/'
-const DEFAULT_MEDIA_CONTENT_TYPE = 'application/octet-stream'
-const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/gif': 'gif',
-  'image/svg+xml': 'svg',
-  'image/webp': 'webp',
-  'image/tiff': 'tiff',
-  'image/bmp': 'bmp',
-  'application/json': 'json',
-}
 
 type BlobLocation = {
   containerName: string
@@ -76,14 +69,6 @@ function getSharedKeyCredential() {
 
 function getBlobServiceClient() {
   return new BlobServiceClient(getStorageAccount(), getSharedKeyCredential())
-}
-
-function inferExtension(contentType: string, filename: string) {
-  const configured = CONTENT_TYPE_EXTENSIONS[contentType]
-  if (configured) return configured
-
-  const extension = path.extname(filename).replace(/^\./, '').toLowerCase()
-  return extension || 'bin'
 }
 
 async function readStreamWithLimit(
@@ -267,7 +252,7 @@ export async function stageImportedMediaFile(
   }
 
   const id = randomUUID()
-  const extension = inferExtension(contentType, filename)
+  const extension = inferMediaFileExtension(contentType, filename)
   const blobName = `${IMPORTED_MEDIA_PREFIX}${id}.${extension}`
   const href = `${getStorageAccount()}/${ctx.user.sub}/${blobName}`
 

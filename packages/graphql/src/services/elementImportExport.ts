@@ -31,6 +31,7 @@ import {
   MAX_IMPORT_EXPORT_TAGS,
   readPositiveIntegerEnv,
 } from '../lib/importExportPackageConfig.js'
+import { isSupportedMediaContentType } from '../lib/mediaContentTypes.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { createZip, parseZip } from '../lib/zip.js'
 import { manipulateElement } from './elements.js'
@@ -168,7 +169,7 @@ const mediaManifestEntrySchema = z
     ref: packageRefSchema,
     file: z.string(),
     filename: z.string().min(1).max(MAX_IMPORT_EXPORT_NAME_LENGTH),
-    contentType: z.string().min(1).max(120),
+    contentType: z.string().min(1).max(120).refine(isSupportedMediaContentType),
     bytes: z.number().int().nonnegative().max(MAX_IMPORT_EXPORT_MEDIA_BYTES),
     sha256: z.string().regex(/^[a-f0-9]{64}$/),
     sourceHref: z.string().url(),
@@ -1532,6 +1533,11 @@ async function createExportMediaFiles(
 
       const mediaFile = await downloadKlickerMediaFile(url, ctx)
       if (!mediaFile) {
+        warnings.push(IMPORT_WARNING_INACCESSIBLE_MEDIA)
+        continue
+      }
+
+      if (!isSupportedMediaContentType(mediaFile.contentType)) {
         warnings.push(IMPORT_WARNING_INACCESSIBLE_MEDIA)
         continue
       }
