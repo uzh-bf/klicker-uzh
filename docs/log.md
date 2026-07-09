@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-09
+
+- **Update**: [domain-model](./domain-model.md) gained a "Course duplication" section (permission contract, atomic transaction, shared-element semantics, what is/isn't copied, rounded date shifting) — restores the contract that was recorded in the retired `project/CODEBASE_NOTES.md` and never migrated when the course-duplication branch merged v3.
+
 ## 2026-07-07
 
 - **Update**: migration-in-flight banners added to [graphql-api-layer](./graphql-api-layer.md), [architecture-overview](./architecture-overview.md) (GraphQL→tRPC, PR #5132), and [chat-platform](./chat-platform.md) (AI-SDK→Mastra, PRs #5126/#5129) — pages stay authoritative until those PRs merge.

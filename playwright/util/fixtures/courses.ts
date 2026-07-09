@@ -605,8 +605,9 @@ export async function createCourseDuplicationFailureFixture(
 ) {
   const prisma = await getPrisma()
 
-  await prisma.course.deleteMany({
-    where: { name: courseName, ownerId: USER_ID_TEST },
+  await deleteCourseWithActivitiesByName({
+    courseName,
+    ownerId: USER_ID_TEST,
   })
 
   const now = new Date()

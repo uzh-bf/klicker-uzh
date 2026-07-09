@@ -2663,9 +2663,31 @@ export default defineConfig({
           courseName: string
         }) {
           try {
-            await prisma.course.deleteMany({
+            const staleCourses = await prisma.course.findMany({
               where: { name: courseName, ownerId: USER_ID_TEST },
+              select: { id: true },
             })
+            const staleCourseIds = staleCourses.map((course) => course.id)
+
+            if (staleCourseIds.length > 0) {
+              await prisma.$transaction([
+                prisma.groupActivity.deleteMany({
+                  where: { courseId: { in: staleCourseIds } },
+                }),
+                prisma.microLearning.deleteMany({
+                  where: { courseId: { in: staleCourseIds } },
+                }),
+                prisma.practiceQuiz.deleteMany({
+                  where: { courseId: { in: staleCourseIds } },
+                }),
+                prisma.liveQuiz.deleteMany({
+                  where: { courseId: { in: staleCourseIds } },
+                }),
+                prisma.course.deleteMany({
+                  where: { id: { in: staleCourseIds } },
+                }),
+              ])
+            }
 
             const now = new Date()
             const later = new Date(now.getTime() + 24 * 60 * 60 * 1000)

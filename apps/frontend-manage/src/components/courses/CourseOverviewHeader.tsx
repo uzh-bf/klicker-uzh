@@ -66,10 +66,51 @@ function getCourseDuplicationGroupSize(
   return Number.isFinite(parsedValue) ? parsedValue : fallback
 }
 
+const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
+  'COURSE_DUPLICATION_PARTIAL_FAILURE'
+
+function getGraphQLErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined
+
+  const extensions = (error as { extensions?: { code?: unknown } }).extensions
+  if (typeof extensions?.code === 'string') return extensions.code
+
+  const graphQLErrors = (error as { graphQLErrors?: unknown[] }).graphQLErrors
+  for (const graphQLError of graphQLErrors ?? []) {
+    const code = getGraphQLErrorCode(graphQLError)
+    if (code) return code
+  }
+
+  const errors = (error as { errors?: unknown[] }).errors
+  for (const nestedError of errors ?? []) {
+    const code = getGraphQLErrorCode(nestedError)
+    if (code) return code
+  }
+
+  return undefined
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+
+  if (error && typeof error === 'object') {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string') return message
+  }
+
+  return String(error)
+}
+
 function getCourseDuplicationErrorType(
   error: unknown
 ): CourseDuplicationErrorType {
-  const message = error instanceof Error ? error.message : String(error)
+  const code = getGraphQLErrorCode(error)
+  if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) {
+    return 'partial'
+  }
+
+  const message = getErrorMessage(error)
   const normalizedMessage = message.toLowerCase()
 
   if (normalizedMessage.includes('not all')) {
@@ -335,6 +376,7 @@ function CourseOverviewHeader({
               })
 
               const duplicatedCourse = result.data?.createCourse
+              const mutationError = result.errors?.[0]
 
               if (duplicatedCourse) {
                 toast({
@@ -346,7 +388,11 @@ function CourseOverviewHeader({
                 setDuplicationModal(false)
                 await router.push(`/courses/${duplicatedCourse.id}`)
               } else {
-                onError('access')
+                onError(
+                  mutationError
+                    ? getCourseDuplicationErrorType(mutationError)
+                    : 'access'
+                )
                 setSubmitting(false)
               }
             } catch (error) {
