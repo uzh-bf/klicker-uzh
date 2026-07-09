@@ -34,12 +34,12 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get(
       `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
     ).realClick()
-    cy.get('[data-cy="insert-question-text"]')
-      .realClick()
-      .realType(this.data.FC.content)
-    cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
-      .realType(this.data.FC.explanation)
+    cy.get('[data-cy="insert-question-text"]').typeRichText(
+      this.data.FC.content
+    )
+    cy.get('[data-cy="insert-question-explanation"]').typeRichText(
+      this.data.FC.explanation
+    )
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
@@ -84,13 +84,13 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
-      .realType(this.data.FC.contentEdited)
+      .typeRichText(this.data.FC.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
+      .click()
       .clear()
-      .realType(this.data.FC.explanationEdited)
+      .typeRichText(this.data.FC.explanationEdited)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 

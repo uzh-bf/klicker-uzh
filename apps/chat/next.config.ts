@@ -4,10 +4,11 @@ import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 
-// @ts-expect-error
+// @ts-expect-error shared config type is broader than this app config
 const nextConfig: NextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL ?? '',
+    includeI18n: false,
     NODE_ENV: process.env.NODE_ENV as string,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV as string,
   }),
@@ -15,6 +16,7 @@ const nextConfig: NextConfig = {
     // Call the base config webpack function if it exists
     const baseConfig = getNextBaseConfig({
       BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL ?? '',
+      includeI18n: false,
       NODE_ENV: process.env.NODE_ENV as string,
       NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV as string,
     })

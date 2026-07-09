@@ -35,9 +35,9 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
-    cy.get('[data-cy="insert-question-text"]')
-      .realClick()
-      .realType(this.data.MC.content)
+    cy.get('[data-cy="insert-question-text"]').typeRichText(
+      this.data.MC.content
+    )
 
     // insert answer options for MC question
     cy.get('[data-cy="insert-answer-field-0"]')
@@ -156,9 +156,9 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
       .clear()
       .type(this.data.MC.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
-      .realType(this.data.MC.contentEdited)
+      .typeRichText(this.data.MC.contentEdited)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .clear()

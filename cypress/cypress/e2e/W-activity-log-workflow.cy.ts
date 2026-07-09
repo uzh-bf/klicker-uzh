@@ -219,9 +219,9 @@ describe('Feature test for activity logs', function () {
     // create a single choice question
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(this.data.SC.title)
-    cy.get('[data-cy="insert-question-text"]')
-      .realClick()
-      .realType(this.data.SC.content)
+    cy.get('[data-cy="insert-question-text"]').typeRichText(
+      this.data.SC.content
+    )
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .realType(this.data.SC.choices[0].value)

@@ -5,8 +5,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 
@@ -27,7 +26,6 @@ function Layout({
   data,
 }: LayoutProps) {
   const t = useTranslations()
-  const router = useRouter()
 
   const {
     loading: loadingUser,
@@ -35,11 +33,20 @@ function Layout({
     data: dataUser,
   } = useQuery(UserProfileDocument, { fetchPolicy: 'cache-and-network' })
 
-  if (!dataUser && !loadingUser) {
-    router.push('/login')
-  }
+  const redirectToLogin = !dataUser && !loadingUser
 
-  if (loadingUser) {
+  useEffect(() => {
+    if (!redirectToLogin) return
+
+    const currentPath = `${window.location.pathname}${window.location.search}`
+    window.location.assign(
+      `/login?expired=true&redirect_to=${encodeURIComponent(
+        currentPath || '/'
+      )}`
+    )
+  }, [redirectToLogin])
+
+  if (loadingUser || redirectToLogin) {
     return (
       <div className="mx-auto my-auto">
         <Loader />
