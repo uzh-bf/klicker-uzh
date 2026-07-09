@@ -3,11 +3,7 @@ from datetime import date
 
 
 def map_details(detail, participantId):
-    courseId = (
-        detail["practiceQuiz"]["courseId"]
-        if detail["practiceQuiz"]
-        else detail["microLearning"]["courseId"]
-    )
+    courseId = detail["practiceQuiz"]["courseId"] if detail["practiceQuiz"] else detail["microLearning"]["courseId"]
     return {**detail, "participantId": participantId, "courseId": courseId}
 
 
@@ -22,13 +18,7 @@ def map_participants(participant):
 
 
 def convert_to_df(participants):
-    return pd.DataFrame(
-        [
-            item
-            for sublist in list(map(map_participants, participants))
-            for item in sublist
-        ]
-    )
+    return pd.DataFrame([item for sublist in list(map(map_participants, participants)) for item in sublist])
 
 
 # Add the course start and end date to the dataframe for filtering of question response details later on
