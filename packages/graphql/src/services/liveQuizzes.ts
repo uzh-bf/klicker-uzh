@@ -33,7 +33,10 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  getPermissionBooleans,
+  persistActivityWithPermissions,
+} from './activities.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -503,19 +506,10 @@ export async function manipulateLiveQuiz(
     return upsertedQuiz
   }
 
-  const activity = transactionPrisma
-    ? await persistLiveQuiz(transactionPrisma)
-    : await ctx.prisma.$transaction(persistLiveQuiz, { timeout: 60000 })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'LiveQuiz',
-    id,
-  })
-
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
   const {
+    activity,
+    permissionLevel,
+    derived,
     isOwner,
     isManager,
     isEditor,
@@ -523,12 +517,12 @@ export async function manipulateLiveQuiz(
     isShared,
     isRemovable,
     sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+  } = await persistActivityWithPermissions({
+    persist: persistLiveQuiz,
+    invalidateTypename: 'LiveQuiz',
+    invalidateId: id,
+    ctx,
+    transactionPrisma,
   })
 
   return {

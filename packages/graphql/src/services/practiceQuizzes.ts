@@ -15,7 +15,7 @@ import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import { getPermissionBooleans } from './activities.js'
+import { persistActivityWithPermissions } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -367,19 +367,10 @@ export async function manipulatePracticeQuiz(
     return upsertedQuiz
   }
 
-  const activity = transactionPrisma
-    ? await persistPracticeQuiz(transactionPrisma)
-    : await ctx.prisma.$transaction(persistPracticeQuiz, { timeout: 60000 })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'PracticeQuiz',
-    id,
-  })
-
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
   const {
+    activity,
+    permissionLevel,
+    derived,
     isOwner,
     isManager,
     isEditor,
@@ -387,12 +378,12 @@ export async function manipulatePracticeQuiz(
     isShared,
     isRemovable,
     sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+  } = await persistActivityWithPermissions({
+    persist: persistPracticeQuiz,
+    invalidateTypename: 'PracticeQuiz',
+    invalidateId: id,
+    ctx,
+    transactionPrisma,
   })
 
   return {

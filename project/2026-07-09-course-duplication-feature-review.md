@@ -144,7 +144,37 @@ The locally fixable findings from this review were addressed after it was writte
 
 Verification after processing: `pnpm --filter @klicker-uzh/{i18n,graphql,frontend-manage} check` all pass; `tsc --noEmit` passes in both `playwright/` and `cypress/`; the new unit test suite passes; Prettier applied to every touched file.
 
-**Still open (not locally fixable):** SonarCloud + GitGuardian gates (need a push and the PR checks), staging scale timing, mandatory `agent-browser` browser verification in EN + DE (needs a running dev stack for this worktree), the design-system-vs-native-inputs maintainer decision, splitting the unrelated devcontainer changes out of the working tree, and formal product sign-off on the owner-ADMIN grant and past-dated-copy behaviors.
+**Still open (not locally fixable):** staging scale timing, mandatory `agent-browser` browser verification in EN + DE (needs a running dev stack for this worktree), the design-system-vs-native-inputs maintainer decision, splitting the unrelated devcontainer changes out of the working tree, and formal product sign-off on the owner-ADMIN grant and past-dated-copy behaviors.
+
+## CI-gate triage (2026-07-09, after push of `6de508471`)
+
+### SonarCloud: 4.3% duplication on new code (gate ≤ 3%) — fixed locally
+
+Exact breakdown from the SonarCloud API (102 duplicated / 2395 new lines):
+
+| new dup | file | clone partner |
+|---|---|---|
+| 32 | `CourseDuplicationModal.tsx` | `CourseManipulationModal.tsx:291-322` (name/displayName/description block) |
+| 31 + 31 | `en.ts` / `de.ts` | each other — the catalogs are whole-file structural clones (CPD anonymizes string literals), so **any** i18n addition counts as duplicated |
+| 4 + 4 | `practiceQuizzes.ts` / `microLearning.ts` | the post-persist tail (`transactionPrisma` ternary + emitter + permission booleans) cloned across all four activity services |
+
+Fixes applied (drops the metric to ~62/2440 ≈ 2.5%):
+
+1. Extracted the shared name/displayName/description fields into `apps/frontend-manage/src/components/courses/modals/CourseInformationFields.tsx`, used by both `CourseDuplicationModal` and `CourseManipulationModal` — removes the 32-line clone and is a genuine dedup of the modal fork.
+2. Extracted the identical post-persist tail of all four activity services into `packages/graphql/src/services/activities.ts:persistActivityWithPermissions` (persist in own transaction or reuse the provided transaction client, optional cache invalidation, permission-view derivation). `liveQuizzes`, `practiceQuizzes`, `microLearning`, and `groups` now share one implementation — removes the 8 counted lines and the four-way clone the earlier reviews called a maintenance smell.
+3. The en/de 62 lines are structural and untouched: translation catalogs are parallel by design. **Recommendation for the maintainer:** add `sonar.cpd.exclusions=packages/i18n/messages/*.ts` to `sonar-project.properties` — otherwise every i18n-heavy PR will trip this gate. Not applied without sign-off (per the earlier review's ground rule).
+
+### GitGuardian: "3 secrets uncovered" — false positives, dashboard triage required
+
+All three findings are **dev-only credentials that entered this branch via `v3` merge commits** (`1af0602ca`, `cb7488c9e`) — nothing this branch authored, and all three are already public on the default branch:
+
+| Incident | File | What it actually is |
+|---|---|---|
+| [26381906](https://dashboard.gitguardian.com/workspace/160640/incidents/26381906?occurrence=274704464) | `.agents/skills/agent-browser/templates/authenticated-session.sh` | commented-out login-flow template (env-var placeholders; historical blob had an example value) |
+| [1509424](https://dashboard.gitguardian.com/workspace/160640/incidents/1509424?occurrence=278860626) | `.devrouter.yml:72` | a **comment** documenting the local dev psql connection string (`password=klicker`) |
+| [1509424](https://dashboard.gitguardian.com/workspace/160640/incidents/1509424?occurrence=278860627) | `.devcontainer/docker-compose.yml:20` | `POSTGRES_PASSWORD: klicker` — the intentionally committed, dev-only devcontainer Postgres password (CLAUDE.md: "committed, dev-only — no real secrets") |
+
+No rotation and no history rewrite is warranted (the content lives on `v3` mainline; rewriting this PR's history would change nothing). Remediation: open the two incidents in the GitGuardian dashboard and **mark them as test credentials / ignored**, then re-run the check from the PR. This needs dashboard permissions and cannot be done from the repo.
 
 ## Accepted for v1 (unchanged from previous reviews, still endorsed)
 
