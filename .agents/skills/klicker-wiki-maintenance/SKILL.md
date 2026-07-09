@@ -1,15 +1,15 @@
 ---
 name: klicker-wiki-maintenance
-description: Keep the KlickerUZH engineering wiki (docs/) accurate. Use when a change alters documented behavior, when you discover a non-obvious pattern worth recording, when adding/renaming/removing wiki pages, or when wiki and code disagree. The wiki is agent-facing ground truth — staleness is worse than absence.
+description: Keep the KlickerUZH engineering wiki (docs/) and custom skills (.agents/skills/) accurate and up to date. Use when a change alters behavior or documented behavior, when you discover a non-obvious pattern worth recording, when adding/renaming/removing wiki pages or skills, or when documentation/skills and code disagree.
 ---
 
-# KlickerUZH Wiki Maintenance
+# KlickerUZH Wiki & Skill Maintenance
 
 The wiki is an OKF v0.1 bundle at [docs/](../../../docs/) (root [index.md](../../../docs/index.md)). House rules on top of the generic `llm-wiki-okf` fundamentals:
 
 ## The same-change-set rule
 
-Any PR that changes documented behavior updates the affected pages **in the same PR**. Find affected pages by grepping `docs/` for the symbol, command, or path that changed. When wiki and reality disagree, reality wins and the wiki gets fixed.
+Any PR that changes behavior or documented behavior must update both the affected wiki pages (in `docs/`) and the relevant skills (in `.agents/skills/`) **in the same PR**. Find affected pages or skills by grepping `docs/` and `.agents/skills/` for the symbol, command, or path that changed. When documentation/skills and reality disagree, reality wins and the docs/skills get fixed.
 
 ## Change-type → page map
 

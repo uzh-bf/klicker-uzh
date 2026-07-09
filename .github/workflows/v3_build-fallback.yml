@@ -1,0 +1,38 @@
+name: Build Fallback
+
+on:
+  pull_request:
+    branches:
+      - 'v3'
+      - 'v3*'
+    paths-ignore:
+      - 'apps/analytics/**'
+      - 'apps/auth/**'
+      - 'apps/backend-docker/**'
+      - 'apps/chat/**'
+      - 'apps/frontend-control/**'
+      - 'apps/frontend-manage/**'
+      - 'apps/frontend-pwa/**'
+      - 'apps/hatchet-worker-general/**'
+      - 'apps/hatchet-worker-response-processor/**'
+      - 'apps/lti/**'
+      - 'apps/olat-api/**'
+      - 'apps/response-api/**'
+      - '.github/workflows/v3_**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-amd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Success
+        run: echo "Fallback build check"
+
+  build-arm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Success
+        run: echo "Fallback build check"

@@ -120,6 +120,9 @@
       "outputLogs": "new-only",
       "dependsOn": ["^build"]
     },
+    "@klicker-uzh/prisma#check": {
+      "dependsOn": ["build"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
