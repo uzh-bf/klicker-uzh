@@ -37,7 +37,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
         ```bash
         dev workspace up <branch-name>
         ```
-        *(Or for manual startup: `WORKSPACE=<slug> DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up .`)*.
+        _(Or for manual startup: `WORKSPACE=<slug> DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up .`)_.
      3. Register the application routes:
         ```bash
         for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done

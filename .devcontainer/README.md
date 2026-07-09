@@ -48,10 +48,11 @@ Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, 
    ```bash
    dev workspace up <branch-name>
    ```
-   *Note: This automatically provisions a git worktree, sets `WORKSPACE` and `DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml` inside the environment, and runs `devpod up` under the hood.*
+   _Note: This automatically provisions a git worktree, sets `WORKSPACE` and `DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml` inside the environment, and runs `devpod up` under the hood._
 3. Open `https://manage.klicker.<workspace>.localhost` (credentials: `lecturer` / `abcd`).
 
 For a manual `devpod up` configuration (without using `dev workspace up`), you must supply the environment variables yourself:
+
 ```bash
 WORKSPACE=my-branch DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up . --ide none
 for a in api auth pwa manage control olat-api response-api lti chat db; do
