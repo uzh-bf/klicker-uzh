@@ -1024,6 +1024,10 @@ export async function seedEscapeRoomPracticeQuiz(
                   results,
                   anonymousResults: results,
                   ownerId: ctx.user.sub,
+                  // respondToElementStack reads instanceStatistics with a non-null
+                  // assertion when grading a response, so a published instance must
+                  // have a statistics row (all counts default to 0).
+                  instanceStatistics: { create: {} },
                 },
               ],
             },
