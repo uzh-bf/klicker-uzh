@@ -663,7 +663,7 @@ Commit:
 - [x] Slice 5 runtime fixes implemented, independently reviewed, and committed as `13037b3ac`.
 - [ ] Authenticated chat clean-render and console/network proof deferred to the configured Slice 8 environment.
 - [x] Post-commit branch review findings resolved in a separate cleanup commit.
-- [ ] Slice 6 legacy e2e repair implemented and committed separately.
+- [x] Slice 6 legacy e2e repair verified and committed separately.
 - [ ] Slice 7 partially complete: auth/version docs synchronized; remaining Next/React operator documentation pending.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
@@ -700,9 +700,17 @@ Slice 5 evidence:
 - Post-commit branch review separated the verified chat navigation contract from the unverified authenticated chat render. Its cleanup commit reduces repeated login-test setup, removes a single-use button variable, replaces a CSS submit selector with an accessible role, and synchronizes auth/version documentation.
 - Cleanup verification: `pnpm run check:all`, the auth production build, Playwright TypeScript, the 14-file OKF validator, AGENTS validation, and Opengrep all passed. Five focused Chrome login/redirect tests passed; chat and manage first hit cold-compilation timeouts, then both passed against the warm stack. `agent-browser` confirmed the simplified auth markup has one disabled button inside a non-interactive span, matching accessible help text and hover title, and no page errors. Existing Next image warnings remain.
 
-Current: Slice 5 implementation is committed as `13037b3ac`. Manage, PWA, control, auth, logged-out chat, and authenticated chat navigation were verified. Authenticated chat content remained at `Loading chatbot...` in the local stack with missing Langfuse configuration, so clean render and console/network proof remain open for Slice 8.
+Slice 6 evidence:
 
-Next: start Slice 6 only after a new explicit continuation. Preserve the authenticated chat evidence gap as a Slice 8 gate.
+- Restored the legacy Cypress suite to the `v3` baseline before testing. The seeded Next 16 DevPod passed the exact `A-login.cy.ts` contract twice (7/7).
+- `N-course-workflow.cy.ts` reproduced cold-navigation races in the deletion workflow. Four route-readiness assertions cover the failing library, courses, and activities transitions; the focused self-contained deletion scenario then passed (1/1). Full-spec runs remained noisy, including an unrelated setup transaction timeout and a previously passing repeated-student loop.
+- `O-live-quiz-workflow.cy.ts` reproduced a destination-DOM race after opening a live quiz. Waiting for the visible description fixed that transition and the next full run passed the first 13 tests, including the description check.
+- The full live-quiz spec then stopped at the legacy student-response boundary (13 passing, 1 failing, 67 skipped): the first SC option was already selected and the submit button enabled before the test selected an answer. This reproduced three times. Awaiting IndexedDB deletion did not change it and was reverted; the branch does not modify the response component or storage code. No speculative compatibility edit was retained.
+- Electron DBus diagnostics and a response-API `POST` 404 were present in the local container logs; neither was the failing assertion. Full legacy-suite proof therefore remains a Slice 8/CI gate.
+
+Current: Slice 6 compatibility repairs are locally verified; full legacy-suite proof remains a Slice 8/CI gate.
+
+Next: commit Slice 6 separately, then continue to Slice 7.
 
 ## Open Questions
 
@@ -712,4 +720,5 @@ Next: start Slice 6 only after a new explicit continuation. Preserve the authent
 
 ## Next Steps
 
-1. Start Slice 6 legacy e2e repair only after the Slice 5 commit boundary and a new explicit continuation.
+1. Commit Slice 6 separately.
+2. Continue to Slice 7 operator documentation.
