@@ -430,8 +430,9 @@ Outcome: PR ready for human approval; no hidden process debt.
 ## Progress
 
 - `2026-07-10 | Planning | APPROVED | User approved execution with reasonable delegation to Agy. Live PR/refs/checks/review threads refreshed. Context7 research completed. Droid GLM review reconciled. | Commit plan alone, then Slice 1.`
+- `2026-07-10 | Slice 1 | DONE_WITH_CONCERNS | Standalone plan committed as a6ebc5568. Merged exact origin/v3 eef745d06 into PR head b40fc33db with merge commit 6c1b6eb6c; AGENTS.md was the only dual-modified path and retained both wiki and workspace/devrouter guidance. Dedicated DevPod pr5148-final installed, built, migrated, seeded, launched, and returned 200 for the manage route. Fresh-container Playwright reached global setup but could not launch because Chromium was absent; browser installation remained in slow extraction, so no local Playwright pass is claimed. Deterministic fallback remains branch run 28933101672 versus passing exact merge-base run 28927821772. Agy/static audit maps MA/K to mount-time editor normalization contaminating Formik/autosave and maps ZA to relative navigation resolving against the PWA base URL. git diff --check passes; status contains only this progress update. Independent merge review: DONE_WITH_CONCERNS for the explicit local-browser limitation. Simplification review: clean scope. | Proceed to bounded Slice 2 lifecycle fix; local Playwright must be restored before Slice 2 verification commit.`
 
 ## Next Steps
 
-1. Commit plan alone.
-2. Execute Slice 1 only.
+1. Execute Slice 2 lifecycle probes and minimum editor fix.
+2. Restore local Chromium runtime and run focused MA/K/ZA verification before the Slice 2 commit.
