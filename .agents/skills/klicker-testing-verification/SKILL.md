@@ -22,7 +22,7 @@ Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `fr
 
 ## Decide whether e2e is warranted locally
 
-CI runs Cypress (8-way split) and Playwright (5-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
+CI runs Cypress (8-way split) and Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
 - You are **authorized to start the required servers for this purpose** — test stack via the e2e skills' setup instructions, plus the Hatchet general worker for publish/schedule/end flows and response-api + response processor for live-answer flows (exact triage in the e2e skills).
 - Tear down afterwards (`./_down.sh`); leave the machine as you found it.

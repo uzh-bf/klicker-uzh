@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-07-07'
+timestamp: '2026-07-10'
 tags:
   - ci
   - deployment
@@ -30,6 +30,8 @@ Per-commit workflows: `check-format`, `check-lint`, `check-syncpack`, `check-typ
 - **prd**: tags `v*.*.*` only.
 
 Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile changes must keep monorepo-root context assumptions.
+
+The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Control, manage, and PWA additionally copy generated service-worker assets from `public/`; their build must retain `sw.js`, Workbox chunks, and the custom worker bundle (`apps/frontend-*/Dockerfile`). Before publishing a framework upgrade, run the production build, inspect those artifacts, smoke the standalone server path, and require both AMD and ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check are recorded for the release SHA.
 
 ## Release flow
 

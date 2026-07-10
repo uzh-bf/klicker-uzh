@@ -664,7 +664,7 @@ Commit:
 - [ ] Authenticated chat clean-render and console/network proof deferred to the configured Slice 8 environment.
 - [x] Post-commit branch review findings resolved in a separate cleanup commit.
 - [x] Slice 6 legacy e2e repair verified and committed separately.
-- [ ] Slice 7 partially complete: auth/version docs synchronized; remaining Next/React operator documentation pending.
+- [x] Slice 7 wiki, skills, and operator evidence synchronized.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
 - [ ] Shared old-PR supersession gate in TypeScript plan approved and executed.
@@ -708,9 +708,9 @@ Slice 6 evidence:
 - The full live-quiz spec then stopped at the legacy student-response boundary (13 passing, 1 failing, 67 skipped): the first SC option was already selected and the submit button enabled before the test selected an answer. This reproduced three times. Awaiting IndexedDB deletion did not change it and was reverted; the branch does not modify the response component or storage code. No speculative compatibility edit was retained.
 - Electron DBus diagnostics and a response-API `POST` 404 were present in the local container logs; neither was the failing assertion. Full legacy-suite proof therefore remains a Slice 8/CI gate.
 
-Current: Slice 6 compatibility repairs are locally verified; full legacy-suite proof remains a Slice 8/CI gate.
+Current: Slice 7 documents the retained Next 16 / React 19 runtime, generated-type, standalone-image, PWA-artifact, auth, and e2e contracts. Config-derived claims remain explicit pending Slice 8 verification.
 
-Next: commit Slice 6 separately, then continue to Slice 7.
+Next: validate and commit Slice 7 separately, then start Slice 8 production-like verification and final reviews.
 
 ## Open Questions
 
@@ -720,5 +720,5 @@ Next: commit Slice 6 separately, then continue to Slice 7.
 
 ## Next Steps
 
-1. Commit Slice 6 separately.
-2. Continue to Slice 7 operator documentation.
+1. Validate and commit Slice 7 separately.
+2. Start Slice 8 production-like verification and final reviews.
