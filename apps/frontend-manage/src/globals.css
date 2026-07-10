@@ -349,27 +349,9 @@
   pointer-events: none;
 }
 
-.ProseMirror .column-resize-handle {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: #adf;
-  pointer-events: none;
-  cursor: col-resize;
-}
-
 /* Code block & syntax highlighting theme (Lowlight & Prism) */
 .ProseMirror pre,
-pre.language-css,
-pre.language-js,
-pre.language-html,
-pre.language-ts,
-pre.language-typescript,
-pre.language-javascript,
-pre.language-python,
-pre.language-sql {
+.markdown-content pre {
   background-color: #f6f8fa;
   border: 1px solid #e1e4e8;
   border-radius: 6px;

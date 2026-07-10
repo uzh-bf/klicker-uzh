@@ -456,7 +456,6 @@ export default {
       deleteRow: 'Delete row',
       addColumn: 'Add column',
       deleteColumn: 'Delete column',
-      mergeCells: 'Merge or split cells',
       deleteTable: 'Delete table',
       undo: 'Undo',
       redo: 'Redo',

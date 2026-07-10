@@ -1,9 +1,13 @@
 # Log
 
+## 2026-07-10
+
+- **Update**: documented the Markdown-safe Tiptap boundary, including round-trippable table controls and the editor/preview syntax-highlighting contract, in [frontend-conventions](./frontend-conventions.md); aligned the frontend and Playwright skills with the same behavior.
+
 ## 2026-07-08
 
 - **Update**: editor technology updated to Tiptap (v3) in Tech Stack overview ([AGENTS.md](../AGENTS.md)).
-- **Update**: added Tiptap editor-testing guidelines and stabilization gotchas to [klicker-playwright-e2e](../../.agents/skills/klicker-playwright-e2e/SKILL.md) skill.
+- **Update**: added Tiptap editor-testing guidelines and stabilization gotchas to [klicker-playwright-e2e](../.agents/skills/klicker-playwright-e2e/SKILL.md) skill.
 - **Update**: simplified [AGENTS.md](../AGENTS.md) by removing duplicate technical workflows (Tech Stack, Code Conventions, Git Hooks) and the legacy host-based stack in favor of Devcontainer guidance and links to the engineering wiki.
 
 ## 2026-07-07

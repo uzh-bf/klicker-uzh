@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-07'
+timestamp: '2026-07-10'
 tags:
   - frontend
 ---
@@ -19,6 +19,7 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 - **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
+- **Rich content persists as Markdown.** Expose only editor behavior that survives `ContentInput`'s Markdown serialization and the shared `Markdown` preview renderer. Tables are pipe-table compatible: insert, add/delete rows or columns, and delete the table; merged cells and persisted column widths are intentionally unavailable. Code fences retain their language tag; the editor registers Lowlight's common languages while the preview keeps a safe Prism superset. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`, `packages/markdown/src/Markdown.tsx:Markdown`)
 
 ## Data fetching
 

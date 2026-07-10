@@ -90,9 +90,11 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     await cellA1.click()
     await cellA1.pressSequentially('CellA1')
 
-    // Focused in a cell: verify contextual toolbar actions (+R, +C, M/S, Del) show up
+    // Focused in a cell: verify the Markdown-safe contextual toolbar appears
     const addRowBtn = page.getByTestId('table-add-row')
     await expect(addRowBtn).toBeVisible()
+    await expect(page.getByText('M/S', { exact: true })).toHaveCount(0)
+    await expect(editor.locator('.column-resize-handle')).toHaveCount(0)
 
     // Click Add Row
     await addRowBtn.click()
@@ -100,7 +102,13 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     // Verify row count increases to 4
     await expect(tableElement.locator('tr')).toHaveCount(4)
 
-    // 5. Test Syntax-Highlighted Code Block
+    // Add a column and keep it through the Markdown save/preview round-trip
+    await page.getByRole('button', { name: 'Add column' }).click()
+    await expect(
+      tableElement.locator('tr').first().locator('th, td')
+    ).toHaveCount(4)
+
+    // 5. Test syntax highlighting across the shared editor/preview language set
     // Click outside of table area in the editor to append text (target only top-level paragraphs)
     await editor.locator('> p').last().click()
 
@@ -108,11 +116,34 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     await page.keyboard.type('```js ')
     await page.keyboard.type('const count = 99;')
 
+    // Exit the JavaScript block, then add TypeScript and non-JS (R) blocks
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Enter')
+    await page.keyboard.type('```ts ')
+    await page.keyboard.type('const total: number = 42;')
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Enter')
+    await page.keyboard.type('```r ')
+    await page.keyboard.type('increment <- function(x) { return(x + 1) }')
+
     // Verify Highlight.js token spans inside the editor
-    const codeBlock = editor.locator('pre code')
-    await expect(codeBlock).toBeVisible()
-    await expect(codeBlock.locator('span.hljs-keyword')).toHaveText('const')
-    await expect(codeBlock.locator('span.hljs-number')).toHaveText('99')
+    const codeBlocks = editor.locator('pre code')
+    await expect(codeBlocks).toHaveCount(3)
+
+    const jsCodeBlock = codeBlocks.nth(0)
+    await expect(jsCodeBlock.locator('span.hljs-keyword')).toHaveText('const')
+    await expect(jsCodeBlock.locator('span.hljs-number')).toHaveText('99')
+
+    const tsCodeBlock = codeBlocks.nth(1)
+    await expect(tsCodeBlock.locator('span.hljs-keyword')).toHaveText('const')
+    await expect(tsCodeBlock.locator('span.hljs-number')).toHaveText('42')
+
+    const rCodeBlock = codeBlocks.nth(2)
+    await expect(rCodeBlock.locator('span.hljs-keyword')).toHaveText('function')
+    await expect(rCodeBlock.locator('span.hljs-built_in')).toHaveText('return')
+    await expect(rCodeBlock.locator('span.hljs-number')).toHaveText('1')
 
     // 6. Save the content element
     await saveElement(page)
@@ -136,14 +167,37 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     // Assert that the GFM table is styled and matches input text
     await expect(previewContainer.locator('table')).toBeVisible()
     await expect(previewContainer.locator('table tr')).toHaveCount(4)
+    await expect(
+      previewContainer.locator('table tr').first().locator('th, td')
+    ).toHaveCount(4)
     await expect(previewContainer.locator('table td').first()).toContainText(
       'CellA1'
     )
 
-    // Assert that code block renders with Prism token styling class names
-    const previewCode = previewContainer.locator('pre code')
-    await expect(previewCode).toBeVisible()
-    await expect(previewCode.locator('span.token.keyword')).toHaveText('const')
-    await expect(previewCode.locator('span.token.number')).toHaveText('99')
+    // Assert that all code blocks render with Prism token styling class names
+    const previewCodeBlocks = previewContainer.locator('pre code')
+    await expect(previewCodeBlocks).toHaveCount(3)
+
+    const previewJsCodeBlock = previewCodeBlocks.nth(0)
+    await expect(previewJsCodeBlock.locator('span.token.keyword')).toHaveText(
+      'const'
+    )
+    await expect(previewJsCodeBlock.locator('span.token.number')).toHaveText(
+      '99'
+    )
+
+    const previewTsCodeBlock = previewCodeBlocks.nth(1)
+    await expect(previewTsCodeBlock.locator('span.token.keyword')).toHaveText(
+      'const'
+    )
+    await expect(previewTsCodeBlock.locator('span.token.number')).toHaveText(
+      '42'
+    )
+
+    const previewRCodeBlock = previewCodeBlocks.nth(2)
+    await expect(previewRCodeBlock.locator('span.token.keyword')).toHaveText(
+      'function'
+    )
+    await expect(previewRCodeBlock.locator('span.token.number')).toHaveText('1')
   })
 })
