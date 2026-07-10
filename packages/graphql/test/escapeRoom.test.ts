@@ -6,6 +6,7 @@ import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
+import { getEscapeRoomProgress } from '../src/services/escapeRooms.js'
 import {
   resetEscapeRoomAttempt,
   startEscapeRoomAttempt,
@@ -613,6 +614,61 @@ describe('Escape room integration tests', () => {
         where: { id: oldAttempt.id },
       })
       expect(oldAfter).toBeNull()
+    })
+  })
+  // #endregion
+
+  // ! Lecturer progress dashboard query
+  // #region
+  describe('getEscapeRoomProgress - lecturer progress aggregation', () => {
+    it('reports per-participant cleared stacks, total stacks and attempt metadata', async () => {
+      const quiz = await seedEscapeRoomQuiz(2, { timeLimit: 1800 })
+      const stack0 = quiz.stacks[0]!
+      const participant = await seedParticipant('progress')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+
+      // clear only the first of two stacks
+      await respondToElementStack(
+        {
+          stackId: stack0.id,
+          courseId,
+          responses: [scResponse(stack0.elements[0]!.id, 0)],
+          stackAnswerTime: 10,
+        },
+        participantCtx(participant.id)
+      )
+
+      const progress = await getEscapeRoomProgress(
+        { practiceQuizId: quiz.id },
+        lecturerCtx
+      )
+
+      expect(progress).not.toBeNull()
+      expect(progress!.totalStacks).toBe(2)
+      expect(progress!.timeLimit).toBe(1800)
+      expect(progress!.attempts).toHaveLength(1)
+
+      const entry = progress!.attempts[0]!
+      expect(entry.participantId).toBe(participant.id)
+      expect(entry.displayName).toBe(`${TEST_PREFIX}-progress`)
+      expect(entry.status).toBe(DB.EscapeRoomStatus.IN_PROGRESS)
+      expect(entry.clearedStacks).toBe(1)
+      expect(entry.hintsUsedCount).toBe(0)
+      expect(entry.penaltySeconds).toBe(0)
+      expect(entry.completedAt).toBeNull()
+      expect(entry.timeSpentSeconds).toBeNull()
+    })
+
+    it('returns null for a non-existent / non-escape-room activity', async () => {
+      // valid UUID format that does not correspond to any escape-room config
+      const progress = await getEscapeRoomProgress(
+        { practiceQuizId: '00000000-0000-0000-0000-000000000000' },
+        lecturerCtx
+      )
+      expect(progress).toBeNull()
     })
   })
   // #endregion
