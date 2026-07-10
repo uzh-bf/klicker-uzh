@@ -1519,6 +1519,11 @@ export async function submitGroupActivityDecisions(
         'No active escape room attempt found for this activity'
       )
     }
+    if (attempt.lockoutUntil && dayjs().isBefore(dayjs(attempt.lockoutUntil))) {
+      throw new GraphQLError(
+        'You are locked out from submitting answers due to a recent incorrect attempt'
+      )
+    }
     const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
     const totalLimit = attempt.timeLimit - attempt.penaltySeconds
     if (elapsed > totalLimit + 5) {

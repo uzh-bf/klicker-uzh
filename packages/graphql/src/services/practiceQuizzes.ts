@@ -109,6 +109,13 @@ export async function getPracticeQuizData(
     }
   }
 
+  // Escape room content must never reach a non-participant, non-owner caller
+  // (the participant path above masks locked stacks; this covers anonymous /
+  // temporary callers that fall through without an attempt).
+  if (quiz.escapeRoomConfig && !isOwner) {
+    return { ...quiz, isOwner, stacks: [] }
+  }
+
   return { ...quiz, isOwner }
 }
 
@@ -1123,18 +1130,17 @@ export async function resetEscapeRoomAttempt(
     }
   }
 
-  let finalParticipantId = participantId
-  let finalGroupId = groupId
-
+  // Reset is a lecturer-only recovery action. Participant self-reset is
+  // intentionally not allowed: it would delete the participant's own
+  // QuestionResponse rows (enabling unlimited retries / XP re-farming and a
+  // fresh full countdown) and skipped the course-enrollment check that
+  // startEscapeRoomAttempt enforces.
   if (!isLecturer) {
-    if (groupActivityId) {
-      throw new GraphQLError('Only lecturers can reset group activity attempts')
-    }
-    if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
-      throw new GraphQLError('Not authenticated')
-    }
-    finalParticipantId = ctx.user.sub
+    throw new GraphQLError('Only lecturers can reset escape room attempts')
   }
+
+  const finalParticipantId = participantId
+  const finalGroupId = groupId
 
   const attemptWhere =
     finalGroupId && groupActivityId

@@ -101,6 +101,13 @@ export async function getMicroLearningData(
     }
   }
 
+  // Escape room content must never reach a non-participant, non-owner caller
+  // (the participant path above masks locked stacks; this covers anonymous /
+  // temporary callers that fall through without an attempt).
+  if (microLearning.escapeRoomConfig && !isOwner) {
+    return { ...microLearning, isOwner, stacks: [] }
+  }
+
   return {
     ...microLearning,
     isOwner,

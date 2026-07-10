@@ -3292,6 +3292,37 @@ export async function respondToElementStack(
     }
   }
 
+  // Escape room integrity guard: respondToElementStack lives in the
+  // anonymous-operations region, so an anonymous or temporary-participant
+  // caller would otherwise skip the entire attempt/lockout/timer/gating block
+  // above and still receive a correct/incorrect oracle. Reject any non-owner
+  // caller that is not an authenticated participant when the target stack
+  // belongs to an escape-room activity, before grading happens.
+  if (
+    !isOwner &&
+    !(ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT)
+  ) {
+    const escapeStack = await ctx.prisma.elementStack.findUnique({
+      where: { id: stackId },
+      select: {
+        practiceQuiz: {
+          select: { escapeRoomConfig: { select: { id: true } } },
+        },
+        microLearning: {
+          select: { escapeRoomConfig: { select: { id: true } } },
+        },
+      },
+    })
+    if (
+      escapeStack?.practiceQuiz?.escapeRoomConfig ||
+      escapeStack?.microLearning?.escapeRoomConfig
+    ) {
+      throw new GraphQLError(
+        'Escape room activities can only be answered by an enrolled participant with an active attempt'
+      )
+    }
+  }
+
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: InstanceEvaluation[] = []
