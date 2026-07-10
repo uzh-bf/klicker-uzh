@@ -42,6 +42,7 @@ function MicrolearningInstance() {
 
   const isEscapeRoom = !!hookActivity?.escapeRoomConfig
   const {
+    attempt,
     isStarted,
     isCompleted,
     isExpired,
@@ -131,6 +132,13 @@ function MicrolearningInstance() {
             await refetch()
           }}
           loading={attemptLoading}
+          attempt={attempt}
+          clearedStacks={
+            microLearning.stacks?.filter((stack) => stack.isCorrect).length ?? 0
+          }
+          totalStacks={
+            microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0
+          }
         />
       )}
       <div className="flex-1">

@@ -103,6 +103,7 @@ function PracticeQuiz({
 
   const isEscapeRoom = !!quiz.escapeRoomConfig
   const {
+    attempt,
     isStarted,
     isCompleted,
     isExpired,
@@ -194,6 +195,15 @@ function PracticeQuiz({
           hintPenalty={quiz.escapeRoomConfig?.hintPenalty ?? 120}
           onStart={startAttempt}
           loading={attemptLoading}
+          attempt={attempt}
+          clearedStacks={
+            quiz.stacks?.filter(
+              (stack) =>
+                progressState?.[stack.id]?.status ===
+                StackFeedbackStatus.Correct
+            ).length ?? 0
+          }
+          totalStacks={quiz.numOfStacks ?? quiz.stacks?.length ?? 0}
         />
       )}
       <div
@@ -222,7 +232,9 @@ function PracticeQuiz({
           currentIx={currentIx}
           setCurrentIx={handleSetCurrentIx}
           resetLocalStorage={
-            showResetLocalStorage
+            // hidden in escape mode: local progress mirrors the server-side
+            // attempt, so a local reset would only desync the participant view
+            showResetLocalStorage && !isEscapeRoom
               ? () => {
                   resetPracticeQuizLocalStorage(quiz.id)
                   window.location.reload()
@@ -251,6 +263,7 @@ function PracticeQuiz({
             pointsMultiplier={quiz.pointsMultiplier}
             setCurrentIx={handleStartQuiz}
             previewOnly={previewOnly}
+            isEscapeRoom={isEscapeRoom}
           />
         )}
 

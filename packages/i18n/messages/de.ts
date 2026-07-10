@@ -881,6 +881,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomRequestHint: 'Hinweis anzeigen (−{penalty}s)',
       escapeRoomHintRevealedToast:
         'Hinweis angezeigt — {penalty}s zu deiner Zeit hinzugefügt.',
+      escapeRoomStagesLabel: 'Stationen',
+      escapeRoomStagesCleared: 'Gelöste Stationen',
+      escapeRoomClearedProgress:
+        'Du hast {cleared} von {total} Stationen gelöst, bevor die Zeit abgelaufen ist.',
+      escapeRoomStatsTime: 'Fluchtzeit',
+      escapeRoomStatsHints: 'Genutzte Hinweise',
+      escapeRoomStatsPenalty: 'Zeitstrafe',
+      escapeRoomOverviewInfo:
+        'Escape Room: ein zeitlich begrenzter Versuch, löse alle Stationen der Reihe nach',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

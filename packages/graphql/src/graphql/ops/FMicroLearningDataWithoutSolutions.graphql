@@ -5,6 +5,7 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
   displayName
   description
   pointsMultiplier
+  numOfStacks
   scheduledStartAt
   scheduledEndAt
   escapeRoomConfig {

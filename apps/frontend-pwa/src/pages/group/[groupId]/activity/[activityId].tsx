@@ -66,6 +66,7 @@ function GroupActivityDetails() {
   const hookActivity = data?.groupActivityDetails
   const isEscapeRoom = !!hookActivity?.escapeRoomConfig
   const {
+    attempt,
     isStarted,
     isCompleted,
     isExpired,
@@ -130,6 +131,7 @@ function GroupActivityDetails() {
             await refetch()
           }}
           loading={attemptLoading}
+          attempt={attempt}
         />
       )}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">

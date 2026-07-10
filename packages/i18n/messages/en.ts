@@ -878,6 +878,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomRequestHint: 'Reveal hint (−{penalty}s)',
       escapeRoomHintRevealedToast:
         'Hint revealed — {penalty}s added to your time.',
+      escapeRoomStagesLabel: 'Stages',
+      escapeRoomStagesCleared: 'Stages cleared',
+      escapeRoomClearedProgress:
+        'You cleared {cleared} of {total} stages before time ran out.',
+      escapeRoomStatsTime: 'Escape time',
+      escapeRoomStatsHints: 'Hints used',
+      escapeRoomStatsPenalty: 'Time penalty',
+      escapeRoomOverviewInfo:
+        'Escape room: one timed attempt, solve all stages in order',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',
