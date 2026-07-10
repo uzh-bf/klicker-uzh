@@ -3,6 +3,27 @@ import * as jose from 'jose'
 import { APP_SECRET, URL_MANAGE } from './constants.js'
 import { TokenData } from './types.js'
 
+function getSharedCookieDomain(targetUrl: URL) {
+  const configuredDomain = process.env.COOKIE_DOMAIN
+  if (
+    configuredDomain &&
+    (targetUrl.hostname === configuredDomain ||
+      targetUrl.hostname.endsWith(`.${configuredDomain}`))
+  ) {
+    return `.${configuredDomain}`
+  }
+
+  if (
+    targetUrl.hostname === 'localhost' ||
+    /^\d+\.\d+\.\d+\.\d+$/.test(targetUrl.hostname)
+  ) {
+    return undefined
+  }
+
+  const [, ...domainParts] = targetUrl.hostname.split('.')
+  return domainParts.length >= 2 ? `.${domainParts.join('.')}` : undefined
+}
+
 export async function setSessionCookieForUrl({
   context,
   cookieName = 'next-auth.session-token',
@@ -23,14 +44,16 @@ export async function setSessionCookieForUrl({
     .sign(secret)
 
   const url = new URL(targetUrl)
+  const domain = getSharedCookieDomain(url)
   await context.addCookies([
     {
       name: cookieName,
       value: token,
-      url: url.origin,
       httpOnly: true,
+      path: '/',
       sameSite: 'Lax',
       secure: url.protocol === 'https:',
+      ...(domain ? { domain } : { url: url.origin }),
     },
   ])
 }

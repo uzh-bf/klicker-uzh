@@ -21,6 +21,10 @@ export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
 })
 
+export const PracticeQuizMode = builder.enumType('PracticeQuizMode', {
+  values: Object.values(DB.PracticeQuizMode),
+})
+
 export const PublicationStatus = builder.enumType('PublicationStatus', {
   values: Object.values(DB.PublicationStatus),
 })
@@ -184,6 +188,7 @@ export interface IPracticeQuiz
     | 'pointsMultiplier'
     | 'resetTimeDays'
     | 'orderType'
+    | 'mode'
     | 'status'
     | 'availableFrom'
     | 'areInstancesOutdated'
@@ -211,6 +216,7 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays'),
     orderType: t.expose('orderType', { type: ElementOrderType }),
+    mode: t.expose('mode', { type: PracticeQuizMode }),
     status: t.expose('status', { type: PublicationStatus }),
     stacks: t.expose('stacks', { type: [ElementStackRef], nullable: true }),
     course: t.expose('course', { type: CourseRef, nullable: true }),

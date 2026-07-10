@@ -495,6 +495,7 @@ export async function applyActivityBatchOperations(
     ? await ctx.prisma.practiceQuiz.findMany({
         where: {
           id: { in: activityIds },
+          mode: DB.PracticeQuizMode.STANDARD,
           permissions: {
             some: {
               userId: ctx.user.sub,

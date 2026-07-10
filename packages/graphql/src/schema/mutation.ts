@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CompetenceTreeService from '../services/competenceTreeManagement.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -19,8 +20,15 @@ import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
+import { AdaptivePracticeQuizConfigInput } from './adaptivePracticeQuiz.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
+import {
+  CompetenceTree,
+  CompetenceTreeInput,
+  CompetenceTreeMetadataInput,
+  DuplicateCompetenceTreeInput,
+} from './competenceTree.js'
 import { Course } from './course.js'
 import {
   Element,
@@ -65,6 +73,7 @@ import {
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
+  PracticeQuizMode,
   ReviewStatus,
   StackFeedback,
   StackResponseInput,
@@ -613,6 +622,70 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await AccountService.changeUserLocale(args, ctx)
         },
+      }),
+
+      createCompetenceTree: t.withAuth(asUserFullAccess).field({
+        type: CompetenceTree,
+        args: {
+          input: t.arg({ type: CompetenceTreeInput, required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.createCompetenceTree(args, ctx),
+      }),
+
+      replaceCompetenceTree: t.withAuth(asUserFullAccess).field({
+        type: CompetenceTree,
+        args: {
+          id: t.arg.string({ required: true }),
+          input: t.arg({ type: CompetenceTreeInput, required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.replaceCompetenceTree(args, ctx),
+      }),
+
+      updateCompetenceTreeMetadata: t.withAuth(asUserFullAccess).field({
+        type: CompetenceTree,
+        args: {
+          id: t.arg.string({ required: true }),
+          input: t.arg({ type: CompetenceTreeMetadataInput, required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.updateCompetenceTreeMetadata(args, ctx),
+      }),
+
+      duplicateCompetenceTree: t.withAuth(asUserFullAccess).field({
+        type: CompetenceTree,
+        args: {
+          id: t.arg.string({ required: true }),
+          input: t.arg({ type: DuplicateCompetenceTreeInput, required: false }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.duplicateCompetenceTree(args, ctx),
+      }),
+
+      linkCompetenceTreeToCourse: t.withAuth(asUserFullAccess).field({
+        type: CompetenceTree,
+        args: {
+          treeId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.linkCompetenceTreeToCourse(args, ctx),
+      }),
+
+      unlinkCompetenceTreeFromCourse: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          treeId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.unlinkCompetenceTreeFromCourse(args, ctx),
+      }),
+
+      deleteCompetenceTree: t.withAuth(asUserFullAccess).boolean({
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.deleteCompetenceTree(args, ctx),
       }),
 
       cancelLiveQuiz: t.withAuth(asUserSessionExec).field({
@@ -3066,6 +3139,11 @@ export const Mutation = builder.mutationType({
               required: true,
             }),
             resetTimeDays: t.arg.int({ required: true }),
+            mode: t.arg({ type: PracticeQuizMode, required: false }),
+            adaptiveConfig: t.arg({
+              type: AdaptivePracticeQuizConfigInput,
+              required: false,
+            }),
           },
           resolve: async (_, args, ctx) => {
             return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
@@ -3093,6 +3171,11 @@ export const Mutation = builder.mutationType({
               required: true,
             }),
             resetTimeDays: t.arg.int({ required: true }),
+            mode: t.arg({ type: PracticeQuizMode, required: false }),
+            adaptiveConfig: t.arg({
+              type: AdaptivePracticeQuizConfigInput,
+              required: false,
+            }),
           },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),

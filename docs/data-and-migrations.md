@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-07'
+timestamp: '2026-07-10'
 tags:
   - backend
   - prisma
@@ -47,6 +47,7 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 ## Schema-level gotchas
 
+- **Some adaptive integrity rules are migration-only PostgreSQL DDL.** `20260707120000_adaptive_practice_quiz_competence_trees` contains partial unique indexes for root ordering, in-progress attempts, and overall estimates. `20260710152000_adaptive_tree_integrity` adds same-tree composite foreign keys and an estimate node-kind check. `20260710190000_adaptive_practice_quiz_configuration` persists preset/attempt policy, preserves advanced legacy rows as Research, resets legacy warm-up/schedules, adds same-tree quiz overrides plus config/quiz/participant/participation/course/pool response constraints, installs numeric/preset/no-gamification checks, and creates immutable `PracticeQuizAdaptivePoolItem` snapshots. Pool-backed responses bind config, pool row, source assignment, and element id as one database identity. `apqr_pool_item_required_check` is deliberately `NOT VALID`: old nullable response rows remain readable, while every new insert must reference a pool item. Invalid legacy numbers or inconsistent attempt identities fail with explicit migration preconditions instead of being silently normalized. Prisma cannot represent every partial index/check constraint; do not remove migration-only checks merely because they are absent from Prisma schemas.
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
 

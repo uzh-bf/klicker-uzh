@@ -340,9 +340,10 @@ export async function testCleanup(prisma: PrismaClient) {
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
+  await prisma.practiceQuiz.deleteMany()
+  await prisma.competenceTree.deleteMany()
   await prisma.element.deleteMany()
   await prisma.liveQuiz.deleteMany()
-  await prisma.practiceQuiz.deleteMany()
   await prisma.microLearning.deleteMany()
   await prisma.groupActivity.deleteMany()
   await prisma.course.deleteMany()

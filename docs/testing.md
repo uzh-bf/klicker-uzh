@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-07'
+timestamp: '2026-07-09'
 tags:
   - testing
   - ci
@@ -47,6 +47,6 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 
 ## CI matrix
 
-Path-filtered unit workflows: `test-grading`, `test-util` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). Cypress/Playwright trigger on broad `apps/**, packages/**` paths — they run on almost every code PR. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
+Path-filtered unit workflows: `test-adaptive-learning`, `test-grading`, `test-util` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). Cypress/Playwright trigger on broad `apps/**, packages/**` paths — they run on almost every code PR. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
 
 **Git hooks run no tests** (pre-commit = `check:all`, pre-push = `build`). The expectation before a PR: `check:all` + build + targeted vitest for touched logic + browser evidence for UI changes; CI is the real e2e gate.

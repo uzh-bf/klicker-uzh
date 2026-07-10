@@ -1,0 +1,5 @@
+mutation LinkCompetenceTreeToCourse($treeId: String!, $courseId: String!) {
+  linkCompetenceTreeToCourse(treeId: $treeId, courseId: $courseId) {
+    ...CompetenceTreeData
+  }
+}

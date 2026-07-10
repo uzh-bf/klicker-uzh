@@ -4,8 +4,10 @@ import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
+import * as AdaptivePracticeQuizService from '../services/adaptivePracticeQuizConfig.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CompetenceTreeService from '../services/competenceTreeManagement.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -23,6 +25,7 @@ import {
   CourseActivityList,
   UserActivityList,
 } from './activities.js'
+import { AdaptivePracticeQuizPreviewType } from './adaptivePracticeQuiz.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -39,6 +42,12 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import {
+  CompetenceTree,
+  CompetenceTreeInput,
+  CompetenceTreeSummaryType,
+  CompetenceTreeValidationResultType,
+} from './competenceTree.js'
 import {
   AssessmentParticipant,
   Course,
@@ -155,6 +164,36 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getPublicParticipantProfile(args, ctx)
         },
+      }),
+
+      competenceTrees: t.withAuth(asUser).field({
+        type: [CompetenceTreeSummaryType],
+        resolve: async (_, __, ctx) =>
+          await CompetenceTreeService.getCompetenceTrees(ctx),
+      }),
+
+      competenceTree: t.withAuth(asUser).field({
+        nullable: true,
+        type: CompetenceTree,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCompetenceTree(args, ctx),
+      }),
+
+      courseCompetenceTrees: t.withAuth(asUser).field({
+        type: [CompetenceTreeSummaryType],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCourseCompetenceTrees(args, ctx),
+      }),
+
+      validateCompetenceTree: t.withAuth(asUser).field({
+        type: CompetenceTreeValidationResultType,
+        args: {
+          input: t.arg({ type: CompetenceTreeInput, required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.validateCompetenceTreeInput(args, ctx),
       }),
 
       controlCourse: t.withAuth(asUser).field({
@@ -648,6 +687,22 @@ export const Query = builder.queryType({
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await PracticeQuizService.getSinglePracticeQuiz(args, ctx)
+          }
+        ),
+      }),
+
+      adaptivePracticeQuizPreview: t.withAuth(asUser).field({
+        nullable: true,
+        type: AdaptivePracticeQuizPreviewType,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ practiceQuizId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await AdaptivePracticeQuizService.getAdaptivePracticeQuizPreview(
+              args,
+              ctx
+            )
           }
         ),
       }),

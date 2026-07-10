@@ -4,6 +4,8 @@ export const DEFAULT_STANDARD_ERROR_THRESHOLD = 0.4
 export const DEFAULT_QUESTION_THRESHOLD = 50
 export const DEFAULT_TOP_INFORMATION_RATIO = 0.8
 export const MAX_COMPETENCE_TREE_DEPTH = 5
+export const MAX_ABSOLUTE_THETA = 10
+export const MAX_DISCRIMINATION = 10
 
 const EPSILON = 1e-9
 
@@ -534,25 +536,40 @@ export function normalizeFreeTextResponse(response: string) {
 
 export function aggregateInverseVariance(entries: EstimateEntry[]) {
   const usable = entries.filter(
-    (entry) => Number.isFinite(entry.standardError) && entry.standardError > 0
+    (entry) =>
+      Number.isFinite(entry.theta) &&
+      Number.isFinite(entry.standardError) &&
+      entry.standardError > 0 &&
+      Number.isFinite(entry.weight ?? 1) &&
+      (entry.weight ?? 1) > 0
   )
 
   if (usable.length === 0) return null
 
-  const weighted = usable.map((entry) => {
-    const precision = 1 / Math.pow(entry.standardError, 2)
-    return {
-      theta: entry.theta,
-      weight: precision * (entry.weight ?? 1),
-    }
-  })
-  const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0)
+  const weighted = usable.map((entry) => ({
+    theta: entry.theta,
+    logWeight: Math.log(entry.weight ?? 1) - 2 * Math.log(entry.standardError),
+  }))
+  const maximumLogWeight = weighted.reduce(
+    (maximum, { logWeight }) => Math.max(maximum, logWeight),
+    Number.NEGATIVE_INFINITY
+  )
+  const scaled = weighted.map((entry) => ({
+    theta: entry.theta,
+    weight: Math.exp(entry.logWeight - maximumLogWeight),
+  }))
+  const scaledWeightSum = scaled.reduce((sum, entry) => sum + entry.weight, 0)
+  const theta =
+    scaled.reduce((sum, entry) => sum + entry.theta * entry.weight, 0) /
+    scaledWeightSum
+  const standardError =
+    Math.exp(-maximumLogWeight / 2) / Math.sqrt(scaledWeightSum)
+
+  if (!Number.isFinite(theta) || !Number.isFinite(standardError)) return null
 
   return {
-    theta:
-      weighted.reduce((sum, entry) => sum + entry.theta * entry.weight, 0) /
-      totalWeight,
-    standardError: Math.sqrt(1 / totalWeight),
+    theta,
+    standardError: Math.max(Number.MIN_VALUE, standardError),
   }
 }
 
@@ -561,31 +578,42 @@ export function aggregateWeightedEstimates(entries: EstimateEntry[]) {
     (entry) =>
       Number.isFinite(entry.theta) &&
       Number.isFinite(entry.standardError) &&
-      entry.standardError > 0
+      entry.standardError > 0 &&
+      Number.isFinite(entry.weight ?? 1) &&
+      (entry.weight ?? 1) >= 0
   )
 
   if (usable.length === 0) return null
 
-  const rawWeights = usable.map((entry) => Math.max(0, entry.weight ?? 1))
-  const rawWeightSum = rawWeights.reduce((sum, weight) => sum + weight, 0)
+  const rawWeights = usable.map((entry) => entry.weight ?? 1)
+  const maximumWeight = rawWeights.reduce(
+    (maximum, weight) => Math.max(maximum, weight),
+    Number.NEGATIVE_INFINITY
+  )
+  const scaledWeights =
+    maximumWeight > 0
+      ? rawWeights.map((weight) => weight / maximumWeight)
+      : rawWeights
+  const scaledWeightSum = scaledWeights.reduce((sum, weight) => sum + weight, 0)
   const weights =
-    rawWeightSum > 0
-      ? rawWeights.map((weight) => weight / rawWeightSum)
+    scaledWeightSum > 0
+      ? scaledWeights.map((weight) => weight / scaledWeightSum)
       : usable.map(() => 1 / usable.length)
 
   const theta = usable.reduce(
     (sum, entry, index) => sum + entry.theta * weights[index]!,
     0
   )
-  const variance = usable.reduce(
-    (sum, entry, index) =>
-      sum + Math.pow(weights[index]!, 2) * Math.pow(entry.standardError, 2),
+  const standardError = usable.reduce(
+    (combined, entry, index) =>
+      Math.hypot(combined, weights[index]! * entry.standardError),
     0
   )
+  if (!Number.isFinite(theta) || !Number.isFinite(standardError)) return null
 
   return {
     theta,
-    standardError: Math.sqrt(variance),
+    standardError,
   }
 }
 
@@ -732,7 +760,13 @@ function parseNormalizedDecimal(input: string) {
 
 function hasAmbiguousSingleComma(input: string) {
   const commaCount = input.split(',').length - 1
-  return commaCount === 1 && /^[+-]?(?:\d+)?,\d{3}(?:e[+-]?\d+)?$/i.test(input)
+  if (commaCount !== 1) return false
+
+  const match = input.match(/^[+-]?(\d*),\d{3}(?:e[+-]?\d+)?$/i)
+  if (!match) return false
+
+  const integerPart = match[1] ?? ''
+  return integerPart.length > 0 && !/^0+$/.test(integerPart)
 }
 
 function probabilityDerivative(

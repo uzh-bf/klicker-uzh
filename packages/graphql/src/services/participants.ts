@@ -834,6 +834,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
         include: {
           practiceQuizzes: {
             where: {
+              mode: DB.PracticeQuizMode.STANDARD,
               status: DB.PublicationStatus.PUBLISHED,
               isDeleted: false,
             },

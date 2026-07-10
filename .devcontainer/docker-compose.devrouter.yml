@@ -1,13 +1,20 @@
 # Overlay to enable devrouter routing (https://*.klicker.localhost) and local trust of mkcert root CA.
-version: '3.8'
 
 services:
   postgres:
+    ports: !reset []
     networks:
       devnet:
         aliases: [klicker-db]
 
+  mailhog:
+    ports: !reset []
+
+  hatchet:
+    ports: !reset []
+
   app:
+    ports: !reset []
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
       - 'auth.klicker.localhost:host-gateway'
@@ -24,6 +31,9 @@ services:
     volumes:
       # Local mkcert root CA (created by `dev tls install`) for server-side TLS trust.
       - '${DEVROUTER_MKCERT_CAROOT:-${HOME}/Library/Application Support/mkcert}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
+
+  litellm:
+    ports: !reset []
 
 networks:
   devnet:

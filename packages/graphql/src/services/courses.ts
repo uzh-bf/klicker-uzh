@@ -2923,6 +2923,7 @@ export async function updateCourseSettings(
               updateMany: {
                 where: {
                   isDeleted: false,
+                  mode: DB.PracticeQuizMode.STANDARD,
                   status: {
                     in: [
                       DB.PublicationStatus.DRAFT,
@@ -4156,6 +4157,7 @@ export async function getCoursePracticeQuiz(
     pointsMultiplier: 1,
     resetTimeDays: 6,
     orderType: DB.ElementOrderType.SPACED_REPETITION,
+    mode: DB.PracticeQuizMode.STANDARD,
     status: DB.PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,

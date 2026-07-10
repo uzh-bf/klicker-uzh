@@ -243,11 +243,26 @@ export async function validateElement(
 // ---------------------------------------------------------------------------
 // Search for an element by name and delete it via the actions menu.
 // ---------------------------------------------------------------------------
-export async function deleteElement(page: Page, elementName: string) {
+export async function deleteElement(
+  page: Page,
+  elementName: string,
+  options?: { allowMissing?: boolean }
+) {
   await page.getByTestId('elements-search-input').clear()
   await page.getByTestId('elements-search-input').fill(elementName)
   await page.keyboard.press('Enter')
-  await expect(page.getByTestId(`element-item-${elementName}`)).toBeVisible()
+  const element = page.getByTestId(`element-item-${elementName}`)
+
+  if (options?.allowMissing) {
+    try {
+      await expect(element).toBeVisible()
+    } catch {
+      return
+    }
+  } else {
+    await expect(element).toBeVisible()
+  }
+
   await page.getByTestId(`actions-element-${elementName}`).click()
   await page.getByTestId(`delete-element-${elementName}`).click()
   for (let attempt = 0; attempt < 5; attempt++) {

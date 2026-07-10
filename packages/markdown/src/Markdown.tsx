@@ -15,6 +15,13 @@ import remarkRehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
+import {
+  VideoEmbed,
+  getKalturaId,
+  getKalturaPartnerId,
+  getKalturaUiConfId,
+  getYoutubeId,
+} from './VideoEmbed.js'
 
 export interface MarkdownProps {
   className?: {
@@ -43,6 +50,127 @@ export interface MarkdownProps {
   data?: {
     cy?: string
     test?: string
+  }
+}
+
+type HastNode = {
+  type: string
+  tagName?: string
+  value?: string
+  properties?: Record<string, unknown>
+  children?: HastNode[]
+}
+
+type VideoProvider = 'youtube' | 'kaltura'
+
+interface VideoEmbedComponentProps {
+  provider?: string
+  videoId?: string
+  partnerId?: string
+  uiConfId?: string
+}
+
+function isElement(node: HastNode, tagName: string): boolean {
+  return node.type === 'element' && node.tagName === tagName
+}
+
+function isWhitespaceText(node: HastNode): boolean {
+  return node.type === 'text' && !node.value?.trim()
+}
+
+function getPlainText(node: HastNode): string | null {
+  if (!node.children) {
+    return ''
+  }
+
+  let text = ''
+  for (const child of node.children) {
+    if (child.type !== 'text') {
+      return null
+    }
+    text += child.value ?? ''
+  }
+
+  return text
+}
+
+function getVideoEmbedProperties(
+  anchor: HastNode
+): Record<string, string> | null {
+  const labelText = getPlainText(anchor)?.trim().toLowerCase()
+  if (labelText !== 'video' && labelText !== 'embed') {
+    return null
+  }
+
+  const href = anchor.properties?.href
+  if (typeof href !== 'string') {
+    return null
+  }
+
+  const youtubeId = getYoutubeId(href)
+  if (youtubeId) {
+    return {
+      provider: 'youtube',
+      videoId: youtubeId,
+    }
+  }
+
+  const kalturaId = getKalturaId(href)
+  if (!kalturaId) {
+    return null
+  }
+
+  return {
+    provider: 'kaltura',
+    videoId: kalturaId,
+    partnerId: getKalturaPartnerId(href),
+    uiConfId: getKalturaUiConfId(href),
+  }
+}
+
+function replaceVideoEmbedParagraphs(node: HastNode): void {
+  if (!node.children) {
+    return
+  }
+
+  for (let index = 0; index < node.children.length; index++) {
+    const child = node.children[index]
+    if (!child) {
+      continue
+    }
+
+    if (isElement(child, 'p') && child.children) {
+      const meaningfulChildren = child.children.filter(
+        (paragraphChild) => !isWhitespaceText(paragraphChild)
+      )
+      const onlyChild = meaningfulChildren[0]
+
+      if (
+        meaningfulChildren.length === 1 &&
+        onlyChild &&
+        isElement(onlyChild, 'a')
+      ) {
+        const embedProperties = getVideoEmbedProperties(onlyChild)
+
+        if (embedProperties) {
+          node.children[index] = {
+            type: 'element',
+            tagName: 'video-embed',
+            properties: embedProperties,
+            children: [],
+          }
+          continue
+        }
+      }
+    }
+
+    replaceVideoEmbedParagraphs(child)
+  }
+}
+
+function rehypeVideoEmbeds() {
+  return (tree: HastNode): void => {
+    replaceVideoEmbedParagraphs(tree)
   }
 }
 
@@ -109,10 +237,33 @@ function Markdown({
             target: '_blank',
             rel: ['noopener', 'noreferrer', 'nofollow'],
           })
+          .use(rehypeVideoEmbeds)
           .use(rehypeKatex)
           .use(rehypeReact, {
             ...runtime,
             components: {
+              'video-embed': ({
+                provider,
+                videoId,
+                partnerId,
+                uiConfId,
+              }: VideoEmbedComponentProps) => {
+                if (
+                  !videoId ||
+                  (provider !== 'youtube' && provider !== 'kaltura')
+                ) {
+                  return null
+                }
+
+                return (
+                  <VideoEmbed
+                    provider={provider as VideoProvider}
+                    videoId={videoId}
+                    partnerId={partnerId}
+                    uiConfId={uiConfId}
+                  />
+                )
+              },
               img: ({
                 src,
                 alt,
@@ -135,32 +286,41 @@ function Markdown({
                   withModal={withModal}
                 />
               ),
-              a: withLinkButtons
-                ? ({
-                    href,
-                    children,
-                  }: {
-                    href: string
-                    children: React.ReactNode
-                  }) => {
-                    const isExcel = href.includes('.xls')
-                    const isPDF = href.includes('.pdf')
-                    return (
-                      <a
-                        className={twMerge(
-                          'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
-                        )}
-                        href={href}
-                      >
-                        <div>
-                          {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
-                          {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
-                        </div>
-                        <div>{children}</div>
-                      </a>
-                    )
-                  }
-                : 'a',
+              a: ({
+                href,
+                children,
+                target,
+                rel,
+                ...rest
+              }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
+                if (withLinkButtons) {
+                  const isExcel = href?.includes('.xls')
+                  const isPDF = href?.includes('.pdf')
+                  return (
+                    <a
+                      className={twMerge(
+                        'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
+                      )}
+                      href={href}
+                      target={target}
+                      rel={rel}
+                      {...rest}
+                    >
+                      <div>
+                        {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
+                        {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
+                      </div>
+                      <div>{children}</div>
+                    </a>
+                  )
+                }
+
+                return (
+                  <a href={href} target={target} rel={rel} {...rest}>
+                    {children}
+                  </a>
+                )
+              },
               ...components,
             },
           })

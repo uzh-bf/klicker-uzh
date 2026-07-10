@@ -72,6 +72,8 @@ model PracticeQuiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([id, courseId], map: "practice_quiz_id_course_key")
 }
 
 // #endregion

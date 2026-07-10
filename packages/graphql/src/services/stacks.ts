@@ -72,6 +72,7 @@ type ExistingInstanceType = DB.ElementInstance & {
   elementStack?: {
     practiceQuizId?: string | null
     microLearningId?: string | null
+    practiceQuiz?: Pick<DB.PracticeQuiz, 'mode'> | null
   } | null
 }
 
@@ -387,7 +388,9 @@ async function getValidateFlashcardInstance({
       elementType: DB.ElementType.FLASHCARD,
     },
     include: {
-      elementStack: true,
+      elementStack: {
+        include: { practiceQuiz: { select: { mode: true } } },
+      },
       instanceStatistics: true,
       responses: participantId
         ? {
@@ -402,6 +405,8 @@ async function getValidateFlashcardInstance({
   // check if the instance exists and the response is valid
   if (
     !existingInstance ||
+    existingInstance.elementStack?.practiceQuiz?.mode ===
+      DB.PracticeQuizMode.ADAPTIVE ||
     existingInstance.elementType !== DB.ElementType.FLASHCARD ||
     ![
       FlashcardCorrectness.INCORRECT,
@@ -826,7 +831,9 @@ async function getValidateContentInstance({
       elementType: DB.ElementType.CONTENT,
     },
     include: {
-      elementStack: true,
+      elementStack: {
+        include: { practiceQuiz: { select: { mode: true } } },
+      },
       instanceStatistics: true,
       responses: participantId
         ? {
@@ -838,7 +845,10 @@ async function getValidateContentInstance({
     },
   })
 
-  return existingInstance
+  return existingInstance?.elementStack?.practiceQuiz?.mode ===
+    DB.PracticeQuizMode.ADAPTIVE
+    ? null
+    : existingInstance
 }
 
 async function createContentResponseDetail({
@@ -1198,7 +1208,9 @@ async function getValidateElementInstance({
       id,
     },
     include: {
-      elementStack: true,
+      elementStack: {
+        include: { practiceQuiz: { select: { mode: true } } },
+      },
       instanceStatistics: true,
       responses: participantId
         ? {
@@ -1210,7 +1222,10 @@ async function getValidateElementInstance({
     },
   })
 
-  return existingInstance
+  return existingInstance?.elementStack?.practiceQuiz?.mode ===
+    DB.PracticeQuizMode.ADAPTIVE
+    ? null
+    : existingInstance
 }
 
 function evaluateChoicesElementResponse({

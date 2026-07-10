@@ -225,6 +225,9 @@ async function seedTestkursAdaptiveAssessment(
   prisma: Prisma.PrismaClient,
   elements: Prisma.Element[]
 ) {
+  // LEGACY standalone adaptive assessment seed. New adaptive development should
+  // seed competence trees plus PracticeQuizMode.ADAPTIVE after service
+  // validation exists.
   const elementByOriginalId = new Map(
     elements.map((element) => [element.originalId, element])
   )
@@ -692,6 +695,8 @@ type AdaptiveSeedAssessmentElement = Prisma.AdaptiveAssessmentElement & {
 async function seedTestkursAdaptiveAssessmentAttempts(
   prisma: Prisma.PrismaClient
 ) {
+  // LEGACY standalone adaptive assessment attempts for historical local data
+  // only. Do not use this as the model for adaptive practice quiz attempts.
   const assessment = await prisma.adaptiveAssessment.findUnique({
     where: { id: ADAPTIVE_ASSESSMENT_ID_TEST },
     include: {

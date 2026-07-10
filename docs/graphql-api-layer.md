@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-10'
 tags:
   - backend
   - graphql
@@ -19,6 +19,10 @@ tags:
 1. **Role/scope gate — `t.withAuth(scopeObject)`.** Scope objects are defined once near the top of `packages/graphql/src/schema/mutation.ts` (and mirrored in `query.ts`): `asUser`, `asUserFullAccess`, `asUserSessionExec`, `asUserOwner`, `asUserWithCatalyst`, `asParticipant`, `asTemporaryParticipant`, `asAdmin`. Their semantics come from `packages/graphql/src/builder.ts` auth scopes: `authenticated` (logged in, not OTP), `role` (USER also passes for ADMIN; PARTICIPANT is exact), `scope` (a ladder — `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY`, a login with a higher scope passes lower requirements), `catalyst`. `defaultStrategy: 'all'`; failure throws `GraphQLError('Unauthorized')`.
 2. **Object-level permission — `withPermission(argsToCheck, PermissionLevel, resolver)`** (`packages/graphql/src/services/sharing.ts:withPermission`). Maps resolver args to a `PermissionCheck` (one of `courseId | liveQuizId | practiceQuizId | microLearningId | groupActivityId | elementId | answerCollectionId | catalogCollectionId`) and a required `PermissionLevel`. **On failure it returns `null` instead of throwing** — clients see a null field, not an error.
 3. **Derived-permission lookup — `checkAccess`** (same file): resolves ownership and sharing grants (`DerivedPermission`) for the target object.
+
+Reusable competence trees are not entries in the generic sharing tables. Their equivalent object-level policy is centralized in `packages/graphql/src/services/competenceTreeManagement.ts`: owner-only edits, linked-course read access, course `WRITE` for links, and element `READ` for assignments and duplication. A linked-course reader receives tree-owned assignment metadata needed for quiz setup, but not element content/options/solutions and not generic element access. Root resolvers remain one-line delegates, and all competence-tree mutations use `asUserFullAccess`.
+
+Adaptive learning remains on the existing PracticeQuiz contract. `createPracticeQuiz` and `editPracticeQuiz` accept optional `mode` / `adaptiveConfig` arguments, so old clients remain standard by omission. `adaptivePracticeQuizPreview` uses `asUser` plus `withPermission(..., WRITE, ...)`; READ collaborators receive `null`. Configuration writes additionally verify that the competence tree is linked to the selected course and that the caller has course `WRITE` access. Until the Phase 3 participant runtime lands, participant listings and direct participant quiz data exclude adaptive mode, and future-dated adaptive publication returns `ADAPTIVE_SCHEDULING_UNAVAILABLE`; immediate owner-side publication remains available for immutable-pool verification. See [Adaptive Learning](./adaptive-learning.md) for presets, readiness, and publication-pool semantics.
 
 Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on courseId), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ). Existing fields use `t.withAuth(...)` exclusively — follow them rather than inventing `authScopes` variants.
 

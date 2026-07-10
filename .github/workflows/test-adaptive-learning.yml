@@ -1,0 +1,42 @@
+name: Test adaptive-learning package functionalities
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+    paths:
+      - 'packages/adaptive-learning/**'
+      - '.github/workflows/test-adaptive-learning.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'packages/adaptive-learning/**'
+      - '.github/workflows/test-adaptive-learning.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: true
+      - name: Check adaptive-learning package
+        shell: bash
+        run: |
+          cd packages/adaptive-learning
+          pnpm run check
+      - name: Test adaptive-learning package
+        shell: bash
+        run: |
+          cd packages/adaptive-learning
+          pnpm run test:run

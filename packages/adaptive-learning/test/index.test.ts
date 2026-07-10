@@ -311,6 +311,14 @@ describe('adaptive-learning core', () => {
       normalized: '0.001',
     })
     expect(normalizeNumericalResponse('1,200').value).toBeNull()
+    expect(normalizeNumericalResponse('0,500')).toEqual({
+      value: 0.5,
+      normalized: '0.5',
+    })
+    expect(normalizeNumericalResponse(',500')).toEqual({
+      value: 0.5,
+      normalized: '0.5',
+    })
     expect(normalizeNumericalResponse('25%').value).toBeNull()
     expect(
       normalizeNumericalResponse('25%', { allowPercentInput: true })
@@ -333,6 +341,26 @@ describe('adaptive-learning core', () => {
 
     expect(aggregate?.theta).toBeCloseTo(0.6, 3)
     expect(aggregate?.standardError).toBeCloseTo(0.447, 3)
+
+    expect(
+      aggregateInverseVariance([
+        { theta: Number.NaN, standardError: 0.1 },
+        { theta: 1, standardError: 0.5, weight: -1 },
+        { theta: 2, standardError: 1 },
+      ])
+    ).toEqual({ theta: 2, standardError: 1 })
+
+    const extremePrecision = aggregateInverseVariance([
+      { theta: -1, standardError: 1e-200, weight: 1e200 },
+      { theta: 1, standardError: 1e-200, weight: 1e200 },
+    ])
+    expect(extremePrecision?.theta).toBe(0)
+    expect(Number.isFinite(extremePrecision?.standardError)).toBe(true)
+    expect(
+      aggregateInverseVariance([
+        { theta: 0, standardError: 1e308, weight: Number.MIN_VALUE },
+      ])
+    ).toBeNull()
   })
 
   it('aggregates weighted estimates with propagated variance', () => {
@@ -343,6 +371,13 @@ describe('adaptive-learning core', () => {
 
     expect(aggregate?.theta).toBeCloseTo(0.5, 3)
     expect(aggregate?.standardError).toBeCloseTo(0.395, 3)
+
+    const largeWeights = aggregateWeightedEstimates([
+      { theta: -1, standardError: 0.5, weight: 1e308 },
+      { theta: 1, standardError: 0.5, weight: 1e308 },
+    ])
+    expect(largeWeights?.theta).toBe(0)
+    expect(largeWeights?.standardError).toBeCloseTo(0.354, 3)
   })
 
   it('validates disabled pools', () => {

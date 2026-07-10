@@ -1,0 +1,114 @@
+fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
+  practiceQuizId
+  mode
+  publishedPoolSize
+  awardsPoints
+  awardsExperiencePoints
+  config {
+    id
+    competenceTreeId
+    preset
+    attemptSelectionPolicy
+    totalQuestionCap
+    perLeafQuestionCap
+    minQuestionsPerLeaf
+    classificationZ
+    standardErrorThreshold
+    topInformationRatio
+    defaultDiscrimination
+    levelMappingRule
+    showTimer
+    showFinalResult
+    showLiveEstimate
+    poolPublishedAt
+  }
+  competenceTree {
+    id
+    name
+    displayName
+    description
+    maxDepth
+    thetaMin
+    thetaMax
+    levels {
+      id
+      label
+      order
+      theta
+      lowerBound
+      upperBound
+    }
+  }
+  nodes {
+    id
+    parentId
+    kind
+    name
+    depth
+    order
+    enabled
+    weight
+    questionCap
+  }
+  assignments {
+    id
+    elementId
+    elementName
+    elementVersion
+    elementType
+    leafNodeId
+    levelId
+    enabled
+    available
+    controlledAnswerReady
+    choiceCount
+    enablePercentInput
+    a
+    b
+    c
+  }
+  readiness {
+    ready
+    errors {
+      code
+      message
+      path
+      nodeId
+      leafNodeId
+      levelId
+      assignmentId
+    }
+    warnings {
+      code
+      message
+      path
+      nodeId
+      leafNodeId
+      levelId
+      assignmentId
+    }
+    coverages {
+      coverageId
+      leafNodeId
+      levelId
+      targetItemCount
+      enabledAssignmentCount
+      ready
+    }
+    rootReachability {
+      nodeId
+      availableItemCount
+      allocatedQuestionCount
+      minimumReachableStandardError
+      thresholdReachable
+      classifiableLevelCount
+      levelCount
+      allLevelsPotentiallyClassifiable
+    }
+    enabledRootCount
+    enabledLeafCount
+    enabledAssignmentCount
+    expectedQuestionCount
+    estimatedDurationMinutes
+  }
+}

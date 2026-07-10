@@ -1,3 +1,8 @@
+// LEGACY standalone adaptive assessment schema.
+// New adaptive learning work targets competence trees and PracticeQuizMode.ADAPTIVE
+// in competence.prisma / quiz.prisma. Do not expose these models through new
+// GraphQL or UI surfaces; remove them after the no-data or migration decision.
+
 enum AdaptiveAssessmentAttemptStatus {
   IN_PROGRESS
   COMPLETED
@@ -65,11 +70,11 @@ model AdaptiveAssessmentLevel {
 model AdaptiveAssessmentCompetence {
   id Int @id @default(autoincrement())
 
-  name    String
-  tagName String?
-  enabled Boolean @default(true)
-  order   Int
-  weight  Float   @default(1)
+  name                   String
+  tagName                String?
+  enabled                Boolean @default(true)
+  order                  Int
+  weight                 Float   @default(1)
   questionThreshold      Int?
   standardErrorThreshold Float?
 
