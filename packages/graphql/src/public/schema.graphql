@@ -1098,12 +1098,14 @@ union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActiv
 input ElementInstanceInput {
   duplicateInstance: Boolean!
   elementId: Int!
+  escapeRoomHint: String
   existingInstanceId: Int
   order: Int!
 }
 
 type ElementInstanceOptions {
   basePoints: Boolean
+  hasHint: Boolean!
   pointsMultiplier: Int
   resetTimeDays: Int
 }
@@ -1231,6 +1233,11 @@ type EscapeRoomConfig {
   microLearningId: String
   practiceQuizId: String
   timeLimit: Int!
+}
+
+type EscapeRoomHintResult {
+  attempt: EscapeRoomAttempt!
+  hint: String!
 }
 
 type EscapeRoomProgress {
@@ -1943,6 +1950,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  requestEscapeRoomHint(elementBlockId: Int, groupActivityId: String, instanceId: Int!, microLearningId: String, practiceQuizId: String): EscapeRoomHintResult
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resetEscapeRoomAttempt(elementBlockId: Int, groupActivityId: String, groupId: String, microLearningId: String, participantId: String, practiceQuizId: String): Boolean!
   resolveActivityLogEntry(id: Int!): ActivityLogEntry

@@ -41,6 +41,9 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
       id
       type
       elementType
+      options {
+        hasHint
+      }
       ...ElementDataWithoutSolutions
     }
   }

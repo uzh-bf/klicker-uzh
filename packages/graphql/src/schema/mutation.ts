@@ -65,6 +65,7 @@ import {
   ElementOrderType,
   ElementStackInput,
   EscapeRoomAttempt,
+  EscapeRoomHintResult,
   PracticeQuiz,
   ReviewStatus,
   StackFeedback,
@@ -3374,6 +3375,21 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await PracticeQuizService.resetEscapeRoomAttempt(args, ctx)
+        },
+      }),
+
+      requestEscapeRoomHint: t.withAuth({ authenticated: true }).field({
+        nullable: true,
+        type: EscapeRoomHintResult,
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
+          instanceId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PracticeQuizService.requestEscapeRoomHint(args, ctx)
         },
       }),
 

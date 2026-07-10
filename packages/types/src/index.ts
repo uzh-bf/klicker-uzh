@@ -77,6 +77,9 @@ export type ElementInstanceInput = {
   order: number
   existingInstanceId?: number | null
   duplicateInstance: boolean
+  // Escape-room per-instance hint text (optional). Persisted into the instance
+  // `options` on create/duplicate; see ElementInstanceOptions.escapeRoomHint.
+  escapeRoomHint?: string | null
 }
 
 export type ElementVersionInput = {
@@ -663,6 +666,12 @@ export type ElementInstanceOptions = {
   basePoints?: boolean
   pointsMultiplier?: number
   resetTimeDays?: number
+  // Escape-room per-instance hint text. Stored on the instance (not the shared
+  // element) since it is specific to how this element is used in this activity.
+  // SECURITY: never exposed to participants as raw text — the GraphQL layer only
+  // derives a content-free `hasHint` boolean; the text is returned exclusively by
+  // the `requestEscapeRoomHint` mutation after attempt-ownership checks.
+  escapeRoomHint?: string | null
 }
 
 export type ElementResultsChoices = {

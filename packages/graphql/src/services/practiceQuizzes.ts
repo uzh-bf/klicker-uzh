@@ -1066,6 +1066,246 @@ export async function startEscapeRoomAttempt(
   })
 }
 
+interface RequestEscapeRoomHintArgs {
+  practiceQuizId?: string | null
+  microLearningId?: string | null
+  groupActivityId?: string | null
+  elementBlockId?: number | null
+  instanceId: number
+}
+
+export interface EscapeRoomHintResult {
+  hint: string
+  attempt: DB.EscapeRoomAttempt
+}
+
+// SECURITY: This is the ONLY code path that reveals an element's escapeRoomHint
+// text. The hint is stored in ElementInstance.options and is never exposed via
+// any participant-facing query field (only the derived `hasHint` boolean is).
+// A hint is revealed only after verifying: (1) the caller is a PARTICIPANT,
+// (2) they own a running (IN_PROGRESS, non-expired, non-locked) attempt for the
+// activity, and (3) the requested instance actually belongs to that activity.
+export async function requestEscapeRoomHint(
+  {
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    elementBlockId,
+    instanceId,
+  }: RequestEscapeRoomHintArgs,
+  ctx: ContextWithUser
+): Promise<EscapeRoomHintResult> {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    throw new GraphQLError('Only participants can request escape room hints', {
+      extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' },
+    })
+  }
+
+  const participantId = ctx.user.sub
+
+  // SECURITY: require exactly one activity ID. The settings-identification chain
+  // below and the belongsToActivity check further down each pick the first
+  // truthy ID in their own order; if a caller supplies two IDs, those orders
+  // diverge and the ownership check could be satisfied against a different
+  // activity than the one that gated auth — leaking a hint for an unrelated,
+  // unenrolled activity. Enforcing a single ID collapses both chains to it.
+  const activityIdCount = [
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    elementBlockId,
+  ].filter((v) => v != null).length
+  if (activityIdCount !== 1) {
+    throw new GraphQLError('Exactly one activity ID must be specified', {
+      extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' },
+    })
+  }
+
+  // 1. Identify active settings (mirrors startEscapeRoomAttempt)
+  let isEscapeRoom = false
+  let hintPenalty = 30
+  let groupId: string | null = null
+  let courseId: string | null = null
+
+  if (practiceQuizId) {
+    const pq = await ctx.prisma.practiceQuiz.findUnique({
+      where: { id: practiceQuizId, isDeleted: false },
+      include: { escapeRoomConfig: true },
+    })
+    if (!pq) throw new GraphQLError('Practice quiz not found')
+    isEscapeRoom = !!pq.escapeRoomConfig
+    hintPenalty = pq.escapeRoomConfig?.hintPenalty ?? 30
+    courseId = pq.courseId
+  } else if (microLearningId) {
+    const ml = await ctx.prisma.microLearning.findUnique({
+      where: { id: microLearningId, isDeleted: false },
+      include: { escapeRoomConfig: true },
+    })
+    if (!ml) throw new GraphQLError('Microlearning not found')
+    isEscapeRoom = !!ml.escapeRoomConfig
+    hintPenalty = ml.escapeRoomConfig?.hintPenalty ?? 30
+    courseId = ml.courseId
+  } else if (groupActivityId) {
+    const ga = await ctx.prisma.groupActivity.findUnique({
+      where: { id: groupActivityId, isDeleted: false },
+      include: { escapeRoomConfig: true },
+    })
+    if (!ga) throw new GraphQLError('Group activity not found')
+    isEscapeRoom = !!ga.escapeRoomConfig
+    hintPenalty = ga.escapeRoomConfig?.hintPenalty ?? 30
+    courseId = ga.courseId
+
+    const participantGroup = await ctx.prisma.participantGroup.findFirst({
+      where: {
+        courseId: ga.courseId,
+        participants: { some: { id: participantId } },
+      },
+    })
+    if (!participantGroup) {
+      throw new GraphQLError('Participant is not in a group for this course')
+    }
+    groupId = participantGroup.id
+  } else if (elementBlockId) {
+    const block = await ctx.prisma.elementBlock.findUnique({
+      where: { id: elementBlockId },
+      include: { escapeRoomConfig: true, liveQuiz: true },
+    })
+    if (!block) throw new GraphQLError('Block not found')
+    isEscapeRoom = !!block.escapeRoomConfig
+    hintPenalty = block.escapeRoomConfig?.hintPenalty ?? 30
+    courseId = block.liveQuiz.courseId
+  } else {
+    throw new GraphQLError('Invalid request: must specify an activity ID')
+  }
+
+  if (!isEscapeRoom) {
+    throw new GraphQLError(
+      'This activity is not configured for escape room mode'
+    )
+  }
+
+  // Verify course enrollment (participation)
+  if (courseId) {
+    const participation = await ctx.prisma.participation.findUnique({
+      where: { courseId_participantId: { courseId, participantId } },
+    })
+    if (!participation) {
+      throw new GraphQLError(
+        'You are not enrolled in the course associated with this activity',
+        { extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' } }
+      )
+    }
+  }
+
+  // 2. Load the owning attempt (must already exist and be running)
+  const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+    where: groupId
+      ? {
+          groupId_groupActivityId: {
+            groupId,
+            groupActivityId: groupActivityId!,
+          },
+        }
+      : practiceQuizId
+        ? { participantId_practiceQuizId: { participantId, practiceQuizId } }
+        : microLearningId
+          ? {
+              participantId_microLearningId: {
+                participantId,
+                microLearningId: microLearningId!,
+              },
+            }
+          : {
+              participantId_elementBlockId: {
+                participantId,
+                elementBlockId: elementBlockId!,
+              },
+            },
+  })
+
+  if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+    throw new GraphQLError(
+      'No active escape room attempt found for this activity',
+      { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
+    )
+  }
+
+  if (attempt.lockoutUntil && dayjs().isBefore(dayjs(attempt.lockoutUntil))) {
+    throw new GraphQLError(
+      'You are locked out due to a recent incorrect attempt',
+      {
+        extensions: {
+          code: 'ESCAPE_ROOM_LOCKOUT',
+          lockoutUntil: attempt.lockoutUntil.toISOString(),
+        },
+      }
+    )
+  }
+
+  const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
+  const totalLimit = attempt.timeLimit - attempt.penaltySeconds
+  if (elapsed > totalLimit + 5) {
+    await ctx.prisma.escapeRoomAttempt.update({
+      where: { id: attempt.id },
+      data: { status: DB.EscapeRoomStatus.EXPIRED },
+    })
+    throw new GraphQLError('Escape room time has expired', {
+      extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
+    })
+  }
+
+  // 3. Load the instance and verify it belongs to THIS activity, then read hint
+  const instance = await ctx.prisma.elementInstance.findUnique({
+    where: { id: instanceId },
+    include: { elementStack: true },
+  })
+  if (!instance) throw new GraphQLError('Element instance not found')
+
+  const belongsToActivity = elementBlockId
+    ? instance.elementBlockId === elementBlockId
+    : practiceQuizId
+      ? instance.elementStack?.practiceQuizId === practiceQuizId
+      : microLearningId
+        ? instance.elementStack?.microLearningId === microLearningId
+        : instance.elementStack?.groupActivityId === groupActivityId
+  if (!belongsToActivity) {
+    throw new GraphQLError('Element does not belong to this activity', {
+      extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' },
+    })
+  }
+
+  const hint = instance.options.escapeRoomHint
+  if (!hint) {
+    throw new GraphQLError('No hint available for this element', {
+      extensions: { code: 'ESCAPE_ROOM_NO_HINT' },
+    })
+  }
+
+  // 4. Charge the time penalty exactly once, atomically. A read-then-write here
+  // would lose updates when two members of a group activity (which share a
+  // single attempt row) request different hints concurrently: both would read
+  // the same penaltySeconds/hintsUsed and the later write would clobber the
+  // earlier one, under-charging now and re-charging the "lost" hint later. This
+  // single statement appends the instance key and increments the penalty only
+  // when the key is not already present; Postgres re-evaluates the guard under
+  // the row lock, making the charge race-free and idempotent. Raw SQL is used
+  // because Prisma cannot append to a JSON array atomically.
+  const hintKey = String(instanceId)
+  await ctx.prisma.$executeRaw`
+    UPDATE "EscapeRoomAttempt"
+    SET "penaltySeconds" = "penaltySeconds" + ${hintPenalty},
+        "hintsUsed" = "hintsUsed" || ${JSON.stringify([hintKey])}::jsonb
+    WHERE "id" = ${attempt.id}::uuid
+      AND NOT ("hintsUsed" @> ${JSON.stringify([hintKey])}::jsonb)
+  `
+
+  const updatedAttempt = await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
+    where: { id: attempt.id },
+  })
+
+  return { hint, attempt: updatedAttempt }
+}
+
 interface ResetEscapeRoomAttemptArgs {
   practiceQuizId?: string | null
   microLearningId?: string | null

@@ -14,7 +14,7 @@ import dayjs from 'dayjs'
 import EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
-import type { ElementInstanceOptions, ResponseInput } from 'src/ops.js'
+import type { ResponseInput } from 'src/ops.js'
 import {
   adjectives,
   animals,
@@ -2356,7 +2356,7 @@ export async function gradeGroupActivitySubmission(
     where: { id: { in: instanceIds } },
   })
   const elementInstanceMap = elementInstances.reduce<
-    Record<number, ElementInstanceOptions>
+    Record<number, PrismaJson.PrismaElementInstanceOptions>
   >((acc, instance) => ({ ...acc, [instance.id]: instance.options }), {})
 
   const updatedInstance = await ctx.prisma.groupActivityInstance.update({

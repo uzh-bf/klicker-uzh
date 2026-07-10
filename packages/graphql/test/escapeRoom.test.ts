@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import { getEscapeRoomProgress } from '../src/services/escapeRooms.js'
 import {
+  requestEscapeRoomHint,
   resetEscapeRoomAttempt,
   startEscapeRoomAttempt,
 } from '../src/services/practiceQuizzes.js'
@@ -412,6 +413,171 @@ describe('Escape room integration tests', () => {
         where: { id: attempt.id },
       })
       expect(expiredAttempt.status).toBe(DB.EscapeRoomStatus.EXPIRED)
+    })
+  })
+  // #endregion
+
+  // ! requestEscapeRoomHint - time-penalty hints
+  // #region
+  describe('requestEscapeRoomHint - time-penalty hints', () => {
+    // The seed helper does not author per-instance hints, so patch the
+    // instance options directly to simulate a lecturer-authored hint.
+    async function seedQuizWithHint(hint: string) {
+      const quiz = await seedEscapeRoomQuiz(2)
+      const instance = quiz.stacks[0]!.elements[0]!
+      await prisma.elementInstance.update({
+        where: { id: instance.id },
+        data: { options: { ...instance.options, escapeRoomHint: hint } },
+      })
+      return { quiz, instanceId: instance.id }
+    }
+
+    it('reveals the hint and charges the penalty once, idempotently', async () => {
+      const { quiz, instanceId } = await seedQuizWithHint('look under the mat')
+      const participant = await seedParticipant('hint-reveal')
+      const attempt = await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+      expect(attempt.penaltySeconds).toBe(0)
+
+      // first request: reveals hint, applies the 30s default penalty
+      const first = await requestEscapeRoomHint(
+        { practiceQuizId: quiz.id, instanceId },
+        participantCtx(participant.id)
+      )
+      expect(first.hint).toBe('look under the mat')
+      expect(first.attempt.penaltySeconds).toBe(30)
+      expect(first.attempt.hintsUsed).toEqual([String(instanceId)])
+
+      // second request for the same instance: same hint, no extra penalty
+      const second = await requestEscapeRoomHint(
+        { practiceQuizId: quiz.id, instanceId },
+        participantCtx(participant.id)
+      )
+      expect(second.hint).toBe('look under the mat')
+      expect(second.attempt.penaltySeconds).toBe(30)
+
+      const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+        where: { id: attempt.id },
+      })
+      expect(persisted.penaltySeconds).toBe(30)
+    })
+
+    it('rejects a hint request for an element that has no hint', async () => {
+      const quiz = await seedEscapeRoomQuiz(2)
+      const instanceId = quiz.stacks[0]!.elements[0]!.id
+      const participant = await seedParticipant('hint-none')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+
+      await expect(
+        requestEscapeRoomHint(
+          { practiceQuizId: quiz.id, instanceId },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('No hint available for this element')
+    })
+
+    it('rejects a hint request without a running attempt', async () => {
+      const { quiz, instanceId } = await seedQuizWithHint('secret')
+      const participant = await seedParticipant('hint-no-attempt')
+
+      await expect(
+        requestEscapeRoomHint(
+          { practiceQuizId: quiz.id, instanceId },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('No active escape room attempt found for this activity')
+    })
+
+    it('rejects a hint request for an instance that belongs to another activity', async () => {
+      const { instanceId: foreignInstanceId } =
+        await seedQuizWithHint('foreign hint')
+      const { quiz } = await seedQuizWithHint('own hint')
+      const participant = await seedParticipant('hint-cross-activity')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+
+      // pairing a valid attempt with an instanceId from a different quiz must
+      // not leak that quiz's hint text
+      await expect(
+        requestEscapeRoomHint(
+          { practiceQuizId: quiz.id, instanceId: foreignInstanceId },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Element does not belong to this activity')
+    })
+
+    it('rejects a hint request from a non-participant', async () => {
+      const { quiz, instanceId } = await seedQuizWithHint('secret')
+
+      await expect(
+        requestEscapeRoomHint(
+          { practiceQuizId: quiz.id, instanceId },
+          lecturerCtx as unknown as ContextWithUser
+        )
+      ).rejects.toThrow('Only participants can request escape room hints')
+    })
+
+    it('rejects a request that supplies more than one activity ID', async () => {
+      // guards against the priority-mismatch leak: a valid attempt on one
+      // activity must not gate a hint read against a second activity's instance
+      const { quiz, instanceId } = await seedQuizWithHint('own hint')
+      const participant = await seedParticipant('hint-multi-id')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+
+      await expect(
+        requestEscapeRoomHint(
+          { practiceQuizId: quiz.id, elementBlockId: 999999, instanceId },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Exactly one activity ID must be specified')
+    })
+
+    it('accumulates the penalty across two distinct hints', async () => {
+      const quiz = await seedEscapeRoomQuiz(2)
+      const i0 = quiz.stacks[0]!.elements[0]!
+      const i1 = quiz.stacks[1]!.elements[0]!
+      await prisma.elementInstance.update({
+        where: { id: i0.id },
+        data: { options: { ...i0.options, escapeRoomHint: 'hint zero' } },
+      })
+      await prisma.elementInstance.update({
+        where: { id: i1.id },
+        data: { options: { ...i1.options, escapeRoomHint: 'hint one' } },
+      })
+      const participant = await seedParticipant('hint-accumulate')
+      const attempt = await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+
+      await requestEscapeRoomHint(
+        { practiceQuizId: quiz.id, instanceId: i0.id },
+        participantCtx(participant.id)
+      )
+      const second = await requestEscapeRoomHint(
+        { practiceQuizId: quiz.id, instanceId: i1.id },
+        participantCtx(participant.id)
+      )
+
+      expect(second.attempt.penaltySeconds).toBe(60)
+      expect((second.attempt.hintsUsed as string[]).sort()).toEqual(
+        [String(i0.id), String(i1.id)].sort()
+      )
+
+      const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+        where: { id: attempt.id },
+      })
+      expect(persisted.penaltySeconds).toBe(60)
     })
   })
   // #endregion

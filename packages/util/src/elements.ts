@@ -442,6 +442,9 @@ export function getActivityInstanceConnectOrCreate({
         elementData: existingInstance.elementData,
         options: {
           ...additionalInstanceOptions,
+          ...(instance.escapeRoomHint
+            ? { escapeRoomHint: instance.escapeRoomHint }
+            : {}),
           basePoints: existingInstance.elementData.basePoints,
           pointsMultiplier:
             activityMultiplier * existingInstance.elementData.pointsMultiplier,
@@ -484,6 +487,9 @@ export function getActivityInstanceConnectOrCreate({
         elementData: elementData,
         options: {
           ...additionalInstanceOptions,
+          ...(instance.escapeRoomHint
+            ? { escapeRoomHint: instance.escapeRoomHint }
+            : {}),
           basePoints: element.basePoints,
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
         },

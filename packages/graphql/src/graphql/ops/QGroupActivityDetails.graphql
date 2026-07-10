@@ -41,6 +41,9 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
         id
         type
         elementType
+        options {
+          hasHint
+        }
         ...ElementDataWithoutSolutions
       }
     }

@@ -16,6 +16,7 @@ import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
   EscapeRoomProgress as IEscapeRoomProgress,
 } from '../services/escapeRooms.js'
+import type { EscapeRoomHintResult as IEscapeRoomHintResult } from '../services/practiceQuizzes.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
@@ -78,6 +79,7 @@ export const ElementInstanceInput = ElementInstanceInputRef.implement({
     order: t.int({ required: true }),
     existingInstanceId: t.int({ required: false }),
     duplicateInstance: t.boolean({ required: true }),
+    escapeRoomHint: t.string({ required: false }),
   }),
 })
 
@@ -305,6 +307,18 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
     microLearningId: t.exposeString('microLearningId', { nullable: true }),
     groupActivityId: t.exposeString('groupActivityId', { nullable: true }),
     elementBlockId: t.exposeInt('elementBlockId', { nullable: true }),
+  }),
+})
+
+// SECURITY: `hint` is only ever populated by the requestEscapeRoomHint
+// mutation, after attempt-ownership validation. Hint text has no query field.
+export const EscapeRoomHintResultRef = builder.objectRef<IEscapeRoomHintResult>(
+  'EscapeRoomHintResult'
+)
+export const EscapeRoomHintResult = EscapeRoomHintResultRef.implement({
+  fields: (t) => ({
+    hint: t.exposeString('hint'),
+    attempt: t.expose('attempt', { type: EscapeRoomAttemptRef }),
   }),
 })
 
