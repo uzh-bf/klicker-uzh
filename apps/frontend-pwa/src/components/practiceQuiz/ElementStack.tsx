@@ -6,6 +6,7 @@ import {
   FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
+  RequestEscapeRoomHintDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -48,6 +49,16 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
+  // Escape-room hints: set only when this stack belongs to an escape-room
+  // activity. Drives the per-element "reveal hint" button (shown only for
+  // elements whose options.hasHint is true). Revealing charges hintPenalty
+  // seconds server-side; onHintRevealed refetches so the live countdown
+  // reflects the new penalty.
+  escapeRoom?: {
+    activityType: 'practiceQuiz' | 'microLearning'
+    hintPenalty: number
+    onHintRevealed: () => void
+  }
 }
 
 function ElementStack({
@@ -67,6 +78,7 @@ function ElementStack({
   activityExpired = false,
   activityExpiredMessage,
   previewOnly = false,
+  escapeRoom,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
@@ -82,6 +94,15 @@ function ElementStack({
 
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
+  )
+
+  // Escape-room hints: revealed text is kept per instanceId so it stays visible
+  // once unlocked. The server charge is idempotent, but we also track a
+  // per-instance "requesting" flag to disable the button while in flight.
+  const [requestEscapeRoomHint] = useMutation(RequestEscapeRoomHintDocument)
+  const [revealedHints, setRevealedHints] = useState<Record<number, string>>({})
+  const [requestingHintFor, setRequestingHintFor] = useState<number | null>(
+    null
   )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
@@ -179,6 +200,38 @@ function ElementStack({
           }),
           type: 'error',
         })
+    }
+  }
+
+  const handleRequestHint = async (instanceId: number) => {
+    if (!escapeRoom || revealedHints[instanceId]) return
+    setRequestingHintFor(instanceId)
+    try {
+      const result = await requestEscapeRoomHint({
+        variables: {
+          instanceId,
+          ...(escapeRoom.activityType === 'microLearning'
+            ? { microLearningId: parentId }
+            : { practiceQuizId: parentId }),
+        },
+      })
+      const hint = result.data?.requestEscapeRoomHint?.hint
+      if (hint) {
+        setRevealedHints((prev) => ({ ...prev, [instanceId]: hint }))
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast' as any, {
+            penalty: escapeRoom.hintPenalty,
+            defaultValue: `Hint revealed — ${escapeRoom.hintPenalty}s added to your time.`,
+          }),
+          type: 'success',
+        })
+        // Refetch so the live countdown picks up the newly charged penalty.
+        escapeRoom.onHintRevealed()
+      }
+    } catch (error) {
+      handleEscapeRoomError(error)
+    } finally {
+      setRequestingHintFor(null)
     }
   }
 
@@ -466,6 +519,32 @@ function ElementStack({
                     stackStorage={stackStorage}
                     preview={embedded && !openEvaluations.has(element.id)}
                   />
+                  {withParticipant &&
+                    escapeRoom &&
+                    element.options?.hasHint &&
+                    (revealedHints[element.id] ? (
+                      <UserNotification
+                        type="success"
+                        className={{ root: 'mt-2' }}
+                        message={revealedHints[element.id]}
+                        data={{ cy: `escape-room-hint-text-${element.id}` }}
+                      />
+                    ) : (
+                      <Button
+                        className={{ root: 'mt-2' }}
+                        loading={requestingHintFor === element.id}
+                        disabled={requestingHintFor !== null}
+                        onClick={() => handleRequestHint(element.id)}
+                        data={{ cy: `request-escape-room-hint-${element.id}` }}
+                      >
+                        <Button.Label>
+                          {t('pwa.practiceQuiz.escapeRoomRequestHint' as any, {
+                            penalty: escapeRoom.hintPenalty,
+                            defaultValue: `Reveal hint (−${escapeRoom.hintPenalty}s)`,
+                          })}
+                        </Button.Label>
+                      </Button>
+                    ))}
                 </div>
               )
             })}

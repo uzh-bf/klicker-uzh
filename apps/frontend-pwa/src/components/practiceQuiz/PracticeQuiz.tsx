@@ -278,6 +278,15 @@ function PracticeQuiz({
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
+            escapeRoom={
+              isEscapeRoom
+                ? {
+                    activityType: 'practiceQuiz',
+                    hintPenalty: quiz.escapeRoomConfig?.hintPenalty ?? 0,
+                    onHintRevealed: refetch ?? (() => {}),
+                  }
+                : undefined
+            }
           />
         )}
       </div>

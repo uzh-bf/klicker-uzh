@@ -875,6 +875,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Answer the preceding questions correctly before this step.',
       escapeRoomForbiddenToast:
         'This escape room can only be answered with an active attempt.',
+      escapeRoomRequestHint: 'Reveal hint (−{penalty}s)',
+      escapeRoomHintRevealedToast:
+        'Hint revealed — {penalty}s added to your time.',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

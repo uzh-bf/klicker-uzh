@@ -175,6 +175,16 @@ function MicrolearningInstance() {
             activityExpired={microLearning.status === PublicationStatus.Ended}
             activityExpiredMessage={t('pwa.microLearning.activityExpired')}
             previewOnly={previewMode}
+            escapeRoom={
+              isEscapeRoom
+                ? {
+                    activityType: 'microLearning',
+                    hintPenalty:
+                      microLearning.escapeRoomConfig?.hintPenalty ?? 0,
+                    onHintRevealed: refetch ?? (() => {}),
+                  }
+                : undefined
+            }
           />
         </div>
       </div>
