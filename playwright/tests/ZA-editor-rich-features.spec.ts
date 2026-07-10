@@ -104,7 +104,7 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     await expect(tableElement.locator('tr')).toHaveCount(4)
 
     // Add a column and keep it through the Markdown save/preview round-trip
-    await page.getByRole('button', { name: 'Add column' }).click()
+    await page.getByTestId('table-add-column').click()
     await expect(
       tableElement.locator('tr').first().locator('th, td')
     ).toHaveCount(4)

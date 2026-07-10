@@ -24,7 +24,7 @@ import { common, createLowlight } from 'lowlight'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import MediaLibrary from '~/components/common/MediaLibrary'
+import MediaLibrary from './MediaLibrary'
 
 const lowlight = createLowlight(common)
 
@@ -32,9 +32,8 @@ const ToolbarContext = React.createContext<{ disabled: boolean }>({
   disabled: false,
 })
 
-const normalizeMarkdown = (str: string) => {
-  return str.replace(/\r\n/g, '\n').replace(/\n+$/, '')
-}
+const normalizeMarkdown = (str: string) =>
+  str.replace(/\r\n/g, '\n').replace(/\n+$/, '')
 
 export interface ContentInputClassName {
   root?: string
@@ -51,7 +50,7 @@ interface Props {
   showToolbarOnFocus?: boolean
   placeholder: string
   autoFocus?: boolean
-  content: string
+  content?: string
   className?: ContentInputClassName
   data?: {
     test?: string
@@ -82,7 +81,7 @@ function ContentInput({
       Image,
       Markdown,
       Placeholder.configure({
-        placeholder: placeholder,
+        placeholder,
         emptyEditorClass: 'is-editor-empty',
       }),
       CodeBlockLowlight.configure({
@@ -90,7 +89,7 @@ function ContentInput({
       }),
       TableKit,
     ],
-    content: content,
+    content: content ?? '',
     contentType: 'markdown',
     autofocus: autoFocus ? 'end' : false,
     editable: !disabled,
@@ -168,7 +167,7 @@ function ContentInput({
           showToolbarOnFocus && 'hidden group-focus-within:flex'
         )}
       >
-        <ToolbarContext.Provider value={{ disabled: !!disabled }}>
+        <ToolbarContext.Provider value={{ disabled }}>
           <div
             className={twMerge(
               'flex flex-1 flex-row gap-1',
@@ -179,10 +178,7 @@ function ContentInput({
               title={t('shared.contentInput.boldStyle')}
               aria-label={t('shared.contentInput.boldStyle')}
               active={editor.isActive('bold')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleBold().run()
-              }}
+              onClick={() => editor.chain().focus().toggleBold().run()}
             >
               <FontAwesomeIcon
                 icon={faBold}
@@ -194,10 +190,7 @@ function ContentInput({
               title={t('shared.contentInput.italicStyle')}
               aria-label={t('shared.contentInput.italicStyle')}
               active={editor.isActive('italic')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleItalic().run()
-              }}
+              onClick={() => editor.chain().focus().toggleItalic().run()}
             >
               <FontAwesomeIcon
                 icon={faItalic}
@@ -209,10 +202,7 @@ function ContentInput({
               title={t('shared.contentInput.codeStyle')}
               aria-label={t('shared.contentInput.codeStyle')}
               active={editor.isActive('code')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleCode().run()
-              }}
+              onClick={() => editor.chain().focus().toggleCode().run()}
             >
               <FontAwesomeIcon
                 icon={faCode}
@@ -224,10 +214,7 @@ function ContentInput({
               title={t('shared.contentInput.citationStyle')}
               aria-label={t('shared.contentInput.citationStyle')}
               active={editor.isActive('blockquote')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleBlockquote().run()
-              }}
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
             >
               <FontAwesomeIcon
                 icon={faQuoteRight}
@@ -239,10 +226,7 @@ function ContentInput({
               title={t('shared.contentInput.numberedList')}
               aria-label={t('shared.contentInput.numberedList')}
               active={editor.isActive('orderedList')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleOrderedList().run()
-              }}
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
             >
               <FontAwesomeIcon
                 icon={faListOl}
@@ -254,10 +238,7 @@ function ContentInput({
               title={t('shared.contentInput.unnumberedList')}
               aria-label={t('shared.contentInput.unnumberedList')}
               active={editor.isActive('bulletList')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleBulletList().run()
-              }}
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
             >
               <FontAwesomeIcon
                 icon={faListUl}
@@ -269,10 +250,7 @@ function ContentInput({
               title={t('shared.contentInput.image')}
               aria-label={t('shared.contentInput.image')}
               active={isImageDropzoneOpen}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                setIsImageDropzoneOpen((prev) => !prev)
-              }}
+              onClick={() => setIsImageDropzoneOpen((prev) => !prev)}
             >
               <FontAwesomeIcon icon={faImage} color="grey" />
             </ToolbarButton>
@@ -280,8 +258,7 @@ function ContentInput({
             <ToolbarButton
               title={t('shared.contentInput.latex')}
               aria-label={t('shared.contentInput.latex')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
+              onClick={() => {
                 editor
                   .chain()
                   .focus()
@@ -295,8 +272,7 @@ function ContentInput({
             <ToolbarButton
               title={t('shared.contentInput.latexCentered')}
               aria-label={t('shared.contentInput.latexCentered')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
+              onClick={() => {
                 editor
                   .chain()
                   .focus()
@@ -313,13 +289,11 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
+              data-cy="toolbar-code-block"
               title={t('shared.contentInput.codeBlock')}
               aria-label={t('shared.contentInput.codeBlock')}
               active={editor.isActive('codeBlock')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleCodeBlock().run()
-              }}
+              onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             >
               <FontAwesomeIcon
                 icon={faTerminal}
@@ -332,8 +306,7 @@ function ContentInput({
               title={t('shared.contentInput.table')}
               aria-label={t('shared.contentInput.table')}
               active={editor.isActive('table')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
+              onClick={() => {
                 if (!editor.isActive('table')) {
                   editor
                     .chain()
@@ -356,50 +329,39 @@ function ContentInput({
                 data-cy="table-add-row"
                 title={t('shared.contentInput.addRow')}
                 aria-label={t('shared.contentInput.addRow')}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().addRowAfter().run()
-                }}
+                onClick={() => editor.chain().focus().addRowAfter().run()}
               >
                 <span className="text-[10px] font-bold">+R</span>
               </ToolbarButton>
               <ToolbarButton
+                data-cy="table-delete-row"
                 title={t('shared.contentInput.deleteRow')}
                 aria-label={t('shared.contentInput.deleteRow')}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().deleteRow().run()
-                }}
+                onClick={() => editor.chain().focus().deleteRow().run()}
               >
                 <span className="text-[10px] font-bold text-red-500">-R</span>
               </ToolbarButton>
               <ToolbarButton
+                data-cy="table-add-column"
                 title={t('shared.contentInput.addColumn')}
                 aria-label={t('shared.contentInput.addColumn')}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().addColumnAfter().run()
-                }}
+                onClick={() => editor.chain().focus().addColumnAfter().run()}
               >
                 <span className="text-[10px] font-bold">+C</span>
               </ToolbarButton>
               <ToolbarButton
+                data-cy="table-delete-column"
                 title={t('shared.contentInput.deleteColumn')}
                 aria-label={t('shared.contentInput.deleteColumn')}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().deleteColumn().run()
-                }}
+                onClick={() => editor.chain().focus().deleteColumn().run()}
               >
                 <span className="text-[10px] font-bold text-red-500">-C</span>
               </ToolbarButton>
               <ToolbarButton
+                data-cy="table-delete"
                 title={t('shared.contentInput.deleteTable')}
                 aria-label={t('shared.contentInput.deleteTable')}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().deleteTable().run()
-                }}
+                onClick={() => editor.chain().focus().deleteTable().run()}
               >
                 <span className="text-[10px] font-bold text-red-700">Del</span>
               </ToolbarButton>
@@ -409,10 +371,7 @@ function ContentInput({
           <ToolbarButton
             title={t('shared.contentInput.undo')}
             aria-label={t('shared.contentInput.undo')}
-            onClick={(e: React.MouseEvent) => {
-              e.preventDefault()
-              editor.chain().focus().undo().run()
-            }}
+            onClick={() => editor.chain().focus().undo().run()}
             className="mr-3"
           >
             <FontAwesomeIcon icon={faRotateLeft} color="grey" />
@@ -421,10 +380,7 @@ function ContentInput({
           <ToolbarButton
             title={t('shared.contentInput.redo')}
             aria-label={t('shared.contentInput.redo')}
-            onClick={(e: React.MouseEvent) => {
-              e.preventDefault()
-              editor.chain().focus().redo().run()
-            }}
+            onClick={() => editor.chain().focus().redo().run()}
             className="mr-0.5"
           >
             <FontAwesomeIcon icon={faRotateRight} color="grey" />
