@@ -313,7 +313,8 @@
 }
 
 /* Tiptap Table & Code Highlighting styles (GFM / Prism / Lowlight) */
-.ProseMirror table {
+.ProseMirror table,
+.markdown-content table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
@@ -322,7 +323,9 @@
 }
 
 .ProseMirror td,
-.ProseMirror th {
+.ProseMirror th,
+.markdown-content td,
+.markdown-content th {
   min-width: 1em;
   border: 1px solid #ced4da;
   padding: 8px 12px;
@@ -331,7 +334,8 @@
   position: relative;
 }
 
-.ProseMirror th {
+.ProseMirror th,
+.markdown-content th {
   font-weight: bold;
   text-align: left;
   background-color: #f8f9fa;

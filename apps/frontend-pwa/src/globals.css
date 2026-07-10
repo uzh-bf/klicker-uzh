@@ -336,15 +336,7 @@
 }
 
 /* Code block & syntax highlighting theme (Lowlight & Prism) scoped to markdown-content */
-.markdown-content pre,
-.markdown-content pre.language-css,
-.markdown-content pre.language-js,
-.markdown-content pre.language-html,
-.markdown-content pre.language-ts,
-.markdown-content pre.language-typescript,
-.markdown-content pre.language-javascript,
-.markdown-content pre.language-python,
-.markdown-content pre.language-sql {
+.markdown-content pre {
   background-color: #f6f8fa;
   border: 1px solid #e1e4e8;
   border-radius: 6px;
