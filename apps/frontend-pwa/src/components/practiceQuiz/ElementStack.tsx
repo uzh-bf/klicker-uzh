@@ -40,8 +40,10 @@ interface ElementStackProps {
     status: StackFeedbackStatus
     score?: number | null
   }) => void
-  handleNextElement: () => void
-  onAllStacksCompletion: () => void
+  // the freshly graded status is passed on the immediate (flashcard/content)
+  // continue path, where the parent's progress state is not yet settled
+  handleNextElement: (gradedStatus?: StackFeedbackStatus) => void
+  onAllStacksCompletion: (gradedStatus?: StackFeedbackStatus) => void
   withParticipant?: boolean
   bookmarks?: number[] | null
   hideBookmark?: boolean
@@ -818,9 +820,9 @@ function ElementStack({
                 )
               ) {
                 if (currentStep === totalSteps) {
-                  onAllStacksCompletion()
+                  onAllStacksCompletion(grading.status)
                 } else {
-                  handleNextElement()
+                  handleNextElement(grading.status)
                 }
               }
             }}

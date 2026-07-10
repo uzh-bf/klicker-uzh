@@ -10,7 +10,7 @@ import {
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
@@ -156,6 +156,31 @@ function PracticeQuiz({
     setCurrentIx(ix)
   }
 
+  // Escape mode masks locked stacks server-side, so quiz.stacks only contains
+  // cleared stacks plus the first uncleared one — never the full quiz. The
+  // regular advance logic (currentStep === totalSteps → completion) would
+  // treat every stack as the last one and boot the participant back home.
+  // Instead: on a correct answer refetch (unmasking the next stack) and
+  // advance; on an incorrect answer wipe the stored evaluation and remount the
+  // stack so it can be retried once the lockout elapses. Completion is
+  // server-driven (attempt status flips → overlay takes over).
+  const [escapeRetryNonce, setEscapeRetryNonce] = useState(0)
+  const escapeTotalStacks = quiz.numOfStacks ?? quiz.stacks?.length ?? 0
+  const handleEscapeAdvance = async (gradedStatus?: StackFeedbackStatus) => {
+    if (!currentStack) return
+    const status = gradedStatus ?? progressState?.[currentStack.id]?.status
+    if (status === StackFeedbackStatus.Correct) {
+      if (refetch) await refetch()
+      if (currentIx + 1 < escapeTotalStacks) {
+        handleNextElement()
+      }
+    } else {
+      localStorage.removeItem(`qi-${quiz.id}-${currentStack.id}`)
+      setEscapeRetryNonce((nonce) => nonce + 1)
+      refetch?.()
+    }
+  }
+
   const handleStartQuiz = async () => {
     if (isEscapeRoom) {
       if (!isStarted) {
@@ -270,13 +295,19 @@ function PracticeQuiz({
 
         {currentStack && (
           <ElementStack
-            key={currentStack.id}
+            key={
+              isEscapeRoom
+                ? `${currentStack.id}-${escapeRetryNonce}`
+                : currentStack.id
+            }
             parentId={quiz.id}
             courseId={quiz.course!.id}
             embedded={embedded}
             stack={currentStack}
             currentStep={currentIx + 1}
-            totalSteps={quiz.stacks?.length ?? 0}
+            totalSteps={
+              isEscapeRoom ? escapeTotalStacks : (quiz.stacks?.length ?? 0)
+            }
             setStepStatus={(value) => {
               setProgressState((prev) => {
                 const next = { ...prev }
@@ -284,12 +315,16 @@ function PracticeQuiz({
                 return next
               })
             }}
-            handleNextElement={handleNextElement}
+            handleNextElement={
+              isEscapeRoom ? handleEscapeAdvance : handleNextElement
+            }
             withParticipant={
               !!dataParticipant?.self &&
               dataParticipant.self.role !== UserRole.TemporaryParticipant
             }
-            onAllStacksCompletion={handleAllStacksCompletion}
+            onAllStacksCompletion={
+              isEscapeRoom ? handleEscapeAdvance : handleAllStacksCompletion
+            }
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
             escapeRoom={
