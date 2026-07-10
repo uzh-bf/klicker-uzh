@@ -2,12 +2,13 @@
  * ZA-editor-rich-features.spec.ts
  *
  * Tests Tiptap rich text editor features: formatting shortcuts,
- * GFM tables insertion, cell merging, contextual menu additions,
+ * GFM tables insertion, contextual menu additions,
  * syntax highlighted code blocks, and HTML rendering in frontend previews.
  */
 
 import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
+import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   saveElement,
@@ -126,7 +127,8 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     const questionId = dbQuestion!.id
 
     // Navigate to the direct element details preview page
-    await page.goto(`/questions/${questionId}`)
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/questions/${questionId}`)
 
     const previewContainer = page.getByTestId('question-preview-container')
     await expect(previewContainer).toBeVisible()
