@@ -1,28 +1,24 @@
 import coreWebVitals from 'eslint-config-next/core-web-vitals'
+import nextTs from 'eslint-config-next/typescript'
+import { defineConfig } from 'eslint/config'
 
-// React Hooks 7 (bundled in eslint-config-next 16) introduced new React
-// Compiler rules that flag pre-existing patterns. Downgraded to warn so
-// they're visible without blocking CI. Address in a follow-up.
-const newReactHooksRulesAsWarn = {
-  'react-hooks/static-components': 'warn',
-  'react-hooks/use-memo': 'warn',
-  'react-hooks/preserve-manual-memoization': 'warn',
-  'react-hooks/immutability': 'warn',
-  'react-hooks/globals': 'warn',
-  'react-hooks/refs': 'warn',
-  'react-hooks/set-state-in-effect': 'warn',
-  'react-hooks/error-boundaries': 'warn',
-  'react-hooks/purity': 'warn',
-  'react-hooks/set-state-in-render': 'warn',
-}
-
-export default [
+const eslintConfig = defineConfig([
   ...coreWebVitals,
-  { rules: newReactHooksRulesAsWarn },
+  ...nextTs,
   {
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
-]
+  {
+    rules: {
+      // Owner: frontend maintainers. Remove each override when this app reports
+      // zero violations for that rule under the pinned Next config.
+      'react-hooks/error-boundaries': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+])
+
+export default eslintConfig

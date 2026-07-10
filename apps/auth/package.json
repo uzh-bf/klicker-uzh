@@ -53,7 +53,7 @@
     "build": "next build --webpack",
     "build:test": "cross-env NODE_ENV=test next build --webpack",
     "check": "tsc --noEmit",
-    "dev": "next dev --webpack --turbo --port 3010",
+    "dev": "next dev --webpack --port 3010",
     "dev:assessment": "pnpm run dev",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "next dev --webpack --port 3010",

@@ -5,17 +5,12 @@ function getNextBaseConfig({
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
-  const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
-  const isProduction = process.env.NEXT_PUBLIC_ENV === 'production'
+  const isStaging = NEXT_PUBLIC_ENV === 'staging'
   const allowLocalImageOptimization =
     NODE_ENV === 'development' || NODE_ENV === 'test'
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
-    // not supported with turbopack -> do we need it?
-    // experimental: {
-    //   esmExternals: 'loose',
-    // },
     productionBrowserSourceMaps: isStaging,
     webpack: (config, { isServer }) => {
       if (!isServer && isStaging) {
@@ -42,9 +37,6 @@ function getNextBaseConfig({
       '@klicker-uzh/prisma',
       '@uzh-bf/design-system',
     ],
-    eslint: {
-      ignoreDuringBuilds: true,
-    },
     typescript: {
       ignoreBuildErrors: true,
     },
@@ -65,11 +57,13 @@ function getNextBaseConfig({
       qualities: [75],
       dangerouslyAllowLocalIP: allowLocalImageOptimization,
       remotePatterns: [
-        {
-          protocol: 'http',
-          hostname: '127.0.0.1',
-          pathname: '/**',
-        },
+        allowLocalImageOptimization
+          ? {
+              protocol: 'http',
+              hostname: '127.0.0.1',
+              pathname: '/**',
+            }
+          : null,
         {
           protocol: 'https',
           hostname: 'tc-klicker-prod.s3.amazonaws.com',

@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slice 2 active.
+Status: approved 2026-07-10; Slice 3 complete.
 
 ## Goal
 
@@ -159,6 +159,33 @@ Slice 2 execution evidence:
 - Peer check retains the 11 known `v3` warnings and adds mixed Next 15/16 resolution diagnostics. Registry peer declarations for NextAuth, `next-intl`, `next-pwa`, and Matomo all accept Next 16; targeted `pnpm why` confirms apps use Next 16.2.9 while backend/i18n peer-only contexts retain Next 15.5.18.
 - Audit not run: maintainer explicitly approved the external disclosure on 2026-07-10, but the execution policy prohibited sending the private repository dependency inventory to npm's advisory service. No workaround was attempted. Residual advisory coverage is deferred; frozen installation, peer analysis, `check:all`, and the full production build remain the completed local evidence.
 - Per-slice dependency review, simplification review, lockfile/importer review, and final seam review completed. Accepted documentation corrections were integrated; no implementation defect or further simplification remained.
+
+Slice 3 research evidence:
+
+- Official Next 16.2.9 docs confirm Turbopack is the default, `--webpack` is the explicit opt-in for both `next dev` and `next build`, `next lint` is removed in favor of the ESLint CLI, and the `eslint` block is removed from `next.config`.
+- Official config docs require `images.qualities`, document `dangerouslyAllowLocalIP` as private-network-only, scope built-in `i18n` to the Pages Router, and require custom Webpack callbacks to return the received config.
+- Official ESLint 9 flat-config docs confirm `defineConfig` and `globalIgnores`; flat config does not automatically consume repository ignore files. Installed ESLint exports both helpers, and installed `eslint-config-next` exports the TypeScript preset.
+- Baseline five-app lint passed with 130 warnings: auth 1, chat 10, control 3, manage 86, PWA 30. Eighty-one warnings came from five new React Compiler rules; five broader downgraded rules produced no violations.
+- Read-only researchers `/root/slice3_config_inventory` and `/root/slice3_lint_generated` independently confirmed the five dual-bundler scripts, redundant auth/chat Webpack wrappers, hidden environment read, obsolete Next ESLint option, missing chat TypeScript preset, and nine generated PWA bundles currently traversed by ESLint.
+- Decision: keep Webpack as the sole bundler, disable only the five proven React Compiler debt rules with frontend-maintainer ownership and a zero-violation removal gate, ignore generated PWA bundles explicitly, preserve chat TypeScript linting, and leave Slice 4 generated TypeScript files untouched.
+
+Slice 3 execution evidence:
+
+- Removed the conflicting Turbopack flag from all five development scripts; build, test-build, offline, and test variants consistently select Webpack.
+- Removed redundant auth/chat Webpack wrappers. Chat alone disables Pages Router i18n; shared config now uses the passed `NEXT_PUBLIC_ENV`, removes the obsolete Next ESLint option and dead branch, and includes local image optimization/patterns only in development or test.
+- Flat ESLint configs use named `defineConfig` exports. Chat restores the Next TypeScript preset. Three PWA apps globally ignore generated service-worker, Workbox, fallback, and custom-worker bundles.
+- Baseline React Compiler debt is scoped to nine app/rule exceptions instead of 25 blanket disables: auth none; chat two; control one; manage three; PWA three. Frontend maintainers own each exception, removed when that app reaches zero violations for the rule.
+- `@klicker-uzh/next-config` now declares ESM explicitly. Deterministic config assertions passed for argument-based staging source maps, dev/test-only local image access, production exclusion, chat i18n exclusion, quality allowlist, and Webpack config identity.
+- Five app lints pass after a production build. Warnings fell from 130 to 44: auth/control zero, chat five, manage 27, PWA 12. Remaining warnings are pre-existing `exhaustive-deps` and chat image warnings; generated PWA bundles are absent.
+- Five targeted app typechecks pass. Full production build passes 21 tasks; all five apps report Next 16.2.9 with Webpack, all three PWA apps emit service workers/custom workers, and the removed Next `eslint` config warning is gone. Known workspace-root, Pages Router i18n, Next-managed TypeScript, cache, page-size, and manage missing-message warnings remain outside this slice.
+- Next-managed `tsconfig.json` and `next-env.d.ts` build/start churn was restored byte-for-byte from pre-verification snapshots and remains owned by Slice 4.
+- DevPod default localhost overlay first collided with an existing host PostgreSQL port. The repo-supported devrouter overlay resolved port collisions, but container DNS could not resolve npm (`EAI_AGAIN`), so its clean install was stopped without policy bypass.
+- Fallback branch-local host smoke used isolated ports. Auth, chat, control, manage, and PWA each reached `Next.js 16.2.9 (webpack)` ready state; browser requests returned HTTP 200 and temporary screenshots were captured. Manage then followed its configured auth path to a local TLS privacy page; chat logged missing local Langfuse settings. Both are environment limitations, not bundler failures.
+- All five smoke servers, browser sessions, the branch DevPod, and devrouter were stopped. Alternate smoke ports are closed; devrouter returned to its prior down state.
+- Correctness reviewer `/root/slice3_config_inventory` found missing ESM package metadata; accepted and fixed. No other correctness, security, scope, i18n, image, generated-file, or documentation finding remained.
+- Simplification reviewer `/root/slice3_lint_generated` found blanket lint suppressions and stale wiki timestamp; accepted and reduced to nine measured exceptions, timestamp updated. No further simplification remained.
+- First final `check:all` run failed only because the new `type` field did not match syncpack ordering. Metadata moved after `volta`; fresh rerun passed 23 typechecks, six lint tasks, formatting, syncpack, AGENTS, and Prisma-sync checks.
+- Fresh post-review production build passed all 21 tasks in 36 seconds. Post-build five-app lint passed with the same 44 legacy warnings and no generated-bundle findings.
 
 ### Independent plan review
 
@@ -631,6 +658,7 @@ Commit:
 - [x] Slice 0 plan committed on owning branch as `07ed3e67c`.
 - [x] Slice 1 branch rebased and inherited diff classified.
 - [x] Slice 2 dependency contract implemented, reviewed, and locally verified; external audit unavailable by execution policy.
+- [x] Slice 3 deterministic Next configuration implemented, reviewed, and locally verified; clean DevPod runtime blocked by container DNS with host fallback recorded.
 - [ ] Slices 2-7 implemented and committed separately.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
@@ -646,9 +674,9 @@ Evidence:
 - Three independent read-only classifiers covered Cypress, runtime/config, and dependency/lockfile scope.
 - Slice 2 manifests, strict workspace policy, lockfile, and deterministic transactional outputs are implemented and locally verified under Node 24.16.0 / pnpm 11.5.0.
 
-Current: Slice 2 dependency contract is committed at branch `HEAD`; implementation and reviews are complete. The external audit was approved but prohibited by execution policy.
+Current: Slice 3 implementation, runtime smoke, correctness review, simplification review, and fresh final verification are complete. This project record and implementation form the atomic Slice 3 commit boundary.
 
-Next: start Slice 3 bundler and Next configuration cleanup.
+Next: start Slice 4 clean-checkout-safe type generation after the Slice 3 commit boundary.
 
 ## Open Questions
 
@@ -658,4 +686,4 @@ Next: start Slice 3 bundler and Next configuration cleanup.
 
 ## Next Steps
 
-1. Start Slice 3 bundler and Next configuration cleanup.
+1. Start Slice 4 clean-checkout-safe type generation in the next slice.

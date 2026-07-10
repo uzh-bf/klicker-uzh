@@ -63,7 +63,7 @@
     "build": "next build --webpack",
     "build:test": "cross-env NODE_ENV=test next build --webpack",
     "check": "tsc --noEmit",
-    "dev": "cross-env NODE_ENV=development next dev --webpack --turbo --port 3003",
+    "dev": "cross-env NODE_ENV=development next dev --webpack --port 3003",
     "dev:assessment": "pnpm run dev",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "cross-env NODE_ENV=development next dev --webpack --port 3003",
