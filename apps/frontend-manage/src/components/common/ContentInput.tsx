@@ -33,7 +33,7 @@ const ToolbarContext = React.createContext<{ disabled: boolean }>({
 })
 
 const normalizeMarkdown = (str: string) => {
-  return str.replace(/\r\n/g, '\n').replace(/\n+$/, '').trim()
+  return str.replace(/\r\n/g, '\n').replace(/\n+$/, '')
 }
 
 export interface ContentInputClassName {
@@ -112,7 +112,6 @@ function ContentInput({
   // Sync content prop when it changes externally
   useEffect(() => {
     if (!editor) return
-    if (editor.isFocused) return
 
     const normalizedContent = content ?? ''
     if (
