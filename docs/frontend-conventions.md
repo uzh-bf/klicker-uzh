@@ -17,6 +17,7 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 
 - All five Next.js 16 apps use Webpack explicitly for `next dev` and `next build`. Keep `--webpack` as the only bundler flag; never combine it with `--turbo` or `--turbopack`. Shared Webpack conditions and the three PWA integrations require this deterministic path.
 - Run lint through each app's `eslint .` script. Next.js 16 removed `next lint` and the `eslint` block from `next.config`.
+- Each app's `check` script runs `next typegen` before `tsc --noEmit`. Keep generated `next-env.d.ts` ignored but included in `tsconfig.json`, together with `.next/types/**/*.ts` and `.next/dev/types/**/*.ts`; Next owns and rewrites these files. Control, manage, and PWA use `tsconfig.check.json` to omit stale dev validators during direct checks because their Pages Router production and dev validators otherwise declare the same global types.
 - `auth`, `frontend-control`, `frontend-manage`, and `frontend-pwa` use Pages Router i18n. `chat` is App Router and passes `includeI18n: false` to the shared config.
 - Generated PWA service-worker, Workbox, fallback, and worker bundles are ignored by each PWA app's flat ESLint config. Do not lint or commit them.
 

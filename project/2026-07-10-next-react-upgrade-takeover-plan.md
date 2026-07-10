@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slice 3 complete.
+Status: approved 2026-07-10; Slice 4 complete.
 
 ## Goal
 
@@ -659,7 +659,8 @@ Commit:
 - [x] Slice 1 branch rebased and inherited diff classified.
 - [x] Slice 2 dependency contract implemented, reviewed, and locally verified; external audit unavailable by execution policy.
 - [x] Slice 3 deterministic Next configuration implemented, reviewed, and locally verified; clean DevPod runtime blocked by container DNS with host fallback recorded.
-- [ ] Slices 2-7 implemented and committed separately.
+- [x] Slice 4 clean-checkout-safe Next type generation implemented, reviewed, and locally verified.
+- [ ] Slices 5-7 implemented and committed separately.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
 - [ ] Shared old-PR supersession gate in TypeScript plan approved and executed.
@@ -673,10 +674,17 @@ Evidence:
 - Normalization restored 17 Cypress files, eight unproven runtime/auth files, three TS-only asset imports, three generated email outputs, five tsconfigs, and three tracked `next-env.d.ts` hunks to `origin/v3`.
 - Three independent read-only classifiers covered Cypress, runtime/config, and dependency/lockfile scope.
 - Slice 2 manifests, strict workspace policy, lockfile, and deterministic transactional outputs are implemented and locally verified under Node 24.16.0 / pnpm 11.5.0.
+- Slice 4 baseline hid all five `.next` trees and all generated PWA worker patterns; counts before generation were zero for both. Five explicit `next typegen` commands produced five `.next/types/routes.d.ts` files and zero worker files. Five app `check` scripts then passed under Node 24.16.0 / pnpm 11.5.0.
+- `next typegen` applied Next 16's mandatory `jsx: react-jsx` setting. All five tsconfigs now include `next-env.d.ts`, `.next/types/**/*.ts`, and `.next/dev/types/**/*.ts`; all five generated declarations exist locally, are ignored, and have no tracked entries.
+- CI's existing build-before-check order remains unchanged. Final staged `check:all` passed 23/23 type tasks, 6/6 lint tasks, formatting, syncpack, AGENTS, and Prisma-sync gates. The OKF wiki validator passed 14 files. Final production build passed 21/21 tasks. Known workspace-root, Pages Router i18n, ESM entry-point, middleware, page-size, cache, and manage missing-message warnings remain outside Slice 4.
+- Native browser smoke loaded production builds for all five apps on isolated localhost ports. Auth rendered its login surface; chat `/noLogin` rendered the expected login-required page; control, manage, and PWA rendered their application shells and waited for absent backend/auth services. Screenshots were captured under `/private/tmp`; expected missing local auth/Langfuse configuration errors were recorded. All five servers and browser tabs were stopped.
+- Final staged `check:all` reproduced a Next 16.2.9 Pages Router generator collision after both dev and production validators existed: control, manage, and PWA loaded two global `PagesPageConfig` declarations. Auth and chat remained clean because imports made their validators module-scoped. A one-app probe proved the root cause; three check-only tsconfigs now exclude `.next/dev/types` while canonical tsconfigs retain both Next-managed includes.
+- Initial correctness review requested clearer evidence plus narrower docs language; both were integrated. Post-fix correctness review verified each check config includes all source/production types and zero dev types. Post-fix simplification review confirmed three local child configs are the smallest durable fix. No final findings remained.
+- Final Opengrep auto scan ran 51 applicable rules across 13 changed app config files with zero findings.
 
-Current: Slice 3 implementation, runtime smoke, correctness review, simplification review, and fresh final verification are complete. This project record and implementation form the atomic Slice 3 commit boundary.
+Current: Slice 4 implementation, diagnosis, artifact-free proof, browser smoke, correctness review, simplification review, wiki validation, static scan, `check:all`, and production build are complete. This project record and implementation form the atomic Slice 4 commit boundary.
 
-Next: start Slice 4 clean-checkout-safe type generation after the Slice 3 commit boundary.
+Next: commit Slice 4 separately, then start Slice 5 runtime compatibility reproduction only after a new explicit continuation.
 
 ## Open Questions
 
@@ -686,4 +694,4 @@ Next: start Slice 4 clean-checkout-safe type generation after the Slice 3 commit
 
 ## Next Steps
 
-1. Start Slice 4 clean-checkout-safe type generation in the next slice.
+1. Start Slice 5 runtime compatibility reproduction after the Slice 4 commit boundary.

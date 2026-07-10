@@ -72,7 +72,7 @@
   "scripts": {
     "build": "next build --webpack",
     "build:test": "cross-env NODE_ENV=test next build --webpack",
-    "check": "tsc --noEmit",
+    "check": "next typegen && tsc --noEmit",
     "dev": "cross-env NODE_ENV=development next dev --webpack --port 3004",
     "dev:test": "cross-env NODE_ENV=test next dev --webpack --port 3004",
     "lint": "eslint .",
