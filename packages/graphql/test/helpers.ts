@@ -963,6 +963,90 @@ export async function seedPracticeQuiz(
 }
 
 /**
+ * Seeds a practice quiz configured as an escape room, with a single-element
+ * stack per array entry (order determines the sequential escape room step)
+ * and an attached `escapeRoomConfig`.
+ *
+ * Unlike `seedPracticeQuiz`, the created `ElementInstance` rows carry real
+ * `elementData`/`results`/`anonymousResults` (via `processElementData` /
+ * `getInitialInstanceResults`), because `respondToElementStack` grades
+ * correctness against the instance's own `elementData` - a bare `{}`
+ * placeholder always evaluates as incorrect.
+ *
+ * @param elements - Full element records (with options) to include, one per stack
+ * @param courseId - The ID of the course to associate the practice quiz with
+ * @param status - Optional publication status for the practice quiz
+ * @param timeLimit - Escape room time limit in seconds (default 3600)
+ * @param lockoutSeconds - Escape room lockout duration in seconds (default 5)
+ * @param ctx - The context object including the authenticated user and Prisma client
+ * @returns The created practice quiz, including its ordered stacks (with elements) and escapeRoomConfig
+ */
+export async function seedEscapeRoomPracticeQuiz(
+  {
+    elements,
+    courseId,
+    status,
+    timeLimit,
+    lockoutSeconds,
+  }: {
+    elements: Element[]
+    courseId: string
+    status?: PublicationStatus
+    timeLimit?: number
+    lockoutSeconds?: number
+  },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.create({
+    data: {
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      courseId,
+      status,
+      ownerId: ctx.user.sub,
+      stacks: {
+        create: elements.map((element, index) => {
+          const elementData = processElementData(element)
+          const results = getInitialInstanceResults(elementData)
+          return {
+            order: index,
+            type: ElementStackType.PRACTICE_QUIZ,
+            elements: {
+              create: [
+                {
+                  order: 0,
+                  elementId: element.id,
+                  type: ElementInstanceType.PRACTICE_QUIZ,
+                  elementType: element.type,
+                  options: {},
+                  elementData,
+                  results,
+                  anonymousResults: results,
+                  ownerId: ctx.user.sub,
+                },
+              ],
+            },
+          }
+        }),
+      },
+      escapeRoomConfig: {
+        create: {
+          timeLimit: timeLimit ?? 3600,
+          lockoutSeconds: lockoutSeconds ?? 5,
+        },
+      },
+    },
+    include: {
+      stacks: { orderBy: { order: 'asc' }, include: { elements: true } },
+      escapeRoomConfig: true,
+    },
+  })
+
+  return practiceQuiz
+}
+
+/**
  * Seeds a microlearning activity in the database with the specified parameters.
  *
  * @param elements - Array of elements to include in the microlearning activity, each with an id and type

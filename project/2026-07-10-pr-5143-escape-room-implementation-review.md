@@ -200,3 +200,31 @@ The plan's v1 was **PracticeQuiz-only, individual play**, deliberately excluding
 
 ## 9. How to use this document
 Work top-down: **Phase 0 → 1 → 2 gate the merge.** Each numbered step cites the finding and the file:line. Land one fix + its test per commit (conventional commits, scope prefix). Re-request review after Phase 2; Phases 3–5 can be a follow-up PR if the product owner accepts a narrower v1. Do not merge while B1–B6 are open.
+
+---
+
+## 10. Progress — implementation of this roadmap
+
+Scope decision (§ end): product chose **keep all four activity types + fix them**, and **fixes + the missing depth features** (hints, QR_SCAN, lecturer dashboard). So §7's "narrow back" recommendation is NOT taken; M1 (group lockout) and M8 (live-quiz path) are kept, not cut.
+
+### Landed on branch (verified: `tsc` + codegen/build green; integration tests authored for CI)
+
+| Commit | Phase | What |
+|--------|-------|------|
+| `f0bd5ca48` | 0 | B5 docker-compose port revert; M9 stray CI comment; B6 playwright login sigs; B3 migration unique index |
+| `8fd46c88d` | 1 | **B1** anon/non-participant grading bypass closed in `respondToElementStack` + stack masking for non-participants in `getPracticeQuizData`/`getMicroLearningData`; **B2** `resetEscapeRoomAttempt` lecturer-only; **B4** `pruneEscapeRooms` retention window (90d) + `statsAggregatedAt` idempotency marker; **M1** group lockout enforced in `submitGroupActivityDecisions` |
+| `7162c3df2` | 2 | **M6** shared `EscapeRoomSettingsFields` + `useEscapeRoomYupFields`; **M4** i18n (10 keys en+de); **M5** order forced Sequential + selector disabled in escape mode; validation bounds (time ≤1440min, penalty ≤3600s) |
+| `247a0154c` | 4 | **Lecturer dashboard data layer:** owner-authorized `escapeRoomProgress` query (`escapeRooms.ts` service) — per-participant cleared/total stacks, status, time, penalty, hints, lockout; `EscapeRoomProgress`/`EscapeRoomAttemptProgress` types + op + codegen |
+| _next commit_ | 1 | **M7** escape-room security regression tests (`packages/graphql/test/escapeRoom.test.ts`, 11 tests) — B1 anon guard + owner bypass, sequential gating, lockout window, expiry, B2 reset auth (lecturer/participant/no-write), completion fires-once, B4 prune retention. New `seedEscapeRoomPracticeQuiz` helper (real `elementData` so grading works). Live-DB integration → CI-verified (not locally runnable); throw messages traced verbatim from source, Participation/startEscapeRoomAttempt preconditions checked against source |
+
+### Verification environment constraint (important for the remaining work)
+This worktree runs on the **host**; the KlickerUZH dev DB is on the compose/`devnet` network behind a TLS-only `devrouter` proxy, and the only running stacks belong to other preview envs — so there is **no branch-correct local browser/DB loop** available here. Established loop for this session: **`tsc` locally + graphql integration tests via CI**. Per `CLAUDE.md`, **browser verification (agent-browser) is mandatory** before any of the UI work below can be marked done.
+
+### Remaining slices (all require the browser loop to close)
+Frontend + full-stack features, deliberately **not** built blind. Each is code-scoped and ready:
+- **M2/M3 — PWA usability (blocking):** `ElementStack.tsx` (the real escape path) has no error/lockout handling, so the Phase-1 `GraphQLError`s (wrong answer, lockout, expiry) are silently swallowed. Add submit error handling + `lockoutUntil` retry countdown; delete the dead lockout-toast code in `liveQuiz/QuestionArea.tsx` (+ its 2 missing i18n keys); **B2 frontend:** remove the participant self-reset button from `EscapeRoomOverlay` (start/expired/completed) and repoint to a "contact lecturer" message; countdown once-guard in `useEscapeRoom.ts` (currently `refetch()`es every second post-expiry); a11y (`aria-live` on the timer, focus mgmt on the overlay).
+- **Phase 3 — Hints (full feature):** add `escapeRoomHint` to `ElementInstanceInput` → persist into instance `options`; **strip it from participant payloads** (same rule as sample solutions); expose a content-free `hasHint` boolean; `requestEscapeRoomHint(activityId, elementInstanceId)` mutation (owns IN_PROGRESS attempt → append to `hintsUsed`, add `hintPenalty` to `penaltySeconds`, return text once); manage authoring field + PWA request-hint button showing the cost.
+- **Phase 4 — Dashboard UI:** consume `escapeRoomProgress` (already shipped) in the manage evaluation views (`pages/{practiceQuiz,microLearning}/[id]/evaluation.tsx`) — segmented per-participant progress bar, hints/penalty/time columns, polling, and the now-lecturer-only reset button.
+- **Phase 4 — QR_SCAN element type:** new `ElementType` across the registry (`elementData.ts`/`element.ts` unions, `useElementTypeOptions.ts`, `StudentElement.tsx`, grading dispatch in `stacks.ts` + `response-api/escapeRoom.ts`), opaque CSPRNG code payload, scanning (BarcodeDetector-first) + manual fallback + print workflow. Largest/riskiest — senior pairing.
+- **M8 — Live-quiz escape authoring:** the `response-api` validation path exists but has no wizard; add the escape surface to `liveQuiz/*Step.tsx` (kept per scope). Then expose `elementBlockId` in `escapeRoomProgress` (service already handles it).
+- **Phase 5:** expand `Z-escape-room.spec.ts` to a ≥3-stack run-through (fix the drag-and-drop stack-builder selectors); agent-browser screenshots (desktop+mobile, de+en) on the PR; final security review; PR description via `rs-mr-description-writer`.
