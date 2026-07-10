@@ -1,0 +1,437 @@
+# PR #5148 Tiptap Editor Finalization Plan
+
+Goal: finish [PR #5148](https://github.com/uzh-bf/klicker-uzh/pull/5148) with correct Markdown round-trips, stable form state, green Playwright, resolved review findings, current `v3`, browser evidence, accurate PR copy.
+
+## Plan Identity
+
+- Plan: `project/2026-07-10-pr-5148-tiptap-editor-finalization-plan.md`
+- Local takeover branch: `codex/pr-5148-finalization`
+- PR head branch: `migrate-editor-to-tiptap`
+- Target: `v3`
+- PR: [#5148](https://github.com/uzh-bf/klicker-uzh/pull/5148)
+- Starting PR head: `b40fc33db`
+- Starting merge base: `bd6df485b`
+- Current `origin/v3` at planning time: `eef745d06`
+- Starting divergence: `v3` ahead by 2; PR branch ahead by 12.
+- Older repo plan: none found for PR #5148 or Tiptap migration.
+- Prior external handoff: reviewed; live Git/PR/CI state overrides it.
+
+## Goal
+
+- Keep stored content Markdown-compatible.
+- Keep editor mount, prop sync, and programmatic normalization from marking Formik fields dirty.
+- Keep genuine user edits observable exactly once through current `onChange` callback.
+- Keep supported toolbar actions keyboard-accessible and disabled when editor disabled.
+- Keep GFM tables and common-language code highlighting.
+- Remove UI capabilities that cannot survive Markdown save/reload.
+- Restore all affected Playwright workflows without skips, weakened assertions, or timeout inflation.
+- Finish with all required CI green, review threads answered, screenshots attached, human approval outstanding only.
+
+## Non-Goals
+
+- No storage migration from Markdown to HTML or Tiptap JSON.
+- No raw-HTML persistence path.
+- No merged-cell support unless a deterministic round-trip proves existing Markdown pipeline preserves it.
+- No broad answer-collection redesign.
+- No unrelated Playwright cleanup.
+- No new dependencies or major upgrades.
+- No history rewrite or force-push without explicit user approval.
+- No PR merge without explicit user approval.
+
+## Current Evidence
+
+- PR state: open, non-draft, `MERGEABLE`, `BEHIND`, `REVIEW_REQUIRED`.
+- Failing branch CI: [Playwright run 28933101672](https://github.com/uzh-bf/klicker-uzh/actions/runs/28933101672).
+- Passing exact merge-base CI: [Playwright run 28927821772](https://github.com/uzh-bf/klicker-uzh/actions/runs/28927821772).
+- Branch failures repeat on retry; same pre-existing tests pass merge base. Treat as branch regressions until disproved.
+- Failed paths:
+  - `V-template.spec.ts`: answer-option controls absent.
+  - new `ZA-editor-rich-features.spec.ts`: preview container absent.
+  - `K-elements-selection.spec.ts` and `L-elements-case-study.spec.ts`: new accordion helper throws.
+  - `T-resources.spec.ts`: answer-option search absent.
+  - `MA-elements-operations.spec.ts`: recovered-data prompt appears after no-op editor flows.
+- GitGuardian failure points at local-dev credentials introduced into branch history by a `v3` merge; files do not differ in feature diff. Do not print values. Resolve incident as base-history/dev-test false positive unless fresh scan proves feature introduction.
+- Unresolved reviews:
+  - [Merged cells do not round-trip](https://github.com/uzh-bf/klicker-uzh/pull/5148#discussion_r3538352953).
+  - [Lowlight full bundle](https://github.com/uzh-bf/klicker-uzh/pull/5148#discussion_r3542985359).
+  - stale duplicate merged-cell thread remains unresolved/outdated; resolve with current thread after fix.
+- Latest CodeRabbit summary also flags:
+  - possible stale `onChange` closure in `useEditor`.
+  - `ToolbarButton` rest props overriding computed `disabled`.
+- Existing PR body uses local `file://` links and lacks reviewer-visible screenshots.
+- Current `v3` overlap: `AGENTS.md` changed on both sides; `git merge-tree` shows no conflict markers. Re-read merged result anyway.
+
+## Research
+
+### R1. Tiptap lifecycle and form contract
+
+- Question: which editor events represent user content edits versus initial creation or programmatic sync?
+- Evidence:
+  - Tiptap defines separate `onCreate`, `onUpdate`, `onTransaction`, focus, and blur lifecycle hooks: [official lifecycle example](https://github.com/ueberdosis/tiptap-docs/blob/main/src/content/editor/extensions/custom-extensions/create-new/extension.mdx).
+  - Local `ContentInput` forwards every `onUpdate` to parent Formik field.
+  - Local `EditorField` marks touched on every parent callback.
+  - Answer-collection accordion refuses state changes while metadata/options touched.
+- Limitation: docs reviewed do not settle whether React `useEditor` refreshes callback props for pinned `3.27.1`.
+- Local applicability: Slice 2 must prove callback freshness and event origin using a deterministic repro before choosing ref, `setOptions`, or transaction filtering.
+
+### R2. Markdown capability boundary
+
+- Question: can Tiptap table merged-cell attributes survive `getMarkdown()` and GFM renderer round-trip?
+- Evidence:
+  - Tiptap Markdown support is extension-defined through parser/renderer hooks and should be covered with parse/serialize integration tests: [Markdown extension guide](https://github.com/ueberdosis/tiptap-docs/blob/main/src/content/editor/markdown/guides/integrate-markdown-in-your-extension.mdx).
+  - Tiptap table model supports merge/split commands, but reviewed Markdown docs provide no merged-cell serialization contract.
+  - Current app saves `editor.getMarkdown()` and renders GFM Markdown.
+  - Current rich-feature spec claims merged-cell coverage but never executes merge/split.
+- Limitation: official docs do not explicitly say “merged cells unsupported in Markdown.”
+- Local applicability: Slice 4 first proves actual round-trip. Default decision: remove merge/split control when structure is lost.
+
+### R3. Syntax-highlighting bundle
+
+- Question: full language bundle or common subset?
+- Evidence:
+  - Lowlight supports `common` (37 languages), `all` (190+), or explicit registration: [official README](https://github.com/wooorm/lowlight/blob/main/readme.md).
+  - `common` includes JavaScript, TypeScript, Python, R, SQL, GraphQL, shell, YAML, JSON, and other expected teaching languages.
+- Limitation: no product-owned supported-language list exists.
+- Decision: use `common`; avoid custom allow-list until product requirement exists.
+
+### R4. Branch synchronization
+
+- Question: merge current `v3` or rewrite branch?
+- Evidence:
+  - Branch contains three historical `v3` merges.
+  - Current base delta touches `AGENTS.md` plus devcontainer, CI fallback, and seed-script files; no editor files.
+  - Force-push would invalidate history/review context and requires explicit approval.
+- Decision: normal merge from current `origin/v3`; preserve history. Rebase only explicit fallback if GitGuardian cannot be resolved and maintainer approves force-push.
+
+## Grill Findings / Decisions
+
+- Canonical persisted format: Markdown.
+- Tiptap document: editing representation, not new persistence contract.
+- No-op contract: mount, external prop sync, disabled-state sync, and Markdown normalization must not call form-level `onChange`.
+- User-edit contract: actual content edit must call latest parent callback once with serialized Markdown.
+- Table contract: only structures surviving save/reload stay exposed.
+- Helper contract: open action must be idempotent. Never retry by blindly toggling accordion.
+- Test contract: existing test intent/count preserved. No skip, deletion, assertion weakening, or timeout-only “fix.”
+- Browser contract: manage editor, answer-collection modal, saved preview, student renderer verified as user sees them.
+- Branch contract: local takeover branch pushes explicitly to existing PR head only after approval and local gates.
+- Security contract: review changed Markdown pipeline and sanitizer allow-list explicitly; permit no broader raw HTML path.
+- Domain model: no new domain terms or irreversible architecture decision. No `CONTEXT.md` or ADR needed.
+
+## Skill Routing
+
+- Plan/delivery: `rs-sliced-development-workflow`, `caveman` basic.
+- Scope: `grill-with-docs`; no domain glossary edits needed.
+- Diagnosis: `diagnose` before behavioral fixes.
+- UI: `klicker-frontend-ui`, `agent-browser`.
+- Tests: `klicker-testing-verification`, `klicker-playwright-e2e`, `playwright-best-practices`.
+- Docs: `klicker-wiki-maintenance`.
+- React/performance review: `vercel-react-best-practices`.
+- UI/a11y review: `web-design-guidelines`.
+- Per slice: independent review agent, then separate simplification agent.
+- Finish security: `security-review` plus `security-best-practices`; threat model unnecessary unless fix changes trust boundary.
+- Final maintainability: `thermo-nuclear-code-quality-review`.
+- PR copy: `rs-mr-description-writer` plus `humanizer`.
+- Completion proof: `verification-before-completion`.
+
+## Approval and Mutation Gates
+
+1. Plan approval:
+   - User reviews this file.
+   - After approval: commit plan alone.
+   - Commit: `docs(project): add PR 5148 finalization plan`.
+2. Remote push:
+   - Local branch differs from PR head branch name.
+   - Push only with explicit refspec to `origin/migrate-editor-to-tiptap` after local gates.
+3. History rewrite:
+   - Never force-push without separate explicit approval.
+4. GitGuardian:
+   - External incident resolution may require maintainer access.
+   - No code/history rewrite solely to silence false positive without evidence and approval.
+5. PR merge:
+   - Never merge without explicit user approval after final evidence.
+
+## Slice 1 — Current Baseline on Latest `v3`
+
+Outcome: fixes start from current target and deterministic failing loops.
+
+- Do:
+  - Commit approved plan alone.
+  - Fetch refs; record exact PR head and target SHA in `Progress`.
+  - Merge current `origin/v3` normally into local takeover branch.
+  - Resolve only genuine overlap; inspect full `AGENTS.md` result.
+  - Run `pnpm install --frozen-lockfile` only if lock/dependency state requires it.
+  - Confirm browser path before UI work:
+    - preferred: repo devcontainer/DevPod plus devrouter.
+    - fallback: documented host Playwright stack.
+    - environment failure routes to `klicker-environment-doctor`.
+  - Build three focused feedback loops with traces/screenshots:
+    - no-op/auto-save prompt (`MA-elements-operations`).
+    - answer-collection accordion (`K-elements-selection`).
+    - rich editor save/preview (`ZA-editor-rich-features`).
+  - Reproduce before changing behavior. If local environment cannot reproduce, use downloaded CI trace/error context as loop and document limitation.
+- Files:
+  - merge result only.
+  - this plan `Progress`.
+- Check:
+  - `git diff --check origin/v3...HEAD`.
+  - `git status --short`.
+  - focused Playwright commands with `--project=chromium` and exact `--grep` titles.
+  - app health probes before test attribution.
+- Stop condition:
+  - no deterministic failure signal and no usable CI trace. Report blocker; do not guess.
+- Review:
+  - merge-result review for accidental branch scope changes.
+  - simplification review: reject unrelated conflict cleanup.
+- Commit:
+  - merge commit for `origin/v3` plus factual `Progress` update.
+
+## Slice 2 — No-Op Editor Mount Stays No-Op
+
+Outcome: editor lifecycle preserves Formik dirty/touched state while real edits still persist.
+
+- Diagnose:
+  - Rank and test 3–5 hypotheses before fix:
+    1. initialization/plugin normalization emits update.
+    2. external `setContent`/normalization causes update loop or semantic mismatch.
+    3. `useEditor` holds stale `onChange` callback.
+    4. toolbar/form event changes touched state independently.
+  - Change one variable per probe.
+  - Tag temporary logs `[DEBUG-pr5148-editor]`; remove before commit.
+- Do:
+  - Add/strengthen regression at real Playwright seam before fix.
+  - Ensure initial Markdown parse and programmatic prop sync emit no parent change.
+  - Ensure user edit emits one serialized Markdown value.
+  - Keep latest callback without recreating editor unless proven necessary.
+  - Keep `EditorField` unchanged unless evidence shows contract belongs there.
+  - Preserve `emitUpdate: false` for external sync.
+  - Destructure toolbar `disabled` prop so rest spread cannot override computed state.
+- Likely files:
+  - `apps/frontend-manage/src/components/common/ContentInput.tsx`.
+  - `playwright/tests/MA-elements-operations.spec.ts` only if sharper regression needed.
+  - `playwright/tests/ZA-editor-rich-features.spec.ts` for Markdown no-op/load-save coverage.
+  - `apps/frontend-manage/src/components/activities/creation/EditorField.tsx` only with evidence.
+- End-to-end path:
+  - open new/edit element -> make no edit -> close/reopen -> no recovery prompt.
+  - open answer collection -> untouched metadata -> options accordion opens.
+  - edit content -> save/reopen -> Markdown content preserved.
+- Check:
+  - focused three auto-save tests in `MA-elements-operations.spec.ts`.
+  - first failing `K-elements-selection` path.
+  - stored Markdown no-op round-trip assertion.
+  - TypeScript check for `frontend-manage` and Playwright.
+- Review:
+  - correctness review: lifecycle, callback freshness, update recursion, Formik contract.
+  - simplification review: prefer small boundary fix over flags/state machine.
+- Commit:
+  - `fix(editor): preserve form state during content sync`.
+
+## Slice 3 — Stable Playwright Interaction and Preview Coverage
+
+Outcome: tests exercise real behavior reliably; branch-only helper and preview failures removed.
+
+- Do:
+  - Make `openAnswerCollectionOptions` idempotent:
+    - return when already open.
+    - inspect stable expanded/visible state.
+    - click once when closed.
+    - wait for expected option control.
+    - no blind toggle loop.
+  - Reuse helper in K/L only where current branch changed calls.
+  - Treat unchanged V-template failure as expected indirect dirty-state fallout from Slice 2; investigate test code only if behavior fix does not clear it.
+  - T-resources has a separate helper with an early-open check but the same blind retry toggle. Change it only if failure remains after Slice 2 and evidence points at retry behavior.
+  - Diagnose `ZA-editor-rich-features` preview failure:
+    - capture URL, route state, GraphQL response, console, screenshot.
+    - use explicit manage base URL or existing navigation helper when relative navigation targets wrong app/state.
+    - wait for real save/navigation completion, not arbitrary delay.
+  - Make spec description match assertions. Remove false “cell merging” claim unless tested.
+  - Keep test count and intent.
+- Files:
+  - `playwright/util/actions.ts`.
+  - `playwright/tests/K-elements-selection.spec.ts`.
+  - `playwright/tests/L-elements-case-study.spec.ts`.
+  - `playwright/tests/ZA-editor-rich-features.spec.ts`.
+  - `apps/frontend-manage/src/pages/questions/[id].tsx` only if product route is wrong, not merely test navigation.
+- End-to-end path:
+  - edit answer collection -> options opens once -> all existing permission/deletion assertions run.
+  - create rich content -> save -> direct manage preview -> table/code visible.
+- Check:
+  - Prettier on touched Playwright files.
+  - Playwright TypeScript check.
+  - test discovery/list.
+  - focused ZA, K, L specs.
+  - T and V failing tests when runtime budget permits; mandatory in CI.
+- Review:
+  - test-quality review: no timeout inflation, retries hiding app bugs, selector weakening, or lost coverage.
+  - simplification review: one helper, minimal call-site churn.
+- Commit:
+  - `test(playwright): stabilize Tiptap editor workflows`.
+
+## Slice 4 — Markdown-Safe Feature Boundary
+
+Outcome: every exposed table/code feature survives persistence; bundle and toolbar findings closed.
+
+- Do:
+  - Prove merged-cell round-trip before product change:
+    - create table.
+    - merge cells.
+    - inspect serialized Markdown.
+    - save/reopen and compare structure.
+  - If structure is lost, remove merge/split toolbar action and unused i18n keys. Do not add HTML storage workaround.
+  - Keep add/delete row/column and delete-table actions only after normal table round-trip passes.
+  - Change `createLowlight(all)` to `createLowlight(common)`.
+  - Verify JavaScript/TypeScript plus at least one non-JS common language in both editor (lowlight/HLJS) and preview (Prism).
+  - Confirm language without dedicated custom CSS token rules still renders legibly; extend generic token styling only when browser evidence requires it.
+  - Recheck `aria-label`, `aria-pressed`, native button semantics, disabled behavior, focus order, tooltips.
+  - Update affected wiki and skill in same PR:
+    - `docs/frontend-conventions.md`: Markdown persistence boundary and supported table behavior.
+    - `.agents/skills/klicker-frontend-ui/SKILL.md` or `.agents/skills/klicker-playwright-e2e/SKILL.md`: only procedural gotcha proven by implementation.
+    - `docs/log.md`: dated update.
+- Files:
+  - `apps/frontend-manage/src/components/common/ContentInput.tsx`.
+  - `apps/frontend-manage/src/globals.css`.
+  - `apps/frontend-pwa/src/globals.css`.
+  - `packages/markdown/src/Markdown.tsx`.
+  - `packages/i18n/messages/de.ts`.
+  - `packages/i18n/messages/en.ts`.
+  - `playwright/tests/ZA-editor-rich-features.spec.ts`.
+  - affected wiki/skill files.
+- End-to-end path:
+  - lecturer authors Markdown-safe table/code -> save -> manage preview -> student renderer matches.
+- Check:
+  - i18n pair check.
+  - focused rich-feature Playwright spec.
+  - browser desktop plus narrow viewport.
+  - English and German toolbar labels if keys change.
+  - `pnpm --filter @klicker-uzh/frontend-manage build` or repo-equivalent filtered build.
+  - `bash ~/.claude/skills/llm-wiki-okf/scripts/validate.sh docs` plus Prettier on touched docs/skills.
+- Review:
+  - `vercel-react-best-practices` for editor render/bundle choices.
+  - `web-design-guidelines` for keyboard/a11y/toolbar behavior.
+  - simplification review: no custom Markdown extension or language allow-list without requirement.
+- Commit:
+  - `fix(editor): enforce Markdown-safe rich content`.
+
+## Slice 5 — Full Regression and CI Closure
+
+Outcome: local evidence complete; remote PR checks green or exact external blocker isolated.
+
+- Local verification, ordered:
+  1. `pnpm run check:all`.
+  2. `pnpm run build`.
+  3. Playwright formatting/typecheck/list commands from `klicker-playwright-e2e`.
+  4. Focused specs: `MA`, `K`, `L`, `T`, `V`, `ZA`.
+  5. Real-browser verification with `npx agent-browser`.
+- Browser evidence:
+  - editor initial Markdown load.
+  - untouched close/reopen with no recovery prompt.
+  - answer-collection metadata -> options accordion.
+  - table add/delete controls.
+  - code block highlight.
+  - saved manage preview.
+  - student/PWA Markdown rendering.
+  - disabled editor toolbar.
+  - desktop and mobile/narrow viewport.
+  - both locales when visible strings change.
+- Artifact rule:
+  - store screenshots in reviewer-accessible PR attachment/comment flow, not local `file://` paths.
+- Push gate:
+  - verify clean status and expected commit list.
+  - explicit push to `origin/migrate-editor-to-tiptap` only after user-approved execution and local gates.
+- Remote verification:
+  - watch full PR checks.
+  - all 8 Playwright shards must pass.
+  - no rerun-only acceptance for deterministic failure.
+  - compare any remaining failure with current `v3` run before classification.
+- GitGuardian:
+  - confirm finding still references base-history/dev-test credential only.
+  - maintainer marks incident false positive/accepted test credential.
+  - if check cannot be cleared, stop at decision gate: maintainer override versus approved history rewrite.
+- Review threads:
+  - answer current merged-cell, lowlight, callback, and disabled-state findings with evidence.
+  - resolve outdated duplicate only after current thread resolution.
+- Commit:
+  - behavior/docs already committed per slices.
+  - factual plan progress update may use `docs(project): record PR 5148 verification`.
+
+## Slice 6 — Final Review and PR Handoff
+
+Outcome: PR ready for human approval; no hidden process debt.
+
+- Do:
+  - Run mandatory security review:
+    - `packages/markdown/src/Markdown.tsx`: re-enabled `remarkGfm`/`rehypePrism` pipeline and `code.className` sanitizer allow-list.
+    - image URL handling unchanged.
+    - no raw HTML expansion.
+    - dependency diff and lockfile sanity.
+  - Run independent final branch review against `origin/v3...HEAD`.
+  - Run separate simplification review.
+  - Run `thermo-nuclear-code-quality-review`.
+  - Integrate accepted findings one at a time; explicitly defer invalid/YAGNI findings with reason.
+  - Re-run affected verification after every accepted change.
+  - Update plan `Progress` to `ready_for_review` with exact commands, CI URLs, screenshot links, review results, residual risks.
+  - Use `rs-mr-description-writer` for whole-branch PR body:
+    - compare full commit history and diff to `v3`.
+    - remove local file links.
+    - summarize storage contract and removed unsupported behavior.
+    - include exact local/CI verification.
+    - include screenshots.
+    - include manual checks and `Next Steps`.
+  - Reassess title against whole branch. Recommended if tables/code remain new user capability: `feat(editor): migrate rich text editor to Tiptap`; otherwise retain accurate `refactor(manage)` title.
+  - Confirm every actionable PR comment/review handled.
+- Final merge-ready gates:
+  - branch current with `v3`.
+  - worktree clean.
+  - expected diff only.
+  - check/type/build green.
+  - targeted local Playwright green.
+  - full remote Playwright green.
+  - GitGuardian cleared or explicitly accepted by authorized maintainer.
+  - security review clear/deferred with rationale.
+  - strict maintainability review clear/deferred with rationale.
+  - independent final review clear/deferred with rationale.
+  - reviewer-visible browser evidence attached.
+  - human approval present.
+  - explicit user merge approval still required.
+- Commit:
+  - `docs(project): finalize PR 5148 evidence` when plan status/evidence changed after final code commit.
+
+## Per-Slice Agent Contract
+
+- Read this plan first.
+- Update `Progress` before and after slice.
+- Work one slice only.
+- Use exact uncommitted `git diff` or explicit commit range for review.
+- Review agent checks requirements/correctness first, quality second.
+- Separate simplification agent finds smaller implementation; does not re-argue scope.
+- Findings format: caveman basic; severity `Critical`, `Important`, `Minor`; status `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
+- Main agent verifies every finding against code before integration.
+- Verify again after integration.
+- Commit before next slice.
+
+## Independent Plan Review
+
+- Reviewer: Droid with `glm-5.2`; read-only repo/diff review.
+- Scope: plan completeness, slice independence, regression coverage, approval boundaries, missing merge gates, security/browser/docs coverage, overplanning.
+- Result: `DONE_WITH_CONCERNS`; 0 Critical, 5 Important, 5 Minor before reconciliation.
+- Accepted changes:
+  - treat Markdown pipeline/sanitizer as changed security surface.
+  - add `packages/markdown/src/Markdown.tsx` to behavior and security scope.
+  - distinguish shared K/L helper, T-local helper, and unchanged V test.
+  - verify same non-JS language in editor and preview.
+  - check generic token styling and list both globals stylesheets.
+  - name exact wiki validator command.
+- Rejected findings:
+  - “`grill-with-docs` unavailable”: global installed skill exists outside repo-local `.agents/skills`.
+  - “`thermo-nuclear-code-quality-review` unavailable”: global installed skill exists and repo instructions require it.
+  - “wiki validator unavailable”: repo skill documents global validator path; plan now names exact command.
+- Secondary internal review agent: stopped after timeout; no incomplete findings integrated.
+- Deferred changes: none.
+
+## Progress
+
+- `2026-07-10 | Planning | APPROVED | User approved execution with reasonable delegation to Agy. Live PR/refs/checks/review threads refreshed. Context7 research completed. Droid GLM review reconciled. | Commit plan alone, then Slice 1.`
+
+## Next Steps
+
+1. Commit plan alone.
+2. Execute Slice 1 only.
