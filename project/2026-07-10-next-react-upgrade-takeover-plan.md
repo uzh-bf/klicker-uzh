@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slice 0 active.
+Status: approved 2026-07-10; Slice 1 complete, paused before dependency changes.
 
 ## Goal
 
@@ -33,10 +33,12 @@ Success:
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/upgrade-next-react`
 - Target branch: `v3`
 - PR: none for replacement branch; rename this file to `project/2026-07-10-pr-<id>-next-react-upgrade-takeover-plan.md` after draft PR creation
-- Current local head: `191d7dff60312ee6f637c1d5e6bb804d844812d0`
-- Current local parent: `bd6df485b3401199468441116feded96c37f484d`
+- Pre-takeover local head: `191d7dff60312ee6f637c1d5e6bb804d844812d0`
+- Pre-takeover local parent: `bd6df485b3401199468441116feded96c37f484d`
 - Live `v3` checked 2026-07-10: `eef745d068ee26d48fb4020b3ae305a5e1c84f59`
-- Divergence: 1 ahead, 2 behind
+- Rebased inherited commit: `3825fa4e6` (from `191d7dff6`)
+- Rebased plan commit: `59b88b059` (from `07ed3e67c`)
+- Post-rebase divergence before normalization commit: 2 ahead, 0 behind
 - Historical source PRs: [#5091](https://github.com/uzh-bf/klicker-uzh/pull/5091), [#5111](https://github.com/uzh-bf/klicker-uzh/pull/5111)
 - Historical validated pre-TS6 source SHA: `7320867dd`
 - Historical plans/reports/screenshots: exist only on `origin/codex/next-16-upgrade`; evidence does not transfer to current SHA
@@ -155,6 +157,25 @@ Accepted changes:
 - required metadata-plan rename push/readback;
 - cross-linked shared supersession execution from TS plan;
 - corrected draft/review status and progress.
+
+### Slice 1 classification
+
+Completed 2026-07-10 against `origin/v3@eef745d06`.
+
+| Class | Files | Decision |
+| --- | --- | --- |
+| Keep and normalize in Slices 2-4 | Next/React package manifests and peer ranges; flat ESLint migration; `apps/chat/next.config.ts`; `packages/next-config`; app scripts; Next type-generation contract | Intent belongs in PR A, but exact versions, scripts, config, ignores, and type files are not accepted until their owning slice verifies them. |
+| Revert now | All 17 changed Cypress files; eight manage/PWA runtime and auth files; three generated transactional HTML files; five app tsconfigs; three tracked `next-env.d.ts` hunks | Restored from current `origin/v3`. Candidate compatibility fixes must reproduce on the normalized branch before reintroduction. Generated files must be regenerated under the final Node 24 dependency set. |
+| Move to TypeScript PR | Three rank SVG import edits in manage/PWA | Restored from `origin/v3`; provenance is TypeScript migration commit `d0d14a998`. |
+| Revert atomically in Slice 2 | Broad `pnpm-workspace.yaml` policy/override drift and inherited lockfile | Do not restore workspace policy alone because the lock override block and upgraded importers must be regenerated together. |
+| Reproduce first | Manage layout/Apollo/login redirects; manage/PWA KaTeX relocation; PWA login message pruning; Cypress rich-text/toast/save waits; transactional React render markers | Historical evidence is stale. Reapply one smallest fix at a time only after a current failure. |
+
+Review evidence:
+
+- Cypress classifier found coverage loss in `N-course-workflow` and `O-live-quiz-workflow`, plus removal of documented `preserveClientState` semantics in `commands.ts`; no inherited Cypress file was accepted.
+- Runtime classifier traced rank imports to the TS plan and found the five dual-bundler dev scripts, incomplete flat ESLint configs, obsolete shared Next config fields, and unproven auth changes.
+- Dependency classifier found stale React types, `next-pwa@7.3.3`, broad override drift, and cached transactional output; no dependency file was classified as TS-only.
+- No build, test, or browser proof was claimed in this classification slice.
 
 ## Resolved Decisions
 
@@ -590,17 +611,25 @@ Commit:
 - [x] Draft plan created in detached review worktree.
 - [x] Independent plan review completed and accepted findings integrated.
 - [x] Maintainer approves plan.
-- [ ] Slice 0 plan committed on owning branch.
-- [ ] Slice 1 branch rebased and inherited diff classified.
+- [x] Slice 0 plan committed on owning branch as `07ed3e67c`.
+- [x] Slice 1 branch rebased and inherited diff classified.
 - [ ] Slices 2-7 implemented and committed separately.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
 - [ ] Shared old-PR supersession gate in TypeScript plan approved and executed.
 - [ ] Merge separately approved.
 
-Current: Slice 0 — commit approved plan on owning branch.
+Evidence:
 
-Next: commit plan alone, then execute Slice 1 rebase/classification.
+- Slice 0 pre-commit `check:all` passed. Host used Node 26.4.0 and emitted engine warnings against required Node 24; clean Node 24 verification remains mandatory.
+- Backup refs: `backup/upgrade-next-react-pre-takeover-20260710` and `backup/upgrade-typescript-pre-takeover-20260710`.
+- Rebase: `origin/v3@eef745d06` is an ancestor; mapping `191d7dff6 -> 3825fa4e6` and `07ed3e67c -> 59b88b059`.
+- Normalization restored 17 Cypress files, eight unproven runtime/auth files, three TS-only asset imports, three generated email outputs, five tsconfigs, and three tracked `next-env.d.ts` hunks to `origin/v3`.
+- Three independent read-only classifiers covered Cypress, runtime/config, and dependency/lockfile scope.
+
+Current: Slice 1 complete. Work is paused before dependency changes.
+
+Next: review the Slice 1 scope reset, then start Slice 2 as one atomic manifest/policy/lockfile transaction under Node 24.16.0 and pnpm 11.5.0.
 
 ## Open Questions
 
@@ -610,7 +639,7 @@ Next: commit plan alone, then execute Slice 1 rebase/classification.
 
 ## Next Steps
 
-1. Review both takeover plans together.
-2. Approve or revise resolved decisions.
-3. Move this plan into owning worktree and commit it alone.
-4. Execute Slice 1 only; stop for review before dependency changes.
+1. Review the Slice 1 scope reset and classification matrix.
+2. Start Slice 2 only after that checkpoint is accepted.
+3. Re-query dependency versions and release ages; obtain approval before any external advisory audit.
+4. Update manifests, strict release-age policy, and lockfile atomically under the pinned Node/pnpm toolchain.

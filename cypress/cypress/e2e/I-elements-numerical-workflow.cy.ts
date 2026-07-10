@@ -35,9 +35,9 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      this.data.NR.content
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(this.data.NR.content)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="set-numerical-minimum"]')
       .click()
@@ -111,9 +111,9 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
       .clear()
       .type(this.data.NR.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.NR.contentEdited)
+      .realType(this.data.NR.contentEdited)
     cy.get('[data-cy="set-numerical-minimum"]')
       .click()
       .clear()

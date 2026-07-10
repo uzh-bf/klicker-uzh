@@ -25,9 +25,9 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      this.data.SC.content
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(this.data.SC.content)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
@@ -128,9 +128,9 @@ describe('Test creation and editing functionalities, validation, etc. for Single
       .clear()
       .type(this.data.SC.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.SC.contentEdited)
+      .realType(this.data.SC.contentEdited)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .clear()

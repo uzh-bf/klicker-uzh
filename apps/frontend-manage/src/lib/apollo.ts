@@ -17,6 +17,7 @@ import { getOperationAST } from 'graphql'
 import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
+import Router from 'next/router'
 import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
@@ -29,17 +30,6 @@ interface PageProps {
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
-let redirectingToLogin = false
-
-function redirectToLogin() {
-  if (redirectingToLogin || window.location.pathname === '/login') return
-
-  redirectingToLogin = true
-  const currentPath = `${window.location.pathname}${window.location.search}`
-  window.location.assign(
-    `/login?expired=true&redirect_to=${encodeURIComponent(currentPath || '/')}`
-  )
-}
 
 function createIsomorphLink() {
   const isBrowser = typeof window !== 'undefined'
@@ -83,7 +73,13 @@ function createIsomorphLink() {
 
         // redirect the user to the login page on errors
         if (isBrowser && message === 'Unauthorized') {
-          redirectToLogin()
+          Router.push(
+            `/login?expired=true&redirect_to=${
+              encodeURIComponent(
+                window?.location?.pathname + (window?.location?.search ?? '')
+              ) ?? '/'
+            }`
+          )
         }
       })
     if (networkError) console.log(`[Network error]`, networkError)

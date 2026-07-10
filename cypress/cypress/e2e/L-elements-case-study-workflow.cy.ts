@@ -79,12 +79,12 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      this.data.CS.content
-    )
-    cy.get('[data-cy="insert-question-explanation"]').typeRichText(
-      this.data.CS.explanation
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(this.data.CS.content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .realType(this.data.CS.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // select an answer collection
@@ -541,17 +541,17 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     // missing question content -> invalid
     cy.get('[data-cy="insert-question-text"]').realClick().clear()
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      this.data.CS.content
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(this.data.CS.content)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // missing question explanation -> valid
     cy.get('[data-cy="insert-question-explanation"]').realClick().clear()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
-    cy.get('[data-cy="insert-question-explanation"]').typeRichText(
-      this.data.CS.explanation
-    )
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .realType(this.data.CS.explanation)
 
     // range criterion name, min, max, step required -> invalid (if removed)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
@@ -848,9 +848,9 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .clear()
       .type(this.data.CS.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.CS.contentEdited)
+      .realType(this.data.CS.contentEdited)
 
     cy.selectOption(
       '[data-cy="select-answer-collection"]',
@@ -1257,12 +1257,12 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      this.data.CS_INLINE.content
-    )
-    cy.get('[data-cy="insert-question-explanation"]').typeRichText(
-      this.data.CS_INLINE.explanation
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(this.data.CS_INLINE.content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .realType(this.data.CS_INLINE.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // check if button for manual creation is present and click it
@@ -1452,13 +1452,13 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .clear()
       .type(this.data.CS_INLINE.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.CS_INLINE.contentEdited)
+      .realType(this.data.CS_INLINE.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.CS_INLINE.explanationEdited)
+      .realType(this.data.CS_INLINE.explanationEdited)
 
     // ensure that switching to manual item creation is not possible during editing
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist')

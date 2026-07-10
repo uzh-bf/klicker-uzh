@@ -30,9 +30,9 @@ describe('Create different types of elements (with and without sample solution) 
       '[data-cy="select-question-status"]',
       messages.shared.DRAFT.statusLabel
     )
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      this.data.duplication.content
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(this.data.duplication.content)
     cy.get('[data-cy="insert-answer-field-0"]').realClick().realType('50%')
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
@@ -74,9 +74,9 @@ describe('Create different types of elements (with and without sample solution) 
   // #region
   function enterSCQuestionContent(data) {
     cy.get('[data-cy="insert-question-title"]').type(data.autoSave.title)
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      data.autoSave.content
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(data.autoSave.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .realType(data.autoSave.choices[0].value)
@@ -207,9 +207,9 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.content
     )
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.autoSave.contentEdited)
+      .realType(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="close-element-modal"]').click()
 
@@ -241,9 +241,9 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.content
     )
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.autoSave.contentEdited)
+      .realType(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="close-element-modal"]').click()
 
@@ -282,9 +282,9 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.content
     )
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.autoSave.contentEdited)
+      .realType(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="save-new-question"]').click()
 
@@ -329,9 +329,9 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.titleEditedDuplicated
     )
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.autoSave.contentEdited2)
+      .realType(this.data.autoSave.contentEdited2)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="close-element-modal"]').click()
 
@@ -559,9 +559,9 @@ describe('Create different types of elements (with and without sample solution) 
       .clear()
       .type(this.data.update.title2)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.update.content2)
+      .realType(this.data.update.content2)
 
     // update choices of the question
     cy.wrap(this.data.update.choices2).each((choice: { value: string }, ix) => {
@@ -638,9 +638,9 @@ describe('Create different types of elements (with and without sample solution) 
       .clear()
       .type(this.data.update.title3)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.update.content3)
+      .realType(this.data.update.content3)
 
     // update choices of the question
     cy.wrap(this.data.update.choices3).each((choice: { value: string }, ix) => {

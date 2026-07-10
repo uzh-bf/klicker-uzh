@@ -14,55 +14,6 @@ import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import LoginForm from '../components/forms/LoginForm'
 
-type LocaleMessages = typeof import('@klicker-uzh/i18n/messages/en').default
-
-function getLoginMessages(messages: LocaleMessages) {
-  return {
-    shared: {
-      generic: {
-        forgotPassword: messages.shared.generic.forgotPassword,
-        login: messages.shared.generic.login,
-        password: messages.shared.generic.password,
-        passwordError: messages.shared.generic.passwordError,
-        signin: messages.shared.generic.signin,
-        studentLoginError: messages.shared.generic.studentLoginError,
-        systemError: messages.shared.generic.systemError,
-        usernameError: messages.shared.generic.usernameError,
-        usernameOrEmail: messages.shared.generic.usernameOrEmail,
-      },
-      login: {
-        installButton: messages.shared.login.installButton,
-      },
-    },
-    pwa: {
-      general: {
-        magicLinkLogin: messages.pwa.general.magicLinkLogin,
-        magicLinkSent: messages.pwa.general.magicLinkSent,
-        passwordLogin: messages.pwa.general.passwordLogin,
-        waitingForActivation: messages.pwa.general.waitingForActivation,
-      },
-      joinCourse: {
-        coursePinFormat: messages.pwa.joinCourse.coursePinFormat,
-        coursePinNumerical: messages.pwa.joinCourse.coursePinNumerical,
-        coursePinRequired: messages.pwa.joinCourse.coursePinRequired,
-      },
-      login: {
-        coursePinInvalid: messages.pwa.login.coursePinInvalid,
-        createAccountJoin: messages.pwa.login.createAccountJoin,
-        existingParticipantAccount:
-          messages.pwa.login.existingParticipantAccount,
-        installAndroid: messages.pwa.login.installAndroid,
-        installIOS: messages.pwa.login.installIOS,
-        joinCourseTooltip: messages.pwa.login.joinCourseTooltip,
-        signup: messages.pwa.login.signup,
-      },
-      profile: {
-        forgotPasswordInfo: messages.pwa.profile.forgotPasswordInfo,
-      },
-    },
-  }
-}
-
 function Login() {
   const t = useTranslations()
   const router = useRouter()
@@ -228,12 +179,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // Non-assessment mode: render as usual with messages
   const locale = ctx.locale || ctx.defaultLocale || 'en'
-  const messages = (await import(`@klicker-uzh/i18n/messages/${locale}`))
-    .default
-
   return {
     props: {
-      messages: getLoginMessages(messages),
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

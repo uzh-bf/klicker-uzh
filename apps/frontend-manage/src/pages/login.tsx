@@ -1,30 +1,25 @@
-import { GetServerSideProps } from 'next'
+import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 function Login() {
+  const router = useRouter()
+
+  useEffect(() => {
+    let origin = '/'
+
+    const urlParams = new URLSearchParams(window?.location?.search)
+    if (urlParams?.get('redirect_to')) {
+      origin = decodeURIComponent(urlParams.get('redirect_to') as string)
+    }
+
+    const redirection = encodeURIComponent(
+      `${process.env.NEXT_PUBLIC_MANAGE_URL as string}${origin}`
+    )
+
+    router.push(`${process.env.NEXT_PUBLIC_AUTH_URL}?redirectTo=${redirection}`)
+  })
+
   return null
-}
-
-export const getServerSideProps: GetServerSideProps = async ({ query }) => {
-  const manageUrl = process.env.NEXT_PUBLIC_MANAGE_URL as string
-  const authUrl = process.env.NEXT_PUBLIC_AUTH_URL as string
-  const manageOrigin = new URL(manageUrl)
-  const redirectTo = Array.isArray(query.redirect_to)
-    ? query.redirect_to[0]
-    : query.redirect_to
-  let target = new URL(redirectTo ?? '/', manageUrl)
-
-  if (target.origin !== manageOrigin.origin) {
-    target = manageOrigin
-  }
-
-  return {
-    redirect: {
-      destination: `${authUrl}?redirectTo=${encodeURIComponent(
-        target.toString()
-      )}`,
-      permanent: false,
-    },
-  }
 }
 
 export default Login

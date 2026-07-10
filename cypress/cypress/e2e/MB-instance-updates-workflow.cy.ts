@@ -4,11 +4,6 @@ import { getDatetimeValidationString } from './helpers'
 const currentYear = new Date().getFullYear()
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
-  function saveActivityEditAndOpenOverview() {
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="open-activity-overview"]').should('be.visible').click()
-  }
-
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -401,7 +396,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-0-block-1"]').should('not.exist')
     cy.get('[data-cy="update-element-1-block-1"]').should('not.exist')
     cy.get('[data-cy="update-element-2-block-1"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // verify that the instance update for the live quiz went into effect
     cy.get('[data-cy="activities"]').click()
@@ -458,7 +453,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-0-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-1-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-2-stack-1"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // verify that the instance update for the practice quiz went into effect
     cy.get('[data-cy="activities"]').click()
@@ -514,7 +509,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-0-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-1-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-2-stack-1"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // verify that the instance update for the microlearning went into effect
     cy.get('[data-cy="activities"]').click()
@@ -570,7 +565,8 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-3-stack-0"]').should('not.exist')
     cy.get('[data-cy="update-element-4-stack-0"]').should('not.exist')
     cy.get('[data-cy="update-element-5-stack-0"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.wait(1000) // wait for the submission to complete
 
     // verify that the instance update for the group activity went into effect
     cy.get('[data-cy="activities"]').click()
@@ -784,7 +780,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-0-block-1"]').should('not.exist')
     cy.get('[data-cy="update-element-1-block-1"]').should('not.exist')
     cy.get('[data-cy="update-element-2-block-1"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // verify that the instance update for the live quiz went into effect
     cy.get('[data-cy="activities"]').click()
@@ -846,7 +842,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-0-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-1-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-2-stack-1"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // verify that the instance update for the practice quiz went into effect
     cy.get('[data-cy="activities"]').click()
@@ -908,7 +904,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-0-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-1-stack-1"]').should('not.exist')
     cy.get('[data-cy="update-element-2-stack-1"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // verify that the instance update for the microlearning went into effect
     cy.get('[data-cy="activities"]').click()
@@ -969,7 +965,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-3-stack-0"]').should('not.exist')
     cy.get('[data-cy="update-element-4-stack-0"]').should('not.exist')
     cy.get('[data-cy="update-element-5-stack-0"]').should('not.exist')
-    saveActivityEditAndOpenOverview()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // verify that the instance update for the group activity went into effect
     cy.get('[data-cy="activities"]').click()

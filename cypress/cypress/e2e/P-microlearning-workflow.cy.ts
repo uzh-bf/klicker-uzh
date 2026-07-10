@@ -1568,9 +1568,9 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.newSETitle)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.manipulation.newSEContent)
+      .realType(this.data.manipulation.newSEContent)
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(1000) // wait for the question to be saved and the modal to be closed
 

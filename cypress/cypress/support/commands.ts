@@ -7,55 +7,6 @@ import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
 
-const richTextSelector = '[contenteditable="true"]'
-
-function getRichTextSubject(subject: unknown): JQuery<HTMLElement> | undefined {
-  if (!subject) return undefined
-
-  const $subject = Cypress.$(subject as any) as JQuery<HTMLElement>
-  const $richText = $subject
-    .filter(richTextSelector)
-    .add($subject.closest(richTextSelector))
-    .add($subject.find(richTextSelector))
-
-  return $richText.length > 0 ? $richText.first() : undefined
-}
-
-Cypress.Commands.add(
-  'typeRichText',
-  { prevSubject: 'element' },
-  (subject, text: string, options: Partial<Cypress.TypeOptions> = {}) => {
-    const $subject = Cypress.$(subject as any) as JQuery<HTMLElement>
-    const $richText = getRichTextSubject(subject) ?? $subject.first()
-
-    return cy
-      .wrap($richText, { log: false })
-      .scrollIntoView()
-      .should('be.visible')
-      .click()
-      .type(text, {
-        parseSpecialCharSequences: false,
-        ...options,
-      })
-      .then(() => undefined)
-  }
-)
-
-Cypress.Commands.add('dismissToasts', () => {
-  cy.get('body').then(($body) => {
-    const $closeButtons = $body.find(
-      '[data-sonner-toast] [data-close-button]:not([data-disabled="true"])'
-    )
-
-    if ($closeButtons.length === 0) return
-
-    cy.wrap($closeButtons, { log: false }).each(($button) => {
-      cy.wrap($button, { log: false }).click({ force: true })
-    })
-    cy.get('[data-sonner-toast]', { timeout: 2000 }).should('not.exist')
-  })
-})
-
 // Only do this in headless/CI runs to keep rich errors locally
 if (!Cypress.config('isInteractive')) {
   configure({
@@ -166,6 +117,18 @@ Cypress.Commands.add('cleanup', () => {
   cy.reload()
 })
 
+const clearPersistedClientState = () => {
+  return cy.wrap(null, { log: false }).then(async () => {
+    await localforage.clear()
+  })
+}
+
+const assertManageSession = () => {
+  cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
+  cy.location('pathname').should('not.eq', '/login')
+  cy.location('search').should('not.contain', 'expired=true')
+}
+
 const loginFactory = (
   tokenData: {
     email: string
@@ -207,6 +170,10 @@ const loginFactory = (
     })
 
     cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
+
+    if (!redirectUrl) {
+      assertManageSession()
+    }
   }
 }
 
@@ -326,19 +293,50 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add('logoutUser', () => {
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+  clearPersistedClientState()
   cy.clearCookie('next-auth.session-token')
 })
 
-Cypress.Commands.add('loginStudent', () => {
-  cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
+interface StudentLoginOptions {
+  preserveClientState?: boolean
+}
+
+Cypress.Commands.add('loginStudent', (options: StudentLoginOptions = {}) => {
+  cy.loginStudentPassword({
+    username: Cypress.env('STUDENT_USERNAME'),
+    preserveClientState: options.preserveClientState,
+  })
 })
 
 Cypress.Commands.add(
   'loginStudentPassword',
-  ({ username }: { username: string }) => {
+  ({
+    username,
+    preserveClientState = false,
+  }: { username: string } & StudentLoginOptions) => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
+    cy.visit(
+      Cypress.env('URL_STUDENT_LOGIN'),
+      preserveClientState
+        ? undefined
+        : {
+            onBeforeLoad: (win) => {
+              win.localStorage.clear()
+              win.sessionStorage.clear()
+              try {
+                win.indexedDB?.deleteDatabase('localforage')
+              } catch {
+                // Fall back to the regular localforage clear after load.
+              }
+            },
+          }
+    )
+    if (!preserveClientState) {
+      clearPersistedClientState()
+    }
     cy.get('[data-cy="username-field"]').click().type(username)
     cy.get('[data-cy="password-field"]')
       .click()
@@ -1863,9 +1861,12 @@ declare global {
       loginInstitutionalCatalyst3(): Chainable<void>
       loginInstitutionalCatalyst4(): Chainable<void>
       logoutUser(): Chainable<void>
-      loginStudent(): Chainable<void>
+      loginStudent(options?: StudentLoginOptions): Chainable<void>
       loginAssessmentStudent(): Chainable<void>
-      loginStudentPassword({ username }: { username: string }): Chainable<void>
+      loginStudentPassword({
+        username,
+        preserveClientState,
+      }: { username: string } & StudentLoginOptions): Chainable<void>
       createAnswerCollection({
         name,
         description,
@@ -2095,11 +2096,6 @@ declare global {
         stackIx,
         instanceIx,
       }: TotalPointsArgs & StackInstanceArgs): Chainable<void>
-      typeRichText(
-        text: string,
-        options?: Partial<TypeOptions>
-      ): Chainable<void>
-      dismissToasts(): Chainable<void>
     }
   }
 }

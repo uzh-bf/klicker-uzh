@@ -34,9 +34,9 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     cy.get(
       `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
     ).realClick()
-    cy.get('[data-cy="insert-question-text"]').typeRichText(
-      this.data.CT.content
-    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .realType(this.data.CT.content)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
@@ -78,9 +78,9 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
-      .typeRichText(this.data.CT.contentEdited)
+      .realType(this.data.CT.contentEdited)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 

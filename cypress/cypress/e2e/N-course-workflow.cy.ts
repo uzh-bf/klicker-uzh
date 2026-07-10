@@ -1831,6 +1831,12 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').click()
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
 
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
@@ -2199,6 +2205,10 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').click()
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
+    cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`).should('exist')
 
     cy.get(`[data-cy="revoke-permission-${this.data.sharing.group1}"]`).click()
     cy.get('[data-cy="confirm-revocation"]').click()
