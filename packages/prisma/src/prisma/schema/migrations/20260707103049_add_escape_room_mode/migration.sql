@@ -70,6 +70,9 @@ CREATE UNIQUE INDEX "EscapeRoomAttempt_participantId_microLearningId_key" ON "pu
 -- CreateIndex
 CREATE UNIQUE INDEX "EscapeRoomAttempt_groupId_groupActivityId_key" ON "public"."EscapeRoomAttempt"("groupId", "groupActivityId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "EscapeRoomAttempt_participantId_elementBlockId_key" ON "public"."EscapeRoomAttempt"("participantId", "elementBlockId");
+
 -- AddForeignKey
 ALTER TABLE "public"."EscapeRoomAttempt" ADD CONSTRAINT "EscapeRoomAttempt_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "public"."Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

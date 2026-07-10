@@ -1,11 +1,5 @@
 // @ts-nocheck
 import { expect } from '@playwright/test'
-import {
-  LECTURER_PASSWORD,
-  LECTURER_SHORTNAME,
-  STUDENT_PASSWORD,
-  STUDENT_USERNAME,
-} from '../util/constants.js'
 import { test } from '../util/fixtures.js'
 import { loginLecturer, loginStudent } from '../util/workflow.js'
 
@@ -15,10 +9,7 @@ test.describe.serial('Escape Room Quiz E2E Workflows', () => {
 
   test('Create Escape Room Practice Quiz', async ({ page }) => {
     // 1. Login as lecturer
-    await loginLecturer(page, {
-      usernameOrEmail: LECTURER_SHORTNAME,
-      password: LECTURER_PASSWORD,
-    })
+    await loginLecturer(page)
 
     // 2. Click create practice quiz
     await page.getByTestId('create-practice-quiz').click()
@@ -64,10 +55,7 @@ test.describe.serial('Escape Room Quiz E2E Workflows', () => {
 
   test('Student Solves Escape Room Practice Quiz', async ({ page }) => {
     // 1. Log in as student
-    await loginStudent(page, {
-      usernameOrEmail: STUDENT_USERNAME,
-      password: STUDENT_PASSWORD,
-    })
+    await loginStudent(page)
 
     // 2. Navigate to course page and open the quiz
     await page.goto('/')
