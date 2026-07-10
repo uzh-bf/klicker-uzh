@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slice 4 complete.
+Status: approved 2026-07-10; Slice 5 complete.
 
 ## Goal
 
@@ -660,7 +660,8 @@ Commit:
 - [x] Slice 2 dependency contract implemented, reviewed, and locally verified; external audit unavailable by execution policy.
 - [x] Slice 3 deterministic Next configuration implemented, reviewed, and locally verified; clean DevPod runtime blocked by container DNS with host fallback recorded.
 - [x] Slice 4 clean-checkout-safe Next type generation implemented, reviewed, and locally verified.
-- [ ] Slices 5-7 implemented and committed separately.
+- [x] Slice 5 runtime fixes implemented, independently reviewed, and verified.
+- [ ] Slices 6-7 implemented and committed separately.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
 - [ ] Shared old-PR supersession gate in TypeScript plan approved and executed.
@@ -682,9 +683,21 @@ Evidence:
 - Initial correctness review requested clearer evidence plus narrower docs language; both were integrated. Post-fix correctness review verified each check config includes all source/production types and zero dev types. Post-fix simplification review confirmed three local child configs are the smallest durable fix. No final findings remained.
 - Final Opengrep auto scan ran 51 applicable rules across 13 changed app config files with zero findings.
 
-Current: Slice 4 implementation, diagnosis, artifact-free proof, browser smoke, correctness review, simplification review, wiki validation, static scan, `check:all`, and production build are complete. This project record and implementation form the atomic Slice 4 commit boundary.
+Slice 5 evidence:
 
-Next: commit Slice 4 separately, then start Slice 5 runtime compatibility reproduction only after a new explicit continuation.
+- Reproduced the manage render-phase redirect under Next 16.2.9: an expired session redirected to `/login` without preserving the requested path. Reproduced the public manage boundary accepting an external `redirect_to` before the fix (HTTP 200 instead of a safe auth redirect).
+- Moved the manage redirect into an effect, preserved pathname and query, and moved the manage login handoff into `getServerSideProps`. Same-origin targets survive; external and malformed targets fail closed to the manage root.
+- Moved PWA return-target validation to the server-provided page props. Configured-PWA absolute targets normalize to relative client navigation, the exact configured chat origin uses a hard navigation, and every other origin or malformed target fails closed to the PWA root.
+- Added `AUTH_LECTURER_ALLOWED_HOSTS` and `AUTH_STUDENT_ALLOWED_HOSTS` to Turbo global environment propagation after a clean namespaced DevPod proved that Turbo stripped both variables from the auth child process and rejected the valid delegated-login callback. The same stack accepted the namespaced callback after the config change.
+- Removed the auth-page tooltip wrapper after React 19 browser evidence showed nested-button hydration errors. The disabled Edu-ID button retains an accessible description and a non-interactive native-title wrapper; a fresh auth render had no console errors.
+- Focused real-Chrome Playwright: five final login/redirect regressions passed after the fix, covering hostile PWA rejection, absolute same-PWA return, configured chatbot return, expired manage return, and external/malformed manage rejection. Two existing chat logged-out redirect tests passed.
+- Native browser: delegated lecturer login returned to `/resources/answerCollections?tab=shared`; participant login returned to PWA home; controller displayed the seeded course selector; tested auth, manage, PWA, and control pages had no fresh console errors. Authenticated chat stayed on the chatbot URL rather than `/noLogin`, but the dev-only page remained at `Loading chatbot...` because the stack lacked Langfuse credentials and logged exporter errors. Clean authenticated chat rendering remains a Slice 8 environment gate.
+- `pnpm run check:all` passed. `pnpm run build` passed all 21 build tasks. After the final PWA review fixes, its typecheck and production build passed again and Playwright TypeScript remained clean. Final Opengrep ran 213 applicable rules over six changed runtime/config/test files with zero findings. Existing framework, large-page-data, lint-warning, and missing-local-provider messages remain non-blocking baseline noise.
+- The simplification review found two cross-app contract regressions before commit: legitimate absolute chat returns and absolute same-PWA returns. Both were fixed with explicit origins and regression coverage. Correctness review prompted hash-safe `router.asPath` preservation and an accessible disabled-login explanation. Final correctness and simplification re-reviews reported no findings.
+
+Current: Slice 5 implementation, browser proof, full checks/build, static scan, correctness review, and simplification review are complete. This project record and implementation form the atomic Slice 5 commit boundary.
+
+Next: commit Slice 5 separately. Start Slice 6 only after a new explicit continuation.
 
 ## Open Questions
 
@@ -694,4 +707,4 @@ Next: commit Slice 4 separately, then start Slice 5 runtime compatibility reprod
 
 ## Next Steps
 
-1. Start Slice 5 runtime compatibility reproduction after the Slice 4 commit boundary.
+1. Start Slice 6 legacy e2e repair only after the Slice 5 commit boundary and a new explicit continuation.

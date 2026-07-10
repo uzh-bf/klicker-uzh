@@ -1,13 +1,7 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
 import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
-import {
-  Button,
-  Checkbox,
-  H1,
-  Tooltip,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, Checkbox, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
@@ -59,10 +53,12 @@ function SignInOutButton() {
     )
   }
 
+  const eduIdLoginHintId = 'eduid-login-disabled-reason'
   const eduIdLoginButton = (
     <Button
       fluid
       disabled={!tosChecked}
+      aria-describedby={!tosChecked ? eduIdLoginHintId : undefined}
       data={{ cy: 'eduid-login-button' }}
       className={{ root: 'p-4 disabled:opacity-50' }}
       onClick={() =>
@@ -131,13 +127,17 @@ function SignInOutButton() {
         checked={tosChecked}
       />
 
-      {!tosChecked ? (
-        <Tooltip tooltip={t('auth.tosAgreementRequired')}>
-          {eduIdLoginButton}
-        </Tooltip>
-      ) : (
-        eduIdLoginButton
+      {!tosChecked && (
+        <span id={eduIdLoginHintId} className="sr-only">
+          {t('auth.tosAgreementRequired')}
+        </span>
       )}
+      <span
+        className="block"
+        title={!tosChecked ? t('auth.tosAgreementRequired') : undefined}
+      >
+        {eduIdLoginButton}
+      </span>
       <Button
         className={{
           root: 'justify-center italic disabled:opacity-50',
