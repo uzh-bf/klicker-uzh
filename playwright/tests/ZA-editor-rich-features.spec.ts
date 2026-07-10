@@ -87,8 +87,9 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
 
     // Fill cell text and check focus actions
     const cellA1 = tableElement.locator('td').first()
-    await cellA1.click()
-    await cellA1.pressSequentially('CellA1')
+    await cellA1.locator('p').click()
+    await page.keyboard.type('CellA1')
+    await expect(cellA1).toHaveText('CellA1')
 
     // Focused in a cell: verify the Markdown-safe contextual toolbar appears
     const addRowBtn = page.getByTestId('table-add-row')
