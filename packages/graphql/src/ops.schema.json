@@ -23517,6 +23517,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "escapeRoomIntroText",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "escapeRoomTimeLimit",
                 "description": null,
                 "type": {
@@ -24052,6 +24064,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "escapeRoomIntroText",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "escapeRoomTimeLimit",
                 "description": null,
                 "type": {
@@ -24356,6 +24380,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "escapeRoomIntroText",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -25592,6 +25628,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "escapeRoomIntroText",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "escapeRoomTimeLimit",
                 "description": null,
                 "type": {
@@ -26034,6 +26082,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "escapeRoomIntroText",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "escapeRoomTimeLimit",
                 "description": null,
                 "type": {
@@ -26208,6 +26268,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "escapeRoomIntroText",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
                   "ofType": null
                 },
                 "defaultValue": null,

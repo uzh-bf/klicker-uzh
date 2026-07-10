@@ -205,6 +205,7 @@ function MicroLearningWizard({
     isEscapeRoom: false,
     escapeRoomTimeLimit: '60',
     escapeRoomHintPenalty: '0',
+    escapeRoomIntroText: '',
   }
 
   const workflowItems = [
@@ -279,6 +280,9 @@ function MicroLearningWizard({
       initialValues?.escapeRoomConfig?.hintPenalty !== null
         ? String(initialValues.escapeRoomConfig.hintPenalty)
         : formDefaultValues.escapeRoomHintPenalty,
+    escapeRoomIntroText:
+      initialValues?.escapeRoomConfig?.introText ??
+      formDefaultValues.escapeRoomIntroText,
   })
 
   const [createMicroLearning, { data: creationData }] = useMutation(

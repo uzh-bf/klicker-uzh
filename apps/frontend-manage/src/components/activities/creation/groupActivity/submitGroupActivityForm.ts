@@ -81,6 +81,9 @@ async function submitGroupActivityForm({
           escapeRoomHintPenalty: values.isEscapeRoom
             ? parseInt(values.escapeRoomHintPenalty ?? '0', 10)
             : undefined,
+          escapeRoomIntroText: values.isEscapeRoom
+            ? values.escapeRoomIntroText || undefined
+            : undefined,
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
@@ -162,6 +165,9 @@ async function submitGroupActivityForm({
             : undefined,
           escapeRoomHintPenalty: values.isEscapeRoom
             ? parseInt(values.escapeRoomHintPenalty ?? '0', 10)
+            : undefined,
+          escapeRoomIntroText: values.isEscapeRoom
+            ? values.escapeRoomIntroText || undefined
             : undefined,
         },
         update: (cache, { data: res }) => {

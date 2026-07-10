@@ -189,6 +189,7 @@ function PracticeQuizWizard({
     isEscapeRoom: false,
     escapeRoomTimeLimit: '60',
     escapeRoomHintPenalty: '0',
+    escapeRoomIntroText: '',
   }
 
   const workflowItems = [
@@ -261,6 +262,9 @@ function PracticeQuizWizard({
       initialValues?.escapeRoomConfig?.hintPenalty !== null
         ? String(initialValues.escapeRoomConfig.hintPenalty)
         : formDefaultValues.escapeRoomHintPenalty,
+    escapeRoomIntroText:
+      initialValues?.escapeRoomConfig?.introText ??
+      formDefaultValues.escapeRoomIntroText,
   })
 
   const [createPracticeQuiz, { data: creationData }] = useMutation(

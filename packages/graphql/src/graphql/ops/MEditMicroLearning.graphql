@@ -11,6 +11,7 @@ mutation EditMicroLearning(
   $isEscapeRoom: Boolean
   $escapeRoomTimeLimit: Int
   $escapeRoomHintPenalty: Int
+  $escapeRoomIntroText: String
 ) {
   editMicroLearning(
     id: $id
@@ -25,6 +26,7 @@ mutation EditMicroLearning(
     isEscapeRoom: $isEscapeRoom
     escapeRoomTimeLimit: $escapeRoomTimeLimit
     escapeRoomHintPenalty: $escapeRoomHintPenalty
+    escapeRoomIntroText: $escapeRoomIntroText
   ) {
     ...ActivityInfoData
   }

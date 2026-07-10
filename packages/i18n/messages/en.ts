@@ -2064,6 +2064,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomHintPenaltyRequired: 'Hint penalty is required',
       escapeRoomHintPenaltyMin: 'Must be a non-negative number of seconds',
       escapeRoomHintPenaltyMax: 'Hint penalty may not exceed 3600 seconds (1h)',
+      escapeRoomIntroText: 'Intro Story (optional)',
+      escapeRoomIntroTextPlaceholder:
+        'Set the scene for your participants — shown on the start screen before the timer begins (Markdown supported)',
+      escapeRoomIntroTextMax: 'Intro story may not exceed 5000 characters',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
       groupActivityInformation:

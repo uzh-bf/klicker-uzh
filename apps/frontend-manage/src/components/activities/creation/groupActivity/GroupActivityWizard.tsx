@@ -231,6 +231,7 @@ function GroupActivityWizard({
     isEscapeRoom: false,
     escapeRoomTimeLimit: '60',
     escapeRoomHintPenalty: '0',
+    escapeRoomIntroText: '',
   }
 
   const workflowItems = [
@@ -313,6 +314,9 @@ function GroupActivityWizard({
       initialValues?.escapeRoomConfig?.hintPenalty !== null
         ? String(initialValues.escapeRoomConfig.hintPenalty)
         : formDefaultValues.escapeRoomHintPenalty,
+    escapeRoomIntroText:
+      initialValues?.escapeRoomConfig?.introText ??
+      formDefaultValues.escapeRoomIntroText,
   })
 
   const [createGroupActivity, { data: creationData }] = useMutation(

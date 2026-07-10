@@ -94,6 +94,9 @@ async function submitMicrolearningForm({
       escapeRoomHintPenalty: values.isEscapeRoom
         ? parseInt(values.escapeRoomHintPenalty ?? '0', 10)
         : undefined,
+      escapeRoomIntroText: values.isEscapeRoom
+        ? values.escapeRoomIntroText || undefined
+        : undefined,
     }
 
     if (editMode && id) {

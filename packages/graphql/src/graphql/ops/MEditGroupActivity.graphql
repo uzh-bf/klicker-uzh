@@ -12,6 +12,7 @@ mutation EditGroupActivity(
   $isEscapeRoom: Boolean
   $escapeRoomTimeLimit: Int
   $escapeRoomHintPenalty: Int
+  $escapeRoomIntroText: String
 ) {
   editGroupActivity(
     id: $id
@@ -27,6 +28,7 @@ mutation EditGroupActivity(
     isEscapeRoom: $isEscapeRoom
     escapeRoomTimeLimit: $escapeRoomTimeLimit
     escapeRoomHintPenalty: $escapeRoomHintPenalty
+    escapeRoomIntroText: $escapeRoomIntroText
   ) {
     ...ActivityInfoData
   }

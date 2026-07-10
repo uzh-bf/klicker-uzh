@@ -26,6 +26,7 @@ interface CommonFormValues {
   isEscapeRoom?: boolean
   escapeRoomTimeLimit?: string
   escapeRoomHintPenalty?: string
+  escapeRoomIntroText?: string
 }
 
 export interface ElementInstanceFormInput {

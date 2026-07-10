@@ -30,5 +30,8 @@ export function useEscapeRoomYupFields() {
           .max(3600, t('manage.activityWizard.escapeRoomHintPenaltyMax')),
       otherwise: (schema) => schema.notRequired(),
     }),
+    escapeRoomIntroText: yup
+      .string()
+      .max(5000, t('manage.activityWizard.escapeRoomIntroTextMax')),
   }
 }

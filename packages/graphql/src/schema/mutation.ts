@@ -3071,6 +3071,7 @@ export const Mutation = builder.mutationType({
             isEscapeRoom: t.arg.boolean({ required: false }),
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
@@ -3101,6 +3102,7 @@ export const Mutation = builder.mutationType({
             isEscapeRoom: t.arg.boolean({ required: false }),
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
@@ -3128,6 +3130,7 @@ export const Mutation = builder.mutationType({
             isEscapeRoom: t.arg.boolean({ required: false }),
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await MicroLearningService.manipulateMicroLearning(args, ctx)
@@ -3152,6 +3155,7 @@ export const Mutation = builder.mutationType({
             isEscapeRoom: t.arg.boolean({ required: false }),
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
@@ -3216,6 +3220,7 @@ export const Mutation = builder.mutationType({
             isEscapeRoom: t.arg.boolean({ required: false }),
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await GroupService.manipulateGroupActivity(args, ctx)
@@ -3241,6 +3246,7 @@ export const Mutation = builder.mutationType({
             isEscapeRoom: t.arg.boolean({ required: false }),
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),

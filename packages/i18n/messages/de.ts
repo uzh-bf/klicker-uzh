@@ -2085,6 +2085,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomHintPenaltyMin: 'Muss eine nicht-negative Anzahl Sekunden sein',
       escapeRoomHintPenaltyMax:
         'Hinweis-Strafe darf 3600 Sekunden (1h) nicht überschreiten',
+      escapeRoomIntroText: 'Einleitungsgeschichte (optional)',
+      escapeRoomIntroTextPlaceholder:
+        'Stimmen Sie die Teilnehmenden ein — wird auf dem Startbildschirm vor dem Start des Timers angezeigt (Markdown wird unterstützt)',
+      escapeRoomIntroTextMax:
+        'Die Einleitungsgeschichte darf 5000 Zeichen nicht überschreiten',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityInformation:

@@ -204,6 +204,7 @@ function PracticeQuiz({
             ).length ?? 0
           }
           totalStacks={quiz.numOfStacks ?? quiz.stacks?.length ?? 0}
+          introText={quiz.escapeRoomConfig?.introText}
         />
       )}
       <div

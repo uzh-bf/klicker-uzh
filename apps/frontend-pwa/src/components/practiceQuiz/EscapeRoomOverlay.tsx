@@ -6,6 +6,7 @@ import {
   faTrophy,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode } from 'react'
@@ -32,6 +33,9 @@ interface EscapeRoomOverlayProps {
   attempt?: EscapeRoomAttemptStats | null
   clearedStacks?: number
   totalStacks?: number
+  // lecturer-authored story shown on the start screen instead of the
+  // generic mode description (markdown supported)
+  introText?: string | null
 }
 
 function formatTime(seconds: number) {
@@ -62,6 +66,7 @@ export default function EscapeRoomOverlay({
   attempt,
   clearedStacks,
   totalStacks,
+  introText,
 }: EscapeRoomOverlayProps) {
   const t = useTranslations()
 
@@ -92,9 +97,18 @@ export default function EscapeRoomOverlay({
           <H3 className={{ root: 'text-2xl font-bold text-white' }}>
             {t('pwa.practiceQuiz.escapeRoomStartTitle')}
           </H3>
-          <p className="text-sm leading-relaxed text-slate-300">
-            {t('pwa.practiceQuiz.escapeRoomStartDesc')}
-          </p>
+          {introText ? (
+            <div
+              className="prose prose-sm prose-invert max-h-56 w-full overflow-y-auto text-left leading-relaxed text-slate-300"
+              data-cy="escape-room-intro-text-display"
+            >
+              <DynamicMarkdown content={introText} />
+            </div>
+          ) : (
+            <p className="text-sm leading-relaxed text-slate-300">
+              {t('pwa.practiceQuiz.escapeRoomStartDesc')}
+            </p>
+          )}
           <div className="w-full space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-left text-xs">
             {typeof totalStacks === 'number' && totalStacks > 0 && (
               <StatRow

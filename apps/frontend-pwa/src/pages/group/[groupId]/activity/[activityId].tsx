@@ -132,6 +132,7 @@ function GroupActivityDetails() {
           }}
           loading={attemptLoading}
           attempt={attempt}
+          introText={groupActivity.escapeRoomConfig?.introText}
         />
       )}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">

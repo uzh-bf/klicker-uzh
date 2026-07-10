@@ -1,4 +1,8 @@
-import { Checkbox, FormikNumberField } from '@uzh-bf/design-system'
+import {
+  Checkbox,
+  FormikNumberField,
+  FormikTextareaField,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface EscapeRoomSettingsFieldsProps {
@@ -39,6 +43,15 @@ function EscapeRoomSettingsFields({
             required
             className={{ root: 'w-full', field: 'w-full' }}
             data={{ cy: 'escape-room-hint-penalty' }}
+          />
+          <FormikTextareaField
+            name="escapeRoomIntroText"
+            label={t('manage.activityWizard.escapeRoomIntroText')}
+            placeholder={t(
+              'manage.activityWizard.escapeRoomIntroTextPlaceholder'
+            )}
+            className={{ root: 'w-full', input: 'h-20 w-full' }}
+            data={{ cy: 'escape-room-intro-text' }}
           />
         </>
       )}

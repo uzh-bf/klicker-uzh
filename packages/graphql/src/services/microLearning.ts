@@ -167,6 +167,7 @@ export async function getSingleMicroLearning(
     where: { id, isDeleted: false },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -234,6 +235,7 @@ interface ManipulateMicroLearningArgs {
   isEscapeRoom?: boolean | null
   escapeRoomTimeLimit?: number | null
   escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
 }
 
 export async function manipulateMicroLearning(
@@ -250,6 +252,7 @@ export async function manipulateMicroLearning(
     isEscapeRoom,
     escapeRoomTimeLimit,
     escapeRoomHintPenalty,
+    escapeRoomIntroText,
   }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser
 ) {
@@ -361,17 +364,25 @@ export async function manipulateMicroLearning(
     course: { connect: { id: courseId } },
   }
 
-  if (isEscapeRoom) {
+  // nested upsert is only valid on the update branch of the activity upsert;
+  // the create branch needs a plain nested create
+  const escapeRoomConfigData = isEscapeRoom
+    ? {
+        timeLimit: escapeRoomTimeLimit ?? 3600,
+        hintPenalty: escapeRoomHintPenalty ?? 120,
+        lockoutSeconds: 5,
+        introText: escapeRoomIntroText?.trim() || null,
+      }
+    : null
+
+  if (escapeRoomConfigData) {
     createOrUpdateJSON.escapeRoomConfig = {
       upsert: {
-        create: {
-          timeLimit: escapeRoomTimeLimit ?? 3600,
-          hintPenalty: escapeRoomHintPenalty ?? 120,
-          lockoutSeconds: 5,
-        },
+        create: escapeRoomConfigData,
         update: {
-          timeLimit: escapeRoomTimeLimit ?? 3600,
-          hintPenalty: escapeRoomHintPenalty ?? 120,
+          timeLimit: escapeRoomConfigData.timeLimit,
+          hintPenalty: escapeRoomConfigData.hintPenalty,
+          introText: escapeRoomConfigData.introText,
         },
       },
     }
@@ -427,6 +438,9 @@ export async function manipulateMicroLearning(
         where: { id: id ?? uuidv4() },
         create: {
           ...createOrUpdateJSON,
+          ...(escapeRoomConfigData
+            ? { escapeRoomConfig: { create: escapeRoomConfigData } }
+            : {}),
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: createOrUpdateJSON,

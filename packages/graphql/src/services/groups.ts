@@ -841,6 +841,7 @@ interface CreateGroupActivityArgs {
   isEscapeRoom?: boolean | null
   escapeRoomTimeLimit?: number | null
   escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
 }
 
 export async function manipulateGroupActivity(
@@ -858,6 +859,7 @@ export async function manipulateGroupActivity(
     isEscapeRoom,
     escapeRoomTimeLimit,
     escapeRoomHintPenalty,
+    escapeRoomIntroText,
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
@@ -989,17 +991,25 @@ export async function manipulateGroupActivity(
     course: { connect: { id: courseId } },
   }
 
-  if (isEscapeRoom) {
+  // nested upsert is only valid on the update branch of the activity upsert;
+  // the create branch needs a plain nested create
+  const escapeRoomConfigData = isEscapeRoom
+    ? {
+        timeLimit: escapeRoomTimeLimit ?? 3600,
+        hintPenalty: escapeRoomHintPenalty ?? 120,
+        lockoutSeconds: 5,
+        introText: escapeRoomIntroText?.trim() || null,
+      }
+    : null
+
+  if (escapeRoomConfigData) {
     createOrUpdateJSON.escapeRoomConfig = {
       upsert: {
-        create: {
-          timeLimit: escapeRoomTimeLimit ?? 3600,
-          hintPenalty: escapeRoomHintPenalty ?? 120,
-          lockoutSeconds: 5,
-        },
+        create: escapeRoomConfigData,
         update: {
-          timeLimit: escapeRoomTimeLimit ?? 3600,
-          hintPenalty: escapeRoomHintPenalty ?? 120,
+          timeLimit: escapeRoomConfigData.timeLimit,
+          hintPenalty: escapeRoomConfigData.hintPenalty,
+          introText: escapeRoomConfigData.introText,
         },
       },
     }
@@ -1052,6 +1062,9 @@ export async function manipulateGroupActivity(
         where: { id: id ?? newId },
         create: {
           ...createOrUpdateJSON,
+          ...(escapeRoomConfigData
+            ? { escapeRoomConfig: { create: escapeRoomConfigData } }
+            : {}),
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: createOrUpdateJSON,
@@ -1736,6 +1749,7 @@ export async function getGroupActivity(
     include: {
       course: true,
       clues: true,
+      escapeRoomConfig: true,
       activityInstances: { include: { group: true } },
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
     },

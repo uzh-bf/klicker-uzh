@@ -139,6 +139,7 @@ function MicrolearningInstance() {
           totalStacks={
             microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0
           }
+          introText={microLearning.escapeRoomConfig?.introText}
         />
       )}
       <div className="flex-1">
