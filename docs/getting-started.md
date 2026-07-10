@@ -30,16 +30,19 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
    devpod ssh klicker-uzh # shell inside the container
    ```
 2. **Accessing the apps:**
-   - **Mode 1 (Plain localhost - default):** Exposed directly on host ports: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
-   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost`. Requires:
-     1. Edit `.devcontainer/devcontainer.json` to include the devrouter overlay:
-        ```json
-        "dockerComposeFile": ["docker-compose.yml", "docker-compose.devrouter.yml"]
-        ```
-     2. Start the devcontainer (`devpod up .`).
-     3. Install `devrouter` on host and register the application routes:
+   - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after starting devcontainer (`devpod up .` or via VS Code) without devrouter: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
+   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost` (or `https://manage.klicker.<workspace>.localhost` for parallel workspaces). Requires:
+     1. Start devrouter on host (`devrouter up && devrouter tls install`).
+     2. Start the devcontainer via devrouter command line for automatic overlay injection and token plumbing:
         ```bash
-        for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+        dev workspace up <branch-name>
+        ```
+        _(Or for manual startup: `WORKSPACE=<slug> DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up .`)_.
+     3. Register the application routes:
+        ```bash
+        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
+        # linked worktree variant:
+        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a" --workspace <slug>; done
         ```
 3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
 
