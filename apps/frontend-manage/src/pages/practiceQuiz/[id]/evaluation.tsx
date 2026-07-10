@@ -39,6 +39,7 @@ function PracticeQuizEvaluation() {
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
+      escapeRoomActivityType="practiceQuiz"
     />
   )
 }

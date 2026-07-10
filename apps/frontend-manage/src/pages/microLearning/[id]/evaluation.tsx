@@ -42,6 +42,7 @@ function MicroLearningEvaluation() {
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
+      escapeRoomActivityType="microLearning"
     />
   )
 }

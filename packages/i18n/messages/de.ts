@@ -2663,6 +2663,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bisher sind aufgrund fehlender Antworten noch keine Statistiken verfügbar.',
       practiceQuizEvaluation: 'Übungs-Quiz Evaluation',
       microLearningEvaluation: 'Microlearning Evaluation',
+      escapeRoomTab: 'Escape Room',
+      escapeRoomProgressDescription:
+        'Live-Fortschritt aller Teilnehmenden in diesem Escape Room. Wird automatisch aktualisiert, solange dieser Tab geöffnet ist.',
+      escapeRoomNoAttempts:
+        'Noch keine Teilnehmenden haben diesen Escape Room gestartet.',
+      escapeRoomColParticipant: 'Teilnehmer:in',
+      escapeRoomColStatus: 'Status',
+      escapeRoomColProgress: 'Fortschritt',
+      escapeRoomColHints: 'Hinweise',
+      escapeRoomColPenalty: 'Strafzeit',
+      escapeRoomColTime: 'Zeit',
+      escapeRoomColActions: 'Aktionen',
+      escapeRoomStatusInProgress: 'Laufend',
+      escapeRoomStatusCompleted: 'Abgeschlossen',
+      escapeRoomStatusExpired: 'Abgelaufen',
+      escapeRoomLockedOut: 'Gesperrt',
+      escapeRoomReset: 'Zurücksetzen',
+      escapeRoomResetConfirm: 'Zurücksetzen bestätigen',
+      escapeRoomResetError:
+        'Der Versuch konnte nicht zurückgesetzt werden. Bitte erneut versuchen.',
       chartTypeNotSupported:
         'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
       histogramNotSupported:

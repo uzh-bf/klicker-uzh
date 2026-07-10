@@ -1,6 +1,8 @@
+import { useQuery } from '@apollo/client'
 import {
   ConfusionTimestep,
   Feedback,
+  GetEscapeRoomProgressDocument,
   LocaleType,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,11 +18,12 @@ import { useRouter } from 'next/router'
 import Rank1Img from 'public/img/rank1.svg'
 import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
-import { useReducer, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
 import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
 import ElementEvaluation from './ElementEvaluation'
+import EscapeRoomProgress from './EscapeRoomProgress'
 import EvaluationFooter from './EvaluationFooter'
 import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
 import EvaluationConfusion from './feedbacks/EvaluationConfusion'
@@ -31,7 +34,12 @@ import EvaluationNavigation from './navigation/EvaluationNavigation'
 import { sizeReducer, TextSizes } from './textSizes'
 
 export type ActivityEvaluationType = 'LiveQuiz' | 'Asynchronous'
-export type ActiveStackType = number | 'feedbacks' | 'confusion' | 'leaderboard'
+export type ActiveStackType =
+  | number
+  | 'feedbacks'
+  | 'confusion'
+  | 'leaderboard'
+  | 'escapeRoom'
 
 interface ActivityEvaluationProps {
   courseId?: string | null
@@ -46,6 +54,9 @@ interface ActivityEvaluationProps {
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
   type?: ActivityEvaluationType
+  // when set, an "Escape Room" tab surfaces the per-participant progress
+  // dashboard (owner-scoped query returns null for non-escape-room activities)
+  escapeRoomActivityType?: 'practiceQuiz' | 'microLearning'
 }
 
 function ActivityEvaluation({
@@ -61,6 +72,7 @@ function ActivityEvaluation({
   pinCode,
   hideActiveBlockResults = false,
   type = 'Asynchronous',
+  escapeRoomActivityType,
 }: ActivityEvaluationProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -113,6 +125,37 @@ function ActivityEvaluation({
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
   const stackInstanceMap = useStackInstanceMap({ stacks })
 
+  // escape-room monitoring: the owner-scoped query returns null for
+  // non-escape-room activities, so the tab only appears when data is present.
+  const {
+    data: escapeRoomData,
+    refetch: refetchEscapeRoom,
+    startPolling: startEscapeRoomPolling,
+    stopPolling: stopEscapeRoomPolling,
+  } = useQuery(GetEscapeRoomProgressDocument, {
+    variables:
+      escapeRoomActivityType === 'microLearning'
+        ? { microLearningId: activityId }
+        : { practiceQuizId: activityId },
+    skip: !escapeRoomActivityType,
+  })
+  const escapeRoomProgress = escapeRoomData?.escapeRoomProgress ?? null
+  const escapeRoomAvailable = escapeRoomProgress !== null
+
+  // only poll while the lecturer is actively viewing the escape-room tab
+  useEffect(() => {
+    if (escapeRoomAvailable && activeStack === 'escapeRoom') {
+      startEscapeRoomPolling(5000)
+      return () => stopEscapeRoomPolling()
+    }
+    stopEscapeRoomPolling()
+  }, [
+    escapeRoomAvailable,
+    activeStack,
+    startEscapeRoomPolling,
+    stopEscapeRoomPolling,
+  ])
+
   // update the chart type as soon as the active instance changes
   useChartTypeUpdate({
     activeInstance,
@@ -156,6 +199,7 @@ function ActivityEvaluation({
             feedbacksAvailable={
               feedbacks !== null && confusionFeedbacks !== null
             }
+            escapeRoomAvailable={escapeRoomAvailable}
           />
         </div>
       )}
@@ -263,6 +307,17 @@ function ActivityEvaluation({
               </div>
             </div>
           )}
+
+        {escapeRoomActivityType &&
+          escapeRoomProgress !== null &&
+          activeStack === 'escapeRoom' && (
+            <EscapeRoomProgress
+              activityType={escapeRoomActivityType}
+              activityId={activityId}
+              progress={escapeRoomProgress}
+              onReset={() => refetchEscapeRoom()}
+            />
+          )}
       </div>
 
       <div
@@ -270,7 +325,8 @@ function ActivityEvaluation({
           'z-20 h-max flex-none',
           (activeStack === 'feedbacks' ||
             activeStack === 'confusion' ||
-            activeStack === 'leaderboard') &&
+            activeStack === 'leaderboard' ||
+            activeStack === 'escapeRoom') &&
             'h-[2.3rem]'
         )}
       >
