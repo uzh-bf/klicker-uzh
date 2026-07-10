@@ -54,31 +54,6 @@ function SignInOutButton() {
   }
 
   const eduIdLoginHintId = 'eduid-login-disabled-reason'
-  const eduIdLoginButton = (
-    <Button
-      fluid
-      disabled={!tosChecked}
-      aria-describedby={!tosChecked ? eduIdLoginHintId : undefined}
-      data={{ cy: 'eduid-login-button' }}
-      className={{ root: 'p-4 disabled:opacity-50' }}
-      onClick={() =>
-        signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
-          callbackUrl:
-            (router.query?.redirectTo as string) ||
-            process.env.NEXT_PUBLIC_MANAGE_URL,
-        })
-      }
-    >
-      <Image
-        src="/edu-id-logo.svg"
-        width={300}
-        height={90}
-        alt="Logo"
-        className="mx-auto"
-        data-cy="login-logo"
-      />
-    </Button>
-  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -136,7 +111,29 @@ function SignInOutButton() {
         className="block"
         title={!tosChecked ? t('auth.tosAgreementRequired') : undefined}
       >
-        {eduIdLoginButton}
+        <Button
+          fluid
+          disabled={!tosChecked}
+          aria-describedby={!tosChecked ? eduIdLoginHintId : undefined}
+          data={{ cy: 'eduid-login-button' }}
+          className={{ root: 'p-4 disabled:opacity-50' }}
+          onClick={() =>
+            signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
+              callbackUrl:
+                (router.query?.redirectTo as string) ||
+                process.env.NEXT_PUBLIC_MANAGE_URL,
+            })
+          }
+        >
+          <Image
+            src="/edu-id-logo.svg"
+            width={300}
+            height={90}
+            alt="Logo"
+            className="mx-auto"
+            data-cy="login-logo"
+          />
+        </Button>
       </span>
       <Button
         className={{

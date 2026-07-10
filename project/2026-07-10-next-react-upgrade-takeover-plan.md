@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slice 5 complete.
+Status: approved 2026-07-10; Slices 0-5 committed; authenticated chat clean-render evidence remains a Slice 8 gate.
 
 ## Goal
 
@@ -660,8 +660,11 @@ Commit:
 - [x] Slice 2 dependency contract implemented, reviewed, and locally verified; external audit unavailable by execution policy.
 - [x] Slice 3 deterministic Next configuration implemented, reviewed, and locally verified; clean DevPod runtime blocked by container DNS with host fallback recorded.
 - [x] Slice 4 clean-checkout-safe Next type generation implemented, reviewed, and locally verified.
-- [x] Slice 5 runtime fixes implemented, independently reviewed, and verified.
-- [ ] Slices 6-7 implemented and committed separately.
+- [x] Slice 5 runtime fixes implemented, independently reviewed, and committed as `13037b3ac`.
+- [ ] Authenticated chat clean-render and console/network proof deferred to the configured Slice 8 environment.
+- [x] Post-commit branch review findings resolved in a separate cleanup commit.
+- [ ] Slice 6 legacy e2e repair implemented and committed separately.
+- [ ] Slice 7 partially complete: auth/version docs synchronized; remaining Next/React operator documentation pending.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
 - [ ] Shared old-PR supersession gate in TypeScript plan approved and executed.
@@ -694,10 +697,12 @@ Slice 5 evidence:
 - Native browser: delegated lecturer login returned to `/resources/answerCollections?tab=shared`; participant login returned to PWA home; controller displayed the seeded course selector; tested auth, manage, PWA, and control pages had no fresh console errors. Authenticated chat stayed on the chatbot URL rather than `/noLogin`, but the dev-only page remained at `Loading chatbot...` because the stack lacked Langfuse credentials and logged exporter errors. Clean authenticated chat rendering remains a Slice 8 environment gate.
 - `pnpm run check:all` passed. `pnpm run build` passed all 21 build tasks. After the final PWA review fixes, its typecheck and production build passed again and Playwright TypeScript remained clean. Final Opengrep ran 213 applicable rules over six changed runtime/config/test files with zero findings. Existing framework, large-page-data, lint-warning, and missing-local-provider messages remain non-blocking baseline noise.
 - The simplification review found two cross-app contract regressions before commit: legitimate absolute chat returns and absolute same-PWA returns. Both were fixed with explicit origins and regression coverage. Correctness review prompted hash-safe `router.asPath` preservation and an accessible disabled-login explanation. Final correctness and simplification re-reviews reported no findings.
+- Post-commit branch review separated the verified chat navigation contract from the unverified authenticated chat render. Its cleanup commit reduces repeated login-test setup, removes a single-use button variable, replaces a CSS submit selector with an accessible role, and synchronizes auth/version documentation.
+- Cleanup verification: `pnpm run check:all`, the auth production build, Playwright TypeScript, the 14-file OKF validator, AGENTS validation, and Opengrep all passed. Five focused Chrome login/redirect tests passed; chat and manage first hit cold-compilation timeouts, then both passed against the warm stack. `agent-browser` confirmed the simplified auth markup has one disabled button inside a non-interactive span, matching accessible help text and hover title, and no page errors. Existing Next image warnings remain.
 
-Current: Slice 5 implementation, browser proof, full checks/build, static scan, correctness review, and simplification review are complete. This project record and implementation form the atomic Slice 5 commit boundary.
+Current: Slice 5 implementation is committed as `13037b3ac`. Manage, PWA, control, auth, logged-out chat, and authenticated chat navigation were verified. Authenticated chat content remained at `Loading chatbot...` in the local stack with missing Langfuse configuration, so clean render and console/network proof remain open for Slice 8.
 
-Next: commit Slice 5 separately. Start Slice 6 only after a new explicit continuation.
+Next: start Slice 6 only after a new explicit continuation. Preserve the authenticated chat evidence gap as a Slice 8 gate.
 
 ## Open Questions
 

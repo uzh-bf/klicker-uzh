@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_PASSWORD,
@@ -12,6 +13,20 @@ import {
   viewPorts,
 } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
+
+function getStudentLoginUrl() {
+  return process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
+}
+
+async function signInStudentFromReturnTarget(page: Page, target: string) {
+  await page.context().clearCookies()
+  await page.goto(
+    `${getStudentLoginUrl()}?redirect_to=${encodeURIComponent(target)}`
+  )
+  await page.getByTestId('username-field').fill(STUDENT_USERNAME)
+  await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  await page.getByTestId('submit-login').click()
+}
 
 test('CLEANUP', cleanupTest)
 
@@ -29,16 +44,10 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
   test('Reject external return target after student sign in', async ({
     page,
   }) => {
-    const studentLoginUrl = process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
+    const studentLoginUrl = getStudentLoginUrl()
     const externalTarget = 'http://127.0.0.1:9/external'
 
-    await page.context().clearCookies()
-    await page.goto(
-      `${studentLoginUrl}?redirect_to=${encodeURIComponent(externalTarget)}`
-    )
-    await page.getByTestId('username-field').fill(STUDENT_USERNAME)
-    await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
-    await page.getByTestId('submit-login').click()
+    await signInStudentFromReturnTarget(page, externalTarget)
 
     await expect(page.getByTestId('homepage')).toBeVisible()
     expect(new URL(page.url()).origin).toBe(new URL(studentLoginUrl).origin)
@@ -47,16 +56,9 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
   test('Preserve an absolute PWA return target after student sign in', async ({
     page,
   }) => {
-    const studentLoginUrl = process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
-    const pwaTarget = new URL('/practice', studentLoginUrl).toString()
+    const pwaTarget = new URL('/practice', getStudentLoginUrl()).toString()
 
-    await page.context().clearCookies()
-    await page.goto(
-      `${studentLoginUrl}?redirect_to=${encodeURIComponent(pwaTarget)}`
-    )
-    await page.getByTestId('username-field').fill(STUDENT_USERNAME)
-    await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
-    await page.getByTestId('submit-login').click()
+    await signInStudentFromReturnTarget(page, pwaTarget)
 
     await expect(page).toHaveURL(pwaTarget)
   })
@@ -64,17 +66,10 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
   test('Return participant to the configured chatbot after sign in', async ({
     page,
   }) => {
-    const studentLoginUrl = process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
     const chatUrl = process.env.URL_CHAT ?? URL_CHAT
     const chatTarget = `${chatUrl}/8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f`
 
-    await page.context().clearCookies()
-    await page.goto(
-      `${studentLoginUrl}?redirect_to=${encodeURIComponent(chatTarget)}`
-    )
-    await page.getByTestId('username-field').fill(STUDENT_USERNAME)
-    await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
-    await page.getByTestId('submit-login').click()
+    await signInStudentFromReturnTarget(page, chatTarget)
 
     await expect(page).toHaveURL(chatTarget)
   })
@@ -193,7 +188,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
     await delegatedLogin.click()
     await page.getByTestId('identifier-field').fill(LECTURER_SHORTNAME)
     await page.getByTestId('password-field').fill(LECTURER_PASSWORD)
-    await page.locator('form > button[type=submit]').click()
+    await page.getByRole('button', { name: 'Sign in with Delegation' }).click()
 
     await expect(page).toHaveURL(`${manageUrl}${requestedPath}`)
   })
