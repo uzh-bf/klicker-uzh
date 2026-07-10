@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-11
+
+- **Update**: escape room production pass on the `escape-room-quiz-mode-plan` branch — practice quiz game loop fixed for server-side stack masking (escape-mode advance/retry in `PracticeQuiz.tsx`), `Z-escape-room.spec.ts` rewritten as a full 11-test workflow, user-facing lecturer/student tutorials added to `apps/docs`, and AGENTS.md gained a "New Functionality Requirements" section (Playwright suite + `apps/docs` updates mandatory for new functionality PRs). Roadmap details: `project/2026-07-10-pr-5143-escape-room-implementation-review.md`.
+
 ## 2026-07-08
 
 - **Update**: [testing](./testing.md) guide updated to document `Z-escape-room.spec.ts` in Playwright E2E spec list.
