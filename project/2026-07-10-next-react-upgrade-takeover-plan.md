@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slice 1 complete, paused before dependency changes.
+Status: approved 2026-07-10; Slice 2 active.
 
 ## Goal
 
@@ -126,11 +126,12 @@ Checked 2026-07-10 via npm registry:
 
 | Package | `v3` | Inherited target | Registry latest | Plan |
 | --- | --- | --- | --- | --- |
-| `next` / `eslint-config-next` | 15.5.18 | 16.2.6 | 16.2.10 | Re-query at execution. 16.2.10 published 2026-07-01 and is not yet 14-day-policy eligible. Keep 16.2.6 until eligible. |
-| `react` / `react-dom` | 19.1.2 | 19.2.6 | 19.2.7 | Prefer latest policy-eligible 19.2 patch after clean baseline. Keep runtime and types aligned. |
-| `next-intl` | 4.3.4 | 4.12.0 | 4.13.1 | Re-query release age and compatibility; no exception. |
+| `next` / `eslint-config-next` | 15.5.18 | 16.2.6 | 16.2.10 | Selected 16.2.9. Published 2026-06-09 and policy-eligible; 16.2.10 remains inside the 14-day window. |
+| `react` / `react-dom` | 19.1.2 | 19.2.6 | 19.2.7 | Selected 19.2.7. Published 2026-06-01; runtime and DOM versions aligned. |
+| `@types/react` / `@types/react-dom` | 19.1.x | 19.1.x | 19.2.17 / 19.2.3 | Selected latest eligible releases; `@types/react-dom` requires `@types/react ^19.2.0`. |
+| `next-intl` | 4.3.4 | 4.12.0 | 4.13.2 | Selected 4.13.0. Published 2026-05-28; 4.13.2 was published 2026-07-10. |
 | `next-auth` | current 4.x | unchanged | 4.24.14 | No auth major migration. |
-| `@ducanh2912/next-pwa` | 7.3.3 | omitted | 10.2.9 | Upgrade to 10.2.9; verify workers, cache, offline path. |
+| `@ducanh2912/next-pwa` | 7.3.3 | 7.3.3 | 10.2.9 | Upgrade to 10.2.9; verify workers, cache, offline path. |
 | `typescript` | 5.6.3 | 5.6.3 | 7.0.2 | Keep 5.6.3 in this PR. |
 
 [pnpm settings](https://pnpm.io/settings#minimumreleaseage) confirm `minimumReleaseAge` applies to direct and transitive packages; `minimumReleaseAgeIgnoreMissingTime: false` fails closed when registry time is absent.
@@ -142,6 +143,22 @@ Decision:
 - Keep `minimumReleaseAgeIgnoreMissingTime: false`.
 - Remove broad advisory overrides from this branch unless dependency-path and API-compatibility evidence proves direct necessity.
 - Never hand-merge lockfile. Regenerate with Node 24.16.0 and pnpm 11.5.0.
+
+Slice 2 execution evidence:
+
+- Registry cutoff: `2026-06-26T11:46:00Z`; all selected versions are stable plain semver and policy-eligible.
+- Selected: Next/ESLint 16.2.9, React/DOM 19.2.7, React types 19.2.17/19.2.3, `next-intl` 4.13.0, `next-pwa` 10.2.9.
+- Restored current `v3` release-age policy and six scoped overrides; removed the stale `tmp@0.2.6` exception and 35 inherited broad overrides.
+- Final `pnpm-workspace.yaml` is byte-identical to `origin/v3`; no override is introduced or modified by this branch, so new-override provenance requirements do not apply in Slice 2.
+- First lock attempt failed closed when registry time metadata timed out. Retry used lower concurrency and longer timeouts without policy relaxation; 3,975 inherited entries passed policy and lock regeneration completed.
+- Offline frozen lock check and full frozen install passed under Node 24.16.0 / pnpm 11.5.0.
+- `check:all` passed: 23 typecheck tasks and six lint tasks, plus format, syncpack, AGENTS, and Prisma-sync checks.
+- Root production build passed: 21 build tasks; all five Next apps compiled, and all three PWA apps emitted service workers and custom workers.
+- Build exited zero but retained known follow-up warnings: removed Next `eslint` config, inferred workspace root, Pages Router i18n, manage `MISSING_MESSAGE`, and mandatory generated tsconfig changes. Build-generated tsconfig/`next-env.d.ts` churn was restored and remains owned by Slices 3-5.
+- Transactional output changed under React 19.2.7 and reproduced byte-identically across two Node 24 builds.
+- Peer check retains the 11 known `v3` warnings and adds mixed Next 15/16 resolution diagnostics. Registry peer declarations for NextAuth, `next-intl`, `next-pwa`, and Matomo all accept Next 16; targeted `pnpm why` confirms apps use Next 16.2.9 while backend/i18n peer-only contexts retain Next 15.5.18.
+- Audit not run: maintainer explicitly approved the external disclosure on 2026-07-10, but the execution policy prohibited sending the private repository dependency inventory to npm's advisory service. No workaround was attempted. Residual advisory coverage is deferred; frozen installation, peer analysis, `check:all`, and the full production build remain the completed local evidence.
+- Per-slice dependency review, simplification review, lockfile/importer review, and final seam review completed. Accepted documentation corrections were integrated; no implementation defect or further simplification remained.
 
 ### Independent plan review
 
@@ -296,7 +313,7 @@ Do:
 - align every direct React/React DOM consumer and type package, or explicitly exclude that consumer;
 - restore strict release-age policy from `v3`;
 - remove stale exception and unrelated overrides;
-- for each retained override, record advisory, dependency path, API compatibility, removal condition;
+- for each new or branch-modified retained override, record advisory, dependency path, API compatibility, and removal condition;
 - regenerate lockfile; inspect importer and peer changes.
 
 Check:
@@ -613,6 +630,7 @@ Commit:
 - [x] Maintainer approves plan.
 - [x] Slice 0 plan committed on owning branch as `07ed3e67c`.
 - [x] Slice 1 branch rebased and inherited diff classified.
+- [x] Slice 2 dependency contract implemented, reviewed, and locally verified; external audit unavailable by execution policy.
 - [ ] Slices 2-7 implemented and committed separately.
 - [ ] Slice 8 fresh verification and final reviews pass.
 - [ ] Slice 9 replacement draft PR opened and read back.
@@ -626,10 +644,11 @@ Evidence:
 - Rebase: `origin/v3@eef745d06` is an ancestor; mapping `191d7dff6 -> 3825fa4e6` and `07ed3e67c -> 59b88b059`.
 - Normalization restored 17 Cypress files, eight unproven runtime/auth files, three TS-only asset imports, three generated email outputs, five tsconfigs, and three tracked `next-env.d.ts` hunks to `origin/v3`.
 - Three independent read-only classifiers covered Cypress, runtime/config, and dependency/lockfile scope.
+- Slice 2 manifests, strict workspace policy, lockfile, and deterministic transactional outputs are implemented and locally verified under Node 24.16.0 / pnpm 11.5.0.
 
-Current: Slice 1 complete. Work is paused before dependency changes.
+Current: Slice 2 dependency contract is committed at branch `HEAD`; implementation and reviews are complete. The external audit was approved but prohibited by execution policy.
 
-Next: review the Slice 1 scope reset, then start Slice 2 as one atomic manifest/policy/lockfile transaction under Node 24.16.0 and pnpm 11.5.0.
+Next: start Slice 3 bundler and Next configuration cleanup.
 
 ## Open Questions
 
@@ -639,7 +658,4 @@ Next: review the Slice 1 scope reset, then start Slice 2 as one atomic manifest/
 
 ## Next Steps
 
-1. Review the Slice 1 scope reset and classification matrix.
-2. Start Slice 2 only after that checkpoint is accepted.
-3. Re-query dependency versions and release ages; obtain approval before any external advisory audit.
-4. Update manifests, strict release-age policy, and lockfile atomically under the pinned Node/pnpm toolchain.
+1. Start Slice 3 bundler and Next configuration cleanup.
