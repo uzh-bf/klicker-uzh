@@ -860,11 +860,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomExpiredTitle: 'Zeit abgelaufen!',
       escapeRoomExpiredDesc:
         'Die Zeit ist abgelaufen! Dieser Versuch ist abgelaufen.',
-      escapeRoomResetButton: 'Escape Room neu starten',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
         'Herzlichen Glückwunsch! Du hast alle Fragen richtig beantwortet und den Escape Room abgeschlossen.',
       escapeRoomTitle: 'Escape Room',
+      escapeRoomTimeRemaining: 'Verbleibende Zeit',
+      escapeRoomContactLecturer:
+        'Wende dich an deine Dozentin oder deinen Dozenten, wenn dieser Versuch zurückgesetzt werden soll.',
+      escapeRoomLockoutToast:
+        'Falsch — du bist für kurze Zeit gesperrt, bevor du es erneut versuchen kannst.',
+      escapeRoomLockoutCountdown:
+        'Gesperrt. Du kannst es in {seconds}s erneut versuchen.',
+      escapeRoomIncorrectToast: 'Falsche Antwort! Bitte versuche es erneut.',
+      escapeRoomExpiredToast:
+        'Die Zeit ist abgelaufen — dieser Escape-Room-Versuch ist verfallen.',
+      escapeRoomGatedToast:
+        'Beantworte die vorherigen Fragen richtig, bevor du diesen Schritt bearbeitest.',
+      escapeRoomForbiddenToast:
+        'Dieser Escape Room kann nur mit einem aktiven Versuch beantwortet werden.',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

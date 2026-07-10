@@ -108,7 +108,6 @@ function PracticeQuiz({
     isExpired,
     remainingSeconds,
     startAttempt,
-    resetAttempt,
     loading: attemptLoading,
   } = useEscapeRoom({
     activity: quiz,
@@ -194,7 +193,6 @@ function PracticeQuiz({
           timeLimit={quiz.escapeRoomConfig?.timeLimit ?? 3600}
           hintPenalty={quiz.escapeRoomConfig?.hintPenalty ?? 120}
           onStart={startAttempt}
-          onReset={resetAttempt}
           loading={attemptLoading}
         />
       )}

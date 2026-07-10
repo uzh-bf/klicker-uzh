@@ -71,7 +71,6 @@ function GroupActivityDetails() {
     isExpired,
     remainingSeconds,
     startAttempt,
-    resetAttempt,
     loading: attemptLoading,
   } = useEscapeRoom({
     activity: hookActivity,
@@ -128,10 +127,6 @@ function GroupActivityDetails() {
           hintPenalty={groupActivity.escapeRoomConfig?.hintPenalty ?? 120}
           onStart={async () => {
             await startAttempt()
-            await refetch()
-          }}
-          onReset={async () => {
-            await resetAttempt()
             await refetch()
           }}
           loading={attemptLoading}

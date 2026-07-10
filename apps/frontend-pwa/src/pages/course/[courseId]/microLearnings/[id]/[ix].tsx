@@ -47,7 +47,6 @@ function MicrolearningInstance() {
     isExpired,
     remainingSeconds,
     startAttempt,
-    resetAttempt,
     loading: attemptLoading,
   } = useEscapeRoom({
     activity: hookActivity,
@@ -130,11 +129,6 @@ function MicrolearningInstance() {
           onStart={async () => {
             await startAttempt()
             await refetch()
-          }}
-          onReset={async () => {
-            await resetAttempt()
-            await refetch()
-            router.push(`/course/${courseId}/microLearnings/${id}/0`)
           }}
           loading={attemptLoading}
         />

@@ -1,10 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
   EscapeRoomStatus,
-  ResetEscapeRoomAttemptDocument,
   StartEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export function useEscapeRoom({
   activity,
@@ -18,15 +17,14 @@ export function useEscapeRoom({
   const [startAttemptMutation, { loading: starting }] = useMutation(
     StartEscapeRoomAttemptDocument
   )
-  const [resetAttemptMutation, { loading: resetting }] = useMutation(
-    ResetEscapeRoomAttemptDocument
-  )
 
   const attempts = activity?.escapeRoomAttempts ?? []
   const attempt = attempts.length > 0 ? attempts[attempts.length - 1] : null
 
   const isEscapeRoom = !!activity?.escapeRoomConfig
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
+  // Guard so the expiry refetch fires exactly once per attempt, not every tick.
+  const expiryHandledRef = useRef(false)
 
   const startAttempt = async () => {
     const variables: Record<string, string> = {}
@@ -42,20 +40,6 @@ export function useEscapeRoom({
     await refetch()
   }
 
-  const resetAttempt = async () => {
-    const variables: Record<string, string> = {}
-    if (activityType === 'practiceQuiz') {
-      variables.practiceQuizId = activity.id
-    } else if (activityType === 'microLearning') {
-      variables.microLearningId = activity.id
-    } else if (activityType === 'groupActivity') {
-      variables.groupActivityId = activity.id
-    }
-
-    await resetAttemptMutation({ variables })
-    await refetch()
-  }
-
   useEffect(() => {
     if (
       !isEscapeRoom ||
@@ -66,6 +50,9 @@ export function useEscapeRoom({
       return
     }
 
+    // Fresh in-progress attempt: allow one expiry refetch again.
+    expiryHandledRef.current = false
+
     const calculateRemaining = () => {
       const started = new Date(attempt.startedAt).getTime()
       const limit = attempt.timeLimit
@@ -74,8 +61,10 @@ export function useEscapeRoom({
       const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
       setRemainingSeconds(remaining)
 
-      if (remaining <= 0) {
-        // If expired locally, trigger refetch to update status on server/client
+      // On local expiry, refetch ONCE to sync the server-side status; without
+      // the guard this fired every second while status stayed InProgress.
+      if (remaining <= 0 && !expiryHandledRef.current) {
+        expiryHandledRef.current = true
         refetch()
       }
     }
@@ -101,7 +90,6 @@ export function useEscapeRoom({
     isExpired,
     remainingSeconds,
     startAttempt,
-    resetAttempt,
-    loading: starting || resetting,
+    loading: starting,
   }
 }

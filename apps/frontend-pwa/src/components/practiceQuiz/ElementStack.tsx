@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { ApolloError, useMutation, useQuery } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
   ElementStack as ElementStackType,
@@ -17,7 +17,7 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H2, UserNotification } from '@uzh-bf/design-system'
+import { Button, H2, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
@@ -98,6 +98,89 @@ function ElementStack({
     useState<StackStudentResponseType>({})
 
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
+
+  // Escape-room lockout: a wrong answer sets a server-side lockout window, and
+  // the next submit throws ESCAPE_ROOM_LOCKOUT carrying lockoutUntil. Track it
+  // to disable the submit button and show a live retry countdown.
+  const [lockedOutUntil, setLockedOutUntil] = useState<Date | null>(null)
+  const [lockoutRemaining, setLockoutRemaining] = useState(0)
+
+  useEffect(() => {
+    if (!lockedOutUntil) {
+      setLockoutRemaining(0)
+      return
+    }
+    const tick = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((lockedOutUntil.getTime() - Date.now()) / 1000)
+      )
+      setLockoutRemaining(remaining)
+      if (remaining <= 0) setLockedOutUntil(null)
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [lockedOutUntil])
+
+  // Map the structured escape-room error codes thrown by respondToElementStack
+  // to localized participant feedback. Non-escape errors surface a generic
+  // system-error toast (previously the rejected promise failed silently).
+  const handleEscapeRoomError = (error: unknown) => {
+    const gqlErrors = error instanceof ApolloError ? error.graphQLErrors : []
+    const escapeError = gqlErrors.find((err) => {
+      const code = err.extensions?.code
+      return typeof code === 'string' && code.startsWith('ESCAPE_ROOM_')
+    })
+    if (!escapeError) {
+      toast({
+        message: t('shared.generic.systemError' as any, {
+          defaultValue: 'Something went wrong. Please try again.',
+        }),
+        type: 'error',
+      })
+      return
+    }
+    switch (escapeError.extensions?.code) {
+      case 'ESCAPE_ROOM_LOCKOUT': {
+        const until = escapeError.extensions?.lockoutUntil
+        if (typeof until === 'string') setLockedOutUntil(new Date(until))
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomLockoutToast' as any, {
+            defaultValue:
+              'Incorrect — you are locked out for a short time before retrying.',
+          }),
+          type: 'error',
+        })
+        break
+      }
+      case 'ESCAPE_ROOM_EXPIRED':
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomExpiredToast' as any, {
+            defaultValue: 'Time is up — this escape room attempt has expired.',
+          }),
+          type: 'error',
+        })
+        break
+      case 'ESCAPE_ROOM_GATED':
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomGatedToast' as any, {
+            defaultValue:
+              'Answer the preceding questions correctly before this step.',
+          }),
+          type: 'error',
+        })
+        break
+      default:
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomForbiddenToast' as any, {
+            defaultValue:
+              'This escape room can only be answered with an active attempt.',
+          }),
+          type: 'error',
+        })
+    }
+  }
 
   const showMarkAsRead = useMemo(() => {
     if (
@@ -456,6 +539,18 @@ function ElementStack({
           </Button>
         )}
 
+      {lockoutRemaining > 0 && (
+        <UserNotification
+          type="error"
+          className={{ root: 'mt-2' }}
+          message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown' as any, {
+            seconds: lockoutRemaining,
+            defaultValue: `Locked out. You can try again in ${lockoutRemaining}s.`,
+          })}
+          data={{ cy: 'escape-room-lockout-countdown' }}
+        />
+      )}
+
       {typeof stackStorage === 'undefined' &&
         !showMarkAsRead &&
         wrapEmbedded(
@@ -464,6 +559,7 @@ function ElementStack({
             loading={submittingResponse}
             disabled={
               (!previewOnly && activityExpired) ||
+              lockoutRemaining > 0 ||
               Object.values(studentResponse).some((response) => !response.valid)
             }
             className={{
@@ -595,9 +691,12 @@ function ElementStack({
                     }
                   ),
                 },
+              }).catch((error) => {
+                handleEscapeRoomError(error)
+                return undefined
               })
 
-              if (!result.data || !result.data?.respondToElementStack) {
+              if (!result?.data || !result.data?.respondToElementStack) {
                 console.error('Error submitting response')
                 return
               }

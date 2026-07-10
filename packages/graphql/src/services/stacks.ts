@@ -3233,7 +3233,8 @@ export async function respondToElementStack(
 
       if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
         throw new GraphQLError(
-          'No active escape room attempt found for this activity'
+          'No active escape room attempt found for this activity',
+          { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
         )
       }
 
@@ -3242,7 +3243,13 @@ export async function respondToElementStack(
         dayjs().isBefore(dayjs(attempt.lockoutUntil))
       ) {
         throw new GraphQLError(
-          'You are locked out from submitting answers due to a recent incorrect attempt'
+          'You are locked out from submitting answers due to a recent incorrect attempt',
+          {
+            extensions: {
+              code: 'ESCAPE_ROOM_LOCKOUT',
+              lockoutUntil: attempt.lockoutUntil.toISOString(),
+            },
+          }
         )
       }
 
@@ -3254,7 +3261,9 @@ export async function respondToElementStack(
           where: { id: attempt.id },
           data: { status: DB.EscapeRoomStatus.EXPIRED },
         })
-        throw new GraphQLError('Escape room time has expired')
+        throw new GraphQLError('Escape room time has expired', {
+          extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
+        })
       }
 
       // Check sequential answer gating: all preceding stacks must be correctly answered
@@ -3284,7 +3293,8 @@ export async function respondToElementStack(
           )
           if (!sCorrect) {
             throw new GraphQLError(
-              'You must answer all preceding questions correctly before attempting this step'
+              'You must answer all preceding questions correctly before attempting this step',
+              { extensions: { code: 'ESCAPE_ROOM_GATED' } }
             )
           }
         }
@@ -3318,7 +3328,8 @@ export async function respondToElementStack(
       escapeStack?.microLearning?.escapeRoomConfig
     ) {
       throw new GraphQLError(
-        'Escape room activities can only be answered by an enrolled participant with an active attempt'
+        'Escape room activities can only be answered by an enrolled participant with an active attempt',
+        { extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' } }
       )
     }
   }

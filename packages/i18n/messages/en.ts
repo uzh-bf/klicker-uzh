@@ -857,11 +857,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomStartButton: 'Start Attempt',
       escapeRoomExpiredTitle: "Time's Up!",
       escapeRoomExpiredDesc: 'You ran out of time! This attempt has expired.',
-      escapeRoomResetButton: 'Restart Escape Room',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
         'Congratulations! You answered all questions correctly and completed the escape room.',
       escapeRoomTitle: 'Escape Room',
+      escapeRoomTimeRemaining: 'Time remaining',
+      escapeRoomContactLecturer:
+        'Contact your lecturer if you need this attempt reset.',
+      escapeRoomLockoutToast:
+        'Incorrect — you are locked out for a short time before retrying.',
+      escapeRoomLockoutCountdown:
+        'Locked out. You can try again in {seconds}s.',
+      escapeRoomIncorrectToast: 'Incorrect answer! Please try again.',
+      escapeRoomExpiredToast:
+        'Time is up — this escape room attempt has expired.',
+      escapeRoomGatedToast:
+        'Answer the preceding questions correctly before this step.',
+      escapeRoomForbiddenToast:
+        'This escape room can only be answered with an active attempt.',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

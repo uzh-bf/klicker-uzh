@@ -16,7 +16,6 @@ interface EscapeRoomOverlayProps {
   timeLimit: number // in seconds
   hintPenalty: number // in seconds
   onStart: () => Promise<void>
-  onReset?: () => Promise<void>
   loading?: boolean
 }
 
@@ -28,7 +27,6 @@ export default function EscapeRoomOverlay({
   timeLimit,
   hintPenalty,
   onStart,
-  onReset,
   loading = false,
 }: EscapeRoomOverlayProps) {
   const t = useTranslations()
@@ -42,7 +40,14 @@ export default function EscapeRoomOverlay({
   // Full page block overlays for start, completed, expired states
   if (!isStarted) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('pwa.practiceQuiz.escapeRoomStartTitle' as any, {
+          defaultValue: 'Escape Room Mode',
+        })}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm"
+      >
         <div className="animate-fade-in flex w-full max-w-md flex-col items-center space-y-6 rounded-xl border border-slate-700 bg-slate-800 p-8 text-center shadow-2xl">
           <div className="bg-primary flex h-16 w-16 items-center justify-center rounded-full text-3xl text-white">
             <FontAwesomeIcon icon={faPlayCircle} />
@@ -103,7 +108,14 @@ export default function EscapeRoomOverlay({
 
   if (isExpired) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('pwa.practiceQuiz.escapeRoomExpiredTitle' as any, {
+          defaultValue: "Time's Up!",
+        })}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm"
+      >
         <div className="flex w-full max-w-md flex-col items-center space-y-6 rounded-xl border border-red-900/50 bg-slate-800 p-8 text-center shadow-2xl">
           <div className="bg-red-650 flex h-16 w-16 items-center justify-center rounded-full text-3xl text-white">
             <FontAwesomeIcon icon={faHourglassEnd} />
@@ -118,22 +130,12 @@ export default function EscapeRoomOverlay({
               defaultValue: 'You ran out of time! This attempt has expired.',
             })}
           </p>
-          {onReset && (
-            <Button
-              basic
-              disabled={loading}
-              className={{
-                root: 'h-10 w-full text-sm font-semibold hover:bg-slate-700',
-              }}
-              onClick={onReset}
-            >
-              <Button.Label>
-                {t('pwa.practiceQuiz.escapeRoomResetButton' as any, {
-                  defaultValue: 'Restart Escape Room',
-                })}
-              </Button.Label>
-            </Button>
-          )}
+          <p className="text-xs leading-relaxed text-slate-400">
+            {t('pwa.practiceQuiz.escapeRoomContactLecturer' as any, {
+              defaultValue:
+                'Contact your lecturer if you need this attempt reset.',
+            })}
+          </p>
         </div>
       </div>
     )
@@ -141,7 +143,14 @@ export default function EscapeRoomOverlay({
 
   if (isCompleted) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('pwa.practiceQuiz.escapeRoomCompletedTitle' as any, {
+          defaultValue: 'Escaped successfully!',
+        })}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm"
+      >
         <div className="flex w-full max-w-md flex-col items-center space-y-6 rounded-xl border border-green-900/50 bg-slate-800 p-8 text-center shadow-2xl">
           <div className="bg-green-650 flex h-16 w-16 items-center justify-center rounded-full text-3xl text-white">
             <FontAwesomeIcon icon={faTrophy} />
@@ -157,22 +166,6 @@ export default function EscapeRoomOverlay({
                 'Congratulations! You answered all questions correctly and completed the escape room.',
             })}
           </p>
-          {onReset && (
-            <Button
-              basic
-              disabled={loading}
-              className={{
-                root: 'h-10 w-full text-sm font-semibold hover:bg-slate-700',
-              }}
-              onClick={onReset}
-            >
-              <Button.Label>
-                {t('pwa.practiceQuiz.escapeRoomResetButton' as any, {
-                  defaultValue: 'Restart Escape Room',
-                })}
-              </Button.Label>
-            </Button>
-          )}
         </div>
       </div>
     )
@@ -188,7 +181,13 @@ export default function EscapeRoomOverlay({
           })}
         </span>
       </div>
-      <div className="flex items-center space-x-2 rounded border border-slate-700 bg-slate-800 px-3 py-1 font-mono text-base font-bold tracking-wider text-amber-400">
+      <div
+        role="timer"
+        aria-label={t('pwa.practiceQuiz.escapeRoomTimeRemaining' as any, {
+          defaultValue: 'Time remaining',
+        })}
+        className="flex items-center space-x-2 rounded border border-slate-700 bg-slate-800 px-3 py-1 font-mono text-base font-bold tracking-wider text-amber-400"
+      >
         <FontAwesomeIcon icon={faClock} className="text-slate-400" />
         <span>
           {remainingSeconds !== null ? formatTime(remainingSeconds) : '00:00'}
