@@ -2347,7 +2347,7 @@ test.describe.serial('Create and solve a group activity', () => {
       }
     }
     await page.getByTestId('group-activity-submission-1').click()
-    await page.getByTestId('confirm-submission-switch').click()
+    await expect(page.getByTestId('confirm-submission-switch')).toHaveCount(0)
     await expectByAssertion(page.getByTestId('finalize-grading'), 'be.disabled')
     await expectByAssertion(
       page.getByTestId('groupActivity-save-submission-grading'),
