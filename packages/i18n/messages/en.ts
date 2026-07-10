@@ -2044,6 +2044,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomMode: 'Escape Room Mode',
       escapeRoomTimeLimit: 'Time Limit (minutes)',
       escapeRoomHintPenalty: 'Hint Penalty (seconds)',
+      escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
       escapeRoomTimeLimitRequired: 'Time limit is required',
       escapeRoomInteger: 'Must be an integer',
       escapeRoomTimeLimitPositive: 'Must be a positive number of minutes',

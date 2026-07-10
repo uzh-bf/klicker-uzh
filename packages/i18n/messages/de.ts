@@ -2063,6 +2063,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomMode: 'Escape-Room-Modus',
       escapeRoomTimeLimit: 'Zeitlimit (Minuten)',
       escapeRoomHintPenalty: 'Hinweis-Strafe (Sekunden)',
+      escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
       escapeRoomTimeLimitRequired: 'Zeitlimit ist erforderlich',
       escapeRoomInteger: 'Muss eine ganze Zahl sein',
       escapeRoomTimeLimitPositive: 'Muss eine positive Anzahl Minuten sein',

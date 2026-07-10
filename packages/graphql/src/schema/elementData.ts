@@ -296,6 +296,7 @@ export const ElementInstanceOptions = builder
       // never serializes it to any client. The text is returned exclusively by
       // the `requestEscapeRoomHint` mutation after attempt-ownership validation.
       hasHint: t.boolean({
+        nullable: true,
         resolve: (options) => !!options.escapeRoomHint,
       }),
     }),

@@ -38,6 +38,7 @@ interface StackBlockCreationProps {
   refetchOutdatedInstances: OutdatedInstancesRefetchFunction
   singleStackMode?: boolean
   className?: string
+  isEscapeRoom?: boolean
 }
 
 interface StackBlockCreationMultipleProps extends StackBlockCreationProps {
@@ -72,6 +73,7 @@ function StackBlockCreation({
   outdatedInstances,
   refetchOutdatedInstances,
   className,
+  isEscapeRoom,
 }:
   | StackBlockCreationMultipleProps
   | StackBlockCreationSingleProps): React.ReactElement {
@@ -253,6 +255,7 @@ function StackBlockCreation({
         }
         outdatedInstances={outdatedInstances}
         refetchOutdatedInstances={refetchOutdatedInstances}
+        isEscapeRoom={isEscapeRoom}
       />
 
       {selection && !isEmpty(selection) && (

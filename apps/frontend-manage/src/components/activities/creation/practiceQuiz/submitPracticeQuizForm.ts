@@ -76,6 +76,9 @@ async function submitPracticeQuizForm({
               order: ix,
               existingInstanceId: element.existingInstanceId,
               duplicateInstance: element.duplicateInstance,
+              escapeRoomHint: values.isEscapeRoom
+                ? (element.escapeRoomHint ?? undefined)
+                : undefined,
             }
           }),
         }

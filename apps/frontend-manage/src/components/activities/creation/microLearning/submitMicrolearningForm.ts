@@ -78,6 +78,9 @@ async function submitMicrolearningForm({
           order: ix,
           existingInstanceId: element.existingInstanceId,
           duplicateInstance: element.duplicateInstance,
+          escapeRoomHint: values.isEscapeRoom
+            ? (element.escapeRoomHint ?? undefined)
+            : undefined,
         })),
       })),
       startDate: dayjs(values.startDate).utc().format(),

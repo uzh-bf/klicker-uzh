@@ -1105,7 +1105,7 @@ input ElementInstanceInput {
 
 type ElementInstanceOptions {
   basePoints: Boolean
-  hasHint: Boolean!
+  hasHint: Boolean
   pointsMultiplier: Int
   resetTimeDays: Int
 }
