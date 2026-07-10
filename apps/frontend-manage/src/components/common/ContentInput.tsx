@@ -134,7 +134,7 @@ function ContentInput({
   // Sync disabled/editable state
   useEffect(() => {
     if (!editor) return
-    editor.setEditable(!disabled)
+    editor.setEditable(!disabled, false)
   }, [disabled, editor])
 
   if (!editor) {
@@ -557,11 +557,18 @@ interface ToolbarButtonProps
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   function ToolbarButton(
-    { className, active, children, onClick, ...props },
+    {
+      className,
+      active,
+      children,
+      disabled: buttonDisabled,
+      onClick,
+      ...props
+    },
     ref
   ) {
-    const { disabled } = React.useContext(ToolbarContext)
-    const isDisabled = disabled || props.disabled
+    const { disabled: editorDisabled } = React.useContext(ToolbarContext)
+    const isDisabled = editorDisabled || buttonDisabled
     return (
       <button
         ref={ref}
