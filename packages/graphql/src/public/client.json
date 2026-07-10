@@ -210,6 +210,7 @@
    "GetDerivedPermissionOrigin": "b2e55d6bd34c82c085d4b2d447b18b5bc18534d72d520c32976082a9d0623601",
    "GetElementSummary": "c4a91bf4322c64867cdbe6588886ba72a80be50a9761637d3c6af5540c22d1d7",
    "GetEndedLiveQuizzesCourse": "31666e2b870ece107025fc3de8b2a1205d1c15d72ff804dfaaccd5b611d1aa1f",
+   "GetEscapeRoomProgress": "8bbb1ee5dabf3402539c6360247b335c0b1a21c819d651c021a604f04fc4952f",
    "GetFeedbacks": "4d12fff29b8c270acb661bd340c218fd12b89ec382e47e0adeab91d5eac3749b",
    "GetGradingGroupActivity": "c504ca2be5a1a511ac007c9231193941e5c9074ce0880d2cfbaa69633ef2e161",
    "GetGroupActivity": "a75705ebc9005997938d1296a9d801ab7848d3233556ff0aac632e23ff962e21",

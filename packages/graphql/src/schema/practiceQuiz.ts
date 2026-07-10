@@ -12,6 +12,10 @@ import {
   StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import type {
+  EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
+  EscapeRoomProgress as IEscapeRoomProgress,
+} from '../services/escapeRooms.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
@@ -301,6 +305,39 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
     microLearningId: t.exposeString('microLearningId', { nullable: true }),
     groupActivityId: t.exposeString('groupActivityId', { nullable: true }),
     elementBlockId: t.exposeInt('elementBlockId', { nullable: true }),
+  }),
+})
+
+export const EscapeRoomAttemptProgressRef =
+  builder.objectRef<IEscapeRoomAttemptProgress>('EscapeRoomAttemptProgress')
+export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
+  {
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      participantId: t.exposeString('participantId', { nullable: true }),
+      groupId: t.exposeString('groupId', { nullable: true }),
+      displayName: t.exposeString('displayName'),
+      avatar: t.exposeString('avatar', { nullable: true }),
+      status: t.expose('status', { type: EscapeRoomStatus }),
+      startedAt: t.expose('startedAt', { type: 'Date' }),
+      completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
+      lockoutUntil: t.expose('lockoutUntil', { type: 'Date', nullable: true }),
+      penaltySeconds: t.exposeInt('penaltySeconds'),
+      hintsUsedCount: t.exposeInt('hintsUsedCount'),
+      clearedStacks: t.exposeInt('clearedStacks'),
+      timeSpentSeconds: t.exposeInt('timeSpentSeconds', { nullable: true }),
+    }),
+  }
+)
+
+export const EscapeRoomProgressRef =
+  builder.objectRef<IEscapeRoomProgress>('EscapeRoomProgress')
+export const EscapeRoomProgress = EscapeRoomProgressRef.implement({
+  fields: (t) => ({
+    activityId: t.exposeString('activityId'),
+    totalStacks: t.exposeInt('totalStacks'),
+    timeLimit: t.exposeInt('timeLimit'),
+    attempts: t.expose('attempts', { type: [EscapeRoomAttemptProgressRef] }),
   }),
 })
 

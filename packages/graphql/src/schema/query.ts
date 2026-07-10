@@ -8,6 +8,7 @@ import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as EscapeRoomService from '../services/escapeRooms.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -88,6 +89,7 @@ import {
 import {
   ActivitySummary,
   ElementStack,
+  EscapeRoomProgress,
   PracticeQuiz,
   PublicationStatus,
   ReviewStatus,
@@ -610,6 +612,28 @@ export const Query = builder.queryType({
               args,
               ctx
             )
+          }
+        ),
+      }),
+
+      escapeRoomProgress: t.withAuth(asUser).field({
+        nullable: true,
+        type: EscapeRoomProgress,
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+        },
+        resolve: withPermission(
+          (args) =>
+            args.practiceQuizId
+              ? { practiceQuizId: args.practiceQuizId }
+              : args.microLearningId
+                ? { microLearningId: args.microLearningId }
+                : { groupActivityId: args.groupActivityId },
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await EscapeRoomService.getEscapeRoomProgress(args, ctx)
           }
         ),
       }),

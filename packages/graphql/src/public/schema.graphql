@@ -1205,6 +1205,22 @@ type EscapeRoomAttempt {
   timeLimit: Int!
 }
 
+type EscapeRoomAttemptProgress {
+  avatar: String
+  clearedStacks: Int!
+  completedAt: Date
+  displayName: String!
+  groupId: String
+  hintsUsedCount: Int!
+  id: String!
+  lockoutUntil: Date
+  participantId: String
+  penaltySeconds: Int!
+  startedAt: Date!
+  status: EscapeRoomStatus!
+  timeSpentSeconds: Int
+}
+
 type EscapeRoomConfig {
   elementBlockId: Int
   groupActivityId: String
@@ -1215,6 +1231,13 @@ type EscapeRoomConfig {
   microLearningId: String
   practiceQuizId: String
   timeLimit: Int!
+}
+
+type EscapeRoomProgress {
+  activityId: String!
+  attempts: [EscapeRoomAttemptProgress!]!
+  timeLimit: Int!
+  totalStacks: Int!
 }
 
 enum EscapeRoomStatus {
@@ -2383,6 +2406,7 @@ type Query {
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
+  escapeRoomProgress(groupActivityId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
