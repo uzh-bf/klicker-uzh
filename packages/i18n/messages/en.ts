@@ -2028,6 +2028,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Practice quizzes can contain all available element types.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
+      escapeRoomMode: 'Escape Room Mode',
+      escapeRoomTimeLimit: 'Time Limit (minutes)',
+      escapeRoomHintPenalty: 'Hint Penalty (seconds)',
+      escapeRoomTimeLimitRequired: 'Time limit is required',
+      escapeRoomInteger: 'Must be an integer',
+      escapeRoomTimeLimitPositive: 'Must be a positive number of minutes',
+      escapeRoomTimeLimitMax: 'Time limit may not exceed 1440 minutes (24h)',
+      escapeRoomHintPenaltyRequired: 'Hint penalty is required',
+      escapeRoomHintPenaltyMin: 'Must be a non-negative number of seconds',
+      escapeRoomHintPenaltyMax: 'Hint penalty may not exceed 3600 seconds (1h)',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
       groupActivityInformation:

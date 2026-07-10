@@ -2047,6 +2047,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Übungs-Quizzes können alle verfügbaren Element-Typen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      escapeRoomMode: 'Escape-Room-Modus',
+      escapeRoomTimeLimit: 'Zeitlimit (Minuten)',
+      escapeRoomHintPenalty: 'Hinweis-Strafe (Sekunden)',
+      escapeRoomTimeLimitRequired: 'Zeitlimit ist erforderlich',
+      escapeRoomInteger: 'Muss eine ganze Zahl sein',
+      escapeRoomTimeLimitPositive: 'Muss eine positive Anzahl Minuten sein',
+      escapeRoomTimeLimitMax:
+        'Zeitlimit darf 1440 Minuten (24h) nicht überschreiten',
+      escapeRoomHintPenaltyRequired: 'Hinweis-Strafe ist erforderlich',
+      escapeRoomHintPenaltyMin: 'Muss eine nicht-negative Anzahl Sekunden sein',
+      escapeRoomHintPenaltyMax:
+        'Hinweis-Strafe darf 3600 Sekunden (1h) nicht überschreiten',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityInformation:

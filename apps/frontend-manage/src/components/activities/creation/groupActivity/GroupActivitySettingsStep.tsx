@@ -1,9 +1,7 @@
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Checkbox,
   FormikDatetimePicker,
-  FormikNumberField,
   FormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -14,6 +12,7 @@ import useGroupActivityCourseGrouping from '../../../../lib/hooks/useGroupActivi
 import CourseChangeMonitor from '../CourseChangeMonitor'
 import CreationFormValidator from '../CreationFormValidator'
 import DateChangeMonitor from '../DateChangeMonitor'
+import EscapeRoomSettingsFields from '../EscapeRoomSettingsFields'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
 import { GroupActivityWizardStepProps } from './GroupActivityWizard'
@@ -150,44 +149,10 @@ function GroupActivitySettingsStep({
                     dataHours={{ cy: 'select-end-date-hours' }}
                     dataMinutes={{ cy: 'select-end-date-minutes' }}
                   />
-                  <div className="mt-2 flex flex-col gap-2 border-t border-solid border-gray-200 pt-2">
-                    <Checkbox
-                      label="Escape Room Mode"
-                      checked={!!values.isEscapeRoom}
-                      onCheck={() =>
-                        setFieldValue('isEscapeRoom', !values.isEscapeRoom)
-                      }
-                      className={{
-                        indicator: 'text-xs',
-                        root: 'w-4.5 h-4.5',
-                      }}
-                      data={{ cy: 'toggle-escape-room' }}
-                    />
-                    {values.isEscapeRoom && (
-                      <>
-                        <FormikNumberField
-                          name="escapeRoomTimeLimit"
-                          label="Time Limit (minutes)"
-                          required
-                          className={{
-                            root: 'w-full',
-                            field: 'w-full',
-                          }}
-                          data={{ cy: 'escape-room-time-limit' }}
-                        />
-                        <FormikNumberField
-                          name="escapeRoomHintPenalty"
-                          label="Hint Penalty (seconds)"
-                          required
-                          className={{
-                            root: 'w-full',
-                            field: 'w-full',
-                          }}
-                          data={{ cy: 'escape-room-hint-penalty' }}
-                        />
-                      </>
-                    )}
-                  </div>
+                  <EscapeRoomSettingsFields
+                    isEscapeRoom={!!values.isEscapeRoom}
+                    onToggle={(next) => setFieldValue('isEscapeRoom', next)}
+                  />
                 </div>
               </div>
             </div>

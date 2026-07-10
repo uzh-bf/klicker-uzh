@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  Checkbox,
   FormikNumberField,
   FormikSelectField,
   UserNotification,
@@ -14,6 +13,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CourseSelectionMonitorPracticeQuiz from '../CourseSelectionMonitorPracticeQuiz'
 import CreationFormValidator from '../CreationFormValidator'
+import EscapeRoomSettingsFields from '../EscapeRoomSettingsFields'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
 import { PracticeQuizWizardStepProps } from './PracticeQuizWizard'
@@ -157,53 +157,22 @@ function PracticeQuizSettingsStep({
                       }
                     })}
                     required
+                    disabled={!!values.isEscapeRoom}
                     data={{ cy: 'select-order' }}
                     className={{
                       root: 'w-full',
                       tooltip: 'z-20',
                     }}
                   />
-                  <div className="mt-2 flex flex-col gap-2 border-t border-solid border-gray-200 pt-2">
-                    <Checkbox
-                      label="Escape Room Mode"
-                      checked={!!values.isEscapeRoom}
-                      onCheck={() => {
-                        setFieldValue('isEscapeRoom', !values.isEscapeRoom)
-                        if (!values.isEscapeRoom) {
-                          setFieldValue('order', ElementOrderType.Sequential)
-                        }
-                      }}
-                      className={{
-                        indicator: 'text-xs',
-                        root: 'w-4.5 h-4.5',
-                      }}
-                      data={{ cy: 'toggle-escape-room' }}
-                    />
-                    {values.isEscapeRoom && (
-                      <>
-                        <FormikNumberField
-                          name="escapeRoomTimeLimit"
-                          label="Time Limit (minutes)"
-                          required
-                          className={{
-                            root: 'w-full',
-                            field: 'w-full',
-                          }}
-                          data={{ cy: 'escape-room-time-limit' }}
-                        />
-                        <FormikNumberField
-                          name="escapeRoomHintPenalty"
-                          label="Hint Penalty (seconds)"
-                          required
-                          className={{
-                            root: 'w-full',
-                            field: 'w-full',
-                          }}
-                          data={{ cy: 'escape-room-hint-penalty' }}
-                        />
-                      </>
-                    )}
-                  </div>
+                  <EscapeRoomSettingsFields
+                    isEscapeRoom={!!values.isEscapeRoom}
+                    onToggle={(next) => {
+                      setFieldValue('isEscapeRoom', next)
+                      // practice-quiz ONLY: force sequential order when enabling
+                      if (next)
+                        setFieldValue('order', ElementOrderType.Sequential)
+                    }}
+                  />
                 </div>
               </div>
             </div>

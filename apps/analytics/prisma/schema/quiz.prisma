@@ -510,6 +510,11 @@ model EscapeRoomAttempt {
   completedAt    DateTime?
   lockoutUntil   DateTime?
 
+  // Set by the prune job once this attempt has been rolled into instance
+  // statistics. Guards against double-counting across repeated prune runs;
+  // completed/expired attempts are retained as the integrity record.
+  statsAggregatedAt DateTime?
+
   // Individual Play (PracticeQuiz / MicroLearning / LiveQuiz block)
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
   participantId String?      @db.Uuid

@@ -17,6 +17,7 @@ import * as yup from 'yup'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
+import { useEscapeRoomYupFields } from '../escapeRoomValidation'
 import WizardLayout, {
   GroupActivityClueFormValues,
   GroupActivityFormValues,
@@ -92,6 +93,7 @@ function GroupActivityWizard({
   } = useCoursesGroupActivitySplit({
     courseSelection: courses,
   })
+  const escapeRoomYupFields = useEscapeRoomYupFields()
 
   const nameValidationSchema = yup.object().shape({
     name: yup
@@ -146,25 +148,7 @@ function GroupActivityWizard({
     courseId: yup
       .string()
       .required(t('manage.activityWizard.groupActivityCourse')),
-    isEscapeRoom: yup.boolean(),
-    escapeRoomTimeLimit: yup.number().when('isEscapeRoom', {
-      is: true,
-      then: (schema) =>
-        schema
-          .required('Time limit is required')
-          .integer('Must be an integer')
-          .positive('Must be a positive number of minutes'),
-      otherwise: (schema) => schema.notRequired(),
-    }),
-    escapeRoomHintPenalty: yup.number().when('isEscapeRoom', {
-      is: true,
-      then: (schema) =>
-        schema
-          .required('Hint penalty is required')
-          .integer('Must be an integer')
-          .min(0, 'Must be a non-negative number of seconds'),
-      otherwise: (schema) => schema.notRequired(),
-    }),
+    ...escapeRoomYupFields,
   })
 
   const stackCluesValiationSchema = yup.object().shape({

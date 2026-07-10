@@ -17,6 +17,7 @@ import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
+import { useEscapeRoomYupFields } from '../escapeRoomValidation'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { PracticeQuizFormValues } from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
@@ -98,6 +99,7 @@ function PracticeQuizWizard({
     useCoursesGamificationSplit({
       courseSelection: courses,
     })
+  const escapeRoomYupFields = useEscapeRoomYupFields()
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -131,25 +133,7 @@ function PracticeQuizWizard({
         /^[0-9]+$/,
         t('manage.activityWizard.practiceQuizValidResetDays')
       ),
-    isEscapeRoom: yup.boolean(),
-    escapeRoomTimeLimit: yup.number().when('isEscapeRoom', {
-      is: true,
-      then: (schema) =>
-        schema
-          .required('Time limit is required')
-          .integer('Must be an integer')
-          .positive('Must be a positive number of minutes'),
-      otherwise: (schema) => schema.notRequired(),
-    }),
-    escapeRoomHintPenalty: yup.number().when('isEscapeRoom', {
-      is: true,
-      then: (schema) =>
-        schema
-          .required('Hint penalty is required')
-          .integer('Must be an integer')
-          .min(0, 'Must be a non-negative number of seconds'),
-      otherwise: (schema) => schema.notRequired(),
-    }),
+    ...escapeRoomYupFields,
   })
 
   const stackValiationSchema = yup.object().shape({
