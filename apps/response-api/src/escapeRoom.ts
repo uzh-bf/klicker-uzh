@@ -8,9 +8,17 @@ import {
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
 import { IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
+
+const ESCAPE_ROOM_GRACE_SECONDS = 5
+const ESCAPE_ROOM_RESPONSE_TYPES = [
+  'SC',
+  'MC',
+  'KPRIM',
+  'NUMERICAL',
+  'FREE_TEXT',
+] as const
 
 async function getParticipantData(
   cookieHeader?: string
@@ -33,12 +41,6 @@ async function getParticipantData(
         process.env.APP_SECRET as string
       )
       if (payload.role === 'PARTICIPANT') return payload
-    } else if (parsedCookies['temporary_participant_token'] !== undefined) {
-      const payload = await verifyJWT(
-        parsedCookies['temporary_participant_token'],
-        process.env.APP_SECRET as string
-      )
-      if (payload.role === 'TEMPORARY_PARTICIPANT') return payload
     }
   } catch (e) {
     console.error('JWT verification failed in response-api:', e)
@@ -75,7 +77,28 @@ export async function handleEscapeRoomValidation(
   }
 
   const blockId = Number(instanceInfo.sessionBlockId)
-  let attempt = await prisma.escapeRoomAttempt.findUnique({
+  if (!Number.isInteger(blockId) || blockId <= 0) {
+    sendJson(res, 400, { error: 'escape_room_invalid_block' })
+    return true
+  }
+
+  const instance = await prisma.elementInstance.findUnique({
+    where: { id: instanceId },
+    select: {
+      elementBlockId: true,
+      elementBlock: { select: { liveQuizId: true } },
+    },
+  })
+  if (
+    !instance ||
+    instance.elementBlockId !== blockId ||
+    instance.elementBlock?.liveQuizId !== liveQuizId
+  ) {
+    sendJson(res, 400, { error: 'escape_room_instance_block_mismatch' })
+    return true
+  }
+
+  const attempt = await prisma.escapeRoomAttempt.findUnique({
     where: {
       participantId_elementBlockId: {
         participantId: participantData.sub,
@@ -85,17 +108,8 @@ export async function handleEscapeRoomValidation(
   })
 
   if (!attempt) {
-    const timeLimit = Number(instanceInfo.escapeRoomTimeLimit || 300)
-    attempt = await prisma.escapeRoomAttempt.create({
-      data: {
-        timeLimit,
-        penaltySeconds: 0,
-        hintsUsed: [],
-        status: 'IN_PROGRESS',
-        participantId: participantData.sub,
-        elementBlockId: blockId,
-      },
-    })
+    sendJson(res, 400, { error: 'escape_room_attempt_not_started' })
+    return true
   }
 
   if (attempt.status !== 'IN_PROGRESS') {
@@ -116,7 +130,7 @@ export async function handleEscapeRoomValidation(
 
   const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
   const totalLimit = attempt.timeLimit - attempt.penaltySeconds
-  if (elapsed > totalLimit) {
+  if (elapsed > totalLimit + ESCAPE_ROOM_GRACE_SECONDS) {
     await prisma.escapeRoomAttempt.update({
       where: { id: attempt.id },
       data: { status: 'EXPIRED' },
@@ -191,11 +205,23 @@ export async function handleEscapeRoomValidation(
     // Correct! Fetch tries and send event to Hatchet to save
     const triesRaw = await redis.get(triesKey)
     const tries = triesRaw ? Number(triesRaw) + 1 : 1
-    await redis.del(triesKey)
 
     const responseTimestamp = Date.now()
+    const clearedKey = `escape-attempt:${attempt.id}:cleared`
+    const claimKey = `${clearedKey}:claim:${instanceId}`
+    const instanceAlreadyCleared =
+      (await redis.sismember(clearedKey, String(instanceId))) === 1
+
+    if (!instanceAlreadyCleared) {
+      const claimed = await redis.set(claimKey, '1', 'EX', 300, 'NX')
+      if (claimed !== 'OK') {
+        sendJson(res, 409, { error: 'escape_room_response_processing' })
+        return true
+      }
+    }
+
     const message = {
-      messageId: randomUUID(),
+      messageId: `escape:${attempt.id}:${instanceId}`,
       sessionId: String(liveQuizId),
       instanceId: String(instanceId),
       response,
@@ -204,17 +230,48 @@ export async function handleEscapeRoomValidation(
       tries,
     }
 
-    const isAuthenticatedParticipant =
-      cookie &&
-      (cookie.includes('participant_token=') ||
-        cookie.includes('temporary_participant_token='))
+    if (!instanceAlreadyCleared) {
+      try {
+        await hatchetClient.events.push(
+          'response-received:authenticated',
+          message
+        )
+        await redis.sadd(clearedKey, String(instanceId))
+        await redis.expire(clearedKey, 60 * 60 * 24 * 30)
+        await redis.del(triesKey)
+      } catch (error) {
+        await redis.del(claimKey)
+        throw error
+      }
+    }
 
-    const eventName = isAuthenticatedParticipant
-      ? 'response-received:authenticated'
-      : 'response-received:anonymous'
+    const requiredInstances = await prisma.elementInstance.findMany({
+      where: {
+        elementBlockId: blockId,
+        elementType: { in: [...ESCAPE_ROOM_RESPONSE_TYPES] },
+      },
+      select: { id: true },
+    })
+    const clearedInstances = new Set(await redis.smembers(clearedKey))
+    const blockCompleted =
+      requiredInstances.length > 0 &&
+      requiredInstances.every((entry) => clearedInstances.has(String(entry.id)))
 
-    await hatchetClient.events.push(eventName, message)
-    sendJson(res, 200, { status: 'correct', responseTimestamp })
+    if (blockCompleted) {
+      await prisma.escapeRoomAttempt.updateMany({
+        where: { id: attempt.id, status: 'IN_PROGRESS' },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          lockoutUntil: null,
+        },
+      })
+    }
+    sendJson(res, 200, {
+      status: 'correct',
+      completed: blockCompleted,
+      responseTimestamp,
+    })
     return true
   } else {
     // Incorrect! Apply lockout and increment tries

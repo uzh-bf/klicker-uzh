@@ -1,0 +1,474 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  grade: vi.fn(),
+  verifyJWT: vi.fn(),
+  push: vi.fn(),
+  findInstance: vi.fn(),
+  findInstances: vi.fn(),
+  findAttempt: vi.fn(),
+  updateAttempt: vi.fn(),
+  updateAttempts: vi.fn(),
+}))
+
+vi.mock('@klicker-uzh/grading', () => ({
+  gradeQuestionSC: mocks.grade,
+  gradeQuestionMC: mocks.grade,
+  gradeQuestionKPRIM: mocks.grade,
+  gradeQuestionNumerical: mocks.grade,
+  gradeQuestionFreeText: mocks.grade,
+}))
+vi.mock('@klicker-uzh/hatchet', () => ({
+  hatchetClient: { events: { push: mocks.push } },
+}))
+vi.mock('@klicker-uzh/prisma', () => ({
+  prisma: {
+    elementInstance: {
+      findUnique: mocks.findInstance,
+      findMany: mocks.findInstances,
+    },
+    escapeRoomAttempt: {
+      findUnique: mocks.findAttempt,
+      update: mocks.updateAttempt,
+      updateMany: mocks.updateAttempts,
+    },
+  },
+}))
+vi.mock('@klicker-uzh/util', () => ({ verifyJWT: mocks.verifyJWT }))
+
+import { handleEscapeRoomValidation } from './escapeRoom.js'
+
+function responseRecorder() {
+  const result = {
+    statusCode: 0,
+    body: '',
+    headers: new Map<string, unknown>(),
+  }
+  return {
+    result,
+    response: {
+      setHeader: (key: string, value: unknown) =>
+        result.headers.set(key, value),
+      end: (body: string) => {
+        result.body = body
+      },
+      get statusCode() {
+        return result.statusCode
+      },
+      set statusCode(value: number) {
+        result.statusCode = value
+      },
+    } as any,
+  }
+}
+
+function redisMock() {
+  const sets = new Map<string, Set<string>>()
+  const claims = new Set<string>()
+  return {
+    get: vi.fn().mockResolvedValue(null),
+    del: vi.fn(async (key: string) => {
+      const removed = claims.delete(key) || sets.delete(key)
+      return removed ? 1 : 0
+    }),
+    incr: vi.fn().mockResolvedValue(1),
+    set: vi.fn(async (key: string) => {
+      if (claims.has(key)) return null
+      claims.add(key)
+      return 'OK'
+    }),
+    sismember: vi.fn(async (key: string, value: string) =>
+      sets.get(key)?.has(value) ? 1 : 0
+    ),
+    sadd: vi.fn(async (key: string, value: string) => {
+      const values = sets.get(key) ?? new Set<string>()
+      const size = values.size
+      values.add(value)
+      sets.set(key, values)
+      return values.size - size
+    }),
+    smembers: vi.fn(async (key: string) => [...(sets.get(key) ?? [])]),
+    expire: vi.fn().mockResolvedValue(1),
+  } as any
+}
+
+const info = {
+  isEscapeRoom: 'true',
+  sessionBlockId: '7',
+  type: 'SC',
+  choiceCount: '2',
+  solutions: '[]',
+  escapeRoomLockoutSeconds: '5',
+}
+
+const payload = {
+  response: { choices: [] },
+  liveQuizId: 'quiz-1',
+  instanceId: 11,
+}
+
+function attempt(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'attempt-1',
+    status: 'IN_PROGRESS',
+    startedAt: new Date(),
+    timeLimit: 300,
+    penaltySeconds: 0,
+    lockoutUntil: null,
+    ...overrides,
+  }
+}
+
+describe('response-api escape-room validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.verifyJWT.mockResolvedValue({
+      sub: 'participant-1',
+      role: 'PARTICIPANT',
+    })
+    mocks.findInstance.mockResolvedValue({
+      elementBlockId: 7,
+      elementBlock: { liveQuizId: 'quiz-1' },
+    })
+    mocks.findAttempt.mockResolvedValue(attempt())
+    mocks.findInstances.mockResolvedValue([{ id: 11 }])
+    mocks.updateAttempt.mockResolvedValue(attempt())
+    mocks.updateAttempts.mockResolvedValue({ count: 1 })
+    mocks.grade.mockReturnValue(0)
+    mocks.push.mockResolvedValue(undefined)
+  })
+
+  it('rejects temporary participants before reading escape-room state', async () => {
+    mocks.verifyJWT.mockResolvedValue({
+      sub: 'temporary-1',
+      role: 'TEMPORARY_PARTICIPANT',
+    })
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'temporary_participant_token=token',
+      info,
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(401)
+    expect(JSON.parse(result.body)).toEqual({
+      error: 'unauthorized_participant',
+    })
+    expect(mocks.findAttempt).not.toHaveBeenCalled()
+  })
+
+  it('requires an explicitly started attempt', async () => {
+    mocks.findAttempt.mockResolvedValue(null)
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(400)
+    expect(JSON.parse(result.body)).toEqual({
+      error: 'escape_room_attempt_not_started',
+    })
+  })
+
+  it('rejects an instance outside the declared block and quiz', async () => {
+    mocks.findInstance.mockResolvedValue({
+      elementBlockId: 8,
+      elementBlock: { liveQuizId: 'quiz-2' },
+    })
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(400)
+    expect(JSON.parse(result.body)).toEqual({
+      error: 'escape_room_instance_block_mismatch',
+    })
+    expect(mocks.findAttempt).not.toHaveBeenCalled()
+  })
+
+  it('returns the active lockout without grading', async () => {
+    const lockoutUntil = new Date(Date.now() + 5_000)
+    mocks.findAttempt.mockResolvedValue(attempt({ lockoutUntil }))
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(429)
+    expect(JSON.parse(result.body).status).toBe('lockout')
+    expect(mocks.grade).not.toHaveBeenCalled()
+  })
+
+  it('accepts the five-second grace boundary and expires beyond it', async () => {
+    mocks.findAttempt.mockResolvedValue(
+      attempt({ startedAt: new Date(Date.now() - 4_000), timeLimit: 0 })
+    )
+    const within = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      within.response,
+      payload,
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+    expect(within.result.statusCode).toBe(200)
+    expect(JSON.parse(within.result.body).status).toBe('incorrect')
+
+    mocks.findAttempt.mockResolvedValue(
+      attempt({ startedAt: new Date(Date.now() - 6_000), timeLimit: 0 })
+    )
+    const beyond = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      beyond.response,
+      payload,
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+    expect(beyond.result.statusCode).toBe(400)
+    expect(JSON.parse(beyond.result.body)).toEqual({
+      error: 'escape_room_expired',
+    })
+    expect(mocks.updateAttempt).toHaveBeenCalledWith({
+      where: { id: 'attempt-1' },
+      data: { status: 'EXPIRED' },
+    })
+  })
+
+  it('publishes a regular participant response and completes the block attempt', async () => {
+    mocks.grade.mockReturnValue(1)
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(200)
+    expect(JSON.parse(result.body)).toEqual(
+      expect.objectContaining({ status: 'correct', completed: true })
+    )
+    expect(mocks.push).toHaveBeenCalledWith(
+      'response-received:authenticated',
+      expect.objectContaining({ sessionId: 'quiz-1', instanceId: '11' })
+    )
+    expect(mocks.updateAttempts).toHaveBeenCalledWith({
+      where: { id: 'attempt-1', status: 'IN_PROGRESS' },
+      data: {
+        status: 'COMPLETED',
+        completedAt: expect.any(Date),
+        lockoutUntil: null,
+      },
+    })
+  })
+
+  it('completes only after every answerable block instance is cleared', async () => {
+    mocks.grade.mockReturnValue(1)
+    mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+    const redis = redisMock()
+
+    const first = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      first.response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(JSON.parse(first.result.body).completed).toBe(false)
+    expect(mocks.updateAttempts).not.toHaveBeenCalled()
+
+    const second = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      second.response,
+      { ...payload, instanceId: 12 },
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(JSON.parse(second.result.body).completed).toBe(true)
+    expect(mocks.updateAttempts).toHaveBeenCalledTimes(1)
+    expect(mocks.push).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries final persistence without republishing an accepted response', async () => {
+    mocks.grade.mockReturnValue(1)
+    mocks.updateAttempts.mockRejectedValueOnce(
+      new Error('database unavailable')
+    )
+    const redis = redisMock()
+    const first = responseRecorder()
+
+    await expect(
+      handleEscapeRoomValidation(
+        {} as any,
+        first.response,
+        payload,
+        'participant_token=token',
+        info,
+        redis
+      )
+    ).rejects.toThrow('database unavailable')
+
+    const retry = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      retry.response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(JSON.parse(retry.result.body).completed).toBe(true)
+    expect(mocks.push).toHaveBeenCalledTimes(1)
+    expect(mocks.updateAttempts).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not inherit cleared instances after a reset starts a new attempt', async () => {
+    mocks.grade.mockReturnValue(1)
+    mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+    const redis = redisMock()
+    const first = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      first.response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(JSON.parse(first.result.body).completed).toBe(false)
+
+    mocks.findAttempt.mockResolvedValue(attempt({ id: 'attempt-2' }))
+    const afterReset = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      afterReset.response,
+      { ...payload, instanceId: 12 },
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(JSON.parse(afterReset.result.body).completed).toBe(false)
+    expect(mocks.updateAttempts).not.toHaveBeenCalled()
+  })
+
+  it('publishes only once for concurrent correct responses to one instance', async () => {
+    mocks.grade.mockReturnValue(1)
+    const redis = redisMock()
+    const responses = [responseRecorder(), responseRecorder()]
+
+    await Promise.all(
+      responses.map(({ response }) =>
+        handleEscapeRoomValidation(
+          {} as any,
+          response,
+          payload,
+          'participant_token=token',
+          info,
+          redis
+        )
+      )
+    )
+
+    expect(mocks.push).toHaveBeenCalledTimes(1)
+    expect(responses.map(({ result }) => result.statusCode).sort()).toEqual([
+      200, 409,
+    ])
+  })
+
+  it('releases the response claim when event publication fails', async () => {
+    mocks.grade.mockReturnValue(1)
+    mocks.push.mockRejectedValueOnce(new Error('hatchet unavailable'))
+    const redis = redisMock()
+    const first = responseRecorder()
+
+    await expect(
+      handleEscapeRoomValidation(
+        {} as any,
+        first.response,
+        payload,
+        'participant_token=token',
+        info,
+        redis
+      )
+    ).rejects.toThrow('hatchet unavailable')
+
+    mocks.push.mockResolvedValue(undefined)
+    const retry = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      retry.response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(JSON.parse(retry.result.body).completed).toBe(true)
+    expect(mocks.push).toHaveBeenCalledTimes(2)
+  })
+
+  it('reuses the deterministic event identity when acceptance marking fails', async () => {
+    mocks.grade.mockReturnValue(1)
+    const redis = redisMock()
+    redis.sadd.mockRejectedValueOnce(new Error('redis marker unavailable'))
+    const first = responseRecorder()
+
+    await expect(
+      handleEscapeRoomValidation(
+        {} as any,
+        first.response,
+        payload,
+        'participant_token=token',
+        info,
+        redis
+      )
+    ).rejects.toThrow('redis marker unavailable')
+
+    const retry = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      retry.response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(mocks.push).toHaveBeenCalledTimes(2)
+    expect(mocks.push.mock.calls.map((call) => call[1].messageId)).toEqual([
+      'escape:attempt-1:11',
+      'escape:attempt-1:11',
+    ])
+  })
+})

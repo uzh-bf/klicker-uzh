@@ -33,6 +33,7 @@ import {
   seedEscapeRoomGroupActivity,
   seedEscapeRoomMicroLearning,
   seedEscapeRoomPracticeQuiz,
+  seedLiveQuiz,
 } from './helpers.js'
 
 const TEST_PREFIX = `escape-${Date.now()}`
@@ -1403,6 +1404,64 @@ describe('Escape room integration tests', () => {
     })
   })
   // #endregion
+
+  describe('LiveQuiz block attempt start/reset contract', () => {
+    it('requires a regular participant start and permits only an authorized reset', async () => {
+      const liveQuiz = await seedLiveQuiz(
+        {
+          elements: [{ id: scElement.id, type: scElement.type }],
+          status: DB.PublicationStatus.PUBLISHED,
+          courseId,
+        },
+        lecturerCtx
+      )
+      const block = liveQuiz.blocks[0]!
+      await prisma.escapeRoomConfig.create({
+        data: { elementBlockId: block.id, timeLimit: 300 },
+      })
+      const participant = await seedParticipant('live-block-start')
+
+      await expect(
+        startEscapeRoomAttempt(
+          { elementBlockId: block.id },
+          createUserCtx(participant.id, DB.UserRole.TEMPORARY_PARTICIPANT)
+        )
+      ).rejects.toThrow('Only participants can start escape room attempts')
+
+      const started = await startEscapeRoomAttempt(
+        { elementBlockId: block.id },
+        participantCtx(participant.id)
+      )
+      expect(started).toMatchObject({
+        participantId: participant.id,
+        elementBlockId: block.id,
+        status: DB.EscapeRoomStatus.IN_PROGRESS,
+      })
+
+      await expect(
+        resetEscapeRoomAttempt(
+          { elementBlockId: block.id, participantId: participant.id },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Only lecturers can reset escape room attempts')
+
+      await recomputeDerivedPermissions(
+        { liveQuizId: liveQuiz.id, userId: lecturerCtx.user.sub },
+        prisma
+      )
+      await expect(
+        resetEscapeRoomAttempt(
+          { elementBlockId: block.id, participantId: participant.id },
+          lecturerCtx
+        )
+      ).resolves.toBe(true)
+      expect(
+        await prisma.escapeRoomAttempt.findUnique({
+          where: { id: started.id },
+        })
+      ).toBeNull()
+    })
+  })
 
   // ! Escape room completion
   // #region

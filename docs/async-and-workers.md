@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-07-11'
 tags:
   - backend
   - hatchet
@@ -27,6 +27,8 @@ Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatche
 ## Response ingest (`apps/response-api`)
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+
+LiveQuiz Escape Room responses take a synchronous validation branch (`apps/response-api/src/escapeRoom.ts:handleEscapeRoomValidation`). Only regular participants with an explicitly started block attempt may answer. The API validates instance-to-block-to-quiz binding, lockout, and server expiry with the shared five-second grace policy before grading. Correct instances are tracked in an attempt-scoped Redis set; only clearing every answerable block instance completes the attempt. Per-instance NX claims and deterministic `escape:<attempt>:<instance>` message IDs make retries stable. The response processor wraps those deterministic events with a Redis lock/done marker so concurrent delivery or a retry after response-api acceptance-marker failure cannot apply statistics twice. Before the response mutations and done marker execute together, a Lua preflight rejects incompatible Redis hash-key state without applying response changes (`apps/hatchet-worker-response-processor/src/processors/processor.ts:processResponseMessage`).
 
 ## Worker task catalog
 
