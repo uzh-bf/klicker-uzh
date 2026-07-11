@@ -19,6 +19,8 @@ fragment MicroLearningData on MicroLearning {
     startedAt
     timeLimit
     penaltySeconds
+    remainingSeconds
+    expiresInSeconds
     hintsUsed
     status
     completedAt

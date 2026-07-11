@@ -220,7 +220,7 @@ function MicrolearningInstance() {
                     activityType: 'microLearning',
                     hintPenalty:
                       microLearning.escapeRoomConfig?.hintPenalty ?? 0,
-                    onHintRevealed: refetch ?? (() => {}),
+                    onStateChanged: refetch ?? (() => {}),
                   }
                 : undefined
             }

@@ -19,6 +19,8 @@ query GetGroupActivity($id: String!) {
       startedAt
       timeLimit
       penaltySeconds
+      remainingSeconds
+      expiresInSeconds
       hintsUsed
       status
       completedAt

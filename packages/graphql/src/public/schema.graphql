@@ -1194,6 +1194,7 @@ enum ElementType {
 type EscapeRoomAttempt {
   completedAt: Date
   elementBlockId: Int
+  expiresInSeconds: Int!
   groupActivityId: String
   groupId: String
   hintsUsed: [String!]!
@@ -1203,6 +1204,7 @@ type EscapeRoomAttempt {
   participantId: String
   penaltySeconds: Int!
   practiceQuizId: String
+  remainingSeconds: Int!
   startedAt: Date!
   status: EscapeRoomStatus!
   timeLimit: Int!

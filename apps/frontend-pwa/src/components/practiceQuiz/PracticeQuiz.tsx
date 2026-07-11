@@ -332,7 +332,7 @@ function PracticeQuiz({
                 ? {
                     activityType: 'practiceQuiz',
                     hintPenalty: quiz.escapeRoomConfig?.hintPenalty ?? 0,
-                    onHintRevealed: refetch ?? (() => {}),
+                    onStateChanged: refetch ?? (() => {}),
                   }
                 : undefined
             }

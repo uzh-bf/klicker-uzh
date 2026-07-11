@@ -18,6 +18,8 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       startedAt
       timeLimit
       penaltySeconds
+      remainingSeconds
+      expiresInSeconds
       hintsUsed
       status
       completedAt

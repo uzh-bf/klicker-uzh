@@ -17,6 +17,8 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import {
+  ESCAPE_ROOM_GRACE_SECONDS,
+  getRemainingSecondsUntil,
   isEscapeRoomStackCleared,
   restoreUsedEscapeRoomHints,
 } from './escapeRooms.js'
@@ -1060,7 +1062,7 @@ export async function startEscapeRoomAttempt(
         (Date.now() - new Date(existingAttempt.startedAt).getTime()) / 1000
       const currentPenalty = existingAttempt.penaltySeconds
       const totalLimit = existingAttempt.timeLimit - currentPenalty
-      if (elapsed > totalLimit + 5) {
+      if (elapsed > totalLimit + ESCAPE_ROOM_GRACE_SECONDS) {
         // Expired! Update status
         return await ctx.prisma.escapeRoomAttempt.update({
           where: { id: existingAttempt.id },
@@ -1259,6 +1261,9 @@ export async function requestEscapeRoomHint(
         extensions: {
           code: 'ESCAPE_ROOM_LOCKOUT',
           lockoutUntil: attempt.lockoutUntil.toISOString(),
+          lockoutRemainingSeconds: getRemainingSecondsUntil(
+            attempt.lockoutUntil
+          ),
         },
       }
     )
@@ -1266,7 +1271,7 @@ export async function requestEscapeRoomHint(
 
   const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
   const totalLimit = attempt.timeLimit - attempt.penaltySeconds
-  if (elapsed > totalLimit + 5) {
+  if (elapsed > totalLimit + ESCAPE_ROOM_GRACE_SECONDS) {
     await ctx.prisma.escapeRoomAttempt.update({
       where: { id: attempt.id },
       data: { status: DB.EscapeRoomStatus.EXPIRED },

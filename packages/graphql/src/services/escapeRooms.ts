@@ -2,6 +2,39 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 
+export const ESCAPE_ROOM_GRACE_SECONDS = 5
+
+export function getRemainingSecondsUntil(deadline: Date, now = Date.now()) {
+  return Math.max(0, Math.ceil((deadline.getTime() - now) / 1000))
+}
+
+export function getEscapeRoomRemainingSeconds(
+  attempt: Pick<
+    DB.EscapeRoomAttempt,
+    'startedAt' | 'timeLimit' | 'penaltySeconds'
+  >,
+  now = Date.now()
+) {
+  const elapsedSeconds = (now - new Date(attempt.startedAt).getTime()) / 1000
+  return Math.max(
+    0,
+    Math.ceil(attempt.timeLimit - attempt.penaltySeconds - elapsedSeconds)
+  )
+}
+
+export function getEscapeRoomExpiresInSeconds(
+  attempt: Pick<
+    DB.EscapeRoomAttempt,
+    'startedAt' | 'timeLimit' | 'penaltySeconds'
+  >,
+  now = Date.now()
+) {
+  return getEscapeRoomRemainingSeconds(
+    { ...attempt, timeLimit: attempt.timeLimit + ESCAPE_ROOM_GRACE_SECONDS },
+    now
+  )
+}
+
 export async function getEscapeRoomHints(
   args: { practiceQuizId?: string | null; microLearningId?: string | null },
   ctx: ContextWithUser

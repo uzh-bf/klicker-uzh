@@ -23,8 +23,9 @@ export function useEscapeRoom({
 
   const isEscapeRoom = !!activity?.escapeRoomConfig
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
+  const [expiresInSeconds, setExpiresInSeconds] = useState<number | null>(null)
   // Guard so the expiry refetch fires exactly once per attempt, not every tick.
-  const expiryHandledRef = useRef(false)
+  const expiryHandledAttemptIdRef = useRef<string | null>(null)
 
   const startAttempt = async () => {
     const variables: Record<string, string> = {}
@@ -47,24 +48,31 @@ export function useEscapeRoom({
       attempt.status !== EscapeRoomStatus.InProgress
     ) {
       setRemainingSeconds(null)
+      setExpiresInSeconds(null)
       return
     }
 
-    // Fresh in-progress attempt: allow one expiry refetch again.
-    expiryHandledRef.current = false
-
+    // The server supplies the authoritative remaining duration. Animate from
+    // that snapshot with a monotonic clock so client wall-clock skew/changes
+    // cannot add or remove time between refetches.
+    const receivedAt = performance.now()
     const calculateRemaining = () => {
-      const started = new Date(attempt.startedAt).getTime()
-      const limit = attempt.timeLimit
-      const penalty = attempt.penaltySeconds
-      const deadline = started + (limit - penalty) * 1000
-      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+      const elapsed = (performance.now() - receivedAt) / 1000
+      const remaining = Math.max(
+        0,
+        Math.ceil(attempt.remainingSeconds - elapsed)
+      )
+      const expiresIn = Math.max(
+        0,
+        Math.ceil(attempt.expiresInSeconds - elapsed)
+      )
       setRemainingSeconds(remaining)
+      setExpiresInSeconds(expiresIn)
 
       // On local expiry, refetch ONCE to sync the server-side status; without
       // the guard this fired every second while status stayed InProgress.
-      if (remaining <= 0 && !expiryHandledRef.current) {
-        expiryHandledRef.current = true
+      if (expiresIn <= 0 && expiryHandledAttemptIdRef.current !== attempt.id) {
+        expiryHandledAttemptIdRef.current = attempt.id
         refetch()
       }
     }
@@ -81,7 +89,8 @@ export function useEscapeRoom({
     attempt?.status === EscapeRoomStatus.Expired ||
     (attempt?.status === EscapeRoomStatus.InProgress &&
       remainingSeconds !== null &&
-      remainingSeconds <= 0)
+      expiresInSeconds !== null &&
+      expiresInSeconds <= 0)
 
   return {
     attempt,

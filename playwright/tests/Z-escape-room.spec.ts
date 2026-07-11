@@ -25,6 +25,11 @@ import {
 
 let page: Page
 
+function timerSeconds(value: string) {
+  const [minutes, seconds] = value.split(':').map(Number)
+  return minutes! * 60 + seconds!
+}
+
 const COURSE = 'Testkurs'
 
 const QUIZ = {
@@ -285,6 +290,10 @@ test.describe.serial('Escape room workflows', () => {
     page = testPage
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
+    await page.addInitScript(() => {
+      const realNow = Date.now
+      Date.now = () => realNow() + 6 * 60 * 60 * 1000
+    })
     await loginStudent(page)
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
@@ -310,7 +319,7 @@ test.describe.serial('Escape room workflows', () => {
     await expect(page.getByTestId('escape-room-progress-chip')).toHaveText(
       /0\s*\/\s*3/
     )
-    await expect(page.getByRole('timer')).toHaveText(/\d{1,3}:\d{2}/)
+    await expect(page.getByRole('timer')).toHaveText(/^(?:30:00|29:\d{2})$/)
     await expect(
       page.getByTestId('practice-quiz-escape-room-info')
     ).toBeVisible()
@@ -331,11 +340,18 @@ test.describe.serial('Escape room workflows', () => {
     page = testPage
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
+    await page.addInitScript(() => {
+      const realNow = Date.now
+      Date.now = () => realNow() - 6 * 60 * 60 * 1000
+    })
     await loginStudent(page)
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
     await page.getByTestId('start-practice-quiz').click()
     await expect(page.getByText(SC1.content).first()).toBeVisible()
+    const beforeHint = timerSeconds(
+      (await page.getByRole('timer').textContent()) ?? '0:00'
+    )
 
     const hintButton = page
       .locator('[data-cy^="request-escape-room-hint-"]')
@@ -359,6 +375,10 @@ test.describe.serial('Escape room workflows', () => {
     await expect(
       page.locator('[data-cy^="request-escape-room-hint-"]')
     ).not.toBeAttached()
+    const afterHint = timerSeconds(
+      (await page.getByRole('timer').textContent()) ?? '0:00'
+    )
+    expect(afterHint).toBeLessThanOrEqual(beforeHint - 25)
 
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
@@ -381,6 +401,10 @@ test.describe.serial('Escape room workflows', () => {
     page = testPage
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
+    await page.addInitScript(() => {
+      const realNow = Date.now
+      Date.now = () => realNow() + 12 * 60 * 60 * 1000
+    })
     await loginStudent(page)
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()

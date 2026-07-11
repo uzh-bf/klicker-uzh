@@ -7,8 +7,10 @@ import { EventEmitter } from 'events'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import {
+  getEscapeRoomExpiresInSeconds,
   getEscapeRoomHints,
   getEscapeRoomProgress,
+  getEscapeRoomRemainingSeconds,
 } from '../src/services/escapeRooms.js'
 import { submitGroupActivityDecisions } from '../src/services/groups.js'
 import { getMicroLearningData } from '../src/services/microLearning.js'
@@ -495,6 +497,24 @@ describe('Escape room integration tests', () => {
     })
   })
   // #endregion
+
+  describe('server-authoritative remaining time', () => {
+    it('calculates from server time, including penalties and boundary clamping', () => {
+      const serverNow = Date.parse('2026-07-11T12:00:00.000Z')
+      const attempt = {
+        startedAt: new Date(serverNow - 10_250),
+        timeLimit: 60,
+        penaltySeconds: 5,
+      }
+
+      expect(getEscapeRoomRemainingSeconds(attempt, serverNow)).toBe(45)
+      expect(getEscapeRoomExpiresInSeconds(attempt, serverNow)).toBe(50)
+      expect(getEscapeRoomRemainingSeconds(attempt, serverNow + 44_749)).toBe(1)
+      expect(getEscapeRoomRemainingSeconds(attempt, serverNow + 60_000)).toBe(0)
+      expect(getEscapeRoomExpiresInSeconds(attempt, serverNow + 49_749)).toBe(1)
+      expect(getEscapeRoomExpiresInSeconds(attempt, serverNow + 50_000)).toBe(0)
+    })
+  })
 
   // ! Escape-room hint authoring round-trip
   // #region

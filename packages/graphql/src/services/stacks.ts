@@ -67,6 +67,10 @@ import type {
   CaseStudyElementOptions,
   ResponseInput,
 } from '../ops.js'
+import {
+  ESCAPE_ROOM_GRACE_SECONDS,
+  getRemainingSecondsUntil,
+} from './escapeRooms.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
@@ -3271,6 +3275,9 @@ export async function respondToElementStack(
             extensions: {
               code: 'ESCAPE_ROOM_LOCKOUT',
               lockoutUntil: attempt.lockoutUntil.toISOString(),
+              lockoutRemainingSeconds: getRemainingSecondsUntil(
+                attempt.lockoutUntil
+              ),
             },
           }
         )
@@ -3279,7 +3286,7 @@ export async function respondToElementStack(
       const elapsed =
         (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
       const totalLimit = attempt.timeLimit - attempt.penaltySeconds
-      if (elapsed > totalLimit + 5) {
+      if (elapsed > totalLimit + ESCAPE_ROOM_GRACE_SECONDS) {
         await ctx.prisma.escapeRoomAttempt.update({
           where: { id: attempt.id },
           data: { status: DB.EscapeRoomStatus.EXPIRED },

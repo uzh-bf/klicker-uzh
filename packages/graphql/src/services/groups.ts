@@ -30,6 +30,7 @@ import {
 import { shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { getPermissionBooleans } from './activities.js'
+import { ESCAPE_ROOM_GRACE_SECONDS } from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -1713,7 +1714,7 @@ export async function submitGroupActivityDecisions(
           const elapsed =
             (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
           const totalLimit = attempt.timeLimit - attempt.penaltySeconds
-          if (elapsed > totalLimit + 5) {
+          if (elapsed > totalLimit + ESCAPE_ROOM_GRACE_SECONDS) {
             await prisma.escapeRoomAttempt.update({
               where: { id: attempt.id },
               data: { status: DB.EscapeRoomStatus.EXPIRED },

@@ -54,12 +54,12 @@ interface ElementStackProps {
   // Escape-room hints: set only when this stack belongs to an escape-room
   // activity. Drives the per-element "reveal hint" button (shown only for
   // elements whose options.hasHint is true). Revealing charges hintPenalty
-  // seconds server-side; onHintRevealed refetches so the live countdown
-  // reflects the new penalty.
+  // seconds server-side; onStateChanged refetches so timer/lockout state stays
+  // synchronized after hints and submissions.
   escapeRoom?: {
     activityType: 'practiceQuiz' | 'microLearning'
     hintPenalty: number
-    onHintRevealed: () => void
+    onStateChanged: () => void | Promise<unknown>
   }
 }
 
@@ -127,26 +127,26 @@ function ElementStack({
   // Escape-room lockout: a wrong answer sets a server-side lockout window, and
   // the next submit throws ESCAPE_ROOM_LOCKOUT carrying lockoutUntil. Track it
   // to disable the submit button and show a live retry countdown.
-  const [lockedOutUntil, setLockedOutUntil] = useState<Date | null>(null)
+  const [lockoutDeadline, setLockoutDeadline] = useState<number | null>(null)
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
 
   useEffect(() => {
-    if (!lockedOutUntil) {
+    if (lockoutDeadline === null) {
       setLockoutRemaining(0)
       return
     }
     const tick = () => {
       const remaining = Math.max(
         0,
-        Math.ceil((lockedOutUntil.getTime() - Date.now()) / 1000)
+        Math.ceil((lockoutDeadline - performance.now()) / 1000)
       )
       setLockoutRemaining(remaining)
-      if (remaining <= 0) setLockedOutUntil(null)
+      if (remaining <= 0) setLockoutDeadline(null)
     }
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [lockedOutUntil])
+  }, [lockoutDeadline])
 
   // Map the structured escape-room error codes thrown by respondToElementStack
   // to localized participant feedback. Non-escape errors surface a generic
@@ -168,8 +168,10 @@ function ElementStack({
     }
     switch (escapeError.extensions?.code) {
       case 'ESCAPE_ROOM_LOCKOUT': {
-        const until = escapeError.extensions?.lockoutUntil
-        if (typeof until === 'string') setLockedOutUntil(new Date(until))
+        const remaining = escapeError.extensions?.lockoutRemainingSeconds
+        if (typeof remaining === 'number') {
+          setLockoutDeadline(performance.now() + remaining * 1000)
+        }
         toast({
           message: t('pwa.practiceQuiz.escapeRoomLockoutToast' as any, {
             defaultValue:
@@ -233,7 +235,7 @@ function ElementStack({
           type: 'success',
         })
         // Refetch so the live countdown picks up the newly charged penalty.
-        escapeRoom.onHintRevealed()
+        await escapeRoom.onStateChanged()
       }
     } catch (error) {
       handleEscapeRoomError(error)
@@ -778,8 +780,9 @@ function ElementStack({
                     }
                   ),
                 },
-              }).catch((error) => {
+              }).catch(async (error) => {
                 handleEscapeRoomError(error)
+                await escapeRoom?.onStateChanged()
                 return undefined
               })
 
@@ -808,6 +811,7 @@ function ElementStack({
 
               // set status and score according to returned correctness
               const grading = result.data?.respondToElementStack
+              await escapeRoom?.onStateChanged()
               setLastGradedStatus(grading.status)
               setStudentResponse({})
 

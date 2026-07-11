@@ -16,6 +16,10 @@ import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
   EscapeRoomProgress as IEscapeRoomProgress,
 } from '../services/escapeRooms.js'
+import {
+  getEscapeRoomExpiresInSeconds,
+  getEscapeRoomRemainingSeconds,
+} from '../services/escapeRooms.js'
 import type { EscapeRoomHintResult as IEscapeRoomHintResult } from '../services/practiceQuizzes.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
@@ -292,6 +296,12 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
     startedAt: t.expose('startedAt', { type: 'Date' }),
     timeLimit: t.exposeInt('timeLimit'),
     penaltySeconds: t.exposeInt('penaltySeconds'),
+    remainingSeconds: t.int({
+      resolve: (attempt) => getEscapeRoomRemainingSeconds(attempt),
+    }),
+    expiresInSeconds: t.int({
+      resolve: (attempt) => getEscapeRoomExpiresInSeconds(attempt),
+    }),
     hintsUsed: t.field({
       type: ['String'],
       resolve: (parent) => {

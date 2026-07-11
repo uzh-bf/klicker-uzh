@@ -21,6 +21,8 @@ fragment PracticeQuizData on PracticeQuiz {
     startedAt
     timeLimit
     penaltySeconds
+    remainingSeconds
+    expiresInSeconds
     hintsUsed
     status
     completedAt
