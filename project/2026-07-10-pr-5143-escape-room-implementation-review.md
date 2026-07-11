@@ -2,9 +2,10 @@
 
 - **PR:** [#5143](https://github.com/uzh-bf/klicker-uzh/pull/5143) — `feat(quiz): generalized escape room mode and response validation`
 - **Branch:** `escape-room-quiz-mode-plan` → target `v3`
-- **Reviewed at HEAD:** `82d02d0cd`
-- **Diff size:** 77 files, +4349 / −179 vs `origin/v3`
-- **Reviewer:** senior pass (Claude) — 5 parallel review agents (PWA, manage, backend, tests, bots/CI) + manual verification of every blocking finding against the code.
+- **Initial review HEAD:** `82d02d0cd`
+- **Initial diff size:** 77 files, +4349 / −179 vs `origin/v3`
+- **Initial reviewer:** senior pass (Claude) — 5 parallel review agents (PWA, manage, backend, tests, bots/CI) + manual verification of every blocking finding against the code.
+- **Follow-up review:** 2026-07-11 at local HEAD `4cd05b1e7`; local branch 18 commits ahead of PR HEAD `8d2fb1a7`; `v3...HEAD` spans 187 files, +12912 / −1245.
 - **Companion doc:** original plan at [project/2026-07-07-pr-5143-escape-room-quiz-mode-plan.md](2026-07-07-pr-5143-escape-room-quiz-mode-plan.md).
 
 ---
@@ -15,7 +16,7 @@
 
 The honest framing for the junior: you built escape mode **wide** (all four activity types) instead of **deep** (the plan's PracticeQuiz-only v1 with hints + QR + lecturer dashboard). The width added duplication and dead surface; the depth the plan actually asked for is missing. Roadmap in §7 converges the two.
 
-### Severity summary
+### Initial severity summary at `82d02d0cd`
 
 | Sev | Count | Headline items |
 |-----|-------|----------------|
@@ -212,12 +213,12 @@ Scope decision (§ end): product chose **keep all four activity types + fix them
 | Commit | Phase | What |
 |--------|-------|------|
 | `f0bd5ca48` | 0 | B5 docker-compose port revert; M9 stray CI comment; B6 playwright login sigs; B3 migration unique index |
-| `8fd46c88d` | 1 | **B1** anon/non-participant grading bypass closed in `respondToElementStack` + stack masking for non-participants in `getPracticeQuizData`/`getMicroLearningData`; **B2** `resetEscapeRoomAttempt` lecturer-only; **B4** `pruneEscapeRooms` retention window (90d) + `statsAggregatedAt` idempotency marker; **M1** group lockout enforced in `submitGroupActivityDecisions` |
+| `8fd46c88d` | 1 | **B1 partial:** anon/non-participant guard added in `respondToElementStack` + stack masking for non-participants in `getPracticeQuizData`/`getMicroLearningData`; follow-up review found the client-controlled `isOwner` bypass in B7 below. **B2** `resetEscapeRoomAttempt` lecturer-only; **B4** retention window (90d) + `statsAggregatedAt` marker; follow-up review found statistics corruption in B10. **M1 partial:** group lockout enforced, but empty/partial submissions still complete the room (B8). |
 | `7162c3df2` | 2 | **M6** shared `EscapeRoomSettingsFields` + `useEscapeRoomYupFields`; **M4** i18n (10 keys en+de); **M5** order forced Sequential + selector disabled in escape mode; validation bounds (time ≤1440min, penalty ≤3600s) |
 | `247a0154c` | 4 | **Lecturer dashboard data layer:** owner-authorized `escapeRoomProgress` query (`escapeRooms.ts` service) — per-participant cleared/total stacks, status, time, penalty, hints, lockout; `EscapeRoomProgress`/`EscapeRoomAttemptProgress` types + op + codegen |
-| `d51a545e3` `6c1b0e75a` `8d2fb1a7e` | 1 | **M7** escape-room security regression tests (`packages/graphql/test/escapeRoom.test.ts`) — B1 anon guard + owner bypass, sequential gating, lockout window, expiry, B2 reset auth (lecturer/participant/no-write), completion fires-once, B4 prune retention, `escapeRoomProgress` aggregation; `seedEscapeRoomPracticeQuiz` helper (real `elementData` + `instanceStatistics` so graded submits don't NPE). Live-DB integration → CI-verified |
+| `d51a545e3` `6c1b0e75a` `8d2fb1a7e` | 1 | **M7 partial:** escape-room integration tests cover the anon guard, sequential gating, lockout, expiry, reset auth, completion, retention, and progress aggregation. The owner-preview test currently blesses an anonymous `isOwner: true` bypass; B7 reverses that expectation. No group empty/partial/foreign-instance tests exist. Live-DB integration was CI-verified at remote HEAD `8d2fb1a7`. |
 | `5dc008c11` | 2 | **M2/M3** structured escape error codes surfaced as participant feedback: `stacks.ts` attaches `extensions.code` (NO_ATTEMPT/LOCKOUT/EXPIRED/GATED/FORBIDDEN, LOCKOUT carries `lockoutUntil`); `ElementStack` maps them to localized toasts + a live lockout countdown that disables Submit; `EscapeRoomOverlay` dialogs get `aria-label`/`role=timer` and the participant reset button is replaced by a "contact lecturer" message; `useEscapeRoom` once-guards the expiry refetch; 8 i18n keys en+de. **Browser-verified on a recovered devcontainer stack (en+de): start/expired overlays, lockout toast+countdown, timer a11y** |
-| `8da2662f4` | 3 | **Phase 3a** time-penalty hints backend. `escapeRoomHint` authored via `ElementInstanceInput` → persisted into instance `options` (`util/elements.ts` Cases 2/3, same slot/behaviour as `resetTimeDays`). **Leak-proof by construction:** the raw string is never declared on any output type — only a derived content-free `hasHint: Boolean` on `ElementInstanceOptions` (nullable, matching sibling fields so partial `options {}` selections still typecheck); the three participant fragments (`FPracticeQuizDataWithoutSolutions`/`FMicroLearningDataWithoutSolutions`/`QGroupActivityDetails`) select `hasHint`. `requestEscapeRoomHint(activityId, instanceId)` reveals the text exactly once, gated by PARTICIPANT + **exactly-one-activity-ID** + enrollment + owns IN_PROGRESS/non-expired/non-locked attempt + instance-belongs-to-activity; charges `hintPenalty` into `penaltySeconds` and appends to `hintsUsed` via a **single atomic jsonb UPDATE** (`\|\|` append guarded by `NOT @>`, race-free for shared group rows). 6 integration tests. Adversarially reviewed (2 confirmed findings — priority-mismatch hint leak + lost-update race — both fixed); atomic SQL smoke-tested against the live schema |
+| `8da2662f4` | 3 | **Phase 3a partial:** time-penalty hint storage, atomic idempotent charging, enrollment, active-attempt, lockout, expiry, single-activity-ID, and activity-membership checks landed. Follow-up review found no current/unlocked-stack authorization, so an active participant can enumerate numeric instance IDs and reveal future-stage hints (B9). Used hint text also does not survive refresh automatically (M11). |
 | `cedfe235d` | 3 | **Phase 3b** manage hint authoring. `escapeRoomHint` on `ElementInstanceFormInput`; `isEscapeRoom` threaded `StackCreationStep` → `StackBlockCreation` → `WizardElementList`, which renders a per-element hint `FormikTextField` (name `stacks.{s}.elements.{e}.escapeRoomHint`, cy `escape-room-hint-stack-{s}-{e}`) only when `isEscapeRoom && type==='stack'`; `submitPracticeQuizForm`/`submitMicrolearningForm` forward the hint (only in escape mode) into each element's `ElementInstanceInput`. i18n key `escapeRoomHintPlaceholder` en+de. **Browser-verified (manage, lecturer):** hint input renders under each stack element in escape mode after adding a content element (en placeholder "Optional hint (costs time when revealed)"); German bundle resolves "Optionaler Hinweis (kostet Zeit bei Anzeige)" |
 | `9a907c976` | 3 | **Phase 3c** PWA participant hint reveal. `ElementStack` gains an optional `escapeRoom` prop (`activityType`/`hintPenalty`/`onHintRevealed`), wired at both call sites (`PracticeQuiz.tsx`, `microLearnings/[id]/[ix].tsx`). Per element with `options.hasHint`, a "Reveal hint (−{penalty}s)" button calls `RequestEscapeRoomHint` with the correct activity id + `instanceId`; the returned text replaces the button (kept in local state), a success toast notes the penalty, and `onHintRevealed` refetches so the live countdown drops. Single-flight; structured escape errors reuse `handleEscapeRoomError`. i18n `escapeRoomRequestHint` + `escapeRoomHintRevealedToast` en+de. **Browser-verified (PWA, participant, en+de):** button label shows the cost, click reveals the hint inline, server charges `penaltySeconds` 0→30 + `hintsUsed` `["250"]`, countdown drops |
 | `f32b12e6b` | UX | **UX/design polish pass** (browser-verified en+de, all overlay states). Fixed invisible icon circles from nonexistent Tailwind shades (`slate-750`/`red-650`/`green-650` → real 600/900 shades); completion screen now shows escape time, hints used, and time penalty; expired screen shows cleared/total stages; in-progress chip with door icon + stage progress; timer pulses red under 60s (`role=timer` kept); start screen gets a stages/time/penalty stats row; overview page in escape mode swaps the misleading order/repetition rows for a one-attempt info row and hides the localStorage reset button (would desync server attempt state); `numOfStacks` added to `FMicroLearningDataWithoutSolutions`; 7 i18n keys en+de |
@@ -231,13 +232,208 @@ The **browser loop is available**: a branch-correct `klicker-hlum` devcontainer 
 ### Remaining slices
 Frontend + full-stack features, deliberately **not** built blind. Each is code-scoped and ready:
 - **M2/M3 — PWA usability (blocking): ✅ DONE (`5dc008c11`, browser-verified en+de).** Submit error handling + `lockoutUntil` retry countdown in `ElementStack.tsx`; participant self-reset removed from `EscapeRoomOverlay` → "contact lecturer" message; once-guard in `useEscapeRoom.ts`; overlay a11y (`role=dialog`/`aria-modal`/`aria-label`, `role=timer`). Note: the `liveQuiz/QuestionArea.tsx` lockout code was **retained** (not deleted) — it is the M8 live-quiz escape path, kept per the §7/§208 scope decision, and shares `escapeRoomIncorrectToast`.
-- **Phase 3 — Hints (full feature): ✅ COMPLETE.** 3a backend (`8da2662f4`), 3b manage authoring (`cedfe235d`, browser-verified en+de), 3c PWA participant reveal (`9a907c976`, browser-verified en+de). `escapeRoomHint` on `ElementInstanceInput` → instance `options`; content-free `hasHint` boolean is the only output surface (raw text leak-proof by construction); `requestEscapeRoomHint` mutation reveals once after full ownership/activity/single-ID validation, charging `hintPenalty` atomically. Manage wizard exposes a per-element hint input in escape mode; the PWA shows a "reveal hint (−{penalty}s)" button per `hasHint` element that unlocks the text, charges the penalty, and drops the live countdown. **Scope note:** hint authoring + reveal cover practice quiz + microlearning (the two `ElementStack` activity types); group-activity hint reveal (`GroupActivityStack`) and live-quiz blocks remain out of scope here (tracked under M8 / a GA follow-up).
-- **Phase 4 — Dashboard UI: ✅ COMPLETE (`1a291bff9`, browser-verified manage/lecturer en+de).** An "Escape Room" tab in the practice-quiz/microlearning evaluation views consumes the owner-scoped `escapeRoomProgress` query (tab appears only when the query is non-null, i.e. actual escape rooms) and polls every 5s while open. Per-participant table: status pill, cleared/total progress bar, hints, `+mm:ss` penalty, time spent, lockout sub-label, and a two-step lecturer-only reset (`resetEscapeRoomAttempt` → refetch). **Scope note:** wired for the two `ElementStack` activity types (practice quiz + microlearning); group-activity/live-quiz progress surfaces remain out of scope here (the service already handles `groupActivityId`/`elementBlockId`, tracked under M8 / a GA follow-up).
+- **Phase 3 — Hints: PARTIAL.** Practice-quiz/microlearning authoring and reveal work, with atomic charging. Merge blockers remain: future-stack authorization (B9), edit/save round-trip (B11), and refresh-safe revealed text (M11). Group/live hint surfaces remain missing despite the all-four scope decision.
+- **Phase 4 — Dashboard UI: PARTIAL (`1a291bff9`, browser-verified manage/lecturer en+de).** Practice-quiz/microlearning attempt rows work. The query omits enrolled participants who have not started, so the planned `NOT_STARTED` state and one-row-per-participant view are absent. Group/live UI remains missing.
 - **UX/engagement pass: ✅ DONE (`f32b12e6b` + `1d27c4de6`, browser-verified en+de).** Overlay states polished (stats, progress, urgency pulse), overview de-mislead, and a lecturer-authored markdown **intro story** on the start screen. The verification loop surfaced and fixed two real regressions: escape-room **creation** via wizard was impossible (Prisma nested-upsert-in-create), and **edit/duplicate prefill** silently dropped the escape config (missing `include`). Both now covered by the browser-verified chain; add unit tests for the create path in the playwright/test slice below.
 - **Phase 4 — QR_SCAN element type:** new `ElementType` across the registry (`elementData.ts`/`element.ts` unions, `useElementTypeOptions.ts`, `StudentElement.tsx`, grading dispatch in `stacks.ts` + `response-api/escapeRoom.ts`), opaque CSPRNG code payload, scanning (BarcodeDetector-first) + manual fallback + print workflow. Largest/riskiest — senior pairing.
 - **M8 — Live-quiz escape authoring:** the `response-api` validation path exists but has no wizard; add the escape surface to `liveQuiz/*Step.tsx` (kept per scope). Then expose `elementBlockId` in `escapeRoomProgress` (service already handles it).
-- **Playwright e2e suite (release gate): ✅ DONE (`96c0fac4d`, static validation).** `Z-escape-room.spec.ts` rewritten as an 11-test serial workflow mirroring `Q-practice-quiz.spec.ts`: CLEANUP + DB-seeded fixtures, wizard creation via the real drag/drop stack builder (escape toggle + time limit/hint penalty/intro story on the settings step, sequential-order lock asserted, per-element hint on the stacks step), edit-prefill regression coverage, publish, full participant loop (intro story overlay → masking asserted via missing progress steps → hint reveal with penalty label → wrong-answer retry + rapid-resubmit lockout countdown → completion stats), dashboard tab + two-step reset + fresh attempt. Validated: prettier, `tsc --noEmit`, `playwright test --list` (820 tests/28 files intact); the 127.0.0.1 playwright stack was down, so the runtime pass is deferred to CI/a local `dev:playwright` run.
+- **Playwright e2e suite: AUTHORED, RUNTIME GATE OPEN (`96c0fac4d`).** `Z-escape-room.spec.ts` contains an 11-test, three-stack PracticeQuiz workflow. Static type/format/discovery checks pass. Runtime remains unverified; the 2026-07-11 attempt reseeded the configured Playwright database during global setup, then failed before test 1 because the container lacks the Chromium executable. Microlearning, group activity, live quiz, edit-and-save hint preservation, future-hint rejection, and client-owner spoofing are not covered.
 - **Wizard edit hint round-trip (found while authoring the e2e suite):** `escapeRoomHint` is never prefetched back into the wizard on edit (no mapping from instance `options.escapeRoomHint` to the form's stack elements), and re-saving rebuilds instance options without it (`packages/util/src/elements.ts` Cases 2/3 only spread the hint when the incoming input has one) — **editing an escape room silently wipes all authored hints**. Fix: prefill the hint into wizard initialValues + decide preserve-vs-clear semantics on resave. The e2e edit test deliberately leaves the wizard without saving to avoid tripping this.
 - **apps/docs documentation (release gate): ✅ DONE (`32f465494`).** Lecturer tutorial `tutorials/escape_room.mdx` (mode + game rules, wizard settings incl. time limit/hint penalty/intro story, sequential-order lock, hint authoring, dashboard tab, attempt reset, caveats) and student tutorial `student_tutorials/escape_room.mdx` (one attempt, timer, lockout, hint costs, completion/expiry), both wired into `sidebars.js` next to the practice-quiz entries and matching the existing style (CatalystTitle on the lecturer page). Validated with a full `docusaurus build` — passes; the single reported broken link (`core_concepts` → `/tutorials/gamification/`) pre-exists and is tracked separately.
 - **Process guard: ✅ DONE (`0e5e20927`).** `AGENTS.md` (CLAUDE.md symlinks to it) gained a "New Functionality Requirements" section: every PR adding user-facing functionality must extend the Playwright suite AND update the `apps/docs` tutorials in the same PR, alongside the existing wiki/skills requirement.
-- **Phase 5:** expand `Z-escape-room.spec.ts` to a ≥3-stack run-through (fix the drag-and-drop stack-builder selectors); agent-browser screenshots (desktop+mobile, de+en) on the PR; final security review; PR description via `rs-mr-description-writer`.
+- **Phase 5:** replaced by the revised execution plan in §11. Do not mark the PR ready from the completion labels above.
+
+---
+
+## 11. Follow-up review and revised execution plan: 2026-07-11
+
+### Current verdict
+
+**Not mergeable.** PracticeQuiz is the strongest tracer path, but two P0 bypasses defeat server-side enforcement. Generalized support, QR_SCAN, runtime evidence, and branch hygiene remain incomplete.
+
+### Execution progress
+
+- **Goal:** active from 2026-07-11; execute this full roadmap through final PR readiness without merging.
+- **Current:** Gate 0 in progress on `escape-room-quiz-mode-plan` at worktree `.claude/worktrees/heuristic-lumiere-d1a7ef`.
+- **Plan review:** independent §11 review completed; accepted changes split authority, group atomicity, hints, timers, dashboards, mode completion, and QR work into smaller gates and moved runtime regression checks forward.
+- **Verified baseline:** plan Prettier and plan-scoped `git diff --check` pass; local branch is 18 commits ahead of PR HEAD `8d2fb1a7`.
+- **Next:** commit this approved plan alone, then produce the escape-room-only commit map and clean-branch operation without rewriting the remote branch.
+
+### Confirmed findings
+
+| ID | Sev | Finding | Evidence | Required result |
+|----|-----|---------|----------|-----------------|
+| B7 | P0 | `respondToElementStack` trusts client `isOwner`; anonymous caller can set `true` and bypass attempt, timer, lockout, gating, and tracking while receiving grading feedback. Existing test explicitly permits this. | `schema/mutation.ts:273-285`; `services/stacks.ts:3200-3215,3305-3335`; `test/escapeRoom.test.ts:238-258` | Derive preview/owner permission server-side. Client input must not grant bypass. |
+| B8 | P0 | Group escape accepts empty/partial responses; `allCorrect` starts true and checks only supplied entries. Foreign instance IDs are not constrained to the activity before results mutate. | `services/groups.ts:1551-1715` | Validate exact required answerable-instance set, reject missing/duplicate/foreign IDs, and make validation + writes transactional. |
+| B9 | P1 | Hint request verifies activity membership but not current/unlocked stack. Numeric instance-ID enumeration can reveal future hints. | `services/practiceQuizzes.ts:1271-1289` | Reuse sequential gating before reading hint text. |
+| B10 | P1 | Prune job invents tries from hints/penalties and applies identical counts to every instance even though normal submissions already update `InstanceStatistics`; swallowed partial failures can still mark aggregation complete. | `services/pruneEscapeRooms.ts:79-148`; `services/stacks.ts:247-309` | Define one statistics owner per mode; no double counting or fabricated per-instance data. |
+| B11 | P1 | Wizard edit does not prefill hints; save can remove them. Persistent-instance path ignores incoming changes. | `PracticeQuizWizard.tsx:224-242`; `MicroLearningWizard.tsx:241-260`; `util/elements.ts:391-495` | Authorized prefill plus explicit preserve/update/clear semantics. |
+| B12 | P1 | Microlearning keeps `singleSubmission` and always advances, so wrong answers cannot follow the promised retry loop. | `microLearnings/[id]/[ix].tsx:164-179`; `ElementStack.tsx:263-281` | Wrong stays on current URL/stack, clears stored evaluation, respects lockout, then retries. |
+| M10 | P2 | Countdown derives deadline from participant `Date.now()` instead of server-sent remaining time. | `useEscapeRoom.ts:56-62` | Server-anchored remaining time re-synced after each relevant mutation/refetch. |
+| M11 | P2 | Revealed hint text lives only in component state. Reload restores the button, not the revealed hint. | `ElementStack.tsx:101-105,208-230` | Return only already-used hint text to the owning participant; render it after reload without another charge. |
+| M12 | P2 | Dashboard loads attempts only, omitting enrolled participants who have not started. | `services/escapeRooms.ts:98-111` | Include `NOT_STARTED` rows from the authorized course roster. |
+| M13 | P2 | Branch diff contains unrelated analytics and agent-readiness/CI work. Local HEAD is 18 commits ahead of the PR branch. | `git diff v3...HEAD`: 187 files, +12912/−1245 | Produce a clean escape-room-only review base before publication. |
+
+### Research before implementation
+
+1. **Preview authorization:** map every `respondToElementStack` caller. Decide whether lecturer preview should reuse the participant mutation with server-derived permission or use a separate authenticated preview path.
+2. **Statistics ownership:** trace `InstanceStatistics` writes for PracticeQuiz, Microlearning, GroupActivity, and LiveQuiz. Record which path owns unique participants, tries, correctness, and average time before changing prune logic.
+3. **Live-quiz policy:** confirm temporary-participant eligibility, explicit-start behavior, enrollment rules, block completion semantics, and 5-second grace behavior. Current response-api path auto-starts and never completes attempts.
+4. **Branch cleanup:** identify escape-room commits that are not patch-equivalent to `v3`. Prepare a clean branch/cherry-pick plan. Do not rewrite the remote PR branch without explicit approval.
+
+### Revised slices
+
+**Environment gate for every UI slice:** confirm the branch-correct devcontainer, devrouter routes, delegated logins, Playwright browser executable, and target database before changing UI. Static discovery is not runtime evidence.
+
+#### Gate 0: establish the clean review base
+
+- **Do:** immediately build an escape-room-only commit list from `v3`; classify unrelated analytics/CI commits; create a clean branch/worktree under `trees/` if needed. Move directly to Slice 1a after equivalence checks; do not spend time polishing branch metadata.
+- **Check:** `git range-diff`, `git diff --stat v3...<clean-head>`, and feature-file checksums preserve intended escape work.
+- **Stop:** no force-push, branch deletion, or worktree removal without explicit approval.
+- **Commit:** none unless a new plan/branch metadata commit is needed.
+
+#### Slice 1a: make preview authority server-owned
+
+- **Do:** remove client-granted `isOwner`; derive preview permission from authenticated context and activity permission. Update mutation operations/callers so preview mode cannot be asserted by the client.
+- **Tests:** anonymous and participant owner spoof rejected; authenticated authorized preview works; unauthorized lecturer preview rejected; locked-stack grading never runs for rejected callers.
+- **Check:** targeted GraphQL integration suite + `@klicker-uzh/graphql` typecheck.
+- **Commit:** `fix(escape-room): derive preview authority on server`
+
+#### Slice 1b: make group completion exact and atomic
+
+- **Do:** validate the complete required answerable-instance set before any result write. Reject empty, partial, duplicate, and foreign IDs. Wrap validation, result updates, decision state, lockout, and attempt transition in one transaction.
+- **Tests:** every invalid input leaves results, decisions, lockout, and attempt unchanged; valid full response completes once; concurrent group submissions produce one consistent transition.
+- **Check:** targeted GraphQL integration suite, then the full GraphQL escape regression file as the security checkpoint.
+- **Commit:** `fix(group-activity): validate escape-room submissions atomically`
+
+#### Slice 2a: secure hint access and reload recovery
+
+- **Do:** gate reveal to the current/unlocked stack. Return already-used hints only to the owning participant so revealed text survives reload without another charge. Keep unused raw hints absent from participant payloads.
+- **Tests:** future hint rejected; current hint revealed once; reload returns used hint only; cross-participant/activity requests rejected; concurrent requests charge once.
+- **Browser:** PracticeQuiz + Microlearning reveal/reload, en+de.
+- **Commit:** `fix(escape-room): authorize and restore revealed hints`
+
+#### Slice 2b: make hint authoring round-trip safely
+
+- **Do:** add owner-authorized edit prefill without exposing raw hints through shared participant fields. Define semantics: omitted = preserve, blank/null = clear, non-empty = update. Apply the same rules to persistent, replaced, and duplicated instances.
+- **Tests:** unchanged edit preserves; edit updates; explicit clear removes; duplicate copies intended value; unauthorized query cannot read raw hint.
+- **Browser:** PracticeQuiz + Microlearning edit/save/reopen, en+de.
+- **Commit:** `fix(manage): preserve escape-room hints on edit`
+
+#### Slice 3: repair the Microlearning game loop
+
+- **Do:** add escape-specific advance/retry flow for URL-index navigation; disable `singleSubmission` semantics for escape retries; clear the correct local/evaluation state after wrong answers; keep current stage through lockout; advance only on correct.
+- **Tests:** focused Playwright microlearning flow with wrong, lockout, retry, correct, reload, and final completion.
+- **Browser:** delegated participant, desktop + mobile, en+de.
+- **Commit:** `fix(microlearning): support escape-room retries`
+
+#### Slice 4: repair statistics ownership
+
+- **Do:** use research result to remove double counting. Prefer event-time submission statistics where already authoritative. Aggregate only metrics unavailable elsewhere. Make aggregation atomic or retry-safe; never mark a partially failed attempt complete.
+- **Tests:** repeated prune is idempotent; partial failure retries safely; PracticeQuiz submissions are not counted twice; Group/Live behavior matches documented owner.
+- **Check:** GraphQL tests + Prisma/schema checks if data shape changes.
+- **Commit:** `fix(escape-room): prevent duplicate attempt statistics`
+
+#### Slice 5a: server-anchor participant time
+
+- **Do:** expose server-calculated remaining seconds or server timestamp; re-sync after start, answer, hint, lockout, and refetch. Keep server expiry authoritative.
+- **Tests:** skewed client clock does not change displayed/server status; latency/grace boundary; penalty and lockout re-sync.
+- **Browser:** timer under clock skew, desktop + mobile, en+de.
+- **Commit:** `fix(escape-room): anchor countdown to server time`
+
+#### Slice 5b: complete the participant dashboard roster
+
+- **Do:** build rows from the authorized course roster plus attempts; add `NOT_STARTED`; add the missing cancel `data-cy`; replace `activity: any` with generated types.
+- **Tests:** not-started/in-progress/completed/expired rows; polling; reset permissions; users outside the course absent.
+- **Browser:** all dashboard states, desktop + mobile, en+de.
+- **Commit:** `fix(manage): include all escape-room participants`
+
+#### Slice 6a: add GroupActivity authoring and participant features
+
+- **Do:** thread escape state into group stack authoring; add hint authoring/reveal; surface structured lockout/expiry errors; reuse server contracts from Slices 1b and 2.
+- **Tests:** two members share one attempt; concurrent distinct hints charge once each; wrong answers preserve retry state.
+- **Browser:** lecturer authoring + two live participant sessions, en+de. Record concurrency evidence, not only automated tests.
+- **Commit:** `feat(group-activity): add escape-room participant flow`
+
+#### Slice 6b: add GroupActivity dashboard and runtime gate
+
+- **Do:** add group progress/reset UI and polling; show shared attempt identity and state consistently for every member.
+- **Tests:** reset clears intended group state; polling observes live progress; unauthorized lecturer blocked.
+- **Check:** full GraphQL escape regression file + GroupActivity Playwright/runtime flow before claiming mode support.
+- **Browser:** lecturer dashboard plus two concurrent participant sessions, en+de.
+- **Commit:** `feat(group-activity): add escape-room monitoring`
+
+#### Slice 7a: finish the LiveQuiz server contract
+
+- **Do:** enforce confirmed participant policy and explicit-start semantics in response-api; add 5-second grace; mark the block attempt completed; validate instance/block binding; remove dead server branches.
+- **Tests:** temporary/regular participant policy, no-attempt rejection, expiry/grace, lockout, completion, and binding.
+- **Check:** response-api tests + GraphQL tests for start/reset contracts.
+- **Commit:** `fix(live-quiz): enforce escape-room attempts`
+
+#### Slice 7b: add LiveQuiz authoring and participant runtime
+
+- **Do:** add wizard block configuration and participant/cockpit UI using the server contract from Slice 7a.
+- **Tests:** create/edit/publish config round-trip and participant completion flow.
+- **Browser:** lecturer cockpit + participant, desktop + mobile, en+de.
+- **Commit:** `feat(live-quiz): add escape-room workflow`
+
+#### Slice 7c: add LiveQuiz dashboard and reset
+
+- **Do:** expose authorized `elementBlockId` progress/reset and add monitoring UI.
+- **Tests:** progress, polling, reset, and unauthorized access.
+- **Check:** full LiveQuiz Playwright/runtime flow before claiming mode support.
+- **Commit:** `feat(live-quiz): add escape-room monitoring`
+
+#### Slice 8a: add QR_SCAN schema and type contracts
+
+- **Do:** add Prisma enum/model fields, migration, generated client, shared types, GraphQL unions/inputs, registry entries, and CSPRNG opaque short-code generation. Audit every exhaustive `ElementType` consumer.
+- **Tests:** migration/schema parity, token uniqueness/format, enum compatibility, no participant token leakage.
+- **Check:** `prisma:sync`, client generation, GraphQL codegen, package typechecks, targeted builds. Slice 9 cannot start until this gate is green.
+- **Commit:** `feat(elements): add QR scan contracts`
+
+#### Slice 8b: add QR_SCAN authoring
+
+- **Do:** add manage editor and owner-authorized code lifecycle. Keep participant payload content-free.
+- **Tests:** create/edit/duplicate authorization and payload stripping.
+- **Browser:** author/reopen/duplicate, en+de.
+- **Commit:** `feat(manage): add QR scan authoring`
+
+#### Slice 8c: add QR print and decoy workflow
+
+- **Do:** add authorized print view, real code placement, decoy generation at print time, and print CSS. Never persist or expose decoys through participant APIs.
+- **Tests:** print authorization, decoy uniqueness, real/decoy separation, no token leakage.
+- **Browser:** print preview and physical/mobile scan smoke test.
+- **Commit:** `feat(manage): add QR escape-room print sheets`
+
+#### Slice 9: QR_SCAN answering and grading
+
+- **Do:** implement BarcodeDetector-first scanner with chosen fallback, manual entry, shared question renderer, grading, sequential gating, and unsupported-activity validation.
+- **Tests:** correct, decoy, malformed, replay, camera denied, manual fallback, locked-stack payload leak.
+- **Browser:** laptop + real mobile camera when available; manual fallback mandatory.
+- **Commit:** `feat(pwa): add QR scan escape-room answers`
+
+#### Slice 10: full release gate
+
+- **Do:** extend Playwright across PracticeQuiz, Microlearning, GroupActivity, LiveQuiz, hint edit/reload, security regressions, and QR fallback. Run the existing 11-test suite plus new specs against the real Playwright stack. Capture required screenshots. Sync plan, wiki, tutorials, and PR body with actual scope.
+- **Check:** `check:all`, targeted builds/tests, Prisma parity, `opengrep scan --config auto`, runtime Playwright, browser screenshots, clean `git diff --check`.
+- **Review:** per-slice review/simplification; final `security-review`; final `thermo-nuclear-code-quality-review`; independent branch review.
+- **PR:** push only after clean branch decision. Rewrite PR body with `rs-mr-description-writer`; never claim QR/all-four support before their runtime evidence exists.
+- **Commit:** `test(escape-room): verify complete workflow` plus separate `docs(project): finalize escape-room rollout` when evidence is complete.
+
+### Dependencies and stop conditions
+
+- Gate 0 establishes the clean base immediately; Slice 1a is the first implementation gate.
+- Slices 1a and 1b before every participant-facing feature slice. Run the full GraphQL escape regression checkpoint after both.
+- Slices 2a and 2b before calling hints complete or extending hint E2E.
+- Slice 3 before calling Microlearning supported.
+- Slice 4 before accepting analytics output. Run the broader statistics/GraphQL regression checkpoint immediately after it.
+- Slice 5a before timer completion claims; Slice 5b before dashboard completion claims.
+- Slices 6a and 6b before calling GroupActivity supported. Live two-session evidence is mandatory.
+- Slices 7a, 7b, and 7c before calling LiveQuiz supported. Run its full runtime flow after 7b and 7c.
+- Slices 8a, 8b, 8c, and 9 stay separate. Schema/client/codegen compatibility must pass after 8a; QR scope must not be batched into another slice.
+- Slice 10 only after all prior slices pass their own gates.
+- Any new P0/P1 security finding stops feature expansion until fixed and regression-tested.
+
+### Next action
+
+Start with Gate 0. Produce the clean commit map and proposed branch operation for approval. Then execute Slice 1.
