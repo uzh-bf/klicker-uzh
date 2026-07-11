@@ -53,7 +53,7 @@ function ElementExplanationField({
               disabled={disabled}
               error={meta.error}
               touched={meta.touched}
-              content={field.value || '<br>'}
+              content={field.value}
               onChange={(newValue: string) =>
                 setFieldValue('explanation', newValue)
               }

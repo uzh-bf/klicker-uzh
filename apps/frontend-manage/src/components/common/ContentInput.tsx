@@ -35,6 +35,11 @@ const ToolbarContext = React.createContext<{ disabled: boolean }>({
 const normalizeMarkdown = (str: string) =>
   str.replace(/\r\n/g, '\n').replace(/\n+$/, '')
 
+const normalizeLegacyEmptyContent = (content?: string) => {
+  const currentContent = content ?? ''
+  return /^\s*(<br\s*\/?>\s*)+$/i.test(currentContent) ? '' : currentContent
+}
+
 export interface ContentInputClassName {
   root?: string
   toolbar?: string
@@ -89,7 +94,7 @@ function ContentInput({
       }),
       TableKit,
     ],
-    content: content ?? '',
+    content: normalizeLegacyEmptyContent(content),
     contentType: 'markdown',
     autofocus: autoFocus ? 'end' : false,
     editable: !disabled,
@@ -112,7 +117,7 @@ function ContentInput({
   useEffect(() => {
     if (!editor) return
 
-    const normalizedContent = content ?? ''
+    const normalizedContent = normalizeLegacyEmptyContent(content)
     if (
       normalizeMarkdown(normalizedContent) !==
       normalizeMarkdown(editor.getMarkdown())

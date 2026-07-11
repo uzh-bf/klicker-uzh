@@ -12,6 +12,7 @@ import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   saveElement,
+  searchAndEdit,
   setElementStatus,
   switchElementType,
 } from '../util/fixtures/elements.js'
@@ -37,6 +38,12 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
 
     // 2. Select the Tiptap editor viewport
     const editor = page.getByTestId('insert-question-text')
+    const emptyEditorParagraph = editor.locator('p.is-editor-empty')
+    await expect(emptyEditorParagraph).toHaveCount(1)
+    await expect(emptyEditorParagraph).toHaveAttribute(
+      'data-placeholder',
+      'Enter your content here...'
+    )
     await editor.scrollIntoViewIfNeeded()
     await editor.click()
 
@@ -200,5 +207,26 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
       'function'
     )
     await expect(previewRCodeBlock.locator('span.token.number')).toHaveText('1')
+
+    // 8. Legacy break-only rows reopen as an empty editor with its placeholder
+    await prisma.element.update({
+      where: { id: questionId },
+      data: { content: '<br>' },
+    })
+
+    try {
+      await page.goto(manageUrl)
+      await searchAndEdit(page, questionTitle)
+
+      const legacyEmptyEditor = page.getByTestId('insert-question-text')
+      await expect(
+        legacyEmptyEditor.locator('p.is-editor-empty')
+      ).toHaveAttribute('data-placeholder', 'Enter your content here...')
+    } finally {
+      await prisma.element.update({
+        where: { id: questionId },
+        data: { content: dbQuestion!.content },
+      })
+    }
   })
 })

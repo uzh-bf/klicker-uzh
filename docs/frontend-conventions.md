@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-10'
+timestamp: '2026-07-11'
 tags:
   - frontend
 ---
@@ -20,6 +20,7 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - **Rich content persists as Markdown.** Expose only editor behavior that survives `ContentInput`'s Markdown serialization and the shared `Markdown` preview renderer. Tables are pipe-table compatible: insert, add/delete rows or columns, and delete the table; merged cells and persisted column widths are intentionally unavailable. Code fences retain their language tag; the editor registers Lowlight's common languages while the preview keeps a safe Prism superset. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`, `packages/markdown/src/Markdown.tsx:Markdown`)
+- **Empty rich content is an empty string.** Pass `''` or `undefined` to `ContentInput`; never synthesize the legacy `'<br>'` sentinel. Tiptap treats `<br>` as a hard break, so the editor no longer counts as empty and its placeholder disappears. Read and validation paths may still recognize `'<br>'` for backward compatibility with stored legacy content. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`, `apps/frontend-manage/src/components/elements/manipulation/ElementContentInput.tsx:ElementContentInput`)
 
 ## Data fetching
 

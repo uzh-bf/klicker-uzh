@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-11
+
+- **Update**: standardized empty Tiptap form content on `''`/`undefined`, documented why the legacy `'<br>'` sentinel suppresses editor placeholders, aligned frontend and Playwright skills with the empty-state contract in [frontend-conventions](./frontend-conventions.md), and corrected the wiki validator path.
+
 ## 2026-07-10
 
 - **Update**: documented the Markdown-safe Tiptap boundary, including round-trippable table controls and the editor/preview syntax-highlighting contract, in [frontend-conventions](./frontend-conventions.md); aligned the frontend and Playwright skills with the same behavior.

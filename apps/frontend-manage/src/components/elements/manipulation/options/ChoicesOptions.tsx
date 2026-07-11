@@ -215,7 +215,7 @@ function ChoicesOptions({
                             disabled={inputsDisabled}
                             error={meta.error}
                             touched={meta.touched}
-                            content={field.value || '<br>'}
+                            content={field.value}
                             onChange={(newContent: string): void => {
                               setFieldValue(
                                 `options.choices.${index}.feedback`,
@@ -261,7 +261,7 @@ function ChoicesOptions({
                   push({
                     id: nanoid(),
                     ix: values.options.choices.length,
-                    value: '<br>',
+                    value: '',
                     correct: false,
                     feedback: '',
                   })
