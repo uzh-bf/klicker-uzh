@@ -100,5 +100,6 @@ export function useEscapeRoom({
     remainingSeconds,
     startAttempt,
     loading: starting,
+    refetch,
   }
 }

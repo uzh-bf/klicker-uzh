@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-11'
 tags:
   - backend
   - graphql
@@ -50,5 +50,7 @@ and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `sr
 Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` pipes `ctx.pubSub.subscribe('feedbackCreated')` through a `liveQuizId` filter; the publishing side is a service (`services/feedbacks.ts`). Frontends consume via `subscribeToMore` with the generated `S*Document`.
 
 ## Worked feature traces
+
+Escape Room hint text follows a split contract: participant activity queries expose only `hasHint` plus an already-authorized `revealedHint`, while `requestEscapeRoomHint` validates the active participant/group attempt before returning text. The owner-only `escapeRoomHints` query is reserved for PracticeQuiz, MicroLearning, and GroupActivity edit forms. Group submit failures use `ESCAPE_ROOM_LOCKOUT`, `ESCAPE_ROOM_EXPIRED`, and `ESCAPE_ROOM_NO_ATTEMPT` extensions so clients can present localized retry state (`packages/graphql/src/services/escapeRooms.ts:getEscapeRoomHints`, `packages/graphql/src/services/groups.ts:submitGroupActivityDecisions`).
 
 Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + committed codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).

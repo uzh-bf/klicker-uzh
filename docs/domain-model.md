@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-11'
 tags:
   - backend
   - prisma
@@ -59,9 +59,9 @@ Activities (PracticeQuiz, MicroLearning, GroupActivity) and LiveQuiz blocks (`El
 
 Attempts are scoped uniquely to a participant/group and activity/block to prevent multiple active attempts. Evaluation and penalty calculations are handled in the backend (`packages/graphql/src/services/`) and validated at response time.
 
-GroupActivity Escape Rooms accept exactly one valid response for every supported answerable instance. The backend validates activity membership, response IDs/types/payloads, and gradability before any write, then commits aggregate results, decisions, lockout/expiry, and attempt completion in one serializable transaction. Content and flashcard instances are not answerable; an activity with no answerable instances fails closed.
+GroupActivity Escape Rooms use one attempt shared by every member of the participant group and accept exactly one valid response for every supported answerable instance. The backend validates activity membership, response IDs/types/payloads, and gradability before any write, then commits aggregate results, decisions, lockout/expiry, and attempt completion in one serializable transaction. Incorrect answers keep the editable group response state for retry after the shared lockout. Content and flashcard instances are not answerable; an activity with no answerable instances fails closed.
 
-Hints are authorized against the participant's current unlocked stack. Unused hint text is never returned in participant queries; after a hint is charged, its instance ID is recorded on the caller's attempt and only that caller receives the restored `revealedHint` text on subsequent PracticeQuiz or MicroLearning loads.
+Hints are authorized against the participant's current unlocked stack. Unused hint text is never returned in participant queries; after a hint is charged, its instance ID is recorded on the attempt. PracticeQuiz and MicroLearning restore it only for that participant, while GroupActivity restores it for every member because the attempt and penalty budget are shared. Distinct concurrent group hint requests are charged atomically.
 
 Raw authored hints are available only through the owner-authorized `escapeRoomHints` query used by the edit wizard. Hint edits use patch semantics: an omitted value preserves the stored hint, a blank or null value clears it, and a non-empty value is trimmed and stored. Duplicating an instance preserves its hint unless an explicit override is supplied.
 

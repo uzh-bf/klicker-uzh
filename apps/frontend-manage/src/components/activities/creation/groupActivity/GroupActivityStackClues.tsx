@@ -27,6 +27,7 @@ interface GroupActivityStackCluesProps extends GroupActivityWizardStepProps {
   acceptedTypes: ElementType[]
   selection: Record<number, Element>
   resetSelection: () => void
+  isEscapeRoom?: boolean
 }
 
 function GroupActivityStackClues({
@@ -44,6 +45,7 @@ function GroupActivityStackClues({
   onPrevStep,
   onSubmit,
   closeWizard,
+  isEscapeRoom,
 }: GroupActivityStackCluesProps) {
   const t = useTranslations()
   const [clueIx, setClueIx] = useState<number | undefined>(undefined)
@@ -120,6 +122,7 @@ function GroupActivityStackClues({
                 outdatedInstances={outdatedInstances}
                 refetchOutdatedInstances={refetch}
                 className="w-80"
+                isEscapeRoom={isEscapeRoom}
               />
               <div className="h-max w-full">
                 <FieldArray name="clues">

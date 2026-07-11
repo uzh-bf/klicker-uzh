@@ -645,12 +645,15 @@ export const Query = builder.queryType({
         args: {
           practiceQuizId: t.arg.string({ required: false }),
           microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
         },
         resolve: withPermission(
           (args) =>
             args.practiceQuizId
               ? { practiceQuizId: args.practiceQuizId }
-              : { microLearningId: args.microLearningId },
+              : args.microLearningId
+                ? { microLearningId: args.microLearningId }
+                : { groupActivityId: args.groupActivityId },
           DB.PermissionLevel.OWNER,
           async (_, args, ctx) =>
             EscapeRoomService.getEscapeRoomHints(args, ctx)

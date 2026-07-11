@@ -36,10 +36,19 @@ export function getEscapeRoomExpiresInSeconds(
 }
 
 export async function getEscapeRoomHints(
-  args: { practiceQuizId?: string | null; microLearningId?: string | null },
+  args: {
+    practiceQuizId?: string | null
+    microLearningId?: string | null
+    groupActivityId?: string | null
+  },
   ctx: ContextWithUser
 ) {
-  if (!!args.practiceQuizId === !!args.microLearningId) {
+  const activityIdCount = [
+    args.practiceQuizId,
+    args.microLearningId,
+    args.groupActivityId,
+  ].filter((id) => id != null).length
+  if (activityIdCount !== 1) {
     throw new GraphQLError('Exactly one escape room activity ID is required')
   }
 
@@ -48,10 +57,15 @@ export async function getEscapeRoomHints(
         where: { id: args.practiceQuizId },
         select: { ownerId: true },
       })
-    : await ctx.prisma.microLearning.findUnique({
-        where: { id: args.microLearningId! },
-        select: { ownerId: true },
-      })
+    : args.microLearningId
+      ? await ctx.prisma.microLearning.findUnique({
+          where: { id: args.microLearningId },
+          select: { ownerId: true },
+        })
+      : await ctx.prisma.groupActivity.findUnique({
+          where: { id: args.groupActivityId! },
+          select: { ownerId: true },
+        })
   if (!activity || activity.ownerId !== ctx.user.sub) {
     throw new GraphQLError('Only the activity owner can read escape room hints')
   }
@@ -60,7 +74,9 @@ export async function getEscapeRoomHints(
     where: {
       elementStack: args.practiceQuizId
         ? { practiceQuizId: args.practiceQuizId }
-        : { microLearningId: args.microLearningId },
+        : args.microLearningId
+          ? { microLearningId: args.microLearningId }
+          : { groupActivityId: args.groupActivityId },
     },
     select: { id: true, options: true },
   })

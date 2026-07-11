@@ -1030,29 +1030,30 @@ export async function startEscapeRoomAttempt(
   }
 
   // 2. Query for existing attempt (check if running or complete)
-  const existingAttempt = await ctx.prisma.escapeRoomAttempt.findUnique({
-    where: groupId
-      ? {
-          groupId_groupActivityId: {
-            groupId,
-            groupActivityId: groupActivityId!,
-          },
-        }
-      : practiceQuizId
-        ? { participantId_practiceQuizId: { participantId, practiceQuizId } }
-        : microLearningId
-          ? {
-              participantId_microLearningId: {
-                participantId,
-                microLearningId: microLearningId!,
-              },
-            }
-          : {
-              participantId_elementBlockId: {
-                participantId,
-                elementBlockId: elementBlockId!,
-              },
+  const attemptWhere: DB.Prisma.EscapeRoomAttemptWhereUniqueInput = groupId
+    ? {
+        groupId_groupActivityId: {
+          groupId,
+          groupActivityId: groupActivityId!,
+        },
+      }
+    : practiceQuizId
+      ? { participantId_practiceQuizId: { participantId, practiceQuizId } }
+      : microLearningId
+        ? {
+            participantId_microLearningId: {
+              participantId,
+              microLearningId: microLearningId!,
             },
+          }
+        : {
+            participantId_elementBlockId: {
+              participantId,
+              elementBlockId: elementBlockId!,
+            },
+          }
+  const existingAttempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+    where: attemptWhere,
   })
 
   if (existingAttempt) {
@@ -1074,20 +1075,39 @@ export async function startEscapeRoomAttempt(
   }
 
   // 3. Create new attempt
-  return await ctx.prisma.escapeRoomAttempt.create({
-    data: {
-      timeLimit,
-      penaltySeconds: 0,
-      hintsUsed: [],
-      status: DB.EscapeRoomStatus.IN_PROGRESS,
-      participantId: groupId ? null : participantId,
-      groupId,
-      practiceQuizId,
-      microLearningId,
-      groupActivityId,
-      elementBlockId,
-    },
-  })
+  try {
+    return await ctx.prisma.escapeRoomAttempt.upsert({
+      where: attemptWhere,
+      update: {},
+      create: {
+        timeLimit,
+        penaltySeconds: 0,
+        hintsUsed: [],
+        status: DB.EscapeRoomStatus.IN_PROGRESS,
+        participantId: groupId ? null : participantId,
+        groupId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+        elementBlockId,
+      },
+    })
+  } catch (error) {
+    // Prisma's emulated upsert can still race under the driver adapter: both
+    // callers observe no row, then one loses the unique-key insert. The winner
+    // is the shared attempt both callers intended to start, so read it back.
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002'
+    ) {
+      return await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
+        where: attemptWhere,
+      })
+    }
+    throw error
+  }
 }
 
 interface RequestEscapeRoomHintArgs {

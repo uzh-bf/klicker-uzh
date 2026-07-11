@@ -7,6 +7,7 @@ import type {
 import { ActivityType, ResponseCorrectness } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomHintUpdate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -30,7 +31,11 @@ import {
 import { shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { getPermissionBooleans } from './activities.js'
-import { ESCAPE_ROOM_GRACE_SECONDS } from './escapeRooms.js'
+import {
+  ESCAPE_ROOM_GRACE_SECONDS,
+  getRemainingSecondsUntil,
+  restoreUsedEscapeRoomHints,
+} from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -1151,6 +1156,11 @@ export async function manipulateGroupActivity(
   // Use a transaction to ensure atomicity of all database operations
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
+      const persistentInputs = new Map(
+        stack.elements
+          .filter((instance) => !instance.duplicateInstance)
+          .map((instance) => [instance.existingInstanceId, instance])
+      )
       // delete all instances that are not used anymore
       await prisma.elementInstance.deleteMany({
         where: { id: { in: instancesToDelete } },
@@ -1172,6 +1182,9 @@ export async function manipulateGroupActivity(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
+              ...getEscapeRoomHintUpdate(
+                persistentInputs.get(instance.id)?.escapeRoomHint
+              ),
               pointsMultiplier: multiplier * elementMultiplier,
             },
           },
@@ -1413,6 +1426,7 @@ export async function getGroupActivityDetails(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       clues: { orderBy: { displayName: 'asc' } },
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       parameters: true,
@@ -1458,8 +1472,21 @@ export async function getGroupActivityDetails(
     },
   })
 
+  const attempt = groupActivity.escapeRoomConfig
+    ? await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          groupId_groupActivityId: { groupId, groupActivityId: activityId },
+        },
+        select: { hintsUsed: true },
+      })
+    : null
+
   return {
     ...groupActivity,
+    stacks: restoreUsedEscapeRoomHints(
+      groupActivity.stacks,
+      attempt?.hintsUsed ?? []
+    ),
     group,
     activityInstance: activityInstance
       ? {
@@ -1700,7 +1727,8 @@ export async function submitGroupActivityDecisions(
           })
           if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
             throw new GraphQLError(
-              'No active escape room attempt found for this activity'
+              'No active escape room attempt found for this activity',
+              { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
             )
           }
           if (
@@ -1708,7 +1736,16 @@ export async function submitGroupActivityDecisions(
             dayjs().isBefore(dayjs(attempt.lockoutUntil))
           ) {
             throw new GraphQLError(
-              'You are locked out from submitting answers due to a recent incorrect attempt'
+              'You are locked out from submitting answers due to a recent incorrect attempt',
+              {
+                extensions: {
+                  code: 'ESCAPE_ROOM_LOCKOUT',
+                  lockoutUntil: attempt.lockoutUntil.toISOString(),
+                  lockoutRemainingSeconds: getRemainingSecondsUntil(
+                    attempt.lockoutUntil
+                  ),
+                },
+              }
             )
           }
           const elapsed =
@@ -1868,10 +1905,9 @@ export async function submitGroupActivityDecisions(
 
           await prisma.groupActivityInstance.update({
             where: { id: activityId },
-            data: {
-              decisions: responses,
-              decisionsSubmittedAt: allCorrect ? new Date() : null,
-            },
+            data: allCorrect
+              ? { decisions: responses, decisionsSubmittedAt: new Date() }
+              : { decisionsSubmittedAt: null },
           })
           await prisma.escapeRoomAttempt.update({
             where: { id: attempt.id },
@@ -1897,11 +1933,21 @@ export async function submitGroupActivityDecisions(
       )
 
       if (result.expired) {
-        throw new GraphQLError('Escape room time has expired')
+        throw new GraphQLError('Escape room time has expired', {
+          extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
+        })
       }
       if (!result.correct) {
         throw new GraphQLError(
-          'Some answers are incorrect. You are locked out.'
+          'Some answers are incorrect. You are locked out.',
+          {
+            extensions: {
+              code: 'ESCAPE_ROOM_LOCKOUT',
+              lockoutRemainingSeconds:
+                groupActivityInstance.groupActivity.escapeRoomConfig
+                  ?.lockoutSeconds ?? 0,
+            },
+          }
         )
       }
       return activityId

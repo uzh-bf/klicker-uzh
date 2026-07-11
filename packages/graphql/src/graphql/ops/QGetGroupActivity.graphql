@@ -1,4 +1,8 @@
-query GetGroupActivity($id: String!) {
+query GetGroupActivity($id: String!, $withEscapeRoomHints: Boolean! = false) {
+  escapeRoomHints(groupActivityId: $id) @include(if: $withEscapeRoomHints) {
+    instanceId
+    hint
+  }
   groupActivity(id: $id) {
     id
     name

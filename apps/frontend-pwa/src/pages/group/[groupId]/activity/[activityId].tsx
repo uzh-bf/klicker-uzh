@@ -73,6 +73,7 @@ function GroupActivityDetails() {
     remainingSeconds,
     startAttempt,
     loading: attemptLoading,
+    refetch: refetchEscapeRoom,
   } = useEscapeRoom({
     activity: hookActivity,
     activityType: 'groupActivity',
@@ -293,6 +294,15 @@ function GroupActivityDetails() {
                 submittedAt={dayjs(instance.decisionsSubmittedAt).format(
                   'DD.MM.YYYY HH:mm:ss'
                 )}
+                groupActivityId={isEscapeRoom ? groupActivity.id : undefined}
+                hintPenalty={
+                  isEscapeRoom
+                    ? (groupActivity.escapeRoomConfig?.hintPenalty ?? 0)
+                    : undefined
+                }
+                onEscapeRoomStateChanged={
+                  isEscapeRoom ? refetchEscapeRoom : undefined
+                }
               />
             </div>
           )}

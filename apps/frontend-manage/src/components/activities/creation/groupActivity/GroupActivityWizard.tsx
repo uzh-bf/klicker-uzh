@@ -66,6 +66,7 @@ interface GroupActivityWizardProps {
   initialValues?: GroupActivity
   editMode: boolean
   duplicationMode: boolean
+  escapeRoomHints: Array<{ instanceId: number; hint: string }>
 }
 
 function GroupActivityWizard({
@@ -77,6 +78,7 @@ function GroupActivityWizard({
   initialValues,
   editMode,
   duplicationMode,
+  escapeRoomHints,
 }: GroupActivityWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
@@ -94,6 +96,9 @@ function GroupActivityWizard({
     courseSelection: courses,
   })
   const escapeRoomYupFields = useEscapeRoomYupFields()
+  const escapeRoomHintMap = new Map(
+    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+  )
 
   const nameValidationSchema = yup.object().shape({
     name: yup
@@ -287,6 +292,7 @@ function GroupActivityWizard({
               hasSampleSolution: false,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
+              escapeRoomHint: escapeRoomHintMap.get(instance.id),
             }
           }),
         }
@@ -469,6 +475,7 @@ function GroupActivityWizard({
           editMode={editMode}
           selection={selection}
           resetSelection={resetSelection}
+          isEscapeRoom={formData.isEscapeRoom}
           acceptedTypes={acceptedTypes}
           formRef={formRef}
           formData={formData}

@@ -31,6 +31,7 @@ interface BaseProps {
   outdatedInstances: ElementInstanceVersionInfo[]
   refetchOutdatedInstances: OutdatedInstancesRefetchFunction
   isEscapeRoom?: boolean
+  singleStackMode?: boolean
 }
 
 interface StackWizardElementListProps extends BaseProps {
@@ -60,6 +61,7 @@ function WizardElementList({
   outdatedInstances,
   refetchOutdatedInstances,
   isEscapeRoom,
+  singleStackMode,
 }: StackWizardElementListProps | BlockWizardElementListProps) {
   const t = useTranslations()
   const outdatedInstanceMap = useMemo(() => {
@@ -262,7 +264,11 @@ function WizardElementList({
             </div>
             {isEscapeRoom && type === 'stack' && (
               <FormikTextField
-                name={`stacks.${stackIx}.elements.${elementIdx}.escapeRoomHint`}
+                name={
+                  singleStackMode
+                    ? `stack.elements.${elementIdx}.escapeRoomHint`
+                    : `stacks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
+                }
                 placeholder={t(
                   'manage.activityWizard.escapeRoomHintPlaceholder'
                 )}

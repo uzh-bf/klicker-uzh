@@ -41,6 +41,7 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       order
       elements {
         id
+        revealedHint
         type
         elementType
         options {

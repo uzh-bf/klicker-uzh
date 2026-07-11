@@ -256,6 +256,7 @@ function StackBlockCreation({
         outdatedInstances={outdatedInstances}
         refetchOutdatedInstances={refetchOutdatedInstances}
         isEscapeRoom={isEscapeRoom}
+        singleStackMode={singleStackMode}
       />
 
       {selection && !isEmpty(selection) && (
