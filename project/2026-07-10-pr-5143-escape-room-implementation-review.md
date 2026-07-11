@@ -1,7 +1,8 @@
 # Escape Room Quiz Mode — Implementation Review & Roadmap to Production
 
 - **PR:** [#5143](https://github.com/uzh-bf/klicker-uzh/pull/5143) — `feat(quiz): generalized escape room mode and response validation`
-- **Branch:** `escape-room-quiz-mode-plan` → target `v3`
+- **Execution branch:** `codex/escape-room-production` in `trees/escape-room-production` → target `v3`
+- **PR source branch:** `escape-room-quiz-mode-plan` remains untouched until an explicit publication decision.
 - **Initial review HEAD:** `82d02d0cd`
 - **Initial diff size:** 77 files, +4349 / −179 vs `origin/v3`
 - **Initial reviewer:** senior pass (Claude) — 5 parallel review agents (PWA, manage, backend, tests, bots/CI) + manual verification of every blocking finding against the code.
@@ -208,7 +209,9 @@ Work top-down: **Phase 0 → 1 → 2 gate the merge.** Each numbered step cites 
 
 Scope decision (§ end): product chose **keep all four activity types + fix them**, and **fixes + the missing depth features** (hints, QR_SCAN, lecturer dashboard). So §7's "narrow back" recommendation is NOT taken; M1 (group lockout) and M8 (live-quiz path) are kept, not cut.
 
-### Landed on branch (verified: `tsc` + codegen/build green; integration tests authored for CI)
+### Landed on source branch (verified: `tsc` + codegen/build green; integration tests authored for CI)
+
+Commit hashes in this table refer to the original `escape-room-quiz-mode-plan` history. Gate 0 replayed the feature onto `codex/escape-room-production`; `git range-diff` records the replay mapping. New execution slices use clean-branch hashes directly.
 
 | Commit | Phase | What |
 |--------|-------|------|
@@ -240,7 +243,7 @@ Frontend + full-stack features, deliberately **not** built blind. Each is code-s
 - **Playwright e2e suite: AUTHORED, RUNTIME GATE OPEN (`96c0fac4d`).** `Z-escape-room.spec.ts` contains an 11-test, three-stack PracticeQuiz workflow. Static type/format/discovery checks pass. Runtime remains unverified; the 2026-07-11 attempt reseeded the configured Playwright database during global setup, then failed before test 1 because the container lacks the Chromium executable. Microlearning, group activity, live quiz, edit-and-save hint preservation, future-hint rejection, and client-owner spoofing are not covered.
 - **Wizard edit hint round-trip (found while authoring the e2e suite):** `escapeRoomHint` is never prefetched back into the wizard on edit (no mapping from instance `options.escapeRoomHint` to the form's stack elements), and re-saving rebuilds instance options without it (`packages/util/src/elements.ts` Cases 2/3 only spread the hint when the incoming input has one) — **editing an escape room silently wipes all authored hints**. Fix: prefill the hint into wizard initialValues + decide preserve-vs-clear semantics on resave. The e2e edit test deliberately leaves the wizard without saving to avoid tripping this.
 - **apps/docs documentation (release gate): ✅ DONE (`32f465494`).** Lecturer tutorial `tutorials/escape_room.mdx` (mode + game rules, wizard settings incl. time limit/hint penalty/intro story, sequential-order lock, hint authoring, dashboard tab, attempt reset, caveats) and student tutorial `student_tutorials/escape_room.mdx` (one attempt, timer, lockout, hint costs, completion/expiry), both wired into `sidebars.js` next to the practice-quiz entries and matching the existing style (CatalystTitle on the lecturer page). Validated with a full `docusaurus build` — passes; the single reported broken link (`core_concepts` → `/tutorials/gamification/`) pre-exists and is tracked separately.
-- **Process guard: ✅ DONE (`0e5e20927`).** `AGENTS.md` (CLAUDE.md symlinks to it) gained a "New Functionality Requirements" section: every PR adding user-facing functionality must extend the Playwright suite AND update the `apps/docs` tutorials in the same PR, alongside the existing wiki/skills requirement.
+- **Process guard: EXCLUDED FROM CLEAN REPLAY.** Commit `0e5e20927` changes global repository policy, not escape-room behavior. Keep it on a separate docs branch/PR. This roadmap still requires Playwright, user docs, wiki, and skill updates before release.
 - **Phase 5:** replaced by the revised execution plan in §11. Do not mark the PR ready from the completion labels above.
 
 ---
@@ -254,10 +257,11 @@ Frontend + full-stack features, deliberately **not** built blind. Each is code-s
 ### Execution progress
 
 - **Goal:** active from 2026-07-11; execute this full roadmap through final PR readiness without merging.
-- **Current:** Gate 0 in progress on `escape-room-quiz-mode-plan` at worktree `.claude/worktrees/heuristic-lumiere-d1a7ef`.
+- **Current:** Gate 0 complete on `codex/escape-room-production` at worktree `trees/escape-room-production`, based on fetched `origin/v3` `eef745d06`.
 - **Plan review:** independent §11 review completed; accepted changes split authority, group atomicity, hints, timers, dashboards, mode completion, and QR work into smaller gates and moved runtime regression checks forward.
-- **Verified baseline:** plan Prettier and plan-scoped `git diff --check` pass; local branch is 18 commits ahead of PR HEAD `8d2fb1a7`.
-- **Next:** commit this approved plan alone, then produce the escape-room-only commit map and clean-branch operation without rewriting the remote branch.
+- **Verified baseline:** live fetch set `origin/v3` to `eef745d06`. Exact source patch `ec55eec57^2..ec55eec57` and clean baseline commit `85f7a45e6` share patch-id `f5ca36676f15d205959013ee28f6f0cb21f3f58b` and the same 77 paths. Later feature commits are patch-identical under `git range-diff`. Direct source-vs-clean tree differences are limited to 16 expected upstream/excluded files; feature trees match. Clean branch diff is 102 files, +8771/−535, instead of 187 files; unrelated agent-readiness/CI, analytics implementation, chat, Node/devcontainer, and global AGENTS policy commits are absent. Required analytics Prisma mirrors remain.
+- **Gate 0 review:** independent correctness review and simplification review both returned `DONE_WITH_CONCERNS`, with no Critical findings. Accepted: use `origin/v3`, label source hashes, clarify the second-parent delta, and keep global policy out. Deferred: squash checkpoint-only docs history; current commits preserve provenance and add no unrelated tree content.
+- **Next:** re-fetch `origin/v3`; if unchanged, commit this Gate 0 progress update and start Slice 1a. Remote PR branch remains unchanged.
 
 ### Confirmed findings
 
