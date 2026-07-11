@@ -11,6 +11,8 @@ function getNextBaseConfig({
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
+    allowedDevOrigins:
+      NODE_ENV === 'development' ? ['**.klicker.localhost'] : undefined,
     productionBrowserSourceMaps: isStaging,
     webpack: (config, { isServer }) => {
       if (!isServer && isStaging) {
