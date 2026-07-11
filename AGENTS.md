@@ -89,16 +89,35 @@ packages/
 cypress/                   # E2E tests
 ```
 
-## Workflows & References
+## Tech Stack
 
-Detailed technical concepts and workflows live in the agent-facing engineering wiki at [docs/index.md](docs/index.md):
+| Layer                  | Technology                                            |
+| ---------------------- | ----------------------------------------------------- |
+| Frontend framework     | Next.js 15, React, TypeScript                         |
+| Styling                | TailwindCSS, @uzh-bf/design-system                    |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
+| GraphQL client         | Apollo Client                                         |
+| ORM                    | Prisma 6 (PostgreSQL)                                 |
+| Caching                | Redis (ioredis)                                       |
+| Workflow orchestration | Hatchet (workers for async processing)                |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
+| Build                  | Turborepo + Rollup                                    |
+| Test                   | Vitest (unit), Cypress (E2E)                          |
+| Formatting             | Prettier (no semi, single quotes, trailing comma es5) |
 
-- **Tech Stack & Architecture**: see [Architecture Overview](docs/architecture-overview.md) and [Getting Started](docs/getting-started.md).
-- **GraphQL APIs & Resolvers**: see [GraphQL API Layer](docs/graphql-api-layer.md).
-- **Database & Prisma Schemas**: see [Data & Migrations](docs/data-and-migrations.md).
-- **Authentication & Authorization**: see [Auth Model](docs/auth-model.md).
-- **Coding Style & Conventions**: see [Frontend Conventions](docs/frontend-conventions.md).
-- **Testing & Verification Matrix**: see [Testing](docs/testing.md).
+## GraphQL Workflow
+
+Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment. The public schema definition is generated at [packages/graphql/src/public/schema.graphql](packages/graphql/src/public/schema.graphql).
+
+## Database Workflow
+
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate`, then `pnpm run prisma:sync` (mirrors the schema into `apps/analytics`, excluding `js.prisma`) and regenerate the client. Update GraphQL types/resolvers if the change affects the API.
+
+## Auth Model
+
+- **Lecturers**: Edu-ID (OIDC) or delegated login via `apps/auth`
+- **Participants**: magic link, LTI, username/password, temporary (anonymous)
+- JWT tokens; GraphQL resolvers enforce three-layer auth: authenticate -> authorize -> execute
 
 ## Local Dev Setup
 
@@ -124,11 +143,46 @@ Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.loc
 
 **Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use a dev-only rule like `https://*.localhost`; keep production storage accounts exact.
 
+### Legacy host-based stack
+
+Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/hosts` entries + mkcert certs; Docker Compose runs Postgres, Redis, Traefik, Hatchet-lite). Without Traefik, hit `http://localhost:<port>` directly — per-app ports are in [Repo Layout](#repo-layout). The `*.klicker.com` domains better mirror production cookie/domain behavior.
+
+| URL                                         | App                          | Port |
+| ------------------------------------------- | ---------------------------- | ---: |
+| https://pwa.klicker.com                     | Student PWA                  | 3001 |
+| https://manage.klicker.com                  | Lecturer UI                  | 3002 |
+| https://control.klicker.com                 | Controller                   | 3003 |
+| https://chat.klicker.com                    | Chat                         | 3004 |
+| https://auth.klicker.com                    | Auth                         | 3010 |
+| https://api.klicker.com                     | Backend/GraphQL              | 3000 |
+| https://assessment.klicker.com              | Assessment PWA (same as PWA) | 3001 |
+| https://assessment-api.klicker.com          | Assessment API (same as API) | 3000 |
+| https://response-api.klicker.com            | Response API                 | 7078 |
+| https://response-api-assessment.klicker.com | Response API (assessment)    | 7078 |
+
 ### Test credentials (local seeded DB only)
 
 - Lecturer: username `lecturer`, password `abcd` (delegated login)
 - Students: `testuser1`-`testuser50`, password `abcdabcd` (enrolled in "Testkurs")
 - Additional: `testuser51`-`testuser52` exist but are not enrolled in any course by default
+
+## Code Conventions
+
+- **TypeScript strict mode** everywhere
+- **Functional components** with hooks only (no class components)
+- **Component naming**: PascalCase files, `function` keyword for component declarations
+- **Prettier**: no semicolons, single quotes, trailing comma es5, 2-space indent
+- Plugins: `prettier-plugin-organize-imports` + `prettier-plugin-tailwindcss`
+- **Imports**: use `@` and `~` path aliases
+- **GraphQL ops**: import from `@klicker-uzh/graphql`
+- **State**: Apollo Client for server state, React hooks for local state
+- **Styling**: TailwindCSS utilities only, `twMerge` for conditional classes
+
+## Pre-commit / Pre-push
+
+- **pre-commit** (husky): runs `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
+- **pre-push**: runs `pnpm run build`
+- lint-staged checks: `prettier --check` on all staged files
 
 ## Important Notes
 

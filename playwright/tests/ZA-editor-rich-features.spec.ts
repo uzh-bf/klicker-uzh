@@ -208,7 +208,19 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     )
     await expect(previewRCodeBlock.locator('span.token.number')).toHaveText('1')
 
-    // 8. Legacy break-only rows reopen as an empty editor with its placeholder
+    // 8. Reopen the saved element and verify rich content survived Markdown
+    await page.goto(manageUrl)
+    await searchAndEdit(page, questionTitle)
+
+    const reopenedEditor = page.getByTestId('insert-question-text')
+    const reopenedTable = reopenedEditor.locator('table')
+    await expect(reopenedTable.locator('tr')).toHaveCount(4)
+    await expect(
+      reopenedTable.locator('tr').first().locator('th, td')
+    ).toHaveCount(4)
+    await expect(reopenedEditor.locator('pre code')).toHaveCount(3)
+
+    // 9. Legacy break-only rows reopen as an empty editor with its placeholder
     await prisma.element.update({
       where: { id: questionId },
       data: { content: '<br>' },

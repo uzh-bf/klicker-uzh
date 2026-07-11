@@ -190,8 +190,8 @@ function ContentInput({
             )}
           >
             <ToolbarButton
-              title={t('shared.contentInput.boldStyle')}
-              aria-label={t('shared.contentInput.boldStyle')}
+              data-cy="toolbar-bold"
+              label={t('shared.contentInput.boldStyle')}
               active={editor.isActive('bold')}
               onClick={() => editor.chain().focus().toggleBold().run()}
             >
@@ -202,8 +202,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.italicStyle')}
-              aria-label={t('shared.contentInput.italicStyle')}
+              data-cy="toolbar-italic"
+              label={t('shared.contentInput.italicStyle')}
               active={editor.isActive('italic')}
               onClick={() => editor.chain().focus().toggleItalic().run()}
             >
@@ -214,8 +214,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.codeStyle')}
-              aria-label={t('shared.contentInput.codeStyle')}
+              data-cy="toolbar-inline-code"
+              label={t('shared.contentInput.codeStyle')}
               active={editor.isActive('code')}
               onClick={() => editor.chain().focus().toggleCode().run()}
             >
@@ -226,8 +226,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.citationStyle')}
-              aria-label={t('shared.contentInput.citationStyle')}
+              data-cy="toolbar-blockquote"
+              label={t('shared.contentInput.citationStyle')}
               active={editor.isActive('blockquote')}
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
             >
@@ -238,8 +238,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.numberedList')}
-              aria-label={t('shared.contentInput.numberedList')}
+              data-cy="toolbar-ordered-list"
+              label={t('shared.contentInput.numberedList')}
               active={editor.isActive('orderedList')}
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
             >
@@ -250,8 +250,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.unnumberedList')}
-              aria-label={t('shared.contentInput.unnumberedList')}
+              data-cy="toolbar-bullet-list"
+              label={t('shared.contentInput.unnumberedList')}
               active={editor.isActive('bulletList')}
               onClick={() => editor.chain().focus().toggleBulletList().run()}
             >
@@ -262,8 +262,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.image')}
-              aria-label={t('shared.contentInput.image')}
+              data-cy="toolbar-image"
+              label={t('shared.contentInput.image')}
               active={isImageDropzoneOpen}
               onClick={() => setIsImageDropzoneOpen((prev) => !prev)}
             >
@@ -271,8 +271,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.latex')}
-              aria-label={t('shared.contentInput.latex')}
+              data-cy="toolbar-inline-math"
+              label={t('shared.contentInput.latex')}
               onClick={() => {
                 editor
                   .chain()
@@ -285,8 +285,8 @@ function ContentInput({
             </ToolbarButton>
 
             <ToolbarButton
-              title={t('shared.contentInput.latexCentered')}
-              aria-label={t('shared.contentInput.latexCentered')}
+              data-cy="toolbar-display-math"
+              label={t('shared.contentInput.latexCentered')}
               onClick={() => {
                 editor
                   .chain()
@@ -299,14 +299,13 @@ function ContentInput({
             >
               <div className="flex flex-row items-center gap-0.5">
                 <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                <span className="text-[9px] font-bold text-gray-500">C</span>
+                <span className="text-[9px] font-bold text-gray-500">↔</span>
               </div>
             </ToolbarButton>
 
             <ToolbarButton
               data-cy="toolbar-code-block"
-              title={t('shared.contentInput.codeBlock')}
-              aria-label={t('shared.contentInput.codeBlock')}
+              label={t('shared.contentInput.codeBlock')}
               active={editor.isActive('codeBlock')}
               onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             >
@@ -318,23 +317,17 @@ function ContentInput({
 
             <ToolbarButton
               data-cy="toolbar-table"
-              title={t('shared.contentInput.table')}
-              aria-label={t('shared.contentInput.table')}
-              active={editor.isActive('table')}
-              onClick={() => {
-                if (!editor.isActive('table')) {
-                  editor
-                    .chain()
-                    .focus()
-                    .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                    .run()
-                }
-              }}
+              label={t('shared.contentInput.table')}
+              disabled={editor.isActive('table')}
+              onClick={() =>
+                editor
+                  .chain()
+                  .focus()
+                  .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                  .run()
+              }
             >
-              <FontAwesomeIcon
-                icon={faTable}
-                color={editor.isActive('table') ? 'black' : 'grey'}
-              />
+              <FontAwesomeIcon icon={faTable} color="grey" />
             </ToolbarButton>
           </div>
 
@@ -342,50 +335,45 @@ function ContentInput({
             <div className="border-uzh-grey-40 mr-3 flex flex-row items-center gap-1 border-l pl-2">
               <ToolbarButton
                 data-cy="table-add-row"
-                title={t('shared.contentInput.addRow')}
-                aria-label={t('shared.contentInput.addRow')}
+                label={t('shared.contentInput.addRow')}
                 onClick={() => editor.chain().focus().addRowAfter().run()}
               >
-                <span className="text-[10px] font-bold">+R</span>
+                <span className="text-[10px] font-bold">+↕</span>
               </ToolbarButton>
               <ToolbarButton
                 data-cy="table-delete-row"
-                title={t('shared.contentInput.deleteRow')}
-                aria-label={t('shared.contentInput.deleteRow')}
+                label={t('shared.contentInput.deleteRow')}
                 onClick={() => editor.chain().focus().deleteRow().run()}
               >
-                <span className="text-[10px] font-bold text-red-500">-R</span>
+                <span className="text-[10px] font-bold text-red-500">−↕</span>
               </ToolbarButton>
               <ToolbarButton
                 data-cy="table-add-column"
-                title={t('shared.contentInput.addColumn')}
-                aria-label={t('shared.contentInput.addColumn')}
+                label={t('shared.contentInput.addColumn')}
                 onClick={() => editor.chain().focus().addColumnAfter().run()}
               >
-                <span className="text-[10px] font-bold">+C</span>
+                <span className="text-[10px] font-bold">+↔</span>
               </ToolbarButton>
               <ToolbarButton
                 data-cy="table-delete-column"
-                title={t('shared.contentInput.deleteColumn')}
-                aria-label={t('shared.contentInput.deleteColumn')}
+                label={t('shared.contentInput.deleteColumn')}
                 onClick={() => editor.chain().focus().deleteColumn().run()}
               >
-                <span className="text-[10px] font-bold text-red-500">-C</span>
+                <span className="text-[10px] font-bold text-red-500">−↔</span>
               </ToolbarButton>
               <ToolbarButton
                 data-cy="table-delete"
-                title={t('shared.contentInput.deleteTable')}
-                aria-label={t('shared.contentInput.deleteTable')}
+                label={t('shared.contentInput.deleteTable')}
                 onClick={() => editor.chain().focus().deleteTable().run()}
               >
-                <span className="text-[10px] font-bold text-red-700">Del</span>
+                <span className="text-sm font-bold text-red-700">×</span>
               </ToolbarButton>
             </div>
           )}
 
           <ToolbarButton
-            title={t('shared.contentInput.undo')}
-            aria-label={t('shared.contentInput.undo')}
+            data-cy="toolbar-undo"
+            label={t('shared.contentInput.undo')}
             onClick={() => editor.chain().focus().undo().run()}
             className="mr-3"
           >
@@ -393,8 +381,8 @@ function ContentInput({
           </ToolbarButton>
 
           <ToolbarButton
-            title={t('shared.contentInput.redo')}
-            aria-label={t('shared.contentInput.redo')}
+            data-cy="toolbar-redo"
+            label={t('shared.contentInput.redo')}
             onClick={() => editor.chain().focus().redo().run()}
             className="mr-0.5"
           >
@@ -423,7 +411,8 @@ function ContentInput({
 }
 
 interface ToolbarButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
+  label: string
   active?: boolean
 }
 
@@ -431,6 +420,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   function ToolbarButton(
     {
       className,
+      label,
       active,
       children,
       disabled: buttonDisabled,
@@ -445,6 +435,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       <button
         ref={ref}
         type="button"
+        title={label}
+        aria-label={label}
         onClick={onClick}
         aria-pressed={active}
         disabled={isDisabled}

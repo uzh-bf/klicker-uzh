@@ -48,7 +48,7 @@ export interface MarkdownProps {
 
 function Markdown({
   className,
-  content = '<br>',
+  content = '',
   components = {},
   withModal = true,
   withLinkButtons = true,

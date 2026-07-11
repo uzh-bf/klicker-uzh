@@ -956,9 +956,6 @@ importers:
       graphql-ws:
         specifier: 5.16.0
         version: 5.16.0(graphql@16.11.0)
-      is-hotkey:
-        specifier: 0.2.0
-        version: 0.2.0
       js-cookie:
         specifier: 3.0.7
         version: 3.0.7
@@ -1044,9 +1041,6 @@ importers:
       '@tailwindcss/typography':
         specifier: ~0.5.19
         version: 0.5.19(tailwindcss@4.1.12)
-      '@types/is-hotkey':
-        specifier: ^0.1.10
-        version: 0.1.10
       '@types/js-cookie':
         specifier: ^3.0.6
         version: 3.0.6
@@ -9267,9 +9261,6 @@ packages:
   '@types/is-buffer@2.0.2':
     resolution: {integrity: sha512-G6OXy83Va+xEo8XgqAJYOuvOMxeey9xM5XKkvwJNmN8rVdcB+r15HvHsG86hl86JvU0y1aa7Z2ERkNFYWw9ySg==}
 
-  '@types/is-hotkey@0.1.10':
-    resolution: {integrity: sha512-RvC8KMw5BCac1NvRRyaHgMMEtBaZ6wh0pyPTBu7izn4Sj/AX9Y4aXU5c7rX8PnM/knsuUpC1IeoBkANtxBypsQ==}
-
   '@types/istanbul-lib-coverage@2.0.6':
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
 
@@ -14071,9 +14062,6 @@ packages:
 
   is-hexadecimal@2.0.1:
     resolution: {integrity: sha512-DgZQp241c8oO6cA1SbTEWiXeoxV42vlcJxgH+B3hi1AiqqKruZR3ZGF8In3fj4+/y/7rHvlOZLZtgJ/4ttYGZg==}
-
-  is-hotkey@0.2.0:
-    resolution: {integrity: sha512-UknnZK4RakDmTgz4PI1wIph5yxSs/mvChWs9ifnlXsKuXgWmOkY/hAE0H/k2MIqH0RlRye0i1oC07MCRSD28Mw==}
 
   is-inside-container@1.0.0:
     resolution: {integrity: sha512-KIYLCCJghfHZxqjYBE7rEy0OBuTd5xCHS7tHVgvCLkx7StIoaxwNW3hCALgEUjFfeRk+MG/Qxmp/vtETEF3tRA==}
@@ -29168,8 +29156,6 @@ snapshots:
     dependencies:
       '@types/node': 24.12.4
 
-  '@types/is-hotkey@0.1.10': {}
-
   '@types/istanbul-lib-coverage@2.0.6': {}
 
   '@types/istanbul-lib-report@3.0.3':
@@ -35469,8 +35455,6 @@ snapshots:
       is-extglob: 2.1.1
 
   is-hexadecimal@2.0.1: {}
-
-  is-hotkey@0.2.0: {}
 
   is-inside-container@1.0.0:
     dependencies:
