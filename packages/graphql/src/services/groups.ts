@@ -49,6 +49,138 @@ import {
 
 export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
+const GROUP_ESCAPE_RESPONSE_TYPES = new Set<DB.ElementType>([
+  DB.ElementType.SC,
+  DB.ElementType.MC,
+  DB.ElementType.KPRIM,
+  DB.ElementType.NUMERICAL,
+  DB.ElementType.FREE_TEXT,
+  DB.ElementType.SELECTION,
+  DB.ElementType.CASE_STUDY,
+])
+
+function isValidGroupEscapeResponse(
+  instance: DB.ElementInstance,
+  response: RespondToElementStackInput['responses'][number]
+) {
+  const elementData = instance.elementData as any
+  if (!elementData?.options?.hasSampleSolution) return false
+
+  if (
+    response.type === DB.ElementType.SC ||
+    response.type === DB.ElementType.MC ||
+    response.type === DB.ElementType.KPRIM
+  ) {
+    const expectedIds = elementData.options.choices.map(
+      (choice: { ix: number }) => choice.ix
+    )
+    const responseIds = response.choicesResponse?.map((choice) => choice.ix)
+    return !!(
+      responseIds &&
+      (responseIds.length > 0 || response.type === DB.ElementType.KPRIM) &&
+      (response.type !== DB.ElementType.SC || responseIds.length === 1) &&
+      new Set(responseIds).size === responseIds.length &&
+      response.choicesResponse?.every(
+        (choice) => choice.selected && expectedIds.includes(choice.ix)
+      )
+    )
+  }
+
+  if (response.type === DB.ElementType.NUMERICAL) {
+    if (
+      typeof response.numericalResponse !== 'number' ||
+      !Number.isFinite(response.numericalResponse) ||
+      response.numericalResponse > 1e30 ||
+      response.numericalResponse < -1e30
+    ) {
+      return false
+    }
+    const restrictions = elementData.options.restrictions
+    return !(
+      (typeof restrictions?.min === 'number' &&
+        response.numericalResponse < restrictions.min) ||
+      (typeof restrictions?.max === 'number' &&
+        response.numericalResponse > restrictions.max)
+    )
+  }
+
+  if (response.type === DB.ElementType.FREE_TEXT) {
+    return !!(
+      typeof response.freeTextResponse === 'string' &&
+      response.freeTextResponse !== '' &&
+      (!elementData.options.restrictions?.maxLength ||
+        response.freeTextResponse.length <=
+          elementData.options.restrictions.maxLength)
+    )
+  }
+
+  if (response.type === DB.ElementType.SELECTION) {
+    const responseIds = response.selectionResponse
+    const allowedIds = elementData.options.answerCollection?.entries.map(
+      (entry: { id: number }) => entry.id
+    )
+    return !!(
+      responseIds &&
+      allowedIds &&
+      responseIds.length === elementData.options.numberOfInputs &&
+      new Set(responseIds).size === responseIds.length &&
+      responseIds.every((id) => allowedIds.includes(id))
+    )
+  }
+
+  if (response.type === DB.ElementType.CASE_STUDY) {
+    const caseResponses = response.caseStudyResponse
+    const expectedCaseIds = elementData.options.cases.map(
+      (caseItem: { id: string }) => caseItem.id
+    )
+    const expectedItemIds = elementData.options.collectionItemIds ?? []
+    const criteria = elementData.options.criteria as {
+      id: string
+      min: number
+      max: number
+    }[]
+    return !!(
+      caseResponses &&
+      caseResponses.length === expectedCaseIds.length &&
+      new Set(caseResponses.map((item) => item.caseId)).size ===
+        caseResponses.length &&
+      caseResponses.every(
+        (caseResponse) =>
+          expectedCaseIds.includes(caseResponse.caseId) &&
+          caseResponse.itemResponses.length === expectedItemIds.length &&
+          new Set(
+            caseResponse.itemResponses.map(
+              (itemResponse) => itemResponse.itemId
+            )
+          ).size === caseResponse.itemResponses.length &&
+          caseResponse.itemResponses.every(
+            (itemResponse) =>
+              expectedItemIds.includes(itemResponse.itemId) &&
+              itemResponse.criterionResponses.length === criteria.length &&
+              new Set(
+                itemResponse.criterionResponses.map(
+                  (criterionResponse) => criterionResponse.criterionId
+                )
+              ).size === itemResponse.criterionResponses.length &&
+              itemResponse.criterionResponses.every((criterionResponse) => {
+                const criterion = criteria.find(
+                  (item) => item.id === criterionResponse.criterionId
+                )
+                return !!(
+                  criterion &&
+                  Number.isFinite(criterionResponse.response) &&
+                  criterionResponse.response >= criterion.min &&
+                  criterionResponse.response <= criterion.max
+                )
+              })
+          )
+      )
+    )
+  }
+
+  return false
+}
+
 export async function createParticipantGroup(
   { courseId, name }: { courseId: string; name: string },
   ctx: ContextWithUser
@@ -1519,32 +1651,271 @@ export async function submitGroupActivityDecisions(
   }
 
   if (groupActivityInstance.groupActivity.escapeRoomConfig) {
-    const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
-      where: {
-        groupId_groupActivityId: {
-          groupId: groupActivityInstance.groupId,
-          groupActivityId: groupActivityInstance.groupActivityId,
+    try {
+      const result = await ctx.prisma.$transaction(
+        async (prisma) => {
+          const transactionInstance =
+            await prisma.groupActivityInstance.findUnique({
+              where: { id: activityId },
+              include: {
+                groupActivity: {
+                  include: {
+                    escapeRoomConfig: true,
+                    stacks: { include: { elements: true } },
+                  },
+                },
+                group: {
+                  include: {
+                    participants: { where: { id: ctx.user.sub } },
+                  },
+                },
+              },
+            })
+
+          if (
+            !transactionInstance ||
+            transactionInstance.group.participants.length === 0 ||
+            transactionInstance.decisionsSubmittedAt ||
+            !transactionInstance.groupActivity.escapeRoomConfig ||
+            transactionInstance.groupActivity.status !==
+              DB.PublicationStatus.PUBLISHED ||
+            dayjs().isBefore(
+              transactionInstance.groupActivity.scheduledStartAt
+            ) ||
+            dayjs().isAfter(transactionInstance.groupActivity.scheduledEndAt)
+          ) {
+            throw new GraphQLError(
+              'This group activity cannot accept escape room responses'
+            )
+          }
+
+          const attempt = await prisma.escapeRoomAttempt.findUnique({
+            where: {
+              groupId_groupActivityId: {
+                groupId: transactionInstance.groupId,
+                groupActivityId: transactionInstance.groupActivityId,
+              },
+            },
+          })
+          if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+            throw new GraphQLError(
+              'No active escape room attempt found for this activity'
+            )
+          }
+          if (
+            attempt.lockoutUntil &&
+            dayjs().isBefore(dayjs(attempt.lockoutUntil))
+          ) {
+            throw new GraphQLError(
+              'You are locked out from submitting answers due to a recent incorrect attempt'
+            )
+          }
+          const elapsed =
+            (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
+          const totalLimit = attempt.timeLimit - attempt.penaltySeconds
+          if (elapsed > totalLimit + 5) {
+            await prisma.escapeRoomAttempt.update({
+              where: { id: attempt.id },
+              data: { status: DB.EscapeRoomStatus.EXPIRED },
+            })
+            return { expired: true, correct: false }
+          }
+
+          const requiredInstances = transactionInstance.groupActivity.stacks
+            .flatMap((stack) => stack.elements)
+            .filter((instance) =>
+              GROUP_ESCAPE_RESPONSE_TYPES.has(instance.elementType)
+            )
+          if (
+            requiredInstances.some((instance) => {
+              const elementData = instance.elementData as any
+              return !elementData?.options?.hasSampleSolution
+            })
+          ) {
+            throw new GraphQLError(
+              'Escape room group activity instances require sample solutions'
+            )
+          }
+          const requiredById = new Map(
+            requiredInstances.map((instance) => [instance.id, instance])
+          )
+          const responseIds = responses.map((response) => response.instanceId)
+          const responseIdSet = new Set(responseIds)
+          const exactResponseSet =
+            requiredInstances.length > 0 &&
+            responses.length === requiredInstances.length &&
+            responseIdSet.size === responses.length &&
+            responses.every((response) => {
+              const instance = requiredById.get(response.instanceId)
+              return !!(
+                instance &&
+                instance.elementType === response.type &&
+                isValidGroupEscapeResponse(instance, response)
+              )
+            })
+
+          if (!exactResponseSet) {
+            throw new GraphQLError(
+              'Group activity responses must exactly match the required instances'
+            )
+          }
+
+          let allCorrect = true
+          for (const inputResponse of responses) {
+            const instance = requiredById.get(inputResponse.instanceId)!
+            if (!instance.elementData) {
+              throw new GraphQLError(
+                'Group activity responses must exactly match the required instances'
+              )
+            }
+
+            let updatedResults:
+              | { results: ElementInstanceResults; modified: boolean }
+              | undefined
+            if (
+              (inputResponse.type === DB.ElementType.SC ||
+                inputResponse.type === DB.ElementType.MC ||
+                inputResponse.type === DB.ElementType.KPRIM) &&
+              'choices' in instance.results
+            ) {
+              updatedResults = updateChoicesResults({
+                previousResults: instance.results,
+                response: { choices: inputResponse.choicesResponse },
+              })
+            } else if (
+              inputResponse.type === DB.ElementType.NUMERICAL &&
+              'responses' in instance.results
+            ) {
+              updatedResults = updateNumericalResults({
+                previousResults: instance.results,
+                elementData: instance.elementData,
+                response: { value: String(inputResponse.numericalResponse) },
+              })
+            } else if (
+              inputResponse.type === DB.ElementType.FREE_TEXT &&
+              'responses' in instance.results
+            ) {
+              updatedResults = updateFreeTextResults({
+                previousResults: instance.results,
+                elementData: instance.elementData,
+                response: { value: inputResponse.freeTextResponse },
+              })
+            } else if (
+              inputResponse.type === DB.ElementType.SELECTION &&
+              'selections' in instance.results
+            ) {
+              updatedResults = updateSelectionResults({
+                previousResults: instance.results,
+                response: { selection: inputResponse.selectionResponse },
+              })
+            } else if (
+              inputResponse.type === DB.ElementType.CASE_STUDY &&
+              'assessments' in instance.results
+            ) {
+              updatedResults = updateCaseStudyResults({
+                previousResults: instance.results,
+                response: { assessment: inputResponse.caseStudyResponse },
+              })
+            }
+
+            if (!updatedResults?.modified) {
+              throw new GraphQLError(
+                'Group activity response type is not supported'
+              )
+            }
+            await prisma.elementInstance.update({
+              where: { id: instance.id },
+              data: { results: updatedResults.results },
+            })
+
+            const elementData = instance.elementData as any
+            if (elementData.options?.hasSampleSolution) {
+              let correctness: number | null = null
+              if (
+                inputResponse.type === DB.ElementType.SC ||
+                inputResponse.type === DB.ElementType.MC ||
+                inputResponse.type === DB.ElementType.KPRIM
+              ) {
+                correctness = evaluateChoicesAnswerCorrectness({
+                  elementData,
+                  response: { choices: inputResponse.choicesResponse },
+                })
+              } else if (inputResponse.type === DB.ElementType.NUMERICAL) {
+                correctness = evaluateNumericalAnswerCorrectness({
+                  elementData,
+                  response: { value: String(inputResponse.numericalResponse) },
+                })
+              } else if (inputResponse.type === DB.ElementType.FREE_TEXT) {
+                correctness = evaluateFreeTextAnswerCorrectness({
+                  elementData,
+                  response: { value: inputResponse.freeTextResponse },
+                })
+              } else if (inputResponse.type === DB.ElementType.SELECTION) {
+                correctness = evaluateSelectionAnswerCorrectness({
+                  elementData,
+                  response: { selection: inputResponse.selectionResponse },
+                })
+              } else if (inputResponse.type === DB.ElementType.CASE_STUDY) {
+                correctness = evaluateCaseStudyAnswerCorrectness({
+                  elementData,
+                  response: { assessment: inputResponse.caseStudyResponse },
+                })
+              }
+              allCorrect = allCorrect && correctness === 1
+            }
+          }
+
+          await prisma.groupActivityInstance.update({
+            where: { id: activityId },
+            data: {
+              decisions: responses,
+              decisionsSubmittedAt: allCorrect ? new Date() : null,
+            },
+          })
+          await prisma.escapeRoomAttempt.update({
+            where: { id: attempt.id },
+            data: allCorrect
+              ? {
+                  status: DB.EscapeRoomStatus.COMPLETED,
+                  completedAt: new Date(),
+                }
+              : {
+                  lockoutUntil: dayjs()
+                    .add(
+                      transactionInstance.groupActivity.escapeRoomConfig
+                        .lockoutSeconds,
+                      'second'
+                    )
+                    .toDate(),
+                },
+          })
+
+          return { expired: false, correct: allCorrect }
         },
-      },
-    })
-    if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
-      throw new GraphQLError(
-        'No active escape room attempt found for this activity'
+        { isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable }
       )
-    }
-    if (attempt.lockoutUntil && dayjs().isBefore(dayjs(attempt.lockoutUntil))) {
-      throw new GraphQLError(
-        'You are locked out from submitting answers due to a recent incorrect attempt'
-      )
-    }
-    const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
-    const totalLimit = attempt.timeLimit - attempt.penaltySeconds
-    if (elapsed > totalLimit + 5) {
-      await ctx.prisma.escapeRoomAttempt.update({
-        where: { id: attempt.id },
-        data: { status: DB.EscapeRoomStatus.EXPIRED },
-      })
-      throw new GraphQLError('Escape room time has expired')
+
+      if (result.expired) {
+        throw new GraphQLError('Escape room time has expired')
+      }
+      if (!result.correct) {
+        throw new GraphQLError(
+          'Some answers are incorrect. You are locked out.'
+        )
+      }
+      return activityId
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2034'
+      ) {
+        throw new GraphQLError(
+          'This group activity submission conflicted with another response'
+        )
+      }
+      throw error
     }
   }
 
@@ -1632,109 +2003,15 @@ export async function submitGroupActivityDecisions(
     })
   )
 
-  let allCorrect = true
-  if (groupActivityInstance.groupActivity.escapeRoomConfig && responses) {
-    for (const resp of responses) {
-      if (resp.type === DB.ElementType.CONTENT) continue
-
-      const instance = await ctx.prisma.elementInstance.findUnique({
-        where: { id: resp.instanceId },
-      })
-      if (!instance || !instance.elementData) continue
-
-      const elementData = instance.elementData as any
-      if (!elementData.options?.hasSampleSolution) continue
-
-      let correctness: number | null = null
-      if (
-        resp.type === DB.ElementType.SC ||
-        resp.type === DB.ElementType.MC ||
-        resp.type === DB.ElementType.KPRIM
-      ) {
-        correctness = evaluateChoicesAnswerCorrectness({
-          elementData,
-          response: { choices: resp.choicesResponse },
-        })
-      } else if (resp.type === DB.ElementType.NUMERICAL) {
-        correctness = evaluateNumericalAnswerCorrectness({
-          elementData,
-          response: { value: String(resp.numericalResponse) },
-        })
-      } else if (resp.type === DB.ElementType.FREE_TEXT) {
-        correctness = evaluateFreeTextAnswerCorrectness({
-          elementData,
-          response: { value: resp.freeTextResponse },
-        })
-      } else if (resp.type === DB.ElementType.SELECTION) {
-        correctness = evaluateSelectionAnswerCorrectness({
-          elementData,
-          response: { selection: resp.selectionResponse },
-        })
-      } else if (resp.type === DB.ElementType.CASE_STUDY) {
-        correctness = evaluateCaseStudyAnswerCorrectness({
-          elementData,
-          response: { assessment: resp.caseStudyResponse },
-        })
-      }
-
-      if (correctness !== 1) {
-        allCorrect = false
-        break
-      }
-    }
-  }
-
-  const isEscapeRoom = !!groupActivityInstance.groupActivity.escapeRoomConfig
-  const shouldSubmitDecisions = !isEscapeRoom || allCorrect
-
   const updatedActivityInstance = await ctx.prisma.groupActivityInstance.update(
     {
       where: { id: activityId },
       data: {
         decisions: responses,
-        decisionsSubmittedAt: shouldSubmitDecisions ? new Date() : undefined,
+        decisionsSubmittedAt: new Date(),
       },
     }
   )
-
-  if (isEscapeRoom) {
-    if (allCorrect) {
-      await ctx.prisma.escapeRoomAttempt
-        .update({
-          where: {
-            groupId_groupActivityId: {
-              groupId: groupActivityInstance.groupId,
-              groupActivityId: groupActivityInstance.groupActivityId,
-            },
-          },
-          data: {
-            status: DB.EscapeRoomStatus.COMPLETED,
-            completedAt: new Date(),
-          },
-        })
-        .catch(() => {})
-    } else {
-      const config = groupActivityInstance.groupActivity.escapeRoomConfig
-      const lockoutSeconds = config?.lockoutSeconds ?? 5
-      const lockoutUntil = dayjs().add(lockoutSeconds, 'second').toDate()
-
-      await ctx.prisma.escapeRoomAttempt
-        .update({
-          where: {
-            groupId_groupActivityId: {
-              groupId: groupActivityInstance.groupId,
-              groupActivityId: groupActivityInstance.groupActivityId,
-            },
-          },
-          data: {
-            lockoutUntil,
-          },
-        })
-        .catch(() => {})
-
-      throw new GraphQLError('Some answers are incorrect. You are locked out.')
-    }
-  }
 
   // return updatedActivityInstance
   return updatedActivityInstance.id

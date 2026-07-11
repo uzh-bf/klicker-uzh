@@ -59,6 +59,8 @@ Activities (PracticeQuiz, MicroLearning, GroupActivity) and LiveQuiz blocks (`El
 
 Attempts are scoped uniquely to a participant/group and activity/block to prevent multiple active attempts. Evaluation and penalty calculations are handled in the backend (`packages/graphql/src/services/`) and validated at response time.
 
+GroupActivity Escape Rooms accept exactly one valid response for every supported answerable instance. The backend validates activity membership, response IDs/types/payloads, and gradability before any write, then commits aggregate results, decisions, lockout/expiry, and attempt completion in one serializable transaction. Content and flashcard instances are not answerable; an activity with no answerable instances fails closed.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.
