@@ -1236,6 +1236,11 @@ type EscapeRoomConfig {
   timeLimit: Int!
 }
 
+type EscapeRoomHint {
+  hint: String!
+  instanceId: Int!
+}
+
 type EscapeRoomHintResult {
   attempt: EscapeRoomAttempt!
   hint: String!
@@ -2415,6 +2420,7 @@ type Query {
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
+  escapeRoomHints(microLearningId: String, practiceQuizId: String): [EscapeRoomHint!]
   escapeRoomProgress(groupActivityId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]

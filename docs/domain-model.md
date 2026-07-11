@@ -63,6 +63,8 @@ GroupActivity Escape Rooms accept exactly one valid response for every supported
 
 Hints are authorized against the participant's current unlocked stack. Unused hint text is never returned in participant queries; after a hint is charged, its instance ID is recorded on the caller's attempt and only that caller receives the restored `revealedHint` text on subsequent PracticeQuiz or MicroLearning loads.
 
+Raw authored hints are available only through the owner-authorized `escapeRoomHints` query used by the edit wizard. Hint edits use patch semantics: an omitted value preserves the stored hint, a blank or null value clears it, and a non-empty value is trimmed and stored. Duplicating an instance preserves its hint unless an explicit override is supplied.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

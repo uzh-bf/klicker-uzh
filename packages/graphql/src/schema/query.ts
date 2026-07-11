@@ -63,6 +63,7 @@ import {
   UserElementList,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
+import { EscapeRoomHint } from './escapeRoomConfig.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -635,6 +636,24 @@ export const Query = builder.queryType({
           async (_, args, ctx) => {
             return await EscapeRoomService.getEscapeRoomProgress(args, ctx)
           }
+        ),
+      }),
+
+      escapeRoomHints: t.withAuth(asUser).field({
+        nullable: true,
+        type: [EscapeRoomHint],
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+        },
+        resolve: withPermission(
+          (args) =>
+            args.practiceQuizId
+              ? { practiceQuizId: args.practiceQuizId }
+              : { microLearningId: args.microLearningId },
+          DB.PermissionLevel.OWNER,
+          async (_, args, ctx) =>
+            EscapeRoomService.getEscapeRoomHints(args, ctx)
         ),
       }),
 

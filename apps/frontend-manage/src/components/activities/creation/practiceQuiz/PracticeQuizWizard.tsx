@@ -73,6 +73,7 @@ interface PracticeQuizWizardProps {
   conversion: boolean
   editMode: boolean
   duplicationMode: boolean
+  escapeRoomHints: Array<{ instanceId: number; hint: string }>
 }
 
 function PracticeQuizWizard({
@@ -85,6 +86,7 @@ function PracticeQuizWizard({
   conversion,
   editMode,
   duplicationMode,
+  escapeRoomHints,
 }: PracticeQuizWizardProps) {
   const t = useTranslations()
 
@@ -100,6 +102,9 @@ function PracticeQuizWizard({
       courseSelection: courses,
     })
   const escapeRoomYupFields = useEscapeRoomYupFields()
+  const escapeRoomHintMap = new Map(
+    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+  )
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -238,6 +243,7 @@ function PracticeQuizWizard({
                   : true,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode || conversion,
+              escapeRoomHint: escapeRoomHintMap.get(instance.id),
             }
           }),
         }))

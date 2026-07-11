@@ -63,6 +63,7 @@ interface MicroLearningWizardProps {
   closeWizard: () => void
   editMode: boolean
   duplicationMode: boolean
+  escapeRoomHints: Array<{ instanceId: number; hint: string }>
 }
 
 function MicroLearningWizard({
@@ -74,6 +75,7 @@ function MicroLearningWizard({
   closeWizard,
   editMode,
   duplicationMode,
+  escapeRoomHints,
 }: MicroLearningWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
@@ -88,6 +90,9 @@ function MicroLearningWizard({
       courseSelection: courses,
     })
   const escapeRoomYupFields = useEscapeRoomYupFields()
+  const escapeRoomHintMap = new Map(
+    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+  )
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -255,6 +260,7 @@ function MicroLearningWizard({
                   : true,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
+              escapeRoomHint: escapeRoomHintMap.get(instance.id),
             }
           }),
         }))

@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomHintUpdate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -353,6 +354,12 @@ export async function manipulatePracticeQuiz(
 
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
+      const persistentInputs = new Map(
+        stacks
+          .flatMap((stack) => stack.elements)
+          .filter((instance) => !instance.duplicateInstance)
+          .map((instance) => [instance.existingInstanceId, instance])
+      )
       // delete all instances that are not used anymore
       await prisma.elementInstance.deleteMany({
         where: { id: { in: instancesToDelete } },
@@ -372,6 +379,9 @@ export async function manipulatePracticeQuiz(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
+              ...getEscapeRoomHintUpdate(
+                persistentInputs.get(instance.id)?.escapeRoomHint
+              ),
               resetTimeDays,
               pointsMultiplier: multiplier * elementMultiplier,
             },

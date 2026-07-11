@@ -1,5 +1,12 @@
-query GetSingleMicroLearning($id: String!) {
+query GetSingleMicroLearning(
+  $id: String!
+  $withEscapeRoomHints: Boolean! = false
+) {
   getSingleMicroLearning(id: $id) {
     ...MicroLearningData
+  }
+  escapeRoomHints(microLearningId: $id) @include(if: $withEscapeRoomHints) {
+    instanceId
+    hint
   }
 }

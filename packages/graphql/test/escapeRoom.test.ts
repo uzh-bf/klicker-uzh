@@ -6,11 +6,15 @@ import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
-import { getEscapeRoomProgress } from '../src/services/escapeRooms.js'
+import {
+  getEscapeRoomHints,
+  getEscapeRoomProgress,
+} from '../src/services/escapeRooms.js'
 import { submitGroupActivityDecisions } from '../src/services/groups.js'
 import { getMicroLearningData } from '../src/services/microLearning.js'
 import {
   getPracticeQuizData,
+  manipulatePracticeQuiz,
   requestEscapeRoomHint,
   resetEscapeRoomAttempt,
   startEscapeRoomAttempt,
@@ -488,6 +492,176 @@ describe('Escape room integration tests', () => {
         where: { id: attempt.id },
       })
       expect(expiredAttempt.status).toBe(DB.EscapeRoomStatus.EXPIRED)
+    })
+  })
+  // #endregion
+
+  // ! Escape-room hint authoring round-trip
+  // #region
+  describe('escape-room hint authoring', () => {
+    async function seedDraftQuizWithHint(hint: string) {
+      const quiz = await seedEscapeRoomPracticeQuiz(
+        {
+          elements: [scElement],
+          courseId,
+          status: DB.PublicationStatus.DRAFT,
+        },
+        lecturerCtx
+      )
+      createdQuizIds.push(quiz.id)
+      const instance = quiz.stacks[0]!.elements[0]!
+      await prisma.elementInstance.update({
+        where: { id: instance.id },
+        data: { options: { ...instance.options, escapeRoomHint: hint } },
+      })
+      return { quiz, instance }
+    }
+
+    function editArgs(
+      quiz: Awaited<ReturnType<typeof seedEscapeRoomPracticeQuiz>>,
+      instance: DB.ElementInstance,
+      escapeRoomHint?: string | null
+    ) {
+      return {
+        id: quiz.id,
+        name: quiz.name,
+        displayName: quiz.displayName,
+        description: quiz.description,
+        stacks: [
+          {
+            order: 0,
+            elements: [
+              {
+                elementId: instance.elementId,
+                order: 0,
+                existingInstanceId: instance.id,
+                duplicateInstance: false,
+                ...(typeof escapeRoomHint === 'undefined'
+                  ? {}
+                  : { escapeRoomHint }),
+              },
+            ],
+          },
+        ],
+        courseId,
+        multiplier: 1,
+        order: DB.ElementOrderType.SEQUENTIAL,
+        resetTimeDays: 1,
+        isEscapeRoom: true,
+      }
+    }
+
+    it('preserves an omitted hint, updates it, and explicitly clears it', async () => {
+      const { quiz, instance } = await seedDraftQuizWithHint('original hint')
+
+      await manipulatePracticeQuiz(editArgs(quiz, instance), lecturerCtx)
+      expect(
+        (
+          await prisma.elementInstance.findUniqueOrThrow({
+            where: { id: instance.id },
+          })
+        ).options.escapeRoomHint
+      ).toBe('original hint')
+
+      await manipulatePracticeQuiz(
+        editArgs(quiz, instance, '  updated hint  '),
+        lecturerCtx
+      )
+      expect(
+        (
+          await prisma.elementInstance.findUniqueOrThrow({
+            where: { id: instance.id },
+          })
+        ).options.escapeRoomHint
+      ).toBe('updated hint')
+
+      await manipulatePracticeQuiz(editArgs(quiz, instance, ''), lecturerCtx)
+      expect(
+        (
+          await prisma.elementInstance.findUniqueOrThrow({
+            where: { id: instance.id },
+          })
+        ).options.escapeRoomHint
+      ).toBeNull()
+    })
+
+    it('copies the existing hint when duplicating an instance with no override', async () => {
+      const { quiz, instance } = await seedDraftQuizWithHint('copy me')
+      await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, prisma)
+      const result = await manipulatePracticeQuiz(
+        {
+          name: `${TEST_PREFIX}-hint-copy`,
+          displayName: 'Hint copy',
+          stacks: [
+            {
+              order: 0,
+              elements: [
+                {
+                  elementId: instance.elementId,
+                  order: 0,
+                  existingInstanceId: instance.id,
+                  duplicateInstance: true,
+                },
+              ],
+            },
+          ],
+          courseId,
+          multiplier: 1,
+          order: DB.ElementOrderType.SEQUENTIAL,
+          resetTimeDays: 1,
+          isEscapeRoom: true,
+        },
+        lecturerCtx
+      )
+      createdQuizIds.push(result.id)
+      const duplicate = await prisma.elementInstance.findFirstOrThrow({
+        where: { elementStack: { practiceQuizId: result.id } },
+      })
+      expect(duplicate.options.escapeRoomHint).toBe('copy me')
+    })
+
+    it('keeps a duplicate hint override isolated from the retained instance', async () => {
+      const { quiz, instance } = await seedDraftQuizWithHint('original')
+      await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, prisma)
+      const args = editArgs(quiz, instance)
+      args.stacks[0]!.elements.push({
+        elementId: instance.elementId,
+        order: 1,
+        existingInstanceId: instance.id,
+        duplicateInstance: true,
+        escapeRoomHint: 'duplicate only',
+      })
+
+      await manipulatePracticeQuiz(args, lecturerCtx)
+
+      const instances = await prisma.elementInstance.findMany({
+        where: { elementStack: { practiceQuizId: quiz.id } },
+        orderBy: { order: 'asc' },
+      })
+      expect(instances).toHaveLength(2)
+      expect(instances[0]!.options.escapeRoomHint).toBe('original')
+      expect(instances[1]!.options.escapeRoomHint).toBe('duplicate only')
+    })
+
+    it('returns raw hints only to the activity owner', async () => {
+      const { quiz, instance } = await seedDraftQuizWithHint('owner only')
+      const otherLecturer = await prisma.user.create({
+        data: {
+          email: `${TEST_PREFIX}-hint-reader@example.com`,
+          shortname: `${TEST_PREFIX}-hint-reader`,
+          role: DB.UserRole.USER,
+        },
+      })
+      createdUserIds.push(otherLecturer.id)
+      await expect(
+        getEscapeRoomHints(
+          { practiceQuizId: quiz.id },
+          createUserCtx(otherLecturer.id)
+        )
+      ).rejects.toThrow('Only the activity owner')
+      await expect(
+        getEscapeRoomHints({ practiceQuizId: quiz.id }, lecturerCtx)
+      ).resolves.toEqual([{ instanceId: instance.id, hint: 'owner only' }])
     })
   })
   // #endregion

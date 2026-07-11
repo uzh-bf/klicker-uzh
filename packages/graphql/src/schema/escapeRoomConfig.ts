@@ -18,3 +18,17 @@ export const EscapeRoomConfig = EscapeRoomConfigRef.implement({
     elementBlockId: t.exposeInt('elementBlockId', { nullable: true }),
   }),
 })
+
+export interface IEscapeRoomHint {
+  instanceId: number
+  hint: string
+}
+
+export const EscapeRoomHintRef =
+  builder.objectRef<IEscapeRoomHint>('EscapeRoomHint')
+export const EscapeRoomHint = EscapeRoomHintRef.implement({
+  fields: (t) => ({
+    instanceId: t.exposeInt('instanceId'),
+    hint: t.exposeString('hint'),
+  }),
+})

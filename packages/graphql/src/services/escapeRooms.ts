@@ -2,6 +2,42 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 
+export async function getEscapeRoomHints(
+  args: { practiceQuizId?: string | null; microLearningId?: string | null },
+  ctx: ContextWithUser
+) {
+  if (!!args.practiceQuizId === !!args.microLearningId) {
+    throw new GraphQLError('Exactly one escape room activity ID is required')
+  }
+
+  const activity = args.practiceQuizId
+    ? await ctx.prisma.practiceQuiz.findUnique({
+        where: { id: args.practiceQuizId },
+        select: { ownerId: true },
+      })
+    : await ctx.prisma.microLearning.findUnique({
+        where: { id: args.microLearningId! },
+        select: { ownerId: true },
+      })
+  if (!activity || activity.ownerId !== ctx.user.sub) {
+    throw new GraphQLError('Only the activity owner can read escape room hints')
+  }
+
+  const elements = await ctx.prisma.elementInstance.findMany({
+    where: {
+      elementStack: args.practiceQuizId
+        ? { practiceQuizId: args.practiceQuizId }
+        : { microLearningId: args.microLearningId },
+    },
+    select: { id: true, options: true },
+  })
+
+  return elements.flatMap((element) => {
+    const hint = element.options.escapeRoomHint?.trim()
+    return hint ? [{ instanceId: element.id, hint }] : []
+  })
+}
+
 type StackWithRevealedHints<
   T extends {
     elements: Array<{
