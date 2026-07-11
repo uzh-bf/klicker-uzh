@@ -52,4 +52,6 @@ Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown` (pack
 
 **Git hooks run no tests** (pre-commit = `check:all`, pre-push = `build`). The expectation before a PR: `check:all` + build + targeted vitest for touched logic + browser evidence for UI changes; CI is the real e2e gate.
 
+Compiler/toolchain upgrades also cover the test build plus Docs, Cypress, and Playwright compiler surfaces omitted from the root typecheck; the exact commands live in `klicker-testing-verification`. Cypress explicitly preserves its TypeScript 5 non-strict baseline in `cypress/tsconfig.json`; Playwright remains strict. This is legacy-suite compatibility, not a precedent for new TypeScript packages.
+
 For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.

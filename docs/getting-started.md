@@ -16,6 +16,8 @@ tags:
 
 Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
 
+The workspace TypeScript baseline is `~6.0.3` (config-derived from root and package manifests). `apps/office-addin/package.json` intentionally remains on `~5.6.3` outside this baseline; `.syncpackrc.mjs` contains the narrow exception that keeps `pnpm run check:syncpack` honest without forcing that app into this upgrade.
+
 ## Onboarding Paths
 
 You can set up the environment in two ways:

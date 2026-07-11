@@ -393,11 +393,12 @@ Every implementation slice:
 - [x] Slice 6 restored the two intentional bare `public/*` asset import roots with explicit relative aliases in Manage and PWA. Both focused production builds pass.
 - [x] Slice 6 made Cypress's inherited TypeScript 5 non-strict behavior explicit. Cypress passes under TypeScript 5.6 and under TypeScript 6 with `strict: false`; Playwright remains strict and passes under TypeScript 6.
 - [x] Slice 6 correctness and simplification reviews found no issues. The two aliases cover all nine bare asset imports without source churn; explicit Cypress `strict: false` does not weaken its TypeScript 5 baseline.
-- [ ] Slice 6 compatibility fixes committed.
-- [ ] Slice 7 wiki and skills updated and committed.
+- [x] Slice 6 compatibility fixes committed as `6d3a86a24`; the normal hook passed 23/23 typecheck tasks and 6/6 lint tasks.
+- [x] Slice 7 updated the four affected wiki pages, log, and two existing procedures. Correctness review found no issues; simplification kept durable facts in the wiki and exact commands in skills.
+- [ ] Slice 7 wiki and skills committed.
 - [ ] Slice 8 fresh verification passed.
 - [ ] Slice 9 publish approval received.
 
-Current: Slice 6 compatibility fixes pass every planned compiler and build surface and both reviews found no issues.
+Current: Slice 7 wiki and skill updates are implemented, reviewed, formatted, and OKF-valid.
 
-Next: Commit Slice 6, then update the wiki and affected verification procedures in Slice 7.
+Next: Commit Slice 7, then execute fresh Node 24 verification and final reviews in Slice 8.
