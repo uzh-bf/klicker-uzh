@@ -22,7 +22,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { common, createLowlight } from 'lowlight'
 import { useTranslations } from 'next-intl'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MediaLibrary from './MediaLibrary'
 
@@ -77,6 +77,7 @@ function ContentInput({
 }: Props): React.ReactElement {
   const t = useTranslations()
   const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
+  const placeholderRef = useRef(placeholder)
 
   const editor = useEditor({
     extensions: [
@@ -86,7 +87,7 @@ function ContentInput({
       Image,
       Markdown,
       Placeholder.configure({
-        placeholder,
+        placeholder: () => placeholderRef.current,
         emptyEditorClass: 'is-editor-empty',
       }),
       CodeBlockLowlight.configure({
@@ -112,6 +113,15 @@ function ContentInput({
       },
     },
   })
+
+  // Placeholder extension options are created once. Refresh its decorations
+  // when the translated placeholder changes without recreating the editor.
+  useEffect(() => {
+    placeholderRef.current = placeholder
+    if (!editor) return
+
+    editor.view.dispatch(editor.state.tr)
+  }, [editor, placeholder])
 
   // Sync content prop when it changes externally
   useEffect(() => {
