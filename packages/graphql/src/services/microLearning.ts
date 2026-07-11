@@ -35,9 +35,14 @@ export async function getMicroLearningData(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: {
           elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+                ? { responses: { where: { participantId: ctx.user.sub } } }
+                : undefined,
             orderBy: {
               order: 'asc',
             },
@@ -50,17 +55,56 @@ export async function getMicroLearningData(
     },
   })
 
-  return microLearning
-    ? {
-        ...microLearning,
-        isOwner:
-          ctx.user?.sub &&
-          (ctx.user.role === DB.UserRole.USER ||
-            ctx.user.role === DB.UserRole.ADMIN)
-            ? ctx.user.sub === microLearning.ownerId
-            : false,
+  if (!microLearning) return null
+  const isOwner =
+    ctx.user?.sub &&
+    (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
+      ? ctx.user.sub === microLearning.ownerId
+      : false
+
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
+    const orderedStacks = microLearning.stacks
+
+    let filteredStacks = orderedStacks
+    if (microLearning.escapeRoomConfig) {
+      const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          participantId_microLearningId: {
+            participantId: ctx.user.sub,
+            microLearningId: microLearning.id,
+          },
+        },
+      })
+      if (!attempt || attempt.status === DB.EscapeRoomStatus.EXPIRED) {
+        filteredStacks = []
+      } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
+        const firstUnclearedIx = orderedStacks.findIndex(
+          (stack) =>
+            !stack.elements.every((elem: any) =>
+              elem.responses?.some(
+                (resp: any) =>
+                  resp.lastResponseCorrectness ===
+                  DB.ResponseCorrectness.CORRECT
+              )
+            )
+        )
+        if (firstUnclearedIx !== -1) {
+          filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)
+        }
       }
-    : null
+    }
+
+    return {
+      ...microLearning,
+      isOwner,
+      stacks: filteredStacks,
+    }
+  }
+
+  return {
+    ...microLearning,
+    isOwner,
+  }
 }
 
 export async function getMicroLearningEvaluation(
@@ -180,6 +224,9 @@ interface ManipulateMicroLearningArgs {
   multiplier: number
   startDate: Date
   endDate: Date
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
 }
 
 export async function manipulateMicroLearning(
@@ -193,6 +240,9 @@ export async function manipulateMicroLearning(
     multiplier,
     startDate,
     endDate,
+    isEscapeRoom,
+    escapeRoomTimeLimit,
+    escapeRoomHintPenalty,
   }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser
 ) {
@@ -262,7 +312,7 @@ export async function manipulateMicroLearning(
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
-  const createOrUpdateJSON = {
+  const createOrUpdateJSON: any = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
@@ -304,6 +354,22 @@ export async function manipulateMicroLearning(
     course: { connect: { id: courseId } },
   }
 
+  if (isEscapeRoom) {
+    createOrUpdateJSON.escapeRoomConfig = {
+      upsert: {
+        create: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+          lockoutSeconds: 5,
+        },
+        update: {
+          timeLimit: escapeRoomTimeLimit ?? 3600,
+          hintPenalty: escapeRoomHintPenalty ?? 120,
+        },
+      },
+    }
+  }
+
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
       // delete all instances that are not used anymore
@@ -341,6 +407,14 @@ export async function manipulateMicroLearning(
           id: { in: stacksToDelete },
         },
       })
+
+      if (!isEscapeRoom && id) {
+        await prisma.escapeRoomConfig
+          .delete({
+            where: { microLearningId: id },
+          })
+          .catch(() => {})
+      }
 
       const upsertedMicrolearning = await prisma.microLearning.upsert({
         where: { id: id ?? uuidv4() },

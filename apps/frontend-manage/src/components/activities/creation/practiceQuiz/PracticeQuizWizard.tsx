@@ -131,6 +131,25 @@ function PracticeQuizWizard({
         /^[0-9]+$/,
         t('manage.activityWizard.practiceQuizValidResetDays')
       ),
+    isEscapeRoom: yup.boolean(),
+    escapeRoomTimeLimit: yup.number().when('isEscapeRoom', {
+      is: true,
+      then: (schema) =>
+        schema
+          .required('Time limit is required')
+          .integer('Must be an integer')
+          .positive('Must be a positive number of minutes'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+    escapeRoomHintPenalty: yup.number().when('isEscapeRoom', {
+      is: true,
+      then: (schema) =>
+        schema
+          .required('Hint penalty is required')
+          .integer('Must be an integer')
+          .min(0, 'Must be a non-negative number of seconds'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   })
 
   const stackValiationSchema = yup.object().shape({
@@ -183,6 +202,9 @@ function PracticeQuizWizard({
     order: ElementOrderType.SpacedRepetition,
     courseStartDate: undefined,
     resetTimeDays: '6',
+    isEscapeRoom: false,
+    escapeRoomTimeLimit: '60',
+    escapeRoomHintPenalty: '0',
   }
 
   const workflowItems = [
@@ -222,7 +244,7 @@ function PracticeQuizWizard({
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
-              id: parseInt(elementId),
+              id: parseInt(elementId, 10),
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
@@ -246,6 +268,15 @@ function PracticeQuizWizard({
       typeof initialValues?.resetTimeDays !== 'undefined'
         ? String(initialValues?.resetTimeDays)
         : formDefaultValues.resetTimeDays,
+    isEscapeRoom: !!initialValues?.escapeRoomConfig,
+    escapeRoomTimeLimit: initialValues?.escapeRoomConfig?.timeLimit
+      ? String(Math.round(initialValues.escapeRoomConfig.timeLimit / 60))
+      : formDefaultValues.escapeRoomTimeLimit,
+    escapeRoomHintPenalty:
+      typeof initialValues?.escapeRoomConfig?.hintPenalty !== 'undefined' &&
+      initialValues?.escapeRoomConfig?.hintPenalty !== null
+        ? String(initialValues.escapeRoomConfig.hintPenalty)
+        : formDefaultValues.escapeRoomHintPenalty,
   })
 
   const [createPracticeQuiz, { data: creationData }] = useMutation(

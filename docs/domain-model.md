@@ -49,6 +49,16 @@ Lifecycle enums:
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 
+## Escape Room Mode
+
+Activities (PracticeQuiz, MicroLearning, GroupActivity) and LiveQuiz blocks (`ElementBlock`) can be configured as **Escape Rooms** via `EscapeRoomConfig`:
+
+- **`EscapeRoomConfig`** (`quiz.prisma`) — Defines the time limit, penalty per used hint, lockout duration for incorrect answers, and introductory text. It links optionally to the respective activity or block.
+- **`EscapeRoomAttempt`** (`quiz.prisma`) — Tracks a participant's or group's progress in an active Escape Room, containing their start/completion times, accumulated penalty seconds, used hints, lockout expiration, and status.
+- **`EscapeRoomStatus`** — Lifecycle state of an attempt: `IN_PROGRESS`, `COMPLETED`, or `EXPIRED`.
+
+Attempts are scoped uniquely to a participant/group and activity/block to prevent multiple active attempts. Evaluation and penalty calculations are handled in the backend (`packages/graphql/src/services/`) and validated at response time.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

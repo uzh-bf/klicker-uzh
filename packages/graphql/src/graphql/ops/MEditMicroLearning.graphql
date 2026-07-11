@@ -8,6 +8,9 @@ mutation EditMicroLearning(
   $multiplier: Int!
   $startDate: Date!
   $endDate: Date!
+  $isEscapeRoom: Boolean
+  $escapeRoomTimeLimit: Int
+  $escapeRoomHintPenalty: Int
 ) {
   editMicroLearning(
     id: $id
@@ -19,6 +22,9 @@ mutation EditMicroLearning(
     multiplier: $multiplier
     startDate: $startDate
     endDate: $endDate
+    isEscapeRoom: $isEscapeRoom
+    escapeRoomTimeLimit: $escapeRoomTimeLimit
+    escapeRoomHintPenalty: $escapeRoomHintPenalty
   ) {
     ...ActivityInfoData
   }

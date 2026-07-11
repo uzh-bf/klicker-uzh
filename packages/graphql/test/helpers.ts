@@ -47,6 +47,7 @@ import {
   handlePublishScheduledMicroLearning,
 } from 'src/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
+import { handlePruneEscapeRooms } from 'src/services/pruneEscapeRooms.js'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -272,6 +273,16 @@ export async function testInitialization(
       ) => {
         const success = await handleAssessmentLiveQuizBlockClosureAggregation(
           { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
+    pruneEscapeRooms: hatchet.task({
+      name: 'prune-escape-rooms',
+      fn: async (_, executionContext) => {
+        const success = await handlePruneEscapeRooms(
           hatchetCtx,
           executionContext
         )

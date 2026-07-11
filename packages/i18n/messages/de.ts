@@ -851,6 +851,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       correctAnswerOptions: 'Richtige Antwortoptionen',
       topNAnswers: 'Top {number} Antworten',
+      escapeRoomStartTitle: 'Escape-Room-Modus',
+      escapeRoomStartDesc:
+        'Schalte Fragen nacheinander frei, indem du sie richtig beantwortest, bevor die Zeit abläuft!',
+      escapeRoomTimeLimitLabel: 'Zeitlimit',
+      escapeRoomPenaltyLabel: 'Hinweis-Strafzeit',
+      escapeRoomStartButton: 'Versuch starten',
+      escapeRoomExpiredTitle: 'Zeit abgelaufen!',
+      escapeRoomExpiredDesc:
+        'Die Zeit ist abgelaufen! Dieser Versuch ist abgelaufen.',
+      escapeRoomResetButton: 'Escape Room neu starten',
+      escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
+      escapeRoomCompletedDesc:
+        'Herzlichen Glückwunsch! Du hast alle Fragen richtig beantwortet und den Escape Room abgeschlossen.',
+      escapeRoomTitle: 'Escape Room',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

@@ -38,7 +38,12 @@ interface QuestionAreaProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<{ statusCode: number; responseTimestamp?: number }>
+  }) => Promise<{
+    statusCode: number
+    responseTimestamp?: number
+    responseStatus?: string
+    lockoutUntil?: string
+  }>
   quizId: string
   execution: number
   timeLimit?: number
@@ -232,7 +237,26 @@ function QuestionArea({
     push(['trackEvent', 'Live Quiz', 'Time expired'])
   }
 
-  function showStatusCodeToast(statusCode: number) {
+  function showStatusCodeToast(statusCode: number, responseStatus?: string) {
+    if (responseStatus === 'incorrect') {
+      toast({
+        message: t('pwa.practiceQuiz.escapeRoomIncorrectToast' as any, {
+          defaultValue: 'Incorrect answer! Please try again.',
+        }),
+        type: 'error',
+      })
+      return
+    }
+    if (statusCode === 429) {
+      toast({
+        message: t('pwa.practiceQuiz.escapeRoomLockoutToast' as any, {
+          defaultValue: 'You are currently locked out. Please wait.',
+        }),
+        type: 'error',
+      })
+      return
+    }
+
     // status code 200 (regular and assessment responses) -> successful submission
     if (statusCode === 200) {
       toast({
@@ -317,10 +341,14 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
+      showStatusCodeToast(result.statusCode, result.responseStatus)
 
       // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         // store the submitted answer locally to be shown and remove any temporary saved response
         await localforage.setItem(storageKey, {
           response: input.response,
@@ -347,9 +375,13 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
+      showStatusCodeToast(result.statusCode, result.responseStatus)
 
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -375,9 +407,13 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
+      showStatusCodeToast(result.statusCode, result.responseStatus)
 
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -405,9 +441,13 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
+      showStatusCodeToast(result.statusCode, result.responseStatus)
 
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -433,9 +473,13 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
+      showStatusCodeToast(result.statusCode, result.responseStatus)
 
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -457,9 +501,13 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
+      showStatusCodeToast(result.statusCode, result.responseStatus)
 
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),

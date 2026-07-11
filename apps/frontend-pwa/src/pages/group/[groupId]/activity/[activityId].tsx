@@ -23,13 +23,15 @@ import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
 import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
 import GroupActivitySubscriber from '../../../../components/groupActivity/GroupActivitySubscriber'
+import { useEscapeRoom } from '../../../../components/hooks/useEscapeRoom'
+import EscapeRoomOverlay from '../../../../components/practiceQuiz/EscapeRoomOverlay'
 
 function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
 
-  const { data, loading, error, subscribeToMore } = useQuery(
+  const { data, loading, error, subscribeToMore, refetch } = useQuery(
     GroupActivityDetailsDocument,
     {
       variables: {
@@ -60,6 +62,22 @@ function GroupActivityDetails() {
       ],
     }
   )
+
+  const hookActivity = data?.groupActivityDetails
+  const isEscapeRoom = !!hookActivity?.escapeRoomConfig
+  const {
+    isStarted,
+    isCompleted,
+    isExpired,
+    remainingSeconds,
+    startAttempt,
+    resetAttempt,
+    loading: attemptLoading,
+  } = useEscapeRoom({
+    activity: hookActivity,
+    activityType: 'groupActivity',
+    refetch: refetch ?? (() => {}),
+  })
 
   if (!data || loading) {
     return (
@@ -100,6 +118,25 @@ function GroupActivityDetails() {
         setActivityEnded={setActivityEnded}
         subscribeToMore={subscribeToMore}
       />
+      {isEscapeRoom && !!instance && (
+        <EscapeRoomOverlay
+          isStarted={isStarted}
+          isCompleted={isCompleted}
+          isExpired={isExpired}
+          remainingSeconds={remainingSeconds}
+          timeLimit={groupActivity.escapeRoomConfig?.timeLimit ?? 3600}
+          hintPenalty={groupActivity.escapeRoomConfig?.hintPenalty ?? 120}
+          onStart={async () => {
+            await startAttempt()
+            await refetch()
+          }}
+          onReset={async () => {
+            await resetAttempt()
+            await refetch()
+          }}
+          loading={attemptLoading}
+        />
+      )}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>

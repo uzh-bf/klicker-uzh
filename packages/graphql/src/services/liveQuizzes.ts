@@ -1094,7 +1094,12 @@ export async function activateLiveQuizBlock(
       },
     },
     include: {
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      activeBlock: {
+        include: {
+          elements: { orderBy: { order: 'asc' } },
+          escapeRoomConfig: true,
+        },
+      },
       blocks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -1183,6 +1188,15 @@ export async function activateLiveQuizBlock(
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
       blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
+      isEscapeRoom: updatedQuiz.activeBlock!.escapeRoomConfig
+        ? 'true'
+        : 'false',
+      escapeRoomTimeLimit:
+        updatedQuiz.activeBlock!.escapeRoomConfig?.timeLimit ?? '',
+      escapeRoomHintPenalty:
+        updatedQuiz.activeBlock!.escapeRoomConfig?.hintPenalty ?? '',
+      escapeRoomLockoutSeconds:
+        updatedQuiz.activeBlock!.escapeRoomConfig?.lockoutSeconds ?? '',
     }
 
     switch (elementData.type) {

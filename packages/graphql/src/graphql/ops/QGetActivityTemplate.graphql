@@ -51,6 +51,14 @@ query GetActivityTemplate($templateId: String!) {
       resetTimeDays
       orderType
 
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
+
       stacks {
         id
         order
@@ -77,6 +85,14 @@ query GetActivityTemplate($templateId: String!) {
       scheduledStartAt
       scheduledEndAt
 
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
+
       stacks {
         id
         order
@@ -102,6 +118,14 @@ query GetActivityTemplate($templateId: String!) {
       status
       scheduledStartAt
       scheduledEndAt
+
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
 
       clues {
         id

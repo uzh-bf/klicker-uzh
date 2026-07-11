@@ -64,6 +64,7 @@ import {
   ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
+  EscapeRoomAttempt,
   PracticeQuiz,
   ReviewStatus,
   StackFeedback,
@@ -3066,6 +3067,9 @@ export const Mutation = builder.mutationType({
               required: true,
             }),
             resetTimeDays: t.arg.int({ required: true }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
@@ -3093,6 +3097,9 @@ export const Mutation = builder.mutationType({
               required: true,
             }),
             resetTimeDays: t.arg.int({ required: true }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
@@ -3117,6 +3124,9 @@ export const Mutation = builder.mutationType({
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await MicroLearningService.manipulateMicroLearning(args, ctx)
@@ -3138,6 +3148,9 @@ export const Mutation = builder.mutationType({
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
@@ -3199,6 +3212,9 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
             clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
             stack: t.arg({ required: true, type: ElementStackInput }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await GroupService.manipulateGroupActivity(args, ctx)
@@ -3221,6 +3237,9 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
             clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
             stack: t.arg({ required: true, type: ElementStackInput }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
@@ -3329,6 +3348,34 @@ export const Mutation = builder.mutationType({
             }
           ),
         }),
+
+      startEscapeRoomAttempt: t.withAuth({ authenticated: true }).field({
+        nullable: true,
+        type: EscapeRoomAttempt,
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PracticeQuizService.startEscapeRoomAttempt(args, ctx)
+        },
+      }),
+
+      resetEscapeRoomAttempt: t.withAuth({ authenticated: true }).boolean({
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
+          participantId: t.arg.string({ required: false }),
+          groupId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PracticeQuizService.resetEscapeRoomAttempt(args, ctx)
+        },
+      }),
 
       deleteMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })

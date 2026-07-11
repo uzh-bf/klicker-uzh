@@ -23,6 +23,9 @@ interface CommonFormValues {
   courseEndDate?: Date
   courseGroupDeadline?: Date
   multiplier: string
+  isEscapeRoom?: boolean
+  escapeRoomTimeLimit?: string
+  escapeRoomHintPenalty?: string
 }
 
 export interface ElementInstanceFormInput {
