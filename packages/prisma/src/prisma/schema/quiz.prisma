@@ -510,9 +510,9 @@ model EscapeRoomAttempt {
   completedAt    DateTime?
   lockoutUntil   DateTime?
 
-  // Set by the prune job once this attempt has been rolled into instance
-  // statistics. Guards against double-counting across repeated prune runs;
-  // completed/expired attempts are retained as the integrity record.
+  // Set once the prune job has processed this finished attempt for retention.
+  // Response/instance statistics are owned by submission/event-time paths;
+  // completed/expired attempts remain the replay-integrity record until stale.
   statsAggregatedAt DateTime?
 
   // Individual Play (PracticeQuiz / MicroLearning / LiveQuiz block)

@@ -12,158 +12,51 @@ export async function handlePruneEscapeRooms(
   executionContext: { logger: any }
 ): Promise<boolean> {
   executionContext.logger.info(
-    'Starting Escape Room statistics aggregation and housekeeping...'
+    'Starting Escape Room attempt bookkeeping and housekeeping...'
   )
 
   try {
-    // 1. Aggregate statistics for attempts that have finished but have not yet
-    //    been rolled into instance statistics. The statsAggregatedAt marker
-    //    makes this idempotent across repeated runs (no double counting).
-    const attempts = await globalContext.prisma.escapeRoomAttempt.findMany({
-      where: {
-        status: {
-          in: [DB.EscapeRoomStatus.COMPLETED, DB.EscapeRoomStatus.EXPIRED],
-        },
-        statsAggregatedAt: null,
-      },
-    })
-
-    executionContext.logger.info(
-      `Found ${attempts.length} finished attempts to aggregate`
-    )
-
-    for (const attempt of attempts) {
-      // Find element instances related to this attempt
-      let instances: { id: number }[] = []
-
-      if (attempt.elementBlockId) {
-        instances = await globalContext.prisma.elementInstance.findMany({
-          where: { elementBlockId: attempt.elementBlockId },
-          select: { id: true },
-        })
-      } else if (attempt.practiceQuizId) {
-        instances = await globalContext.prisma.elementInstance.findMany({
-          where: {
-            elementStack: { practiceQuizId: attempt.practiceQuizId },
-          },
-          select: { id: true },
-        })
-      } else if (attempt.microLearningId) {
-        instances = await globalContext.prisma.elementInstance.findMany({
-          where: {
-            elementStack: { microLearningId: attempt.microLearningId },
-          },
-          select: { id: true },
-        })
-      } else if (attempt.groupActivityId) {
-        instances = await globalContext.prisma.elementInstance.findMany({
-          where: {
-            elementStack: { groupActivityId: attempt.groupActivityId },
-          },
-          select: { id: true },
-        })
-      }
-
-      if (instances.length > 0) {
-        const timeSpent = attempt.completedAt
-          ? (new Date(attempt.completedAt).getTime() -
-              new Date(attempt.startedAt).getTime()) /
-            1000
-          : attempt.timeLimit
-
-        const isSuccess = attempt.status === DB.EscapeRoomStatus.COMPLETED
-        const hintsUsedCount = Array.isArray(attempt.hintsUsed)
-          ? attempt.hintsUsed.length
-          : 0
-
-        // Estimate tries count (1 success + incorrect tries)
-        const triesCount =
-          1 + hintsUsedCount + Math.floor(attempt.penaltySeconds / 60)
-
-        for (const instance of instances) {
-          const stats =
-            await globalContext.prisma.instanceStatistics.findUnique({
-              where: { elementInstanceId: instance.id },
-            })
-
-          if (stats) {
-            const newParticipantCount = stats.uniqueParticipantCount + 1
-            const newAverageTimeSpent =
-              ((stats.averageTimeSpent ?? 0) * stats.uniqueParticipantCount +
-                timeSpent) /
-              newParticipantCount
-
-            await globalContext.prisma.instanceStatistics
-              .update({
-                where: { elementInstanceId: instance.id },
-                data: {
-                  uniqueParticipantCount: newParticipantCount,
-                  correctCount: isSuccess
-                    ? stats.correctCount + 1
-                    : stats.correctCount,
-                  wrongCount:
-                    stats.wrongCount +
-                    (isSuccess ? Math.max(0, triesCount - 1) : triesCount),
-                  averageTimeSpent: newAverageTimeSpent,
-                },
-              })
-              .catch((err) => {
-                executionContext.logger.error(
-                  `Failed to update stats for instance ${instance.id}: ${err}`
-                )
-              })
-          } else {
-            await globalContext.prisma.instanceStatistics
-              .create({
-                data: {
-                  elementInstanceId: instance.id,
-                  uniqueParticipantCount: 1,
-                  correctCount: isSuccess ? 1 : 0,
-                  wrongCount: isSuccess
-                    ? Math.max(0, triesCount - 1)
-                    : triesCount,
-                  averageTimeSpent: timeSpent,
-                },
-              })
-              .catch((err) => {
-                executionContext.logger.error(
-                  `Failed to create stats for instance ${instance.id}: ${err}`
-                )
-              })
-          }
-        }
-      }
-
-      // Mark this attempt aggregated immediately so a mid-run failure never
-      // causes it to be counted a second time on the next run.
-      await globalContext.prisma.escapeRoomAttempt
-        .update({
-          where: { id: attempt.id },
-          data: { statsAggregatedAt: new Date() },
-        })
-        .catch((err) => {
-          executionContext.logger.error(
-            `Failed to mark attempt ${attempt.id} aggregated: ${err}`
-          )
-        })
-    }
-
-    // 2. Housekeeping: remove only long-stale finished attempts that have
-    //    already been aggregated. Recent completions/expiries are retained so
-    //    finished participants keep seeing their result and cannot restart.
+    // Submission paths own response/instance statistics. PracticeQuiz and
+    // MicroLearning update them while grading, LiveQuiz uses its response-event
+    // pipeline, and GroupActivity has no compatible participant-level metric.
+    // Attempt hints/penalties are not tries and must never be projected onto
+    // every instance. This job therefore only marks finished attempts as
+    // processed and applies retention, atomically and idempotently.
     const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000)
-    const deleted = await globalContext.prisma.escapeRoomAttempt.deleteMany({
-      where: {
-        status: {
-          in: [DB.EscapeRoomStatus.COMPLETED, DB.EscapeRoomStatus.EXPIRED],
-        },
-        statsAggregatedAt: { not: null },
-        startedAt: { lt: cutoff },
+    const finishedWhere = {
+      status: {
+        in: [
+          DB.EscapeRoomStatus.COMPLETED,
+          DB.EscapeRoomStatus.EXPIRED,
+        ] as DB.EscapeRoomStatus[],
       },
-    })
+    }
+    const [marked, deleted] = await globalContext.prisma.$transaction([
+      globalContext.prisma.escapeRoomAttempt.updateMany({
+        where: { ...finishedWhere, statsAggregatedAt: null },
+        data: { statsAggregatedAt: new Date() },
+      }),
+      globalContext.prisma.escapeRoomAttempt.deleteMany({
+        where: {
+          statsAggregatedAt: { not: null },
+          OR: [
+            {
+              status: DB.EscapeRoomStatus.COMPLETED,
+              completedAt: { lt: cutoff },
+            },
+            {
+              // There is no expiredAt timestamp. startedAt older than the full
+              // retention window is the conservative available lower bound.
+              status: DB.EscapeRoomStatus.EXPIRED,
+              startedAt: { lt: cutoff },
+            },
+          ],
+        },
+      }),
+    ])
 
     executionContext.logger.info(
-      `Aggregated ${attempts.length} attempts, pruned ${deleted.count} stale attempts (>${RETENTION_DAYS}d)`
+      `Marked ${marked.count} finished attempts, pruned ${deleted.count} stale attempts (>${RETENTION_DAYS}d)`
     )
 
     return true

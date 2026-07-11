@@ -1542,7 +1542,7 @@ describe('Escape room integration tests', () => {
   // ! B4: prune retention window
   // #region
   describe('handlePruneEscapeRooms - retention window (B4)', () => {
-    it('aggregates finished attempts and only deletes ones older than the retention window', async () => {
+    it('marks finished attempts and only deletes ones older than the retention window', async () => {
       const now = new Date()
       const oldDate = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000)
 
@@ -1568,6 +1568,18 @@ describe('Escape room integration tests', () => {
       })
       createdStandaloneAttemptIds.push(oldAttempt.id)
 
+      const recentlyCompletedLongRunningAttempt =
+        await prisma.escapeRoomAttempt.create({
+          data: {
+            startedAt: oldDate,
+            timeLimit: 3600,
+            status: DB.EscapeRoomStatus.COMPLETED,
+            completedAt: now,
+            statsAggregatedAt: null,
+          },
+        })
+      createdStandaloneAttemptIds.push(recentlyCompletedLongRunningAttempt.id)
+
       const logger = { info: vi.fn(), error: vi.fn() }
       const result = await handlePruneEscapeRooms({ prisma }, { logger })
       expect(result).toBe(true)
@@ -1582,6 +1594,98 @@ describe('Escape room integration tests', () => {
         where: { id: oldAttempt.id },
       })
       expect(oldAfter).toBeNull()
+      await expect(
+        prisma.escapeRoomAttempt.findUnique({
+          where: { id: recentlyCompletedLongRunningAttempt.id },
+        })
+      ).resolves.not.toBeNull()
+    })
+
+    it('is idempotent and does not count PracticeQuiz submissions twice', async () => {
+      const quiz = await seedEscapeRoomQuiz(1)
+      const instance = quiz.stacks[0]!.elements[0]!
+      const participant = await seedParticipant('prune-idempotent')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+      await respondToElementStack(
+        {
+          stackId: quiz.stacks[0]!.id,
+          courseId,
+          responses: [scResponse(instance.id, 0)],
+          stackAnswerTime: 12,
+        },
+        participantCtx(participant.id)
+      )
+      const before = await prisma.instanceStatistics.findUniqueOrThrow({
+        where: { elementInstanceId: instance.id },
+      })
+      const logger = { info: vi.fn(), error: vi.fn() }
+
+      await expect(
+        handlePruneEscapeRooms({ prisma }, { logger })
+      ).resolves.toBe(true)
+      await expect(
+        handlePruneEscapeRooms({ prisma }, { logger })
+      ).resolves.toBe(true)
+
+      const after = await prisma.instanceStatistics.findUniqueOrThrow({
+        where: { elementInstanceId: instance.id },
+      })
+      expect(after).toEqual(before)
+      const attempt = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+        where: {
+          participantId_practiceQuizId: {
+            participantId: participant.id,
+            practiceQuizId: quiz.id,
+          },
+        },
+      })
+      expect(attempt.statsAggregatedAt).not.toBeNull()
+    })
+
+    it('leaves the marker untouched on transaction failure and retries safely', async () => {
+      const attempt = await prisma.escapeRoomAttempt.create({
+        data: {
+          timeLimit: 60,
+          status: DB.EscapeRoomStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+      })
+      createdStandaloneAttemptIds.push(attempt.id)
+      const logger = { info: vi.fn(), error: vi.fn() }
+      const failingTransaction = vi.fn().mockRejectedValue(new Error('fail'))
+      const failingPrisma = new Proxy(prisma, {
+        get(target, property, receiver) {
+          return property === '$transaction'
+            ? failingTransaction
+            : Reflect.get(target, property, receiver)
+        },
+      })
+
+      await expect(
+        handlePruneEscapeRooms({ prisma: failingPrisma }, { logger })
+      ).resolves.toBe(false)
+      expect(failingTransaction).toHaveBeenCalledOnce()
+      expect(
+        (
+          await prisma.escapeRoomAttempt.findUniqueOrThrow({
+            where: { id: attempt.id },
+          })
+        ).statsAggregatedAt
+      ).toBeNull()
+
+      await expect(
+        handlePruneEscapeRooms({ prisma }, { logger })
+      ).resolves.toBe(true)
+      expect(
+        (
+          await prisma.escapeRoomAttempt.findUniqueOrThrow({
+            where: { id: attempt.id },
+          })
+        ).statsAggregatedAt
+      ).not.toBeNull()
     })
   })
   // #endregion

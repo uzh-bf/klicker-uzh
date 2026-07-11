@@ -67,6 +67,8 @@ Raw authored hints are available only through the owner-authorized `escapeRoomHi
 
 Escape-room Microlearning navigation is server-progress-driven rather than single-submission-driven. The URL resumes at the first uncleared stack; an incorrect answer clears the local evaluation for a retry while retaining the stage through lockout, and only a correct result refetches and advances to the next stack. Completion remains authoritative on the server attempt.
 
+Escape-room attempts are not a second source of per-instance response statistics. PracticeQuiz and Microlearning grading update statistics at submission time, LiveQuiz uses the response-event pipeline (including its actual try count), and GroupActivity keeps aggregate instance results without inventing participant-level metrics. The prune job atomically marks finished attempts as processed and applies retention only; hints and time penalties are never interpreted as response tries.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.
