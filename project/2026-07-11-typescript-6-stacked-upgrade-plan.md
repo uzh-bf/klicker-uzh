@@ -387,11 +387,17 @@ Every implementation slice:
 - [x] Slice 4 added fail-closed exact-cardinality patching and four node-level regression tests. Two generations produced identical tree hash `ae14ed18d4d72e7b88a2e800df8fe556abf3bc97eed6a0dcf0f0bb92800c5d3a`; Prisma check, build, test build, and declaration export inspection pass. Correctness and simplification reviews found no issues.
 - [x] Slice 5 Prisma-first GraphQL generation, check, build, no-drift assertion, backend check, and both worker checks pass. Generated schema, operations, and GraphQL documents are unchanged from the stack base.
 - [x] Slice 5 declaration baseline compared on identical source: TS5.6 reports 33 TS2742 diagnostics and TS6 reports the corresponding 33 TS2883 diagnostics; Rollup diagnostic histograms and public `index.d.ts` / `builder.d.ts` hashes are identical. Existing Pothos declaration debt is not expanded in this upgrade.
+- [x] Slices 2–5 committed atomically as `fcc231ce9`; the normal pre-commit gate passed without bypassing hooks.
 - [ ] GraphQL `test:local` rerun pending an environment without the existing OrbStack port-80 listener; the script cleaned up after the bind failure.
-- [ ] Slices 6 and 7 implemented and committed.
+- [x] Slice 6 frozen install, full build (21/21), root `check:all`, test build (19/19), Docs production build, and explicit Cypress and Playwright compiler checks pass.
+- [x] Slice 6 restored the two intentional bare `public/*` asset import roots with explicit relative aliases in Manage and PWA. Both focused production builds pass.
+- [x] Slice 6 made Cypress's inherited TypeScript 5 non-strict behavior explicit. Cypress passes under TypeScript 5.6 and under TypeScript 6 with `strict: false`; Playwright remains strict and passes under TypeScript 6.
+- [x] Slice 6 correctness and simplification reviews found no issues. The two aliases cover all nine bare asset imports without source churn; explicit Cypress `strict: false` does not weaken its TypeScript 5 baseline.
+- [ ] Slice 6 compatibility fixes committed.
+- [ ] Slice 7 wiki and skills updated and committed.
 - [ ] Slice 8 fresh verification passed.
 - [ ] Slice 9 publish approval received.
 
-Current: Logical Slices 2–5 implemented and reviewed. Their atomic compatibility commit is pending the normal pre-commit gate.
+Current: Slice 6 compatibility fixes pass every planned compiler and build surface and both reviews found no issues.
 
-Next: Stage the complete Slices 2–5 set, run fresh verification and the normal hook, then continue with omitted compiler/build surfaces in Slice 6.
+Next: Commit Slice 6, then update the wiki and affected verification procedures in Slice 7.

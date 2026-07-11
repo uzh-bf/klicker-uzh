@@ -21,7 +21,8 @@
       "@components/*": ["./src/components/*"],
       "@lib/*": ["./src/lib/*"],
       "@pages/*": ["./src/pages/*"],
-      "@type/*": ["./src/types/*"]
+      "@type/*": ["./src/types/*"],
+      "public/*": ["./public/*"]
     }
   },
   "include": [
