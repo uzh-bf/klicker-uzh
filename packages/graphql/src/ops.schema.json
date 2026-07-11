@@ -29493,22 +29493,6 @@
                 "deprecationReason": null
               },
               {
-                "name": "isOwner",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
                 "name": "responses",
                 "description": null,
                 "type": {

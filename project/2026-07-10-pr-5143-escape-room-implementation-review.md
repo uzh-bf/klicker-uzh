@@ -257,11 +257,12 @@ Frontend + full-stack features, deliberately **not** built blind. Each is code-s
 ### Execution progress
 
 - **Goal:** active from 2026-07-11; execute this full roadmap through final PR readiness without merging.
-- **Current:** Gate 0 complete on `codex/escape-room-production` at worktree `trees/escape-room-production`, based on fetched `origin/v3` `eef745d06`.
+- **Current:** Slice 1a complete; Slice 1b next on `codex/escape-room-production` at worktree `trees/escape-room-production`. The branch-correct devcontainer and live PostgreSQL/Hatchet test loop are healthy.
 - **Plan review:** independent §11 review completed; accepted changes split authority, group atomicity, hints, timers, dashboards, mode completion, and QR work into smaller gates and moved runtime regression checks forward.
 - **Verified baseline:** live fetch set `origin/v3` to `eef745d06`. Exact source patch `ec55eec57^2..ec55eec57` and clean baseline commit `85f7a45e6` share patch-id `f5ca36676f15d205959013ee28f6f0cb21f3f58b` and the same 77 paths. Later feature commits are patch-identical under `git range-diff`. Direct source-vs-clean tree differences are limited to 16 expected upstream/excluded files; feature trees match. Clean branch diff is 102 files, +8771/−535, instead of 187 files; unrelated agent-readiness/CI, analytics implementation, chat, Node/devcontainer, and global AGENTS policy commits are absent. Required analytics Prisma mirrors remain.
 - **Gate 0 review:** independent correctness review and simplification review both returned `DONE_WITH_CONCERNS`, with no Critical findings. Accepted: use `origin/v3`, label source hashes, clarify the second-parent delta, and keep global policy out. Deferred: squash checkpoint-only docs history; current commits preserve provenance and add no unrelated tree content.
-- **Next:** re-fetch `origin/v3`; if unchanged, commit this Gate 0 progress update and start Slice 1a. Remote PR branch remains unchanged.
+- **Slice 1a evidence:** TDD red proved anonymous and participant `isOwner: true` spoofing reached grading and the authenticated owner could not preview. The public argument and PWA variable are removed; authority is now derived from the authenticated USER/ADMIN matching the PracticeQuiz or Microlearning owner. Focused integration: 22/22 passed; GraphQL `tsc --noEmit`, generated artifacts, Prettier, and `git diff --check` passed. Independent correctness review found no Critical/Important issues. Its only DB-read concern and the simplification review's duplicate-test concern were resolved before commit.
+- **Next:** Slice 1b TDD for exact, atomic GroupActivity submissions: reject empty, partial, duplicate, and foreign instance IDs without any mutation, then cover valid and concurrent completion. Remote PR branch remains unchanged.
 
 ### Confirmed findings
 

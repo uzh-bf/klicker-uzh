@@ -209,7 +209,7 @@ describe('Escape room integration tests', () => {
   // ! B1: escape room integrity guard in respondToElementStack
   // #region
   describe('respondToElementStack - escape room integrity guard (B1)', () => {
-    it('rejects a non-owner caller that is not an authenticated participant, and persists no response', async () => {
+    it('rejects an anonymous caller that spoofs owner preview authority, and persists no response', async () => {
       const quiz = await seedEscapeRoomQuiz(1)
       const stack = quiz.stacks[0]!
       const instance = stack.elements[0]!
@@ -222,6 +222,8 @@ describe('Escape room integration tests', () => {
             courseId,
             responses: [scResponse(instance.id, 0)],
             stackAnswerTime: 10,
+            // @ts-expect-error preview authority is no longer a public input
+            isOwner: true,
           },
           anonCtx
         )
@@ -235,11 +237,36 @@ describe('Escape room integration tests', () => {
       expect(responses).toHaveLength(0)
     })
 
-    it('allows the owner (isOwner: true) to bypass the guard for a preview submission', async () => {
+    it('rejects a participant that spoofs owner preview authority', async () => {
+      const participant = await seedParticipant('preview-spoof')
       const quiz = await seedEscapeRoomQuiz(1)
       const stack = quiz.stacks[0]!
       const instance = stack.elements[0]!
-      const anonCtx = createCtx(undefined)
+
+      await expect(
+        respondToElementStack(
+          {
+            stackId: stack.id,
+            courseId,
+            responses: [scResponse(instance.id, 0)],
+            stackAnswerTime: 10,
+            // @ts-expect-error preview authority is no longer a public input
+            isOwner: true,
+          },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('No active escape room attempt found')
+
+      const responses = await prisma.questionResponse.findMany({
+        where: { elementInstanceId: instance.id },
+      })
+      expect(responses).toHaveLength(0)
+    })
+
+    it('derives owner preview authority from the authenticated lecturer', async () => {
+      const quiz = await seedEscapeRoomQuiz(1)
+      const stack = quiz.stacks[0]!
+      const instance = stack.elements[0]!
 
       const result = await respondToElementStack(
         {
@@ -247,14 +274,46 @@ describe('Escape room integration tests', () => {
           courseId,
           responses: [scResponse(instance.id, 0)],
           stackAnswerTime: 10,
-          isOwner: true,
         },
-        anonCtx
+        lecturerCtx
       )
 
       expect(result).not.toBeNull()
       expect(result!.id).toBe(stack.id)
       expect(result!.status).toBe(StackFeedbackStatus.CORRECT)
+    })
+
+    it('rejects an authenticated lecturer without owner permission', async () => {
+      const quiz = await seedEscapeRoomQuiz(1)
+      const stack = quiz.stacks[0]!
+      const instance = stack.elements[0]!
+      const lecturer = await prisma.user.create({
+        data: {
+          email: `${TEST_PREFIX}-unauthorized@example.com`,
+          shortname: `${TEST_PREFIX}-unauthorized`,
+          role: DB.UserRole.USER,
+        },
+      })
+      createdUserIds.push(lecturer.id)
+
+      await expect(
+        respondToElementStack(
+          {
+            stackId: stack.id,
+            courseId,
+            responses: [scResponse(instance.id, 0)],
+            stackAnswerTime: 10,
+          },
+          createUserCtx(lecturer.id)
+        )
+      ).rejects.toThrow(
+        'Escape room activities can only be answered by an enrolled participant with an active attempt'
+      )
+
+      const responses = await prisma.questionResponse.findMany({
+        where: { elementInstanceId: instance.id },
+      })
+      expect(responses).toHaveLength(0)
     })
   })
   // #endregion

@@ -274,7 +274,6 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: StackFeedback,
         args: {
-          isOwner: t.arg.boolean({ required: true }),
           stackId: t.arg.int({ required: true }),
           courseId: t.arg.string({ required: true }),
           responses: t.arg({ type: [StackResponseInput], required: true }),

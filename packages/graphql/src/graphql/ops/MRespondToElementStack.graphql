@@ -1,12 +1,10 @@
 mutation RespondToElementStack(
-  $isOwner: Boolean!
   $stackId: Int!
   $courseId: String!
   $responses: [StackResponseInput!]!
   $stackAnswerTime: Int!
 ) {
   respondToElementStack(
-    isOwner: $isOwner
     stackId: $stackId
     courseId: $courseId
     responses: $responses

@@ -3159,26 +3159,49 @@ export interface RespondToElementStackInput {
   courseId: string
   responses: ElementResponseInput[]
   stackAnswerTime: number
-  isOwner?: boolean
 }
 
 export async function respondToElementStack(
-  {
-    stackId,
-    courseId,
-    responses,
-    stackAnswerTime,
-    isOwner,
-  }: RespondToElementStackInput,
+  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
+  const participantId =
+    ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : null
+  const isParticipant = participantId !== null
+  const previewStack = isParticipant
+    ? null
+    : await ctx.prisma.elementStack.findUnique({
+        where: { id: stackId },
+        select: {
+          practiceQuiz: {
+            select: {
+              ownerId: true,
+              escapeRoomConfig: { select: { id: true } },
+            },
+          },
+          microLearning: {
+            select: {
+              ownerId: true,
+              escapeRoomConfig: { select: { id: true } },
+            },
+          },
+        },
+      })
+  const isOwner = !!(
+    ctx.user?.sub &&
+    (ctx.user.role === DB.UserRole.USER ||
+      ctx.user.role === DB.UserRole.ADMIN) &&
+    (previewStack?.practiceQuiz?.ownerId === ctx.user.sub ||
+      previewStack?.microLearning?.ownerId === ctx.user.sub)
+  )
+
   let isEscapeRoom = false
   let attempt: DB.EscapeRoomAttempt | null = null
   let finalStack: any = null
   let allActivityStacks: any[] = []
 
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
-  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
+  if (isParticipant) {
     const stack = await ctx.prisma.elementStack.findUnique({
       where: { id: stackId },
       include: {
@@ -3188,7 +3211,7 @@ export async function respondToElementStack(
           include: {
             responses: {
               where: {
-                participantId: ctx.user.sub,
+                participantId,
               },
             },
           },
@@ -3216,13 +3239,13 @@ export async function respondToElementStack(
       const attemptWhere = practiceQuiz
         ? {
             participantId_practiceQuizId: {
-              participantId: ctx.user.sub,
+              participantId,
               practiceQuizId: practiceQuiz.id,
             },
           }
         : {
             participantId_microLearningId: {
-              participantId: ctx.user.sub,
+              participantId,
               microLearningId: microLearning!.id,
             },
           }
@@ -3276,7 +3299,7 @@ export async function respondToElementStack(
           elements: {
             include: {
               responses: {
-                where: { participantId: ctx.user.sub },
+                where: { participantId },
               },
             },
           },
@@ -3308,24 +3331,10 @@ export async function respondToElementStack(
   // above and still receive a correct/incorrect oracle. Reject any non-owner
   // caller that is not an authenticated participant when the target stack
   // belongs to an escape-room activity, before grading happens.
-  if (
-    !isOwner &&
-    !(ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT)
-  ) {
-    const escapeStack = await ctx.prisma.elementStack.findUnique({
-      where: { id: stackId },
-      select: {
-        practiceQuiz: {
-          select: { escapeRoomConfig: { select: { id: true } } },
-        },
-        microLearning: {
-          select: { escapeRoomConfig: { select: { id: true } } },
-        },
-      },
-    })
+  if (!isOwner && !isParticipant) {
     if (
-      escapeStack?.practiceQuiz?.escapeRoomConfig ||
-      escapeStack?.microLearning?.escapeRoomConfig
+      previewStack?.practiceQuiz?.escapeRoomConfig ||
+      previewStack?.microLearning?.escapeRoomConfig
     ) {
       throw new GraphQLError(
         'Escape room activities can only be answered by an enrolled participant with an active attempt',

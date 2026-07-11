@@ -649,7 +649,6 @@ function ElementStack({
             onClick={async () => {
               const result = await respondToElementStack({
                 variables: {
-                  isOwner: previewOnly,
                   stackId: stack.id,
                   courseId: courseId,
                   stackAnswerTime: timeRef.current,
