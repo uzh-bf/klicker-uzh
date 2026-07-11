@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slices 0-5 committed; authenticated chat clean-render evidence remains a Slice 8 gate.
+Status: approved 2026-07-10; Slices 0-7 committed; Slice 8 local verification active with CI-only gates remaining.
 
 ## Goal
 
@@ -708,9 +708,18 @@ Slice 6 evidence:
 - The full live-quiz spec then stopped at the legacy student-response boundary (13 passing, 1 failing, 67 skipped): the first SC option was already selected and the submit button enabled before the test selected an answer. This reproduced three times. Awaiting IndexedDB deletion did not change it and was reverted; the branch does not modify the response component or storage code. No speculative compatibility edit was retained.
 - Electron DBus diagnostics and a response-API `POST` 404 were present in the local container logs; neither was the failing assertion. Full legacy-suite proof therefore remains a Slice 8/CI gate.
 
-Current: Slice 7 documents the retained Next 16 / React 19 runtime, generated-type, standalone-image, PWA-artifact, auth, and e2e contracts. Config-derived claims remain explicit pending Slice 8 verification.
+Slice 8 local evidence:
 
-Next: validate and commit Slice 7 separately, then start Slice 8 production-like verification and final reviews.
+- Fresh DevPod `klicker-upgrade-next-react-slice8` used new database, node_modules, Hatchet, and app volumes. Node 24.16.0, pnpm 11.5.0, and frozen CI install passed.
+- Clean production build passed 21/21 tasks with zero cached under bounded concurrency. Test build passed 19/19. Host `check:all`, fresh-container 23/23 typechecks, chat 40/40 tests, and branch diff check passed.
+- Production builds emitted chat standalone server plus service worker, Workbox, and custom worker artifacts for control/manage/PWA. Development registered zero service workers.
+- Browser verified delegated manage login, participant PWA login, authenticated control, logged-out chat, and mobile PWA. Next 16 initially blocked namespaced devrouter HMR resources; shared development-only `allowedDevOrigins` fixed this without changing production.
+- Security, thermo maintainability, and independent branch reviews found no code issues. Detailed evidence: `project/2026-07-11-next-react-verification/verification.md`.
+- Remaining: authenticated chat content, full live-quiz Cypress state boundary, production PWA offline/update behavior, and AMD/ARM image jobs.
+
+Current: Slice 8 local verification is complete except documented environment/CI gates. Replacement PR CI is required before readiness.
+
+Next: review and commit Slice 8 evidence/fix, then request approval before Slice 9 push and replacement draft PR.
 
 ## Open Questions
 
@@ -720,5 +729,5 @@ Next: validate and commit Slice 7 separately, then start Slice 8 production-like
 
 ## Next Steps
 
-1. Validate and commit Slice 7 separately.
-2. Start Slice 8 production-like verification and final reviews.
+1. Review and commit Slice 8 evidence/fix.
+2. Obtain approval for Slice 9 push and replacement draft PR.
