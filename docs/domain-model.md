@@ -61,6 +61,8 @@ Attempts are scoped uniquely to a participant/group and activity/block to preven
 
 GroupActivity Escape Rooms accept exactly one valid response for every supported answerable instance. The backend validates activity membership, response IDs/types/payloads, and gradability before any write, then commits aggregate results, decisions, lockout/expiry, and attempt completion in one serializable transaction. Content and flashcard instances are not answerable; an activity with no answerable instances fails closed.
 
+Hints are authorized against the participant's current unlocked stack. Unused hint text is never returned in participant queries; after a hint is charged, its instance ID is recorded on the caller's attempt and only that caller receives the restored `revealedHint` text on subsequent PracticeQuiz or MicroLearning loads.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

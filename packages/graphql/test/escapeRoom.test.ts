@@ -8,7 +8,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import { getEscapeRoomProgress } from '../src/services/escapeRooms.js'
 import { submitGroupActivityDecisions } from '../src/services/groups.js'
+import { getMicroLearningData } from '../src/services/microLearning.js'
 import {
+  getPracticeQuizData,
   requestEscapeRoomHint,
   resetEscapeRoomAttempt,
   startEscapeRoomAttempt,
@@ -18,6 +20,7 @@ import { respondToElementStack } from '../src/services/stacks.js'
 import {
   seedCourse,
   seedEscapeRoomGroupActivity,
+  seedEscapeRoomMicroLearning,
   seedEscapeRoomPracticeQuiz,
 } from './helpers.js'
 
@@ -536,6 +539,33 @@ describe('Escape room integration tests', () => {
       expect(persisted.penaltySeconds).toBe(30)
     })
 
+    it('charges a concurrently requested hint only once', async () => {
+      const { quiz, instanceId } = await seedQuizWithHint('concurrent hint')
+      const participant = await seedParticipant('hint-concurrent')
+      const attempt = await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+
+      const results = await Promise.all(
+        Array.from({ length: 2 }, () =>
+          requestEscapeRoomHint(
+            { practiceQuizId: quiz.id, instanceId },
+            participantCtx(participant.id)
+          )
+        )
+      )
+      expect(results.map((result) => result.hint)).toEqual([
+        'concurrent hint',
+        'concurrent hint',
+      ])
+      const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+        where: { id: attempt.id },
+      })
+      expect(persisted.penaltySeconds).toBe(30)
+      expect(persisted.hintsUsed).toEqual([String(instanceId)])
+    })
+
     it('rejects a hint request for an element that has no hint', async () => {
       const quiz = await seedEscapeRoomQuiz(2)
       const instanceId = quiz.stacks[0]!.elements[0]!.id
@@ -614,7 +644,7 @@ describe('Escape room integration tests', () => {
       ).rejects.toThrow('Exactly one activity ID must be specified')
     })
 
-    it('accumulates the penalty across two distinct hints', async () => {
+    it('rejects a hint for a future locked stack without charging it', async () => {
       const quiz = await seedEscapeRoomQuiz(2)
       const i0 = quiz.stacks[0]!.elements[0]!
       const i1 = quiz.stacks[1]!.elements[0]!
@@ -636,20 +666,135 @@ describe('Escape room integration tests', () => {
         { practiceQuizId: quiz.id, instanceId: i0.id },
         participantCtx(participant.id)
       )
-      const second = await requestEscapeRoomHint(
-        { practiceQuizId: quiz.id, instanceId: i1.id },
-        participantCtx(participant.id)
-      )
-
-      expect(second.attempt.penaltySeconds).toBe(60)
-      expect((second.attempt.hintsUsed as string[]).sort()).toEqual(
-        [String(i0.id), String(i1.id)].sort()
+      await expect(
+        requestEscapeRoomHint(
+          { practiceQuizId: quiz.id, instanceId: i1.id },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow(
+        'You must answer all preceding questions correctly before requesting this hint'
       )
 
       const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
         where: { id: attempt.id },
       })
-      expect(persisted.penaltySeconds).toBe(60)
+      expect(persisted.penaltySeconds).toBe(30)
+      expect(persisted.hintsUsed).toEqual([String(i0.id)])
+
+      await respondToElementStack(
+        {
+          stackId: quiz.stacks[0]!.id,
+          courseId,
+          responses: [scResponse(i0.id, 0)],
+          stackAnswerTime: 10,
+        },
+        participantCtx(participant.id)
+      )
+      const second = await requestEscapeRoomHint(
+        { practiceQuizId: quiz.id, instanceId: i1.id },
+        participantCtx(participant.id)
+      )
+      expect(second.attempt.penaltySeconds).toBe(60)
+      expect((second.attempt.hintsUsed as string[]).sort()).toEqual(
+        [String(i0.id), String(i1.id)].sort()
+      )
+    })
+
+    it('restores only an already-used hint for the owning participant', async () => {
+      const { quiz, instanceId } = await seedQuizWithHint('persistent hint')
+      const participant = await seedParticipant('hint-reload')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+      await requestEscapeRoomHint(
+        { practiceQuizId: quiz.id, instanceId },
+        participantCtx(participant.id)
+      )
+
+      const reloaded = await getPracticeQuizData(
+        { id: quiz.id },
+        participantCtx(participant.id)
+      )
+      const reloadedElement = reloaded!.stacks[0]!.elements[0]!
+      expect(
+        'revealedHint' in reloadedElement
+          ? reloadedElement.revealedHint
+          : undefined
+      ).toBe('persistent hint')
+
+      const otherParticipant = await seedParticipant('hint-reload-other')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(otherParticipant.id)
+      )
+      const otherView = await getPracticeQuizData(
+        { id: quiz.id },
+        participantCtx(otherParticipant.id)
+      )
+      const otherElement = otherView!.stacks[0]!.elements[0]!
+      expect(
+        'revealedHint' in otherElement ? otherElement.revealedHint : undefined
+      ).toBeNull()
+    })
+
+    it('gates and restores hints for MicroLearning without cross-participant leakage', async () => {
+      const microLearning = await seedEscapeRoomMicroLearning(
+        { elements: [scElement, scElement], courseId },
+        lecturerCtx
+      )
+      const first = microLearning.stacks[0]!.elements[0]!
+      const second = microLearning.stacks[1]!.elements[0]!
+      await prisma.elementInstance.update({
+        where: { id: first.id },
+        data: { options: { ...first.options, escapeRoomHint: 'micro first' } },
+      })
+      await prisma.elementInstance.update({
+        where: { id: second.id },
+        data: {
+          options: { ...second.options, escapeRoomHint: 'micro second' },
+        },
+      })
+      const participant = await seedParticipant('micro-hint-owner')
+      await startEscapeRoomAttempt(
+        { microLearningId: microLearning.id },
+        participantCtx(participant.id)
+      )
+
+      await expect(
+        requestEscapeRoomHint(
+          { microLearningId: microLearning.id, instanceId: second.id },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow(
+        'You must answer all preceding questions correctly before requesting this hint'
+      )
+      await requestEscapeRoomHint(
+        { microLearningId: microLearning.id, instanceId: first.id },
+        participantCtx(participant.id)
+      )
+      const ownerView = await getMicroLearningData(
+        { id: microLearning.id },
+        participantCtx(participant.id)
+      )
+      const ownerElement = ownerView!.stacks[0]!.elements[0]!
+      expect(
+        'revealedHint' in ownerElement ? ownerElement.revealedHint : undefined
+      ).toBe('micro first')
+
+      const otherParticipant = await seedParticipant('micro-hint-other')
+      await startEscapeRoomAttempt(
+        { microLearningId: microLearning.id },
+        participantCtx(otherParticipant.id)
+      )
+      const otherView = await getMicroLearningData(
+        { id: microLearning.id },
+        participantCtx(otherParticipant.id)
+      )
+      const otherElement = otherView!.stacks[0]!.elements[0]!
+      expect(
+        'revealedHint' in otherElement ? otherElement.revealedHint : undefined
+      ).toBeNull()
     })
   })
   // #endregion

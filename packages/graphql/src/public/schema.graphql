@@ -1090,6 +1090,7 @@ type ElementInstance {
   feedbacks: [ElementFeedback!]
   id: Int!
   options: ElementInstanceOptions
+  revealedHint: String
   type: ElementInstanceType!
 }
 

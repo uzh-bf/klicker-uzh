@@ -14,6 +14,10 @@ import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
+import {
+  isEscapeRoomStackCleared,
+  restoreUsedEscapeRoomHints,
+} from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -66,8 +70,9 @@ export async function getMicroLearningData(
     const orderedStacks = microLearning.stacks
 
     let filteredStacks = orderedStacks
+    let attempt: DB.EscapeRoomAttempt | null = null
     if (microLearning.escapeRoomConfig) {
-      const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+      attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
         where: {
           participantId_microLearningId: {
             participantId: ctx.user.sub,
@@ -79,14 +84,7 @@ export async function getMicroLearningData(
         filteredStacks = []
       } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
         const firstUnclearedIx = orderedStacks.findIndex(
-          (stack) =>
-            !stack.elements.every((elem: any) =>
-              elem.responses?.some(
-                (resp: any) =>
-                  resp.lastResponseCorrectness ===
-                  DB.ResponseCorrectness.CORRECT
-              )
-            )
+          (stack) => !isEscapeRoomStackCleared(stack.elements)
         )
         if (firstUnclearedIx !== -1) {
           filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)
@@ -97,7 +95,7 @@ export async function getMicroLearningData(
     return {
       ...microLearning,
       isOwner,
-      stacks: filteredStacks,
+      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
     }
   }
 

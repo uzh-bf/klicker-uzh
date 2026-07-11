@@ -51,6 +51,7 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
       id
       type
       elementType
+      revealedHint
       options {
         hasHint
       }

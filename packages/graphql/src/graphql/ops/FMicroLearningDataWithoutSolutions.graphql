@@ -42,6 +42,7 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
       id
       type
       elementType
+      revealedHint
       options {
         hasHint
       }

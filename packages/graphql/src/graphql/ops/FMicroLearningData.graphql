@@ -41,6 +41,7 @@ fragment MicroLearningData on MicroLearning {
       id
       type
       elementType
+      revealedHint
       ...ElementData
     }
   }

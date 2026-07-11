@@ -2,6 +2,57 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 
+type StackWithRevealedHints<
+  T extends {
+    elements: Array<{
+      id: number
+      options: { escapeRoomHint?: string | null }
+    }>
+  },
+> = Omit<T, 'elements'> & {
+  elements: Array<T['elements'][number] & { revealedHint: string | null }>
+}
+
+export function restoreUsedEscapeRoomHints<
+  T extends {
+    elements: Array<{
+      id: number
+      options: { escapeRoomHint?: string | null }
+    }>
+  },
+>(stacks: T[], hintsUsed: unknown): StackWithRevealedHints<T>[] {
+  const usedHintIds = new Set(
+    Array.isArray(hintsUsed) ? hintsUsed.map(String) : []
+  )
+  return stacks.map((stack) => ({
+    ...stack,
+    elements: stack.elements.map((element) => ({
+      ...element,
+      revealedHint: usedHintIds.has(String(element.id))
+        ? (element.options.escapeRoomHint ?? null)
+        : null,
+    })),
+  }))
+}
+
+export function isEscapeRoomStackCleared(
+  elements: Array<{
+    elementType: DB.ElementType
+    responses?: Array<{
+      lastResponseCorrectness: DB.ResponseCorrectness | null
+    }>
+  }>
+) {
+  return elements
+    .filter((element) => element.elementType !== DB.ElementType.CONTENT)
+    .every((element) =>
+      element.responses?.some(
+        (response) =>
+          response.lastResponseCorrectness === DB.ResponseCorrectness.CORRECT
+      )
+    )
+}
+
 interface EscapeRoomProgressArgs {
   practiceQuizId?: string | null
   microLearningId?: string | null

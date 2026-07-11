@@ -15,6 +15,10 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import {
+  isEscapeRoomStackCleared,
+  restoreUsedEscapeRoomHints,
+} from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { checkAccess } from './sharing.js'
@@ -73,8 +77,9 @@ export async function getPracticeQuizData(
         : quiz.stacks
 
     let filteredStacks = orderedStacks
+    let attempt: DB.EscapeRoomAttempt | null = null
     if (quiz.escapeRoomConfig) {
-      const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+      attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
         where: {
           participantId_practiceQuizId: {
             participantId: ctx.user.sub,
@@ -86,14 +91,7 @@ export async function getPracticeQuizData(
         filteredStacks = []
       } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
         const firstUnclearedIx = orderedStacks.findIndex(
-          (stack) =>
-            !stack.elements.every((elem: any) =>
-              elem.responses?.some(
-                (resp: any) =>
-                  resp.lastResponseCorrectness ===
-                  DB.ResponseCorrectness.CORRECT
-              )
-            )
+          (stack) => !isEscapeRoomStackCleared(stack.elements)
         )
         if (firstUnclearedIx !== -1) {
           filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)
@@ -104,7 +102,7 @@ export async function getPracticeQuizData(
     return {
       ...quiz,
       isOwner,
-      stacks: filteredStacks,
+      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
       numOfStacks: orderedStacks.length,
     }
   }
@@ -1286,6 +1284,38 @@ export async function requestEscapeRoomHint(
     throw new GraphQLError('Element does not belong to this activity', {
       extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' },
     })
+  }
+
+  if (practiceQuizId || microLearningId) {
+    const stacks = await ctx.prisma.elementStack.findMany({
+      where: practiceQuizId
+        ? { practiceQuizId }
+        : { microLearningId: microLearningId! },
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        order: true,
+        elements: {
+          select: {
+            id: true,
+            elementType: true,
+            responses: {
+              where: { participantId },
+              select: { lastResponseCorrectness: true },
+            },
+          },
+        },
+      },
+    })
+    const currentStack = stacks.find(
+      (stack) => !isEscapeRoomStackCleared(stack.elements)
+    )
+    if (!currentStack || instance.elementStackId !== currentStack.id) {
+      throw new GraphQLError(
+        'You must answer all preceding questions correctly before requesting this hint',
+        { extensions: { code: 'ESCAPE_ROOM_GATED' } }
+      )
+    }
   }
 
   const hint = instance.options.escapeRoomHint

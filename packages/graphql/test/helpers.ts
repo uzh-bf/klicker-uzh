@@ -1142,6 +1142,68 @@ export async function seedEscapeRoomGroupActivity(
   return { group, groupActivity, activityInstance, attempt }
 }
 
+export async function seedEscapeRoomMicroLearning(
+  {
+    elements,
+    courseId,
+    timeLimit,
+    lockoutSeconds,
+  }: {
+    elements: Element[]
+    courseId: string
+    timeLimit?: number
+    lockoutSeconds?: number
+  },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.microLearning.create({
+    data: {
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      courseId,
+      status: PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(Date.now() - 60_000),
+      scheduledEndAt: new Date(Date.now() + 3_600_000),
+      ownerId: ctx.user.sub,
+      stacks: {
+        create: elements.map((element, index) => {
+          const elementData = processElementData(element)
+          const results = getInitialInstanceResults(elementData)
+          return {
+            order: index,
+            type: ElementStackType.MICROLEARNING,
+            elements: {
+              create: {
+                order: 0,
+                elementId: element.id,
+                type: ElementInstanceType.MICROLEARNING,
+                elementType: element.type,
+                options: {},
+                elementData,
+                results,
+                anonymousResults: results,
+                ownerId: ctx.user.sub,
+                instanceStatistics: { create: {} },
+              },
+            },
+          }
+        }),
+      },
+      escapeRoomConfig: {
+        create: {
+          timeLimit: timeLimit ?? 3600,
+          lockoutSeconds: lockoutSeconds ?? 5,
+        },
+      },
+    },
+    include: {
+      stacks: { orderBy: { order: 'asc' }, include: { elements: true } },
+      escapeRoomConfig: true,
+    },
+  })
+}
+
 /**
  * Seeds a microlearning activity in the database with the specified parameters.
  *

@@ -206,7 +206,10 @@ function ElementStack({
   }
 
   const handleRequestHint = async (instanceId: number) => {
-    if (!escapeRoom || revealedHints[instanceId]) return
+    const restoredHint = stack.elements?.find(
+      (element) => element.id === instanceId
+    )?.revealedHint
+    if (!escapeRoom || revealedHints[instanceId] || restoredHint) return
     setRequestingHintFor(instanceId)
     try {
       const result = await requestEscapeRoomHint({
@@ -480,6 +483,8 @@ function ElementStack({
           {stack.elements &&
             stack.elements.length > 0 &&
             stack.elements.map((element, elementIx) => {
+              const revealedHint =
+                revealedHints[element.id] ?? element.revealedHint
               return (
                 <div key={`${element.id}-student`}>
                   <InstanceHeader
@@ -524,11 +529,11 @@ function ElementStack({
                   {withParticipant &&
                     escapeRoom &&
                     element.options?.hasHint &&
-                    (revealedHints[element.id] ? (
+                    (revealedHint ? (
                       <UserNotification
                         type="success"
                         className={{ root: 'mt-2' }}
-                        message={revealedHints[element.id]}
+                        message={revealedHint}
                         data={{ cy: `escape-room-hint-text-${element.id}` }}
                       />
                     ) : (

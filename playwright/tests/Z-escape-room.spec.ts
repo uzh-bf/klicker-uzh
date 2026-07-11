@@ -305,6 +305,14 @@ test.describe.serial('Escape room workflows', () => {
     ).toContainText(QUIZ.hint)
     await expect(hintButton).not.toBeAttached()
 
+    await page.reload()
+    await expect(
+      page.locator('[data-cy^="escape-room-hint-text-"]').first()
+    ).toContainText(QUIZ.hint)
+    await expect(
+      page.locator('[data-cy^="request-escape-room-hint-"]')
+    ).not.toBeAttached()
+
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
