@@ -8,12 +8,13 @@ Stack a narrow TypeScript 6 migration on [PR #5166](https://github.com/uzh-bf/kl
 
 Success:
 
-- every direct workspace TypeScript dependency uses `~6.0.3`;
+- every in-scope direct workspace TypeScript dependency uses `~6.0.3`;
 - direct lint tooling declares TypeScript 6 support;
 - compiler config changes are explicit and minimal;
 - Prisma generation is repeatable and fails closed when its compatibility patch no longer matches;
 - GraphQL schema and operations do not drift;
-- root checks plus Docs, Office, Cypress, and Playwright compiler surfaces pass;
+- GraphQL public entry declarations do not regress relative to TypeScript 5.6; existing Pothos declaration portability debt stays explicit and out of scope;
+- root checks plus Docs, Cypress, and Playwright compiler surfaces pass;
 - PR diff against `feature/upgrade-next-react` contains TypeScript-only work.
 
 ## Non-goals
@@ -23,6 +24,7 @@ Success:
 - No GraphQL, Pothos, Yoga, or codegen major upgrade.
 - No React Compiler adoption.
 - No broad dependency refresh.
+- No Office Add-in changes. Another open PR reworks that app and owns its compiler/tooling migration.
 - No product or UI behavior changes unless TypeScript 6 exposes a verified defect.
 - No push, old-PR closure, ready-for-review change, or merge without separate approval.
 
@@ -66,10 +68,9 @@ Checked 2026-07-11:
 - [TypeScript 6 announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/): migration context and compatibility guidance.
 - [typescript-eslint dependency policy](https://typescript-eslint.io/users/dependency-versions/): supported compiler range must include the selected TypeScript version.
 - npm registry: TypeScript `6.0.3` is the final TS6 patch; TypeScript `7.0.2` is latest overall and out of scope.
-- npm registry: `@typescript-eslint` `8.62.0` is old enough for the repository's 14-day release policy and declares TypeScript `>=4.8.4 <6.1.0`.
 - npm registry: `prisma-json-types-generator` `3.6.0` and `3.6.2` require Prisma 6 but declare TypeScript `^5.9.2`.
 - npm registry: generator `5.1.1` requires Prisma 7. No supported Prisma 6 plus TypeScript 6 combination exists.
-- Local inventory: 29 package manifests declare TypeScript directly; 25 tsconfigs use `baseUrl`.
+- Local inventory: 29 package manifests declare TypeScript directly; 28 are in scope and the Office Add-in remains on its existing compiler. Twenty-five tsconfigs use `baseUrl`.
 
 Limitation:
 
@@ -80,11 +81,10 @@ Limitation:
 | Package | Base | Target | Decision |
 | --- | --- | --- | --- |
 | `typescript` | `~5.6.3` | `~6.0.3` | Pin across every direct consumer. |
-| `@typescript-eslint/parser` | `~8.35.1` | `~8.62.0` or remove | Prove direct Office use. Keep parser/plugin paired. |
-| `@typescript-eslint/eslint-plugin` | `~8.35.1` | `~8.62.0` or remove | Same decision as parser. |
+| Office Add-in TypeScript and lint tooling | Current PR #5166 state | Unchanged | Owned by separate Office Add-in PR. |
 | `@types/node` | Node 24 line | Node 24 line | No runtime-major drift. |
 | Prisma and client | `6.16.1` | `6.16.1` | Prisma 7 stays separate. |
-| `prisma-json-types-generator` | `3.6.0` | `3.6.x` | Temporary TS peer override only after proof. |
+| `prisma-json-types-generator` | `3.6.0` | `3.6.0` | Temporary TS peer override only after proof. |
 
 ## Main risks
 
@@ -96,7 +96,8 @@ Limitation:
 | Prisma generator peer mismatch breaks declarations | Generate twice, hash output, build declarations, test failure path | Revert TS6 or pause PR |
 | Patch silently stops applying | Exact-string fail-closed script and fixture test | Pin generator; keep TS5 |
 | GraphQL public API drifts | Diff generated schema and operations | Reject drift; narrow type fix |
-| Generic root gates omit packages | Explicit Docs, Office, Cypress, Playwright checks | Fix package locally; do not weaken gates |
+| Existing GraphQL declaration warnings are mistaken for TS6 regressions | Compare TS5.6 and TS6 diagnostics plus public entry declaration hashes on identical source | Split warning cleanup into a prerequisite/follow-up PR if TS6 changes the baseline |
+| Generic root gates omit packages | Explicit Docs, Cypress, and Playwright checks | Fix package locally; do not weaken gates |
 
 ## Slices
 
@@ -156,6 +157,7 @@ test "$(git merge-base feature/upgrade-next-react HEAD)" = \
   "$(git rev-parse feature/upgrade-next-react)"
 git log --oneline feature/upgrade-next-react..HEAD
 git diff --name-status
+git ls-files --others --exclude-standard
 git diff --check
 ```
 
@@ -166,14 +168,15 @@ Commit: none. Source diff stays uncommitted for partitioning.
 Files:
 
 - direct TypeScript package manifests
-- Office lint tooling
 - `pnpm-workspace.yaml`
 - `pnpm-lock.yaml`
+- `.syncpackrc.mjs`
 
 Do:
 
-- pin TypeScript `~6.0.3` everywhere it is direct;
-- remove dead Office parser/plugin packages or upgrade pair to `~8.62.0`;
+- pin TypeScript `~6.0.3` in all 28 in-scope direct consumers;
+- leave Office Add-in manifest and tooling unchanged;
+- add one scoped syncpack exception for Office Add-in `typescript` until its owning PR lands;
 - keep Node types on Node 24;
 - keep one documented Prisma generator peer exception;
 - regenerate lockfile and inspect peers.
@@ -187,7 +190,7 @@ pnpm run check:syncpack
 pnpm peers check
 ```
 
-Commit: `chore(deps): align workspace tooling with TypeScript 6`
+Checkpoint: batch with Slices 3–5. A dependency-only commit cannot pass the mandatory root pre-commit typecheck before the compiler-config and Prisma/GraphQL compatibility changes exist.
 
 ### Slice 3: Migrate compiler configs
 
@@ -198,6 +201,7 @@ Do:
 - record preserve/remove decision for each encountered TS6 default or deprecation;
 - add explicit values only where TS6 changes current behavior;
 - remove `baseUrl` only with equivalent explicit paths;
+- retain the Docs `baseUrl` with `ignoreDeprecations: "6.0"` because the inherited Docusaurus `@site/*` mapping otherwise resolves relative to the dependency package;
 - keep Prisma and GraphQL check configs separate from declaration builds;
 - accept only type/import fixes caused by TS6.
 
@@ -206,17 +210,22 @@ Check:
 ```bash
 pnpm run check
 pnpm --filter @klicker-uzh/docs build:docs
-pnpm --filter @klicker-uzh/office-addin check
-pnpm --filter @klicker-uzh/office-addin build:office
 ```
 
-Commit: `build(tsconfig): migrate compiler configs to TypeScript 6`
+Decisions:
+
+- remove 24 local `baseUrl` declarations; retain only the Docusaurus compatibility exception;
+- make path targets explicitly relative where TS6 requires it without `baseUrl`;
+- raise the three Next frontend targets from deprecated ES5 to the TS6 floor, ES2015;
+- leave `types`, `rootDir`, module settings, strictness, side-effect imports, library replacement, downlevel iteration, output mode, and interop behavior unchanged.
+
+Checkpoint: batch with Slices 2, 4, and 5 so the normal pre-commit gate sees one buildable compatibility set.
 
 ### Slice 4: Stabilize Prisma generation
 
 Do:
 
-- generate from a clean disposable environment;
+- generate twice in the local worktree; reserve clean disposable-environment proof for Slice 8;
 - run compatibility patch through package script;
 - generate twice and compare hashes;
 - add automated patch tests for expected input, already-patched input, missing token, and duplicate token;
@@ -234,7 +243,7 @@ pnpm --filter @klicker-uzh/prisma build
 pnpm --filter @klicker-uzh/prisma build:test
 ```
 
-Commit: `fix(prisma): stabilize generated types under TypeScript 6`
+Checkpoint: batch with Slices 2, 3, and 5. Final clean-environment proof remains in Slice 8.
 
 ### Slice 5: Prove GraphQL integration
 
@@ -247,6 +256,7 @@ Do:
 - assert zero diff against stack base for `src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, and `src/public/server.json`;
 - assert `src/graphql/ops/**/*.graphql` remains unchanged;
 - compile backend and worker consumers.
+- compare TS5.6 and TS6 declaration diagnostics and public entry declarations on identical source; do not claim warning-free declarations while baseline Pothos portability debt remains.
 
 Check:
 
@@ -267,7 +277,7 @@ pnpm --filter @klicker-uzh/hatchet-worker-general check
 pnpm --filter @klicker-uzh/hatchet-worker-response-processor check
 ```
 
-Commit: `fix(graphql): align Prisma types with TypeScript 6`
+Commit for Slices 2–5: `chore(types): upgrade workspace to TypeScript 6`
 
 ### Slice 6: Run omitted compiler and build surfaces
 
@@ -279,9 +289,6 @@ pnpm run build
 pnpm run check:all
 pnpm run build:test
 pnpm --filter @klicker-uzh/docs build:docs
-pnpm --filter @klicker-uzh/office-addin build:office
-pnpm --filter @klicker-uzh/office-addin validate:content
-pnpm --filter @klicker-uzh/office-addin validate:taskpane
 pnpm --filter @klicker-uzh/cypress exec tsc --noEmit -p tsconfig.json
 pnpm --filter @klicker-uzh/playwright exec tsc --noEmit -p tsconfig.json
 ```
@@ -318,7 +325,7 @@ Environment:
 Proof:
 
 - root build/check/test-build gates;
-- explicit Docs, Office, Cypress, and Playwright compiler checks;
+- explicit Docs, Cypress, and Playwright compiler checks;
 - auth, manage, PWA, control, and chat browser smoke;
 - desktop/mobile screenshots;
 - scoped Opengrep plus repository-wide baseline report;
@@ -367,12 +374,24 @@ Every implementation slice:
 - [x] Historical TS commit classified as source material.
 - [x] Independent plan review completed on this branch-owned draft.
 - [x] Review changes accepted: plan-first rebuild, local-before-remote verification order, live-base drift gate, patch tests, GraphQL no-drift assertion, expanded compiler audit.
-- [ ] Slice 0 plan committed alone.
-- [ ] Slice 1 restack reviewed.
-- [ ] Slices 2 through 7 implemented and committed.
+- [x] Slice 0 plan committed alone as `03c185f20`; rewritten on the new base as `00d528063`.
+- [x] Slice 1 plan-first rebuild completed on `bdc670190`; historical TS commit applied without commit.
+- [x] Slice 1 source scope classified after Office exclusion: 60 files excluding this plan, comprising 28 manifests, one workspace-policy file, 25 modified tsconfigs, two new config files, and four Prisma/GraphQL integration files. No runtime page/component, Cypress-spec, Next-config, Office Add-in, or generated-email scope remains.
+- [x] Slice 1 conflict resolution preserved PR #5166 typegen includes and release/security policy; lockfile restored to base for Slice 2 regeneration.
+- [x] Slice 1 correctness and simplification reviews completed. Accepted fixes: restore auth `baseUrl` removal, include untracked source files in inventory, correct source counts, remove one cosmetic blank line.
+- [x] Slice 2 dependency partition prepared: 28 direct consumers use TypeScript `~6.0.3`; Office Add-in remains the only `~5.6.3` consumer; a package-scoped Syncpack exception isolates that intentional mismatch.
+- [x] Slice 2 lockfile regenerated with pnpm 11.5.0, then narrowed to preserve the existing Office Add-in Teams CLI transitive edges. Frozen install and Syncpack pass; peer inspection reports only pre-existing non-TypeScript incompatibilities.
+- [x] Slice 2 correctness review found no actionable issue. Simplification review identified the Office transitive drift, which was removed without adding global overrides.
+- [x] Slice 2 cannot be committed as a standalone buildable checkpoint: the normal root hook correctly fails on TS6-deprecated compiler options before Slice 3. No hook bypass was used; Slices 2–5 will form one atomic compatibility commit.
+- [x] Slice 3 migrated 25 tracked compiler configs. Root compiler gate passes 23/23 tasks and Docs production build passes. Review restored the required Docs `baseUrl`; an invalid suggestion to remove explicit `./` path prefixes was rejected by fresh TS5090 evidence.
+- [x] Slice 4 added fail-closed exact-cardinality patching and four node-level regression tests. Two generations produced identical tree hash `ae14ed18d4d72e7b88a2e800df8fe556abf3bc97eed6a0dcf0f0bb92800c5d3a`; Prisma check, build, test build, and declaration export inspection pass. Correctness and simplification reviews found no issues.
+- [x] Slice 5 Prisma-first GraphQL generation, check, build, no-drift assertion, backend check, and both worker checks pass. Generated schema, operations, and GraphQL documents are unchanged from the stack base.
+- [x] Slice 5 declaration baseline compared on identical source: TS5.6 reports 33 TS2742 diagnostics and TS6 reports the corresponding 33 TS2883 diagnostics; Rollup diagnostic histograms and public `index.d.ts` / `builder.d.ts` hashes are identical. Existing Pothos declaration debt is not expanded in this upgrade.
+- [ ] GraphQL `test:local` rerun pending an environment without the existing OrbStack port-80 listener; the script cleaned up after the bind failure.
+- [ ] Slices 6 and 7 implemented and committed.
 - [ ] Slice 8 fresh verification passed.
 - [ ] Slice 9 publish approval received.
 
-Current: reviewed Slice 0 plan ready to commit.
+Current: Logical Slices 2–5 implemented and reviewed. Their atomic compatibility commit is pending the normal pre-commit gate.
 
-Next: commit plan alone, rebuild plan-first branch on `bdc670190`, apply old TS commit without committing, and stop for diff classification review.
+Next: Stage the complete Slices 2–5 set, run fresh verification and the normal hook, then continue with omitted compiler/build surfaces in Slice 6.

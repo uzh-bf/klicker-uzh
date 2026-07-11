@@ -56,6 +56,13 @@ export default {
       isIgnored: true,
     },
     {
+      // Office Add-in compiler/tooling is owned by a separate upgrade PR.
+      label: 'Office Add-in TypeScript can differ from the workspace',
+      dependencies: ['typescript'],
+      packages: ['@klicker-uzh/office-addin'],
+      isIgnored: true,
+    },
+    {
       // FIXME: update when consistent versions are possible (e.g., do other remark updates in apps)
       label: 'remark-math can be inconsistent between docs and apps',
       dependencies: ['remark-math'],

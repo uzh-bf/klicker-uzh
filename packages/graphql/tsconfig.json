@@ -2,7 +2,6 @@
   "include": ["./**/*"],
   "exclude": ["node_modules", "dist", "src/scripts", "instrumented/"],
   "compilerOptions": {
-    "baseUrl": ".",
     "rootDir": ".",
     /* Base Options: */
     "esModuleInterop": true,
@@ -34,6 +33,9 @@
     "lib": ["es2022"],
     "noErrorTruncation": true,
     // "preserveSymlinks": true
+    "paths": {
+      "src/*": ["./src/*"]
+    },
     /* Vitest global types */
     "types": ["vitest/globals"]
   }
