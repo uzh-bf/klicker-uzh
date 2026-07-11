@@ -40,6 +40,7 @@ const statusActionMap = {
     'deleteGroupActivity',
   ],
   [PublicationStatus.Published]: [
+    'monitorGroupActivity',
     'extendGroupActivity',
     'endGroupActivity',
     'activityLog',
@@ -107,6 +108,7 @@ function GroupActivityActions({
         'startGroupActivityNow',
         'extendGroupActivity',
         'endGroupActivity',
+        'monitorGroupActivity',
         'gradeGroupActivity',
       ],
       isShared: ['activityLog'],

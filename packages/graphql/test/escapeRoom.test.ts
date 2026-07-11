@@ -13,6 +13,7 @@ import {
   getEscapeRoomRemainingSeconds,
 } from '../src/services/escapeRooms.js'
 import {
+  getGradingGroupActivity,
   getGroupActivityDetails,
   manipulateGroupActivity,
   submitGroupActivityDecisions,
@@ -1319,6 +1320,86 @@ describe('Escape room integration tests', () => {
           otherLecturerCtx
         )
       ).rejects.toThrow('You do not have write access to this activity')
+    })
+
+    it('resets only the authorized shared group state', async () => {
+      const participantA = await seedParticipant('group-reset-a')
+      const participantB = await seedParticipant('group-reset-b')
+      const fixture = await seedEscapeRoomGroupActivity(
+        {
+          elements: [scElement],
+          courseId,
+          participantIds: [participantA.id, participantB.id],
+        },
+        lecturerCtx
+      )
+      await recomputeDerivedPermissions(
+        {
+          groupActivityId: fixture.groupActivity.id,
+          userId: lecturerCtx.user.sub,
+        },
+        prisma
+      )
+      const otherLecturer = await prisma.user.create({
+        data: {
+          email: `${TEST_PREFIX}-group-reset-reader@example.com`,
+          shortname: `${TEST_PREFIX}-group-reset-reader`,
+          role: DB.UserRole.USER,
+        },
+      })
+      createdUserIds.push(otherLecturer.id)
+
+      expect(
+        (
+          await getGradingGroupActivity(
+            { id: fixture.groupActivity.id },
+            lecturerCtx
+          )
+        )?.canResetEscapeRoom
+      ).toBe(true)
+      expect(
+        (
+          await getGradingGroupActivity(
+            { id: fixture.groupActivity.id },
+            createUserCtx(otherLecturer.id)
+          )
+        )?.canResetEscapeRoom
+      ).toBe(false)
+
+      await expect(
+        resetEscapeRoomAttempt(
+          {
+            groupActivityId: fixture.groupActivity.id,
+            groupId: fixture.group.id,
+          },
+          createUserCtx(otherLecturer.id)
+        )
+      ).rejects.toThrow('You do not have write access')
+      expect(
+        await prisma.escapeRoomAttempt.findUnique({
+          where: { id: fixture.attempt.id },
+        })
+      ).not.toBeNull()
+
+      await expect(
+        resetEscapeRoomAttempt(
+          {
+            groupActivityId: fixture.groupActivity.id,
+            groupId: fixture.group.id,
+          },
+          lecturerCtx
+        )
+      ).resolves.toBe(true)
+      expect(
+        await prisma.escapeRoomAttempt.findUnique({
+          where: { id: fixture.attempt.id },
+        })
+      ).toBeNull()
+      expect(
+        await prisma.groupActivityInstance.findUnique({
+          where: { id: fixture.activityInstance.id },
+        })
+      ).toBeNull()
     })
   })
   // #endregion

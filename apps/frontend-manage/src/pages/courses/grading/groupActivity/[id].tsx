@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   ElementType,
+  GetEscapeRoomProgressDocument,
   GetGradingGroupActivityDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,6 +17,7 @@ import FinalizeGradingModal from '../../../../components/courses/groupActivity/F
 import GroupActivityGradingStack from '../../../../components/courses/groupActivity/GroupActivityGradingStack'
 import GroupActivitySubmission from '../../../../components/courses/groupActivity/GroupActivitySubmission'
 import SubmissionSwitchModal from '../../../../components/courses/groupActivity/SubmissionSwitchModal'
+import EscapeRoomProgress from '../../../../components/evaluation/EscapeRoomProgress'
 
 const MAX_POINTS_PER_QUESTION = 25
 
@@ -30,12 +32,25 @@ function GroupActivityGrading() {
   const [finalizeModal, setFinalizeModal] = useState<boolean>(false)
   const [nextSubmission, setNextSubmission] = useState<number>(-1)
 
-  const { data, loading } = useQuery(GetGradingGroupActivityDocument, {
+  const {
+    data,
+    loading,
+    refetch: refetchGroupActivity,
+  } = useQuery(GetGradingGroupActivityDocument, {
     variables: {
       id: router.query.id as string,
     },
     skip: !router.query.id,
   })
+  const { data: escapeRoomData, refetch: refetchEscapeRoom } = useQuery(
+    GetEscapeRoomProgressDocument,
+    {
+      variables: { groupActivityId: router.query.id as string },
+      skip:
+        !router.query.id || !data?.getGradingGroupActivity?.escapeRoomConfig,
+      pollInterval: 5000,
+    }
+  )
 
   const groupActivity = data?.getGradingGroupActivity
   const maxPoints =
@@ -87,6 +102,27 @@ function GroupActivityGrading() {
       <H1 className={{ root: 'mb-4' }}>
         {t('manage.groupActivity.gradingTitle', { name: groupActivity.name })}
       </H1>
+      {escapeRoomData?.escapeRoomProgress && (
+        <div
+          className="mb-6 rounded border"
+          data-cy="group-escape-room-progress"
+        >
+          <H2 className={{ root: 'border-b p-4' }}>
+            {t('manage.evaluation.escapeRoomTab')}
+          </H2>
+          <EscapeRoomProgress
+            activityType="groupActivity"
+            activityId={groupActivity.id}
+            progress={escapeRoomData.escapeRoomProgress}
+            canReset={groupActivity.canResetEscapeRoom ?? false}
+            onReset={() => {
+              setSelectedSubmission(undefined)
+              setCurrentEditing(false)
+              void Promise.all([refetchEscapeRoom(), refetchGroupActivity()])
+            }}
+          />
+        </div>
+      )}
       <div className="flex flex-row">
         <div className="w-1/2 pr-6">
           <H2 className={{ root: 'mb-2' }}>

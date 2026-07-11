@@ -10,10 +10,11 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface EscapeRoomProgressProps {
-  activityType: 'practiceQuiz' | 'microLearning'
+  activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
   activityId: string
   progress: EscapeRoomProgressType
   onReset: () => void
+  canReset?: boolean
 }
 
 function formatDuration(seconds: number) {
@@ -64,6 +65,7 @@ function EscapeRoomProgress({
   activityId,
   progress,
   onReset,
+  canReset = true,
 }: EscapeRoomProgressProps) {
   const t = useTranslations()
   const [resetEscapeRoomAttempt] = useMutation(ResetEscapeRoomAttemptDocument)
@@ -82,7 +84,9 @@ function EscapeRoomProgress({
         variables: {
           ...(activityType === 'microLearning'
             ? { microLearningId: activityId }
-            : { practiceQuizId: activityId }),
+            : activityType === 'groupActivity'
+              ? { groupActivityId: activityId }
+              : { practiceQuizId: activityId }),
           participantId: attempt.participantId ?? undefined,
           groupId: attempt.groupId ?? undefined,
         },
@@ -232,7 +236,7 @@ function EscapeRoomProgress({
                               </Button.Label>
                             </Button>
                           </div>
-                        ) : attempt.id ? (
+                        ) : attempt.id && canReset ? (
                           <Button
                             className={{ root: 'px-2 py-1 text-xs' }}
                             disabled={resettingId !== null}

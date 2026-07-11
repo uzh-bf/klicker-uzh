@@ -8,6 +8,10 @@ query GetGradingGroupActivity($id: String!) {
     pointsMultiplier
     scheduledStartAt
     scheduledEndAt
+    canResetEscapeRoom
+    escapeRoomConfig {
+      id
+    }
 
     clues {
       id

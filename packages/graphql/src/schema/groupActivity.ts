@@ -48,6 +48,7 @@ export interface IGroupActivity extends DB.GroupActivity {
   clues?: DB.GroupActivityClue[]
   escapeRoomConfig?: DB.EscapeRoomConfig | null
   escapeRoomAttempts?: DB.EscapeRoomAttempt[] | null
+  canResetEscapeRoom?: boolean
 }
 export const GroupActivityRef =
   builder.objectRef<IGroupActivity>('GroupActivity')
@@ -67,6 +68,9 @@ export const GroupActivity = GroupActivityRef.implement({
 
     escapeRoomConfig: t.expose('escapeRoomConfig', {
       type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    canResetEscapeRoom: t.exposeBoolean('canResetEscapeRoom', {
       nullable: true,
     }),
     escapeRoomAttempts: t.field({

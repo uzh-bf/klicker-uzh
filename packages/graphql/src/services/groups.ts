@@ -39,6 +39,7 @@ import {
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
+import { checkAccess } from './sharing.js'
 import {
   evaluateCaseStudyAnswerCorrectness,
   evaluateChoicesAnswerCorrectness,
@@ -2662,12 +2663,26 @@ export async function getGradingGroupActivity(
 
   if (!groupActivity) return null
 
+  const canResetEscapeRoom = await checkAccess(
+    [
+      {
+        groupActivityId: id,
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+      },
+    ],
+    ctx
+  )
+
   const mappedInstances = groupActivity?.activityInstances.map((instance) => ({
     ...instance,
     groupName: instance.group.name,
   }))
 
-  return { ...groupActivity, activityInstances: mappedInstances }
+  return {
+    ...groupActivity,
+    activityInstances: mappedInstances,
+    canResetEscapeRoom,
+  }
 }
 
 interface GradeGroupActivitySubmissionArgs {

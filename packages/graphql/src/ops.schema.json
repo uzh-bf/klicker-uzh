@@ -17062,6 +17062,18 @@
             "deprecationReason": null
           },
           {
+            "name": "canResetEscapeRoom",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "clues",
             "description": null,
             "args": [],
