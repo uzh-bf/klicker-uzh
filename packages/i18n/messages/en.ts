@@ -2647,6 +2647,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomColTime: 'Time',
       escapeRoomColActions: 'Actions',
       escapeRoomStatusInProgress: 'In progress',
+      escapeRoomStatusNotStarted: 'Not started',
       escapeRoomStatusCompleted: 'Completed',
       escapeRoomStatusExpired: 'Expired',
       escapeRoomLockedOut: 'Locked out',

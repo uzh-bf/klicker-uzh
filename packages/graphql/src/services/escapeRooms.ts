@@ -134,13 +134,13 @@ interface EscapeRoomProgressArgs {
 // progress bar; hintsUsedCount/penaltySeconds/timeSpentSeconds surface the cost
 // side of the run.
 export interface EscapeRoomAttemptProgress {
-  id: string
+  id: string | null
   participantId: string | null
   groupId: string | null
   displayName: string
   avatar: string | null
-  status: DB.EscapeRoomStatus
-  startedAt: Date
+  status: DB.EscapeRoomStatus | 'NOT_STARTED'
+  startedAt: Date | null
   completedAt: Date | null
   lockoutUntil: Date | null
   penaltySeconds: number
@@ -198,6 +198,11 @@ export async function getEscapeRoomProgress(
       microLearningId: microLearningId ?? undefined,
       groupActivityId: groupActivityId ?? undefined,
       elementBlockId: elementBlockId ?? undefined,
+    },
+    include: {
+      practiceQuiz: { select: { courseId: true } },
+      microLearning: { select: { courseId: true } },
+      groupActivity: { select: { courseId: true } },
     },
   })
   if (!config) return null
@@ -280,7 +285,9 @@ export async function getEscapeRoomProgress(
     }
   }
 
-  const progress: EscapeRoomAttemptProgress[] = attempts.map((attempt) => {
+  const progressForAttempt = (
+    attempt: (typeof attempts)[number]
+  ): EscapeRoomAttemptProgress => {
     const hintsUsedCount = Array.isArray(attempt.hintsUsed)
       ? attempt.hintsUsed.length
       : 0
@@ -314,7 +321,47 @@ export async function getEscapeRoomProgress(
       clearedStacks,
       timeSpentSeconds,
     }
-  })
+  }
+
+  let progress = attempts.map(progressForAttempt)
+  const participantCourseId =
+    config.practiceQuiz?.courseId ?? config.microLearning?.courseId
+  if (participantCourseId) {
+    const roster = await ctx.prisma.participation.findMany({
+      where: { courseId: participantCourseId, isActive: true },
+      include: {
+        participant: {
+          select: { id: true, username: true, avatar: true },
+        },
+      },
+      orderBy: { participant: { username: 'asc' } },
+    })
+    const attemptsByParticipant = new Map(
+      attempts.flatMap((attempt) =>
+        attempt.participantId ? [[attempt.participantId, attempt]] : []
+      )
+    )
+    progress = roster.map(({ participant }) => {
+      const attempt = attemptsByParticipant.get(participant.id)
+      return attempt
+        ? progressForAttempt(attempt)
+        : {
+            id: null,
+            participantId: participant.id,
+            groupId: null,
+            displayName: participant.username,
+            avatar: participant.avatar,
+            status: 'NOT_STARTED' as const,
+            startedAt: null,
+            completedAt: null,
+            lockoutUntil: null,
+            penaltySeconds: 0,
+            hintsUsedCount: 0,
+            clearedStacks: 0,
+            timeSpentSeconds: null,
+          }
+    })
+  }
 
   return {
     activityId,

@@ -124,7 +124,7 @@ async function seedParticipant(label: string) {
     data: {
       username: `${TEST_PREFIX}-${label}`,
       password: 'test-password',
-      participations: { create: [{ courseId }] },
+      participations: { create: [{ courseId, isActive: true }] },
     },
   })
   createdParticipantIds.push(participant.id)
@@ -1717,6 +1717,24 @@ describe('Escape room integration tests', () => {
       const quiz = await seedEscapeRoomQuiz(2, { timeLimit: 1800 })
       const stack0 = quiz.stacks[0]!
       const participant = await seedParticipant('progress')
+      const notStartedParticipant = await seedParticipant(
+        'progress-not-started'
+      )
+      const outsideParticipant = await prisma.participant.create({
+        data: {
+          username: `${TEST_PREFIX}-progress-outside`,
+          password: 'test-password',
+        },
+      })
+      createdParticipantIds.push(outsideParticipant.id)
+      const inactiveParticipant = await prisma.participant.create({
+        data: {
+          username: `${TEST_PREFIX}-progress-inactive`,
+          password: 'test-password',
+          participations: { create: [{ courseId, isActive: false }] },
+        },
+      })
+      createdParticipantIds.push(inactiveParticipant.id)
       await startEscapeRoomAttempt(
         { practiceQuizId: quiz.id },
         participantCtx(participant.id)
@@ -1741,9 +1759,9 @@ describe('Escape room integration tests', () => {
       expect(progress).not.toBeNull()
       expect(progress!.totalStacks).toBe(2)
       expect(progress!.timeLimit).toBe(1800)
-      expect(progress!.attempts).toHaveLength(1)
-
-      const entry = progress!.attempts[0]!
+      const entry = progress!.attempts.find(
+        (attempt) => attempt.participantId === participant.id
+      )!
       expect(entry.participantId).toBe(participant.id)
       expect(entry.displayName).toBe(`${TEST_PREFIX}-progress`)
       expect(entry.status).toBe(DB.EscapeRoomStatus.IN_PROGRESS)
@@ -1752,6 +1770,55 @@ describe('Escape room integration tests', () => {
       expect(entry.penaltySeconds).toBe(0)
       expect(entry.completedAt).toBeNull()
       expect(entry.timeSpentSeconds).toBeNull()
+
+      const notStarted = progress!.attempts.find(
+        (attempt) => attempt.participantId === notStartedParticipant.id
+      )!
+      expect(notStarted).toMatchObject({
+        id: null,
+        status: 'NOT_STARTED',
+        clearedStacks: 0,
+        hintsUsedCount: 0,
+        penaltySeconds: 0,
+        startedAt: null,
+      })
+      expect(
+        progress!.attempts.some(
+          (attempt) => attempt.participantId === outsideParticipant.id
+        )
+      ).toBe(false)
+      expect(
+        progress!.attempts.some(
+          (attempt) => attempt.participantId === inactiveParticipant.id
+        )
+      ).toBe(false)
+    })
+
+    it('keeps group progress scoped to the shared group attempt', async () => {
+      const participantA = await seedParticipant('progress-group-a')
+      const participantB = await seedParticipant('progress-group-b')
+      const fixture = await seedEscapeRoomGroupActivity(
+        {
+          elements: [scElement],
+          courseId,
+          participantIds: [participantA.id, participantB.id],
+        },
+        lecturerCtx
+      )
+
+      const progress = await getEscapeRoomProgress(
+        { groupActivityId: fixture.groupActivity.id },
+        lecturerCtx
+      )
+
+      expect(progress).not.toBeNull()
+      expect(progress!.attempts).toHaveLength(1)
+      expect(progress!.attempts[0]).toMatchObject({
+        id: fixture.attempt.id,
+        groupId: fixture.group.id,
+        participantId: null,
+        status: DB.EscapeRoomStatus.IN_PROGRESS,
+      })
     })
 
     it('returns null for a non-existent / non-escape-room activity', async () => {

@@ -1217,12 +1217,12 @@ type EscapeRoomAttemptProgress {
   displayName: String!
   groupId: String
   hintsUsedCount: Int!
-  id: String!
+  id: String
   lockoutUntil: Date
   participantId: String
   penaltySeconds: Int!
-  startedAt: Date!
-  status: EscapeRoomStatus!
+  startedAt: Date
+  status: EscapeRoomProgressStatus!
   timeSpentSeconds: Int
 }
 
@@ -1253,6 +1253,13 @@ type EscapeRoomProgress {
   attempts: [EscapeRoomAttemptProgress!]!
   timeLimit: Int!
   totalStacks: Int!
+}
+
+enum EscapeRoomProgressStatus {
+  COMPLETED
+  EXPIRED
+  IN_PROGRESS
+  NOT_STARTED
 }
 
 enum EscapeRoomStatus {

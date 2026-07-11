@@ -2690,6 +2690,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomColTime: 'Zeit',
       escapeRoomColActions: 'Aktionen',
       escapeRoomStatusInProgress: 'Laufend',
+      escapeRoomStatusNotStarted: 'Nicht gestartet',
       escapeRoomStatusCompleted: 'Abgeschlossen',
       escapeRoomStatusExpired: 'Abgelaufen',
       escapeRoomLockedOut: 'Gesperrt',

@@ -1328,12 +1328,12 @@ export type EscapeRoomAttemptProgress = {
   displayName: Scalars['String']['output'];
   groupId?: Maybe<Scalars['String']['output']>;
   hintsUsedCount: Scalars['Int']['output'];
-  id: Scalars['String']['output'];
+  id?: Maybe<Scalars['String']['output']>;
   lockoutUntil?: Maybe<Scalars['Date']['output']>;
   participantId?: Maybe<Scalars['String']['output']>;
   penaltySeconds: Scalars['Int']['output'];
-  startedAt: Scalars['Date']['output'];
-  status: EscapeRoomStatus;
+  startedAt?: Maybe<Scalars['Date']['output']>;
+  status: EscapeRoomProgressStatus;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -1369,6 +1369,13 @@ export type EscapeRoomProgress = {
   timeLimit: Scalars['Int']['output'];
   totalStacks: Scalars['Int']['output'];
 };
+
+export enum EscapeRoomProgressStatus {
+  Completed = 'COMPLETED',
+  Expired = 'EXPIRED',
+  InProgress = 'IN_PROGRESS',
+  NotStarted = 'NOT_STARTED'
+}
 
 export enum EscapeRoomStatus {
   Completed = 'COMPLETED',
@@ -6878,7 +6885,7 @@ export type GetEscapeRoomProgressQueryVariables = Exact<{
 }>;
 
 
-export type GetEscapeRoomProgressQuery = { __typename?: 'Query', escapeRoomProgress?: { __typename?: 'EscapeRoomProgress', activityId: string, totalStacks: number, timeLimit: number, attempts: Array<{ __typename?: 'EscapeRoomAttemptProgress', id: string, participantId?: string | null, groupId?: string | null, displayName: string, avatar?: string | null, status: EscapeRoomStatus, startedAt: any, completedAt?: any | null, lockoutUntil?: any | null, penaltySeconds: number, hintsUsedCount: number, clearedStacks: number, timeSpentSeconds?: number | null }> } | null };
+export type GetEscapeRoomProgressQuery = { __typename?: 'Query', escapeRoomProgress?: { __typename?: 'EscapeRoomProgress', activityId: string, totalStacks: number, timeLimit: number, attempts: Array<{ __typename?: 'EscapeRoomAttemptProgress', id?: string | null, participantId?: string | null, groupId?: string | null, displayName: string, avatar?: string | null, status: EscapeRoomProgressStatus, startedAt?: any | null, completedAt?: any | null, lockoutUntil?: any | null, penaltySeconds: number, hintsUsedCount: number, clearedStacks: number, timeSpentSeconds?: number | null }> } | null };
 
 export type GetFeedbacksQueryVariables = Exact<{
   quizId: Scalars['String']['input'];

@@ -287,6 +287,12 @@ export const PracticeQuiz = PracticeQuizRef.implement({
 export const EscapeRoomStatus = builder.enumType('EscapeRoomStatus', {
   values: Object.values(DB.EscapeRoomStatus),
 })
+export const EscapeRoomProgressStatus = builder.enumType(
+  'EscapeRoomProgressStatus',
+  {
+    values: ['NOT_STARTED', ...Object.values(DB.EscapeRoomStatus)] as const,
+  }
+)
 
 export const EscapeRoomAttemptRef =
   builder.objectRef<DB.EscapeRoomAttempt>('EscapeRoomAttempt')
@@ -337,13 +343,13 @@ export const EscapeRoomAttemptProgressRef =
 export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
   {
     fields: (t) => ({
-      id: t.exposeString('id'),
+      id: t.exposeString('id', { nullable: true }),
       participantId: t.exposeString('participantId', { nullable: true }),
       groupId: t.exposeString('groupId', { nullable: true }),
       displayName: t.exposeString('displayName'),
       avatar: t.exposeString('avatar', { nullable: true }),
-      status: t.expose('status', { type: EscapeRoomStatus }),
-      startedAt: t.expose('startedAt', { type: 'Date' }),
+      status: t.expose('status', { type: EscapeRoomProgressStatus }),
+      startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
       completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
       lockoutUntil: t.expose('lockoutUntil', { type: 'Date', nullable: true }),
       penaltySeconds: t.exposeInt('penaltySeconds'),

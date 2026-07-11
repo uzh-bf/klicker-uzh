@@ -71,6 +71,8 @@ Escape-room attempts are not a second source of per-instance response statistics
 
 Participant countdowns start from the server-calculated `EscapeRoomAttempt.remainingSeconds` snapshot (time limit minus server elapsed time and penalties) and animate with the browser's monotonic clock. A separate `expiresInSeconds` snapshot includes the shared five-second network grace without displaying it as game time. Refetches after start, answers, hints, and lockout errors resynchronize these snapshots. Lockout errors likewise provide a server-calculated remaining duration, so changing the participant device clock cannot extend or shorten either timer; expiry remains enforced by the shared server contract.
 
+The lecturer dashboard is roster-based for course activities: every enrolled participant is returned, with `NOT_STARTED` and zero progress when no attempt exists, while users outside the activity's course are absent. Attempt-backed rows retain in-progress/completed/expired state and are the only rows that expose reset actions. The dashboard polls only while its tab is active.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

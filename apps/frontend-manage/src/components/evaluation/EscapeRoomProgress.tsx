@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
+  EscapeRoomProgressStatus,
   EscapeRoomProgress as EscapeRoomProgressType,
-  EscapeRoomStatus,
   ResetEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
@@ -23,18 +23,25 @@ function formatDuration(seconds: number) {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-function StatusPill({ status }: { status: EscapeRoomStatus }) {
+function StatusPill({ status }: { status: EscapeRoomProgressStatus }) {
   const t = useTranslations()
-  const map: Record<EscapeRoomStatus, { label: string; className: string }> = {
-    [EscapeRoomStatus.InProgress]: {
+  const map: Record<
+    EscapeRoomProgressStatus,
+    { label: string; className: string }
+  > = {
+    [EscapeRoomProgressStatus.NotStarted]: {
+      label: t('manage.evaluation.escapeRoomStatusNotStarted'),
+      className: 'bg-gray-100 text-gray-700',
+    },
+    [EscapeRoomProgressStatus.InProgress]: {
       label: t('manage.evaluation.escapeRoomStatusInProgress'),
       className: 'bg-blue-100 text-blue-800',
     },
-    [EscapeRoomStatus.Completed]: {
+    [EscapeRoomProgressStatus.Completed]: {
       label: t('manage.evaluation.escapeRoomStatusCompleted'),
       className: 'bg-green-100 text-green-800',
     },
-    [EscapeRoomStatus.Expired]: {
+    [EscapeRoomProgressStatus.Expired]: {
       label: t('manage.evaluation.escapeRoomStatusExpired'),
       className: 'bg-red-100 text-red-800',
     },
@@ -67,6 +74,7 @@ function EscapeRoomProgress({
   const { totalStacks, attempts } = progress
 
   async function handleReset(attempt: (typeof attempts)[number]) {
+    if (!attempt.id) return
     setResettingId(attempt.id)
     setError(null)
     try {
@@ -150,7 +158,10 @@ function EscapeRoomProgress({
                     new Date(attempt.lockoutUntil).getTime() > Date.now()
                   return (
                     <tr
-                      key={attempt.id}
+                      key={
+                        attempt.id ??
+                        `participant-${attempt.participantId ?? attempt.groupId}`
+                      }
                       className="border-b last:border-b-0"
                       data-cy={`escape-room-attempt-${attempt.displayName}`}
                     >
@@ -192,7 +203,7 @@ function EscapeRoomProgress({
                           : '–'}
                       </td>
                       <td className="p-2 text-right">
-                        {confirmingId === attempt.id ? (
+                        {attempt.id != null && confirmingId === attempt.id ? (
                           <div className="flex justify-end gap-1">
                             <Button
                               className={{
@@ -212,17 +223,20 @@ function EscapeRoomProgress({
                               basic
                               className={{ root: 'px-2 py-1 text-xs' }}
                               onClick={() => setConfirmingId(null)}
+                              data={{
+                                cy: `escape-room-reset-cancel-${attempt.displayName}`,
+                              }}
                             >
                               <Button.Label>
                                 {t('shared.generic.cancel')}
                               </Button.Label>
                             </Button>
                           </div>
-                        ) : (
+                        ) : attempt.id ? (
                           <Button
                             className={{ root: 'px-2 py-1 text-xs' }}
                             disabled={resettingId !== null}
-                            onClick={() => setConfirmingId(attempt.id)}
+                            onClick={() => setConfirmingId(attempt.id ?? null)}
                             data={{
                               cy: `escape-room-reset-${attempt.displayName}`,
                             }}
@@ -231,6 +245,8 @@ function EscapeRoomProgress({
                               {t('manage.evaluation.escapeRoomReset')}
                             </Button.Label>
                           </Button>
+                        ) : (
+                          '–'
                         )}
                       </td>
                     </tr>

@@ -491,29 +491,44 @@ test.describe.serial('Escape room workflows', () => {
     })
     await page.getByTestId('evaluation-escape-room').click()
     await expect(page.getByTestId('escape-room-progress-table')).toBeVisible()
-    const attemptRow = page.locator('[data-cy^="escape-room-attempt-"]').first()
+    const attemptRow = page
+      .locator('[data-cy^="escape-room-attempt-"]')
+      .filter({ hasText: messages.manage.evaluation.escapeRoomStatusCompleted })
+      .first()
     await expect(attemptRow).toBeVisible()
     await expect(attemptRow).toContainText(
       messages.manage.evaluation.escapeRoomStatusCompleted
     )
+    await expect(
+      page
+        .getByText(messages.manage.evaluation.escapeRoomStatusNotStarted)
+        .first()
+    ).toBeVisible()
 
     // two-step reset: the confirm button replaces the reset button
-    await page
+    await attemptRow
       .locator(
         '[data-cy^="escape-room-reset-"]:not([data-cy^="escape-room-reset-confirm-"])'
       )
       .first()
       .click()
-    await page
+    const cancelReset = attemptRow
+      .locator('[data-cy^="escape-room-reset-cancel-"]')
+      .first()
+    await expect(cancelReset).toBeVisible()
+    await cancelReset.click()
+    await attemptRow
+      .locator(
+        '[data-cy^="escape-room-reset-"]:not([data-cy^="escape-room-reset-confirm-"]):not([data-cy^="escape-room-reset-cancel-"])'
+      )
+      .first()
+      .click()
+    await attemptRow
       .locator('[data-cy^="escape-room-reset-confirm-"]')
       .first()
       .click()
-    await expect(
-      page.locator('[data-cy^="escape-room-attempt-"]')
-    ).not.toBeAttached()
-    await expect(
-      page.getByText(messages.manage.evaluation.escapeRoomNoAttempts).first()
-    ).toBeVisible()
+    await expect(attemptRow).not.toBeAttached()
+    await expect(page.getByTestId('escape-room-progress-table')).toBeVisible()
   })
 
   test('Student can start a fresh attempt after the reset', async ({
