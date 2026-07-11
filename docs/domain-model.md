@@ -65,6 +65,8 @@ Hints are authorized against the participant's current unlocked stack. Unused hi
 
 Raw authored hints are available only through the owner-authorized `escapeRoomHints` query used by the edit wizard. Hint edits use patch semantics: an omitted value preserves the stored hint, a blank or null value clears it, and a non-empty value is trimmed and stored. Duplicating an instance preserves its hint unless an explicit override is supplied.
 
+Escape-room Microlearning navigation is server-progress-driven rather than single-submission-driven. The URL resumes at the first uncleared stack; an incorrect answer clears the local evaluation for a retry while retaining the stage through lockout, and only a correct result refetches and advances to the next stack. Completion remains authoritative on the server attempt.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

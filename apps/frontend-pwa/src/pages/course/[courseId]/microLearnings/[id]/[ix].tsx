@@ -3,6 +3,7 @@ import {
   GetMicroLearningDocument,
   PublicationStatus,
   SelfDocument,
+  StackFeedbackStatus,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -10,7 +11,7 @@ import { Progress, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import { useEscapeRoom } from '../../../../../components/hooks/useEscapeRoom'
@@ -41,6 +42,7 @@ function MicrolearningInstance() {
   const courseId = hookActivity?.course?.id
 
   const isEscapeRoom = !!hookActivity?.escapeRoomConfig
+  const [escapeRetryNonce, setEscapeRetryNonce] = useState(0)
   const {
     attempt,
     isStarted,
@@ -55,13 +57,15 @@ function MicrolearningInstance() {
     refetch: refetch ?? (() => {}),
   })
 
-  // Prevent skipping ahead by checking first uncleared stack index
+  // Escape rooms always resume at the first uncleared stack. This prevents
+  // skipping ahead and also advances a stale/reloaded URL that still points to
+  // an already-cleared stack.
   useEffect(() => {
     if (isEscapeRoom && !previewMode && hookActivity?.stacks) {
       const activeFirstUncleared = hookActivity.stacks.findIndex(
         (stack) => !stack.isCorrect
       )
-      if (activeFirstUncleared !== -1 && ix > activeFirstUncleared) {
+      if (activeFirstUncleared !== -1 && ix !== activeFirstUncleared) {
         router.replace(
           `/course/${courseId}/microLearnings/${id}/${activeFirstUncleared}`
         )
@@ -107,6 +111,23 @@ function MicrolearningInstance() {
 
   if (!currentStack) {
     throw new Error('Stack not found')
+  }
+
+  const handleEscapeAdvance = async (gradedStatus?: StackFeedbackStatus) => {
+    if (gradedStatus === StackFeedbackStatus.Correct) {
+      await refetch()
+      if (
+        ix + 1 <
+        (microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0)
+      ) {
+        await router.push(`/course/${courseId}/microLearnings/${id}/${ix + 1}`)
+      }
+      return
+    }
+
+    localStorage.removeItem(`qi-${microLearning.id}-${currentStack.id}`)
+    setEscapeRetryNonce((nonce) => nonce + 1)
+    await refetch()
   }
 
   return (
@@ -163,20 +184,29 @@ function MicrolearningInstance() {
           ) : null}
           <ElementStack
             hideBookmark
-            singleSubmission
-            key={currentStack.id}
+            singleSubmission={!isEscapeRoom}
+            key={`${currentStack.id}-${isEscapeRoom ? escapeRetryNonce : 0}`}
             parentId={microLearning.id}
             courseId={microLearning.course!.id}
             stack={currentStack}
             currentStep={ix + 1}
             totalSteps={microLearning.stacks?.length ?? 0}
-            handleNextElement={() => {
-              router.push(`/course/${courseId}/microLearnings/${id}/${ix + 1}`)
-            }}
-            onAllStacksCompletion={() => {
-              // TODO: also mark the microlearning as completed with this action already?
-              router.push(`/course/${courseId}/microLearnings/${id}/evaluation`)
-            }}
+            handleNextElement={
+              isEscapeRoom
+                ? handleEscapeAdvance
+                : () =>
+                    router.push(
+                      `/course/${courseId}/microLearnings/${id}/${ix + 1}`
+                    )
+            }
+            onAllStacksCompletion={
+              isEscapeRoom
+                ? handleEscapeAdvance
+                : () =>
+                    router.push(
+                      `/course/${courseId}/microLearnings/${id}/evaluation`
+                    )
+            }
             withParticipant={
               !!selfData?.self &&
               selfData.self.role !== UserRole.TemporaryParticipant

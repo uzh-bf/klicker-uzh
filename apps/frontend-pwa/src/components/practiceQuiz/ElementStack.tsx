@@ -121,6 +121,8 @@ function ElementStack({
     useState<StackStudentResponseType>({})
 
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
+  const [lastGradedStatus, setLastGradedStatus] =
+    useState<StackFeedbackStatus>()
 
   // Escape-room lockout: a wrong answer sets a server-side lockout window, and
   // the next submit throws ESCAPE_ROOM_LOCKOUT carrying lockoutUntil. Track it
@@ -566,9 +568,9 @@ function ElementStack({
                 setStudentResponse({})
 
                 if (currentStep === totalSteps) {
-                  onAllStacksCompletion()
+                  onAllStacksCompletion(lastGradedStatus)
                 } else {
-                  handleNextElement()
+                  handleNextElement(lastGradedStatus)
                 }
               }}
               className={{
@@ -806,6 +808,7 @@ function ElementStack({
 
               // set status and score according to returned correctness
               const grading = result.data?.respondToElementStack
+              setLastGradedStatus(grading.status)
               setStudentResponse({})
 
               if (typeof setStepStatus !== 'undefined') {
