@@ -46,6 +46,7 @@ let prisma: PrismaClient
 let lecturerCtx: ContextWithUser
 let courseId: string
 let scElement: DB.Element
+let qrElement: DB.Element
 
 // every record created below is tracked here and deleted by id (in FK order)
 // in the final afterAll - the shared helpers (seedCourse / seedEscapeRoomPracticeQuiz)
@@ -108,6 +109,14 @@ function groupScResponse(instanceId: number, selectedIx: 0 | 1) {
     instanceId,
     type: DB.ElementType.SC,
     choicesResponse: [{ ix: selectedIx, selected: true }],
+  }
+}
+
+function qrResponse(instanceId: number, code: string) {
+  return {
+    instanceId,
+    type: DB.ElementType.QR_SCAN,
+    qrScanResponse: code,
   }
 }
 
@@ -231,6 +240,19 @@ describe('Escape room integration tests', () => {
       },
     })
     createdElementIds.push(scElement.id)
+
+    qrElement = await prisma.element.create({
+      data: {
+        type: DB.ElementType.QR_SCAN,
+        name: `${TEST_PREFIX}-qr-element`,
+        content: 'Find and scan the hidden code',
+        explanation: 'QR explanation',
+        options: {},
+        qrScanCode: 'AbCdEf12_-34',
+        ownerId: lecturer.id,
+      },
+    })
+    createdElementIds.push(qrElement.id)
   }, 60000)
 
   afterAll(async () => {
@@ -349,6 +371,153 @@ describe('Escape room integration tests', () => {
     })
   })
   // #endregion
+
+  describe('respondToElementStack - QR scan grading', () => {
+    async function seedQrQuiz() {
+      const quiz = await seedEscapeRoomPracticeQuiz(
+        {
+          elements: [qrElement],
+          courseId,
+          status: DB.PublicationStatus.PUBLISHED,
+          lockoutSeconds: 0,
+        },
+        lecturerCtx
+      )
+      createdQuizIds.push(quiz.id)
+      return quiz
+    }
+
+    it('grades an exact code as correct and a decoy as incorrect', async () => {
+      const correctQuiz = await seedQrQuiz()
+      const correctParticipant = await seedParticipant('qr-correct')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: correctQuiz.id },
+        participantCtx(correctParticipant.id)
+      )
+      const correctInstance = correctQuiz.stacks[0]!.elements[0]!
+      const correct = await respondToElementStack(
+        {
+          stackId: correctQuiz.stacks[0]!.id,
+          courseId,
+          responses: [qrResponse(correctInstance.id, 'AbCdEf12_-34')],
+          stackAnswerTime: 10,
+        },
+        participantCtx(correctParticipant.id)
+      )
+      expect(correct!.status).toBe(StackFeedbackStatus.CORRECT)
+
+      const decoyQuiz = await seedQrQuiz()
+      const decoyParticipant = await seedParticipant('qr-decoy')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: decoyQuiz.id },
+        participantCtx(decoyParticipant.id)
+      )
+      const decoyInstance = decoyQuiz.stacks[0]!.elements[0]!
+      const decoy = await respondToElementStack(
+        {
+          stackId: decoyQuiz.stacks[0]!.id,
+          courseId,
+          responses: [qrResponse(decoyInstance.id, 'ZbCdEf12_-34')],
+          stackAnswerTime: 10,
+        },
+        participantCtx(decoyParticipant.id)
+      )
+      expect(decoy!.status).toBe(StackFeedbackStatus.INCORRECT)
+    })
+
+    it('rejects malformed codes and replays after completion', async () => {
+      const quiz = await seedQrQuiz()
+      const participant = await seedParticipant('qr-replay')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+      const stack = quiz.stacks[0]!
+      const instance = stack.elements[0]!
+
+      await expect(
+        respondToElementStack(
+          {
+            stackId: stack.id,
+            courseId,
+            responses: [qrResponse(instance.id, 'not-a-code')],
+            stackAnswerTime: 10,
+          },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Invalid QR scan response')
+
+      await respondToElementStack(
+        {
+          stackId: stack.id,
+          courseId,
+          responses: [qrResponse(instance.id, 'AbCdEf12_-34')],
+          stackAnswerTime: 10,
+        },
+        participantCtx(participant.id)
+      )
+      await expect(
+        respondToElementStack(
+          {
+            stackId: stack.id,
+            courseId,
+            responses: [qrResponse(instance.id, 'AbCdEf12_-34')],
+            stackAnswerTime: 10,
+          },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('No active escape room attempt found')
+    })
+
+    it('binds QR responses to the authorized stack and activity', async () => {
+      const quiz = await seedEscapeRoomPracticeQuiz(
+        {
+          elements: [qrElement, qrElement],
+          courseId,
+          status: DB.PublicationStatus.PUBLISHED,
+        },
+        lecturerCtx
+      )
+      createdQuizIds.push(quiz.id)
+      const participant = await seedParticipant('qr-boundary')
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+      const first = quiz.stacks[0]!
+      const future = quiz.stacks[1]!.elements[0]!
+
+      await expect(
+        respondToElementStack(
+          {
+            stackId: first.id,
+            courseId,
+            responses: [qrResponse(future.id, 'AbCdEf12_-34')],
+            stackAnswerTime: 10,
+          },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow(
+        'Escape room responses must exactly match the authorized stack'
+      )
+
+      const otherQuiz = await seedQrQuiz()
+      const foreign = otherQuiz.stacks[0]!.elements[0]!
+      await expect(
+        respondToElementStack(
+          {
+            stackId: first.id,
+            courseId,
+            responses: [qrResponse(foreign.id, 'AbCdEf12_-34')],
+            stackAnswerTime: 10,
+          },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow(
+        'Escape room responses must exactly match the authorized stack'
+      )
+    })
+  })
 
   // ! Sequential answer gating
   // #region
@@ -2194,6 +2363,59 @@ describe('Escape room integration tests', () => {
       expect(state.activityInstance.decisionsSubmittedAt).not.toBeNull()
       expect(state.attempt.status).toBe(DB.EscapeRoomStatus.COMPLETED)
       expect(state.attempt.completedAt).not.toBeNull()
+    })
+
+    it('grades QR scan decisions against the private source code', async () => {
+      const participantA = await seedParticipant('qr-group-a')
+      const participantB = await seedParticipant('qr-group-b')
+      const fixture = await seedEscapeRoomGroupActivity(
+        {
+          elements: [qrElement],
+          courseId,
+          participantIds: [participantA.id, participantB.id],
+        },
+        lecturerCtx
+      )
+      const instance = fixture.groupActivity.stacks[0]!.elements[0]!
+
+      await expect(
+        submitGroupActivityDecisions(
+          {
+            activityId: fixture.activityInstance.id,
+            responses: [qrResponse(instance.id, 'AbCdEf12_-34')],
+          },
+          participantCtx(participantA.id)
+        )
+      ).resolves.toBe(fixture.activityInstance.id)
+
+      const saved = await prisma.groupActivityInstance.findUniqueOrThrow({
+        where: { id: fixture.activityInstance.id },
+        select: { decisions: true },
+      })
+      expect(saved.decisions).toEqual([
+        expect.objectContaining({ qrScanResponse: null }),
+      ])
+
+      const decoyParticipantA = await seedParticipant('qr-group-decoy-a')
+      const decoyParticipantB = await seedParticipant('qr-group-decoy-b')
+      const decoyFixture = await seedEscapeRoomGroupActivity(
+        {
+          elements: [qrElement],
+          courseId,
+          participantIds: [decoyParticipantA.id, decoyParticipantB.id],
+        },
+        lecturerCtx
+      )
+      const decoyInstance = decoyFixture.groupActivity.stacks[0]!.elements[0]!
+      await expect(
+        submitGroupActivityDecisions(
+          {
+            activityId: decoyFixture.activityInstance.id,
+            responses: [qrResponse(decoyInstance.id, 'ZbCdEf12_-34')],
+          },
+          participantCtx(decoyParticipantA.id)
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'ESCAPE_ROOM_LOCKOUT' } })
     })
 
     it('commits incorrect results and lockout without finalizing decisions', async () => {

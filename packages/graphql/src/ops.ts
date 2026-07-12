@@ -4780,6 +4780,7 @@ export type StackResponseInput = {
   freeTextResponse?: InputMaybe<Scalars['String']['input']>;
   instanceId: Scalars['Int']['input'];
   numericalResponse?: InputMaybe<Scalars['Float']['input']>;
+  qrScanResponse?: InputMaybe<Scalars['String']['input']>;
   selectionResponse?: InputMaybe<Array<Scalars['Int']['input']>>;
   type: ElementType;
 };

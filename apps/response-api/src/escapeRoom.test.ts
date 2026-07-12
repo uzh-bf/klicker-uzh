@@ -34,7 +34,10 @@ vi.mock('@klicker-uzh/prisma', () => ({
     },
   },
 }))
-vi.mock('@klicker-uzh/util', () => ({ verifyJWT: mocks.verifyJWT }))
+vi.mock('@klicker-uzh/util', () => ({
+  verifyJWT: mocks.verifyJWT,
+  QR_SCAN_CODE_PATTERN: /^[A-Za-z0-9_-]{12}$/,
+}))
 
 import { handleEscapeRoomValidation } from './escapeRoom.js'
 
@@ -129,6 +132,7 @@ describe('response-api escape-room validation', () => {
     mocks.findInstance.mockResolvedValue({
       elementBlockId: 7,
       elementBlock: { liveQuizId: 'quiz-1' },
+      element: { qrScanCode: null },
     })
     mocks.findAttempt.mockResolvedValue(attempt())
     mocks.findInstances.mockResolvedValue([{ id: 11 }])
@@ -289,6 +293,62 @@ describe('response-api escape-room validation', () => {
         lockoutUntil: null,
       },
     })
+  })
+
+  it('accepts an exact QR code and rejects a well-formed decoy', async () => {
+    mocks.findInstance.mockResolvedValue({
+      elementBlockId: 7,
+      elementBlock: { liveQuizId: 'quiz-1' },
+      element: { qrScanCode: 'AbCdEf12_-34' },
+    })
+    const qrInfo = { ...info, type: 'QR_SCAN', solutions: '' }
+
+    const correct = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      correct.response,
+      { ...payload, response: { value: 'AbCdEf12_-34' } },
+      'participant_token=token',
+      qrInfo,
+      redisMock()
+    )
+    expect(JSON.parse(correct.result.body)).toEqual(
+      expect.objectContaining({ status: 'correct', completed: true })
+    )
+
+    mocks.findAttempt.mockResolvedValue(attempt({ id: 'attempt-2' }))
+    const decoy = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      decoy.response,
+      { ...payload, response: { value: 'ZbCdEf12_-34' } },
+      'participant_token=token',
+      qrInfo,
+      redisMock()
+    )
+    expect(JSON.parse(decoy.result.body).status).toBe('incorrect')
+  })
+
+  it('rejects malformed QR codes before publishing a response', async () => {
+    mocks.findInstance.mockResolvedValue({
+      elementBlockId: 7,
+      elementBlock: { liveQuizId: 'quiz-1' },
+      element: { qrScanCode: 'AbCdEf12_-34' },
+    })
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      { ...payload, response: { value: 'not-a-code' } },
+      'participant_token=token',
+      { ...info, type: 'QR_SCAN', solutions: '' },
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(400)
+    expect(JSON.parse(result.body)).toEqual({ error: 'invalid_qr_code' })
+    expect(mocks.push).not.toHaveBeenCalled()
   })
 
   it('completes only after every answerable block instance is cleared', async () => {

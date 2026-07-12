@@ -66,6 +66,7 @@ import {
   createAnswerCollection as createAnswerCollectionBase,
   createQuestionKPRIM as createQuestionKPRIMBase,
   createQuestionMC as createQuestionMCBase,
+  createQuestionQrScan as createQuestionQrScanBase,
   createQuestionSC as createQuestionSCBase,
   createQuestionSE as createQuestionSEBase,
   deleteElement as deleteElementBase,
@@ -605,6 +606,11 @@ export async function deleteAnswerCollection(
 
 export async function createQuestionSC(page: Page, args: any) {
   await createQuestionSCBase(args)
+  await reloadAndValidate(page, args.name)
+}
+
+export async function createQuestionQrScan(page: Page, args: any) {
+  await createQuestionQrScanBase(args)
   await reloadAndValidate(page, args.name)
 }
 

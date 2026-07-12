@@ -153,6 +153,7 @@ export const StackResponseInput = StackResponseInputRef.implement({
       type: [CaseStudyCaseResponse],
       required: false,
     }),
+    qrScanResponse: t.string({ required: false }),
   }),
 })
 

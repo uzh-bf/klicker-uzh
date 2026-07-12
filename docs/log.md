@@ -2,6 +2,7 @@
 
 ## 2026-07-11
 
+- **Update**: QR Scan questions can now be answered across all Escape Room modes through native browser scanning or validated manual entry; exact-code grading remains server-side, malformed values fail closed, and QR placement outside Escape Room activities is rejected.
 - **Update**: QR Scan owners now have printable, neutrally labeled QR sheets with request-time ephemeral decoys and a screen-only answer legend; decoys are neither persisted nor participant-visible.
 - **Update**: QR Scan elements can now be authored, reopened, and duplicated; codes are generated on create/duplicate, preserved on edit, and readable only by the exact owner.
 - **Update**: [domain-model](./domain-model.md) now documents the `QR_SCAN` element contract, opaque CSPRNG code storage, and participant snapshot leakage boundary.

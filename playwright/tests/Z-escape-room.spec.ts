@@ -14,6 +14,7 @@ import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
   createContent,
+  createQuestionQrScan,
   createQuestionSC,
   createStacks,
   env,
@@ -59,6 +60,13 @@ const SC2 = {
 const CT1 = {
   title: 'ER Content 1',
   content: 'ER Content Element 1',
+}
+const QR = {
+  title: 'ER QR Scan Question',
+  content: 'Scan the hidden vault marker',
+  code: 'AbCdEf12_-34',
+  quizName: 'Escape Room QR Quiz',
+  quizDisplayName: 'Escape Room QR Quiz Display',
 }
 
 // Wizard flow of createPracticeQuiz (activities fixture) extended with the
@@ -196,6 +204,12 @@ test.describe.serial('Escape room workflows', () => {
     await createContent(page, {
       name: CT1.title,
       content: CT1.content,
+      userId: env('LECTURER_ID'),
+    })
+    await createQuestionQrScan(page, {
+      name: QR.title,
+      content: QR.content,
+      code: QR.code,
       userId: env('LECTURER_ID'),
     })
   })
@@ -561,6 +575,81 @@ test.describe.serial('Escape room workflows', () => {
     await expect(
       page.getByTestId(`status-${MICRO.name}-PUBLISHED`)
     ).toBeAttached()
+  })
+
+  test('QR scanner denial falls back to a validated manual code', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+
+    await loginLecturer(page)
+    await page.getByTestId('library').click()
+    await createEscapeRoomPracticeQuiz(page, {
+      name: QR.quizName,
+      displayName: QR.quizDisplayName,
+      description: 'QR scanner fallback workflow',
+      courseName: COURSE,
+      stacks: [{ elements: [QR.title] }],
+      timeLimitMinutes: '30',
+      hintPenaltySeconds: '30',
+      introText: 'Find the marker and enter its code.',
+      hints: [],
+    })
+    await page.getByTestId('open-activity-overview').click()
+    await page.getByTestId('tab-practiceQuizzes').click()
+    await page.getByTestId(`publish-practice-quiz-${QR.quizName}`).click()
+    await page.getByTestId('publish-practice-quiz-immediately').click()
+    await expect(
+      page.getByTestId(`status-${QR.quizName}-PUBLISHED`)
+    ).toBeAttached()
+
+    await page.addInitScript(() => {
+      Object.defineProperty(globalThis, 'BarcodeDetector', {
+        configurable: true,
+        value: class {
+          detect() {
+            return Promise.resolve([])
+          }
+        },
+      })
+      ;(globalThis as any).__qrCameraCalls = 0
+      navigator.mediaDevices.getUserMedia = () => {
+        ;(globalThis as any).__qrCameraCalls += 1
+        return new Promise((_, reject) => {
+          ;(globalThis as any).__rejectQrCamera = () =>
+            reject(new DOMException('Permission denied', 'NotAllowedError'))
+        })
+      }
+    })
+    await loginStudent(page)
+    await page.getByTestId('quizzes').click()
+    await page.getByTestId(`practice-quiz-${QR.quizDisplayName}`).click()
+    await page.getByTestId('escape-room-start').click()
+    await page.getByTestId('start-practice-quiz').click()
+    await expect(page.getByText(QR.content).first()).toBeVisible()
+
+    const startScanner = page.locator('[data-cy="start-qr-scanner"]')
+    await startScanner.click()
+    await expect(startScanner).toBeDisabled()
+    await startScanner.evaluate((button: HTMLButtonElement) => button.click())
+    expect(await page.evaluate(() => (globalThis as any).__qrCameraCalls)).toBe(
+      1
+    )
+    await page.evaluate(() => (globalThis as any).__rejectQrCamera())
+    await expect(page.getByRole('status')).toContainText(
+      messages.shared.QR_SCAN.cameraFallback
+    )
+    const manualCode = page.getByLabel(messages.shared.QR_SCAN.manualLabel)
+    await manualCode.fill('not-a-code')
+    await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
+    await manualCode.fill(QR.code)
+    await expect(page.getByTestId('student-stack-submit')).toBeEnabled()
+    await page.getByTestId('student-stack-submit').click()
+    await expect(
+      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
+    ).toBeVisible()
   })
 
   test('Microlearning wrong answer, lockout, retry, reload, and completion stay in the escape flow', async ({

@@ -278,6 +278,7 @@ export async function getEscapeRoomProgress(
               DB.ElementType.KPRIM,
               DB.ElementType.NUMERICAL,
               DB.ElementType.FREE_TEXT,
+              DB.ElementType.QR_SCAN,
             ],
           },
         },

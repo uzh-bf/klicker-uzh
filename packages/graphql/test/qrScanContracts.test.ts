@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { activityInputContainsElementType } from '../src/services/activities.js'
 import {
   getQrScanCode,
   getQrScanPrintData,
@@ -25,9 +26,40 @@ afterEach(async () => {
 })
 
 describe('QR scan GraphQL contracts', () => {
+  it('detects QR elements across new, retained, and duplicated activity inputs', () => {
+    const base = {
+      displayName: '',
+      description: '',
+      order: 0,
+      elements: [],
+    }
+    expect(
+      activityInputContainsElementType({
+        stacksOrBlocks: [
+          {
+            ...base,
+            elements: [
+              {
+                elementId: 42,
+                existingInstanceId: null,
+                duplicateInstance: false,
+                order: 0,
+              },
+            ],
+          },
+        ],
+        persistentInstances: [],
+        duplicationInstances: [],
+        elementMap: { 42: { type: ElementType.QR_SCAN } },
+        type: ElementType.QR_SCAN,
+      })
+    ).toBe(true)
+  })
+
   it('serializes QR_SCAN and exposes only safe participant fields', () => {
     const elementType = schema.getType('ElementType')
     const qrScanData = schema.getType('QrScanElementData')
+    const groupDecision = schema.getType('GroupActivityDecision')
 
     expect(elementType?.constructor.name).toBe('GraphQLEnumType')
     expect((elementType as GraphQLEnumType).serialize('QR_SCAN')).toBe(
@@ -48,6 +80,9 @@ describe('QR scan GraphQL contracts', () => {
     )
     expect((qrScanData as GraphQLObjectType).getFields()).not.toHaveProperty(
       'qrScanCode'
+    )
+    expect((groupDecision as GraphQLObjectType).getFields()).not.toHaveProperty(
+      'qrScanResponse'
     )
   })
 

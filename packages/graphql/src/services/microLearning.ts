@@ -14,7 +14,10 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  activityInputContainsElementType,
+  getPermissionBooleans,
+} from './activities.js'
 import {
   isEscapeRoomStackCleared,
   restoreUsedEscapeRoomHints,
@@ -295,6 +298,21 @@ export async function manipulateMicroLearning(
     elementMap,
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
+
+  if (
+    !isEscapeRoom &&
+    activityInputContainsElementType({
+      stacksOrBlocks: stacks,
+      persistentInstances,
+      duplicationInstances,
+      elementMap,
+      type: DB.ElementType.QR_SCAN,
+    })
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are only supported in escape room activities'
+    )
+  }
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []

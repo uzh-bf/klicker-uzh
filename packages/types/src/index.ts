@@ -286,6 +286,7 @@ export type StackResponseInput = {
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
   caseStudyResponse?: CaseStudyCaseResponse[] | null
+  qrScanResponse?: string | null
 }
 
 export type GroupActivityClueInput = {
@@ -604,6 +605,25 @@ export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
 export interface ElementOptionsQrScan {}
 
+export const QR_SCAN_CODE_LENGTH = 12
+export const QR_SCAN_CODE_PATTERN = /^[A-Za-z0-9_-]{12}$/
+
+export function normalizeQrScanCode(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+export function isValidQrScanCode(value: unknown): value is string {
+  return QR_SCAN_CODE_PATTERN.test(normalizeQrScanCode(value))
+}
+
+export function gradeQrScanResponse(
+  expected: string | null | undefined,
+  submitted: unknown
+): boolean {
+  const normalized = normalizeQrScanCode(submitted)
+  return isValidQrScanCode(normalized) && normalized === expected
+}
+
 export type ElementOptions =
   | ElementOptionsChoices
   | ElementOptionsNumerical
@@ -749,6 +769,7 @@ export type GroupActivityDecision = {
   contentResponse?: SingleQuestionResponseContent['viewed'] | null
   selectionResponse?: SingleQuestionResponseSelection['selection'] | null
   caseStudyResponse?: SingleQuestionResponseCaseStudy['assessment'] | null
+  qrScanResponse?: string | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 

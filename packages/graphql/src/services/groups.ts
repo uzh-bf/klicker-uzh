@@ -4,7 +4,12 @@ import type {
   ElementStackInput,
   HatchetHandlers,
 } from '@klicker-uzh/types'
-import { ActivityType, ResponseCorrectness } from '@klicker-uzh/types'
+import {
+  ActivityType,
+  gradeQrScanResponse,
+  isValidQrScanCode,
+  ResponseCorrectness,
+} from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getEscapeRoomHintUpdate,
@@ -30,7 +35,10 @@ import {
 } from '../lib/randomizedGroups.js'
 import { shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  activityInputContainsElementType,
+  getPermissionBooleans,
+} from './activities.js'
 import {
   ESCAPE_ROOM_GRACE_SECONDS,
   getRemainingSecondsUntil,
@@ -64,14 +72,26 @@ const GROUP_ESCAPE_RESPONSE_TYPES = new Set<DB.ElementType>([
   DB.ElementType.FREE_TEXT,
   DB.ElementType.SELECTION,
   DB.ElementType.CASE_STUDY,
+  DB.ElementType.QR_SCAN,
 ])
 
 function isValidGroupEscapeResponse(
-  instance: DB.ElementInstance,
+  instance: DB.ElementInstance & { element?: { qrScanCode: string | null } },
   response: RespondToElementStackInput['responses'][number]
 ) {
   const elementData = instance.elementData as any
-  if (!elementData?.options?.hasSampleSolution) return false
+  if (
+    response.type !== DB.ElementType.QR_SCAN &&
+    !elementData?.options?.hasSampleSolution
+  )
+    return false
+
+  if (response.type === DB.ElementType.QR_SCAN) {
+    return (
+      typeof response.qrScanResponse === 'string' &&
+      isValidQrScanCode(response.qrScanResponse)
+    )
+  }
 
   if (
     response.type === DB.ElementType.SC ||
@@ -1047,6 +1067,21 @@ export async function manipulateGroupActivity(
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx)
 
+  if (
+    !isEscapeRoom &&
+    activityInputContainsElementType({
+      stacksOrBlocks: [stack],
+      persistentInstances,
+      duplicationInstances,
+      elementMap,
+      type: DB.ElementType.QR_SCAN,
+    })
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are only supported in escape room activities'
+    )
+  }
+
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
   let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
@@ -1690,7 +1725,15 @@ export async function submitGroupActivityDecisions(
                 groupActivity: {
                   include: {
                     escapeRoomConfig: true,
-                    stacks: { include: { elements: true } },
+                    stacks: {
+                      include: {
+                        elements: {
+                          include: {
+                            element: { select: { qrScanCode: true } },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
                 group: {
@@ -1768,7 +1811,10 @@ export async function submitGroupActivityDecisions(
           if (
             requiredInstances.some((instance) => {
               const elementData = instance.elementData as any
-              return !elementData?.options?.hasSampleSolution
+              return (
+                instance.elementType !== DB.ElementType.QR_SCAN &&
+                !elementData?.options?.hasSampleSolution
+              )
             })
           ) {
             throw new GraphQLError(
@@ -1855,6 +1901,13 @@ export async function submitGroupActivityDecisions(
                 previousResults: instance.results,
                 response: { assessment: inputResponse.caseStudyResponse },
               })
+            } else if (inputResponse.type === DB.ElementType.QR_SCAN) {
+              updatedResults = {
+                results: {
+                  total: (instance.results as { total: number }).total + 1,
+                },
+                modified: true,
+              }
             }
 
             if (!updatedResults?.modified) {
@@ -1868,7 +1921,10 @@ export async function submitGroupActivityDecisions(
             })
 
             const elementData = instance.elementData as any
-            if (elementData.options?.hasSampleSolution) {
+            if (
+              inputResponse.type === DB.ElementType.QR_SCAN ||
+              elementData.options?.hasSampleSolution
+            ) {
               let correctness: number | null = null
               if (
                 inputResponse.type === DB.ElementType.SC ||
@@ -1899,6 +1955,13 @@ export async function submitGroupActivityDecisions(
                   elementData,
                   response: { assessment: inputResponse.caseStudyResponse },
                 })
+              } else if (inputResponse.type === DB.ElementType.QR_SCAN) {
+                correctness = gradeQrScanResponse(
+                  instance.element.qrScanCode,
+                  inputResponse.qrScanResponse
+                )
+                  ? 1
+                  : 0
               }
               allCorrect = allCorrect && correctness === 1
             }
@@ -1907,7 +1970,14 @@ export async function submitGroupActivityDecisions(
           await prisma.groupActivityInstance.update({
             where: { id: activityId },
             data: allCorrect
-              ? { decisions: responses, decisionsSubmittedAt: new Date() }
+              ? {
+                  decisions: responses.map((response) =>
+                    response.type === DB.ElementType.QR_SCAN
+                      ? { ...response, qrScanResponse: null }
+                      : response
+                  ),
+                  decisionsSubmittedAt: new Date(),
+                }
               : { decisionsSubmittedAt: null },
           })
           await prisma.escapeRoomAttempt.update({

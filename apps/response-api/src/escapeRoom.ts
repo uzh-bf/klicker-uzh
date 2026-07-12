@@ -7,6 +7,11 @@ import {
 } from '@klicker-uzh/grading'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
+import {
+  gradeQrScanResponse,
+  isValidQrScanCode,
+  normalizeQrScanCode,
+} from '@klicker-uzh/types'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
@@ -18,6 +23,7 @@ const ESCAPE_ROOM_RESPONSE_TYPES = [
   'KPRIM',
   'NUMERICAL',
   'FREE_TEXT',
+  'QR_SCAN',
 ] as const
 
 async function getParticipantData(
@@ -87,6 +93,7 @@ export async function handleEscapeRoomValidation(
     select: {
       elementBlockId: true,
       elementBlock: { select: { liveQuizId: true } },
+      element: { select: { qrScanCode: true } },
     },
   })
   if (
@@ -196,6 +203,15 @@ export async function handleEscapeRoomValidation(
         response: (response.value || '').trim(),
         solutions: parsedSolutions || [],
       }) || 0
+  } else if (type === 'QR_SCAN') {
+    const code = normalizeQrScanCode(response.value)
+    if (!isValidQrScanCode(code)) {
+      sendJson(res, 400, { error: 'invalid_qr_code' })
+      return true
+    }
+    pointsPercentage = gradeQrScanResponse(instance.element.qrScanCode, code)
+      ? 1
+      : 0
   }
 
   const isCorrect = pointsPercentage === 1

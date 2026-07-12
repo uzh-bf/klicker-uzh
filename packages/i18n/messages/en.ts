@@ -101,6 +101,11 @@ export default {
       typeLabel: 'QR Scan (QR)',
       text: 'Please scan or enter the hidden code.',
       richtext: 'Please <b>scan or enter</b> the hidden code.',
+      startCamera: 'Scan QR code',
+      stopCamera: 'Stop camera',
+      cameraFallback:
+        'Camera scanning is unavailable. Enter the code below instead.',
+      manualLabel: 'Enter code manually',
     },
     login: {
       installButton: 'Install Now',

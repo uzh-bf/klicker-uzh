@@ -103,6 +103,11 @@ export default {
       text: 'Bitte scannen Sie den versteckten Code oder geben Sie ihn ein.',
       richtext:
         'Bitte <b>scannen Sie</b> den versteckten Code oder geben Sie ihn ein.',
+      startCamera: 'QR-Code scannen',
+      stopCamera: 'Kamera stoppen',
+      cameraFallback:
+        'Der Kamerascan ist nicht verfügbar. Geben Sie den Code stattdessen unten ein.',
+      manualLabel: 'Code manuell eingeben',
     },
     login: {
       installButton: 'Jetzt installieren',

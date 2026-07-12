@@ -720,6 +720,12 @@ function ElementStack({
                           type: ElementType.FreeText,
                           freeTextResponse: value.response,
                         }
+                      } else if (value.type === ElementType.QrScan) {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: ElementType.QrScan,
+                          qrScanResponse: value.response,
+                        }
                       } else if (value.type === ElementType.Selection) {
                         return {
                           instanceId: parseInt(instanceId),

@@ -31,7 +31,10 @@ import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  activityInputContainsElementType,
+  getPermissionBooleans,
+} from './activities.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { checkAccess } from './sharing.js'
@@ -254,12 +257,32 @@ export async function manipulateLiveQuiz(
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
 
+  if (
+    blocks.some((block) => !block.isEscapeRoom) &&
+    blocks
+      .filter((block) => !block.isEscapeRoom)
+      .some((block) =>
+        activityInputContainsElementType({
+          stacksOrBlocks: [block],
+          persistentInstances,
+          duplicationInstances,
+          elementMap,
+          type: DB.ElementType.QR_SCAN,
+        })
+      )
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are only supported in escape room activities'
+    )
+  }
+
   const escapeRoomElementTypes = new Set<DB.ElementType>([
     DB.ElementType.SC,
     DB.ElementType.MC,
     DB.ElementType.KPRIM,
     DB.ElementType.NUMERICAL,
     DB.ElementType.FREE_TEXT,
+    DB.ElementType.QR_SCAN,
   ])
   for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
     if (block.elements.length === 0) {
@@ -1333,6 +1356,14 @@ export async function activateLiveQuizBlock(
           participants: 0,
         })
 
+        break
+      }
+
+      case DB.ElementType.QR_SCAN: {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
         break
       }
 

@@ -16,7 +16,6 @@ import {
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import {
   Button,
@@ -38,6 +37,7 @@ import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
 import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
+import { buildLiveQuizResponsePayload } from '../../lib/liveQuizResponse'
 
 const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
@@ -69,62 +69,17 @@ Promise<{
     credentials: 'include',
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type)) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { choices: answer },
-      }),
-    }
-  } else if (
-    QUESTION_GROUPS.NUMERICAL.includes(type) ||
-    QUESTION_GROUPS.FREE_TEXT.includes(type)
-  ) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { value: answer },
-      }),
-    }
-  } else if (type === ElementType.Selection) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { selection: answer },
-      }),
-    }
-  } else if (type === ElementType.CaseStudy) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { assessment: answer },
-      }),
-    }
-  } else if (type === ElementType.Content) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { viewed: true },
-      }),
-    }
-  } else {
+  const payload = buildLiveQuizResponsePayload({
+    correlationKey,
+    instanceId,
+    liveQuizId,
+    type,
+    answer,
+  })
+  if (!payload) {
     return { statusCode: 1 }
   }
+  requestOptions = { ...requestOptions, body: JSON.stringify(payload) }
 
   try {
     const response = await fetch(

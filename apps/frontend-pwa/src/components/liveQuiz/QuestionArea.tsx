@@ -564,6 +564,36 @@ function QuestionArea({
         return false
       }
     } else if (
+      ElementType.QrScan === type &&
+      input.type === ElementType.QrScan &&
+      typeof input.response !== 'undefined'
+    ) {
+      const result = await handleNewResponse({
+        liveQuizId: quizId,
+        instanceId,
+        type,
+        answer: input.response,
+        correlationKey,
+      })
+
+      showStatusCodeToast(result.statusCode, result.responseStatus)
+      applyEscapeResponseState(result)
+
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
+        await localforage.removeItem(`${storageKey}-temp`)
+        return true
+      }
+      return false
+    } else if (
       ElementType.Numerical === type &&
       input.type === ElementType.Numerical &&
       typeof input.response !== 'undefined'

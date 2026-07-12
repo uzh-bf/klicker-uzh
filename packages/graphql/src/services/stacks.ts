@@ -50,7 +50,13 @@ import type {
   SingleQuestionResponseSelection,
   SingleQuestionResponseValue,
 } from '@klicker-uzh/types'
-import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
+import {
+  FlashcardCorrectness,
+  gradeQrScanResponse,
+  isValidQrScanCode,
+  normalizeQrScanCode,
+  StackFeedbackStatus,
+} from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   PrismaTransactionClient,
@@ -1203,6 +1209,7 @@ async function getValidateElementInstance({
       id,
     },
     include: {
+      element: { select: { qrScanCode: true } },
       elementStack: true,
       instanceStatistics: true,
       responses: participantId
@@ -1937,11 +1944,13 @@ function updateQuestionResults({
   participation,
   response,
   caseStudySolutions,
+  qrScanCode,
 }: {
   existingInstance: DB.ElementInstance
   participation: (DB.Participation & { participant: DB.Participant }) | null
   response: ResponseInput
   caseStudySolutions?: CaseStudySolutionsObject
+  qrScanCode?: string | null
 }): {
   correctness: number | null
   results: ElementInstanceResults
@@ -1990,6 +1999,13 @@ function updateQuestionResults({
     return {
       ...res,
       correctness,
+    }
+  } else if (elementData.type === DB.ElementType.QR_SCAN) {
+    const value = normalizeQrScanCode(response.value)
+    return {
+      correctness: gradeQrScanResponse(qrScanCode, value) ? 1 : 0,
+      results: { total: previousResults.total + 1 },
+      modified: value !== '',
     }
   } else if (
     elementData.type === DB.ElementType.FREE_TEXT &&
@@ -2339,6 +2355,11 @@ function computeAggregatedResponsesQuestion({
       responseAssessment: response.assessment!,
       solutions: caseStudySolutions,
     })
+  } else if (instance.elementType === DB.ElementType.QR_SCAN) {
+    const previous = (existingResponse?.aggregatedResponses ?? {
+      total: 0,
+    }) as { total: number }
+    return { total: previous.total + 1 }
   }
 
   return null
@@ -2656,6 +2677,7 @@ export async function respondToQuestion(
       participation,
       response,
       caseStudySolutions,
+      qrScanCode: existingInstance.element.qrScanCode,
     })
 
     if (!modified || results === null) {
@@ -2711,8 +2733,19 @@ export async function respondToQuestion(
       multiplier: updatedInstance.options.pointsMultiplier,
     })
 
+    const effectiveEvaluation =
+      existingInstance.elementType === DB.ElementType.QR_SCAN
+        ? {
+            score: correctness === 1 ? POINTS_PER_INSTANCE : 0,
+            xp: 0,
+            percentile: correctness ?? 0,
+            pointsMultiplier: updatedInstance.options.pointsMultiplier ?? 1,
+            explanation: existingInstance.elementData.explanation,
+          }
+        : questionEval
+
     // processing of percentile into status of instance
-    const percentile = questionEval?.percentile ?? 0
+    const percentile = effectiveEvaluation?.percentile ?? 0
     const status =
       percentile === 0
         ? StackFeedbackStatus.INCORRECT
@@ -2722,16 +2755,16 @@ export async function respondToQuestion(
 
     // if participant is not logged in, return early and return the evaluation
     if (
-      !questionEval ||
+      !effectiveEvaluation ||
       !participation ||
       !ctx.user?.sub ||
       ctx.user.role !== DB.UserRole.PARTICIPANT
     ) {
       return {
         ...updatedInstance,
-        evaluation: questionEval
+        evaluation: effectiveEvaluation
           ? {
-              ...questionEval,
+              ...effectiveEvaluation,
               pointsAwarded: undefined,
               newPointsFrom: undefined,
               xpAwarded: undefined,
@@ -2751,8 +2784,8 @@ export async function respondToQuestion(
       xpAwarded,
       newXpFrom,
     } = computeAwardedPointsAndXP({
-      score: questionEval.score ?? 0,
-      xp: questionEval.xp ?? 0,
+      score: effectiveEvaluation.score ?? 0,
+      xp: effectiveEvaluation.xp ?? 0,
       existingResponse,
       participation,
       instance: updatedInstance,
@@ -2790,7 +2823,7 @@ export async function respondToQuestion(
         participantId: ctx.user.sub,
         courseId,
         response,
-        score: questionEval.score ?? 0,
+        score: effectiveEvaluation.score ?? 0,
         pointsAwarded,
         xpAwarded,
         answerTime,
@@ -2808,7 +2841,7 @@ export async function respondToQuestion(
         courseId,
         response,
         correctness: percentile,
-        score: questionEval.score ?? 0,
+        score: effectiveEvaluation.score ?? 0,
         pointsAwarded,
         lastAwardedAt: lastAwardedAt ?? new Date(),
         xpAwarded,
@@ -2861,7 +2894,7 @@ export async function respondToQuestion(
     return {
       ...updatedInstance,
       evaluation: {
-        ...questionEval,
+        ...effectiveEvaluation,
         pointsAwarded,
         newPointsFrom,
         xpAwarded,
@@ -2895,6 +2928,7 @@ interface ElementResponseInput {
         }[]
       }[]
     | null
+  qrScanResponse?: string | null
 }
 
 async function respondToElement({
@@ -3086,6 +3120,32 @@ async function respondToElement({
         evaluation: null,
       }
     }
+  } else if (response.type === DB.ElementType.QR_SCAN) {
+    const qrScanResponse = normalizeQrScanCode(response.qrScanResponse)
+    if (!isValidQrScanCode(qrScanResponse)) {
+      throw new GraphQLError('Invalid QR scan response', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      })
+    }
+    const result = await respondToQuestion(
+      {
+        id: response.instanceId,
+        courseId,
+        response: { value: qrScanResponse },
+        answerTime,
+        participation,
+        skipTracking,
+      },
+      ctx
+    )
+
+    return result
+      ? {
+          grading: result.status,
+          score: result.evaluation?.score ?? 0,
+          evaluation: null,
+        }
+      : { grading: null, score: null, evaluation: null }
   } else if (response.type === DB.ElementType.SELECTION) {
     const result = await respondToQuestion(
       {
@@ -3345,6 +3405,30 @@ export async function respondToElementStack(
     ) {
       throw new GraphQLError(
         'Escape room activities can only be answered by an enrolled participant with an active attempt',
+        { extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' } }
+      )
+    }
+  }
+
+  if (isParticipant && isEscapeRoom) {
+    const activityCourseId =
+      finalStack?.practiceQuiz?.courseId ?? finalStack?.microLearning?.courseId
+    const expectedTypes = new Map<number, DB.ElementType>(
+      (finalStack?.elements ?? []).map((element: DB.ElementInstance) => [
+        element.id,
+        element.elementType,
+      ])
+    )
+    const responseIds = responses.map((response) => response.instanceId)
+    const exactResponseSet =
+      responseIds.length === expectedTypes.size &&
+      new Set(responseIds).size === responseIds.length &&
+      responses.every(
+        (response) => expectedTypes.get(response.instanceId) === response.type
+      )
+    if (activityCourseId !== courseId || !exactResponseSet) {
+      throw new GraphQLError(
+        'Escape room responses must exactly match the authorized stack',
         { extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' } }
       )
     }
