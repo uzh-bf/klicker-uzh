@@ -33,3 +33,6 @@ export * from './chatUsage.js'
 
 // export everything from the chat model registry module
 export * from './chatModelRegistry.js'
+
+// export QR scan code helpers
+export * from './qrScan.js'

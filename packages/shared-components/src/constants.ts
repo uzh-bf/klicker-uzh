@@ -50,6 +50,7 @@ export const QUESTION_GROUPS: Record<string, ElementType[]> = {
     ElementType.Numerical,
     ElementType.Selection,
     ElementType.CaseStudy,
+    ElementType.QrScan,
   ],
   WITH_PERCENTAGES: [
     ElementType.Sc,
@@ -135,6 +136,9 @@ export const ACTIVE_CHART_TYPES: Record<
     { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
   [ElementType.Content]: [
+    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
+  ],
+  [ElementType.QrScan]: [
     { label: 'manage.evaluation.unset', value: ChartType.UNSET },
   ],
 }

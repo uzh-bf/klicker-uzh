@@ -352,6 +352,40 @@ query GetUserElements(
           order
         }
       }
+
+      ... on QrScanElement {
+        id
+        name
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        tags {
+          id
+          name
+          order
+        }
+      }
     }
   }
 }

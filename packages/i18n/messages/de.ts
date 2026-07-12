@@ -374,6 +374,13 @@ export default {
       richtext:
         'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
     },
+    QR_SCAN: {
+      short: 'QR',
+      typeLabel: 'QR-Scan (QR)',
+      text: 'Bitte scannen Sie den versteckten Code oder geben Sie ihn ein.',
+      richtext:
+        'Bitte <b>scannen Sie</b> den versteckten Code oder geben Sie ihn ein.',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
@@ -704,6 +711,7 @@ export default {
       CASE_STUDY: 'Fallstudie',
       FLASHCARD: 'Lernkarte',
       CONTENT: 'Inhaltselement',
+      QR_SCAN: 'QR-Scan-Frage',
     },
     short: {
       LIVE_QUIZ: 'LQ',

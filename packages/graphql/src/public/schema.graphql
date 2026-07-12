@@ -1226,7 +1226,7 @@ type DerivedPermissionOriginInformation {
   permissionUser: String!
 }
 
-union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
+union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | QrScanElement | SelectionElement
 
 type ElementBatchSharingOutcome {
   elementId: Int!
@@ -1281,7 +1281,7 @@ enum ElementBlockStatus {
   SCHEDULED
 }
 
-union ElementData = CaseStudyElementData | ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
+union ElementData = CaseStudyElementData | ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | QrScanElementData | SelectionElementData
 
 enum ElementDisplayMode {
   GRID
@@ -2573,6 +2573,44 @@ enum PublicationStatus {
 type PushSubscription {
   endpoint: String!
   id: Int!
+}
+
+type QrScanElement {
+  basePoints: Boolean!
+  content: String!
+  createdAt: Date
+  derivedAccess: Boolean
+  explanation: String
+  id: Int!
+  isArchived: Boolean
+  isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isRemovable: Boolean
+  isShared: Boolean
+  name: String!
+  numSharedUsers: Int
+  permissionLevel: PermissionLevel
+  pointsMultiplier: Int!
+  sharingType: SharingType
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date
+  version: Int!
+}
+
+type QrScanElementData {
+  basePoints: Boolean!
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int!
+  type: ElementType!
 }
 
 type Query {

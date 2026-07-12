@@ -369,6 +369,12 @@ export default {
       richtext:
         'Please evaluate all options with respect to the given criteria.',
     },
+    QR_SCAN: {
+      short: 'QR',
+      typeLabel: 'QR Scan (QR)',
+      text: 'Please scan or enter the hidden code.',
+      richtext: 'Please <b>scan or enter</b> the hidden code.',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -698,6 +704,7 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
+      QR_SCAN: 'QR Scan Question',
     },
     short: {
       LIVE_QUIZ: 'LQ',
