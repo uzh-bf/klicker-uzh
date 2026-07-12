@@ -43,7 +43,7 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 5. **i18n pair check** if UI text changed: the key exists in BOTH `packages/i18n/messages/de.ts` and `en.ts`.
 6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
 
-For TypeScript or other compiler/toolchain upgrades, also run the compiler surfaces omitted from root `check:all`: `pnpm run build:test`, the Docs production build, and direct `tsc --noEmit -p tsconfig.json` checks in both `@klicker-uzh/cypress` and `@klicker-uzh/playwright`. Do not infer these from the root Turbo task.
+For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Cypress and Playwright compilers through their package `check` scripts. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Cypress or Playwright failure.
 
 ## Reporting
 

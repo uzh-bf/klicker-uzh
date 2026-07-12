@@ -395,10 +395,19 @@ Every implementation slice:
 - [x] Slice 6 correctness and simplification reviews found no issues. The two aliases cover all nine bare asset imports without source churn; explicit Cypress `strict: false` does not weaken its TypeScript 5 baseline.
 - [x] Slice 6 compatibility fixes committed as `6d3a86a24`; the normal hook passed 23/23 typecheck tasks and 6/6 lint tasks.
 - [x] Slice 7 updated the four affected wiki pages, log, and two existing procedures. Correctness review found no issues; simplification kept durable facts in the wiki and exact commands in skills.
-- [ ] Slice 7 wiki and skills committed.
-- [ ] Slice 8 fresh verification passed.
+- [x] Slice 7 wiki and skills committed as `fd4cfe82a`; the normal hook passed 23/23 typecheck tasks and 6/6 lint tasks.
+- [x] Slice 8 created fresh DevPod `klicker-upgrade-typescript` for repo `/Users/rschlae/Git/klicker/klicker-uzh/trees/upgrade-typescript`, with workspace token `upgrade-typescript`, Node 24.16.0, pnpm 11.5.0, and TypeScript 6.0.3. Fresh install passed the 3,995-entry supply-chain lockfile policy.
+- [x] Slice 8 cold Node 24 gates pass: production build 21/21, expanded typecheck 25/25 with Cypress, Playwright, and the four Prisma patch invariant tests, test build 19/19, and Docs production build. The production build required removing the devcontainer's inherited `NODE_ENV=development`, matching CI production semantics.
+- [x] Slice 8 aggregate `check:all` limitations are environment-only and explicit: container `lint-staged` cannot follow the host worktree's `.git` metadata path, and the devcontainer omits `uv` for Analytics lint. The normal host hooks passed the complete check on both Slice 6 and Slice 7; direct Node 24 typecheck, Syncpack, AGENTS, and Prisma-sync gates pass.
+- [x] Slice 8 browser smoke passed with no page errors: delegated Auth → Manage login and authenticated dashboard, PWA login page, Control course list, and Chat no-login page. Evidence: `/private/tmp/ts6-browser/manage-desktop.png` and `/private/tmp/ts6-browser/pwa-mobile.png`.
+- [x] Slice 8 scoped Opengrep ran 200 rules on both new Prisma script files with zero findings. Repository baseline ran 676 rules on 3,013 tracked files and reported 607 pre-existing findings; none touch the new scripts.
+- [x] Slice 8 registry audit reports no TypeScript advisory. The repository baseline remains 123 advisories (2 critical, 40 high, 65 moderate, 16 low), outside this TypeScript-only dependency scope.
+- [x] Slice 8 security review found no high-confidence vulnerability: the TypeScript artifact is pinned with integrity, the peer override is package-scoped, the Prisma patch is fixed-path and fail-closed, and Office's semantic importer remains unchanged.
+- [x] Slice 8 strict maintainability review produced two accepted fixes: make Cypress, Playwright, and Prisma regression checks canonical, and remove duplicate `src/*` import dialects from Chat and PWA. Focused checks, the 25/25 Node 24 graph, Chat/PWA Node 24 production builds, root `check:all`, and OKF validation pass after the fixes.
+- [x] Slice 8 independent branch review found no code or scope issue and confirmed the branch is ready for a stacked draft PR. Merge readiness remains gated on GraphQL runtime tests in CI or an environment without the existing host port-80 listener.
+- [x] Slice 8 fresh verification passed. Browser warming was serialized after simultaneous first compilation exhausted the 24 GiB container memory and swap; the resulting user-path smoke is clean. Both unchanged Hatchet workers connect but expose an existing `@hatchet-dev/typescript-sdk@1.9.4` heartbeat logger `TypeError`; this is recorded as an unrelated runtime baseline gap.
 - [ ] Slice 9 publish approval received.
 
-Current: Slice 7 wiki and skill updates are implemented, reviewed, formatted, and OKF-valid.
+Current: Slice 8 implementation, fresh Node 24 verification, browser smoke, static analysis, security review, strict review, and final review fixes are committed locally. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: Commit Slice 7, then execute fresh Node 24 verification and final reviews in Slice 8.
+Next: Wait for explicit approval before pushing or opening the stacked draft PR.
