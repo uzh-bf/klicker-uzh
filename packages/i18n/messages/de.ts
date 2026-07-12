@@ -2173,6 +2173,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       tagNameUpdatedSuccessfully: 'Der Tagname wurde erfolgreich angepasst.',
     },
     elements: {
+      qrPrintOpen: 'QR-Druckbögen öffnen',
+      qrPrintAction: 'Bögen drucken',
+      qrPrintDecoyCount: 'Anzahl Täuschcodes',
+      qrPrintSheet: 'QR-Station {number}',
+      qrPrintLegend: 'Lösungscode nur für Dozierende: {code}',
+      qrPrintUnauthorized:
+        'Dieser QR-Druckbogen ist nicht verfügbar oder Sie sind nicht dessen Eigentümer:in.',
       CREATETitle: 'Element erstellen',
       EDITTitle: 'Element bearbeiten',
       DUPLICATETitle: 'Element duplizieren',

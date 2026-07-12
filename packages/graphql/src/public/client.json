@@ -248,7 +248,7 @@
    "GetPreviousPointCorrections": "f3bb0379c76690ac9e488aa0549e7961ba8788ef4b74ba24bda9cb5a4393ccba",
    "GetPreviousStackEvaluation": "179a69cf889090027d3579581168954f5bf1c1cec2b5436ac1390717ff53b307",
    "GetPublicParticipantProfile": "840169ba8a67902da899e1f08c92668228657ba5c6af024e42737081179bb343",
-   "GetQrScanCode": "a6ddee2dcc92e4f1462be00f6d72e2ef0a22fd7a050ccf2307bcba75c3597144",
+   "GetQrScanPrintData": "f86e6cfaa4c9fb8308d9f8ac001dab62fabee38ed2ac2f38bf56cbfea31e1381",
    "GetRunningLiveQuiz": "138ac8f9aacf8d8de25d64bc9e4a505a7e2227dd5b865291b8f6e5f010a675ad",
    "GetShortnameQuizzes": "d7af38702df3fa265ccbefe9b2f133b67a27b462dcf28178c021cef21083c11f",
    "GetSingleAnswerCollection": "b586e9af280f888252c3549bf06d599addb7c0de0a9cd8c4aaca9ce746f069a0",

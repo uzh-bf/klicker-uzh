@@ -2156,6 +2156,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       tagNameUpdatedSuccessfully: 'The tag name has been updated successfully.',
     },
     elements: {
+      qrPrintOpen: 'Open QR print sheets',
+      qrPrintAction: 'Print sheets',
+      qrPrintDecoyCount: 'Number of decoys',
+      qrPrintSheet: 'QR station {number}',
+      qrPrintLegend: 'Lecturer-only answer code: {code}',
+      qrPrintUnauthorized:
+        'This QR print sheet is unavailable or you are not its owner.',
       CREATETitle: 'Create Element',
       EDITTitle: 'Edit Element',
       DUPLICATETitle: 'Duplicate Element',

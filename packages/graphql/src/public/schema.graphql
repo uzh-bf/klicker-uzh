@@ -2615,6 +2615,14 @@ type QrScanElementData {
   type: ElementType!
 }
 
+type QrScanPrintData {
+  code: String!
+  content: String!
+  decoys: [String!]!
+  elementId: Int!
+  name: String!
+}
+
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
@@ -2721,7 +2729,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
-  qrScanCode(elementId: Int!): String
+  qrScanPrintData(decoyCount: Int!, elementId: Int!): QrScanPrintData
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]

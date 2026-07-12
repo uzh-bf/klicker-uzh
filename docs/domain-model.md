@@ -43,6 +43,8 @@ Invitation creation normalizes emails and matriculation numbers, reports invalid
 
 `QR_SCAN` elements keep their 72-bit URL-safe opaque code in the nullable, unique `Element.qrScanCode` column. `packages/util/src/elements.ts:processElementData` intentionally omits that column when snapshotting participant-facing `ElementInstance.elementData`; participant GraphQL data therefore contains the prompt and content-free options, never the answer token. Creation and duplication generate independent codes, editing preserves the existing code, and `packages/graphql/src/services/elements.ts:getQrScanCode` returns it only to the exact owner. Element discriminators are immutable during edits, preventing a QR mutation from overwriting another element type's options.
 
+The owner-only print contract (`packages/graphql/src/services/elements.ts:getQrScanPrintData`) creates up to 20 distinct decoys in memory for each request; decoys are never persisted or included in participant APIs. The manage print view randomizes real/decoy card order, gives every printed card a neutral station label, and keeps the answer legend screen-only.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.

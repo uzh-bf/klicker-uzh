@@ -61,6 +61,7 @@ import {
   ElementInstanceVersionInfo,
   ElementSummary,
   InstanceUpdateActivityInfo,
+  QrScanPrintData,
   SortByType,
   Tag,
   UserElementList,
@@ -849,13 +850,15 @@ export const Query = builder.queryType({
         ),
       }),
 
-      qrScanCode: t.withAuth(asUser).string({
+      qrScanPrintData: t.withAuth(asUser).field({
         nullable: true,
+        type: QrScanPrintData,
         args: {
           elementId: t.arg.int({ required: true }),
+          decoyCount: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await ElementService.getQrScanCode(args, ctx)
+          return await ElementService.getQrScanPrintData(args, ctx)
         },
       }),
 

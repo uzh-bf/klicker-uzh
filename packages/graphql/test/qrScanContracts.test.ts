@@ -11,7 +11,11 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { getQrScanCode, manipulateElement } from '../src/services/elements.js'
+import {
+  getQrScanCode,
+  getQrScanPrintData,
+  manipulateElement,
+} from '../src/services/elements.js'
 
 const createdUserIds: string[] = []
 
@@ -75,6 +79,68 @@ describe('QR scan GraphQL contracts', () => {
     } as unknown as ContextWithUser
 
     await expect(getQrScanCode({ elementId: 42 }, ctx)).resolves.toBeNull()
+  })
+
+  it('generates unique ephemeral decoys for an owner-authorized print request', async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      id: 42,
+      name: 'QR clue',
+      content: 'Find it',
+      qrScanCode: 'real_code-12',
+    })
+    const ctx = {
+      user: { sub: 'owner-id' },
+      prisma: { element: { findFirst } },
+    } as unknown as ContextWithUser
+
+    const result = await getQrScanPrintData(
+      { elementId: 42, decoyCount: 5 },
+      ctx
+    )
+
+    expect(result?.code).toBe('real_code-12')
+    expect(result?.decoys).toHaveLength(5)
+    expect(new Set(result?.decoys)).toHaveLength(5)
+    expect(result?.decoys).not.toContain(result?.code)
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 42,
+        type: 'QR_SCAN',
+        ownerId: 'owner-id',
+        isDeleted: false,
+      },
+      select: { id: true, name: true, content: true, qrScanCode: true },
+    })
+  })
+
+  it('returns null print data when the caller does not own the element', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const ctx = {
+      user: { sub: 'other-user' },
+      prisma: { element: { findFirst } },
+    } as unknown as ContextWithUser
+
+    await expect(
+      getQrScanPrintData({ elementId: 42, decoyCount: 3 }, ctx)
+    ).resolves.toBeNull()
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ ownerId: 'other-user' }),
+      })
+    )
+  })
+
+  it('rejects invalid decoy counts before reading an element', async () => {
+    const findFirst = vi.fn()
+    const ctx = {
+      user: { sub: 'owner-id' },
+      prisma: { element: { findFirst } },
+    } as unknown as ContextWithUser
+
+    await expect(
+      getQrScanPrintData({ elementId: 42, decoyCount: 21 }, ctx)
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    expect(findFirst).not.toHaveBeenCalled()
   })
 
   it('creates a code, preserves it on edit, and rotates it on duplication', async () => {

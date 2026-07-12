@@ -23,7 +23,8 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
-import { prop, sortBy, swapIndices } from 'remeda'
+import { GraphQLError } from 'graphql'
+import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -291,6 +292,39 @@ export async function getQrScanCode(
   })
 
   return element?.qrScanCode ?? null
+}
+
+export async function getQrScanPrintData(
+  { elementId, decoyCount }: { elementId: number; decoyCount: number },
+  ctx: ContextWithUser
+) {
+  if (!Number.isInteger(decoyCount) || decoyCount < 0 || decoyCount > 20) {
+    throw new GraphQLError('QR decoy count must be between 0 and 20', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+
+  const element = await ctx.prisma.element.findFirst({
+    where: {
+      id: elementId,
+      type: DB.ElementType.QR_SCAN,
+      ownerId: ctx.user.sub,
+      isDeleted: false,
+    },
+    select: { id: true, name: true, content: true, qrScanCode: true },
+  })
+  if (!element?.qrScanCode) return null
+
+  const codes = new Set<string>([element.qrScanCode])
+  while (codes.size <= decoyCount) codes.add(generateQrScanCode())
+
+  return {
+    elementId: element.id,
+    name: element.name,
+    content: element.content,
+    code: element.qrScanCode,
+    decoys: [...codes].slice(1),
+  }
 }
 
 export async function getSingleElement(
