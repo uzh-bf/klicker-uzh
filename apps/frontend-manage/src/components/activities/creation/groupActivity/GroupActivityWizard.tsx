@@ -168,7 +168,7 @@ function GroupActivityWizard({
             type: yup
               .string()
               .oneOf(
-                acceptedTypes,
+                [...acceptedTypes, ElementType.QrScan],
                 t('manage.activityWizard.groupActivityTypes')
               ),
           })
@@ -325,6 +325,11 @@ function GroupActivityWizard({
       formDefaultValues.escapeRoomIntroText,
   })
 
+  // QR scan questions are only placeable in escape-room activities
+  const stackAcceptedTypes = formData.isEscapeRoom
+    ? [...acceptedTypes, ElementType.QrScan]
+    : acceptedTypes
+
   const [createGroupActivity, { data: creationData }] = useMutation(
     CreateGroupActivityDocument
   )
@@ -476,7 +481,7 @@ function GroupActivityWizard({
           selection={selection}
           resetSelection={resetSelection}
           isEscapeRoom={formData.isEscapeRoom}
-          acceptedTypes={acceptedTypes}
+          acceptedTypes={stackAcceptedTypes}
           formRef={formRef}
           formData={formData}
           continueDisabled={false}

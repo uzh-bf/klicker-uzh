@@ -178,7 +178,7 @@ function LiveQuizWizard({
                 type: yup
                   .string()
                   .oneOf(
-                    acceptedTypes,
+                    [...acceptedTypes, ElementType.QrScan],
                     t('manage.activityWizard.liveQuizTypes')
                   ),
                 hasSampleSolution: yup.boolean().nullable(),
@@ -200,8 +200,18 @@ function LiveQuizWizard({
                             ElementType.Kprim,
                             ElementType.Numerical,
                             ElementType.FreeText,
+                            ElementType.QrScan,
                           ].includes(element.type)
                         : false
+                    )
+                ),
+              otherwise: (schema) =>
+                schema.test(
+                  'no-qr-scan-outside-escape-room',
+                  t('manage.activityWizard.liveQuizTypes'),
+                  (elements) =>
+                    !elements?.some(
+                      (element) => element.type === ElementType.QrScan
                     )
                 ),
             }),

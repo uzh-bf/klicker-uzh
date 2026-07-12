@@ -164,7 +164,7 @@ function MicroLearningWizard({
                 type: yup
                   .string()
                   .oneOf(
-                    acceptedTypes,
+                    [...acceptedTypes, ElementType.QrScan],
                     t('manage.activityWizard.microlearningTypes')
                   ),
                 hasSampleSolution: yup.boolean().when('type', {
@@ -290,6 +290,11 @@ function MicroLearningWizard({
       initialValues?.escapeRoomConfig?.introText ??
       formDefaultValues.escapeRoomIntroText,
   })
+
+  // QR scan questions are only placeable in escape-room activities
+  const stackAcceptedTypes = formData.isEscapeRoom
+    ? [...acceptedTypes, ElementType.QrScan]
+    : acceptedTypes
 
   const [createMicroLearning, { data: creationData }] = useMutation(
     CreateMicroLearningDocument
@@ -446,7 +451,7 @@ function MicroLearningWizard({
           editMode={editMode}
           selection={selection}
           resetSelection={resetSelection}
-          acceptedTypes={acceptedTypes}
+          acceptedTypes={stackAcceptedTypes}
           formRef={formRef}
           formData={formData}
           continueDisabled={false}
