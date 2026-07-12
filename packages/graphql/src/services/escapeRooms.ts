@@ -299,7 +299,6 @@ export async function getEscapeRoomProgress(
     },
     orderBy: { startedAt: 'asc' },
   })
-
   // 4. For participant-scoped stack activities, compute cleared stacks from the
   //    correct responses in one query. Group/live-quiz paths fall back to a
   //    status-derived estimate (they do not track per-stack QuestionResponse).

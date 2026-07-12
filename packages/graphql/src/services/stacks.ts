@@ -3284,10 +3284,14 @@ export async function respondToElementStack(
     })
     finalStack = stack
 
+    // Escape-room microlearnings are exempt from the single-submission rule:
+    // wrong answers must be retryable (the attempt/lockout gate below governs
+    // resubmission instead). The availability-window guard still applies.
     if (
       !isOwner &&
       stack?.microLearning &&
-      (stack.elements.some((element) => element.responses.length > 0) ||
+      ((!stack.microLearning.escapeRoomConfig &&
+        stack.elements.some((element) => element.responses.length > 0)) ||
         dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
     ) {
       return null

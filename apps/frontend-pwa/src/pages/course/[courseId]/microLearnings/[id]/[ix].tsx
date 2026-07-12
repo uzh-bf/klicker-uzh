@@ -102,14 +102,51 @@ function MicrolearningInstance() {
 
   const microLearning = data.microLearning
 
-  // throw error if length of stacks is smaller than number
-  if (!microLearning.stacks || !(ix <= (microLearning.stacks.length || -1))) {
-    throw new Error('Stack not found')
-  }
+  const escapeRoomOverlay = isEscapeRoom && !previewMode && (
+    <EscapeRoomOverlay
+      isStarted={isStarted}
+      isCompleted={isCompleted}
+      isExpired={isExpired}
+      remainingSeconds={remainingSeconds}
+      timeLimit={microLearning.escapeRoomConfig?.timeLimit ?? 3600}
+      hintPenalty={microLearning.escapeRoomConfig?.hintPenalty ?? 120}
+      onStart={async () => {
+        await startAttempt()
+        await refetch()
+      }}
+      loading={attemptLoading}
+      attempt={attempt}
+      clearedStacks={
+        microLearning.stacks?.filter((stack) => stack.isCorrect).length ?? 0
+      }
+      totalStacks={
+        microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0
+      }
+      introText={microLearning.escapeRoomConfig?.introText}
+    />
+  )
 
-  const currentStack = microLearning.stacks[ix]
+  const currentStack = microLearning.stacks?.[ix]
 
   if (!currentStack) {
+    // Escape rooms withhold their stacks until an attempt is started (or
+    // after it expired) — show the intro/lockout overlay instead of failing.
+    if (isEscapeRoom && !previewMode) {
+      return (
+        <Layout
+          displayName={microLearning.displayName}
+          course={microLearning.course ?? undefined}
+        >
+          <MicroLearningSubscriber
+            activityId={microLearning.id}
+            microLearningName={microLearning.displayName}
+            subscribeToMore={subscribeToMore}
+          />
+          {escapeRoomOverlay}
+        </Layout>
+      )
+    }
+
     throw new Error('Stack not found')
   }
 
@@ -140,29 +177,7 @@ function MicrolearningInstance() {
         microLearningName={microLearning.displayName}
         subscribeToMore={subscribeToMore}
       />
-      {isEscapeRoom && !previewMode && (
-        <EscapeRoomOverlay
-          isStarted={isStarted}
-          isCompleted={isCompleted}
-          isExpired={isExpired}
-          remainingSeconds={remainingSeconds}
-          timeLimit={microLearning.escapeRoomConfig?.timeLimit ?? 3600}
-          hintPenalty={microLearning.escapeRoomConfig?.hintPenalty ?? 120}
-          onStart={async () => {
-            await startAttempt()
-            await refetch()
-          }}
-          loading={attemptLoading}
-          attempt={attempt}
-          clearedStacks={
-            microLearning.stacks?.filter((stack) => stack.isCorrect).length ?? 0
-          }
-          totalStacks={
-            microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0
-          }
-          introText={microLearning.escapeRoomConfig?.introText}
-        />
-      )}
+      {escapeRoomOverlay}
       <div className="flex-1">
         <div
           className={twMerge(
