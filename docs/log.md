@@ -2,6 +2,7 @@
 
 ## 2026-07-11
 
+- **Update**: QR Scan owners now have printable, neutrally labeled QR sheets with request-time ephemeral decoys and a screen-only answer legend; decoys are neither persisted nor participant-visible.
 - **Update**: QR Scan elements can now be authored, reopened, and duplicated; codes are generated on create/duplicate, preserved on edit, and readable only by the exact owner.
 - **Update**: [domain-model](./domain-model.md) now documents the `QR_SCAN` element contract, opaque CSPRNG code storage, and participant snapshot leakage boundary.
 - **Update**: LiveQuiz blocks now support Escape Room authoring and participant runtime: validated gradable element types, config/hint edit readback, explicit attempt start, attempt-scoped local progress, timer/lockout controls, charged hint reveal/restoration, and completion state.

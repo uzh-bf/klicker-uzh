@@ -195,6 +195,27 @@ function ElementEditForm({
                       setFieldValue={setFieldValue}
                     />
 
+                    {values.type === ElementType.QrScan &&
+                      mode === ElementEditMode.EDIT &&
+                      elementId != null && (
+                        <Button
+                          type="button"
+                          className={{ root: 'mt-4' }}
+                          data={{ cy: 'open-qr-print-view' }}
+                          onClick={() =>
+                            window.open(
+                              `/elements/${elementId}/qr-print`,
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }
+                        >
+                          <Button.Label>
+                            {t('manage.elements.qrPrintOpen')}
+                          </Button.Label>
+                        </Button>
+                      )}
+
                     {/* scoring section */}
                     {!isTemplate &&
                       values.type !== ElementType.Content &&
