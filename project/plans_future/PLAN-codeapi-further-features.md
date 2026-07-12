@@ -47,7 +47,7 @@ Sandbox execution earns its cost ONLY when the code's author is untrusted — an
 ## Sequencing recommendation
 
 1. rehypePrism (hours, standalone)
-2. Chat tool v1 (3–5 days) → instructor-aid pilot (config only)
-3. CODE element v1 (10–15 days; infra prerequisites from RESEARCH doc first)
+2. Chat tool v1 (3–5 days; on the Mastra chat-api stack — after PR #5126 merges, see chat plan) → instructor-aid pilot (config only)
+3. CODE element v1 (10–15 days; infra prerequisites from RESEARCH doc first; unaffected by Mastra migration)
 4. Bridge feature (#4), group activities (#2)
 5. Live quiz: evidence-gated, maybe never
