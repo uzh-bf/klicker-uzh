@@ -1,6 +1,6 @@
-# TypeScript 6 stacked upgrade plan
+# PR #5167 TypeScript 6 upgrade plan
 
-Status: approved for local preparation on 2026-07-11. Implementation stays local until a later push approval.
+Status: draft PR published on 2026-07-12. Merge readiness awaits PR CI, including GraphQL runtime tests.
 
 ## Goal
 
@@ -26,13 +26,14 @@ Success:
 - No broad dependency refresh.
 - No Office Add-in changes. Another open PR reworks that app and owns its compiler/tooling migration.
 - No product or UI behavior changes unless TypeScript 6 exposes a verified defect.
-- No push, old-PR closure, ready-for-review change, or merge without separate approval.
+- No old-PR closure, ready-for-review change, or merge without separate approval.
 
 ## Plan identity
 
-- Plan: `project/2026-07-11-typescript-6-stacked-upgrade-plan.md`
+- Plan: `project/2026-07-11-pr-5167-typescript-6-stacked-upgrade-plan.md`
 - Branch: `feature/upgrade-typescript`
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/upgrade-typescript`
+- PR: [#5167](https://github.com/uzh-bf/klicker-uzh/pull/5167)
 - Stack base: `feature/upgrade-next-react`
 - Base PR: [#5166](https://github.com/uzh-bf/klicker-uzh/pull/5166)
 - Base SHA: `bdc6701902af6e8a9863809fa2d8246d428e7101`
@@ -409,6 +410,6 @@ Every implementation slice:
 - [x] Publication standards, spec, and simplification reviews completed. Accepted cleanup: replace GraphQL's compatibility-only `src/*` alias with repository-standard `@/*` imports across all 12 consumers. Node 24 GraphQL check and production build pass after the cleanup; existing declaration warnings remain baseline-equivalent.
 - [x] Slice 9 publish approval received.
 
-Current: Final publication review and GraphQL alias simplification are complete. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: Commit the GraphQL alias simplification, then push and open the stacked draft PR.
+Next: Read PR CI and reviews. Keep draft status until GraphQL runtime CI and remaining required checks pass.
