@@ -2,6 +2,7 @@
 
 ## 2026-07-11
 
+- **Update**: QR Scan elements can now be authored, reopened, and duplicated; codes are generated on create/duplicate, preserved on edit, and readable only by the exact owner.
 - **Update**: [domain-model](./domain-model.md) now documents the `QR_SCAN` element contract, opaque CSPRNG code storage, and participant snapshot leakage boundary.
 - **Update**: LiveQuiz blocks now support Escape Room authoring and participant runtime: validated gradable element types, config/hint edit readback, explicit attempt start, attempt-scoped local progress, timer/lockout controls, charged hint reveal/restoration, and completion state.
 - **Update**: the LiveQuiz cockpit now polls active Escape Room block progress, binds quiz/block identifiers to prevent cross-quiz reads, reports completed block progress, and exposes reset only with WRITE permission.

@@ -1954,6 +1954,7 @@ type Mutation {
   manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateNumericalQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateQrScanElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): [ParticipantGroup!]
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
@@ -2554,6 +2555,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  qrScanCode(elementId: Int!): String
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]

@@ -1,0 +1,36 @@
+mutation ManipulateQrScanElement(
+  $id: Int
+  $name: String
+  $status: ElementStatus
+  $content: String
+  $explanation: String
+  $basePoints: Boolean
+  $pointsMultiplier: Int
+  $tags: [String!]
+) {
+  manipulateQrScanElement(
+    id: $id
+    name: $name
+    status: $status
+    content: $content
+    explanation: $explanation
+    basePoints: $basePoints
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+  ) {
+    ... on QrScanElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+      tags {
+        id
+        name
+      }
+    }
+  }
+}
