@@ -6,10 +6,29 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
     timeLimit
     randomSelection
     execution
+    escapeRoomConfig {
+      timeLimit
+      hintPenalty
+      introText
+    }
+    escapeRoomAttempts {
+      id
+      startedAt
+      timeLimit
+      penaltySeconds
+      hintsUsed
+      lockoutUntil
+      status
+      completedAt
+    }
     elements {
       id
       type
       elementType
+      revealedHint
+      options {
+        hasHint
+      }
       ...ElementDataWithoutSolutions
     }
   }
@@ -21,10 +40,29 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
     timeLimit
     randomSelection
     execution
+    escapeRoomConfig {
+      timeLimit
+      hintPenalty
+      introText
+    }
+    escapeRoomAttempts {
+      id
+      startedAt
+      timeLimit
+      penaltySeconds
+      hintsUsed
+      lockoutUntil
+      status
+      completedAt
+    }
     elements {
       id
       type
       elementType
+      revealedHint
+      options {
+        hasHint
+      }
       correlationKey
       ...ElementDataWithoutSolutions
     }

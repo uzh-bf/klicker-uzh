@@ -62,6 +62,10 @@ export enum SharingType {
 export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
   elements: ElementInstanceInput[]
 }
 

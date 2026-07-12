@@ -18,6 +18,7 @@ import {
   manipulateGroupActivity,
   submitGroupActivityDecisions,
 } from '../src/services/groups.js'
+import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
 import { getMicroLearningData } from '../src/services/microLearning.js'
 import {
   getPracticeQuizData,
@@ -1406,6 +1407,214 @@ describe('Escape room integration tests', () => {
   // #endregion
 
   describe('LiveQuiz block attempt start/reset contract', () => {
+    it('round-trips escape-room block configuration through create and edit', async () => {
+      await recomputeDerivedPermissions(
+        { elementId: scElement.id, userId: lecturerCtx.user.sub },
+        prisma
+      )
+      const common = {
+        name: `${TEST_PREFIX}-live-authoring`,
+        displayName: 'Escape LiveQuiz',
+        multiplier: 1,
+        isGamificationEnabled: false,
+        isPinProtected: false,
+        isConfusionFeedbackEnabled: false,
+        isLiveQAEnabled: false,
+        isModerationEnabled: false,
+        courseId: null,
+      }
+      const created = await manipulateLiveQuiz(
+        {
+          ...common,
+          blocks: [
+            {
+              order: 0,
+              isEscapeRoom: true,
+              escapeRoomTimeLimit: 420,
+              escapeRoomHintPenalty: 45,
+              escapeRoomIntroText: 'Find the key.',
+              elements: [
+                {
+                  elementId: scElement.id,
+                  order: 0,
+                  existingInstanceId: null,
+                  duplicateInstance: false,
+                  escapeRoomHint: 'Look closely.',
+                },
+              ],
+            },
+          ],
+        },
+        lecturerCtx
+      )
+      createdQuizIds.push(created.id)
+
+      const createdBlock = await prisma.elementBlock.findFirstOrThrow({
+        where: { liveQuizId: created.id },
+        include: { escapeRoomConfig: true, elements: true },
+      })
+      expect(createdBlock.escapeRoomConfig).toMatchObject({
+        timeLimit: 420,
+        hintPenalty: 45,
+        introText: 'Find the key.',
+      })
+      expect(createdBlock.elements[0]?.options.escapeRoomHint).toBe(
+        'Look closely.'
+      )
+
+      await manipulateLiveQuiz(
+        {
+          ...common,
+          id: created.id,
+          displayName: 'Edited Escape LiveQuiz',
+          blocks: [
+            {
+              order: 0,
+              isEscapeRoom: true,
+              escapeRoomTimeLimit: 600,
+              escapeRoomHintPenalty: 30,
+              escapeRoomIntroText: 'Open the vault.',
+              elements: [
+                {
+                  elementId: scElement.id,
+                  order: 0,
+                  existingInstanceId: createdBlock.elements[0]!.id,
+                  duplicateInstance: false,
+                  escapeRoomHint: 'Try the first digit.',
+                },
+              ],
+            },
+          ],
+        },
+        lecturerCtx
+      )
+
+      const editedBlock = await prisma.elementBlock.findFirstOrThrow({
+        where: { liveQuizId: created.id },
+        include: { escapeRoomConfig: true, elements: true },
+      })
+      expect(editedBlock.escapeRoomConfig).toMatchObject({
+        timeLimit: 600,
+        hintPenalty: 30,
+        introText: 'Open the vault.',
+      })
+      expect(editedBlock.elements[0]?.options.escapeRoomHint).toBe(
+        'Try the first digit.'
+      )
+    })
+
+    it('rejects empty and unsupported escape-room blocks', async () => {
+      await recomputeDerivedPermissions(
+        { elementId: scElement.id, userId: lecturerCtx.user.sub },
+        prisma
+      )
+      const common = {
+        name: `${TEST_PREFIX}-invalid-live-escape`,
+        displayName: 'Invalid Escape LiveQuiz',
+        multiplier: 1,
+        isGamificationEnabled: false,
+        isPinProtected: false,
+        isConfusionFeedbackEnabled: false,
+        isLiveQAEnabled: false,
+        isModerationEnabled: false,
+        courseId: null,
+      }
+      await expect(
+        manipulateLiveQuiz(
+          {
+            ...common,
+            blocks: [{ order: 0, isEscapeRoom: true, elements: [] }],
+          },
+          lecturerCtx
+        )
+      ).rejects.toThrow('at least one question')
+
+      const content = await prisma.element.create({
+        data: {
+          type: DB.ElementType.CONTENT,
+          name: `${TEST_PREFIX}-content-element`,
+          content: 'Unsupported content',
+          explanation: '',
+          options: {},
+          ownerId: lecturerCtx.user.sub,
+        },
+      })
+      createdElementIds.push(content.id)
+      await recomputeDerivedPermissions(
+        { elementId: content.id, userId: lecturerCtx.user.sub },
+        prisma
+      )
+      await expect(
+        manipulateLiveQuiz(
+          {
+            ...common,
+            blocks: [
+              {
+                order: 0,
+                isEscapeRoom: true,
+                elements: [
+                  {
+                    elementId: content.id,
+                    order: 0,
+                    existingInstanceId: null,
+                    duplicateInstance: false,
+                  },
+                ],
+              },
+            ],
+          },
+          lecturerCtx
+        )
+      ).rejects.toThrow('only support')
+
+      const originalCourseAuth = await prisma.course.findUniqueOrThrow({
+        where: { id: courseId },
+        select: { authType: true, pinCode: true },
+      })
+      await prisma.course.update({
+        where: { id: courseId },
+        data: {
+          isAssessmentEnabled: true,
+          authType: DB.CourseAuthType.SSO,
+          pinCode: null,
+        },
+      })
+      try {
+        await expect(
+          manipulateLiveQuiz(
+            {
+              ...common,
+              courseId,
+              blocks: [
+                {
+                  order: 0,
+                  isEscapeRoom: true,
+                  elements: [
+                    {
+                      elementId: scElement.id,
+                      order: 0,
+                      existingInstanceId: null,
+                      duplicateInstance: false,
+                    },
+                  ],
+                },
+              ],
+            },
+            lecturerCtx
+          )
+        ).rejects.toThrow('not supported in assessment')
+      } finally {
+        await prisma.course.update({
+          where: { id: courseId },
+          data: {
+            isAssessmentEnabled: false,
+            authType: originalCourseAuth.authType,
+            pinCode: originalCourseAuth.pinCode,
+          },
+        })
+      }
+    })
+
     it('requires a regular participant start and permits only an authorized reset', async () => {
       const liveQuiz = await seedLiveQuiz(
         {

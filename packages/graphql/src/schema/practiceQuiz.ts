@@ -60,6 +60,10 @@ export const ElementBlockInput = ElementBlockInputRef.implement({
   fields: (t) => ({
     order: t.int({ required: true }),
     timeLimit: t.int({ required: false }),
+    isEscapeRoom: t.boolean({ required: false }),
+    escapeRoomTimeLimit: t.int({ required: false }),
+    escapeRoomHintPenalty: t.int({ required: false }),
+    escapeRoomIntroText: t.string({ required: false }),
     elements: t.field({ type: [ElementInstanceInput], required: true }),
   }),
 })

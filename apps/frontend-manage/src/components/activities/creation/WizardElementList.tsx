@@ -262,12 +262,14 @@ function WizardElementList({
                 </Button>
               </div>
             </div>
-            {isEscapeRoom && type === 'stack' && (
+            {isEscapeRoom && (type === 'stack' || type === 'block') && (
               <FormikTextField
                 name={
-                  singleStackMode
-                    ? `stack.elements.${elementIdx}.escapeRoomHint`
-                    : `stacks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
+                  type === 'block'
+                    ? `blocks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
+                    : singleStackMode
+                      ? `stack.elements.${elementIdx}.escapeRoomHint`
+                      : `stacks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
                 }
                 placeholder={t(
                   'manage.activityWizard.escapeRoomHintPlaceholder'

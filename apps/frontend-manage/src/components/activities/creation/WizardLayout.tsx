@@ -44,6 +44,10 @@ export interface ElementInstanceFormInput {
 
 export interface ElementBlockFormValues {
   timeLimit?: number
+  isEscapeRoom?: boolean
+  escapeRoomTimeLimit?: number
+  escapeRoomHintPenalty?: number
+  escapeRoomIntroText?: string
   elements: ElementInstanceFormInput[]
 }
 

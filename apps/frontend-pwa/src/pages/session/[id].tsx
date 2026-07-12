@@ -57,7 +57,13 @@ async function handleNewResponse({
   answer: any
   correlationKey?: string | null
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
-Promise<{ statusCode: number; responseTimestamp?: number }> {
+Promise<{
+  statusCode: number
+  responseTimestamp?: number
+  responseStatus?: string
+  completed?: boolean
+  lockoutUntil?: string
+}> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
@@ -127,15 +133,30 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
     )
 
     let responseTimestamp: number | undefined
+    let responseStatus: string | undefined
+    let completed: boolean | undefined
+    let lockoutUntil: string | undefined
     try {
       const json = await response.json()
       if (json && typeof json.responseTimestamp === 'number') {
         responseTimestamp = json.responseTimestamp
       }
+      if (json && typeof json.status === 'string') responseStatus = json.status
+      if (json && typeof json.completed === 'boolean')
+        completed = json.completed
+      if (json && typeof json.lockoutUntil === 'string') {
+        lockoutUntil = json.lockoutUntil
+      }
     } catch (_) {
       // ignore JSON parse errors; not all responses may have a body
     }
-    return { statusCode: response.status, responseTimestamp }
+    return {
+      statusCode: response.status,
+      responseTimestamp,
+      responseStatus,
+      completed,
+      lockoutUntil,
+    }
   } catch (e) {
     console.log('error', e)
     return { statusCode: 1 }

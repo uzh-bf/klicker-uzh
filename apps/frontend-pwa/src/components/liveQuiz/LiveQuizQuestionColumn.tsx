@@ -30,7 +30,12 @@ interface LiveQuizQuestionColumnProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<{ statusCode: number; responseTimestamp?: number }>
+  }) => Promise<{
+    statusCode: number
+    responseTimestamp?: number
+    responseStatus?: string
+    completed?: boolean
+  }>
   className?: string
 }
 
@@ -140,6 +145,9 @@ function LiveQuizQuestionColumn({
           handleNewResponse={handleNewResponse}
           timeLimit={activeBlock?.timeLimit ?? undefined}
           execution={activeBlock?.execution ?? 0}
+          blockId={activeBlock.id}
+          escapeRoomConfig={activeBlock.escapeRoomConfig}
+          initialEscapeRoomAttempt={activeBlock.escapeRoomAttempts?.at(-1)}
         />
       ) : null}
 

@@ -2,16 +2,19 @@ mutation StartEscapeRoomAttempt(
   $practiceQuizId: String
   $microLearningId: String
   $groupActivityId: String
+  $elementBlockId: Int
 ) {
   startEscapeRoomAttempt(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
     groupActivityId: $groupActivityId
+    elementBlockId: $elementBlockId
   ) {
     id
     startedAt
     timeLimit
     penaltySeconds
+    lockoutUntil
     hintsUsed
     status
     completedAt

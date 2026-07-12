@@ -1058,6 +1058,10 @@ type ElementBlock {
 
 input ElementBlockInput {
   elements: [ElementInstanceInput!]!
+  escapeRoomHintPenalty: Int
+  escapeRoomIntroText: String
+  escapeRoomTimeLimit: Int
+  isEscapeRoom: Boolean
   order: Int!
   timeLimit: Int
 }
@@ -2430,8 +2434,8 @@ type Query {
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
-  escapeRoomHints(groupActivityId: String, microLearningId: String, practiceQuizId: String): [EscapeRoomHint!]
-  escapeRoomProgress(groupActivityId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
+  escapeRoomHints(groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): [EscapeRoomHint!]
+  escapeRoomProgress(groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics

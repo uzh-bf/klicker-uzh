@@ -18,6 +18,7 @@ mutation RequestEscapeRoomHint(
       startedAt
       timeLimit
       penaltySeconds
+      lockoutUntil
       hintsUsed
       status
       completedAt

@@ -1,13 +1,20 @@
+import { useMutation } from '@apollo/client'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementInstance,
+  ElementType,
+  EscapeRoomStatus,
+  RequestEscapeRoomHintDocument,
+  StartEscapeRoomAttemptDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
 import { push } from '@socialgouv/matomo-next'
-import { H2, toast, UserNotification } from '@uzh-bf/design-system'
+import { Button, H2, toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
@@ -15,6 +22,7 @@ import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
+import EscapeRoomOverlay from '../practiceQuiz/EscapeRoomOverlay'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
@@ -43,11 +51,19 @@ interface QuestionAreaProps {
     responseTimestamp?: number
     responseStatus?: string
     lockoutUntil?: string
+    completed?: boolean
   }>
   quizId: string
   execution: number
   timeLimit?: number
   isStaticPreview?: boolean
+  blockId?: number
+  escapeRoomConfig?: {
+    timeLimit: number
+    hintPenalty: number
+    introText?: string | null
+  } | null
+  initialEscapeRoomAttempt?: any
 }
 
 function QuestionArea({
@@ -59,10 +75,34 @@ function QuestionArea({
   quizId,
   timeLimit,
   execution,
+  blockId,
+  escapeRoomConfig,
+  initialEscapeRoomAttempt,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
   const [showConfetti, setShowConfetti] = useState(false)
+  const [startEscapeRoomAttempt, { loading: startingEscapeRoom }] = useMutation(
+    StartEscapeRoomAttemptDocument
+  )
+  const [requestEscapeRoomHint, { loading: requestingHint }] = useMutation(
+    RequestEscapeRoomHintDocument
+  )
+  const [escapeAttempt, setEscapeAttempt] = useState(initialEscapeRoomAttempt)
+  const [escapeCompleted, setEscapeCompleted] = useState(
+    initialEscapeRoomAttempt?.status === EscapeRoomStatus.Completed
+  )
+  const [escapeRemaining, setEscapeRemaining] = useState<number | null>(null)
+  const [lockoutRemaining, setLockoutRemaining] = useState(0)
+  const [revealedHints, setRevealedHints] = useState<Record<number, string>>(
+    Object.fromEntries(
+      instances.flatMap((instance) =>
+        instance.revealedHint
+          ? [[instance.id, instance.revealedHint] as const]
+          : []
+      )
+    )
+  )
   const [submitting, setSubmitting] = useState(false)
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
@@ -71,6 +111,113 @@ function QuestionArea({
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+  const responseStorageQuizId = escapeAttempt?.id
+    ? `${quizId}-escape-${escapeAttempt.id}`
+    : quizId
+  const serverAttemptIdRef = useRef<string | null>(
+    initialEscapeRoomAttempt?.id ?? null
+  )
+  const revealedHintProjection = instances
+    .map((instance) => `${instance.id}:${instance.revealedHint ?? ''}`)
+    .join('|')
+
+  useEffect(() => {
+    const nextServerAttemptId = initialEscapeRoomAttempt?.id ?? null
+    if (serverAttemptIdRef.current === nextServerAttemptId) return
+
+    serverAttemptIdRef.current = nextServerAttemptId
+    setEscapeAttempt(initialEscapeRoomAttempt ?? null)
+    setEscapeCompleted(
+      initialEscapeRoomAttempt?.status === EscapeRoomStatus.Completed
+    )
+    setLockoutRemaining(0)
+    setRemainingQuestions(null)
+    setActiveInstance(0)
+  }, [initialEscapeRoomAttempt])
+
+  useEffect(() => {
+    setRevealedHints(
+      Object.fromEntries(
+        instances.flatMap((instance) =>
+          instance.revealedHint
+            ? [[instance.id, instance.revealedHint] as const]
+            : []
+        )
+      )
+    )
+  }, [revealedHintProjection])
+
+  useEffect(() => {
+    if (!escapeRoomConfig || !escapeAttempt) {
+      setEscapeRemaining(null)
+      return
+    }
+    const tick = () => {
+      const elapsed =
+        (Date.now() - new Date(escapeAttempt.startedAt).getTime()) / 1000
+      setEscapeRemaining(
+        Math.max(
+          0,
+          Math.ceil(
+            escapeAttempt.timeLimit - escapeAttempt.penaltySeconds - elapsed
+          )
+        )
+      )
+      setLockoutRemaining(
+        escapeAttempt.lockoutUntil
+          ? Math.max(
+              0,
+              Math.ceil(
+                (new Date(escapeAttempt.lockoutUntil).getTime() - Date.now()) /
+                  1000
+              )
+            )
+          : 0
+      )
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [escapeAttempt, escapeRoomConfig])
+
+  const handleEscapeStart = async () => {
+    if (!blockId) return
+    try {
+      const result = await startEscapeRoomAttempt({
+        variables: { elementBlockId: blockId },
+      })
+      if (result.data?.startEscapeRoomAttempt) {
+        setEscapeAttempt(result.data.startEscapeRoomAttempt)
+        setEscapeCompleted(false)
+      }
+    } catch {
+      toast({
+        message: t('pwa.assessment.submissionGeneralError'),
+        type: 'error',
+      })
+    }
+  }
+
+  const handleHintRequest = async () => {
+    if (!blockId || !currentInstance) return
+    try {
+      const result = await requestEscapeRoomHint({
+        variables: { elementBlockId: blockId, instanceId: currentInstance.id },
+      })
+      const payload = result.data?.requestEscapeRoomHint
+      if (!payload) return
+      setRevealedHints((current) => ({
+        ...current,
+        [currentInstance.id]: payload.hint,
+      }))
+      setEscapeAttempt(payload.attempt)
+    } catch {
+      toast({
+        message: t('pwa.assessment.submissionGeneralError'),
+        type: 'error',
+      })
+    }
+  }
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -106,7 +253,7 @@ function QuestionArea({
     setSubmittedAt(null)
 
     loadStoredResponse({
-      quizId,
+      quizId: responseStorageQuizId,
       execution,
       currentInstance,
       setStudentResponse: safeSetStudentResponse,
@@ -118,7 +265,7 @@ function QuestionArea({
     }
 
     // re-run when quizId/execution/instance changes
-  }, [quizId, execution, currentInstance?.id])
+  }, [responseStorageQuizId, execution, currentInstance?.id])
 
   // periodically store the in-progress response in a temporary key
   useEffect(() => {
@@ -129,11 +276,11 @@ function QuestionArea({
       if (!currentInstance) return
 
       // if the answer to this instance has already been submitted, do not store a temporary response
-      const storageKey = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+      const storageKey = `lq-${responseStorageQuizId}-ex-${execution}-i-${currentInstance.id}`
       const stored = await localforage.getItem(storageKey)
       if (stored) return
 
-      const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}-temp`
+      const key = `lq-${responseStorageQuizId}-ex-${execution}-i-${currentInstance.id}-temp`
       interval = setInterval(async () => {
         const latest = latestStudentResponseRef.current
         // only persist if there is something to store
@@ -149,11 +296,11 @@ function QuestionArea({
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [quizId, execution, currentInstance?.id])
+  }, [responseStorageQuizId, execution, currentInstance?.id])
 
   // compute remaining instances based on stored responses
   useRemainingInstances({
-    quizId,
+    quizId: responseStorageQuizId,
     instances,
     execution,
     isBlockCompleted: !isBlockActive,
@@ -162,6 +309,7 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
+    if (lockoutRemaining > 0) return
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
@@ -186,7 +334,7 @@ function QuestionArea({
     if (!success) return
 
     // update the stored responses
-    await updateStoredResponses(instanceId, quizId, execution)
+    await updateStoredResponses(instanceId, responseStorageQuizId, execution)
 
     // calculate the new indices of remaining questions
     const newRemaining = (remainingQuestions ?? []).filter(
@@ -223,7 +371,11 @@ function QuestionArea({
     const remainingQuestionIds = (remainingQuestions ?? []).map(
       (index: number) => instances[index].id
     )
-    await updateStoredResponses(remainingQuestionIds, quizId, execution)
+    await updateStoredResponses(
+      remainingQuestionIds,
+      responseStorageQuizId,
+      execution
+    )
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
@@ -301,6 +453,23 @@ function QuestionArea({
     }
   }
 
+  function applyEscapeResponseState(result: {
+    completed?: boolean
+    lockoutUntil?: string
+  }) {
+    if (result.completed) setEscapeCompleted(true)
+    if (result.lockoutUntil) {
+      const remaining = Math.max(
+        0,
+        Math.ceil((new Date(result.lockoutUntil).getTime() - Date.now()) / 1000)
+      )
+      setLockoutRemaining(remaining)
+      setEscapeAttempt((current: any) =>
+        current ? { ...current, lockoutUntil: result.lockoutUntil } : current
+      )
+    }
+  }
+
   // use the handleNewResponse function to add a response to the question instance
   // return value is status code: 0 = success, 1 = invalid input, 2 = submission failed, 3 = unsupported type
   async function answerQuestion({
@@ -314,7 +483,7 @@ function QuestionArea({
     input: InstanceStackStudentResponseType
     correlationKey?: string | null
   }): Promise<boolean> {
-    const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+    const storageKey = `lq-${responseStorageQuizId}-ex-${execution}-i-${instanceId}`
 
     if (!input.valid) {
       toast({
@@ -342,6 +511,7 @@ function QuestionArea({
 
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode, result.responseStatus)
+      applyEscapeResponseState(result)
 
       // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
       if (
@@ -376,6 +546,7 @@ function QuestionArea({
 
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode, result.responseStatus)
+      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -408,6 +579,7 @@ function QuestionArea({
 
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode, result.responseStatus)
+      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -442,6 +614,7 @@ function QuestionArea({
 
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode, result.responseStatus)
+      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -474,6 +647,7 @@ function QuestionArea({
 
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode, result.responseStatus)
+      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -502,6 +676,7 @@ function QuestionArea({
 
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode, result.responseStatus)
+      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -528,6 +703,26 @@ function QuestionArea({
     }
   }
 
+  const escapeRoomOverlay = escapeRoomConfig ? (
+    <EscapeRoomOverlay
+      isStarted={!!escapeAttempt}
+      isCompleted={escapeCompleted}
+      isExpired={
+        escapeAttempt?.status === EscapeRoomStatus.Expired ||
+        escapeRemaining === 0
+      }
+      remainingSeconds={escapeRemaining}
+      timeLimit={escapeRoomConfig.timeLimit}
+      hintPenalty={escapeRoomConfig.hintPenalty}
+      onStart={handleEscapeStart}
+      loading={startingEscapeRoom}
+      attempt={escapeAttempt}
+      clearedStacks={instances.length - (remainingQuestions?.length ?? 0)}
+      totalStacks={instances.length}
+      introText={escapeRoomConfig.introText}
+    />
+  ) : null
+
   // while the remaining questions are still initializing, do not return anything
   if (remainingQuestions === null) {
     return <></>
@@ -535,6 +730,7 @@ function QuestionArea({
 
   return (
     <div className="min-h-content relative mt-1.5 h-full w-full">
+      {escapeRoomOverlay}
       <div className="flex flex-row items-center justify-between">
         <H2 className={{ root: 'mb-0 pt-2' }}>
           {t('shared.generic.questions')}
@@ -580,7 +776,9 @@ function QuestionArea({
           isCurrentUnanswered={remainingQuestions.includes(activeInstance)}
           isContent={currentInstance.elementType === ElementType.Content}
           isBlockOver={remainingQuestions.length === 0}
-          canSubmit={!!studentResponse.valid && !submitting}
+          canSubmit={
+            !!studentResponse.valid && !submitting && lockoutRemaining === 0
+          }
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
             setActiveInstance((prev) =>
@@ -609,6 +807,41 @@ function QuestionArea({
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}
         />
+        {escapeRoomConfig && lockoutRemaining > 0 && (
+          <UserNotification
+            type="warning"
+            className={{ root: 'mt-3' }}
+            message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown' as any, {
+              seconds: lockoutRemaining,
+              defaultValue: `Try again in ${lockoutRemaining}s`,
+            })}
+          />
+        )}
+        {escapeRoomConfig &&
+          escapeAttempt &&
+          currentInstance?.options?.hasHint && (
+            <div className="mt-3">
+              {revealedHints[currentInstance.id] ? (
+                <UserNotification
+                  type="info"
+                  message={revealedHints[currentInstance.id]}
+                />
+              ) : (
+                <Button
+                  basic
+                  loading={requestingHint}
+                  disabled={lockoutRemaining > 0}
+                  onClick={handleHintRequest}
+                  data={{ cy: 'live-quiz-escape-room-hint' }}
+                >
+                  {t('pwa.practiceQuiz.escapeRoomRequestHint' as any, {
+                    penalty: escapeRoomConfig.hintPenalty,
+                    defaultValue: `Reveal hint (−${escapeRoomConfig.hintPenalty}s)`,
+                  })}
+                </Button>
+              )}
+            </div>
+          )}
       </div>
     </div>
   )

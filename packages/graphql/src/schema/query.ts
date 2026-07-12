@@ -624,6 +624,7 @@ export const Query = builder.queryType({
           practiceQuizId: t.arg.string({ required: false }),
           microLearningId: t.arg.string({ required: false }),
           groupActivityId: t.arg.string({ required: false }),
+          liveQuizId: t.arg.string({ required: false }),
         },
         resolve: withPermission(
           (args) =>
@@ -631,7 +632,9 @@ export const Query = builder.queryType({
               ? { practiceQuizId: args.practiceQuizId }
               : args.microLearningId
                 ? { microLearningId: args.microLearningId }
-                : { groupActivityId: args.groupActivityId },
+                : args.groupActivityId
+                  ? { groupActivityId: args.groupActivityId }
+                  : { liveQuizId: args.liveQuizId },
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await EscapeRoomService.getEscapeRoomProgress(args, ctx)
@@ -646,6 +649,7 @@ export const Query = builder.queryType({
           practiceQuizId: t.arg.string({ required: false }),
           microLearningId: t.arg.string({ required: false }),
           groupActivityId: t.arg.string({ required: false }),
+          liveQuizId: t.arg.string({ required: false }),
         },
         resolve: withPermission(
           (args) =>
@@ -653,7 +657,9 @@ export const Query = builder.queryType({
               ? { practiceQuizId: args.practiceQuizId }
               : args.microLearningId
                 ? { microLearningId: args.microLearningId }
-                : { groupActivityId: args.groupActivityId },
+                : args.groupActivityId
+                  ? { groupActivityId: args.groupActivityId }
+                  : { liveQuizId: args.liveQuizId },
           DB.PermissionLevel.OWNER,
           async (_, args, ctx) =>
             EscapeRoomService.getEscapeRoomHints(args, ctx)

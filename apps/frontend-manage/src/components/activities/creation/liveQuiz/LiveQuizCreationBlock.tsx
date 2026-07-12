@@ -193,6 +193,7 @@ function LiveQuizCreationBlock({
         }
         outdatedInstances={outdatedInstances}
         refetchOutdatedInstances={refetchOutdatedInstances}
+        isEscapeRoom={block.isEscapeRoom}
       />
 
       {selection && !isEmpty(selection) && (

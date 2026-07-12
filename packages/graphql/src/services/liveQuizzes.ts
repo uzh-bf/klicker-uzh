@@ -253,6 +253,37 @@ export async function manipulateLiveQuiz(
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
 
+  const escapeRoomElementTypes = new Set<DB.ElementType>([
+    DB.ElementType.SC,
+    DB.ElementType.MC,
+    DB.ElementType.KPRIM,
+    DB.ElementType.NUMERICAL,
+    DB.ElementType.FREE_TEXT,
+  ])
+  for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
+    if (block.elements.length === 0) {
+      throw new GraphQLError('Escape room blocks require at least one question')
+    }
+    const unsupported = block.elements.some((entry) => {
+      const source = entry.existingInstanceId
+        ? [...persistentInstances, ...duplicationInstances].find(
+            (instance) => instance.id === entry.existingInstanceId
+          )
+        : elementMap[entry.elementId]
+      const elementType = source
+        ? 'elementType' in source
+          ? source.elementType
+          : source.type
+        : null
+      return !elementType || !escapeRoomElementTypes.has(elementType)
+    })
+    if (unsupported) {
+      throw new GraphQLError(
+        'Escape room blocks only support SC, MC, KPRIM, numerical, and free-text questions'
+      )
+    }
+  }
+
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
   let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
@@ -289,6 +320,11 @@ export async function manipulateLiveQuiz(
 
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
+  if (assessmentSetting && blocks.some((block) => block.isEscapeRoom)) {
+    throw new GraphQLError(
+      'Escape room blocks are not supported in assessment live quizzes'
+    )
+  }
 
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
@@ -384,6 +420,15 @@ export async function manipulateLiveQuiz(
       create: blocks.map((block) => ({
         order: block.order,
         timeLimit: block.timeLimit,
+        escapeRoomConfig: block.isEscapeRoom
+          ? {
+              create: {
+                timeLimit: Math.max(block.escapeRoomTimeLimit ?? 300, 1),
+                hintPenalty: Math.max(block.escapeRoomHintPenalty ?? 0, 0),
+                introText: block.escapeRoomIntroText?.trim() || null,
+              },
+            }
+          : undefined,
         elements: {
           connectOrCreate: block.elements.map((instance) =>
             getActivityInstanceConnectOrCreate({
@@ -410,6 +455,9 @@ export async function manipulateLiveQuiz(
 
       // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
       for (const instance of persistentInstances) {
+        const submittedInstance = blocks
+          .flatMap((block) => block.elements)
+          .find((entry) => entry.existingInstanceId === instance.id)
         const elementMultiplier =
           'pointsMultiplier' in instance.elementData
             ? ((instance.elementData.pointsMultiplier as number) ?? 1)
@@ -422,6 +470,12 @@ export async function manipulateLiveQuiz(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
+              ...(typeof submittedInstance?.escapeRoomHint === 'undefined'
+                ? {}
+                : {
+                    escapeRoomHint:
+                      submittedInstance.escapeRoomHint?.trim() || null,
+                  }),
               pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
             },
           },
@@ -2931,10 +2985,16 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     where: { id },
     include: {
       activeBlock: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
       },
       blocks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
         orderBy: { order: 'asc' },
       },
       course: true,
@@ -2949,12 +3009,34 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // extract solution from instances in active block
   let quizWithoutSolutions: any
   if (quiz && quiz.activeBlock) {
+    const escapeAttempt =
+      quiz.activeBlock.escapeRoomConfig &&
+      ctx.user?.role === DB.UserRole.PARTICIPANT
+        ? await ctx.prisma.escapeRoomAttempt.findUnique({
+            where: {
+              participantId_elementBlockId: {
+                participantId: ctx.user.sub,
+                elementBlockId: quiz.activeBlock.id,
+              },
+            },
+          })
+        : null
+    const revealedHintIds = new Set(
+      Array.isArray(escapeAttempt?.hintsUsed)
+        ? escapeAttempt.hintsUsed.map(String)
+        : []
+    )
     const activeBlockInstances = await Promise.all(
       removeSolutionFromInstances({
         instances: quiz.activeBlock.elements,
       }).map(async (instance) => {
         if (!quiz.isAssessmentEnabled) {
-          return instance
+          return {
+            ...instance,
+            revealedHint: revealedHintIds.has(String(instance.id))
+              ? (instance.options.escapeRoomHint ?? null)
+              : null,
+          }
         }
 
         // for assessment quizzes, add a correlation key to verify a student's submission

@@ -2,6 +2,7 @@
 
 ## 2026-07-11
 
+- **Update**: LiveQuiz blocks now support Escape Room authoring and participant runtime: validated gradable element types, config/hint edit readback, explicit attempt start, attempt-scoped local progress, timer/lockout controls, charged hint reveal/restoration, and completion state.
 - **Update**: [async-and-workers](./async-and-workers.md) and [domain-model](./domain-model.md) now document the enforced LiveQuiz Escape Room response contract, multi-instance completion, and deterministic event deduplication.
 - **Update**: [domain-model](./domain-model.md) and [graphql-api-layer](./graphql-api-layer.md) now document shared GroupActivity escape-room attempts, atomic concurrent hint penalties/restoration, retry-preserving lockouts, and structured participant errors.
 - **Update**: escape room production pass on the `codex/escape-room-production` branch — practice quiz game loop fixed for server-side stack masking (escape-mode advance/retry in `PracticeQuiz.tsx`), `Z-escape-room.spec.ts` rewritten as a full 11-test workflow, and user-facing lecturer/student tutorials added to `apps/docs`. Roadmap details: `project/2026-07-10-pr-5143-escape-room-implementation-review.md`.
