@@ -68,6 +68,16 @@ const QR = {
   quizName: 'Escape Room QR Quiz',
   quizDisplayName: 'Escape Room QR Quiz Display',
 }
+const GROUP = {
+  name: 'Escape Room Group Activity',
+  displayName: 'Escape Room Group Activity Display',
+  task: 'Crack the vault together before the timer runs out.',
+  introText: 'Only teamwork opens the vault. Coordinate and escape.',
+  clues: [
+    { name: 'Vault Clue Alpha', displayName: 'Clue Alpha', content: 'north' },
+    { name: 'Vault Clue Beta', displayName: 'Clue Beta', content: 'south' },
+  ],
+}
 
 // Wizard flow of createPracticeQuiz (activities fixture) extended with the
 // escape-room settings on the settings step and hint authoring on the
@@ -173,6 +183,80 @@ async function createEscapeRoomMicroLearning(page: Page) {
   await page.getByTestId('next-or-submit').click()
 }
 
+// Group-activity wizard flow with the shared escape-room settings enabled on
+// the settings step. Group activities carry a single stack, so the escape
+// gate operates on the one all-or-nothing decisions submission.
+async function createEscapeRoomGroupActivity(page: Page) {
+  await page.getByTestId('create-group-activity').click()
+
+  await page.getByTestId('insert-groupactivity-name').fill(GROUP.name)
+  await page.getByTestId('next-or-submit').click()
+
+  await page.getByTestId('back-activity-creation').click()
+  await page.getByTestId('next-or-submit').click()
+  await page
+    .getByTestId('insert-groupactivity-display-name')
+    .fill(GROUP.displayName)
+  await page.getByTestId('insert-groupactivity-description').click()
+  await page
+    .getByTestId('insert-groupactivity-description')
+    .pressSequentially(GROUP.task)
+  await page.getByTestId('next-or-submit').click()
+
+  await selectOption(page, '[data-cy="select-course"]', COURSE)
+  await expect(page.getByTestId('select-course')).toContainText(COURSE)
+  await setDatetime(page, {
+    cyString: 'select-start-date',
+    deselectorString: 'availability-section-header',
+    datetime: {
+      monthDelta: -1,
+      day: 10,
+      hour: 8,
+      minute: 0,
+      validation: `${getDatetimeValidationString(-1, '10')}, 08:00`,
+    },
+  })
+  await setDatetime(page, {
+    cyString: 'select-end-date',
+    deselectorString: 'availability-section-header',
+    datetime: {
+      monthDelta: 2,
+      day: 10,
+      hour: 18,
+      minute: 0,
+      validation: `${getDatetimeValidationString(2, '10')}, 18:00`,
+    },
+  })
+
+  // the escape settings render only once the checkbox is toggled
+  await expect(page.getByTestId('escape-room-time-limit')).not.toBeAttached()
+  await page.getByTestId('toggle-escape-room').click()
+  await expect(page.getByTestId('escape-room-time-limit')).toBeVisible()
+  await page.getByTestId('escape-room-time-limit').fill('30')
+  await page.getByTestId('escape-room-hint-penalty').fill('30')
+  await page.getByTestId('escape-room-intro-text').fill(GROUP.introText)
+  await page.getByTestId('next-or-submit').click()
+
+  // group activities require at least two clues
+  for (const clue of GROUP.clues) {
+    await page.getByTestId('add-group-activity-clue').click()
+    await page.getByTestId('group-activity-clue-type').click()
+    await page.getByTestId('group-activity-clue-type-string').click()
+    await page.getByTestId('group-activity-clue-name').fill(clue.name)
+    await page
+      .getByTestId('group-activity-clue-display-name')
+      .fill(clue.displayName)
+    await page
+      .getByTestId('group-activity-string-clue-value')
+      .fill(clue.content)
+    await page.getByTestId('group-activity-clue-save').click()
+    await expect(page.getByText(clue.name, { exact: true })).toBeVisible()
+  }
+
+  await createStacks(page, { stacks: [{ elements: [SC1.title] }] })
+  await page.getByTestId('next-or-submit').click()
+}
+
 test.describe.serial('Escape room workflows', () => {
   test('CLEANUP', async ({ page: testPage }, testInfo) => {
     page = testPage
@@ -238,10 +322,10 @@ test.describe.serial('Escape room workflows', () => {
       hints: [{ stackIx: 0, elementIx: 0, text: QUIZ.hint }],
     })
     await page.getByTestId('open-activity-overview').click()
-    await page.getByTestId('tab-practiceQuizzes').click()
+    await page.waitForURL(/\/courses\/.*tab=practiceQuizzes/)
     await expect(
       page.getByTestId(`activity-PRACTICE_QUIZ-${QUIZ.name}`)
-    ).toBeAttached()
+    ).toBeAttached({ timeout: 60_000 })
     await expect(page.getByTestId(`status-${QUIZ.name}-DRAFT`)).toBeAttached()
   })
 
@@ -383,6 +467,8 @@ test.describe.serial('Escape room workflows', () => {
     await expect(hintButton).not.toBeAttached()
 
     await page.reload()
+    await page.getByTestId('start-practice-quiz').click()
+    await expect(page.getByText(SC1.content).first()).toBeVisible()
     await expect(
       page.locator('[data-cy^="escape-room-hint-text-"]').first()
     ).toContainText(QUIZ.hint)
@@ -409,6 +495,95 @@ test.describe.serial('Escape room workflows', () => {
     ).not.toBeAttached()
   })
 
+  test('Server rejects future hints and non-participant escape submissions', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    testInfo.setTimeout(600_000)
+
+    const quiz = (await runTask('getEscapeRoomQuizStacks', {
+      quizName: QUIZ.name,
+    })) as {
+      id: string
+      courseId: string
+      stacks: { id: number; order: number; instanceIds: number[] }[]
+    }
+    const lockedStack = quiz.stacks[2]!
+
+    // authenticated participant with the in-progress attempt from the
+    // previous test: requesting the hint of a locked future stack is
+    // rejected by the sequential gate at the API. The backend only reads
+    // the participant cookie for requests with a PWA origin header, so a
+    // direct API call must authenticate via the Bearer fallback instead.
+    await loginStudent(page)
+    const participantToken = (await page.context().cookies()).find(
+      (cookie) => cookie.name === 'participant_token'
+    )?.value
+    expect(participantToken).toBeTruthy()
+    const hintResponse = await page.request.post(
+      `${env('URL_API')}/api/graphql`,
+      {
+        headers: {
+          'x-graphql-yoga-csrf': '1',
+          authorization: `Bearer ${participantToken}`,
+        },
+        data: {
+          operationName: 'RequestEscapeRoomHint',
+          query: `mutation RequestEscapeRoomHint($practiceQuizId: String, $instanceId: Int!) {
+            requestEscapeRoomHint(practiceQuizId: $practiceQuizId, instanceId: $instanceId) { hint }
+          }`,
+          variables: {
+            practiceQuizId: quiz.id,
+            instanceId: lockedStack.instanceIds[0],
+          },
+        },
+      }
+    )
+    const hintBody = await hintResponse.json()
+    expect(hintBody.data?.requestEscapeRoomHint ?? null).toBeNull()
+    expect(hintBody.errors?.[0]?.extensions?.code).toBe('ESCAPE_ROOM_GATED')
+
+    // an anonymous caller (no participant cookie) must not receive a
+    // grading oracle for an escape room stack
+    const anonResponse = await page
+      .context()
+      .browser()!
+      .newContext()
+      .then(async (anonContext) => {
+        const response = await anonContext.request.post(
+          `${env('URL_API')}/api/graphql`,
+          {
+            headers: { 'x-graphql-yoga-csrf': '1' },
+            data: {
+              operationName: 'RespondToElementStack',
+              query: `mutation RespondToElementStack($stackId: Int!, $courseId: String!, $responses: [StackResponseInput!]!, $stackAnswerTime: Int!) {
+                respondToElementStack(stackId: $stackId, courseId: $courseId, responses: $responses, stackAnswerTime: $stackAnswerTime) { id status }
+              }`,
+              variables: {
+                stackId: lockedStack.id,
+                courseId: quiz.courseId,
+                stackAnswerTime: 5,
+                responses: [
+                  {
+                    instanceId: lockedStack.instanceIds[0],
+                    type: 'CONTENT',
+                    contentReponse: true,
+                  },
+                ],
+              },
+            },
+          }
+        )
+        const body = await response.json()
+        await anonContext.close()
+        return body
+      })
+    expect(anonResponse.data?.respondToElementStack ?? null).toBeNull()
+    expect(anonResponse.errors?.[0]?.extensions?.code).toBe(
+      'ESCAPE_ROOM_FORBIDDEN'
+    )
+  })
+
   test('Wrong answer stays on the stage and a rapid resubmit hits the lockout', async ({
     page: testPage,
   }, testInfo) => {
@@ -423,6 +598,7 @@ test.describe.serial('Escape room workflows', () => {
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
     await page.getByTestId('start-practice-quiz').click()
+    await page.getByTestId('practice-quiz-progress-1').click()
     await expect(page.getByText(SC2.content).first()).toBeVisible()
 
     // wrong answer: grading sets a server-side lockout window
@@ -466,6 +642,7 @@ test.describe.serial('Escape room workflows', () => {
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
     await page.getByTestId('start-practice-quiz').click()
+    await page.getByTestId('practice-quiz-progress-2').click()
     await expect(page.getByText(CT1.content).first()).toBeVisible()
 
     await page.getByTestId('practice-quiz-mark-all-as-read').click()
@@ -503,7 +680,9 @@ test.describe.serial('Escape room workflows', () => {
     await page.goto(`${env('URL_MANAGE')}/practiceQuiz/${quiz.id}/evaluation`, {
       waitUntil: 'commit',
     })
-    await page.getByTestId('evaluation-escape-room').click()
+    const escapeRoomEvaluation = page.getByTestId('evaluation-escape-room')
+    await expect(escapeRoomEvaluation).toBeVisible({ timeout: 60_000 })
+    await escapeRoomEvaluation.click()
     await expect(page.getByTestId('escape-room-progress-table')).toBeVisible()
     const attemptRow = page
       .locator('[data-cy^="escape-room-attempt-"]')
@@ -569,7 +748,7 @@ test.describe.serial('Escape room workflows', () => {
     await page.getByTestId('library').click()
     await createEscapeRoomMicroLearning(page)
     await page.getByTestId('open-activity-overview').click()
-    await page.getByTestId('tab-microLearnings').click()
+    await page.waitForURL(/\/courses\/.*tab=microLearnings/)
     await page.getByTestId(`publish-microlearning-${MICRO.name}`).click()
     await page.getByTestId('confirm-publish-action').click()
     await expect(
@@ -598,7 +777,7 @@ test.describe.serial('Escape room workflows', () => {
       hints: [],
     })
     await page.getByTestId('open-activity-overview').click()
-    await page.getByTestId('tab-practiceQuizzes').click()
+    await page.waitForURL(/\/courses\/.*tab=practiceQuizzes/)
     await page.getByTestId(`publish-practice-quiz-${QR.quizName}`).click()
     await page.getByTestId('publish-practice-quiz-immediately').click()
     await expect(
@@ -664,13 +843,18 @@ test.describe.serial('Escape room workflows', () => {
     await page.getByTestId('escape-room-start').click()
 
     await expect(page.getByText(SC1.content).first()).toBeVisible()
+
+    // wrong answer: grading sets a server-side lockout window
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
+
+    // the stage remounts for a retry on the same URL instead of advancing
     await expect(page).toHaveURL(/\/microLearnings\/[^/]+\/0$/)
-    await page.reload()
     await expect(page.getByText(SC1.content).first()).toBeVisible()
 
+    // resubmitting within the lockout window surfaces the countdown
+    // (clicks must land within ~5s of grading)
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
     await expect(
@@ -685,11 +869,75 @@ test.describe.serial('Escape room workflows', () => {
     await expect(page).toHaveURL(/\/microLearnings\/[^/]+\/1$/)
     await expect(page.getByText(SC2.content).first()).toBeVisible()
 
+    // a full reload stays in the escape flow at the current stage
     await page.reload()
     await expect(page.getByText(SC2.content).first()).toBeVisible()
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
-    await page.getByTestId('student-stack-continue').click()
+
+    // clearing the last stage completes the server-side attempt and the
+    // completion overlay takes over without a continue click
+    await expect(
+      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
+    ).toBeVisible()
+  })
+
+  test('Create and publish an escape room group activity', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await page.getByTestId('library').click()
+    await createEscapeRoomGroupActivity(page)
+    await page.getByTestId('open-activity-overview').click()
+    await page.getByTestId('tab-groupActivities').click()
+    await expect(
+      page.getByTestId(`activity-GROUP_ACTIVITY-${GROUP.name}`)
+    ).toBeAttached({ timeout: 60_000 })
+    await page.getByTestId(`publish-group-activity-${GROUP.name}`).click()
+    await page.getByTestId('confirm-publish-action').click()
+    // a past start date publishes the activity as immediately available
+    await expect(
+      page.getByTestId(`status-${GROUP.name}-PUBLISHED`)
+    ).toBeAttached()
+  })
+
+  test('Group members start, hit the lockout on a wrong answer, and escape on the correct one', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    // testuser1 belongs to a seeded two-member group ("Gruppe 1"), which
+    // clears the minimum-size gate for starting a group activity
+    await loginStudent(page)
+    await page.getByTestId(`course-button-${COURSE}`).click()
+    await page.getByTestId('student-course-existing-group-0').click()
+    await page.getByTestId(`open-group-activity-${GROUP.displayName}`).click()
+    await page.getByTestId('start-group-activity').click()
+
+    // the group instance now exists; the escape overlay withholds the stack
+    // until a shared attempt is started
+    await page.getByTestId('escape-room-start').click()
+    await expect(page.getByText(SC1.content).first()).toBeVisible()
+
+    // a wrong answer in the all-or-nothing submission persists nothing and
+    // locks the whole group out for a short window
+    await page.getByTestId('sc-0-answer-option-1').click()
+    await page.getByTestId('submit-group-activity').click()
+    await expect(
+      page.getByText(messages.pwa.practiceQuiz.escapeRoomLockoutToast)
+    ).toBeVisible()
+    await expect(page.getByTestId('submit-group-activity')).toBeEnabled({
+      timeout: 15_000,
+    })
+
+    // the correct answer clears the single stack and completes the shared
+    // attempt, surfacing the completion overlay
+    await page.getByTestId('sc-0-answer-option-0').click()
+    await page.getByTestId('submit-group-activity').click()
     await expect(
       page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
     ).toBeVisible()

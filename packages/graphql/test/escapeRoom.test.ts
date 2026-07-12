@@ -248,7 +248,9 @@ describe('Escape room integration tests', () => {
         content: 'Find and scan the hidden code',
         explanation: 'QR explanation',
         options: {},
-        qrScanCode: 'AbCdEf12_-34',
+        // distinct from the Playwright spec's code: both may target the same
+        // dev database and qrScanCode is globally unique
+        qrScanCode: 'ItGrQr56_-78',
         ownerId: lecturer.id,
       },
     })
@@ -399,7 +401,7 @@ describe('Escape room integration tests', () => {
         {
           stackId: correctQuiz.stacks[0]!.id,
           courseId,
-          responses: [qrResponse(correctInstance.id, 'AbCdEf12_-34')],
+          responses: [qrResponse(correctInstance.id, 'ItGrQr56_-78')],
           stackAnswerTime: 10,
         },
         participantCtx(correctParticipant.id)
@@ -451,7 +453,7 @@ describe('Escape room integration tests', () => {
         {
           stackId: stack.id,
           courseId,
-          responses: [qrResponse(instance.id, 'AbCdEf12_-34')],
+          responses: [qrResponse(instance.id, 'ItGrQr56_-78')],
           stackAnswerTime: 10,
         },
         participantCtx(participant.id)
@@ -461,7 +463,7 @@ describe('Escape room integration tests', () => {
           {
             stackId: stack.id,
             courseId,
-            responses: [qrResponse(instance.id, 'AbCdEf12_-34')],
+            responses: [qrResponse(instance.id, 'ItGrQr56_-78')],
             stackAnswerTime: 10,
           },
           participantCtx(participant.id)
@@ -492,7 +494,7 @@ describe('Escape room integration tests', () => {
           {
             stackId: first.id,
             courseId,
-            responses: [qrResponse(future.id, 'AbCdEf12_-34')],
+            responses: [qrResponse(future.id, 'ItGrQr56_-78')],
             stackAnswerTime: 10,
           },
           participantCtx(participant.id)
@@ -508,7 +510,7 @@ describe('Escape room integration tests', () => {
           {
             stackId: first.id,
             courseId,
-            responses: [qrResponse(foreign.id, 'AbCdEf12_-34')],
+            responses: [qrResponse(foreign.id, 'ItGrQr56_-78')],
             stackAnswerTime: 10,
           },
           participantCtx(participant.id)
@@ -634,6 +636,65 @@ describe('Escape room integration tests', () => {
         participantCtx(participant.id)
       )
       expect(allowedResult!.status).toBe(StackFeedbackStatus.CORRECT)
+    })
+
+    it('allows a microlearning escape room retry instead of silently ignoring the resubmission', async () => {
+      const microLearning = await seedEscapeRoomMicroLearning(
+        { elements: [scElement], courseId, lockoutSeconds: 300 },
+        lecturerCtx
+      )
+      const stack0 = microLearning.stacks[0]!
+      const instance = stack0.elements[0]!
+      const participant = await seedParticipant('micro-lockout')
+      const attempt = await startEscapeRoomAttempt(
+        { microLearningId: microLearning.id },
+        participantCtx(participant.id)
+      )
+
+      // the wrong answer grades INCORRECT and sets the lockout; the
+      // microlearning single-submission rule must not swallow it
+      const wrongResult = await respondToElementStack(
+        {
+          stackId: stack0.id,
+          courseId,
+          responses: [scResponse(instance.id, 1)],
+          stackAnswerTime: 10,
+        },
+        participantCtx(participant.id)
+      )
+      expect(wrongResult!.status).toBe(StackFeedbackStatus.INCORRECT)
+
+      // resubmitting during the lockout window surfaces the lockout error
+      // instead of the single-submission null
+      await expect(
+        respondToElementStack(
+          {
+            stackId: stack0.id,
+            courseId,
+            responses: [scResponse(instance.id, 0)],
+            stackAnswerTime: 10,
+          },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow(
+        'You are locked out from submitting answers due to a recent incorrect attempt'
+      )
+
+      // after the lockout passes, the retry grades and completes the stage
+      await prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: { lockoutUntil: new Date(Date.now() - 1000) },
+      })
+      const retryResult = await respondToElementStack(
+        {
+          stackId: stack0.id,
+          courseId,
+          responses: [scResponse(instance.id, 0)],
+          stackAnswerTime: 10,
+        },
+        participantCtx(participant.id)
+      )
+      expect(retryResult!.status).toBe(StackFeedbackStatus.CORRECT)
     })
   })
   // #endregion
@@ -2382,7 +2443,7 @@ describe('Escape room integration tests', () => {
         submitGroupActivityDecisions(
           {
             activityId: fixture.activityInstance.id,
-            responses: [qrResponse(instance.id, 'AbCdEf12_-34')],
+            responses: [qrResponse(instance.id, 'ItGrQr56_-78')],
           },
           participantCtx(participantA.id)
         )

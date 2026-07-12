@@ -140,17 +140,16 @@ export async function setDatetime(
   const hour = String(datetime.hour).padStart(2, '0')
   const minute = String(datetime.minute).padStart(2, '0')
   const targetDataDay = getCalendarDataDay(datetime.validation)
-
-  const direction =
-    datetime.monthDelta > 0
-      ? `${cyString}-next-month`
-      : `${cyString}-previous-month`
-  for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
-    const button = page.getByTestId(direction).locator('..')
-    await expect(button).toBeEnabled()
-    await button.click()
-    await page.waitForTimeout(100)
-  }
+  const [month, , year] = targetDataDay.split('/').map(Number)
+  const monthLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+  }).format(new Date(year!, month! - 1, 1))
+  await page
+    .getByRole('combobox', { name: 'Choose the Month' })
+    .selectOption({ label: monthLabel })
+  await page
+    .getByRole('combobox', { name: 'Choose the Year' })
+    .selectOption({ label: String(year) })
 
   await page
     .getByTestId(`${cyString}-calendar`)
