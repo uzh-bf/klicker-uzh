@@ -849,6 +849,15 @@ export const ContentElement = builder
     }),
   })
 
+export interface IQrScanElement extends IBaseElementProps {}
+export const QrScanElement = builder
+  .objectRef<IQrScanElement>('QrScanElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+    }),
+  })
+
 export const Element = builder.unionType('Element', {
   types: [
     ChoicesElement,
@@ -858,6 +867,7 @@ export const Element = builder.unionType('Element', {
     ContentElement,
     SelectionElement,
     CaseStudyElement,
+    QrScanElement,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -877,6 +887,8 @@ export const Element = builder.unionType('Element', {
         return SelectionElement
       case DB.ElementType.CASE_STUDY:
         return CaseStudyElement
+      case DB.ElementType.QR_SCAN:
+        return QrScanElement
     }
   },
 })
@@ -891,6 +903,7 @@ export interface IUserElementList {
     | IContentElement
     | ISelectionElement
     | ICaseStudyElement
+    | IQrScanElement
   )[]
 }
 

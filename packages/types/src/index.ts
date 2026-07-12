@@ -602,6 +602,7 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
 
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
+export interface ElementOptionsQrScan {}
 
 export type ElementOptions =
   | ElementOptionsChoices
@@ -609,6 +610,7 @@ export type ElementOptions =
   | ElementOptionsFreeText
   | ElementOptionsFlashcard
   | ElementOptionsContent
+  | ElementOptionsQrScan
   | ElementOptionsSelection
   | ElementOptionsCaseStudy
 
@@ -648,6 +650,7 @@ export type FlashcardElementData = IElementData<
   ElementOptionsFlashcard
 >
 export type ContentElementData = IElementData<'CONTENT', ElementOptionsContent>
+export type QrScanElementData = IElementData<'QR_SCAN', ElementOptionsQrScan>
 export type SelectionElementData = IElementData<
   'SELECTION',
   ElementOptionsSelection
@@ -663,6 +666,7 @@ export type ElementData =
   | NumericalElementData
   | FlashcardElementData
   | ContentElementData
+  | QrScanElementData
   | SelectionElementData
   | CaseStudyElementData
 
