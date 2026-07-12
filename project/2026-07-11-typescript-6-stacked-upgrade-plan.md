@@ -406,8 +406,9 @@ Every implementation slice:
 - [x] Slice 8 strict maintainability review produced two accepted fixes: make Cypress, Playwright, and Prisma regression checks canonical, and remove duplicate `src/*` import dialects from Chat and PWA. Focused checks, the 25/25 Node 24 graph, Chat/PWA Node 24 production builds, root `check:all`, and OKF validation pass after the fixes.
 - [x] Slice 8 independent branch review found no code or scope issue and confirmed the branch is ready for a stacked draft PR. Merge readiness remains gated on GraphQL runtime tests in CI or an environment without the existing host port-80 listener.
 - [x] Slice 8 fresh verification passed. Browser warming was serialized after simultaneous first compilation exhausted the 24 GiB container memory and swap; the resulting user-path smoke is clean. Both unchanged Hatchet workers connect but expose an existing `@hatchet-dev/typescript-sdk@1.9.4` heartbeat logger `TypeError`; this is recorded as an unrelated runtime baseline gap.
-- [ ] Slice 9 publish approval received.
+- [x] Publication standards, spec, and simplification reviews completed. Accepted cleanup: replace GraphQL's compatibility-only `src/*` alias with repository-standard `@/*` imports across all 12 consumers. Node 24 GraphQL check and production build pass after the cleanup; existing declaration warnings remain baseline-equivalent.
+- [x] Slice 9 publish approval received.
 
-Current: Slice 8 implementation, fresh Node 24 verification, browser smoke, static analysis, security review, strict review, and final review fixes are committed locally. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: Final publication review and GraphQL alias simplification are complete. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: Wait for explicit approval before pushing or opening the stacked draft PR.
+Next: Commit the GraphQL alias simplification, then push and open the stacked draft PR.

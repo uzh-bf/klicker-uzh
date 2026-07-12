@@ -34,7 +34,7 @@
     "noErrorTruncation": true,
     // "preserveSymlinks": true
     "paths": {
-      "src/*": ["./src/*"]
+      "@/*": ["./src/*"]
     },
     /* Vitest global types */
     "types": ["vitest/globals"]
