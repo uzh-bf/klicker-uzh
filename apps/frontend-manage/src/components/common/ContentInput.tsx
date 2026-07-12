@@ -18,7 +18,7 @@ import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { TableKit } from '@tiptap/extension-table'
 import { Markdown } from '@tiptap/markdown'
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { common, createLowlight } from 'lowlight'
 import { useTranslations } from 'next-intl'
@@ -97,6 +97,7 @@ function ContentInput({
     ],
     content: normalizeLegacyEmptyContent(content),
     contentType: 'markdown',
+    immediatelyRender: false,
     autofocus: autoFocus ? 'end' : false,
     editable: !disabled,
     onUpdate: ({ editor }) => {
@@ -112,6 +113,20 @@ function ContentInput({
         ),
       },
     },
+  })
+
+  const activeEditorState = useEditorState({
+    editor,
+    selector: ({ editor }) => ({
+      bold: editor?.isActive('bold') ?? false,
+      italic: editor?.isActive('italic') ?? false,
+      code: editor?.isActive('code') ?? false,
+      blockquote: editor?.isActive('blockquote') ?? false,
+      orderedList: editor?.isActive('orderedList') ?? false,
+      bulletList: editor?.isActive('bulletList') ?? false,
+      codeBlock: editor?.isActive('codeBlock') ?? false,
+      table: editor?.isActive('table') ?? false,
+    }),
   })
 
   // Placeholder extension options are created once. Refresh its decorations
@@ -192,72 +207,72 @@ function ContentInput({
             <ToolbarButton
               data-cy="toolbar-bold"
               label={t('shared.contentInput.boldStyle')}
-              active={editor.isActive('bold')}
+              active={activeEditorState?.bold}
               onClick={() => editor.chain().focus().toggleBold().run()}
             >
               <FontAwesomeIcon
                 icon={faBold}
-                color={editor.isActive('bold') ? 'black' : 'grey'}
+                color={activeEditorState?.bold ? 'black' : 'grey'}
               />
             </ToolbarButton>
 
             <ToolbarButton
               data-cy="toolbar-italic"
               label={t('shared.contentInput.italicStyle')}
-              active={editor.isActive('italic')}
+              active={activeEditorState?.italic}
               onClick={() => editor.chain().focus().toggleItalic().run()}
             >
               <FontAwesomeIcon
                 icon={faItalic}
-                color={editor.isActive('italic') ? 'black' : 'grey'}
+                color={activeEditorState?.italic ? 'black' : 'grey'}
               />
             </ToolbarButton>
 
             <ToolbarButton
               data-cy="toolbar-inline-code"
               label={t('shared.contentInput.codeStyle')}
-              active={editor.isActive('code')}
+              active={activeEditorState?.code}
               onClick={() => editor.chain().focus().toggleCode().run()}
             >
               <FontAwesomeIcon
                 icon={faCode}
-                color={editor.isActive('code') ? 'black' : 'grey'}
+                color={activeEditorState?.code ? 'black' : 'grey'}
               />
             </ToolbarButton>
 
             <ToolbarButton
               data-cy="toolbar-blockquote"
               label={t('shared.contentInput.citationStyle')}
-              active={editor.isActive('blockquote')}
+              active={activeEditorState?.blockquote}
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
             >
               <FontAwesomeIcon
                 icon={faQuoteRight}
-                color={editor.isActive('blockquote') ? 'black' : 'grey'}
+                color={activeEditorState?.blockquote ? 'black' : 'grey'}
               />
             </ToolbarButton>
 
             <ToolbarButton
               data-cy="toolbar-ordered-list"
               label={t('shared.contentInput.numberedList')}
-              active={editor.isActive('orderedList')}
+              active={activeEditorState?.orderedList}
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
             >
               <FontAwesomeIcon
                 icon={faListOl}
-                color={editor.isActive('orderedList') ? 'black' : 'grey'}
+                color={activeEditorState?.orderedList ? 'black' : 'grey'}
               />
             </ToolbarButton>
 
             <ToolbarButton
               data-cy="toolbar-bullet-list"
               label={t('shared.contentInput.unnumberedList')}
-              active={editor.isActive('bulletList')}
+              active={activeEditorState?.bulletList}
               onClick={() => editor.chain().focus().toggleBulletList().run()}
             >
               <FontAwesomeIcon
                 icon={faListUl}
-                color={editor.isActive('bulletList') ? 'black' : 'grey'}
+                color={activeEditorState?.bulletList ? 'black' : 'grey'}
               />
             </ToolbarButton>
 
@@ -306,19 +321,19 @@ function ContentInput({
             <ToolbarButton
               data-cy="toolbar-code-block"
               label={t('shared.contentInput.codeBlock')}
-              active={editor.isActive('codeBlock')}
+              active={activeEditorState?.codeBlock}
               onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             >
               <FontAwesomeIcon
                 icon={faTerminal}
-                color={editor.isActive('codeBlock') ? 'black' : 'grey'}
+                color={activeEditorState?.codeBlock ? 'black' : 'grey'}
               />
             </ToolbarButton>
 
             <ToolbarButton
               data-cy="toolbar-table"
               label={t('shared.contentInput.table')}
-              disabled={editor.isActive('table')}
+              disabled={activeEditorState?.table}
               onClick={() =>
                 editor
                   .chain()
@@ -331,7 +346,7 @@ function ContentInput({
             </ToolbarButton>
           </div>
 
-          {editor.isActive('table') && (
+          {activeEditorState?.table && (
             <div className="border-uzh-grey-40 mr-3 flex flex-row items-center gap-1 border-l pl-2">
               <ToolbarButton
                 data-cy="table-add-row"

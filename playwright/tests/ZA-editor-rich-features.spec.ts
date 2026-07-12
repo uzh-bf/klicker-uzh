@@ -220,6 +220,12 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
     ).toHaveCount(4)
     await expect(reopenedEditor.locator('pre code')).toHaveCount(3)
 
+    // Selecting existing table content is a selection-only transaction. The
+    // contextual controls must still react without requiring a content edit.
+    await reopenedTable.locator('td').first().locator('p').click()
+    await expect(page.getByTestId('table-add-row')).toBeVisible()
+    await expect(page.getByTestId('toolbar-table')).toBeDisabled()
+
     // 9. Legacy break-only rows reopen as an empty editor with its placeholder
     await prisma.element.update({
       where: { id: questionId },
