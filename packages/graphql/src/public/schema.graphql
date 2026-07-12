@@ -1732,6 +1732,7 @@ type LiveQuiz {
   activeBlock: ElementBlock
   beforeFirstBlock: Boolean
   blocks: [ElementBlock!]
+  canResetEscapeRoom: Boolean
   confusionFeedbacks: [ConfusionTimestep!]
   confusionSummary: ConfusionSummary
   course: Course
@@ -2435,7 +2436,7 @@ type Query {
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   escapeRoomHints(groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): [EscapeRoomHint!]
-  escapeRoomProgress(groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
+  escapeRoomProgress(elementBlockId: Int, groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics

@@ -625,6 +625,7 @@ export const Query = builder.queryType({
           microLearningId: t.arg.string({ required: false }),
           groupActivityId: t.arg.string({ required: false }),
           liveQuizId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
         },
         resolve: withPermission(
           (args) =>

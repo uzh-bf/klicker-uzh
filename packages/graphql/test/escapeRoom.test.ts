@@ -18,7 +18,10 @@ import {
   manipulateGroupActivity,
   submitGroupActivityDecisions,
 } from '../src/services/groups.js'
-import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
+import {
+  getCockpitQuiz,
+  manipulateLiveQuiz,
+} from '../src/services/liveQuizzes.js'
 import { getMicroLearningData } from '../src/services/microLearning.js'
 import {
   getPracticeQuizData,
@@ -1628,6 +1631,40 @@ describe('Escape room integration tests', () => {
       await prisma.escapeRoomConfig.create({
         data: { elementBlockId: block.id, timeLimit: 300 },
       })
+      await prisma.liveQuiz.update({
+        where: { id: liveQuiz.id },
+        data: {
+          activeBlockId: block.id,
+          blocks: {
+            update: {
+              where: { id: block.id },
+              data: { status: DB.ElementBlockStatus.ACTIVE },
+            },
+          },
+        },
+      })
+      await recomputeDerivedPermissions(
+        { liveQuizId: liveQuiz.id, userId: lecturerCtx.user.sub },
+        prisma
+      )
+      const redisPipeline = {
+        hgetall: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([[null, { participants: '0' }]]),
+      }
+      const cockpit = await getCockpitQuiz(
+        { id: liveQuiz.id },
+        {
+          ...lecturerCtx,
+          redisExec: { pipeline: () => redisPipeline } as any,
+        }
+      )
+      expect(cockpit).toMatchObject({
+        canResetEscapeRoom: true,
+        activeBlock: {
+          id: block.id,
+          escapeRoomConfig: { timeLimit: 300 },
+        },
+      })
       const participant = await seedParticipant('live-block-start')
 
       await expect(
@@ -1647,6 +1684,59 @@ describe('Escape room integration tests', () => {
         status: DB.EscapeRoomStatus.IN_PROGRESS,
       })
 
+      const progress = await getEscapeRoomProgress(
+        { liveQuizId: liveQuiz.id, elementBlockId: block.id },
+        lecturerCtx
+      )
+      expect(progress).toMatchObject({
+        activityId: String(block.id),
+        totalStacks: 1,
+        attempts: [
+          {
+            id: started.id,
+            participantId: participant.id,
+            clearedStacks: 0,
+          },
+        ],
+      })
+
+      await prisma.escapeRoomAttempt.update({
+        where: { id: started.id },
+        data: {
+          status: DB.EscapeRoomStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+      })
+      const completedProgress = await getEscapeRoomProgress(
+        { liveQuizId: liveQuiz.id, elementBlockId: block.id },
+        lecturerCtx
+      )
+      expect(completedProgress?.attempts[0]?.clearedStacks).toBe(1)
+
+      const foreignQuiz = await seedLiveQuiz(
+        {
+          elements: [{ id: scElement.id, type: scElement.type }],
+          status: DB.PublicationStatus.PUBLISHED,
+          courseId,
+        },
+        lecturerCtx
+      )
+      const foreignBlock = foreignQuiz.blocks[0]!
+      await prisma.escapeRoomConfig.create({
+        data: { elementBlockId: foreignBlock.id, timeLimit: 300 },
+      })
+      await expect(
+        getEscapeRoomProgress(
+          { liveQuizId: liveQuiz.id, elementBlockId: foreignBlock.id },
+          lecturerCtx
+        )
+      ).resolves.toBeNull()
+
+      await prisma.escapeRoomAttempt.update({
+        where: { id: started.id },
+        data: { status: DB.EscapeRoomStatus.IN_PROGRESS, completedAt: null },
+      })
+
       await expect(
         resetEscapeRoomAttempt(
           { elementBlockId: block.id, participantId: participant.id },
@@ -1654,10 +1744,6 @@ describe('Escape room integration tests', () => {
         )
       ).rejects.toThrow('Only lecturers can reset escape room attempts')
 
-      await recomputeDerivedPermissions(
-        { liveQuizId: liveQuiz.id, userId: lecturerCtx.user.sub },
-        prisma
-      )
       await expect(
         resetEscapeRoomAttempt(
           { elementBlockId: block.id, participantId: participant.id },

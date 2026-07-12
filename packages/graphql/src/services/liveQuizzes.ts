@@ -34,6 +34,7 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
+import { checkAccess } from './sharing.js'
 import { computeStackEvaluation } from './stacks.js'
 
 // TODO: rework scheduling for serverless
@@ -742,7 +743,6 @@ export async function getLecturerViewLiveQuiz(
     return null
   }
 
-  // recude live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
     ...liveQuiz,
     confusionSummary: aggregateFeedbacks(liveQuiz.confusionFeedbacks),
@@ -1021,10 +1021,18 @@ export async function getCockpitQuiz(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id, status: DB.PublicationStatus.PUBLISHED },
     include: {
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      activeBlock: {
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
+      },
       blocks: {
         orderBy: { order: 'asc' },
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
       },
       course: true,
       confusionFeedbacks: true,
@@ -1079,7 +1087,17 @@ export async function getCockpitQuiz(
       activeBlockParticipants ?? blockParticipants[liveQuiz.activeBlock.id] ?? 0
   }
 
-  // recude live quiz to only contain what is required for the lecturer cockpit
+  const canResetEscapeRoom = await checkAccess(
+    [
+      {
+        liveQuizId: id,
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+      },
+    ],
+    ctx
+  )
+
+  // reduce live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
     ...liveQuiz,
     activeBlock: liveQuiz.activeBlock,
@@ -1108,6 +1126,7 @@ export async function getCockpitQuiz(
       }
     }),
     confusionSummary: aggregateFeedbacks(liveQuiz.confusionFeedbacks),
+    canResetEscapeRoom,
   }
 
   return reducedQuiz

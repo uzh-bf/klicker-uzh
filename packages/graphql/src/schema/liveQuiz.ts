@@ -92,6 +92,7 @@ export interface ILiveQuiz extends DB.LiveQuiz {
   isPartOfGamifiedCourse?: boolean | null
   isPinProtected?: boolean | null
   beforeFirstBlock?: boolean
+  canResetEscapeRoom?: boolean
 }
 
 export const LiveQuizRef = builder.objectRef<ILiveQuiz>('LiveQuiz')
@@ -116,6 +117,9 @@ export const LiveQuiz = LiveQuizRef.implement({
       nullable: true,
     }),
     isPinProtected: t.exposeBoolean('isPinProtected', { nullable: true }),
+    canResetEscapeRoom: t.exposeBoolean('canResetEscapeRoom', {
+      nullable: true,
+    }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     defaultPoints: t.exposeInt('defaultPoints'),

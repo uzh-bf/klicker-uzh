@@ -4,11 +4,13 @@ import {
   DeactivateLiveQuizBlockDocument,
   EndLiveQuizDocument,
   GetCockpitQuizDocument,
+  GetEscapeRoomProgressDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import EscapeRoomProgress from '../../../components/evaluation/EscapeRoomProgress'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
 import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
@@ -57,6 +59,23 @@ function Cockpit() {
     pollInterval: 2000,
     skip: !router.query.id,
   })
+  const activeEscapeBlock = cockpitData?.cockpitQuiz?.blocks?.find(
+    (block) =>
+      block.id === cockpitData.cockpitQuiz?.activeBlock?.id &&
+      !!block.escapeRoomConfig
+  )
+  const { data: escapeRoomData, refetch: refetchEscapeRoom } = useQuery(
+    GetEscapeRoomProgressDocument,
+    {
+      variables: {
+        liveQuizId: router.query.id as string,
+        elementBlockId: activeEscapeBlock?.id,
+      },
+      skip: !router.query.id || !activeEscapeBlock,
+      pollInterval: activeEscapeBlock ? 2000 : 0,
+      fetchPolicy: 'network-only',
+    }
+  )
 
   // data has not been received yet
   if (cockpitLoading || !cockpitData?.cockpitQuiz)
@@ -81,6 +100,7 @@ function Cockpit() {
     blocks,
     confusionSummary,
     feedbacks,
+    canResetEscapeRoom,
   } = cockpitData.cockpitQuiz
 
   return (
@@ -132,6 +152,15 @@ function Cockpit() {
         quizId={id}
         liveQuizName={name}
       />
+      {activeEscapeBlock && escapeRoomData?.escapeRoomProgress && (
+        <EscapeRoomProgress
+          activityType="liveQuiz"
+          activityId={String(activeEscapeBlock.id)}
+          progress={escapeRoomData.escapeRoomProgress}
+          onReset={() => void refetchEscapeRoom()}
+          canReset={canResetEscapeRoom ?? false}
+        />
+      )}
     </Layout>
   )
 }

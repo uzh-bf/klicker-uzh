@@ -10,7 +10,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface EscapeRoomProgressProps {
-  activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
+  activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity' | 'liveQuiz'
   activityId: string
   progress: EscapeRoomProgressType
   onReset: () => void
@@ -86,7 +86,9 @@ function EscapeRoomProgress({
             ? { microLearningId: activityId }
             : activityType === 'groupActivity'
               ? { groupActivityId: activityId }
-              : { practiceQuizId: activityId }),
+              : activityType === 'liveQuiz'
+                ? { elementBlockId: Number(activityId) }
+                : { practiceQuizId: activityId }),
           participantId: attempt.participantId ?? undefined,
           groupId: attempt.groupId ?? undefined,
         },

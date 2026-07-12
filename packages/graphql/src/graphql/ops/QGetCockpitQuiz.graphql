@@ -6,6 +6,7 @@ query GetCockpitQuiz($id: String!) {
     isModerationEnabled
     isGamificationEnabled
     isAssessmentEnabled
+    canResetEscapeRoom
 
     namespace
     name
@@ -27,6 +28,13 @@ query GetCockpitQuiz($id: String!) {
       timeLimit
       randomSelection
       execution
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
       elements {
         id
         type
@@ -36,6 +44,13 @@ query GetCockpitQuiz($id: String!) {
     }
     activeBlock {
       id
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
     }
     confusionSummary {
       speed
