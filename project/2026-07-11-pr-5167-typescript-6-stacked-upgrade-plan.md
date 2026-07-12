@@ -409,7 +409,9 @@ Every implementation slice:
 - [x] Slice 8 fresh verification passed. Browser warming was serialized after simultaneous first compilation exhausted the 24 GiB container memory and swap; the resulting user-path smoke is clean. Both unchanged Hatchet workers connect but expose an existing `@hatchet-dev/typescript-sdk@1.9.4` heartbeat logger `TypeError`; this is recorded as an unrelated runtime baseline gap.
 - [x] Publication standards, spec, and simplification reviews completed. Accepted cleanup: replace GraphQL's compatibility-only `src/*` alias with repository-standard `@/*` imports across all 12 consumers. Node 24 GraphQL check and production build pass after the cleanup; existing declaration warnings remain baseline-equivalent.
 - [x] Slice 9 publish approval received.
+- [x] PR CI failure diagnosis completed at `d74201f15`: GraphQL tests could not resolve the new `@/*` imports because Vitest lacked the matching runtime alias; `check-types` restored a cached Prisma build without the generated `src/prisma/client` tree. The `test-graphql-status` failure was only the downstream status gate.
+- [x] CI repair adds the Vitest alias, makes the Prisma check generate its own client, and removes the now-redundant Prisma check-to-build Turbo edge. A missing-client Node 24 Prisma check passes, the formerly blocked GraphQL suite resolves its aliases and executes, and the full Node 24 typecheck graph passes 25/25. Full service-backed GraphQL results remain delegated to the clean CI stack because the shared DevPod database and worker state are not test-isolated.
 
-Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published with a focused CI repair. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: Read PR CI and reviews. Keep draft status until GraphQL runtime CI and remaining required checks pass.
+Next: Read rerun CI and reviews. Keep draft status until GraphQL runtime CI and remaining required checks pass.

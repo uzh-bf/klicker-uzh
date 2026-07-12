@@ -36,7 +36,7 @@ CI runs Cypress (8-way split) and Playwright (8-way shard) on almost every code 
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:
 
-1. `pnpm run check:all` — typecheck + format + lint + syncpack (same as pre-commit hook).
+1. `pnpm run check:all` — typecheck + format + lint + syncpack (same as pre-commit hook). The Prisma package check regenerates its client before typechecking, so it is safe from a clean checkout.
 2. `pnpm run build` — same as pre-push hook; also refreshes generated artifacts.
 3. Targeted tests per the routing table above — quote failures exactly; never delete/weaken a test to pass.
 4. **Codegen artifacts committed** if any `.graphql` op or schema changed (`git status` must be clean after `pnpm --filter @klicker-uzh/graphql generate`).
