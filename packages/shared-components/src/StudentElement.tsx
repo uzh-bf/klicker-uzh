@@ -436,6 +436,19 @@ function StudentElement({
         elementIx={elementIx}
       />
     )
+  } else if (element.elementData.__typename === 'QrScanElementData') {
+    // Slice 8 authoring preview; the interactive scanner is added with the
+    // participant answering contract in Slice 9.
+    return (
+      <ContentElement
+        key={element.id}
+        element={element}
+        read={false}
+        onRead={() => undefined}
+        elementIx={elementIx}
+        hideReadButton
+      />
+    )
   } else if (element.elementData.__typename === 'ContentElementData') {
     return (
       <ContentElement

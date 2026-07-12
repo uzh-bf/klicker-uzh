@@ -14,6 +14,7 @@ import {
   SortByType,
 } from '@klicker-uzh/types'
 import {
+  generateQrScanCode,
   getInitialInstanceResults,
   PrismaTransactionClient,
   processElementData,
@@ -275,6 +276,23 @@ export async function getUserElements(
   }
 }
 
+export async function getQrScanCode(
+  { elementId }: { elementId: number },
+  ctx: ContextWithUser
+) {
+  const element = await ctx.prisma.element.findFirst({
+    where: {
+      id: elementId,
+      type: DB.ElementType.QR_SCAN,
+      ownerId: ctx.user.sub,
+      isDeleted: false,
+    },
+    select: { qrScanCode: true },
+  })
+
+  return element?.qrScanCode ?? null
+}
+
 export async function getSingleElement(
   { id }: { id: number },
   ctx: ContextWithUser
@@ -458,6 +476,12 @@ export async function manipulateElement(
       })
     : undefined
 
+  // An element's discriminator is immutable. Reject cross-type mutation IDs
+  // before any option processing can overwrite another element shape.
+  if (elementPrev && elementPrev.type !== type) {
+    return null
+  }
+
   // determine which tags have been deconnected
   if (elementPrev?.tags) {
     tagsToDisconnect = elementPrev.tags
@@ -542,6 +566,8 @@ export async function manipulateElement(
           : basePoints!,
       pointsMultiplier: pointsMultiplier!,
       options: processedOptions,
+      qrScanCode:
+        type === DB.ElementType.QR_SCAN ? generateQrScanCode() : undefined,
       owner: { connect: { id: ctx.user.sub } },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
       tags: {

@@ -849,6 +849,16 @@ export const Query = builder.queryType({
         ),
       }),
 
+      qrScanCode: t.withAuth(asUser).string({
+        nullable: true,
+        args: {
+          elementId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementService.getQrScanCode(args, ctx)
+        },
+      }),
+
       getInstanceUpdateActivities: t.withAuth(asUser).field({
         nullable: true,
         type: [InstanceUpdateActivityInfo],

@@ -1,0 +1,3 @@
+query GetQrScanCode($elementId: Int!) {
+  qrScanCode(elementId: $elementId)
+}
