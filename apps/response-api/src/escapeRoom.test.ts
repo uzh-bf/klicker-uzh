@@ -382,6 +382,27 @@ describe('response-api escape-room validation', () => {
     expect(mocks.push).toHaveBeenCalledTimes(2)
   })
 
+  it('rejects a future escape-room stage before grading or publishing it', async () => {
+    mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      { ...payload, instanceId: 12 },
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(409)
+    expect(JSON.parse(result.body)).toEqual({
+      error: 'escape_room_stage_locked',
+    })
+    expect(mocks.grade).not.toHaveBeenCalled()
+    expect(mocks.push).not.toHaveBeenCalled()
+  })
+
   it('retries final persistence without republishing an accepted response', async () => {
     mocks.grade.mockReturnValue(1)
     mocks.updateAttempts.mockRejectedValueOnce(
@@ -440,7 +461,10 @@ describe('response-api escape-room validation', () => {
       info,
       redis
     )
-    expect(JSON.parse(afterReset.result.body).completed).toBe(false)
+    expect(afterReset.result.statusCode).toBe(409)
+    expect(JSON.parse(afterReset.result.body)).toEqual({
+      error: 'escape_room_stage_locked',
+    })
     expect(mocks.updateAttempts).not.toHaveBeenCalled()
   })
 

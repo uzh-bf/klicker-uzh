@@ -36,6 +36,7 @@ interface LiveQuizQuestionColumnProps {
     responseStatus?: string
     completed?: boolean
   }>
+  refetchLiveQuiz: () => Promise<unknown>
   className?: string
 }
 
@@ -50,6 +51,7 @@ function LiveQuizQuestionColumn({
   onSelectBlock,
   isGamificationEnabled,
   handleNewResponse,
+  refetchLiveQuiz,
   className,
 }: LiveQuizQuestionColumnProps) {
   const t = useTranslations()
@@ -148,6 +150,9 @@ function LiveQuizQuestionColumn({
           blockId={activeBlock.id}
           escapeRoomConfig={activeBlock.escapeRoomConfig}
           initialEscapeRoomAttempt={activeBlock.escapeRoomAttempts?.at(-1)}
+          escapeRoomTotalInstances={activeBlock.escapeRoomTotalInstances}
+          escapeRoomClearedInstances={activeBlock.escapeRoomClearedInstances}
+          refetchLiveQuiz={refetchLiveQuiz}
         />
       ) : null}
 

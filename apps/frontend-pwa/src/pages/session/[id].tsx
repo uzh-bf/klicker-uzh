@@ -416,6 +416,7 @@ function Index({ id }: { id: string }) {
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
         handleNewResponse={handleNewResponse}
+        refetchLiveQuiz={refetch}
         className={extraClassName}
       />
     )

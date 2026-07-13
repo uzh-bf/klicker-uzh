@@ -6,6 +6,8 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
     timeLimit
     randomSelection
     execution
+    escapeRoomTotalInstances
+    escapeRoomClearedInstances
     escapeRoomConfig {
       timeLimit
       hintPenalty
@@ -40,6 +42,8 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
     timeLimit
     randomSelection
     execution
+    escapeRoomTotalInstances
+    escapeRoomClearedInstances
     escapeRoomConfig {
       timeLimit
       hintPenalty

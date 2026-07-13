@@ -299,6 +299,43 @@ export async function getEscapeRoomProgress(
     },
     orderBy: { startedAt: 'asc' },
   })
+
+  const now = Date.now()
+  const elapsedAttemptIds = attempts
+    .filter(
+      (attempt) =>
+        attempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
+        now - attempt.startedAt.getTime() >
+          (attempt.timeLimit -
+            attempt.penaltySeconds +
+            ESCAPE_ROOM_GRACE_SECONDS) *
+            1000
+    )
+    .map((attempt) => attempt.id)
+  if (elapsedAttemptIds.length > 0) {
+    await ctx.prisma.escapeRoomAttempt.updateMany({
+      where: {
+        id: { in: elapsedAttemptIds },
+        status: DB.EscapeRoomStatus.IN_PROGRESS,
+      },
+      data: { status: DB.EscapeRoomStatus.EXPIRED },
+    })
+    const persistedElapsedAttempts =
+      await ctx.prisma.escapeRoomAttempt.findMany({
+        where: { id: { in: elapsedAttemptIds } },
+        select: { id: true, status: true },
+      })
+    const persistedElapsedStatuses = new Map(
+      persistedElapsedAttempts.map((attempt) => [attempt.id, attempt.status])
+    )
+    for (const attempt of attempts) {
+      const persistedStatus = persistedElapsedStatuses.get(attempt.id)
+      if (persistedStatus) {
+        attempt.status = persistedStatus
+      }
+    }
+  }
+
   // 4. For participant-scoped stack activities, compute cleared stacks from the
   //    correct responses in one query. Group/live-quiz paths fall back to a
   //    status-derived estimate (they do not track per-stack QuestionResponse).

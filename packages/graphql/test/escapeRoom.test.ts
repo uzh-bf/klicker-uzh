@@ -1,7 +1,11 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
-import { StackFeedbackStatus } from '@klicker-uzh/types'
+import {
+  type ElementData,
+  type ElementInstanceResults,
+  StackFeedbackStatus,
+} from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -19,7 +23,9 @@ import {
   submitGroupActivityDecisions,
 } from '../src/services/groups.js'
 import {
+  activateLiveQuizBlock,
   getCockpitQuiz,
+  getRunningLiveQuiz,
   manipulateLiveQuiz,
 } from '../src/services/liveQuizzes.js'
 import { getMicroLearningData } from '../src/services/microLearning.js'
@@ -148,6 +154,75 @@ async function seedParticipant(label: string) {
   })
   createdParticipantIds.push(participant.id)
   return participant
+}
+
+async function seedEscapeRoomLiveQuiz({
+  active = true,
+  includeSecondInstance = false,
+  firstHint,
+  secondHint,
+  hintPenalty,
+}: {
+  active?: boolean
+  includeSecondInstance?: boolean
+  firstHint?: string
+  secondHint?: string
+  hintPenalty?: number
+} = {}) {
+  const liveQuiz = await seedLiveQuiz(
+    {
+      elements: [{ id: scElement.id, type: scElement.type }],
+      status: DB.PublicationStatus.PUBLISHED,
+      courseId,
+    },
+    lecturerCtx
+  )
+  const seededBlock = liveQuiz.blocks[0]!
+  if (firstHint !== undefined) {
+    await prisma.elementInstance.updateMany({
+      where: { elementBlockId: seededBlock.id },
+      data: { options: { escapeRoomHint: firstHint } },
+    })
+  }
+  if (includeSecondInstance) {
+    await prisma.elementInstance.create({
+      data: {
+        order: 1,
+        elementId: qrElement.id,
+        elementBlockId: seededBlock.id,
+        type: DB.ElementInstanceType.LIVE_QUIZ,
+        elementType: qrElement.type,
+        options: secondHint === undefined ? {} : { escapeRoomHint: secondHint },
+        elementData: {} as ElementData,
+        results: {} as ElementInstanceResults,
+        anonymousResults: {} as ElementInstanceResults,
+        ownerId: lecturerCtx.user.sub,
+      },
+    })
+  }
+  const block = await prisma.elementBlock.findUniqueOrThrow({
+    where: { id: seededBlock.id },
+    include: { elements: { orderBy: { order: 'asc' } } },
+  })
+  await prisma.escapeRoomConfig.create({
+    data: { elementBlockId: block.id, timeLimit: 300, hintPenalty },
+  })
+  if (active) {
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        activeBlockId: block.id,
+        blocks: {
+          update: {
+            where: { id: block.id },
+            data: { status: DB.ElementBlockStatus.ACTIVE },
+          },
+        },
+      },
+    })
+  }
+
+  return { liveQuiz, block }
 }
 
 async function cleanupTestData() {
@@ -1640,6 +1715,142 @@ describe('Escape room integration tests', () => {
   // #endregion
 
   describe('LiveQuiz block attempt start/reset contract', () => {
+    it('does not broadcast escape-room question content when a block activates', async () => {
+      const { liveQuiz, block } = await seedEscapeRoomLiveQuiz({
+        active: false,
+      })
+      const publish = vi.fn()
+      const redisPipeline = {
+        hmset: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([]),
+      }
+
+      await activateLiveQuizBlock(
+        { quizId: liveQuiz.id, blockId: block.id },
+        {
+          ...lecturerCtx,
+          pubSub: { ...lecturerCtx.pubSub, publish } as any,
+          redisExec: { pipeline: () => redisPipeline } as any,
+        }
+      )
+
+      expect(publish).toHaveBeenCalledWith(
+        'runningLiveQuizUpdated',
+        expect.objectContaining({
+          activeBlock: expect.objectContaining({
+            elements: [],
+            escapeRoomTotalInstances: 1,
+            escapeRoomClearedInstances: 0,
+          }),
+        })
+      )
+    })
+
+    it('returns no locked question content and only the current live escape stage', async () => {
+      const { liveQuiz, block } = await seedEscapeRoomLiveQuiz({
+        includeSecondInstance: true,
+      })
+      const participant = await seedParticipant('live-stage-mask')
+      const clearedIds: string[] = []
+      const ctx = {
+        ...participantCtx(participant.id),
+        redisExec: {
+          smembers: vi.fn().mockImplementation(async () => clearedIds),
+        } as any,
+      }
+
+      const beforeStart = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+      expect(beforeStart?.activeBlock?.elements).toEqual([])
+      expect(beforeStart?.activeBlock).toMatchObject({
+        escapeRoomTotalInstances: 2,
+        escapeRoomClearedInstances: 0,
+      })
+      const anonymous = await getRunningLiveQuiz(
+        { id: liveQuiz.id },
+        createCtx(undefined)
+      )
+      expect(anonymous?.activeBlock?.elements).toEqual([])
+      const temporary = await getRunningLiveQuiz(
+        { id: liveQuiz.id },
+        createUserCtx('temporary-viewer', DB.UserRole.TEMPORARY_PARTICIPANT)
+      )
+      expect(temporary?.activeBlock?.elements).toEqual([])
+
+      const attempt = await startEscapeRoomAttempt(
+        { elementBlockId: block.id },
+        ctx
+      )
+      const firstInstanceId = block.elements[0]!.id
+      const secondInstanceId = block.elements[1]!.id
+      const firstStage = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+      expect(firstStage?.activeBlock?.elements?.map(({ id }) => id)).toEqual([
+        firstInstanceId,
+      ])
+
+      clearedIds.push(String(firstInstanceId))
+      const secondStage = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+      expect(secondStage?.activeBlock?.elements?.map(({ id }) => id)).toEqual([
+        secondInstanceId,
+      ])
+      expect(secondStage?.activeBlock).toMatchObject({
+        escapeRoomTotalInstances: 2,
+        escapeRoomClearedInstances: 1,
+      })
+      expect(
+        await prisma.escapeRoomAttempt.findUnique({ where: { id: attempt.id } })
+      ).not.toBeNull()
+    })
+
+    it('rejects a future LiveQuiz hint until the preceding stage is cleared', async () => {
+      const { block } = await seedEscapeRoomLiveQuiz({
+        includeSecondInstance: true,
+        firstHint: 'first hint',
+        secondHint: 'future hint',
+        hintPenalty: 30,
+      })
+      const participant = await seedParticipant('live-hint-gate')
+      const clearedIds: string[] = []
+      const ctx = {
+        ...participantCtx(participant.id),
+        redisExec: {
+          smembers: vi.fn().mockImplementation(async () => clearedIds),
+        } as any,
+      }
+      const attempt = await startEscapeRoomAttempt(
+        { elementBlockId: block.id },
+        ctx
+      )
+
+      await expect(
+        requestEscapeRoomHint(
+          { elementBlockId: block.id, instanceId: block.elements[1]!.id },
+          ctx
+        )
+      ).rejects.toThrow(
+        'You must answer all preceding questions correctly before requesting this hint'
+      )
+      expect(
+        await prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+        })
+      ).toMatchObject({ penaltySeconds: 0, hintsUsed: [] })
+
+      await expect(
+        requestEscapeRoomHint(
+          { elementBlockId: block.id, instanceId: block.elements[0]!.id },
+          ctx
+        )
+      ).resolves.toMatchObject({ hint: 'first hint' })
+
+      clearedIds.push(String(block.elements[0]!.id))
+      await expect(
+        requestEscapeRoomHint(
+          { elementBlockId: block.id, instanceId: block.elements[1]!.id },
+          ctx
+        )
+      ).resolves.toMatchObject({ hint: 'future hint' })
+    })
+
     it('round-trips escape-room block configuration through create and edit', async () => {
       await recomputeDerivedPermissions(
         { elementId: scElement.id, userId: lecturerCtx.user.sub },
@@ -1991,6 +2202,25 @@ describe('Escape room integration tests', () => {
   // ! SEC#1: status gate on escape attempt start/hint
   // #region
   describe('escape attempt status gate (SEC#1)', () => {
+    it('rejects a start request that binds more than one activity', async () => {
+      const practiceQuiz = await seedEscapeRoomQuiz(1)
+      const { block } = await seedEscapeRoomLiveQuiz()
+      const participant = await seedParticipant('start-multi-id')
+
+      await expect(
+        startEscapeRoomAttempt(
+          { practiceQuizId: practiceQuiz.id, elementBlockId: block.id },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Exactly one activity ID must be specified')
+
+      expect(
+        await prisma.escapeRoomAttempt.count({
+          where: { participantId: participant.id },
+        })
+      ).toBe(0)
+    })
+
     it('rejects starting or hinting on an unpublished practice quiz for an enrolled participant', async () => {
       // an enrolled participant is authorized for the course but must still be
       // blocked from a scheduled (not-yet-published) escape room; the status
@@ -2789,6 +3019,90 @@ describe('Escape room integration tests', () => {
   // ! Lecturer progress dashboard query
   // #region
   describe('getEscapeRoomProgress - lecturer progress aggregation', () => {
+    it('expires an elapsed attempt when the lecturer reads progress', async () => {
+      const quiz = await seedEscapeRoomQuiz(1, { timeLimit: 1 })
+      const participant = await seedParticipant('progress-passive-expiry')
+      const attempt = await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+      await prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: { startedAt: new Date(Date.now() - 10_000) },
+      })
+
+      const progress = await getEscapeRoomProgress(
+        { practiceQuizId: quiz.id },
+        lecturerCtx
+      )
+
+      expect(
+        progress?.attempts.find((entry) => entry.id === attempt.id)?.status
+      ).toBe(DB.EscapeRoomStatus.EXPIRED)
+      expect(
+        (
+          await prisma.escapeRoomAttempt.findUniqueOrThrow({
+            where: { id: attempt.id },
+          })
+        ).status
+      ).toBe(DB.EscapeRoomStatus.EXPIRED)
+    })
+
+    it('reports a concurrent completion instead of stale passive expiry', async () => {
+      const quiz = await seedEscapeRoomQuiz(1, { timeLimit: 1 })
+      const participant = await seedParticipant('progress-expiry-race')
+      const attempt = await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(participant.id)
+      )
+      await prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: { startedAt: new Date(Date.now() - 10_000) },
+      })
+
+      const escapeRoomAttempt = new Proxy(prisma.escapeRoomAttempt, {
+        get(target, property, receiver) {
+          if (property !== 'updateMany') {
+            return Reflect.get(target, property, receiver)
+          }
+
+          return async () => {
+            await prisma.escapeRoomAttempt.update({
+              where: { id: attempt.id },
+              data: {
+                status: DB.EscapeRoomStatus.COMPLETED,
+                completedAt: new Date(),
+              },
+            })
+            return { count: 0 }
+          }
+        },
+      })
+      const concurrentPrisma = new Proxy(prisma, {
+        get(target, property, receiver) {
+          return property === 'escapeRoomAttempt'
+            ? escapeRoomAttempt
+            : Reflect.get(target, property, receiver)
+        },
+      })
+
+      const progress = await getEscapeRoomProgress(
+        { practiceQuizId: quiz.id },
+        { ...lecturerCtx, prisma: concurrentPrisma }
+      )
+
+      expect(
+        progress?.attempts.find((entry) => entry.id === attempt.id)?.status
+      ).toBe(DB.EscapeRoomStatus.COMPLETED)
+      expect(
+        (
+          await prisma.escapeRoomAttempt.findUniqueOrThrow({
+            where: { id: attempt.id },
+          })
+        ).status
+      ).toBe(DB.EscapeRoomStatus.COMPLETED)
+    })
+
     it('reports per-participant cleared stacks, total stacks and attempt metadata', async () => {
       const quiz = await seedEscapeRoomQuiz(2, { timeLimit: 1800 })
       const stack0 = quiz.stacks[0]!

@@ -5,6 +5,8 @@ import {
   ElementInstanceResults,
   ElementResultsCaseStudy,
   ElementResultsOpen,
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  getCurrentEscapeRoomInstance,
   HatchetHandlers,
   type ElementBlockInput,
   type ElementResultsChoices,
@@ -1221,40 +1223,48 @@ export async function activateLiveQuizBlock(
     )
   }
 
+  const isEscapeRoomBlock = !!updatedQuiz.activeBlock?.escapeRoomConfig
+
   // update the quiz with an updated version through the corresponding subscription
   ctx.pubSub.publish('runningLiveQuizUpdated', {
     id: updatedQuiz.id,
     beforeFirstBlock: false,
     activeBlock: {
       ...updatedQuiz.activeBlock,
-      elements: updatedQuiz.activeBlock!.elements
-        ? await Promise.all(
-            removeSolutionFromInstances({
-              instances: updatedQuiz.activeBlock!.elements,
-            }).map(async (instance) => {
-              if (!quiz.isAssessmentEnabled) {
-                return instance
-              }
-
-              // for assessment quizzes, add a correlation key to verify a student's submission
-              const correlationKey = await signJWT(
-                {
-                  instanceId: instance.id,
-                  execution: updatedQuiz.activeBlock!.execution,
-                  liveQuizId: quiz.id,
-                  sub: '', // dummy sub, since this value is required
-                },
-                process.env.APP_SECRET as string,
-                {
-                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
-                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+      elements: isEscapeRoomBlock
+        ? []
+        : updatedQuiz.activeBlock!.elements
+          ? await Promise.all(
+              removeSolutionFromInstances({
+                instances: updatedQuiz.activeBlock!.elements,
+              }).map(async (instance) => {
+                if (!quiz.isAssessmentEnabled) {
+                  return instance
                 }
-              )
 
-              return { ...instance, correlationKey }
-            })
-          )
-        : [],
+                // for assessment quizzes, add a correlation key to verify a student's submission
+                const correlationKey = await signJWT(
+                  {
+                    instanceId: instance.id,
+                    execution: updatedQuiz.activeBlock!.execution,
+                    liveQuizId: quiz.id,
+                    sub: '', // dummy sub, since this value is required
+                  },
+                  process.env.APP_SECRET as string,
+                  {
+                    issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+                    issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+                  }
+                )
+
+                return { ...instance, correlationKey }
+              })
+            )
+          : [],
+      escapeRoomTotalInstances: isEscapeRoomBlock
+        ? updatedQuiz.activeBlock!.elements.length
+        : null,
+      escapeRoomClearedInstances: isEscapeRoomBlock ? 0 : null,
     },
     // for future blocks, do not return the elements
     blocks: updatedQuiz.blocks.map((block) => ({
@@ -3064,18 +3074,54 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // extract solution from instances in active block
   let quizWithoutSolutions: any
   if (quiz && quiz.activeBlock) {
-    const escapeAttempt =
-      quiz.activeBlock.escapeRoomConfig &&
-      ctx.user?.role === DB.UserRole.PARTICIPANT
-        ? await ctx.prisma.escapeRoomAttempt.findUnique({
-            where: {
-              participantId_elementBlockId: {
-                participantId: ctx.user.sub,
-                elementBlockId: quiz.activeBlock.id,
-              },
-            },
-          })
+    const isEscapeRoomBlock = !!quiz.activeBlock.escapeRoomConfig
+    const escapeParticipantId =
+      isEscapeRoomBlock && ctx.user?.role === DB.UserRole.PARTICIPANT
+        ? ctx.user.sub
         : null
+    const isParticipantEscapeRoom = escapeParticipantId !== null
+    const escapeAttempt = isParticipantEscapeRoom
+      ? await ctx.prisma.escapeRoomAttempt.findUnique({
+          where: {
+            participantId_elementBlockId: {
+              participantId: escapeParticipantId,
+              elementBlockId: quiz.activeBlock.id,
+            },
+          },
+        })
+      : null
+    const clearedInstanceIds = new Set(
+      escapeAttempt
+        ? await ctx.redisExec.smembers(
+            `escape-attempt:${escapeAttempt.id}:cleared`
+          )
+        : []
+    )
+    const escapeRoomInstances = isEscapeRoomBlock
+      ? quiz.activeBlock.elements.filter((instance) =>
+          ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES.includes(instance.elementType)
+        )
+      : []
+    const escapeRoomTotalInstances = isEscapeRoomBlock
+      ? escapeRoomInstances.length
+      : null
+    const escapeRoomClearedInstances = isEscapeRoomBlock
+      ? escapeAttempt?.status === DB.EscapeRoomStatus.COMPLETED
+        ? escapeRoomInstances.length
+        : escapeRoomInstances.filter((instance) =>
+            clearedInstanceIds.has(String(instance.id))
+          ).length
+      : null
+    const participantVisibleInstances = isEscapeRoomBlock
+      ? escapeAttempt?.status === DB.EscapeRoomStatus.IN_PROGRESS
+        ? [
+            getCurrentEscapeRoomInstance(
+              escapeRoomInstances,
+              clearedInstanceIds
+            ),
+          ].filter((instance) => instance !== undefined)
+        : []
+      : quiz.activeBlock.elements
     const revealedHintIds = new Set(
       Array.isArray(escapeAttempt?.hintsUsed)
         ? escapeAttempt.hintsUsed.map(String)
@@ -3083,7 +3129,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     )
     const activeBlockInstances = await Promise.all(
       removeSolutionFromInstances({
-        instances: quiz.activeBlock.elements,
+        instances: participantVisibleInstances,
       }).map(async (instance) => {
         if (!quiz.isAssessmentEnabled) {
           return {
@@ -3116,7 +3162,12 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     quizWithoutSolutions = {
       ...quiz,
       beforeFirstBlock,
-      activeBlock: { ...quiz.activeBlock, elements: activeBlockInstances },
+      activeBlock: {
+        ...quiz.activeBlock,
+        elements: activeBlockInstances,
+        escapeRoomTotalInstances,
+        escapeRoomClearedInstances,
+      },
       // for future blocks, do not return the elements
       blocks: quiz.blocks.map((block) => ({
         ...block,

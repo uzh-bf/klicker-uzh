@@ -11,6 +11,26 @@ import type {
   PointCorrection,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
+import { ElementType as PrismaElementType } from '@klicker-uzh/prisma/client'
+
+export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly PrismaElementType[] =
+  [
+    PrismaElementType.SC,
+    PrismaElementType.MC,
+    PrismaElementType.KPRIM,
+    PrismaElementType.NUMERICAL,
+    PrismaElementType.FREE_TEXT,
+    PrismaElementType.QR_SCAN,
+  ]
+
+export function getCurrentEscapeRoomInstance<T extends { id: number }>(
+  orderedInstances: readonly T[],
+  clearedInstanceIds: ReadonlySet<string>
+): T | undefined {
+  return orderedInstances.find(
+    (instance) => !clearedInstanceIds.has(String(instance.id))
+  )
+}
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './hatchet.js'

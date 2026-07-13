@@ -1,6 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  getCurrentEscapeRoomInstance,
   HatchetHandlers,
   type ElementStackInput,
 } from '@klicker-uzh/types'
@@ -964,6 +966,18 @@ export async function startEscapeRoomAttempt(
     throw new GraphQLError('Only participants can start escape room attempts')
   }
 
+  const activityIdCount = [
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    elementBlockId,
+  ].filter((value) => value != null).length
+  if (activityIdCount !== 1) {
+    throw new GraphQLError('Exactly one activity ID must be specified', {
+      extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' },
+    })
+  }
+
   const participantId = ctx.user.sub
 
   // 1. Identify active settings
@@ -1388,6 +1402,28 @@ export async function requestEscapeRoomHint(
       (stack) => !isEscapeRoomStackCleared(stack.elements)
     )
     if (!currentStack || instance.elementStackId !== currentStack.id) {
+      throw new GraphQLError(
+        'You must answer all preceding questions correctly before requesting this hint',
+        { extensions: { code: 'ESCAPE_ROOM_GATED' } }
+      )
+    }
+  } else if (elementBlockId) {
+    const blockInstances = await ctx.prisma.elementInstance.findMany({
+      where: {
+        elementBlockId,
+        elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
+      },
+      orderBy: { order: 'asc' },
+      select: { id: true },
+    })
+    const clearedInstanceIds = new Set(
+      await ctx.redisExec.smembers(`escape-attempt:${attempt.id}:cleared`)
+    )
+    const currentInstance = getCurrentEscapeRoomInstance(
+      blockInstances,
+      clearedInstanceIds
+    )
+    if (currentInstance?.id !== instanceId) {
       throw new GraphQLError(
         'You must answer all preceding questions correctly before requesting this hint',
         { extensions: { code: 'ESCAPE_ROOM_GATED' } }

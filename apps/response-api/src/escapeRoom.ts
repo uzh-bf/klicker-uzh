@@ -8,6 +8,8 @@ import {
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  getCurrentEscapeRoomInstance,
   gradeQrScanResponse,
   isValidQrScanCode,
   normalizeQrScanCode,
@@ -17,14 +19,6 @@ import { IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 
 const ESCAPE_ROOM_GRACE_SECONDS = 5
-const ESCAPE_ROOM_RESPONSE_TYPES = [
-  'SC',
-  'MC',
-  'KPRIM',
-  'NUMERICAL',
-  'FREE_TEXT',
-  'QR_SCAN',
-] as const
 
 async function getParticipantData(
   cookieHeader?: string
@@ -146,6 +140,26 @@ export async function handleEscapeRoomValidation(
     return true
   }
 
+  const requiredInstances = await prisma.elementInstance.findMany({
+    where: {
+      elementBlockId: blockId,
+      elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
+    },
+    select: { id: true },
+    orderBy: { order: 'asc' },
+  })
+  const clearedKey = `escape-attempt:${attempt.id}:cleared`
+  const clearedInstances = new Set(await redis.smembers(clearedKey))
+  const instanceAlreadyCleared = clearedInstances.has(String(instanceId))
+  const currentInstance = getCurrentEscapeRoomInstance(
+    requiredInstances,
+    clearedInstances
+  )
+  if (!instanceAlreadyCleared && currentInstance?.id !== instanceId) {
+    sendJson(res, 409, { error: 'escape_room_stage_locked' })
+    return true
+  }
+
   // Grade response
   let pointsPercentage = 0
   const type = instanceInfo.type
@@ -223,10 +237,7 @@ export async function handleEscapeRoomValidation(
     const tries = triesRaw ? Number(triesRaw) + 1 : 1
 
     const responseTimestamp = Date.now()
-    const clearedKey = `escape-attempt:${attempt.id}:cleared`
     const claimKey = `${clearedKey}:claim:${instanceId}`
-    const instanceAlreadyCleared =
-      (await redis.sismember(clearedKey, String(instanceId))) === 1
 
     if (!instanceAlreadyCleared) {
       const claimed = await redis.set(claimKey, '1', 'EX', 300, 'NX')
@@ -253,6 +264,7 @@ export async function handleEscapeRoomValidation(
           message
         )
         await redis.sadd(clearedKey, String(instanceId))
+        clearedInstances.add(String(instanceId))
         await redis.expire(clearedKey, 60 * 60 * 24 * 30)
         await redis.del(triesKey)
       } catch (error) {
@@ -261,14 +273,6 @@ export async function handleEscapeRoomValidation(
       }
     }
 
-    const requiredInstances = await prisma.elementInstance.findMany({
-      where: {
-        elementBlockId: blockId,
-        elementType: { in: [...ESCAPE_ROOM_RESPONSE_TYPES] },
-      },
-      select: { id: true },
-    })
-    const clearedInstances = new Set(await redis.smembers(clearedKey))
     const blockCompleted =
       requiredInstances.length > 0 &&
       requiredInstances.every((entry) => clearedInstances.has(String(entry.id)))

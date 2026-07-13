@@ -202,6 +202,8 @@ export interface IElementBlock extends DB.ElementBlock {
   numOfParticipants?: number
   elements?: DB.ElementInstance[] | null
   escapeRoomConfig?: DB.EscapeRoomConfig | null
+  escapeRoomTotalInstances?: number | null
+  escapeRoomClearedInstances?: number | null
 }
 export const ElementBlockRef = builder.objectRef<IElementBlock>('ElementBlock')
 export const ElementBlock = ElementBlockRef.implement({
@@ -214,6 +216,12 @@ export const ElementBlock = ElementBlockRef.implement({
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
     execution: t.exposeInt('execution', { nullable: true }),
+    escapeRoomTotalInstances: t.exposeInt('escapeRoomTotalInstances', {
+      nullable: true,
+    }),
+    escapeRoomClearedInstances: t.exposeInt('escapeRoomClearedInstances', {
+      nullable: true,
+    }),
 
     elements: t.expose('elements', {
       type: [ElementInstanceRef],

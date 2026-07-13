@@ -78,6 +78,9 @@ interface QuestionAreaProps {
     introText?: string | null
   } | null
   initialEscapeRoomAttempt?: EscapeRoomAttemptView | null
+  escapeRoomTotalInstances?: number | null
+  escapeRoomClearedInstances?: number | null
+  refetchLiveQuiz?: () => Promise<unknown>
 }
 
 function QuestionArea({
@@ -92,6 +95,9 @@ function QuestionArea({
   blockId,
   escapeRoomConfig,
   initialEscapeRoomAttempt,
+  escapeRoomTotalInstances,
+  escapeRoomClearedInstances,
+  refetchLiveQuiz,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
@@ -201,6 +207,7 @@ function QuestionArea({
         variables: { elementBlockId: blockId },
       })
       if (result.data?.startEscapeRoomAttempt) {
+        await refetchLiveQuiz?.()
         setEscapeAttempt(result.data.startEscapeRoomAttempt)
         setEscapeCompleted(false)
       }
@@ -349,6 +356,11 @@ function QuestionArea({
 
     // update the stored responses
     await updateStoredResponses(instanceId, responseStorageQuizId, execution)
+
+    if (escapeRoomConfig && refetchLiveQuiz) {
+      await refetchLiveQuiz()
+      return
+    }
 
     // calculate the new indices of remaining questions
     const newRemaining = (remainingQuestions ?? []).filter(
@@ -757,11 +769,20 @@ function QuestionArea({
       onStart={handleEscapeStart}
       loading={startingEscapeRoom}
       attempt={escapeAttempt}
-      clearedStacks={instances.length - (remainingQuestions?.length ?? 0)}
-      totalStacks={instances.length}
+      clearedStacks={
+        escapeRoomClearedInstances ??
+        instances.length - (remainingQuestions?.length ?? 0)
+      }
+      totalStacks={escapeRoomTotalInstances ?? instances.length}
       introText={escapeRoomConfig.introText}
     />
   ) : null
+
+  if (escapeRoomConfig && instances.length === 0) {
+    return (
+      <div className="min-h-content relative h-full">{escapeRoomOverlay}</div>
+    )
+  }
 
   // while the remaining questions are still initializing, do not return anything
   if (remainingQuestions === null) {

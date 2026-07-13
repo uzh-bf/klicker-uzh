@@ -1045,7 +1045,9 @@ union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardEl
 type ElementBlock {
   elements: [ElementInstance!]
   escapeRoomAttempts: [EscapeRoomAttempt!]
+  escapeRoomClearedInstances: Int
   escapeRoomConfig: EscapeRoomConfig
+  escapeRoomTotalInstances: Int
   execution: Int
   expiresAt: Date
   id: Int!
