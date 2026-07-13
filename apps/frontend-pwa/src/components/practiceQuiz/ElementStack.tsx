@@ -173,37 +173,26 @@ function ElementStack({
           setLockoutDeadline(performance.now() + remaining * 1000)
         }
         toast({
-          message: t('pwa.practiceQuiz.escapeRoomLockoutToast' as any, {
-            defaultValue:
-              'Incorrect — you are locked out for a short time before retrying.',
-          }),
+          message: t('pwa.practiceQuiz.escapeRoomLockoutToast'),
           type: 'error',
         })
         break
       }
       case 'ESCAPE_ROOM_EXPIRED':
         toast({
-          message: t('pwa.practiceQuiz.escapeRoomExpiredToast' as any, {
-            defaultValue: 'Time is up — this escape room attempt has expired.',
-          }),
+          message: t('pwa.practiceQuiz.escapeRoomExpiredToast'),
           type: 'error',
         })
         break
       case 'ESCAPE_ROOM_GATED':
         toast({
-          message: t('pwa.practiceQuiz.escapeRoomGatedToast' as any, {
-            defaultValue:
-              'Answer the preceding questions correctly before this step.',
-          }),
+          message: t('pwa.practiceQuiz.escapeRoomGatedToast'),
           type: 'error',
         })
         break
       default:
         toast({
-          message: t('pwa.practiceQuiz.escapeRoomForbiddenToast' as any, {
-            defaultValue:
-              'This escape room can only be answered with an active attempt.',
-          }),
+          message: t('pwa.practiceQuiz.escapeRoomForbiddenToast'),
           type: 'error',
         })
     }
@@ -228,9 +217,8 @@ function ElementStack({
       if (hint) {
         setRevealedHints((prev) => ({ ...prev, [instanceId]: hint }))
         toast({
-          message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast' as any, {
+          message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast', {
             penalty: escapeRoom.hintPenalty,
-            defaultValue: `Hint revealed — ${escapeRoom.hintPenalty}s added to your time.`,
           }),
           type: 'success',
         })
@@ -549,9 +537,8 @@ function ElementStack({
                         data={{ cy: `request-escape-room-hint-${element.id}` }}
                       >
                         <Button.Label>
-                          {t('pwa.practiceQuiz.escapeRoomRequestHint' as any, {
+                          {t('pwa.practiceQuiz.escapeRoomRequestHint', {
                             penalty: escapeRoom.hintPenalty,
-                            defaultValue: `Reveal hint (−${escapeRoom.hintPenalty}s)`,
                           })}
                         </Button.Label>
                       </Button>
@@ -633,9 +620,8 @@ function ElementStack({
         <UserNotification
           type="error"
           className={{ root: 'mt-2' }}
-          message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown' as any, {
+          message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
             seconds: lockoutRemaining,
-            defaultValue: `Locked out. You can try again in ${lockoutRemaining}s.`,
           })}
           data={{ cy: 'escape-room-lockout-countdown' }}
         />

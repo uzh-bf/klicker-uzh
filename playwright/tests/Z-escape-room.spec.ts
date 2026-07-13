@@ -78,6 +78,16 @@ const GROUP = {
     { name: 'Vault Clue Beta', displayName: 'Clue Beta', content: 'south' },
   ],
 }
+const LIVE = {
+  name: 'Escape Room Live Quiz',
+  displayName: 'Escape Room Live Quiz Display',
+  description: 'Escape room live quiz e2e test',
+  // authored in MINUTES; the backend stores the escape time limit in seconds,
+  // so the edit round-trip below is the regression guard for that conversion
+  timeLimitMinutes: '5',
+  hintPenaltySeconds: '45',
+  introText: 'The live vault is sealed. Escape before the timer runs out.',
+}
 
 // Wizard flow of createPracticeQuiz (activities fixture) extended with the
 // escape-room settings on the settings step and hint authoring on the
@@ -941,5 +951,81 @@ test.describe.serial('Escape room workflows', () => {
     await expect(
       page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
     ).toBeVisible()
+  })
+
+  test('Author a LiveQuiz escape-room block and confirm the time limit round-trips in minutes on edit', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+
+    // --- create: minimal live quiz carrying a single escape-room block ---
+    await page.getByTestId('create-live-quiz').click()
+    await page.getByTestId('insert-live-quiz-name').fill(LIVE.name)
+    await page.getByTestId('next-or-submit').click()
+    await page.getByTestId('insert-live-display-name').fill(LIVE.displayName)
+    await page.getByTestId('insert-live-description').click()
+    await page
+      .getByTestId('insert-live-description')
+      .pressSequentially(LIVE.description)
+    await page.getByTestId('next-or-submit').click()
+    await selectOption(page, '[data-cy="select-course"]', COURSE)
+    await expect(page.getByTestId('select-course')).toContainText(COURSE)
+    await page.getByTestId('next-or-submit').click()
+
+    // blocks step: one block holding one SC element, then enable escape mode
+    // on that block through its countdown modal. The escape settings only
+    // render once the checkbox is toggled.
+    await createStacks(page, {
+      stacks: [{ elements: [SC1.title] }],
+      type: 'block',
+    })
+    await page.getByTestId('open-block-0-countdown').click()
+    await expect(page.getByTestId('escape-room-time-limit')).not.toBeAttached()
+    await page.getByTestId('toggle-escape-room').click()
+    await expect(page.getByTestId('escape-room-time-limit')).toBeVisible()
+    await page.getByTestId('escape-room-time-limit').fill(LIVE.timeLimitMinutes)
+    await page
+      .getByTestId('escape-room-hint-penalty')
+      .fill(LIVE.hintPenaltySeconds)
+    await page.getByTestId('escape-room-intro-text').fill(LIVE.introText)
+    await page.getByTestId('close-block-countdown').click()
+
+    // submit the live quiz
+    await page.getByTestId('next-or-submit').click()
+    await page.waitForTimeout(500)
+
+    // --- edit: reopen the wizard and step through to the block config ---
+    await page.getByTestId('activities').click()
+    await page.getByTestId('activities-search-input').fill(LIVE.name)
+    await page.getByTestId('activities-search-input').press('Enter')
+    await page.getByTestId(`actions-LIVE_QUIZ-${LIVE.name}`).click()
+    await page.getByTestId(`edit-live-quiz-${LIVE.name}`).click()
+    await expect(page.getByTestId('insert-live-quiz-name')).toHaveValue(
+      LIVE.name
+    )
+    await page.getByTestId('next-or-submit').click()
+    await expect(page.getByTestId('insert-live-display-name')).toHaveValue(
+      LIVE.displayName
+    )
+    await page.getByTestId('next-or-submit').click()
+    await page.getByTestId('next-or-submit').click()
+
+    // the escape settings prefill from the stored config. The time limit must
+    // come back in MINUTES (stored server-side as seconds) - pre-fix this
+    // showed the raw seconds (300) instead of 5.
+    await page.getByTestId('open-block-0-countdown').click()
+    await expect(page.getByTestId('escape-room-time-limit')).toHaveValue(
+      LIVE.timeLimitMinutes
+    )
+    await expect(page.getByTestId('escape-room-hint-penalty')).toHaveValue(
+      LIVE.hintPenaltySeconds
+    )
+    await expect(page.getByTestId('escape-room-intro-text')).toHaveValue(
+      LIVE.introText
+    )
+    await page.getByTestId('close-block-countdown').click()
   })
 })

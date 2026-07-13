@@ -180,6 +180,23 @@ Dependencies: 2a needs 1; 2b needs 2a; 3,4 need 2b; 6 needs 5; 5 independent of 
 - Rate-limit or debounce `requestEscapeRoomHint` and answer submissions server-side to the extent existing middleware allows; document any gap.
 - Final security review subagent (`$security-review`) mandatory before the implementation PR is marked ready.
 
+### Deferred hardening (SEC#3, SEC#4) — accepted residual risk
+
+The independent security review surfaced two hardening items that are **intentionally deferred out of this PR** with the rationale below. Both are recorded here and mirrored in the PR body so the decision is auditable; both get a follow-up ticket rather than silent omission.
+
+- **SEC#3 — no dedicated rate limit on `requestEscapeRoomHint` / answer submission.** Deferred.
+  - _Residual risk:_ a scripted participant could hammer the hint or submit resolvers.
+  - _Why acceptable now:_ the feature already carries app-level throttles that blunt the abuse. Every hint applies a **monotonic time penalty** to the participant's own attempt, so hint-spam is self-defeating and bounded by the finite hint count; a wrong answer arms a **5s server-side lockout** that rejects premature resubmits; attempts are per-participant/per-group with a server-anchored deadline, and sequential gating prevents skipping ahead. The remaining exposure is compute load, not a correctness or data-leak bug.
+  - _Why not fixed here:_ KlickerUZH has **no per-resolver rate-limit primitive** today. Adding a Redis-backed limiter is a cross-cutting platform concern that should be designed once and applied uniformly (hint, submit, login, magic-link), not bolted onto one feature. Doing it inside this PR would either duplicate infra or under-build it.
+  - _Follow-up:_ ticket to add a shared resolver rate-limit primitive and apply it to the escape hint + submit paths (and other participant-facing mutations).
+
+- **SEC#4 — QR-scan code comparison is not constant-time.** Deferred.
+  - _Site:_ `gradeQrScanResponse` in `packages/types/src/index.ts` compares with `normalized === expected` (short-circuits on first differing char).
+  - _Residual risk:_ a theoretical timing side-channel could leak the code character-by-character.
+  - _Why acceptable now:_ the code is **72 bits of CSPRNG entropy** (`randomBytes(9)` base64url), single-use inside an escape context and redacted from participant-facing payloads. Recovering it char-by-char via `===` timing requires isolating nanosecond-scale differences across the network; wall-clock jitter dwarfs that signal, and the per-participant attempt/lockout model further throttles the sampling an attacker would need. Threat model = classroom escape rooms, not a credential or financial secret.
+  - _Why not fixed here:_ `gradeQrScanResponse` lives in the **isomorphic `@klicker-uzh/types` package** that is bundled into the frontend. Pulling `node:crypto.timingSafeEqual` into it risks the browser build; a correct fix relocates QR comparison to a server-only module — a refactor disproportionate to the residual risk.
+  - _Follow-up:_ ticket to move QR-code comparison to a server-only path and switch to `crypto.timingSafeEqual`.
+
 ## Verification & PR Evidence
 
 - Per-slice: `pnpm --filter @klicker-uzh/graphql check`, targeted vitest (`grading`), agent-browser screenshots (desktop + mobile viewport) attached to PR.
@@ -209,9 +226,23 @@ Dependencies: 2a needs 1; 2b needs 2a; 3,4 need 2b; 6 needs 5; 5 independent of 
 ## Progress
 
 - 2026-07-07: Research done (4 subagents OK, 4 failed on rate/spend limits — gaps filled inline, marked in Research). Plan drafted. Independent `agy` review done, 11 findings integrated. Next: plan commit → draft PR.
+- 2026-07-12: All slices implemented on `codex/escape-room-production` (PR #5143). Feature complete across practice quizzes, microlearnings, group activities, and live-quiz blocks: server-side sequential gating, per-participant/group attempts with server-anchored countdown, 5s wrong-answer lockout, time-penalty hints, QR-scan answer elements (CSPRNG codes, redacted like sample solutions, print sheets), and the lecturer progress dashboard with owner-only reset. Slice 10 verification pass:
+  - Playwright `Z-escape-room.spec.ts`: 17/17 green — full authoring→publish→play loops for quiz, microlearning, and group activity, plus a server-side security regression test (future-stack hint → `ESCAPE_ROOM_GATED`; anonymous submit → `ESCAPE_ROOM_FORBIDDEN`).
+  - GraphQL integration `escapeRoom.test.ts`: 62/62 green (B1 integrity guard, B2 owner-only reset, B4 retention, gating/lockout/expiry/completion, group atomic submission, progress aggregation, plus a new microlearning retry regression test).
+  - Two product bugs found and fixed during e2e: escape microlearnings were silently swallowing retries under the single-submission guard (`stacks.ts`), and the microlearning page threw "Stack not found" instead of rendering the intro/lockout overlay when the server withheld stacks (`[ix].tsx`).
+  - Gates: full turbo `check` 23/23, prettier clean, frontend lint clean, codegen + Prisma-sync parity clean, opengrep clean (no escape-room findings). QR-outside-escape enforced server-side in all three creation validators.
+  - LiveQuiz escape browser coverage deferred: server path covered by the integration suite; the participant overlay is the shared `EscapeRoomOverlay` already exercised by the practice-quiz browser tests; driving a full live control-app session in-browser is heavy and flaky for low marginal value.
+- 2026-07-12 (review remediation): addressed the LiveQuiz-escape review findings in-PR rather than deferring them.
+  - **SEC#1 status gate:** `startEscapeRoomAttempt` / `requestEscapeRoomHint` now reject unpublished practice quizzes / microlearnings / group activities and non-active LiveQuiz blocks (`practiceQuizzes.ts`). Two integration regression tests added → `escapeRoom.test.ts` now **64/64** green.
+  - **MAINT#1 unit bug:** LiveQuiz escape time limit was authored in minutes but read back/persisted inconsistently; the wizard now round-trips minutes and `submitLiveQuizForm.tsx` converts to seconds (`* 60`) with a `?? 5` default. Guarded by a new authoring→edit Playwright test in `Z-escape-room.spec.ts` that asserts the edit form re-prefills the time limit in **minutes**, not the stored seconds.
+  - **MAINT#5 i18n:** dedicated keys `escapeRoomAssessmentIncompatible` + `escapeRoomNoQrOutside` added to `en.ts`/`de.ts` (no reused/borrowed strings).
+  - **MAINT#2/#3/#4 typing:** `stacks.ts` escape types tightened; stray `t()` casts removed in `QuestionArea.tsx` + `ElementStack.tsx`; `useEscapeRoom` `Pick` widened to include the overlay stats fields (`startedAt`/`completedAt`/`penaltySeconds`/`hintsUsed`) so `EscapeRoomOverlay` typechecks at all three call sites.
+  - **SEC#3 / SEC#4:** intentionally deferred with documented rationale — see [Deferred hardening](#deferred-hardening-sec3-sec4--accepted-residual-risk).
+  - Re-verification (correct worktree container, `default-es-d54ef-app-1`, fresh run): turbo `check` 11/11; `escapeRoom.test.ts` 64/64; `format:check` (`prettier --check .`) clean; `check:syncpack`, `check:prisma-sync`, `check:agents-md` all pass; lint on changed packages clean; graphql codegen produces no drift. opengrep on the changed escape-room files is clean (2 `unsafe-formatstring` findings at `practiceQuizzes.ts:725/781` are pre-existing on `v3`, outside this branch's diff). Note: `pnpm run check:all` as a whole reports failure only on its `check:format` step, which is `lint-staged` and requires git — git is unavailable inside the devcontainer (the mount is a worktree pointer), so that step is an environment artifact, not a formatting defect; `format:check` (stronger, checks all files) is the substitute and passes.
 
 ## Next Steps
 
-1. Junior: read plan + R2 precedent PRs (#4477, #4486) before touching QR track.
-2. Confirm with product owner: individual-only v1, hint penalty default, one-attempt policy.
-3. Start Slice 1 on a fresh branch off `v3`.
+1. Final security + maintainability review of the branch; address findings.
+2. Refresh the engineering wiki escape-room page and confirm the lecturer/student tutorials match shipped behavior.
+3. Capture PR screenshots (wizard, student locked→unlocked→countdown→hint→completion, dashboard) at desktop + mobile.
+4. Finalize the PR description; decide the push strategy for PR head `escape-room-quiz-mode-plan` (cannot fast-forward — needs merge-in or force-with-lease, with explicit user approval). Do not merge without approval.

@@ -59,7 +59,7 @@ async function submitLiveQuizForm({
         timeLimit: block.timeLimit,
         isEscapeRoom: block.isEscapeRoom ?? false,
         escapeRoomTimeLimit: block.isEscapeRoom
-          ? block.escapeRoomTimeLimit
+          ? (block.escapeRoomTimeLimit ?? 5) * 60
           : undefined,
         escapeRoomHintPenalty: block.isEscapeRoom
           ? block.escapeRoomHintPenalty

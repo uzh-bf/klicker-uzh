@@ -1988,6 +1988,82 @@ describe('Escape room integration tests', () => {
     })
   })
 
+  // ! SEC#1: status gate on escape attempt start/hint
+  // #region
+  describe('escape attempt status gate (SEC#1)', () => {
+    it('rejects starting or hinting on an unpublished practice quiz for an enrolled participant', async () => {
+      // an enrolled participant is authorized for the course but must still be
+      // blocked from a scheduled (not-yet-published) escape room; the status
+      // gate makes it indistinguishable from a missing quiz
+      const quiz = await seedEscapeRoomPracticeQuiz(
+        {
+          elements: [scElement],
+          courseId,
+          status: DB.PublicationStatus.SCHEDULED,
+        },
+        lecturerCtx
+      )
+      createdQuizIds.push(quiz.id)
+      const instanceId = quiz.stacks[0]!.elements[0]!.id
+      const participant = await seedParticipant('gate-unpublished-pq')
+
+      await expect(
+        startEscapeRoomAttempt(
+          { practiceQuizId: quiz.id },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Practice quiz not found')
+
+      // the hint path carries the same gate, so no hint leaks before publish
+      await expect(
+        requestEscapeRoomHint(
+          { practiceQuizId: quiz.id, instanceId },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Practice quiz not found')
+
+      expect(
+        await prisma.escapeRoomAttempt.count({
+          where: { practiceQuizId: quiz.id },
+        })
+      ).toBe(0)
+    })
+
+    it('rejects starting an escape attempt on a LiveQuiz block that is not active', async () => {
+      // ElementBlock.id is a globally sequential, guessable integer. A block
+      // that carries an escapeRoomConfig but has not been activated must reject
+      // an attempt - existence of the config alone must never open the timer.
+      const liveQuiz = await seedLiveQuiz(
+        {
+          elements: [{ id: scElement.id, type: scElement.type }],
+          status: DB.PublicationStatus.PUBLISHED,
+          courseId,
+        },
+        lecturerCtx
+      )
+      const block = liveQuiz.blocks[0]!
+      await prisma.escapeRoomConfig.create({
+        data: { elementBlockId: block.id, timeLimit: 300 },
+      })
+      // deliberately leave the block in its default (non-ACTIVE) status
+      const participant = await seedParticipant('gate-inactive-block')
+
+      await expect(
+        startEscapeRoomAttempt(
+          { elementBlockId: block.id },
+          participantCtx(participant.id)
+        )
+      ).rejects.toThrow('Block not found')
+
+      expect(
+        await prisma.escapeRoomAttempt.count({
+          where: { elementBlockId: block.id },
+        })
+      ).toBe(0)
+    })
+  })
+  // #endregion
+
   // ! Escape room completion
   // #region
   describe('respondToElementStack - escape room completion', () => {

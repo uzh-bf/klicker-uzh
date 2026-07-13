@@ -57,7 +57,7 @@ function LiveQuizCountdownModal({
             replace(index, {
               ...block,
               isEscapeRoom: !block.isEscapeRoom,
-              escapeRoomTimeLimit: block.escapeRoomTimeLimit ?? 300,
+              escapeRoomTimeLimit: block.escapeRoomTimeLimit ?? 5,
               escapeRoomHintPenalty: block.escapeRoomHintPenalty ?? 0,
             })
           }
@@ -67,7 +67,7 @@ function LiveQuizCountdownModal({
           <div className="mt-3 flex flex-col gap-3">
             <NumberField
               label={t('manage.activityWizard.escapeRoomTimeLimit')}
-              value={block.escapeRoomTimeLimit ?? 300}
+              value={block.escapeRoomTimeLimit ?? 5}
               onChange={(value) =>
                 replace(index, {
                   ...block,

@@ -208,7 +208,7 @@ function LiveQuizWizard({
               otherwise: (schema) =>
                 schema.test(
                   'no-qr-scan-outside-escape-room',
-                  t('manage.activityWizard.liveQuizTypes'),
+                  t('manage.activityWizard.escapeRoomNoQrOutside'),
                   (elements) =>
                     !elements?.some(
                       (element) => element.type === ElementType.QrScan
@@ -230,7 +230,7 @@ function LiveQuizWizard({
         })
         .test(
           'escape-room-assessment',
-          t('manage.activityWizard.liveQuizTypes'),
+          t('manage.activityWizard.escapeRoomAssessmentIncompatible'),
           (block) => !formData.isAssessmentEnabled || !block.isEscapeRoom
         )
     ),
@@ -289,7 +289,9 @@ function LiveQuizWizard({
       ? initialValues.blocks.map((block) => ({
           timeLimit: block.timeLimit ?? undefined,
           isEscapeRoom: !!block.escapeRoomConfig,
-          escapeRoomTimeLimit: block.escapeRoomConfig?.timeLimit ?? 300,
+          escapeRoomTimeLimit: block.escapeRoomConfig?.timeLimit
+            ? Math.round(block.escapeRoomConfig.timeLimit / 60)
+            : 5,
           escapeRoomHintPenalty: block.escapeRoomConfig?.hintPenalty ?? 0,
           escapeRoomIntroText: block.escapeRoomConfig?.introText ?? '',
           elements: block.elements!.map((instance) => {

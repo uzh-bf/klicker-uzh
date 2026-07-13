@@ -977,7 +977,10 @@ export async function startEscapeRoomAttempt(
       where: { id: practiceQuizId, isDeleted: false },
       include: { escapeRoomConfig: true },
     })
-    if (!pq) throw new GraphQLError('Practice quiz not found')
+    // SECURITY: an unpublished quiz must be indistinguishable from a missing
+    // one so participants cannot probe for / start escape attempts early.
+    if (!pq || pq.status !== DB.PublicationStatus.PUBLISHED)
+      throw new GraphQLError('Practice quiz not found')
     isEscapeRoom = !!pq.escapeRoomConfig
     timeLimit = pq.escapeRoomConfig?.timeLimit ?? 3600
     courseId = pq.courseId
@@ -986,7 +989,10 @@ export async function startEscapeRoomAttempt(
       where: { id: microLearningId, isDeleted: false },
       include: { escapeRoomConfig: true },
     })
-    if (!ml) throw new GraphQLError('Microlearning not found')
+    // SECURITY: only a published microlearning may back an escape attempt;
+    // hide the not-yet-published state behind the same not-found error.
+    if (!ml || ml.status !== DB.PublicationStatus.PUBLISHED)
+      throw new GraphQLError('Microlearning not found')
     isEscapeRoom = !!ml.escapeRoomConfig
     timeLimit = ml.escapeRoomConfig?.timeLimit ?? 3600
     courseId = ml.courseId
@@ -995,7 +1001,9 @@ export async function startEscapeRoomAttempt(
       where: { id: groupActivityId, isDeleted: false },
       include: { escapeRoomConfig: true },
     })
-    if (!ga) throw new GraphQLError('Group activity not found')
+    // SECURITY: only a published group activity may back an escape attempt.
+    if (!ga || ga.status !== DB.PublicationStatus.PUBLISHED)
+      throw new GraphQLError('Group activity not found')
     isEscapeRoom = !!ga.escapeRoomConfig
     timeLimit = ga.escapeRoomConfig?.timeLimit ?? 3600
     courseId = ga.courseId
@@ -1016,7 +1024,11 @@ export async function startEscapeRoomAttempt(
       where: { id: elementBlockId },
       include: { escapeRoomConfig: true, liveQuiz: true },
     })
-    if (!block) throw new GraphQLError('Block not found')
+    // SECURITY: ElementBlock.id is a globally sequential, guessable integer.
+    // Require the block to be ACTIVE so a participant cannot start a timer or
+    // pull hint text for a scheduled (not-yet-activated) live-quiz block.
+    if (!block || block.status !== DB.ElementBlockStatus.ACTIVE)
+      throw new GraphQLError('Block not found')
     isEscapeRoom = !!block.escapeRoomConfig
     timeLimit = block.escapeRoomConfig?.timeLimit ?? 300
     courseId = block.liveQuiz.courseId
@@ -1194,7 +1206,10 @@ export async function requestEscapeRoomHint(
       where: { id: practiceQuizId, isDeleted: false },
       include: { escapeRoomConfig: true },
     })
-    if (!pq) throw new GraphQLError('Practice quiz not found')
+    // SECURITY: an unpublished quiz must be indistinguishable from a missing
+    // one so participants cannot probe for / start escape attempts early.
+    if (!pq || pq.status !== DB.PublicationStatus.PUBLISHED)
+      throw new GraphQLError('Practice quiz not found')
     isEscapeRoom = !!pq.escapeRoomConfig
     hintPenalty = pq.escapeRoomConfig?.hintPenalty ?? 30
     courseId = pq.courseId
@@ -1203,7 +1218,10 @@ export async function requestEscapeRoomHint(
       where: { id: microLearningId, isDeleted: false },
       include: { escapeRoomConfig: true },
     })
-    if (!ml) throw new GraphQLError('Microlearning not found')
+    // SECURITY: only a published microlearning may back an escape attempt;
+    // hide the not-yet-published state behind the same not-found error.
+    if (!ml || ml.status !== DB.PublicationStatus.PUBLISHED)
+      throw new GraphQLError('Microlearning not found')
     isEscapeRoom = !!ml.escapeRoomConfig
     hintPenalty = ml.escapeRoomConfig?.hintPenalty ?? 30
     courseId = ml.courseId
@@ -1212,7 +1230,9 @@ export async function requestEscapeRoomHint(
       where: { id: groupActivityId, isDeleted: false },
       include: { escapeRoomConfig: true },
     })
-    if (!ga) throw new GraphQLError('Group activity not found')
+    // SECURITY: only a published group activity may back an escape attempt.
+    if (!ga || ga.status !== DB.PublicationStatus.PUBLISHED)
+      throw new GraphQLError('Group activity not found')
     isEscapeRoom = !!ga.escapeRoomConfig
     hintPenalty = ga.escapeRoomConfig?.hintPenalty ?? 30
     courseId = ga.courseId
@@ -1232,7 +1252,11 @@ export async function requestEscapeRoomHint(
       where: { id: elementBlockId },
       include: { escapeRoomConfig: true, liveQuiz: true },
     })
-    if (!block) throw new GraphQLError('Block not found')
+    // SECURITY: ElementBlock.id is a globally sequential, guessable integer.
+    // Require the block to be ACTIVE so a participant cannot start a timer or
+    // pull hint text for a scheduled (not-yet-activated) live-quiz block.
+    if (!block || block.status !== DB.ElementBlockStatus.ACTIVE)
+      throw new GraphQLError('Block not found')
     isEscapeRoom = !!block.escapeRoomConfig
     hintPenalty = block.escapeRoomConfig?.hintPenalty ?? 30
     courseId = block.liveQuiz.courseId

@@ -2075,6 +2075,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomMode: 'Escape Room Mode',
       escapeRoomTimeLimit: 'Time Limit (minutes)',
       escapeRoomHintPenalty: 'Hint Penalty (seconds)',
+      escapeRoomAssessmentIncompatible:
+        'Escape room mode cannot be combined with assessment (graded) mode.',
+      escapeRoomNoQrOutside:
+        'QR scan questions can only be used in escape room blocks.',
       escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
       escapeRoomTimeLimitRequired: 'Time limit is required',
       escapeRoomInteger: 'Must be an integer',

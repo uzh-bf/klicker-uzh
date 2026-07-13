@@ -29,6 +29,20 @@ const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
 })
 
+// The escape attempt is fed from three GraphQL selections (start mutation, hint
+// mutation, live-quiz block query) that all select the same fields, so we type
+// it structurally here rather than coupling to one generated selection type.
+type EscapeRoomAttemptView = {
+  id: string
+  startedAt: string
+  timeLimit: number
+  penaltySeconds: number
+  hintsUsed: string[]
+  status: EscapeRoomStatus
+  lockoutUntil?: string | null
+  completedAt?: string | null
+}
+
 interface QuestionAreaProps {
   isBlockActive?: boolean
   gamificationEnabled: boolean
@@ -63,7 +77,7 @@ interface QuestionAreaProps {
     hintPenalty: number
     introText?: string | null
   } | null
-  initialEscapeRoomAttempt?: any
+  initialEscapeRoomAttempt?: EscapeRoomAttemptView | null
 }
 
 function QuestionArea({
@@ -392,18 +406,14 @@ function QuestionArea({
   function showStatusCodeToast(statusCode: number, responseStatus?: string) {
     if (responseStatus === 'incorrect') {
       toast({
-        message: t('pwa.practiceQuiz.escapeRoomIncorrectToast' as any, {
-          defaultValue: 'Incorrect answer! Please try again.',
-        }),
+        message: t('pwa.practiceQuiz.escapeRoomIncorrectToast'),
         type: 'error',
       })
       return
     }
     if (statusCode === 429) {
       toast({
-        message: t('pwa.practiceQuiz.escapeRoomLockoutToast' as any, {
-          defaultValue: 'You are currently locked out. Please wait.',
-        }),
+        message: t('pwa.practiceQuiz.escapeRoomLockoutToast'),
         type: 'error',
       })
       return
@@ -464,7 +474,7 @@ function QuestionArea({
         Math.ceil((new Date(result.lockoutUntil).getTime() - Date.now()) / 1000)
       )
       setLockoutRemaining(remaining)
-      setEscapeAttempt((current: any) =>
+      setEscapeAttempt((current) =>
         current ? { ...current, lockoutUntil: result.lockoutUntil } : current
       )
     }
@@ -841,9 +851,8 @@ function QuestionArea({
           <UserNotification
             type="warning"
             className={{ root: 'mt-3' }}
-            message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown' as any, {
+            message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
               seconds: lockoutRemaining,
-              defaultValue: `Try again in ${lockoutRemaining}s`,
             })}
           />
         )}
@@ -864,9 +873,8 @@ function QuestionArea({
                   onClick={handleHintRequest}
                   data={{ cy: 'live-quiz-escape-room-hint' }}
                 >
-                  {t('pwa.practiceQuiz.escapeRoomRequestHint' as any, {
+                  {t('pwa.practiceQuiz.escapeRoomRequestHint', {
                     penalty: escapeRoomConfig.hintPenalty,
-                    defaultValue: `Reveal hint (−${escapeRoomConfig.hintPenalty}s)`,
                   })}
                 </Button>
               )}

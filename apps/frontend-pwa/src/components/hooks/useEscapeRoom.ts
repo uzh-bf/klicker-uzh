@@ -1,16 +1,39 @@
 import { useMutation } from '@apollo/client'
 import {
+  EscapeRoomAttempt,
   EscapeRoomStatus,
   StartEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useEffect, useRef, useState } from 'react'
+
+// Minimal shape the hook actually reads off an escape-room-capable activity.
+// Pick ties the attempt fields to the generated schema so a rename breaks here.
+type EscapeRoomActivityInput = {
+  id: string
+  escapeRoomConfig?: unknown
+  escapeRoomAttempts?: Array<
+    Pick<
+      EscapeRoomAttempt,
+      // fields the hook reads directly ...
+      | 'id'
+      | 'status'
+      | 'remainingSeconds'
+      | 'expiresInSeconds'
+      // ... plus the stats the returned attempt feeds into EscapeRoomOverlay
+      | 'startedAt'
+      | 'completedAt'
+      | 'penaltySeconds'
+      | 'hintsUsed'
+    >
+  > | null
+}
 
 export function useEscapeRoom({
   activity,
   activityType,
   refetch,
 }: {
-  activity: any
+  activity: EscapeRoomActivityInput | null | undefined
   activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
   refetch: () => void
 }) {
@@ -28,6 +51,7 @@ export function useEscapeRoom({
   const expiryHandledAttemptIdRef = useRef<string | null>(null)
 
   const startAttempt = async () => {
+    if (!activity) return
     const variables: Record<string, string> = {}
     if (activityType === 'practiceQuiz') {
       variables.practiceQuizId = activity.id

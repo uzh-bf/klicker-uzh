@@ -3261,8 +3261,16 @@ export async function respondToElementStack(
 
   let isEscapeRoom = false
   let attempt: DB.EscapeRoomAttempt | null = null
-  let finalStack: any = null
-  let allActivityStacks: any[] = []
+  let finalStack: DB.Prisma.ElementStackGetPayload<{
+    include: {
+      microLearning: { include: { escapeRoomConfig: true } }
+      practiceQuiz: { include: { escapeRoomConfig: true } }
+      elements: { include: { responses: true } }
+    }
+  }> | null = null
+  let allActivityStacks: DB.Prisma.ElementStackGetPayload<{
+    include: { elements: { include: { responses: true } } }
+  }>[] = []
 
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
   if (isParticipant) {
@@ -3304,22 +3312,23 @@ export async function respondToElementStack(
     )
 
     if (isEscapeRoom && !isOwner) {
-      const attemptWhere = practiceQuiz
-        ? {
-            participantId_practiceQuizId: {
-              participantId,
-              practiceQuizId: practiceQuiz.id,
-            },
-          }
-        : {
-            participantId_microLearningId: {
-              participantId,
-              microLearningId: microLearning!.id,
-            },
-          }
+      const attemptWhere: DB.Prisma.EscapeRoomAttemptWhereUniqueInput =
+        practiceQuiz
+          ? {
+              participantId_practiceQuizId: {
+                participantId,
+                practiceQuizId: practiceQuiz.id,
+              },
+            }
+          : {
+              participantId_microLearningId: {
+                participantId,
+                microLearningId: microLearning!.id,
+              },
+            }
 
       attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
-        where: attemptWhere as any,
+        where: attemptWhere,
       })
 
       if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
