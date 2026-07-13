@@ -40,34 +40,26 @@ Use this if you are running in a headless cloud server or want to avoid installi
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.23 recommended; ≥ 0.0.21 required) and start it:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.26 and start it:
    ```bash
    devrouter up && devrouter tls install   # Traefik + the shared `devnet` + mkcert CA
    ```
-2. Start the devcontainer via devrouter workspace commands:
+2. Reconcile this existing linked worktree with one command:
    ```bash
-   dev workspace up <branch-name>
+   devrouter workspace ensure .
    ```
-   _Note: This automatically provisions a git worktree, sets `WORKSPACE` and `DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml` inside the environment, and runs `devpod up` under the hood._
+   To create a new worktree instead, run `devrouter workspace up <branch-name>` from the main repository. Both commands persist one identity, select the devrouter overlay, mount linked Git metadata, start or attach the exact DevPod, prove the runtime, and reconcile routes.
 3. Open `https://manage.klicker.<workspace>.localhost` (credentials: `lecturer` / `abcd`).
 
-For a manual `devpod up` configuration (without using `dev workspace up`), you must supply the environment variables yourself:
+Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops in a linked worktree. Those paths cannot prove that the DevPod, Git mount, aliases, and routes share one identity.
+
+## Primary checkout with DevPod
 
 ```bash
-WORKSPACE=my-branch DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up . --ide none
-for a in api auth pwa manage control olat-api response-api lti chat db; do
-  devrouter app run "$a" --workspace my-branch
-done
+devpod up . --ide none # builds image, starts infra, installs, builds, seeds
 ```
 
-## Run with DevPod
-
-```bash
-devpod up . --ide none         # builds image, starts infra, installs, builds, seeds
-for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done   # register routes
-```
-
-Open <https://manage.klicker.localhost> and log in as **`lecturer` / `abcd`**
+Open <http://localhost:3002> and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers auto-start in the background
 (`tail -f /tmp/dev.log`; first compile can take a minute).
 
@@ -76,23 +68,21 @@ Open <https://manage.klicker.localhost> and log in as **`lecturer` / `abcd`**
 The monorepo runs **all apps in one container** via `turbo dev`;
 devrouter's Traefik (on `devnet`) routes each hostname to that container's
 internal port — no published host ports. The devrouter overlay exposes
-`${WORKSPACE:-klicker-uzh}-app` and `${WORKSPACE:-klicker-uzh}-db` aliases.
-`.devrouter.yml` uses `${WORKSPACE}` in each proxy upstream, so the primary
-checkout routes to `klicker-uzh-app` / `klicker-uzh-db`, while a worktree with
-`WORKSPACE=my-branch` routes to `my-branch-app` / `my-branch-db`.
+`${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. `.devrouter.yml` uses that
+persisted linked-worktree identity in every proxy upstream.
 
-| What              | Host                                                   | Upstream (devnet)       |
-| ----------------- | ------------------------------------------------------ | ----------------------- |
-| API (GraphQL)     | `https://api.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:3000` |
-| Auth              | `https://auth.klicker[.<workspace>].localhost`         | `${WORKSPACE}-app:3010` |
-| PWA (student)     | `https://pwa.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:3001` |
-| Manage (lecturer) | `https://manage.klicker[.<workspace>].localhost`       | `${WORKSPACE}-app:3002` |
-| Control           | `https://control.klicker[.<workspace>].localhost`      | `${WORKSPACE}-app:3003` |
-| OLAT API          | `https://olat-api.klicker[.<workspace>].localhost`     | `${WORKSPACE}-app:3030` |
-| Response API      | `https://response-api.klicker[.<workspace>].localhost` | `${WORKSPACE}-app:7078` |
-| LTI Service       | `https://lti.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:4000` |
-| Chat App          | `https://chat.klicker[.<workspace>].localhost`         | `${WORKSPACE}-app:3004` |
-| Postgres          | `db.klicker[.<workspace>].localhost:5432`              | `${WORKSPACE}-db:5432`  |
+| What              | Host                                                 | Upstream (devnet)       |
+| ----------------- | ---------------------------------------------------- | ----------------------- |
+| API (GraphQL)     | `https://api.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3000` |
+| Auth              | `https://auth.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3010` |
+| PWA (student)     | `https://pwa.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3001` |
+| Manage (lecturer) | `https://manage.klicker.<workspace>.localhost`       | `${WORKSPACE}-app:3002` |
+| Control           | `https://control.klicker.<workspace>.localhost`      | `${WORKSPACE}-app:3003` |
+| OLAT API          | `https://olat-api.klicker.<workspace>.localhost`     | `${WORKSPACE}-app:3030` |
+| Response API      | `https://response-api.klicker.<workspace>.localhost` | `${WORKSPACE}-app:7078` |
+| LTI Service       | `https://lti.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:4000` |
+| Chat App          | `https://chat.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3004` |
+| Postgres          | `db.klicker.<workspace>.localhost:5432`              | `${WORKSPACE}-db:5432`  |
 
 The two Hatchet workers (`hatchet-worker-general`, `hatchet-worker-response-processor`)
 also run in the `app` container but have **no port/route** — they consume the
@@ -103,7 +93,7 @@ compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
 `hatchet:7077`). Connect to the DB from the host with direct-SSL:
 
 ```bash
-psql "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker \
+psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker-prod password=klicker \
       dbname=klicker-prod sslmode=require sslnegotiation=direct"
 ```
 
@@ -112,9 +102,8 @@ psql "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker \
 EduID is replaced by klicker's own **credentials login** (no OIDC mock needed).
 Seeded users (`packages/prisma-data`): `lecturer`/`abcd` (ADMIN), `free`/`abcd`,
 `pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd`. Cross-app sessions work because
-every app is served under the same `klicker*.localhost` parent and the cookie
-domain resolves to that parent (`klicker.localhost` for the primary checkout,
-`klicker.<workspace>.localhost` for linked worktrees). `post-start.sh` rewrites
+linked-worktree apps are served under the same `klicker.<workspace>.localhost`
+parent and the cookie domain resolves to that parent. `post-start.sh` rewrites
 the public origins and `AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because
 the hardcoded defaults only know `klicker.com`.
 
@@ -148,7 +137,10 @@ hatchet DB migrations finishing. If the API is down, check
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
-`post-start.sh` (launch `turbo dev`).
+`post-start.sh` (reconcile the owned `turbo dev` process group). The runtime
+state is `/tmp/klicker-dev-process.state`: an exact workspace/origin/command
+fingerprint is reused, a stale owned group is replaced boundedly, and an
+unknown process is never killed.
 
 ## Notes
 

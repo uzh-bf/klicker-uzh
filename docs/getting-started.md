@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-07'
+timestamp: '2026-07-13'
 tags:
   - environment
   - onboarding
@@ -26,25 +26,21 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 
 1. **Start the container:**
    ```bash
-   devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
-   devpod ssh klicker-uzh # shell inside the container
+   devpod up . # primary checkout / plain localhost fallback
    ```
+   For a linked worktree, complete Mode 2 below. `workspace ensure` prints the exact DevPod ID for `devpod ssh <workspace-id>`; the primary checkout uses `klicker-uzh`.
 2. **Accessing the apps:**
    - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after starting devcontainer (`devpod up .` or via VS Code) without devrouter: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
-   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost` (or `https://manage.klicker.<workspace>.localhost` for parallel workspaces). Requires:
-     1. Start devrouter on host (`devrouter up && devrouter tls install`).
-     2. Start the devcontainer via devrouter command line for automatic overlay injection and token plumbing:
+   - **Mode 2 (devrouter overlay):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
+     1. Install devrouter ≥ 0.0.26 and start it on the host (`devrouter up && devrouter tls install`).
+     2. From an existing linked worktree, start and prove the environment with:
         ```bash
-        dev workspace up <branch-name>
+        devrouter workspace ensure .
         ```
-        _(Or for manual startup: `WORKSPACE=<slug> DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up .`)_.
-     3. Register the application routes:
-        ```bash
-        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
-        # linked worktree variant:
-        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a" --workspace <slug>; done
-        ```
+        Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops in linked worktrees; `workspace ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
+
+`post-start.sh` records its owned process group and a workspace/origin/command fingerprint in `/tmp/klicker-dev-process.state`. Re-running it is idempotent for an exact match, replaces only its own stale group, and refuses to kill an unknown process.
 
 ### Path B: Host-based Setup (Legacy)
 

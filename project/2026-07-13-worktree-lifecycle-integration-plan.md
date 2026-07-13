@@ -31,7 +31,7 @@
 ## Decisions
 
 - Require devrouter `0.0.26` in `.devrouter.yml`.
-- Canonical command: `dev workspace ensure` from an existing worktree; `workspace up` remains create-and-ensure.
+- Canonical command: `devrouter workspace ensure .` from an existing linked worktree; `workspace up` remains create-and-ensure.
 - `post-start.sh` owns one detached process group and a runtime fingerprint containing workspace plus public origins.
 - Matching process group/fingerprint stays running; mismatch terminates owned group, waits boundedly, then restarts.
 - Missing/foreign ownership fails safely instead of killing unknown processes.
@@ -44,8 +44,8 @@
 
 ## Progress
 
-- Current: Slice 1 complete locally; Devrouter dependency complete at `0713383`.
-- Next: commit runtime ownership, then update the canonical integration/docs surfaces.
+- Current: Slice 1 committed locally; Devrouter dependency complete at `0713383`; Slice 2 ready for commit.
+- Next: run the live gate, record evidence, then complete final review.
 
 ## Slice 1: runtime ownership
 
@@ -60,6 +60,8 @@
 
 - Do: pin devrouter; replace manual-token instructions in AGENTS, devcontainer README, wiki, and environment-doctor; update wiki log.
 - Check: doc searches find no recommended manual linked-worktree route flow; format/check-all proportional to docs/config changes.
+- Result: devrouter `0.0.26` and `devrouter workspace ensure .` are canonical for existing linked worktrees. Unsupported primary-checkout proxy instructions were removed; the primary checkout remains the one-at-a-time localhost fallback.
+- Evidence: Prettier and `git diff --check` pass; review found no remaining stale linked-worktree token-loop recommendation.
 - Commit: `docs(devcontainer): standardize worktree ensure flow`
 
 ## Live gate
