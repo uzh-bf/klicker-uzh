@@ -2858,16 +2858,27 @@ describe('Escape room integration tests', () => {
         penaltySeconds: 0,
         startedAt: null,
       })
+      // participants not enrolled in the course are never listed
       expect(
         progress!.attempts.some(
           (attempt) => attempt.participantId === outsideParticipant.id
         )
       ).toBe(false)
+      // enrolled-but-inactive participants (not on the leaderboard) still appear
+      // as NOT_STARTED: enrollment drives the progress roster, not leaderboard
+      // membership (isActive)
       expect(
         progress!.attempts.some(
           (attempt) => attempt.participantId === inactiveParticipant.id
         )
-      ).toBe(false)
+      ).toBe(true)
+      const inactiveEntry = progress!.attempts.find(
+        (attempt) => attempt.participantId === inactiveParticipant.id
+      )!
+      expect(inactiveEntry).toMatchObject({
+        id: null,
+        status: 'NOT_STARTED',
+      })
     })
 
     it('keeps group progress scoped to the shared group attempt', async () => {

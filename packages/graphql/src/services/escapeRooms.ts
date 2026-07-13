@@ -394,8 +394,12 @@ export async function getEscapeRoomProgress(
   const participantCourseId =
     config.practiceQuiz?.courseId ?? config.microLearning?.courseId
   if (participantCourseId) {
+    // The progress dashboard tracks the whole class, so include every enrolled
+    // participant rather than only leaderboard-active ones (isActive gates
+    // leaderboard membership, which is orthogonal to escape-room progress).
+    // Students without an attempt show as NOT_STARTED.
     const roster = await ctx.prisma.participation.findMany({
-      where: { courseId: participantCourseId, isActive: true },
+      where: { courseId: participantCourseId },
       include: {
         participant: {
           select: { id: true, username: true, avatar: true },
@@ -408,7 +412,10 @@ export async function getEscapeRoomProgress(
         attempt.participantId ? [[attempt.participantId, attempt]] : []
       )
     )
-    progress = roster.map(({ participant }) => {
+    const rosterParticipantIds = new Set(
+      roster.map(({ participant }) => participant.id)
+    )
+    const rosterProgress = roster.map(({ participant }) => {
       const attempt = attemptsByParticipant.get(participant.id)
       return attempt
         ? progressForAttempt(attempt)
@@ -428,6 +435,16 @@ export async function getEscapeRoomProgress(
             timeSpentSeconds: null,
           }
     })
+    // Never drop a real attempt: keep participant attempts whose participation
+    // is no longer in the course roster (e.g. the student left the course).
+    const orphanProgress = attempts
+      .filter(
+        (attempt) =>
+          attempt.participantId &&
+          !rosterParticipantIds.has(attempt.participantId)
+      )
+      .map(progressForAttempt)
+    progress = [...rosterProgress, ...orphanProgress]
   }
 
   return {
