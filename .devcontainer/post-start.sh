@@ -68,13 +68,10 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# PHASE 1 core: backend + auth + frontend-pwa/manage/control.
-# PHASE 2 Tier 1: + olat-api & response-api (routed) + the two hatchet workers
-# (no port/route — they consume the hatchet event queue). Still NOT chat/lti/
-# analytics. Bypass the Infisical wrapper the root `dev` script uses — the
-# container owns its env. Fully detach so the DevPod agent pipe is released
-# (else `devpod up` hangs). (GOTCHAS #2)
-DEV_CMD='pnpm exec turbo run dev \
+# Run every routed app plus the two Hatchet workers. LTI uses the `dev:lti`
+# task; the other apps use `dev`. Bypass the Infisical wrappers because the
+# container owns its env. Fully detach so the DevPod agent pipe is released.
+DEV_CMD='pnpm exec turbo run dev dev:lti \
   --filter=@klicker-uzh/backend-docker \
   --filter=@klicker-uzh/auth \
   --filter=@klicker-uzh/frontend-pwa \
