@@ -40,7 +40,7 @@ Use this if you are running in a headless cloud server or want to avoid installi
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.28 and start it:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.29 and start it:
    ```bash
    devrouter up && devrouter tls install   # Traefik + the shared `devnet` + mkcert CA
    ```

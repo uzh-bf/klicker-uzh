@@ -16,7 +16,7 @@
 # no route; analytics, Office add-in, and docs remain outside this stack.
 version: 1
 devrouter:
-  version: 0.0.28
+  version: 0.0.29
 project:
   name: klicker-uzh
 apps:
