@@ -85,6 +85,19 @@ DEV_CMD='pnpm exec turbo run dev dev:lti \
   --filter=@klicker-uzh/hatchet-worker-response-processor \
   --concurrency 30'
 
+# A production build can replace Next.js dev output while Turbo's parent stays
+# alive. On a repeated start, reuse the owned process only when every routed app
+# is reachable and returns a non-5xx response; otherwise restart the whole group.
+export KLICKER_DEV_HEALTH_URLS='http://127.0.0.1:3000
+http://127.0.0.1:3010
+http://127.0.0.1:3001
+http://127.0.0.1:3002
+http://127.0.0.1:3003
+http://127.0.0.1:3030/health
+http://127.0.0.1:7078
+http://127.0.0.1:4000
+http://127.0.0.1:3004'
+
 # The fingerprint changes when this worktree's identity, public origins, or dev
 # command changes. Reconcile only the process group marked and recorded by this
 # container; never kill a foreign process that merely resembles Turbo.

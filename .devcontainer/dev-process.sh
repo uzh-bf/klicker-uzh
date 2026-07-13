@@ -31,6 +31,32 @@ klicker_process_group_alive() {
   '
 }
 
+klicker_dev_runtime_healthy() {
+  local health_urls="${KLICKER_DEV_HEALTH_URLS:-}"
+  local attempts="${KLICKER_DEV_HEALTH_ATTEMPTS:-2}"
+  local attempt
+  local status
+  local url
+  local healthy
+
+  [ -z "$health_urls" ] && return 0
+
+  for ((attempt = 1; attempt <= attempts; attempt += 1)); do
+    healthy=true
+    for url in $health_urls; do
+      status="$(curl -sS -o /dev/null --connect-timeout 1 --max-time 3 -w '%{http_code}' -- "$url" 2>/dev/null || true)"
+      if ! [[ "$status" =~ ^[1-4][0-9][0-9]$ ]]; then
+        healthy=false
+        break
+      fi
+    done
+    [ "$healthy" = true ] && return 0
+    [ "$attempt" -lt "$attempts" ] && sleep 1
+  done
+
+  return 1
+}
+
 klicker_stop_process_group() {
   local pid="$1"
   local pgid="$2"
@@ -95,12 +121,16 @@ klicker_reconcile_dev_process() (
         echo "[post-start] Dev-process state points at an unowned process; refusing to kill it." >&2
         return 1
       fi
-      if [ "$stored_fingerprint" = "$fingerprint" ]; then
+      if [ "$stored_fingerprint" = "$fingerprint" ] && klicker_dev_runtime_healthy; then
         echo "[post-start] Owned dev servers already match this runtime (PID $pid)."
         return 0
       fi
 
-      echo "[post-start] Runtime identity changed; restarting owned dev process group $pgid."
+      if [ "$stored_fingerprint" = "$fingerprint" ]; then
+        echo "[post-start] Owned dev runtime is unhealthy; restarting process group $pgid."
+      else
+        echo "[post-start] Runtime identity changed; restarting owned dev process group $pgid."
+      fi
       klicker_stop_process_group "$pid" "$pgid"
       rm -f "$state_file"
     else

@@ -53,6 +53,19 @@ klicker_reconcile_dev_process "$command" "100-1"
 read -r matching_pid _ _ <"$state_file"
 [ "$matching_pid" = "$first_pid" ]
 
+export KLICKER_DEV_HEALTH_URLS=http://127.0.0.1:1
+export KLICKER_DEV_HEALTH_ATTEMPTS=1
+klicker_reconcile_dev_process "$command" "100-1"
+read -r recovered_pid _ _ <"$state_file"
+[ "$recovered_pid" != "$first_pid" ]
+if klicker_process_alive "$first_pid"; then
+  echo "unhealthy owned process group survived reconciliation" >&2
+  exit 1
+fi
+managed_pid="$recovered_pid"
+first_pid="$recovered_pid"
+unset KLICKER_DEV_HEALTH_URLS KLICKER_DEV_HEALTH_ATTEMPTS
+
 klicker_reconcile_dev_process "$command" "200-1"
 read -r changed_pid _ _ <"$state_file"
 [ "$changed_pid" != "$first_pid" ]

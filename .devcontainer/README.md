@@ -139,8 +139,10 @@ Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
 `post-start.sh` (reconcile the owned `turbo dev` process group). The runtime
 state is `/tmp/klicker-dev-process.state`: an exact workspace/origin/command
-fingerprint is reused, a stale owned group is replaced boundedly, and an
-unknown process is never killed.
+fingerprint is reused only while all routed apps remain healthy, a stale or
+unhealthy owned group is replaced boundedly, and an unknown process is never
+killed. This also repairs Next.js dev output invalidated by a production build;
+run `devrouter workspace ensure .` again after such a build.
 
 ## Notes
 

@@ -7,7 +7,7 @@ description: Diagnose and repair a broken KlickerUZH development environment. Us
 
 Run the checks **in order** — later checks assume earlier ones pass. Background facts live in the wiki: [docs/getting-started.md](../../../docs/getting-started.md).
 
-Provenance: checks 1–5 and 7–9 were executed and verified on macOS (2026-07-07). Check 6's process reconciler was executed in the Linux devcontainer image (2026-07-13); its host-side devrouter lifecycle steps are **config-derived** until the integration plan's live gate passes. Other steps marked **config-derived** were read from config, not executed — treat their exact output as unconfirmed.
+Provenance: checks 1–5 and 7–9 were executed and verified on macOS (2026-07-07). Check 6's process reconciler was executed in the Linux devcontainer image, and its host-side devrouter lifecycle was verified from a clean linked worktree on macOS (2026-07-13). Other steps marked **config-derived** were read from config, not executed — treat their exact output as unconfirmed.
 
 ## Agent ground rules
 
@@ -32,7 +32,7 @@ Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **sil
 | `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                          |
 | ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, codegen, dists), then re-check |
 
-Healthy sequence from scratch: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean).
+Healthy sequence from scratch: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). A production build inside a running devcontainer can replace Next.js dev output; from a linked worktree, run `devrouter workspace ensure .` afterward so the owned runtime is health-checked and recovered when needed.
 
 ## Check 3 — stale GraphQL codegen
 
@@ -69,7 +69,7 @@ cat /tmp/klicker-dev-process.state
 tail -n 50 /tmp/dev.log   # inspect server startup logs
 ```
 
-An exact fingerprint is reused; a stale owned process group is restarted; an unknown process is reported and left untouched. For a linked worktree that fails before container entry, run `devrouter workspace ensure .` on the host so one stale exact-path DevPod can be recreated once.
+An exact fingerprint is reused only while all routed app endpoints remain below 500; a stale or unhealthy owned process group is restarted; an unknown process is reported and left untouched. For a linked worktree that fails before container entry, run `devrouter workspace ensure .` on the host so one stale exact-path DevPod can be recreated once.
 
 ### Path B: Host-based Setup
 
