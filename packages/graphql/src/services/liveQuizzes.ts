@@ -713,6 +713,11 @@ export async function getLiveQuizData(
               order: 'asc',
             },
           },
+          // required so the wizard can restore escape-room block settings on
+          // edit (isEscapeRoom / time limit / hint penalty / intro text);
+          // without it the exposed escapeRoomConfig is null and the settings
+          // silently disappear when re-editing a live quiz
+          escapeRoomConfig: true,
         },
         orderBy: {
           order: 'asc',
