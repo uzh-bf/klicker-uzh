@@ -44,14 +44,16 @@
 
 ## Progress
 
-- Current: plan approved; plan commit next.
-- Next: implement supervisor ownership tests and shell changes after devrouter Slice 1.
+- Current: Slice 1 complete locally; Devrouter dependency complete at `0713383`.
+- Next: commit runtime ownership, then update the canonical integration/docs surfaces.
 
 ## Slice 1: runtime ownership
 
 - Do: extract small testable shell helper if needed; record PID/PGID/fingerprint; verify/restart only owned supervisor group.
 - Test: first start, matching restart, workspace mismatch, origin mismatch, stale PID, foreign process, bounded stop failure.
 - Check: shell syntax, focused tests, Prettier where applicable.
+- Result: `post-start.sh` fingerprints the workspace, routed origins, and exact dev command. A small Linux helper serializes reconciliation with `flock`, proves the recorded session leader through PGID plus a `/proc` environment marker, waits on every non-zombie process-group member, escalates TERM to KILL boundedly, and refuses unknown Turbo processes. The devrouter overlay mounts the linked worktree's Git common directory at the same absolute container path.
+- Evidence: Bash syntax and ShellCheck pass; disposable-container regression covers concurrent first start, exact reuse, fingerprint restart, stale state, a TERM-ignoring child, and foreign-process refusal; Compose config resolves the exact same-path Git bind; Opengrep reports 0 findings.
 - Commit: `fix(devcontainer): reconcile worktree runtime identity`
 
 ## Slice 2: canonical integration and docs
@@ -63,6 +65,7 @@
 ## Live gate
 
 - Install local devrouter build.
-- Run `dev workspace ensure` against `trees/escape-room-production` without removing or resetting it.
+- Preserve `trees/escape-room-production` and its current DevPod unchanged because the feature branch does not yet contain this contract.
+- Run `devrouter workspace ensure .` against this clean latest-`origin/v3` integration worktree.
 - Require identity/overlay/alias/route/database proof before agent-browser login.
 - Capture live proof in this plan. Escape Room work resumes only after gate passes.

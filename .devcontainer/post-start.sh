@@ -68,14 +68,6 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# Double-start guard. The dev command runs `turbo run dev`, so the supervisor
-# shows as "turbo run dev" in ps.
-if pgrep -f "turbo run dev" >/dev/null 2>&1; then
-  echo "[post-start] Dev servers already running."
-  exit 0
-fi
-
-echo "[post-start] Starting apps in the background (logs: /tmp/dev.log)..."
 # PHASE 1 core: backend + auth + frontend-pwa/manage/control.
 # PHASE 2 Tier 1: + olat-api & response-api (routed) + the two hatchet workers
 # (no port/route — they consume the hatchet event queue). Still NOT chat/lti/
@@ -95,8 +87,27 @@ DEV_CMD='pnpm exec turbo run dev \
   --filter=@klicker-uzh/hatchet-worker-general \
   --filter=@klicker-uzh/hatchet-worker-response-processor \
   --concurrency 30'
-setsid bash -c "$DEV_CMD" >/tmp/dev.log 2>&1 </dev/null &
-disown 2>/dev/null || true
+
+# The fingerprint changes when this worktree's identity, public origins, or dev
+# command changes. Reconcile only the process group marked and recorded by this
+# container; never kill a foreign process that merely resembles Turbo.
+RUNTIME_FINGERPRINT="$({
+  printf 'workspace=%s\n' "${WORKSPACE:-primary}"
+  printf 'devrouter_workspace=%s\n' "${DEVROUTER_WORKSPACE:-}"
+  printf 'api=%s\n' "$APP_ORIGIN_API"
+  printf 'auth=%s\n' "$APP_ORIGIN_AUTH"
+  printf 'pwa=%s\n' "$APP_ORIGIN_PWA"
+  printf 'manage=%s\n' "$APP_ORIGIN_MANAGE"
+  printf 'control=%s\n' "$APP_ORIGIN_CONTROL"
+  printf 'lti=%s\n' "$APP_ORIGIN_LTI"
+  printf 'chat=%s\n' "$APP_ORIGIN_CHAT"
+  printf 'response=%s\n' "$NEXT_PUBLIC_ADD_RESPONSE_URL"
+  printf 'cookie=%s\n' "$COOKIE_DOMAIN"
+  printf 'command=%s\n' "$DEV_CMD"
+} | cksum | awk '{print $1 "-" $2}')"
+
+. .devcontainer/dev-process.sh
+klicker_reconcile_dev_process "$DEV_CMD" "$RUNTIME_FINGERPRINT"
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF
@@ -111,7 +122,7 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
 [post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Routes  -> on the host: for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "\$a"${WORKSPACE:+ --workspace ${WORKSPACE}}; done
+[post-start] Lifecycle -> on the host: devrouter workspace ensure <this-worktree>
 [post-start] Logs    -> tail -f /tmp/dev.log
 EOF
 else

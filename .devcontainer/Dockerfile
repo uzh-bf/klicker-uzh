@@ -8,10 +8,11 @@ ENV PNPM_HOME="/pnpm" \
     DEBIAN_FRONTEND=noninteractive
 
 # Runtime tools: git (repo ops), openssl/ca-certificates (Prisma + TLS),
-# procps (pgrep for the post-start dev-server guard), curl (healthchecks).
+# procps (PID/PGID ownership checks), util-linux (flock/setsid), curl
+# (healthchecks).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        git openssl ca-certificates procps curl \
+        git openssl ca-certificates procps util-linux curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm with npm (not corepack — signature verification can fail on a
