@@ -26,6 +26,7 @@ import {
   getRemainingSecondsUntil,
   isEscapeRoomStackCleared,
   restoreUsedEscapeRoomHints,
+  validateEscapeRoomConfig,
 } from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
@@ -236,6 +237,12 @@ export async function manipulatePracticeQuiz(
 ) {
   if (isEscapeRoom && order !== DB.ElementOrderType.SEQUENTIAL) {
     throw new GraphQLError('Escape room quizzes must have sequential order')
+  }
+  if (isEscapeRoom) {
+    validateEscapeRoomConfig({
+      timeLimit: escapeRoomTimeLimit ?? 3600,
+      hintPenalty: escapeRoomHintPenalty ?? 120,
+    })
   }
 
   // in EDIT mode - validate that the practice quiz exists and is not published
@@ -982,7 +989,7 @@ export async function startEscapeRoomAttempt(
 
   // 1. Identify active settings
   let isEscapeRoom = false
-  let timeLimit = 3600
+  let timeLimit: number
   let groupId: string | null = null
   let courseId: string | null = null
 
@@ -1211,7 +1218,7 @@ export async function requestEscapeRoomHint(
 
   // 1. Identify active settings (mirrors startEscapeRoomAttempt)
   let isEscapeRoom = false
-  let hintPenalty = 30
+  let hintPenalty: number
   let groupId: string | null = null
   let courseId: string | null = null
 

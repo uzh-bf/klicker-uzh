@@ -8,6 +8,7 @@ import {
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  ESCAPE_ROOM_GRACE_SECONDS,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
   getCurrentEscapeRoomInstance,
   gradeQrScanResponse,
@@ -17,8 +18,6 @@ import {
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-
-const ESCAPE_ROOM_GRACE_SECONDS = 5
 
 async function getParticipantData(
   cookieHeader?: string
@@ -295,7 +294,11 @@ export async function handleEscapeRoomValidation(
     return true
   } else {
     // Incorrect! Apply lockout and increment tries
-    await redis.incr(triesKey)
+    await redis
+      .multi()
+      .incr(triesKey)
+      .expire(triesKey, 60 * 60 * 24 * 30)
+      .exec()
     const lockoutSeconds = Number(instanceInfo.escapeRoomLockoutSeconds || 0)
     let lockoutUntil: Date | null = null
 

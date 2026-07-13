@@ -43,6 +43,7 @@ import {
   ESCAPE_ROOM_GRACE_SECONDS,
   getRemainingSecondsUntil,
   restoreUsedEscapeRoomHints,
+  validateEscapeRoomConfig,
 } from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
@@ -1022,6 +1023,13 @@ export async function manipulateGroupActivity(
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
+  if (isEscapeRoom) {
+    validateEscapeRoomConfig({
+      timeLimit: escapeRoomTimeLimit ?? 3600,
+      hintPenalty: escapeRoomHintPenalty ?? 120,
+    })
+  }
+
   // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
   let existingActivity: DB.GroupActivity | null = null
   if (id) {

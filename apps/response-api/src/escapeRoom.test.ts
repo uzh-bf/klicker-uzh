@@ -68,6 +68,14 @@ function responseRecorder() {
 function redisMock() {
   const sets = new Map<string, Set<string>>()
   const claims = new Set<string>()
+  const transaction = {
+    incr: vi.fn().mockReturnThis(),
+    expire: vi.fn().mockReturnThis(),
+    exec: vi.fn().mockResolvedValue([
+      [null, 1],
+      [null, 1],
+    ]),
+  }
   return {
     get: vi.fn().mockResolvedValue(null),
     del: vi.fn(async (key: string) => {
@@ -91,6 +99,8 @@ function redisMock() {
       return values.size - size
     }),
     smembers: vi.fn(async (key: string) => [...(sets.get(key) ?? [])]),
+    multi: vi.fn(() => transaction),
+    transaction,
     expire: vi.fn().mockResolvedValue(1),
   } as any
 }
@@ -262,6 +272,32 @@ describe('response-api escape-room validation', () => {
       where: { id: 'attempt-1' },
       data: { status: 'EXPIRED' },
     })
+  })
+
+  it('expires incorrect-response attempt counters', async () => {
+    const redis = redisMock()
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+
+    const triesKey = 'lq:quiz-1:i:11:tries:participant-1'
+    expect(result.statusCode).toBe(200)
+    expect(redis.multi).toHaveBeenCalledOnce()
+    expect(redis.transaction.incr).toHaveBeenCalledWith(triesKey)
+    expect(redis.transaction.expire).toHaveBeenCalledWith(
+      triesKey,
+      60 * 60 * 24 * 30
+    )
+    expect(redis.transaction.exec).toHaveBeenCalledOnce()
+    expect(redis.incr).not.toHaveBeenCalled()
+    expect(redis.expire).not.toHaveBeenCalled()
   })
 
   it('publishes a regular participant response and completes the block attempt', async () => {

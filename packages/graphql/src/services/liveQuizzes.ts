@@ -37,6 +37,7 @@ import {
   activityInputContainsElementType,
   getPermissionBooleans,
 } from './activities.js'
+import { validateEscapeRoomConfig } from './escapeRooms.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { checkAccess } from './sharing.js'
@@ -214,6 +215,13 @@ export async function manipulateLiveQuiz(
   }: ManipulateLiveQuizArgs,
   ctx: ContextWithUser
 ) {
+  for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
+    validateEscapeRoomConfig({
+      timeLimit: block.escapeRoomTimeLimit ?? 300,
+      hintPenalty: block.escapeRoomHintPenalty ?? 0,
+    })
+  }
+
   // in EDIT mode - validate that the live quiz exists and is not published
   let existingActivity:
     | (DB.LiveQuiz & { course?: { _count: { permissions: number } } | null })
@@ -278,14 +286,6 @@ export async function manipulateLiveQuiz(
     )
   }
 
-  const escapeRoomElementTypes = new Set<DB.ElementType>([
-    DB.ElementType.SC,
-    DB.ElementType.MC,
-    DB.ElementType.KPRIM,
-    DB.ElementType.NUMERICAL,
-    DB.ElementType.FREE_TEXT,
-    DB.ElementType.QR_SCAN,
-  ])
   for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
     if (block.elements.length === 0) {
       throw new GraphQLError('Escape room blocks require at least one question')
@@ -301,11 +301,14 @@ export async function manipulateLiveQuiz(
           ? source.elementType
           : source.type
         : null
-      return !elementType || !escapeRoomElementTypes.has(elementType)
+      return (
+        !elementType ||
+        !ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES.includes(elementType)
+      )
     })
     if (unsupported) {
       throw new GraphQLError(
-        'Escape room blocks only support SC, MC, KPRIM, numerical, and free-text questions'
+        'Escape room blocks only support SC, MC, KPRIM, numerical, free-text, and QR scan questions'
       )
     }
   }
@@ -449,8 +452,8 @@ export async function manipulateLiveQuiz(
         escapeRoomConfig: block.isEscapeRoom
           ? {
               create: {
-                timeLimit: Math.max(block.escapeRoomTimeLimit ?? 300, 1),
-                hintPenalty: Math.max(block.escapeRoomHintPenalty ?? 0, 0),
+                timeLimit: block.escapeRoomTimeLimit ?? 300,
+                hintPenalty: block.escapeRoomHintPenalty ?? 0,
                 introText: block.escapeRoomIntroText?.trim() || null,
               },
             }

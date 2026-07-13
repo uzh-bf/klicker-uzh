@@ -172,7 +172,13 @@ export const StackFeedback = builder
   })
 
 export interface IElementStack extends DB.ElementStack {
-  elements?: DB.ElementInstance[] | null
+  elements?: Array<
+    DB.ElementInstance & {
+      responses?: Array<
+        Pick<DB.QuestionResponse, 'lastResponseCorrectness'>
+      > | null
+    }
+  > | null
 }
 export const ElementStackRef = builder.objectRef<IElementStack>('ElementStack')
 export const ElementStack = ElementStackRef.implement({
@@ -188,25 +194,16 @@ export const ElementStack = ElementStackRef.implement({
     }),
     isCorrect: t.boolean({
       nullable: true,
-      resolve: async (parent, _args, ctx) => {
-        if (!ctx.user?.sub) return false
-        const elements = await ctx.prisma.elementInstance.findMany({
-          where: {
-            elementStackId: parent.id,
-          },
-          include: {
-            responses: {
-              where: {
-                participantId: ctx.user.sub,
-              },
-            },
-          },
-        })
-        if (elements.length === 0) return false
-        return (elements as any[]).every((elem) =>
-          elem.responses?.some(
-            (resp: any) =>
-              resp.lastResponseCorrectness === DB.ResponseCorrectness.CORRECT
+      resolve: (parent, _args, ctx) => {
+        if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+          return false
+        }
+        if (!parent.elements?.length) return false
+        return parent.elements.every((element) =>
+          element.responses?.some(
+            (response) =>
+              response.lastResponseCorrectness ===
+              DB.ResponseCorrectness.CORRECT
           )
         )
       },

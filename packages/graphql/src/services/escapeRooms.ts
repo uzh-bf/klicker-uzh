@@ -1,8 +1,34 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { ESCAPE_ROOM_GRACE_SECONDS } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 
-export const ESCAPE_ROOM_GRACE_SECONDS = 5
+export { ESCAPE_ROOM_GRACE_SECONDS }
+
+export function validateEscapeRoomConfig({
+  timeLimit,
+  hintPenalty,
+}: {
+  timeLimit: number
+  hintPenalty: number
+}) {
+  if (!Number.isInteger(timeLimit) || timeLimit < 1 || timeLimit > 86_400) {
+    throw new GraphQLError(
+      'Escape room time limit must be an integer between 1 and 86400 seconds',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+  if (
+    !Number.isInteger(hintPenalty) ||
+    hintPenalty < 0 ||
+    hintPenalty > 3_600
+  ) {
+    throw new GraphQLError(
+      'Escape room hint penalty must be an integer between 0 and 3600 seconds',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+}
 
 export function getRemainingSecondsUntil(deadline: Date, now = Date.now()) {
   return Math.max(0, Math.ceil((deadline.getTime() - now) / 1000))

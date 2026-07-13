@@ -23,6 +23,8 @@ export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly PrismaElementType[] =
     PrismaElementType.QR_SCAN,
   ]
 
+export const ESCAPE_ROOM_GRACE_SECONDS = 5
+
 export function getCurrentEscapeRoomInstance<T extends { id: number }>(
   orderedInstances: readonly T[],
   clearedInstanceIds: ReadonlySet<string>

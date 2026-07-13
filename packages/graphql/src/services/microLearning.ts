@@ -21,6 +21,7 @@ import {
 import {
   isEscapeRoomStackCleared,
   restoreUsedEscapeRoomHints,
+  validateEscapeRoomConfig,
 } from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
@@ -258,6 +259,13 @@ export async function manipulateMicroLearning(
   }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser
 ) {
+  if (isEscapeRoom) {
+    validateEscapeRoomConfig({
+      timeLimit: escapeRoomTimeLimit ?? 3600,
+      hintPenalty: escapeRoomHintPenalty ?? 120,
+    })
+  }
+
   // in EDIT mode - validate that the microlearning exists and is not published
   let existingActivity: DB.MicroLearning | null = null
   if (id) {

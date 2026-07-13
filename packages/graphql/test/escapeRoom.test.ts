@@ -6,9 +6,14 @@ import {
   type ElementInstanceResults,
   StackFeedbackStatus,
 } from '@klicker-uzh/types'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  generateQrScanCode,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import type { GraphQLObjectType } from 'graphql'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { schema } from '../src/index.js'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import {
   getEscapeRoomExpiresInSeconds,
@@ -28,7 +33,10 @@ import {
   getRunningLiveQuiz,
   manipulateLiveQuiz,
 } from '../src/services/liveQuizzes.js'
-import { getMicroLearningData } from '../src/services/microLearning.js'
+import {
+  getMicroLearningData,
+  manipulateMicroLearning,
+} from '../src/services/microLearning.js'
 import {
   getPracticeQuizData,
   manipulatePracticeQuiz,
@@ -47,6 +55,7 @@ import {
 } from './helpers.js'
 
 const TEST_PREFIX = `escape-${Date.now()}`
+const QR_SCAN_CODE = generateQrScanCode()
 
 let prisma: PrismaClient
 let lecturerCtx: ContextWithUser
@@ -323,9 +332,7 @@ describe('Escape room integration tests', () => {
         content: 'Find and scan the hidden code',
         explanation: 'QR explanation',
         options: {},
-        // distinct from the Playwright spec's code: both may target the same
-        // dev database and qrScanCode is globally unique
-        qrScanCode: 'ItGrQr56_-78',
+        qrScanCode: QR_SCAN_CODE,
         ownerId: lecturer.id,
       },
     })
@@ -340,6 +347,37 @@ describe('Escape room integration tests', () => {
   // ! B1: escape room integrity guard in respondToElementStack
   // #region
   describe('respondToElementStack - escape room integrity guard (B1)', () => {
+    it('derives stack correctness from preloaded participant responses', async () => {
+      const findMany = vi.fn()
+      const stackType = schema.getType('ElementStack') as GraphQLObjectType
+      const resolver = stackType.getFields().isCorrect!.resolve!
+
+      const result = await resolver(
+        {
+          id: 1,
+          elements: [
+            {
+              id: 11,
+              responses: [
+                {
+                  lastResponseCorrectness: DB.ResponseCorrectness.CORRECT,
+                },
+              ],
+            },
+          ],
+        },
+        {},
+        {
+          ...participantCtx('preloaded-participant'),
+          prisma: { elementInstance: { findMany } },
+        },
+        {} as any
+      )
+
+      expect(result).toBe(true)
+      expect(findMany).not.toHaveBeenCalled()
+    })
+
     it('rejects an anonymous caller that spoofs owner preview authority, and persists no response', async () => {
       const quiz = await seedEscapeRoomQuiz(1)
       const stack = quiz.stacks[0]!
@@ -476,7 +514,7 @@ describe('Escape room integration tests', () => {
         {
           stackId: correctQuiz.stacks[0]!.id,
           courseId,
-          responses: [qrResponse(correctInstance.id, 'ItGrQr56_-78')],
+          responses: [qrResponse(correctInstance.id, QR_SCAN_CODE)],
           stackAnswerTime: 10,
         },
         participantCtx(correctParticipant.id)
@@ -528,7 +566,7 @@ describe('Escape room integration tests', () => {
         {
           stackId: stack.id,
           courseId,
-          responses: [qrResponse(instance.id, 'ItGrQr56_-78')],
+          responses: [qrResponse(instance.id, QR_SCAN_CODE)],
           stackAnswerTime: 10,
         },
         participantCtx(participant.id)
@@ -538,7 +576,7 @@ describe('Escape room integration tests', () => {
           {
             stackId: stack.id,
             courseId,
-            responses: [qrResponse(instance.id, 'ItGrQr56_-78')],
+            responses: [qrResponse(instance.id, QR_SCAN_CODE)],
             stackAnswerTime: 10,
           },
           participantCtx(participant.id)
@@ -569,7 +607,7 @@ describe('Escape room integration tests', () => {
           {
             stackId: first.id,
             courseId,
-            responses: [qrResponse(future.id, 'ItGrQr56_-78')],
+            responses: [qrResponse(future.id, QR_SCAN_CODE)],
             stackAnswerTime: 10,
           },
           participantCtx(participant.id)
@@ -585,7 +623,7 @@ describe('Escape room integration tests', () => {
           {
             stackId: first.id,
             courseId,
-            responses: [qrResponse(foreign.id, 'ItGrQr56_-78')],
+            responses: [qrResponse(foreign.id, QR_SCAN_CODE)],
             stackAnswerTime: 10,
           },
           participantCtx(participant.id)
@@ -2294,6 +2332,157 @@ describe('Escape room integration tests', () => {
   })
   // #endregion
 
+  describe('escape-room configuration validation', () => {
+    const databaseAccessError = new Error('database accessed before validation')
+    const rejectingPrisma = new Proxy({} as PrismaClient, {
+      get() {
+        throw databaseAccessError
+      },
+    })
+    const rejectingCtx = () => ({
+      ...lecturerCtx,
+      prisma: rejectingPrisma,
+    })
+    const baseBlock = {
+      order: 0,
+      elements: [],
+      isEscapeRoom: true,
+    }
+
+    const invalidInputs = [
+      { timeLimit: 0, hintPenalty: 0 },
+      { timeLimit: 300, hintPenalty: 3601 },
+    ]
+
+    for (const invalid of invalidInputs) {
+      it.each([
+        [
+          'PracticeQuiz',
+          () =>
+            manipulatePracticeQuiz(
+              {
+                name: 'invalid escape room',
+                displayName: 'invalid escape room',
+                stacks: [],
+                courseId,
+                multiplier: 1,
+                order: DB.ElementOrderType.SEQUENTIAL,
+                resetTimeDays: 1,
+                isEscapeRoom: true,
+                escapeRoomTimeLimit: invalid.timeLimit,
+                escapeRoomHintPenalty: invalid.hintPenalty,
+              },
+              rejectingCtx()
+            ),
+        ],
+        [
+          'MicroLearning',
+          () =>
+            manipulateMicroLearning(
+              {
+                name: 'invalid escape room',
+                displayName: 'invalid escape room',
+                stacks: [],
+                courseId,
+                multiplier: 1,
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 60_000),
+                isEscapeRoom: true,
+                escapeRoomTimeLimit: invalid.timeLimit,
+                escapeRoomHintPenalty: invalid.hintPenalty,
+              },
+              rejectingCtx()
+            ),
+        ],
+        [
+          'GroupActivity',
+          () =>
+            manipulateGroupActivity(
+              {
+                name: 'invalid escape room',
+                displayName: 'invalid escape room',
+                courseId,
+                multiplier: 1,
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 60_000),
+                clues: [],
+                stack: { order: 0, elements: [] },
+                isEscapeRoom: true,
+                escapeRoomTimeLimit: invalid.timeLimit,
+                escapeRoomHintPenalty: invalid.hintPenalty,
+              },
+              rejectingCtx()
+            ),
+        ],
+        [
+          'LiveQuiz',
+          () =>
+            manipulateLiveQuiz(
+              {
+                name: 'invalid escape room',
+                displayName: 'invalid escape room',
+                blocks: [
+                  {
+                    ...baseBlock,
+                    escapeRoomTimeLimit: invalid.timeLimit,
+                    escapeRoomHintPenalty: invalid.hintPenalty,
+                  },
+                ],
+                multiplier: 1,
+                isGamificationEnabled: false,
+                isPinProtected: false,
+                isConfusionFeedbackEnabled: false,
+                isLiveQAEnabled: false,
+                isModerationEnabled: false,
+              },
+              rejectingCtx()
+            ),
+        ],
+      ])(
+        'rejects invalid numeric settings for %s before database access',
+        async (_mode, action) => {
+          await expect(action()).rejects.toMatchObject({
+            extensions: { code: 'BAD_USER_INPUT' },
+          })
+        }
+      )
+    }
+
+    it('returns BAD_USER_INPUT through the public GraphQL mutation resolver', async () => {
+      const resolver = schema.getMutationType()!.getFields().createPracticeQuiz!
+        .resolve!
+      const context = {
+        ...lecturerCtx,
+        user: {
+          ...lecturerCtx.user,
+          catalystIndividual: true,
+        },
+      }
+
+      await expect(
+        resolver(
+          {},
+          {
+            name: 'invalid-escape-room',
+            displayName: 'Invalid escape room',
+            stacks: [],
+            courseId: 'not-read-before-validation',
+            multiplier: 1,
+            order: DB.ElementOrderType.SEQUENTIAL,
+            resetTimeDays: 1,
+            isEscapeRoom: true,
+            escapeRoomTimeLimit: 0,
+            escapeRoomHintPenalty: 0,
+          },
+          context,
+          {} as any
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'BAD_USER_INPUT' },
+      })
+    })
+  })
+
   // ! Escape room completion
   // #region
   describe('respondToElementStack - escape room completion', () => {
@@ -2749,7 +2938,7 @@ describe('Escape room integration tests', () => {
         submitGroupActivityDecisions(
           {
             activityId: fixture.activityInstance.id,
-            responses: [qrResponse(instance.id, 'ItGrQr56_-78')],
+            responses: [qrResponse(instance.id, QR_SCAN_CODE)],
           },
           participantCtx(participantA.id)
         )
