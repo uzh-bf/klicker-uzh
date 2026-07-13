@@ -16,6 +16,7 @@ import {
 } from './competenceTreeInput.js'
 import {
   deriveAdaptiveItemParameters,
+  hasControlledAdaptiveAnswer,
   validateCompetenceTreeShape,
   type CompetenceTreeValidationResult,
 } from './competenceTrees.js'
@@ -39,9 +40,21 @@ export type CompetenceTreeSummary = DB.CompetenceTree & {
   levelCount: number
   nodeCount: number
   assignmentCount: number
+  adaptiveQuizCount: number
+  draftAdaptiveQuizCount: number
+  publishedAdaptiveQuizCount: number
+  isArchived: boolean
   isOwner: boolean
   canEdit: boolean
   isStructurallyLocked: boolean
+}
+
+export type CompetenceTreeElementAssignmentUpdateInput = {
+  leafNodeId: number
+  levelId: number
+  enabled: boolean
+  enablePercentInput: boolean
+  discrimination?: number | null
 }
 
 export type CompetenceTreeLevelView = DB.CompetenceTreeLevel & {
@@ -85,8 +98,10 @@ const summaryInclude = {
       levels: true,
       nodes: true,
       elementAssignments: true,
-      adaptivePracticeQuizConfigs: true,
     },
+  },
+  adaptivePracticeQuizConfigs: {
+    select: { practiceQuiz: { select: { status: true } } },
   },
 } satisfies DB.Prisma.CompetenceTreeInclude
 
@@ -117,8 +132,10 @@ const detailInclude = {
     },
   },
   adaptivePracticeQuizConfigs: {
-    select: { id: true },
-    take: 1,
+    select: {
+      id: true,
+      practiceQuiz: { select: { status: true } },
+    },
   },
 } satisfies DB.Prisma.CompetenceTreeInclude
 
@@ -131,11 +148,12 @@ type DetailRecord = DB.Prisma.CompetenceTreeGetPayload<{
 }>
 
 export async function getCompetenceTrees(
+  { includeArchived = false }: { includeArchived?: boolean | null },
   ctx: ContextWithUser
 ): Promise<CompetenceTreeSummary[]> {
   const [trees, readableCourseIds] = await Promise.all([
     ctx.prisma.competenceTree.findMany({
-      where: readableTreeWhere(ctx.user.sub),
+      where: readableTreeWhere(ctx.user.sub, includeArchived ?? false),
       include: summaryInclude,
       orderBy: [{ updatedAt: 'desc' }, { displayName: 'asc' }],
     }),
@@ -154,6 +172,7 @@ export async function getCourseCompetenceTrees(
   const trees = await ctx.prisma.competenceTree.findMany({
     where: {
       isDeleted: false,
+      isArchived: false,
       courseLinks: { some: { courseId } },
     },
     include: summaryInclude,
@@ -170,13 +189,34 @@ export async function getCompetenceTree(
 ): Promise<CompetenceTreeDetail | null> {
   const [tree, readableCourseIds] = await Promise.all([
     ctx.prisma.competenceTree.findFirst({
-      where: { id, ...readableTreeWhere(ctx.user.sub) },
+      where: { id, ...readableTreeWhere(ctx.user.sub, true) },
       include: detailInclude,
     }),
     getReadableCourseIds(ctx),
   ])
 
   return tree ? toDetail(tree, ctx.user.sub, readableCourseIds) : null
+}
+
+export async function getElementCompetenceTrees(
+  { elementId }: { elementId: number },
+  ctx: ContextWithUser
+): Promise<CompetenceTreeDetail[]> {
+  await getAccessibleElement(elementId, ctx.user.sub, ctx.prisma)
+
+  const [trees, readableCourseIds] = await Promise.all([
+    ctx.prisma.competenceTree.findMany({
+      where: {
+        ...readableTreeWhere(ctx.user.sub, true),
+        elementAssignments: { some: { elementId } },
+      },
+      include: detailInclude,
+      orderBy: [{ updatedAt: 'desc' }, { displayName: 'asc' }],
+    }),
+    getReadableCourseIds(ctx),
+  ])
+
+  return trees.map((tree) => toDetail(tree, ctx.user.sub, readableCourseIds))
 }
 
 export async function validateCompetenceTreeInput(
@@ -275,6 +315,121 @@ export async function updateCompetenceTreeMetadata(
   })
 
   return await getRequiredCompetenceTree(id, ctx)
+}
+
+export async function updateCompetenceTreeElementAssignment(
+  {
+    treeId,
+    elementId,
+    assignment,
+  }: {
+    treeId: string
+    elementId: number
+    assignment?: CompetenceTreeElementAssignmentUpdateInput | null
+  },
+  ctx: ContextWithUser
+): Promise<CompetenceTreeDetail> {
+  await ctx.prisma.$transaction(async (tx) => {
+    await lockOwnedCompetenceTree(tx, treeId, ctx.user.sub)
+    const locked = await tx.practiceQuizAdaptiveConfig.count({
+      where: { competenceTreeId: treeId },
+    })
+    if (locked > 0) {
+      throw serviceError(
+        'This competence tree is already used by a practice quiz. Duplicate it before changing its assignments.',
+        'COMPETENCE_TREE_STRUCTURE_LOCKED'
+      )
+    }
+
+    if (!assignment) {
+      await tx.competenceTreeElementAssignment.deleteMany({
+        where: { treeId, elementId },
+      })
+      return
+    }
+
+    const [tree, element] = await Promise.all([
+      tx.competenceTree.findUniqueOrThrow({
+        where: { id: treeId },
+        include: detailInclude,
+      }),
+      getAccessibleElement(elementId, ctx.user.sub, tx),
+    ])
+    const coverage = tree.levelCoverages.find(
+      (entry) =>
+        entry.leafNodeId === assignment.leafNodeId &&
+        entry.levelId === assignment.levelId &&
+        entry.enabled
+    )
+    if (!coverage) {
+      throw serviceError(
+        'Element assignments require enabled leaf-level coverage in the same competence tree.',
+        'COMPETENCE_TREE_ASSIGNMENT_COVERAGE_INVALID'
+      )
+    }
+
+    const validation = validateCompetenceTreeShape({
+      name: tree.name,
+      displayName: tree.displayName,
+      maxDepth: tree.maxDepth,
+      thetaMin: tree.thetaMin,
+      thetaMax: tree.thetaMax,
+      defaultDiscrimination: tree.defaultDiscrimination,
+      levels: tree.levels,
+      nodes: tree.nodes,
+      coverages: tree.levelCoverages,
+      assignments: [
+        ...tree.elementAssignments
+          .filter((entry) => entry.elementId !== elementId)
+          .map((entry) => ({
+            elementId: entry.elementId,
+            type: entry.element.type,
+            leafNodeId: entry.leafNodeId,
+            levelId: entry.levelId,
+            discrimination: entry.discrimination,
+            enablePercentInput: entry.enablePercentInput,
+            enabled: entry.enabled,
+            controlledAnswerReady: hasControlledAdaptiveAnswer(
+              entry.element.type,
+              entry.element.options
+            ),
+          })),
+        {
+          elementId,
+          type: element.type,
+          leafNodeId: assignment.leafNodeId,
+          levelId: assignment.levelId,
+          discrimination: assignment.discrimination,
+          enablePercentInput: assignment.enablePercentInput,
+          enabled: assignment.enabled,
+          controlledAnswerReady: hasControlledAdaptiveAnswer(
+            element.type,
+            element.options
+          ),
+        },
+      ],
+    })
+    if (!validation.valid) {
+      throw new GraphQLError('Competence tree assignment is invalid.', {
+        extensions: {
+          code: 'COMPETENCE_TREE_INVALID',
+          issues: validation.errors,
+        },
+      })
+    }
+
+    const assignmentData = {
+      ...assignment,
+      discrimination: assignment.discrimination ?? null,
+    }
+    await tx.competenceTreeElementAssignment.upsert({
+      where: { treeId_elementId: { treeId, elementId } },
+      create: { treeId, elementId, ...assignmentData },
+      update: assignmentData,
+    })
+  })
+
+  return await getRequiredCompetenceTree(treeId, ctx)
 }
 
 export async function duplicateCompetenceTree(
@@ -426,12 +581,47 @@ export async function deleteCompetenceTree(
   return true
 }
 
-function readableTreeWhere(userId: string): DB.Prisma.CompetenceTreeWhereInput {
+export async function archiveCompetenceTree(
+  { id }: { id: string },
+  ctx: ContextWithUser
+): Promise<boolean> {
+  await ctx.prisma.$transaction(async (tx) => {
+    await lockOwnedCompetenceTreeAnyState(tx, id, ctx.user.sub)
+    await tx.competenceTree.update({
+      where: { id },
+      data: { isArchived: true },
+    })
+  })
+  return true
+}
+
+export async function restoreCompetenceTree(
+  { id }: { id: string },
+  ctx: ContextWithUser
+): Promise<boolean> {
+  await ctx.prisma.$transaction(async (tx) => {
+    await lockOwnedCompetenceTreeAnyState(tx, id, ctx.user.sub)
+    await tx.competenceTree.update({
+      where: { id },
+      data: { isArchived: false },
+    })
+  })
+  return true
+}
+
+function readableTreeWhere(
+  userId: string,
+  includeArchived: boolean
+): DB.Prisma.CompetenceTreeWhereInput {
   return {
     isDeleted: false,
     OR: [
-      { ownerId: userId },
       {
+        ownerId: userId,
+        isArchived: includeArchived ? undefined : false,
+      },
+      {
+        isArchived: false,
         courseLinks: {
           some: {
             course: {
@@ -488,6 +678,52 @@ async function lockOwnedCompetenceTree(
   }
 }
 
+async function lockOwnedCompetenceTreeAnyState(
+  tx: DB.Prisma.TransactionClient,
+  id: string,
+  ownerId: string
+): Promise<void> {
+  const rows = await tx.$queryRaw<
+    Array<{ id: string; ownerId: string; isDeleted: boolean }>
+  >`
+    SELECT "id", "ownerId", "isDeleted"
+    FROM "CompetenceTree"
+    WHERE "id" = ${id}::uuid
+    FOR UPDATE
+  `
+  if (!rows[0] || rows[0].ownerId !== ownerId || rows[0].isDeleted) {
+    throw serviceError('Competence tree not found.', 'NOT_FOUND')
+  }
+}
+
+async function getAccessibleElement(
+  elementId: number,
+  userId: string,
+  prisma: Pick<DB.Prisma.TransactionClient, 'element'>
+) {
+  const element = await prisma.element.findFirst({
+    where: {
+      id: elementId,
+      isDeleted: false,
+      OR: [{ ownerId: userId }, { permissions: { some: { userId } } }],
+    },
+    select: {
+      id: true,
+      type: true,
+      name: true,
+      version: true,
+      options: true,
+    },
+  })
+  if (!element) {
+    throw serviceError(
+      'The element does not exist or is not readable.',
+      'FORBIDDEN'
+    )
+  }
+  return element
+}
+
 async function assertCourseAccess(
   courseId: string,
   minimumPermission: DB.PermissionLevel,
@@ -535,8 +771,9 @@ function toSummary(
   userId: string,
   readableCourseIds: Set<string>
 ): CompetenceTreeSummary {
-  const { _count, ...data } = tree
+  const { _count, adaptivePracticeQuizConfigs, ...data } = tree
   const isOwner = tree.ownerId === userId
+  const usage = getAdaptiveQuizUsage(adaptivePracticeQuizConfigs)
   return {
     ...data,
     courseLinks: isOwner
@@ -547,9 +784,11 @@ function toSummary(
     levelCount: _count.levels,
     nodeCount: _count.nodes,
     assignmentCount: _count.elementAssignments,
+    ...usage,
+    isArchived: tree.isArchived,
     isOwner,
     canEdit: isOwner,
-    isStructurallyLocked: _count.adaptivePracticeQuizConfigs > 0,
+    isStructurallyLocked: usage.adaptiveQuizCount > 0,
   }
 }
 
@@ -624,6 +863,7 @@ function toDetail(
     ...data
   } = tree
   const isOwner = tree.ownerId === userId
+  const usage = getAdaptiveQuizUsage(adaptivePracticeQuizConfigs)
 
   return {
     ...data,
@@ -637,10 +877,29 @@ function toDetail(
     levelCount: levels.length,
     nodeCount: tree.nodes.length,
     assignmentCount: elementAssignments.length,
+    ...usage,
+    isArchived: tree.isArchived,
     isOwner,
     canEdit: isOwner,
-    isStructurallyLocked: adaptivePracticeQuizConfigs.length > 0,
+    isStructurallyLocked: usage.adaptiveQuizCount > 0,
     validation,
+  }
+}
+
+function getAdaptiveQuizUsage(
+  configs: Array<{
+    practiceQuiz: Pick<DB.PracticeQuiz, 'status'>
+  }>
+) {
+  return {
+    adaptiveQuizCount: configs.length,
+    draftAdaptiveQuizCount: configs.filter(
+      ({ practiceQuiz }) => practiceQuiz.status === DB.PublicationStatus.DRAFT
+    ).length,
+    publishedAdaptiveQuizCount: configs.filter(
+      ({ practiceQuiz }) =>
+        practiceQuiz.status === DB.PublicationStatus.PUBLISHED
+    ).length,
   }
 }
 

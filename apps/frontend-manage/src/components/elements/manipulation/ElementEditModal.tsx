@@ -16,7 +16,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
   createInlineCaseStudyCollection,
@@ -61,6 +61,15 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
+  const [persistedElementId, setPersistedElementId] = useState<
+    number | undefined
+  >()
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPersistedElementId(undefined)
+    }
+  }, [isOpen])
 
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
@@ -155,11 +164,16 @@ function ElementEditModal({
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
       onSubmitElement={async (values) => {
         try {
+          const submissionElementId = persistedElementId ?? elementId
+          const submissionIsDuplication =
+            isDuplication && typeof persistedElementId === 'undefined'
+          let savedElementId: number | null = null
+
           switch (values.type) {
             case ElementType.Content: {
               const args = prepareContentArgs({
-                elementId,
-                isDuplication,
+                elementId: submissionElementId,
+                isDuplication: submissionIsDuplication,
                 values,
               })
 
@@ -171,16 +185,17 @@ function ElementEditModal({
 
               const data = result.data?.manipulateContentElement
               if (data?.__typename !== 'ContentElement' || !data.id) {
-                return false
+                return null
               }
 
+              savedElementId = data.id
               break
             }
 
             case ElementType.Flashcard: {
               const args = prepareFlashcardArgs({
-                elementId,
-                isDuplication,
+                elementId: submissionElementId,
+                isDuplication: submissionIsDuplication,
                 values,
               })
 
@@ -192,9 +207,10 @@ function ElementEditModal({
 
               const data = result.data?.manipulateFlashcardElement
               if (data?.__typename !== 'FlashcardElement' || !data.id) {
-                return false
+                return null
               }
 
+              savedElementId = data.id
               break
             }
 
@@ -202,8 +218,8 @@ function ElementEditModal({
             case ElementType.Mc:
             case ElementType.Kprim: {
               const args = prepareChoicesArgs({
-                elementId,
-                isDuplication,
+                elementId: submissionElementId,
+                isDuplication: submissionIsDuplication,
                 values,
               })
 
@@ -215,16 +231,17 @@ function ElementEditModal({
 
               const data = result.data?.manipulateChoicesQuestion
               if (data?.__typename !== 'ChoicesElement' || !data.id) {
-                return false
+                return null
               }
 
+              savedElementId = data.id
               break
             }
 
             case ElementType.Numerical: {
               const args = prepareNumericalArgs({
-                elementId,
-                isDuplication,
+                elementId: submissionElementId,
+                isDuplication: submissionIsDuplication,
                 values,
               })
 
@@ -236,16 +253,17 @@ function ElementEditModal({
 
               const data = result.data?.manipulateNumericalQuestion
               if (data?.__typename !== 'NumericalElement' || !data.id) {
-                return false
+                return null
               }
 
+              savedElementId = data.id
               break
             }
 
             case ElementType.FreeText: {
               const args = prepareFreeTextArgs({
-                elementId,
-                isDuplication,
+                elementId: submissionElementId,
+                isDuplication: submissionIsDuplication,
                 values,
               })
 
@@ -257,9 +275,10 @@ function ElementEditModal({
 
               const data = result.data?.manipulateFreeTextQuestion
               if (data?.__typename !== 'FreeTextElement' || !data.id) {
-                return false
+                return null
               }
 
+              savedElementId = data.id
               break
             }
 
@@ -278,12 +297,12 @@ function ElementEditModal({
                 values.options.itemSelectionMode === 'new' &&
                 (innerValues === null || typeof innerValues === 'undefined')
               ) {
-                return false
+                return null
               }
 
               const args = prepareSelectionArgs({
-                elementId,
-                isDuplication,
+                elementId: submissionElementId,
+                isDuplication: submissionIsDuplication,
                 values:
                   values.options.itemSelectionMode === 'new'
                     ? innerValues!
@@ -298,9 +317,10 @@ function ElementEditModal({
 
               const data = result.data?.manipulateSelectionQuestion
               if (data?.__typename !== 'SelectionElement' || !data.id) {
-                return false
+                return null
               }
 
+              savedElementId = data.id
               break
             }
 
@@ -319,12 +339,12 @@ function ElementEditModal({
                 values.options.itemSelectionMode === 'new' &&
                 (innerValues === null || typeof innerValues === 'undefined')
               ) {
-                return false
+                return null
               }
 
               const args = prepareCaseStudyArgs({
-                elementId,
-                isDuplication,
+                elementId: submissionElementId,
+                isDuplication: submissionIsDuplication,
                 values:
                   values.options.itemSelectionMode === 'new'
                     ? innerValues!
@@ -339,14 +359,15 @@ function ElementEditModal({
 
               const data = result.data?.manipulateCaseStudyQuestion
               if (data?.__typename !== 'CaseStudyElement' || !data.id) {
-                return false
+                return null
               }
 
+              savedElementId = data.id
               break
             }
 
             default:
-              break
+              return null
           }
 
           if (
@@ -370,13 +391,16 @@ function ElementEditModal({
             await flagOutdatedElementInstances({ variables: { elementId } })
           }
 
-          return true
+          setPersistedElementId(savedElementId ?? undefined)
+          return savedElementId
         } catch (err) {
           console.error('Error submitting element:', err)
-          return false
+          return null
         }
       }}
       onSuccess={() => {
+        setPersistedElementId(undefined)
+
         // remove local storage entry
         if (autoSavedElement) {
           localStorage.removeItem(

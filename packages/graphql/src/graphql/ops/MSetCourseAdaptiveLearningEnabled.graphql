@@ -1,0 +1,9 @@
+mutation MSetCourseAdaptiveLearningEnabled(
+  $courseId: String!
+  $enabled: Boolean!
+) {
+  setCourseAdaptiveLearningEnabled(courseId: $courseId, enabled: $enabled) {
+    id
+    isAdaptiveLearningEnabled
+  }
+}

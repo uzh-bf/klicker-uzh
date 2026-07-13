@@ -253,6 +253,7 @@ export default {
       multiplier: 'Multiplikator',
       options: 'Optionen',
       correct: 'Richtig',
+      incorrect: 'Falsch',
       delete: 'Löschen',
       edit: 'Bearbeiten',
       duplicate: 'Duplizieren',
@@ -851,6 +852,130 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       correctAnswerOptions: 'Richtige Antwortoptionen',
       topNAnswers: 'Top {number} Antworten',
+      adaptive: {
+        intro: {
+          title: 'Adaptives Übungs-Quiz',
+          purpose:
+            'Die Fragen passen sich an deine Antworten an und ermitteln dein aktuelles Kompetenzniveau.',
+          expectedLength:
+            '{maximum, plural, one {Das Quiz umfasst höchstens # Frage.} other {Das Quiz umfasst höchstens # Fragen.}}',
+          noBacktracking:
+            'Nach dem Absenden kannst du nicht zu früheren Fragen zurückkehren.',
+          resumable: 'Du kannst das Quiz verlassen und später fortsetzen.',
+          privacy:
+            'Dein Ergebnis zeigt dir, was du als Nächstes üben kannst. Kursdozierende sehen nur anonymisierte Gruppenergebnisse.',
+        },
+        question: {
+          progress: 'Frage {current}, höchstens {maximum}',
+          timer: 'Dauer {time}',
+          status: {
+            building: 'Dein Kompetenzprofil wird aufgebaut',
+            refining: 'Dein Kompetenzprofil wird verfeinert',
+          },
+        },
+        actions: {
+          start: 'Quiz starten',
+          resume: 'Quiz fortsetzen',
+          submit: 'Antwort senden',
+          startOver: 'Neu starten',
+          startOverTitle: 'Neu starten?',
+          startOverDescription:
+            'Dein aktueller Versuch und die zugehörigen Antworten werden verworfen.',
+          startOverConfirm: 'Neu starten',
+          practiceAgain: 'Erneut üben',
+        },
+        errors: {
+          load: 'Das adaptive Übungs-Quiz konnte nicht geladen werden.',
+          start:
+            'Das Quiz konnte nicht gestartet werden. Bitte versuche es erneut.',
+          resume:
+            'Das Quiz konnte nicht fortgesetzt werden. Bitte versuche es erneut.',
+          startOver:
+            'Ein neuer Versuch konnte nicht gestartet werden. Bitte versuche es erneut.',
+          submit:
+            'Deine Antwort konnte nicht übermittelt werden. Bitte versuche es erneut.',
+          result:
+            'Dein Ergebnis konnte nicht geladen werden. Bitte versuche es erneut.',
+        },
+        unavailable: {
+          title: 'Quiz nicht verfügbar',
+          description:
+            'Dieses adaptive Übungs-Quiz ist zurzeit nicht verfügbar.',
+        },
+        preview: {
+          label: 'Vorschau',
+          description: 'Du siehst eine Vorschau dieses adaptiven Übungs-Quiz.',
+        },
+        validation: {
+          numericRequired: 'Gib eine Zahl ein.',
+          numericInvalid: 'Gib eine gültige Zahl ein.',
+          numericRange: 'Gib einen Wert zwischen {min} und {max} ein.',
+          numericMin: 'Gib einen Wert von mindestens {min} ein.',
+          numericMax: 'Gib einen Wert von höchstens {max} ein.',
+          numericPercentRange: 'Gib einen Prozentwert zwischen 0 und 100 ein.',
+          numericPercentAllowed: 'Prozenteingaben sind möglich.',
+          freeTextRequired: 'Gib eine Antwort ein.',
+          freeTextTooLong:
+            '{maxLength, plural, one {Gib höchstens # Zeichen ein.} other {Gib höchstens # Zeichen ein.}}',
+        },
+        result: {
+          title: 'Dein Ergebnis',
+          headline: 'Dein aktuelles Niveau: {level}',
+          incompleteHeadline: 'Noch kein vollständiges Ergebnis',
+          incomplete:
+            'Es liegen noch nicht genügend Daten für ein Gesamtniveau vor.',
+          answeredQuestions:
+            '{count, plural, one {# Frage beantwortet} other {# Fragen beantwortet}}',
+        },
+        confidence: {
+          label: 'Aussagekraft',
+          HIGH: 'Hoch',
+          MODERATE: 'Mittel',
+          LOW: 'Tief',
+          INSUFFICIENT_DATA: 'Unzureichende Daten',
+        },
+        nearBoundary: {
+          label: 'Nahe an einer Stufengrenze',
+          description:
+            'Dein Ergebnis liegt nahe an der Grenze zwischen zwei Niveaus.',
+        },
+        stopReasons: {
+          ABANDONED:
+            'Dieser Versuch wurde vor dem vollständigen Abschluss beendet.',
+          CLASSIFIED: 'Dein Niveau konnte zuverlässig geschätzt werden.',
+          ALL_ROOTS_CLASSIFIED:
+            'Alle Kompetenzbereiche konnten zuverlässig geschätzt werden.',
+          TOTAL_QUESTION_CAP:
+            'Das Quiz endete nach der maximalen Anzahl Fragen.',
+          NODE_QUESTION_CAP:
+            'Die Fragengrenze für einen Kompetenzbereich wurde erreicht.',
+          POOL_EXHAUSTED: 'Es waren keine weiteren passenden Fragen verfügbar.',
+          INSUFFICIENT_DATA:
+            'Es lagen nicht genügend Daten für ein vollständiges Ergebnis vor.',
+        },
+        trajectory: {
+          title: 'Verlauf der Schätzung',
+          questionAxis: 'Beantwortete Fragen',
+          levelAxis: 'Geschätztes Niveau',
+          question: 'Frage {number}',
+          estimate: 'Schätzung',
+          confidenceRange: 'Unsicherheitsbereich',
+          finalResult: 'Endergebnis',
+          noData: 'Es sind keine Verlaufsdaten verfügbar.',
+          summary:
+            '{count, plural, one {Nach # beantworteter Frage liegt deine abschliessende Schätzung bei {level}.} other {Nach # beantworteten Fragen liegt deine abschliessende Schätzung bei {level}.}}',
+          incompleteSummary:
+            '{count, plural, one {Nach # beantworteter Frage liegen noch nicht genügend Daten für ein Gesamtniveau vor.} other {Nach # beantworteten Fragen liegen noch nicht genügend Daten für ein Gesamtniveau vor.}}',
+        },
+        profile: {
+          title: 'Kompetenzprofil',
+          overall: 'Gesamt',
+          responses: '{count, plural, one {# Antwort} other {# Antworten}}',
+          insufficientData: 'Unzureichende Daten',
+          expand: 'Details zu {name} anzeigen',
+          collapse: 'Details zu {name} ausblenden',
+        },
+      },
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',
@@ -1761,6 +1886,41 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',
       questionSavedFailed:
         'Beim Speichern der Frage ist ein Fehler aufgetreten. Bitte beachten Sie die Fehlermeldungen im Formular und überprüfen Sie die Eingaben.',
+      adaptiveMapping: {
+        title: 'Adaptive Zuordnung',
+        description:
+          'Ordnen Sie dieses Element in einem oder mehreren Kompetenzbäumen einer Blatt-Teilkompetenz und einer Stufe zu.',
+        unsupportedType:
+          'Adaptive Zuordnungen sind nur für numerische, Single-Choice-, Multiple-Choice-, KPRIM- und Freitextfragen mit kontrollierter Antwort verfügbar.',
+        saveElementFirst:
+          'Speichern Sie das Element, bevor Sie seine adaptiven Zuordnungen ändern.',
+        noTrees: 'Es sind keine Kompetenzbäume verfügbar.',
+        tree: 'Kompetenzbaum',
+        selectTree: 'Kompetenzbaum auswählen...',
+        noAssignableLeaves:
+          'Dieser Kompetenzbaum enthält keine aktivierte Blatt-Stufen-Kombination für eine Zuordnung.',
+        leaf: 'Blatt-Teilkompetenz',
+        selectLeaf: 'Blatt-Teilkompetenz auswählen...',
+        level: 'Stufe',
+        selectLevel: 'Stufe auswählen...',
+        enabled: 'In adaptiven Quizzes verwenden',
+        enablePercentInput: 'Prozenteingabe erlauben',
+        selectedB: 'Gewählte Schwierigkeit (b)',
+        defaultA: 'Standard-Trennschärfe (a)',
+        effectiveA: 'Effektive Trennschärfe (a)',
+        inferredC: 'Abgeleitete Ratewahrscheinlichkeit (c)',
+        choiceCount: 'Antwortoptionen',
+        notAssigned: 'Nicht zugeordnet',
+        add: 'Zuordnung hinzufügen',
+        remove: 'Zuordnung entfernen',
+        save: 'Zuordnung speichern',
+        states: {
+          archived: 'Archiviert',
+          locked: 'Struktur gesperrt',
+          owner: 'Eigener Baum',
+          readOnly: 'Schreibgeschützt',
+        },
+      },
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',
@@ -2103,6 +2263,221 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie einen Anzeigenamen für Ihren Hinweis ein.',
       clueContentMissing: 'Bitte geben Sie den Inhalt Ihres Hinweises ein.',
       clueValueMissing: 'Bitte geben Sie den Wert Ihres Hinweises ein.',
+      adaptive: {
+        loadFailed: 'Das adaptive Übungs-Quiz konnte nicht geladen werden.',
+        mode: {
+          label: 'Quizmodus',
+          standard: 'Standard',
+          adaptive: 'Adaptiv',
+          standardDescription:
+            'Verwendet die in diesem Quiz konfigurierten Fragenstapel und deren Reihenfolge.',
+          adaptiveDescription:
+            'Wählt Fragen dynamisch aus einem verknüpften Kompetenzbaum und zeigt stufenbasierte Resultate.',
+          confirmTitle: 'Quizmodus wechseln?',
+          confirmDescription:
+            'Beim Wechsel zum Modus {mode} werden die modusspezifischen Fragen und Einstellungen entfernt. Dies kann nicht rückgängig gemacht werden.',
+          confirmAction: 'Modus wechseln',
+          rolloutUnavailable:
+            'Adaptives Lernen ist derzeit nur in ausgewählten Pilotkursen verfügbar.',
+        },
+        preset: {
+          DIAGNOSTIC: 'Diagnose / Selbsteinschätzung',
+          PLACEMENT: 'Einstufung / Kompetenznachweis',
+          RESEARCH: 'Forschung / Kalibrierung',
+        },
+        attemptPolicy: {
+          FIRST_COMPLETED: 'Erster abgeschlossener Versuch',
+          LATEST_COMPLETED: 'Letzter abgeschlossener Versuch',
+        },
+        levelMapping: {
+          MASTERY: 'Beherrschungsschwelle',
+          NEAREST: 'Nächstgelegene Stufe',
+        },
+        settings: {
+          noPoints:
+            'Adaptive Übungs-Quizzes vergeben weder Punkte noch Erfahrungspunkte.',
+          preset: 'Voreinstellung',
+          totalQuestionCap: 'Maximale Fragenzahl',
+          showTimer: 'Timer anzeigen',
+          attemptPolicy: 'Versuch für die Auswertung',
+          finalResult: 'Endresultat anzeigen',
+          liveEstimate: 'Schätzung während des Quiz anzeigen',
+          advanced: 'Erweiterte adaptive Einstellungen',
+          perLeafQuestionCap: 'Maximale Fragen pro Blatt',
+          minQuestionsPerLeaf: 'Minimale Fragen pro Blatt',
+          classificationZ: 'Klassifikations-Z-Wert',
+          standardErrorThreshold: 'Grenzwert des Standardfehlers',
+          levelMappingRule: 'Stufenzuordnung',
+          topInformationRatio: 'Anteil der informationsreichsten Items',
+          defaultDiscrimination: 'Standard-Trennschärfe (a)',
+          showLiveEstimate: 'Live-Schätzung anzeigen',
+        },
+        assignments: {
+          title: 'Fragenpool',
+          searchPlaceholder: 'Nach Elementname oder ID suchen...',
+          allLeaves: 'Alle Blätter',
+          allLevels: 'Alle Stufen',
+          state: {
+            ALL: 'Alle Status',
+            ENABLED: 'Aktiviert',
+            DISABLED: 'Deaktiviert',
+          },
+          use: 'Verwenden',
+          element: 'Element',
+          leaf: 'Blatt',
+          level: 'Stufe',
+          effective: 'Effektiver Pool',
+          discrimination: 'Trennschärfe (a)',
+          included: 'Enthalten',
+          excluded: 'Ausgeschlossen',
+        },
+        coverage: {
+          title: 'Abdeckungsstatus',
+          leaf: 'Blatt',
+        },
+        hierarchy: {
+          title: 'Quiz-Hierarchie',
+          directIntent:
+            'Änderungen gelten nur für dieses Quiz; der gemeinsame Kompetenzbaum bleibt unverändert.',
+          effectiveState: 'Effektiver Status',
+          competence: 'Kompetenz',
+          subcompetence: 'Teilkompetenz',
+          weight: 'Gewicht',
+          cap: 'Fragenlimit',
+          effectiveEnabled: 'Enthalten',
+          effectiveDisabled: 'Ausgeschlossen',
+          disableConfirmTitle: 'Hierarchiezweig ausschliessen?',
+          disableConfirmDescription:
+            '"{name}" ausschliessen? Dadurch werden auch {descendants, plural, one {# untergeordneter Knoten} other {# untergeordnete Knoten}} und {assignments, plural, one {# zugeordnetes Element} other {# zugeordnete Elemente}} aus diesem Quiz ausgeschlossen.',
+          disableAction: 'Zweig ausschliessen',
+        },
+        setup: {
+          title: 'Adaptive Konfiguration',
+          tooltip:
+            'Wählen Sie einen Kompetenzbaum, konfigurieren Sie den effektiven Pool und prüfen Sie die Veröffentlichungsbereitschaft.',
+          tree: 'Kompetenzbaum',
+          selectTree: 'Kompetenzbaum auswählen...',
+          linkedTrees: 'Mit diesem Kurs verknüpft',
+          ownedUnlinkedTrees: 'Eigene, nicht verknüpfte Bäume',
+          linkSuccess: 'Der Kompetenzbaum wurde mit dem Kurs verknüpft.',
+          linkFailed:
+            'Der Kompetenzbaum konnte nicht mit dem Kurs verknüpft werden.',
+          linkTree: 'Mit Kurs verknüpfen',
+          courseRequired:
+            'Wählen Sie einen Kurs, bevor Sie die adaptive Durchführung konfigurieren.',
+          linkRequired:
+            'Verknüpfen Sie den gewählten Kompetenzbaum mit diesem Kurs, bevor Sie fortfahren.',
+        },
+        preview: {
+          emptyResponse: 'Die adaptive Vorschau hat keine Daten zurückgegeben.',
+          refresh: 'Vorschau aktualisieren',
+        },
+        readiness: {
+          notChecked:
+            'Die Veröffentlichungsbereitschaft wurde noch nicht geprüft.',
+          ready: 'Bereit zur Veröffentlichung',
+          notReady: 'Nicht bereit zur Veröffentlichung',
+          stale: 'Vorschau veraltet',
+          expectedLength: 'Erwartete Fragenzahl',
+          duration: 'Geschätzte Dauer',
+          minutes: '{value} Min.',
+          roots: 'Aktive Kompetenzen',
+          leaves: 'Aktive Blätter',
+          assignments: 'Aktive Zuordnungen',
+          errors: 'Blockierende Probleme',
+          warnings: 'Warnungen',
+          reachability: 'Erreichbarkeit der Hauptkompetenzen',
+          root: 'Hauptkompetenz',
+          available: 'Verfügbare Items',
+          allocated: 'Zugewiesene Fragen',
+          levels: 'Klassifizierbare Stufen',
+          minimumSe: 'Minimal erreichbarer SE',
+          issues: {
+            ADAPTIVE_COURSE_DISABLED:
+              'Adaptives Lernen ist für diesen Kurs nicht aktiviert.',
+            ADAPTIVE_NO_ENABLED_COMPETENCE:
+              'Aktivieren Sie mindestens eine Hauptkompetenz.',
+            ADAPTIVE_COMPETENCE_WITHOUT_ENABLED_LEAF:
+              'Die aktive Kompetenz "{nodeName}" hat kein aktives Blatt.',
+            ADAPTIVE_ITEM_UNAVAILABLE:
+              'Das Element "{elementName}" wurde gelöscht und kann keinem neuen adaptiven Pool hinzugefügt werden.',
+            ADAPTIVE_ITEM_NOT_SCORABLE:
+              'Das Element "{elementName}" hat keine kontrollierte Antwort, die adaptiv bewertet werden kann.',
+            ADAPTIVE_ITEM_PARAMETERS_INVALID:
+              'Das Element "{elementName}" hat ungültige effektive Itemparameter.',
+            ADAPTIVE_COVERAGE_CELL_EMPTY:
+              'Jede aktive Kombination aus Blatt und Stufe benötigt mindestens ein aktives Element.',
+            ADAPTIVE_COVERAGE_BELOW_TARGET:
+              'Das Ziel sind {targetItemCount} Elemente, aber nur {enabledAssignmentCount} {enabledAssignmentCount, plural, one {Element ist} other {Elemente sind}} verfügbar.',
+            ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE:
+              'Das Blatt "{nodeName}" benötigt {requiredQuestionCount} Fragen, aber nur {availableItemCount} aktive Elemente sind verfügbar.',
+            ADAPTIVE_MINIMUM_EVIDENCE_CAPPED:
+              'Der Knoten "{nodeName}" benötigt {requiredQuestionCount} Fragen, sein effektives Limit ist jedoch {effectiveQuestionCap}.',
+            ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED:
+              'Die aktiven Blätter benötigen {requiredQuestionCount} Fragen, das Gesamtlimit ist jedoch {totalQuestionCap}.',
+            ADAPTIVE_STANDARD_ERROR_UNREACHABLE:
+              'Der konfigurierte Standardfehler-Grenzwert ist für "{nodeName}" mit dem aktuellen Pool und den Limits nicht erreichbar.',
+            ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
+              '{classifiableLevelCount} von {levelCount} Stufen können für "{nodeName}" mit dem aktuellen Limit und Unsicherheitsintervall klassifiziert werden.',
+            ADAPTIVE_COVERAGE_TARGETS_CAPPED:
+              'Die Abdeckungsziele verlangen {targetQuestionCount} Fragen, die konfigurierten Limits erlauben jedoch höchstens {maximumQuestionCount}.',
+            ADAPTIVE_TIME_BUDGET_EXCEEDED:
+              'Die Abdeckung dauert voraussichtlich etwa {estimatedDurationMinutes} Minuten bei {secondsPerItem} Sekunden pro Item.',
+            ADAPTIVE_CONFIG_INTEGER_RANGE:
+              'Die Einstellung {field} muss eine ganze Zahl zwischen {minimumValue} und {maximumValue} sein.',
+            ADAPTIVE_PER_LEAF_CAP_INVALID:
+              'Das Limit pro Blatt muss positiv und darf nicht grösser als das Gesamtlimit von {totalQuestionCap} sein.',
+            ADAPTIVE_MIN_QUESTIONS_EXCEEDS_TOTAL:
+              'Die minimale Fragenzahl pro Blatt darf das Gesamtlimit von {totalQuestionCap} nicht überschreiten.',
+            ADAPTIVE_CLASSIFICATION_Z_INVALID:
+              'Der Klassifikations-Z-Wert muss grösser als 0 und höchstens {maximumValue} sein.',
+            ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID:
+              'Der Standardfehler-Grenzwert muss eine positive endliche Zahl sein.',
+            ADAPTIVE_TOP_INFORMATION_RATIO_INVALID:
+              'Der Anteil der informationsreichsten Items muss grösser als 0 und höchstens {maximumValue} sein.',
+            ADAPTIVE_DEFAULT_DISCRIMINATION_INVALID:
+              'Die Standard-Trennschärfe muss grösser als 0 und höchstens {maximumValue} sein.',
+            ADAPTIVE_STACKS_FORBIDDEN:
+              'Adaptive Übungs-Quizzes dürfen keine Standard-Fragenstapel enthalten.',
+            ADAPTIVE_RESEARCH_SETTINGS_FORBIDDEN:
+              'Erweiterte Forschungseinstellungen sind nur mit der Forschungsvoreinstellung verfügbar.',
+            ADAPTIVE_ASSIGNMENT_INVALID:
+              'Die Zuordnung {assignmentId} hat keinen unterstützten Elementtyp und keine gültige Stufe.',
+            ADAPTIVE_NODE_OVERRIDE_INVALID:
+              'Die Knotenanpassung {nodeId} ist doppelt vorhanden oder gehört nicht zum gewählten Baum.',
+            ADAPTIVE_NON_ROOT_WEIGHT_FORBIDDEN:
+              'Quiz-Gewichte können nur für Hauptkompetenzen gesetzt werden.',
+            ADAPTIVE_NODE_CAP_INVALID:
+              'Fragenlimits für Knoten müssen ganze Zahlen zwischen 1 und {maximumValue} sein.',
+            ADAPTIVE_ELEMENT_OVERRIDE_INVALID:
+              'Die Elementanpassung {assignmentId} ist doppelt vorhanden oder gehört nicht zum gewählten Baum.',
+            ADAPTIVE_DISCRIMINATION_OVERRIDE_FORBIDDEN:
+              'Quiz-spezifische Anpassungen der Trennschärfe benötigen die Forschungsvoreinstellung.',
+            ADAPTIVE_DISCRIMINATION_OVERRIDE_INVALID:
+              'Die Trennschärfe muss grösser als 0 und höchstens {maximumValue} sein.',
+            ADAPTIVE_ROOT_WEIGHT_INVALID:
+              'Die aktive Kompetenz "{nodeName}" benötigt ein positives endliches Gewicht.',
+            ADAPTIVE_CONFIG_MISSING:
+              'Die Konfiguration des adaptiven Übungs-Quizzes wurde nicht gefunden.',
+            unknown:
+              'Die adaptive Konfiguration enthält ein unbekanntes Problem.',
+          },
+        },
+        validation: {
+          number: 'Geben Sie eine gültige Zahl ein.',
+          required: 'Dieses Feld ist erforderlich.',
+          integer: 'Geben Sie eine ganze Zahl ein.',
+          positive: 'Geben Sie einen Wert grösser als 0 ein.',
+          questionCapMax: 'Geben Sie höchstens 1000 Fragen ein.',
+          classificationZMax: 'Geben Sie einen Wert von höchstens 5 ein.',
+          ratioMax: 'Geben Sie einen Wert von höchstens 1 ein.',
+          discriminationMax: 'Geben Sie einen Wert von höchstens 10 ein.',
+          treeRequired: 'Wählen Sie einen Kompetenzbaum.',
+          courseNotEnabled:
+            'Wählen Sie einen Kurs, der für den Pilotbetrieb des adaptiven Lernens aktiviert ist.',
+          nonNegative: 'Geben Sie 0 oder einen positiven Wert ein.',
+        },
+      },
     },
     template: {
       convertToTemplate: '{activityType} in Vorlage umwandeln',
@@ -2402,6 +2777,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyCourseAssignment: 'Kurszuweisung ändern',
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
     },
+    adaptivePublication: {
+      immediateOnly:
+        '"{title}" kann derzeit nur sofort veröffentlicht werden. Eine geplante Veröffentlichung ist für adaptive Übungs-Quizzes nicht verfügbar.',
+      checkingReadiness: 'Veröffentlichungsbereitschaft wird geprüft...',
+      emptyResponse:
+        'Die Veröffentlichung des adaptiven Übungs-Quizzes hat keine Daten zurückgegeben.',
+      publishFailed:
+        'Das adaptive Übungs-Quiz konnte nicht veröffentlicht werden.',
+    },
     microLearnings: {
       viewMicroLearning: 'Microlearning einsehen',
       publishUnpublishMicroLearning:
@@ -2643,6 +3027,69 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der aktuell ausgewählte Block wurde noch nicht geschlossen. Die Teilnehmenden Ihres Quizzes können nach wie vor Antworten abgeben. Bitte bestätigen Sie, dass Sie die Resultate anzeigen wollen.',
       showResults: 'Resultate anzeigen',
       showQRCodes: 'QR-Codes anzeigen',
+      adaptive: {
+        title: 'Adaptive Kohortenauswertung',
+        attemptSummary: 'Versuchsübersicht',
+        attempts: {
+          total: 'Gesamt',
+          completed: 'Freigegebene abgeschlossene Resultate',
+          inProgress: 'In Bearbeitung',
+          abandoned: 'Abgebrochen',
+          classified: 'Klassifiziert',
+          capped: 'Fragenlimit erreicht',
+          poolExhausted: 'Fragenpool ausgeschöpft',
+          stoppedInsufficientData: 'Mit unzureichenden Daten beendet',
+          insufficientData: 'Unzureichende Daten',
+          nearBoundary: 'Nahe an einer Stufengrenze',
+        },
+        stopSummary: 'Beendigungsgründe',
+        qualitySummary: 'Qualitätsmerkmale',
+        suppressedValue: 'Ausgeblendet',
+        suppression: {
+          cohort:
+            'Kohortenresultate werden in festen Gruppen von fünf abgeschlossenen Teilnehmenden freigegeben.',
+          summary:
+            'Ergebniszahlen werden ausgeblendet, wenn eine Resultatgruppe zu klein ist.',
+          distribution:
+            'Diese Verteilung ist ausgeblendet, weil eine oder mehrere Gruppen zu klein sind.',
+          pilot:
+            'Pilotmetriken werden in festen Gruppen von fünf abgeschlossenen Teilnehmenden freigegeben.',
+        },
+        pilot: {
+          title: 'Qualitätsmonitoring des Piloten',
+          description:
+            'Anonyme operative Indikatoren zu Testlänge, Exposition und deskriptiver Itempassung. Sie kalibrieren keine Items neu und ersetzen nicht die didaktische Prüfung.',
+          medianQuestions: 'Median der Fragenzahl',
+          p95Questions: '95. Perzentil der Fragenzahl',
+          medianDuration: 'Median der Antwortzeit',
+          p95Duration: '95. Perzentil der Antwortzeit',
+          nearBoundaryRate: 'Anteil nahe Stufengrenzen',
+          responseCountMismatch:
+            'Gespeicherte Schätzungen und kanonische Antwortzeilen stimmen nicht überein. Prüfen Sie diese Datenwarnung vor der Interpretation des Piloten.',
+          durationMissing:
+            'Mindestens ein ausgewählter Versuch hat keine clientseitig gemeldete Antwortdauer.',
+          item: 'Item',
+          competence: 'Kompetenzpfad',
+          level: 'Stufe',
+          responses: 'Antworten',
+          exposure: 'Exposition',
+          observed: 'Beobachtet korrekt',
+          expected: 'Erwartet korrekt',
+          residual: 'Residuum',
+          flags: 'Prüfhinweise',
+          highExposure: 'Hohe Exposition',
+          reviewFit: 'Passung prüfen',
+          noFlags: 'Keine',
+        },
+        overallDistribution: 'Gesamte Stufenverteilung',
+        rootDistributions: 'Kompetenzverteilungen',
+        insufficientData: 'Unzureichende Daten',
+        noDistributionData: 'Es sind noch keine Verteilungsdaten verfügbar.',
+        expandNode: '{node} aufklappen',
+        collapseNode: '{node} zuklappen',
+        distributionBarLabel:
+          '{level}: {count} {count, plural, one {Versuch} other {Versuche}}',
+      },
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
@@ -3125,6 +3572,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es wurden keine Punktkorrekturen auf diese Antwort angewendet.',
     },
     resources: {
+      competenceTrees: 'Kompetenzbäume',
       mediaLibrary: 'Mediathek',
       mediaLibraryAvailableSoon:
         'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
@@ -3285,6 +3733,180 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       duplicationFailure:
         'Duplizierung der Sammlung fehlgeschlagen. Bitte versuchen Sie es erneut.',
       duplicationSuccess: 'Sammlung wurde erfolgreich dupliziert.',
+    },
+    competenceTree: {
+      libraryDescription:
+        'Erstellen und verwalten Sie wiederverwendbare Kompetenzbäume für adaptive Übungs-Quizzes.',
+      create: 'Kompetenzbaum erstellen',
+      searchPlaceholder: 'Kompetenzbäume durchsuchen...',
+      ownershipFilter: 'Nach Eigentum filtern',
+      filterOwned: 'Eigene',
+      filterLinked: 'Verknüpfte',
+      filterAll: 'Alle',
+      allCourses: 'Alle Kurse',
+      showArchived: 'Archivierte anzeigen',
+      tree: 'Kompetenzbaum',
+      linkedCourses: 'Verknüpfte Kurse',
+      structure: 'Struktur',
+      usage: 'Verwendung',
+      actions: 'Aktionen',
+      owned: 'Eigener Baum',
+      linkedReadOnly: 'Verknüpft, schreibgeschützt',
+      archived: 'Archiviert',
+      noLinkedCourses: 'Keine verknüpften Kurse',
+      levelCount: '{count} {count, plural, one {Stufe} other {Stufen}}',
+      nodeCount: '{count} {count, plural, one {Knoten} other {Knoten}}',
+      assignmentCount:
+        '{count} {count, plural, one {Zuordnung} other {Zuordnungen}}',
+      draftUsage: 'Quiz-Entwürfe: {count}',
+      publishedUsage: 'Veröffentlichte Quizzes: {count}',
+      structurallyLocked: 'Struktur gesperrt',
+      open: 'Öffnen',
+      duplicate: 'Duplizieren',
+      saveBeforeDuplicate:
+        'Speichern oder verwerfen Sie Ihre Änderungen vor dem Duplizieren.',
+      leaveUnsavedTitle: 'Ungespeicherte Änderungen verwerfen?',
+      leaveUnsavedDescription:
+        'Ihre Änderungen an diesem Kompetenzbaum wurden nicht gespeichert.',
+      leaveUnsavedAction: 'Änderungen verwerfen',
+      manageLinks: 'Kursverknüpfungen verwalten',
+      archive: 'Archivieren',
+      restore: 'Wiederherstellen',
+      emptyLibrary: 'Keine Kompetenzbäume entsprechen den aktuellen Filtern.',
+      archiveTitle: 'Kompetenzbaum archivieren?',
+      archiveWarning:
+        '"{tree}" archivieren? Der Baum bleibt in bestehenden Quizzes verfügbar, kann aber nicht für neue Zuordnungen oder Quizzes ausgewählt werden.',
+      actionError: 'Die Kompetenzbaum-Aktion konnte nicht ausgeführt werden.',
+      newTitle: 'Kompetenzbaum erstellen',
+      editTitle: 'Kompetenzbaum bearbeiten',
+      backToLibrary: 'Zurück zu den Kompetenzbäumen',
+      save: 'Kompetenzbaum speichern',
+      saveError: 'Der Kompetenzbaum konnte nicht gespeichert werden.',
+      treeNotFound: 'Der Kompetenzbaum wurde nicht gefunden.',
+      readOnlyNotice:
+        'Dieser Baum gehört einer anderen Person. Sie können ihn einsehen und duplizieren, aber nur die Eigentümerin oder der Eigentümer kann ihn bearbeiten.',
+      lockedNotice:
+        'Dieser Baum wird von einem adaptiven Quiz verwendet. Seine Metadaten können weiterhin bearbeitet werden; duplizieren Sie den Baum, um Stufen, Hierarchie, Abdeckung oder Zuordnungen zu ändern.',
+      defaultLevelLow: 'Tief',
+      defaultLevelMedium: 'Mittel',
+      defaultLevelHigh: 'Hoch',
+      defaultRoot: 'Kompetenz 1',
+      defaultLeaf: 'Teilkompetenz 1',
+      metadataTitle: 'Metadaten und Modell',
+      metadataDescription:
+        'Namen identifizieren den Baum; die Modelleinstellungen definieren seine Stufenskala und Standardwerte.',
+      internalName: 'Interner Name',
+      displayName: 'Anzeigename',
+      description: 'Beschreibung',
+      modelSettings: 'Modelleinstellungen',
+      maxDepth: 'Maximale Hierarchietiefe',
+      thetaMin: 'Minimaler Theta-Wert',
+      thetaMax: 'Maximaler Theta-Wert',
+      defaultDiscrimination: 'Standard-Trennschärfe (a)',
+      mappingRule: 'Stufenzuordnung',
+      mappingNearest: 'Nächstgelegener Stufenanker',
+      mappingMastery: 'Höchste erreichte Stufe',
+      levelsTitle: 'Stufen',
+      levelsDescription:
+        'Definieren Sie geordnete Bezeichnungen und deren kanonische Schwierigkeitsbänder.',
+      addLevel: 'Stufe hinzufügen',
+      newLevel: 'Neue Stufe',
+      levelLabel: 'Bezeichnung',
+      theta: 'Anker (b)',
+      band: 'Stufenband',
+      moveUp: 'Nach oben verschieben',
+      moveDown: 'Nach unten verschieben',
+      deleteLevel: 'Stufe löschen',
+      assignmentsAffectedTitle: 'Zuordnungen werden geändert',
+      levelReorderWarning:
+        'Durch das Verschieben von Stufen ändern sich deren Schwierigkeitsanker; bestehende Zuordnungen können betroffen sein. Fortfahren?',
+      levelDeleteWarning:
+        'Beim Löschen dieser Stufe werden auch ihre Abdeckungsfelder und Zuordnungen entfernt. Fortfahren?',
+      hierarchyTitle: 'Kompetenzhierarchie',
+      hierarchyDescription:
+        'Erstellen Sie Hauptkompetenzen und verschachtelte Teilkompetenzen. Elemente können nur Blatt-Teilkompetenzen zugeordnet werden.',
+      selectedNode: 'Ausgewählter Knoten',
+      addChild: 'Untergeordneten Knoten hinzufügen',
+      maxDepthReached: 'Maximale Hierarchietiefe erreicht',
+      duplicateBranch: 'Zweig duplizieren',
+      deleteBranch: 'Zweig löschen',
+      nodeName: 'Knotenname',
+      parent: 'Übergeordneter Knoten',
+      rootNode: 'Hauptkompetenz',
+      nodeDescription: 'Knotenbeschreibung',
+      nodeType: 'Knotentyp',
+      competence: 'Kompetenz',
+      subcompetence: 'Teilkompetenz',
+      depth: 'Tiefe',
+      rootWeight: 'Gewicht der Hauptkompetenz',
+      normalizedWeight: 'Normalisiert: {percentage}%',
+      noNodeSelected:
+        'Wählen Sie einen Knoten, um seine Details zu bearbeiten.',
+      expandNode: 'Knoten aufklappen',
+      collapseNode: 'Knoten zuklappen',
+      newSubcompetence: 'Neue Teilkompetenz',
+      deleteBranchTitle: 'Hierarchiezweig löschen?',
+      deleteBranchWarning:
+        'Beim Löschen dieses Zweigs werden auch {assignments, plural, one {# Zuordnung} other {# Zuordnungen}} entfernt. Fortfahren?',
+      coverageTitle: 'Abdeckungsziele',
+      coverageDescription:
+        'Legen Sie die erforderliche Anzahl aktiver Items für jedes Blatt und jede Stufe fest. Wählen Sie ein Feld, um die Zuordnungen darunter zu filtern.',
+      searchLeaves: 'Blätter durchsuchen...',
+      allRoots: 'Alle Hauptkompetenzen',
+      leaf: 'Blatt-Teilkompetenz',
+      coverageDisabled: 'Deaktiviert',
+      coverageReady: 'Bereit',
+      coverageMissing: 'Unvollständig',
+      coverageTargetLabel: 'Zielanzahl Items für {leaf} auf Stufe {level}',
+      coverageEnabledLabel: '{leaf} auf Stufe {level} aktivieren',
+      coverageFilterLabel: 'Zuordnungen für {leaf} auf Stufe {level} anzeigen',
+      coverageAssignmentCount: '{count} von {target} aktiviert',
+      noMatchingLeaves: 'Keine Blätter entsprechen den aktuellen Filtern.',
+      assignmentsTitle: 'Elementzuordnungen',
+      assignmentsDescription:
+        'Prüfen Sie die in diesem Baum gespeicherten Elementzuordnungen. Wählen Sie oben ein Abdeckungsfeld, um die Liste zu filtern.',
+      clearCoverageFilter: 'Feldfilter aufheben',
+      assignmentFilter: 'Zuordnungen für {leaf} auf Stufe {level}.',
+      element: 'Element',
+      elementType: 'Typ',
+      level: 'Stufe',
+      enabled: 'Aktiviert',
+      assignmentEnabledLabel: '{element} in diesem Kompetenzbaum verwenden',
+      percentInput: 'Prozenteingabe',
+      yes: 'Ja',
+      no: 'Nein',
+      removeAssignment: 'Zuordnung entfernen',
+      noAssignments: 'Dieser Kompetenzbaum enthält keine Elementzuordnungen.',
+      noFilteredAssignments:
+        'Keine Zuordnungen entsprechen dem gewählten Blatt und der Stufe.',
+      validationTitle: 'Validierung',
+      validationDescription:
+        'Prüfen Sie den vollständigen Baum vor dem Speichern oder Veröffentlichen auf blockierende Probleme und Warnungen.',
+      validate: 'Baum validieren',
+      validationNotRun: 'Die Validierung wurde noch nicht ausgeführt.',
+      validationValid: 'Der Kompetenzbaum ist gültig.',
+      validationErrors:
+        '{count} blockierende {count, plural, one {Fehlermeldung} other {Fehlermeldungen}}',
+      validationWarnings:
+        '{count} {count, plural, one {Warnung} other {Warnungen}}',
+      validationRequestError:
+        'Der Kompetenzbaum konnte nicht validiert werden.',
+      jumpToSection: 'Zum Abschnitt',
+      courseLinksTitle: 'Kursverknüpfungen für {tree}',
+      courseLinksDescription:
+        'Verknüpfte Kurse können diesen Baum in adaptiven Übungs-Quizzes verwenden. Die Verknüpfung überträgt kein Eigentum.',
+      courseLinkError: 'Die Kursverknüpfung konnte nicht aktualisiert werden.',
+      inactiveCourse: 'Inaktiver Kurs',
+      courseWriteRequired:
+        'Zum Ändern dieser Verknüpfung ist Bearbeitungszugriff erforderlich.',
+      courseLinkSwitchLabel: '{course} mit diesem Kompetenzbaum verknüpfen',
+      linked: 'Verknüpft',
+      notLinked: 'Nicht verknüpft',
+      updating: 'Wird aktualisiert...',
+      noActiveCourses: 'Es sind keine Kurse zum Verknüpfen verfügbar.',
+      close: 'Schliessen',
+      confirm: 'Bestätigen',
+      cancel: 'Abbrechen',
     },
     userGroups: {
       description:

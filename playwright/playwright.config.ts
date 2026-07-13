@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
+const hostResolverRules = process.env.PLAYWRIGHT_HOST_RESOLVER_RULES
 
 // URL defaults mirror cypress.config.ts env block
 const baseURL =
@@ -47,7 +48,12 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
     launchOptions: {
-      args: ['--lang=en-US'],
+      args: [
+        '--lang=en-US',
+        ...(hostResolverRules
+          ? [`--host-resolver-rules=${hostResolverRules}`]
+          : []),
+      ],
     },
     locale: 'en-US',
     viewport: { width: 1920, height: 1080 }, // macbook-16 equivalent

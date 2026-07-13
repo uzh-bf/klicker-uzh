@@ -33,6 +33,7 @@ async function run() {
       mediaFiles: true,
       tags: true,
       competencyTrees: true,
+      competenceTrees: true,
       answerCollections: true,
       chatbots: true,
       chatbotDisclaimers: true,
@@ -370,6 +371,21 @@ async function run() {
         })
 
         emitter.emit('invalidate', { typename: 'CompetencyTree', id: treeId })
+      }
+
+      // migrate adaptive-learning competence trees to the new owner
+      let competenceTreeCounter = 0
+      for (const { id: treeId, name: treeName } of user.competenceTrees) {
+        console.log(
+          `Transferring competence tree: ${treeName} (ID: ${treeId}; ${++competenceTreeCounter}/${user.competenceTrees.length})`
+        )
+
+        await prisma.competenceTree.update({
+          where: { id: treeId },
+          data: { ownerId: newUserId },
+        })
+
+        emitter.emit('invalidate', { typename: 'CompetenceTree', id: treeId })
       }
 
       // migrate chatbots to new owner

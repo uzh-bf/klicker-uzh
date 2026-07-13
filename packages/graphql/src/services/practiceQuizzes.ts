@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import { lockAdaptiveLearningCourseEnabled } from './adaptiveLearningRollout.js'
 import {
   removeAdaptivePracticeQuizConfig,
   replaceAdaptivePracticeQuizConfig,
@@ -23,6 +24,7 @@ import {
 import {
   assertAdaptivePublishedPool,
   clearAdaptivePublishedPool,
+  lockAdaptivePracticeQuizConfig,
   materializeAdaptivePracticeQuizPool,
 } from './adaptivePracticeQuizPublication.js'
 import { splitActivityInstances } from './liveQuizzes.js'
@@ -47,6 +49,9 @@ export async function getPracticeQuizData(
     },
     include: {
       course: true,
+      adaptiveConfig: {
+        select: { totalQuestionCap: true },
+      },
       stacks: {
         include: {
           elements: {
@@ -63,29 +68,71 @@ export async function getPracticeQuizData(
   })
 
   if (!quiz) return null
+  if (quiz.mode === DB.PracticeQuizMode.ADAPTIVE && !ctx.user) {
+    return null
+  }
   if (
     quiz.mode === DB.PracticeQuizMode.ADAPTIVE &&
-    (!ctx.user || ctx.user.role === DB.UserRole.PARTICIPANT)
+    ctx.user?.role === DB.UserRole.PARTICIPANT
   ) {
-    // Phase 3 introduces the participant runtime. Until then, never expose an
-    // adaptive quiz as an empty standard quiz through the public data path.
-    return null
+    if (!quiz.course.isAdaptiveLearningEnabled) return null
+
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId: quiz.courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      select: { id: true },
+    })
+    if (!participation) return null
   }
   const isOwner =
     ctx.user?.sub &&
     (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
       ? ctx.user.sub === quiz.ownerId
       : false
+  const isLecturer =
+    ctx.user?.role === DB.UserRole.USER || ctx.user?.role === DB.UserRole.ADMIN
+  const sharedPreview =
+    isLecturer && !isOwner
+      ? await ctx.prisma.practiceQuiz.findFirst({
+          where: {
+            id,
+            permissions: { some: { userId: ctx.user!.sub } },
+          },
+          select: { id: true },
+        })
+      : null
+  const isPreview = Boolean(isOwner || sharedPreview)
+  if (quiz.mode === DB.PracticeQuizMode.ADAPTIVE && isLecturer && !isPreview) {
+    return null
+  }
+  if (
+    quiz.mode === DB.PracticeQuizMode.ADAPTIVE &&
+    !quiz.course.isAdaptiveLearningEnabled &&
+    !isPreview
+  ) {
+    return null
+  }
 
   // if the quiz is scheduled, return the quiz without the stacks
   if (quiz.status === DB.PublicationStatus.SCHEDULED) {
-    return isOwner && quiz.mode === DB.PracticeQuizMode.STANDARD
-      ? { ...quiz, isOwner }
-      : { ...quiz, isOwner, stacks: [], numOfStacks: 0 }
+    return isPreview && quiz.mode === DB.PracticeQuizMode.STANDARD
+      ? { ...quiz, isOwner, isPreview }
+      : { ...quiz, isOwner, isPreview, stacks: [], numOfStacks: 0 }
   }
 
   if (quiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
-    return { ...quiz, isOwner, stacks: [], numOfStacks: 0 }
+    return {
+      ...quiz,
+      isOwner,
+      isPreview,
+      stacks: [],
+      numOfStacks: 0,
+      adaptiveMaximumQuestions: quiz.adaptiveConfig?.totalQuestionCap ?? null,
+    }
   }
 
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
@@ -97,12 +144,13 @@ export async function getPracticeQuizData(
     return {
       ...quiz,
       isOwner,
+      isPreview,
       stacks: orderedStacks,
       numOfStacks: orderedStacks.length,
     }
   }
 
-  return { ...quiz, isOwner }
+  return { ...quiz, isOwner, isPreview }
 }
 
 export async function getPracticeQuizEvaluation(
@@ -163,14 +211,42 @@ export async function getCoursePublishedPracticeQuizzes(
   { courseId }: { courseId: string },
   ctx: Context
 ) {
+  const adaptiveAccess =
+    ctx.user?.role === DB.UserRole.PARTICIPANT
+      ? {
+          course: {
+            isAdaptiveLearningEnabled: true,
+            participations: {
+              some: { participantId: ctx.user.sub },
+            },
+          },
+        }
+      : ctx.user?.role === DB.UserRole.USER ||
+          ctx.user?.role === DB.UserRole.ADMIN
+        ? {
+            course: { isAdaptiveLearningEnabled: true },
+            permissions: { some: { userId: ctx.user.sub } },
+          }
+        : null
+
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
       practiceQuizzes: {
         where: {
-          mode: DB.PracticeQuizMode.STANDARD,
           status: DB.PublicationStatus.PUBLISHED,
           isDeleted: false,
+          OR: [
+            { mode: DB.PracticeQuizMode.STANDARD },
+            ...(adaptiveAccess
+              ? [
+                  {
+                    mode: DB.PracticeQuizMode.ADAPTIVE,
+                    ...adaptiveAccess,
+                  },
+                ]
+              : []),
+          ],
         },
         orderBy: { createdAt: 'asc' },
       },
@@ -271,11 +347,21 @@ export async function manipulatePracticeQuiz(
   // get the course to which the practice quiz should be assigned
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
-    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+    select: {
+      isGamificationEnabled: true,
+      isAssessmentEnabled: true,
+      isAdaptiveLearningEnabled: true,
+    },
   })
 
   if (!course) {
     throw new GraphQLError('Course not found')
+  }
+  if (isAdaptive && !course.isAdaptiveLearningEnabled) {
+    throw new GraphQLError(
+      'Adaptive learning is not enabled for the selected course.',
+      { extensions: { code: 'ADAPTIVE_COURSE_DISABLED' } }
+    )
   }
 
   const effectiveMultiplier = isAdaptive ? 0 : multiplier
@@ -355,6 +441,9 @@ export async function manipulatePracticeQuiz(
 
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
+      if (isAdaptive) {
+        await lockAdaptiveLearningCourseEnabled(courseId, prisma)
+      }
       if (id) {
         const lockedQuiz = await lockPracticeQuiz(prisma, id)
         if (lockedQuiz.status === DB.PublicationStatus.PUBLISHED) {
@@ -508,6 +597,7 @@ export async function manipulatePracticeQuiz(
     displayName: activity.displayName,
     reviewStatus: activity.reviewStatus,
     type: ActivityType.PRACTICE_QUIZ,
+    mode: activity.mode,
     status: activity.status,
     courseId: activity.course?.id,
     courseName: activity.course?.name,
@@ -648,7 +738,13 @@ export async function publishPracticeQuiz(
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: { id, isDeleted: false },
-    select: { id: true, mode: true, status: true },
+    select: {
+      id: true,
+      mode: true,
+      status: true,
+      courseId: true,
+      course: { select: { isAdaptiveLearningEnabled: true } },
+    },
   })
   if (!practiceQuiz) return null
 
@@ -656,6 +752,12 @@ export async function publishPracticeQuiz(
     availableFrom && dayjs(availableFrom).isAfter(dayjs())
   )
   if (practiceQuiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
+    if (!practiceQuiz.course.isAdaptiveLearningEnabled) {
+      throw new GraphQLError(
+        'Adaptive learning is not enabled for this course.',
+        { extensions: { code: 'ADAPTIVE_COURSE_DISABLED' } }
+      )
+    }
     if (scheduledPublication) {
       throw new GraphQLError(
         'Scheduled publication is not available for adaptive practice quizzes until durable task dispatch is enabled.',
@@ -664,6 +766,7 @@ export async function publishPracticeQuiz(
     }
 
     const updatedQuiz = await ctx.prisma.$transaction(async (prisma) => {
+      await lockAdaptiveLearningCourseEnabled(practiceQuiz.courseId, prisma)
       const lockedQuiz = await lockPracticeQuiz(prisma, id)
       if (lockedQuiz.mode !== DB.PracticeQuizMode.ADAPTIVE) {
         throw new GraphQLError('Practice quiz mode changed while publishing.', {
@@ -679,7 +782,16 @@ export async function publishPracticeQuiz(
           { extensions: { code: 'ADAPTIVE_PUBLICATION_STATE_INVALID' } }
         )
       }
-      await materializeAdaptivePracticeQuizPool(id, prisma)
+      await lockAdaptivePracticeQuizConfig(id, prisma)
+      const config = await prisma.practiceQuizAdaptiveConfig.findUnique({
+        where: { practiceQuizId: id },
+        select: { _count: { select: { attempts: true } } },
+      })
+      if (config && config._count.attempts > 0) {
+        await assertAdaptivePublishedPool(id, prisma)
+      } else {
+        await materializeAdaptivePracticeQuizPool(id, prisma)
+      }
       return await prisma.practiceQuiz.update({
         where: { id, isDeleted: false },
         data: {
@@ -756,8 +868,25 @@ export async function unpublishPracticeQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.SCHEDULED },
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findFirst({
+    where: {
+      id,
+      OR: [
+        {
+          mode: DB.PracticeQuizMode.STANDARD,
+          status: DB.PublicationStatus.SCHEDULED,
+        },
+        {
+          mode: DB.PracticeQuizMode.ADAPTIVE,
+          status: {
+            in: [
+              DB.PublicationStatus.SCHEDULED,
+              DB.PublicationStatus.PUBLISHED,
+            ],
+          },
+        },
+      ],
+    },
   })
 
   if (!practiceQuiz) {
@@ -769,15 +898,29 @@ export async function unpublishPracticeQuiz(
     practiceQuiz.mode === DB.PracticeQuizMode.ADAPTIVE
       ? await ctx.prisma.$transaction(async (prisma) => {
           const lockedQuiz = await lockPracticeQuiz(prisma, id)
-          if (lockedQuiz.status !== DB.PublicationStatus.SCHEDULED) {
+          if (
+            lockedQuiz.status !== DB.PublicationStatus.SCHEDULED &&
+            lockedQuiz.status !== DB.PublicationStatus.PUBLISHED
+          ) {
             throw new GraphQLError(
-              'Adaptive practice quiz is no longer scheduled.',
+              'Adaptive practice quiz is no longer published or scheduled.',
               { extensions: { code: 'ADAPTIVE_PUBLICATION_STATE_INVALID' } }
             )
           }
-          await clearAdaptivePublishedPool(id, prisma)
+          await clearAdaptivePublishedPool(id, prisma, {
+            retainWhenAttemptsExist: true,
+          })
           return await prisma.practiceQuiz.update({
-            where: { id, status: DB.PublicationStatus.SCHEDULED },
+            where: {
+              id,
+              mode: DB.PracticeQuizMode.ADAPTIVE,
+              status: {
+                in: [
+                  DB.PublicationStatus.SCHEDULED,
+                  DB.PublicationStatus.PUBLISHED,
+                ],
+              },
+            },
             data: {
               availableFrom: null,
               status: DB.PublicationStatus.DRAFT,
@@ -968,8 +1111,15 @@ export async function removePracticeQuiz(
 export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishScheduledPracticeQuiz'] =
   async ({ practiceQuizId }, globalCtx) => {
     try {
+      const targetQuiz = await globalCtx.prisma.practiceQuiz.findUnique({
+        where: { id: practiceQuizId, isDeleted: false },
+        select: { mode: true, courseId: true },
+      })
       const { didPublish, practiceQuiz } = await globalCtx.prisma.$transaction(
         async (prisma) => {
+          if (targetQuiz?.mode === DB.PracticeQuizMode.ADAPTIVE) {
+            await lockAdaptiveLearningCourseEnabled(targetQuiz.courseId, prisma)
+          }
           const lockedQuiz = await lockPracticeQuiz(prisma, practiceQuizId)
 
           // Hatchet may retry a task after the transaction committed. Treat that

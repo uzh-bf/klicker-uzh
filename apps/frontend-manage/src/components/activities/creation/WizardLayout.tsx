@@ -1,7 +1,11 @@
 import {
+  AdaptiveAttemptSelectionPolicy,
+  AdaptiveLevelMappingRule,
+  AdaptivePracticeQuizPreset,
   ElementOrderType,
   ElementType,
   ParameterType,
+  PracticeQuizMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -90,7 +94,40 @@ export interface MicroLearningFormValues extends CommonFormValues {
   endDate: Date
 }
 
+export interface AdaptivePracticeQuizNodeOverrideFormValues {
+  nodeId: number
+  enabled: boolean
+  weight: string
+  questionCap: string
+}
+
+export interface AdaptivePracticeQuizElementOverrideFormValues {
+  assignmentId: number
+  enabled: boolean
+  discrimination: string
+}
+
+export interface AdaptivePracticeQuizConfigFormValues {
+  competenceTreeId?: string
+  preset: AdaptivePracticeQuizPreset
+  totalQuestionCap: string
+  perLeafQuestionCap: string
+  minQuestionsPerLeaf: string
+  classificationZ: string
+  standardErrorThreshold: string
+  showTimer: boolean
+  attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy
+  levelMappingRule: AdaptiveLevelMappingRule
+  topInformationRatio: string
+  defaultDiscrimination: string
+  showLiveEstimate: boolean
+  nodeOverrides: AdaptivePracticeQuizNodeOverrideFormValues[]
+  elementOverrides: AdaptivePracticeQuizElementOverrideFormValues[]
+}
+
 export interface PracticeQuizFormValues extends CommonFormValues {
+  mode: PracticeQuizMode
+  adaptiveConfig: AdaptivePracticeQuizConfigFormValues
   stacks: ElementStackFormValues[]
   order: ElementOrderType
   resetTimeDays: string
@@ -141,7 +178,7 @@ function WizardLayout({
   const t = useTranslations()
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex h-6 flex-row items-end gap-8">
         <H2 className={{ root: 'm-0 flex flex-none items-end' }}>
           {editMode
@@ -164,7 +201,7 @@ function WizardLayout({
         />
       </div>
 
-      <div className="flex h-full w-full flex-1 flex-col justify-between gap-1 pt-4">
+      <div className="flex min-h-0 w-full flex-1 flex-col justify-between gap-1 pt-4">
         {!isCompleted && steps[activeStep]}
         {isCompleted && completionStep}
       </div>

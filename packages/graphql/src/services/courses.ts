@@ -18,6 +18,7 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
@@ -2795,6 +2796,62 @@ export async function toggleArchiveCourse(
   return course
 }
 
+export async function setCourseAdaptiveLearningEnabled(
+  { courseId, enabled }: { courseId: string; enabled: boolean },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.$transaction(async (prisma) => {
+    const administrator = await prisma.user.findUnique({
+      where: { id: ctx.user.sub },
+      select: { role: true },
+    })
+    if (
+      ctx.user.role !== DB.UserRole.ADMIN ||
+      administrator?.role !== DB.UserRole.ADMIN
+    ) {
+      throw new GraphQLError(
+        'Only administrators can change the adaptive-learning rollout.',
+        { extensions: { code: 'ADAPTIVE_ROLLOUT_FORBIDDEN' } }
+      )
+    }
+
+    const rows = await prisma.$queryRaw<
+      Array<{ id: string; isAdaptiveLearningEnabled: boolean }>
+    >`
+      SELECT "id", "isAdaptiveLearningEnabled"
+      FROM "Course"
+      WHERE "id" = ${courseId}::uuid
+      FOR UPDATE
+    `
+    const existing = rows[0]
+    if (!existing) {
+      throw new GraphQLError('Course not found.', {
+        extensions: { code: 'NOT_FOUND' },
+      })
+    }
+    if (existing.isAdaptiveLearningEnabled === enabled) {
+      return await prisma.course.findUniqueOrThrow({ where: { id: courseId } })
+    }
+
+    const updated = await prisma.course.update({
+      where: { id: courseId },
+      data: { isAdaptiveLearningEnabled: enabled },
+    })
+    await prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.MODIFICATION,
+        objectType: DB.ObjectType.COURSE,
+        courseId,
+        userId: ctx.user.sub,
+        message: `Adaptive learning rollout ${enabled ? 'enabled' : 'disabled'} by an administrator.`,
+      },
+    })
+    return updated
+  })
+  ctx.emitter.emit('invalidate', { typename: 'Course', id: courseId })
+  return course
+}
+
 interface UpdateCourseSettingsArgs {
   id: string
   name?: string | null
@@ -3636,6 +3693,7 @@ export async function getCourseData(
       isGamificationEnabled: practiceQuiz.isGamificationEnabled,
       isAssessmentEnabled: practiceQuiz.isAssessmentEnabled,
       type: ActivityType.PRACTICE_QUIZ,
+      mode: practiceQuiz.mode,
       status: practiceQuiz.status,
       courseId: course.id,
       courseName: course.name,

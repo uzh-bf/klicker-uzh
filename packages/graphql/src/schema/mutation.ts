@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as AdaptivePracticeQuizRuntimeService from '../services/adaptivePracticeQuizzes.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CompetenceTreeService from '../services/competenceTreeManagement.js'
 import * as CourseService from '../services/courses.js'
@@ -21,10 +22,15 @@ import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { AdaptivePracticeQuizConfigInput } from './adaptivePracticeQuiz.js'
+import {
+  AdaptivePracticeQuizAttemptStateRef,
+  AdaptivePracticeQuizResponseInput,
+} from './adaptivePracticeQuizRuntime.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import {
   CompetenceTree,
+  CompetenceTreeElementAssignmentUpdateInput,
   CompetenceTreeInput,
   CompetenceTreeMetadataInput,
   DuplicateCompetenceTreeInput,
@@ -347,6 +353,77 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      startAdaptivePracticeQuizAttempt: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: AdaptivePracticeQuizAttemptStateRef,
+        args: {
+          practiceQuizId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await AdaptivePracticeQuizRuntimeService.startAdaptivePracticeQuizAttempt(
+            args,
+            ctx
+          ),
+      }),
+
+      resumeAdaptivePracticeQuizAttempt: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: AdaptivePracticeQuizAttemptStateRef,
+        args: {
+          attemptId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await AdaptivePracticeQuizRuntimeService.resumeAdaptivePracticeQuizAttempt(
+            args,
+            ctx
+          ),
+      }),
+
+      restartAdaptivePracticeQuizAttempt: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: AdaptivePracticeQuizAttemptStateRef,
+        args: {
+          attemptId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await AdaptivePracticeQuizRuntimeService.restartAdaptivePracticeQuizAttempt(
+            args,
+            ctx
+          ),
+      }),
+
+      submitAdaptivePracticeQuizResponse: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: AdaptivePracticeQuizAttemptStateRef,
+        args: {
+          attemptId: t.arg.string({ required: true }),
+          servedItemId: t.arg.int({ required: true }),
+          response: t.arg({
+            type: AdaptivePracticeQuizResponseInput,
+            required: true,
+          }),
+          elapsedSeconds: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) =>
+          await AdaptivePracticeQuizRuntimeService.submitAdaptivePracticeQuizResponse(
+            args,
+            ctx
+          ),
+      }),
+
+      abandonAdaptivePracticeQuizAttempt: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: AdaptivePracticeQuizAttemptStateRef,
+        args: {
+          attemptId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await AdaptivePracticeQuizRuntimeService.abandonAdaptivePracticeQuizAttempt(
+            args,
+            ctx
+          ),
+      }),
+
       joinCourseLeaderboard: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
@@ -653,6 +730,25 @@ export const Mutation = builder.mutationType({
           await CompetenceTreeService.updateCompetenceTreeMetadata(args, ctx),
       }),
 
+      updateCompetenceTreeElementAssignment: t
+        .withAuth(asUserFullAccess)
+        .field({
+          type: CompetenceTree,
+          args: {
+            treeId: t.arg.string({ required: true }),
+            elementId: t.arg.int({ required: true }),
+            assignment: t.arg({
+              type: CompetenceTreeElementAssignmentUpdateInput,
+              required: false,
+            }),
+          },
+          resolve: async (_, args, ctx) =>
+            await CompetenceTreeService.updateCompetenceTreeElementAssignment(
+              args,
+              ctx
+            ),
+        }),
+
       duplicateCompetenceTree: t.withAuth(asUserFullAccess).field({
         type: CompetenceTree,
         args: {
@@ -688,6 +784,18 @@ export const Mutation = builder.mutationType({
           await CompetenceTreeService.deleteCompetenceTree(args, ctx),
       }),
 
+      archiveCompetenceTree: t.withAuth(asUserFullAccess).boolean({
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.archiveCompetenceTree(args, ctx),
+      }),
+
+      restoreCompetenceTree: t.withAuth(asUserFullAccess).boolean({
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.restoreCompetenceTree(args, ctx),
+      }),
+
       cancelLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: LiveQuiz,
@@ -712,6 +820,16 @@ export const Mutation = builder.mutationType({
             return await CourseService.enableGamification(args, ctx)
           }
         ),
+      }),
+
+      setCourseAdaptiveLearningEnabled: t.withAuth(asAdmin).field({
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          enabled: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CourseService.setCourseAdaptiveLearningEnabled(args, ctx),
       }),
 
       deleteCourse: t.withAuth(asUser).field({

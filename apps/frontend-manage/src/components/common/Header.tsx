@@ -43,6 +43,13 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
+      key: 'competence-trees-item',
+      type: 'link' as const,
+      label: t('manage.resources.competenceTrees'),
+      onClick: () => router.push('/resources/competenceTrees'),
+      data: { cy: 'competence-trees' },
+    },
+    {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),
@@ -139,6 +146,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
+        router.pathname.startsWith('/resources/competenceTrees') ||
         router.pathname == '/resources/answerCollections' ||
         router.pathname === '/resources/chatbots' ||
         router.pathname === '/resources/catalog' ||

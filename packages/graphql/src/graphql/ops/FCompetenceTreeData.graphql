@@ -11,6 +11,10 @@ fragment CompetenceTreeData on CompetenceTree {
   levelCount
   nodeCount
   assignmentCount
+  adaptiveQuizCount
+  draftAdaptiveQuizCount
+  publishedAdaptiveQuizCount
+  isArchived
   isOwner
   canEdit
   isStructurallyLocked

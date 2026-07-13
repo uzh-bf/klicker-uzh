@@ -81,6 +81,7 @@ export async function cleanupDatabase() {
     await prisma.practiceQuiz.deleteMany()
     await prisma.groupActivity.deleteMany()
 
+    await prisma.competenceTree.deleteMany()
     await prisma.course.deleteMany()
 
     await prisma.element.deleteMany()
@@ -218,6 +219,7 @@ export async function seedDatabase() {
         displayName: 'Testkurs',
         description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
         isGamificationEnabled: true,
+        isAdaptiveLearningEnabled: true,
         color: '#016272',
         pinCode: 123456789,
         startDate: new Date(`${currentYear - 1}-01-01T00:00`),
@@ -228,7 +230,7 @@ export async function seedDatabase() {
         preferredGroupSize: 3,
         owner: { connect: { id: USER_ID_TEST } },
       },
-      update: {},
+      update: { isAdaptiveLearningEnabled: true },
     })
     await prisma.derivedPermission.upsert({
       where: {
@@ -571,11 +573,16 @@ export async function seedActivities() {
 // Default export consumed by playwright.config.ts globalSetup
 // ---------------------------------------------------------------------------
 export default async function globalSetup() {
-  console.log('[global-setup] Ensuring database views...')
-  await ensureDatabaseViews()
-  console.log('[global-setup] Cleaning up database...')
-  await cleanupDatabase()
-  console.log('[global-setup] Seeding database...')
-  await seedDatabase()
-  console.log('[global-setup] Done.')
+  try {
+    console.log('[global-setup] Ensuring database views...')
+    await ensureDatabaseViews()
+    console.log('[global-setup] Cleaning up database...')
+    await cleanupDatabase()
+    console.log('[global-setup] Seeding database...')
+    await seedDatabase()
+    console.log('[global-setup] Done.')
+  } finally {
+    const prisma = await getPrisma()
+    await prisma.$disconnect()
+  }
 }

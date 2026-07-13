@@ -875,6 +875,9 @@ importers:
       '@fullcalendar/timegrid':
         specifier: 6.1.20
         version: 6.1.20(@fullcalendar/core@6.1.20)
+      '@klicker-uzh/adaptive-learning':
+        specifier: workspace:*
+        version: link:../../packages/adaptive-learning
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
@@ -1119,6 +1122,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.2)
+      '@klicker-uzh/adaptive-learning':
+        specifier: workspace:*
+        version: link:../../packages/adaptive-learning
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql

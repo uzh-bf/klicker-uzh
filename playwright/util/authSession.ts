@@ -50,10 +50,9 @@ export async function setSessionCookieForUrl({
       name: cookieName,
       value: token,
       httpOnly: true,
-      path: '/',
       sameSite: 'Lax',
       secure: url.protocol === 'https:',
-      ...(domain ? { domain } : { url: url.origin }),
+      ...(domain ? { domain, path: '/' } : { url: url.origin }),
     },
   ])
 }

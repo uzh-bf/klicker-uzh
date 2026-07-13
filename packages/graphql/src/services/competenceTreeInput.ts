@@ -9,6 +9,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 import {
+  hasControlledAdaptiveAnswer,
   validateCompetenceTreeShape,
   type CompetenceTreeValidationResult,
 } from './competenceTrees.js'
@@ -210,6 +211,10 @@ export function validatePreparedTree(
       discrimination: assignment.discrimination,
       enablePercentInput: assignment.enablePercentInput,
       enabled: assignment.enabled,
+      controlledAnswerReady: hasControlledAdaptiveAnswer(
+        elementsById.get(assignment.elementId)?.type ?? 'UNKNOWN',
+        elementsById.get(assignment.elementId)?.options
+      ),
     })),
   })
 }

@@ -115,6 +115,8 @@ export const PARTICIPANT_GROUP_IDS = [
 ]
 
 const ADAPTIVE_ASSESSMENT_ID_TEST = 'f0186f1d-3ec8-48a4-bd58-5f968db52f48'
+const ADAPTIVE_COMPETENCE_TREE_ID_TEST = 'b9a9e488-cc25-4cef-bd6f-4fe18cfa9d74'
+const ADAPTIVE_PRACTICE_QUIZ_ID_TEST = '6bd53b30-77df-41c4-973b-ff1caa8c9028'
 
 const ADAPTIVE_STANDING_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 const ADAPTIVE_THETA_RANGE = { min: -3, max: 3 } as const
@@ -219,6 +221,355 @@ async function seedTestkursAdaptiveElements(prisma: Prisma.PrismaClient) {
   }
 
   return elements
+}
+
+async function seedAdaptivePracticeQuizV2(
+  prisma: Prisma.PrismaClient,
+  elements: Prisma.Element[]
+) {
+  const supportedTypes = [
+    Prisma.ElementType.SC,
+    Prisma.ElementType.MC,
+    Prisma.ElementType.KPRIM,
+    Prisma.ElementType.NUMERICAL,
+    Prisma.ElementType.FREE_TEXT,
+  ] as const
+  const elementsByType = new Map(
+    supportedTypes.map((type) => [
+      type,
+      elements.find((element) => element.type === type),
+    ])
+  )
+
+  for (const type of supportedTypes) {
+    if (!elementsByType.get(type)) {
+      throw new Error(`Missing ${type} element for adaptive v2 seed.`)
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.practiceQuiz.deleteMany({
+      where: { id: ADAPTIVE_PRACTICE_QUIZ_ID_TEST },
+    })
+    await tx.competenceTree.deleteMany({
+      where: { id: ADAPTIVE_COMPETENCE_TREE_ID_TEST },
+    })
+
+    await tx.competenceTree.create({
+      data: {
+        id: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        name: 'adaptive-language-foundations',
+        displayName: 'Adaptive language foundations',
+        description:
+          'Reusable depth-5 competence tree for adaptive Practice Quiz development.',
+        maxDepth: 5,
+        thetaMin: -3,
+        thetaMax: 3,
+        defaultDiscrimination: 1.2,
+        levelMappingRule: Prisma.AdaptiveLevelMappingRule.NEAREST,
+        ownerId: USER_ID_TEST,
+        courseLinks: {
+          create: [
+            { courseId: COURSE_ID_TEST, linkedById: USER_ID_TEST },
+            { courseId: COURSE_ID_TEST2, linkedById: USER_ID_TEST },
+          ],
+        },
+      },
+    })
+
+    await tx.competenceTreeLevel.createMany({
+      data: [
+        {
+          treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+          label: 'Foundation',
+          order: 0,
+        },
+        {
+          treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+          label: 'Independent',
+          order: 1,
+        },
+        {
+          treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+          label: 'Advanced',
+          order: 2,
+        },
+      ],
+    })
+    const levels = await tx.competenceTreeLevel.findMany({
+      where: { treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST },
+      orderBy: { order: 'asc' },
+    })
+
+    const comprehension = await tx.competenceTreeNode.create({
+      data: {
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        kind: Prisma.AdaptiveNodeKind.COMPETENCE,
+        name: 'Comprehension',
+        order: 0,
+        depth: 1,
+        weight: 3,
+      },
+    })
+    const evidence = await tx.competenceTreeNode.create({
+      data: {
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        parentId: comprehension.id,
+        kind: Prisma.AdaptiveNodeKind.SUBCOMPETENCE,
+        name: 'Evidence',
+        order: 0,
+        depth: 2,
+      },
+    })
+    const interpretation = await tx.competenceTreeNode.create({
+      data: {
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        parentId: evidence.id,
+        kind: Prisma.AdaptiveNodeKind.SUBCOMPETENCE,
+        name: 'Interpretation',
+        order: 0,
+        depth: 3,
+      },
+    })
+    const evaluation = await tx.competenceTreeNode.create({
+      data: {
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        parentId: interpretation.id,
+        kind: Prisma.AdaptiveNodeKind.SUBCOMPETENCE,
+        name: 'Evaluation',
+        order: 0,
+        depth: 4,
+      },
+    })
+    const transfer = await tx.competenceTreeNode.create({
+      data: {
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        parentId: evaluation.id,
+        kind: Prisma.AdaptiveNodeKind.SUBCOMPETENCE,
+        name: 'Transfer',
+        order: 0,
+        depth: 5,
+      },
+    })
+    const communication = await tx.competenceTreeNode.create({
+      data: {
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        kind: Prisma.AdaptiveNodeKind.COMPETENCE,
+        name: 'Communication',
+        order: 1,
+        depth: 1,
+        weight: 2,
+      },
+    })
+    const clarity = await tx.competenceTreeNode.create({
+      data: {
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        parentId: communication.id,
+        kind: Prisma.AdaptiveNodeKind.SUBCOMPETENCE,
+        name: 'Clarity',
+        order: 0,
+        depth: 2,
+      },
+    })
+
+    const assignmentSpecs = [
+      {
+        type: Prisma.ElementType.SC,
+        leafNodeId: transfer.id,
+        levelId: levels[0]!.id,
+        enablePercentInput: false,
+      },
+      {
+        type: Prisma.ElementType.MC,
+        leafNodeId: transfer.id,
+        levelId: levels[1]!.id,
+        enablePercentInput: false,
+      },
+      {
+        type: Prisma.ElementType.KPRIM,
+        leafNodeId: transfer.id,
+        levelId: levels[2]!.id,
+        enablePercentInput: false,
+      },
+      {
+        type: Prisma.ElementType.NUMERICAL,
+        leafNodeId: clarity.id,
+        levelId: levels[1]!.id,
+        enablePercentInput: true,
+      },
+      {
+        type: Prisma.ElementType.FREE_TEXT,
+        leafNodeId: clarity.id,
+        levelId: levels[2]!.id,
+        enablePercentInput: false,
+      },
+    ]
+
+    await tx.competenceTreeLeafLevelCoverage.createMany({
+      data: assignmentSpecs.map(({ leafNodeId, levelId }) => ({
+        treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        leafNodeId,
+        levelId,
+        targetItemCount: 1,
+        enabled: true,
+      })),
+    })
+    await tx.competenceTreeElementAssignment.createMany({
+      data: assignmentSpecs.map(
+        ({ type, leafNodeId, levelId, enablePercentInput }) => ({
+          treeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+          elementId: elementsByType.get(type)!.id,
+          leafNodeId,
+          levelId,
+          enablePercentInput,
+        })
+      ),
+    })
+
+    const practiceQuiz = await tx.practiceQuiz.create({
+      data: {
+        id: ADAPTIVE_PRACTICE_QUIZ_ID_TEST,
+        name: 'adaptive-language-check',
+        displayName: 'Adaptive language check',
+        description:
+          'Draft adaptive Practice Quiz used to verify authoring and readiness.',
+        mode: Prisma.PracticeQuizMode.ADAPTIVE,
+        status: Prisma.PublicationStatus.DRAFT,
+        pointsMultiplier: 0,
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_TEST,
+        adaptiveConfig: {
+          create: {
+            competenceTreeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+            preset: Prisma.AdaptivePracticeQuizPreset.DIAGNOSTIC,
+            attemptSelectionPolicy:
+              Prisma.AdaptiveAttemptSelectionPolicy.LATEST_COMPLETED,
+            totalQuestionCap: 12,
+            perLeafQuestionCap: 6,
+            minQuestionsPerLeaf: 1,
+            showTimer: true,
+            showFinalResult: true,
+          },
+        },
+      },
+      include: { adaptiveConfig: true },
+    })
+
+    const adaptiveConfig = practiceQuiz.adaptiveConfig
+    if (!adaptiveConfig) {
+      throw new Error('Missing adaptive configuration for adaptive v2 seed.')
+    }
+
+    const participantIds = PARTICIPANT_IDS.slice(0, 15)
+    const participations = await tx.participation.findMany({
+      where: {
+        courseId: COURSE_ID_TEST,
+        participantId: { in: participantIds },
+      },
+    })
+    const participationByParticipantId = new Map(
+      participations.map((participation) => [
+        participation.participantId,
+        participation,
+      ])
+    )
+    if (participationByParticipantId.size !== participantIds.length) {
+      throw new Error(
+        'Missing Testkurs participations for adaptive v2 cohort seed.'
+      )
+    }
+
+    const nodes = [
+      comprehension,
+      evidence,
+      interpretation,
+      evaluation,
+      transfer,
+      communication,
+      clarity,
+    ]
+    const thetaByLevel = [-2, 0, 2]
+    const attempts = participantIds.map((participantId, index) => {
+      const participation = participationByParticipantId.get(participantId)!
+      const level = levels[index % levels.length]!
+      const theta = thetaByLevel[level.order]!
+      const stopReason =
+        index < 5
+          ? Prisma.AdaptivePracticeQuizStopReason.CLASSIFIED
+          : index < 10
+            ? Prisma.AdaptivePracticeQuizStopReason.TOTAL_QUESTION_CAP
+            : Prisma.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED
+
+      return {
+        id: `ad000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+        participantId,
+        participationId: participation.id,
+        level,
+        theta,
+        stopReason,
+      }
+    })
+
+    await tx.adaptivePracticeQuizAttempt.createMany({
+      data: attempts.map((attempt, index) => ({
+        id: attempt.id,
+        status: Prisma.AdaptivePracticeQuizAttemptStatus.COMPLETED,
+        stopReason: attempt.stopReason,
+        currentTheta: attempt.theta,
+        currentStandardError: 0.2,
+        finalTheta: attempt.theta,
+        finalStandardError: 0.2,
+        finalLevelId: attempt.level.id,
+        elapsedSeconds: 240 + index * 10,
+        configId: adaptiveConfig.id,
+        competenceTreeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+        practiceQuizId: ADAPTIVE_PRACTICE_QUIZ_ID_TEST,
+        courseId: COURSE_ID_TEST,
+        participantId: attempt.participantId,
+        participationId: attempt.participationId,
+        completedAt: new Date(Date.UTC(2026, 6, 12, 12, 0, index)),
+      })),
+    })
+    await tx.adaptivePracticeQuizEstimate.createMany({
+      data: attempts.flatMap((attempt) => [
+        {
+          attemptId: attempt.id,
+          configId: adaptiveConfig.id,
+          competenceTreeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+          nodeKind: Prisma.AdaptiveEstimateNodeKind.OVERALL,
+          nodeId: null,
+          theta: attempt.theta,
+          standardError: 0.2,
+          responseCount: 5,
+          stopReason: attempt.stopReason,
+          levelId: attempt.level.id,
+        },
+        ...nodes.map((node) => ({
+          attemptId: attempt.id,
+          configId: adaptiveConfig.id,
+          competenceTreeId: ADAPTIVE_COMPETENCE_TREE_ID_TEST,
+          nodeKind:
+            node.kind === Prisma.AdaptiveNodeKind.COMPETENCE
+              ? Prisma.AdaptiveEstimateNodeKind.COMPETENCE
+              : Prisma.AdaptiveEstimateNodeKind.SUBCOMPETENCE,
+          nodeId: node.id,
+          theta: attempt.theta,
+          standardError: 0.2,
+          responseCount: 5,
+          stopReason: attempt.stopReason,
+          levelId: attempt.level.id,
+        })),
+      ]),
+    })
+  })
+
+  await recomputeDerivedPermissions(
+    {
+      practiceQuizId: ADAPTIVE_PRACTICE_QUIZ_ID_TEST,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
 }
 
 async function seedTestkursAdaptiveAssessment(
@@ -1310,6 +1661,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
+      isAdaptiveLearningEnabled: true,
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
@@ -1911,6 +2263,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  await seedAdaptivePracticeQuizV2(prisma, questionsTest)
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

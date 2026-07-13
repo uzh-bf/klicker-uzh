@@ -3,6 +3,7 @@ import { prepareTreeInput } from '../src/services/competenceTreeInput.js'
 import {
   assertValidCompetenceTreeShape,
   deriveAdaptiveItemParameters,
+  hasControlledAdaptiveAnswer,
   isSupportedAdaptiveElementType,
   validateCompetenceTreeShape,
   type CompetenceTreeValidationInput,
@@ -227,6 +228,53 @@ describe('competence tree validation', () => {
         (type) => !isSupportedAdaptiveElementType(type)
       )
     ).toBe(true)
+  })
+
+  it('requires controlled non-empty answers for adaptive free text', () => {
+    expect(
+      hasControlledAdaptiveAnswer('FREE_TEXT', {
+        solutions: [' Zurich ', 'Zuerich'],
+      })
+    ).toBe(true)
+    expect(
+      hasControlledAdaptiveAnswer('FREE_TEXT', { solutions: ['   '] })
+    ).toBe(false)
+    expect(
+      hasControlledAdaptiveAnswer('FREE_TEXT', { solutions: ['Zurich', 42] })
+    ).toBe(false)
+    expect(
+      hasControlledAdaptiveAnswer('FREE_TEXT', { solutions: ['Zurich', ''] })
+    ).toBe(false)
+
+    const result = validateCompetenceTreeShape({
+      ...validTree,
+      assignments: [
+        {
+          elementId: 100,
+          type: 'FREE_TEXT',
+          leafNodeId: 11,
+          levelId: 1,
+          controlledAnswerReady: false,
+        },
+      ],
+    })
+    expect(result.errors.map(({ code }) => code)).toContain(
+      'ASSIGNMENT_CONTROLLED_ANSWER_REQUIRED'
+    )
+  })
+
+  it('rejects all-zero enabled root weights', () => {
+    const result = validateCompetenceTreeShape({
+      ...validTree,
+      nodes: validTree.nodes.map((node) =>
+        node.parentId == null ? { ...node, weight: 0 } : node
+      ),
+    })
+
+    expect(result.normalizedRootWeights).toEqual([])
+    expect(result.errors.map(({ code }) => code)).toContain(
+      'ROOT_WEIGHT_TOTAL_INVALID'
+    )
   })
 
   it('rejects cycles and duplicate sibling positions', () => {

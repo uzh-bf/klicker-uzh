@@ -62,11 +62,34 @@ export type AdaptiveConfiguredSettings = {
 export type AdaptiveReadinessIssue = {
   code: string
   message: string
+  parameters: AdaptiveReadinessIssueParameters
   path?: string
   nodeId?: number
   leafNodeId?: number
   levelId?: number
   assignmentId?: number
+}
+
+export type AdaptiveReadinessIssueParameters = {
+  nodeName?: string
+  elementName?: string
+  field?: string
+  minimumValue?: number
+  maximumValue?: number
+  targetItemCount?: number
+  enabledAssignmentCount?: number
+  requiredQuestionCount?: number
+  availableItemCount?: number
+  effectiveQuestionCap?: number
+  totalQuestionCap?: number
+  classifiableLevelCount?: number
+  levelCount?: number
+  targetQuestionCount?: number
+  maximumQuestionCount?: number
+  estimatedDurationMinutes?: number
+  secondsPerItem?: number
+  assignmentId?: number
+  nodeId?: number
 }
 
 export type AdaptiveCoverageReadiness = {
@@ -161,6 +184,7 @@ export function validateAdaptiveQuizReadiness({
     errors.push({
       code: 'ADAPTIVE_NO_ENABLED_COMPETENCE',
       message: 'At least one root competence must be enabled.',
+      parameters: {},
       path: 'nodeOverrides',
     })
   }
@@ -173,6 +197,7 @@ export function validateAdaptiveQuizReadiness({
       errors.push({
         code: 'ADAPTIVE_COMPETENCE_WITHOUT_ENABLED_LEAF',
         message: `Enabled competence ${root.name} has no enabled subcompetence leaf.`,
+        parameters: { nodeName: root.name },
         path: `nodes.${root.id}`,
         nodeId: root.id,
       })
@@ -184,7 +209,7 @@ export function validateAdaptiveQuizReadiness({
       assignment.enabled && enabledLeafIds.has(assignment.leafNodeId)
   )
   const enabledAssignments = selectedAssignments.filter(
-    ({ available }) => available
+    isUsableAdaptiveAssignment
   )
   const assignmentsByCell = new Map<string, AdaptiveConfiguredAssignment[]>()
   const assignmentsByLeaf = new Map<number, AdaptiveConfiguredAssignment[]>()
@@ -194,6 +219,7 @@ export function validateAdaptiveQuizReadiness({
       errors.push({
         code: 'ADAPTIVE_ITEM_UNAVAILABLE',
         message: `Element ${assignment.elementName} has been deleted and cannot be included in a new adaptive pool.`,
+        parameters: { elementName: assignment.elementName },
         path: `assignments.${assignment.id}`,
         leafNodeId: assignment.leafNodeId,
         levelId: assignment.levelId,
@@ -201,6 +227,32 @@ export function validateAdaptiveQuizReadiness({
       })
       continue
     }
+
+    let usable = true
+    if (!assignment.controlledAnswerReady) {
+      errors.push({
+        code: 'ADAPTIVE_ITEM_NOT_SCORABLE',
+        message: `Element ${assignment.elementName} does not contain a controlled answer that can be graded adaptively.`,
+        parameters: { elementName: assignment.elementName },
+        path: `assignments.${assignment.id}`,
+        leafNodeId: assignment.leafNodeId,
+        levelId: assignment.levelId,
+        assignmentId: assignment.id,
+      })
+      usable = false
+    }
+
+    if (!hasValidAdaptiveItemParameters(assignment)) {
+      errors.push({
+        code: 'ADAPTIVE_ITEM_PARAMETERS_INVALID',
+        message: `Element ${assignment.elementName} has invalid effective item parameters.`,
+        parameters: { elementName: assignment.elementName },
+        path: `assignments.${assignment.id}`,
+        assignmentId: assignment.id,
+      })
+      usable = false
+    }
+    if (!usable) continue
 
     const cellKey = `${assignment.leafNodeId}:${assignment.levelId}`
     const cellAssignments = assignmentsByCell.get(cellKey) ?? []
@@ -210,34 +262,6 @@ export function validateAdaptiveQuizReadiness({
     const leafAssignments = assignmentsByLeaf.get(assignment.leafNodeId) ?? []
     leafAssignments.push(assignment)
     assignmentsByLeaf.set(assignment.leafNodeId, leafAssignments)
-
-    if (!assignment.controlledAnswerReady) {
-      errors.push({
-        code: 'ADAPTIVE_ITEM_NOT_SCORABLE',
-        message: `Element ${assignment.elementName} does not contain a controlled answer that can be graded adaptively.`,
-        path: `assignments.${assignment.id}`,
-        leafNodeId: assignment.leafNodeId,
-        levelId: assignment.levelId,
-        assignmentId: assignment.id,
-      })
-    }
-
-    if (
-      !Number.isFinite(assignment.discrimination) ||
-      assignment.discrimination <= 0 ||
-      assignment.discrimination > MAX_DISCRIMINATION ||
-      !Number.isFinite(assignment.difficulty) ||
-      !Number.isFinite(assignment.guessing) ||
-      assignment.guessing < 0 ||
-      assignment.guessing >= 1
-    ) {
-      errors.push({
-        code: 'ADAPTIVE_ITEM_PARAMETERS_INVALID',
-        message: `Element ${assignment.elementName} has invalid effective item parameters.`,
-        path: `assignments.${assignment.id}`,
-        assignmentId: assignment.id,
-      })
-    }
   }
 
   const coverageReadiness: AdaptiveCoverageReadiness[] = []
@@ -264,6 +288,7 @@ export function validateAdaptiveQuizReadiness({
         code: 'ADAPTIVE_COVERAGE_CELL_EMPTY',
         message:
           'Every enabled leaf-level coverage cell needs at least one enabled element.',
+        parameters: {},
         path: `coverages.${coverage.id}`,
         leafNodeId: coverage.leafNodeId,
         levelId: coverage.levelId,
@@ -272,6 +297,10 @@ export function validateAdaptiveQuizReadiness({
       warnings.push({
         code: 'ADAPTIVE_COVERAGE_BELOW_TARGET',
         message: `Coverage target is ${coverage.targetItemCount}, but only ${enabledAssignmentCount} enabled element${enabledAssignmentCount === 1 ? '' : 's'} are available.`,
+        parameters: {
+          targetItemCount: coverage.targetItemCount,
+          enabledAssignmentCount,
+        },
         path: `coverages.${coverage.id}`,
         leafNodeId: coverage.leafNodeId,
         levelId: coverage.levelId,
@@ -285,6 +314,11 @@ export function validateAdaptiveQuizReadiness({
       warnings.push({
         code: 'ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE',
         message: `Leaf ${leaf.name} requires ${settings.minQuestionsPerLeaf} questions, but only ${itemCount} enabled elements are available.`,
+        parameters: {
+          nodeName: leaf.name,
+          requiredQuestionCount: settings.minQuestionsPerLeaf,
+          availableItemCount: itemCount,
+        },
         path: `nodes.${leaf.id}`,
         leafNodeId: leaf.id,
       })
@@ -310,6 +344,11 @@ export function validateAdaptiveQuizReadiness({
       warnings.push({
         code: 'ADAPTIVE_MINIMUM_EVIDENCE_CAPPED',
         message: `Node ${node.name} requires ${required} minimum-evidence question${required === 1 ? '' : 's'}, but its effective cap is ${effectiveCap}.`,
+        parameters: {
+          nodeName: node.name,
+          requiredQuestionCount: required,
+          effectiveQuestionCap: effectiveCap,
+        },
         path: `nodes.${node.id}.questionCap`,
         nodeId: node.id,
       })
@@ -324,6 +363,10 @@ export function validateAdaptiveQuizReadiness({
     warnings.push({
       code: 'ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED',
       message: `The enabled leaves require ${totalMinimumEvidence} minimum-evidence questions, but the total cap is ${settings.totalQuestionCap}.`,
+      parameters: {
+        requiredQuestionCount: totalMinimumEvidence,
+        totalQuestionCap: settings.totalQuestionCap,
+      },
       path: 'totalQuestionCap',
     })
   }
@@ -379,6 +422,7 @@ export function validateAdaptiveQuizReadiness({
       warnings.push({
         code: 'ADAPTIVE_STANDARD_ERROR_UNREACHABLE',
         message: `The configured standard-error threshold is not reachable for competence ${root.name} with the enabled pool and caps.`,
+        parameters: { nodeName: root.name },
         path: `nodes.${root.id}`,
         nodeId: root.id,
       })
@@ -403,6 +447,11 @@ export function validateAdaptiveQuizReadiness({
       warnings.push({
         code: 'ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE',
         message: `${classifiableLevelCount} of ${levels.length} level bands are potentially classifiable for competence ${root.name} under the shared question cap and configured uncertainty interval.`,
+        parameters: {
+          nodeName: root.name,
+          classifiableLevelCount,
+          levelCount: levels.length,
+        },
         path: `nodes.${root.id}`,
         nodeId: root.id,
       })
@@ -428,6 +477,7 @@ export function validateAdaptiveQuizReadiness({
     warnings.push({
       code: 'ADAPTIVE_COVERAGE_TARGETS_CAPPED',
       message: `Enabled coverage targets request ${targetQuestionCount} questions, but the shared and nested caps allow at most ${maximumQuestionCount}.`,
+      parameters: { targetQuestionCount, maximumQuestionCount },
       path: 'totalQuestionCap',
     })
   }
@@ -441,6 +491,10 @@ export function validateAdaptiveQuizReadiness({
     warnings.push({
       code: 'ADAPTIVE_TIME_BUDGET_EXCEEDED',
       message: `The configured coverage is expected to require about ${estimatedDurationMinutes} minutes at the conservative planning estimate of 60 seconds per item.`,
+      parameters: {
+        estimatedDurationMinutes,
+        secondsPerItem: ADAPTIVE_SECONDS_PER_ITEM,
+      },
       path: 'totalQuestionCap',
     })
   }
@@ -475,8 +529,13 @@ export function validateAdaptiveSettings(
     const value = settings[key]
     if (!Number.isInteger(value) || value < min || value > max) {
       errors.push({
-        code: 'ADAPTIVE_CONFIG_VALUE_INVALID',
+        code: 'ADAPTIVE_CONFIG_INTEGER_RANGE',
         message: `${key} must be an integer between ${min} and ${max}.`,
+        parameters: {
+          field: key,
+          minimumValue: min,
+          maximumValue: max,
+        },
         path: key,
       })
     }
@@ -489,16 +548,18 @@ export function validateAdaptiveSettings(
       settings.perLeafQuestionCap > settings.totalQuestionCap)
   ) {
     errors.push({
-      code: 'ADAPTIVE_CONFIG_VALUE_INVALID',
+      code: 'ADAPTIVE_PER_LEAF_CAP_INVALID',
       message:
         'perLeafQuestionCap must be positive and no larger than the total cap.',
+      parameters: { totalQuestionCap: settings.totalQuestionCap },
       path: 'perLeafQuestionCap',
     })
   }
   if (settings.minQuestionsPerLeaf > settings.totalQuestionCap) {
     errors.push({
-      code: 'ADAPTIVE_CONFIG_VALUE_INVALID',
+      code: 'ADAPTIVE_MIN_QUESTIONS_EXCEEDS_TOTAL',
       message: 'minQuestionsPerLeaf cannot exceed the total question cap.',
+      parameters: { totalQuestionCap: settings.totalQuestionCap },
       path: 'minQuestionsPerLeaf',
     })
   }
@@ -508,8 +569,9 @@ export function validateAdaptiveSettings(
     settings.classificationZ > 5
   ) {
     errors.push({
-      code: 'ADAPTIVE_CONFIG_VALUE_INVALID',
+      code: 'ADAPTIVE_CLASSIFICATION_Z_INVALID',
       message: 'classificationZ must be greater than 0 and at most 5.',
+      parameters: { minimumValue: 0, maximumValue: 5 },
       path: 'classificationZ',
     })
   }
@@ -519,8 +581,9 @@ export function validateAdaptiveSettings(
       settings.standardErrorThreshold <= 0)
   ) {
     errors.push({
-      code: 'ADAPTIVE_CONFIG_VALUE_INVALID',
+      code: 'ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID',
       message: 'standardErrorThreshold must be a positive finite number.',
+      parameters: { minimumValue: 0 },
       path: 'standardErrorThreshold',
     })
   }
@@ -530,8 +593,9 @@ export function validateAdaptiveSettings(
     settings.topInformationRatio > 1
   ) {
     errors.push({
-      code: 'ADAPTIVE_CONFIG_VALUE_INVALID',
+      code: 'ADAPTIVE_TOP_INFORMATION_RATIO_INVALID',
       message: 'topInformationRatio must be greater than 0 and at most 1.',
+      parameters: { minimumValue: 0, maximumValue: 1 },
       path: 'topInformationRatio',
     })
   }
@@ -541,8 +605,12 @@ export function validateAdaptiveSettings(
     settings.defaultDiscrimination > MAX_DISCRIMINATION
   ) {
     errors.push({
-      code: 'ADAPTIVE_CONFIG_VALUE_INVALID',
+      code: 'ADAPTIVE_DEFAULT_DISCRIMINATION_INVALID',
       message: `defaultDiscrimination must be greater than 0 and at most ${MAX_DISCRIMINATION}.`,
+      parameters: {
+        minimumValue: 0,
+        maximumValue: MAX_DISCRIMINATION,
+      },
       path: 'defaultDiscrimination',
     })
   }
@@ -746,6 +814,28 @@ function buildThetaGrid(
     }
   }
   return Array.from(values).sort((a, b) => a - b)
+}
+
+function isUsableAdaptiveAssignment(assignment: AdaptiveConfiguredAssignment) {
+  return (
+    assignment.available &&
+    assignment.controlledAnswerReady &&
+    hasValidAdaptiveItemParameters(assignment)
+  )
+}
+
+function hasValidAdaptiveItemParameters(
+  assignment: AdaptiveConfiguredAssignment
+) {
+  return (
+    Number.isFinite(assignment.discrimination) &&
+    assignment.discrimination > 0 &&
+    assignment.discrimination <= MAX_DISCRIMINATION &&
+    Number.isFinite(assignment.difficulty) &&
+    Number.isFinite(assignment.guessing) &&
+    assignment.guessing >= 0 &&
+    assignment.guessing < 1
+  )
 }
 
 function representativeBandTheta(

@@ -136,6 +136,30 @@ describe('adaptive practice quiz readiness', () => {
     )
   })
 
+  it('does not count unscorable items toward coverage or reachability', () => {
+    const result = validateAdaptiveQuizReadiness({
+      settings,
+      nodes: nodes.slice(0, 2),
+      coverages: coverages.slice(0, 1),
+      assignments: [{ ...assignments[0]!, controlledAnswerReady: false }],
+      levels,
+      thetaRange,
+    })
+
+    expect(result.ready).toBe(false)
+    expect(result.enabledAssignmentCount).toBe(0)
+    expect(result.coverages[0]).toMatchObject({
+      enabledAssignmentCount: 0,
+      ready: false,
+    })
+    expect(result.errors.map(({ code }) => code)).toEqual(
+      expect.arrayContaining([
+        'ADAPTIVE_ITEM_NOT_SCORABLE',
+        'ADAPTIVE_COVERAGE_CELL_EMPTY',
+      ])
+    )
+  })
+
   it('warns for low coverage, unreachable precision, and long duration', () => {
     const result = validateAdaptiveQuizReadiness({
       settings: {
@@ -527,6 +551,40 @@ describe('adaptive practice quiz readiness', () => {
         'standardErrorThreshold',
         'topInformationRatio',
         'defaultDiscrimination',
+      ])
+    )
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'ADAPTIVE_CONFIG_INTEGER_RANGE',
+          path: 'totalQuestionCap',
+          parameters: {
+            field: 'totalQuestionCap',
+            minimumValue: 1,
+            maximumValue: 1000,
+          },
+        }),
+        expect.objectContaining({
+          code: 'ADAPTIVE_MIN_QUESTIONS_EXCEEDS_TOTAL',
+          path: 'minQuestionsPerLeaf',
+          parameters: { totalQuestionCap: 0 },
+        }),
+        expect.objectContaining({
+          code: 'ADAPTIVE_CLASSIFICATION_Z_INVALID',
+          parameters: { minimumValue: 0, maximumValue: 5 },
+        }),
+        expect.objectContaining({
+          code: 'ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID',
+          parameters: { minimumValue: 0 },
+        }),
+        expect.objectContaining({
+          code: 'ADAPTIVE_TOP_INFORMATION_RATIO_INVALID',
+          parameters: { minimumValue: 0, maximumValue: 1 },
+        }),
+        expect.objectContaining({
+          code: 'ADAPTIVE_DEFAULT_DISCRIMINATION_INVALID',
+          parameters: { minimumValue: 0, maximumValue: 10 },
+        }),
       ])
     )
   })

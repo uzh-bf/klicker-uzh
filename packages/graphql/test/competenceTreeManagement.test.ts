@@ -1,22 +1,30 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AdaptiveEstimateNodeKind,
+  AdaptivePracticeQuizAttemptStatus,
+  AdaptivePracticeQuizStopReason,
   ElementType,
   PermissionLevel,
+  PracticeQuizMode,
   PrismaClient,
+  PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  archiveCompetenceTree,
   createCompetenceTree,
   deleteCompetenceTree,
   duplicateCompetenceTree,
   getCompetenceTree,
   getCompetenceTrees,
   getCourseCompetenceTrees,
+  getElementCompetenceTrees,
   linkCompetenceTreeToCourse,
   replaceCompetenceTree,
+  restoreCompetenceTree,
   unlinkCompetenceTreeFromCourse,
+  updateCompetenceTreeElementAssignment,
   updateCompetenceTreeMetadata,
   type CompetenceTreeInput,
 } from '../src/services/competenceTreeManagement.js'
@@ -124,6 +132,21 @@ describe('competence tree management', () => {
     })
   }
 
+  async function createFreeTextElement(
+    ctx: ContextWithUser,
+    solutions: unknown[]
+  ) {
+    return await prisma.element.create({
+      data: {
+        type: ElementType.FREE_TEXT,
+        name: 'Adaptive free text',
+        content: 'Question',
+        options: { solutions },
+        ownerId: ctx.user.sub,
+      },
+    })
+  }
+
   it('creates an atomic tree and derives normalized psychometric parameters', async () => {
     const element = await createSingleChoiceElement(ownerCtx)
     const tree = await createCompetenceTree(
@@ -144,7 +167,7 @@ describe('competence tree management', () => {
       c: 0.25,
     })
 
-    const trees = await getCompetenceTrees(ownerCtx)
+    const trees = await getCompetenceTrees({}, ownerCtx)
     expect(trees).toHaveLength(1)
     expect(trees[0]).toMatchObject({
       id: tree.id,
@@ -152,6 +175,287 @@ describe('competence tree management', () => {
       nodeCount: 2,
       assignmentCount: 1,
       canEdit: true,
+    })
+  })
+
+  it('archives trees without deleting them and hides archived links from non-owners', async () => {
+    const element = await createSingleChoiceElement(ownerCtx)
+    const tree = await createCompetenceTree(
+      { input: treeInput(element.id) },
+      ownerCtx
+    )
+    const course = await seedCourse({}, ownerCtx)
+    await linkCompetenceTreeToCourse(
+      { treeId: tree.id, courseId: course.id },
+      ownerCtx
+    )
+    await prisma.derivedPermission.create({
+      data: {
+        userId: otherCtx.user.sub,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+
+    await expect(
+      archiveCompetenceTree({ id: tree.id }, ownerCtx)
+    ).resolves.toBe(true)
+    expect(
+      await prisma.competenceTree.findUnique({ where: { id: tree.id } })
+    ).toMatchObject({ isDeleted: false, isArchived: true })
+    await expect(getCompetenceTrees({}, ownerCtx)).resolves.toEqual([])
+    await expect(
+      getCompetenceTrees({ includeArchived: true }, ownerCtx)
+    ).resolves.toEqual([
+      expect.objectContaining({ id: tree.id, isArchived: true }),
+    ])
+    await expect(
+      getCompetenceTree({ id: tree.id }, ownerCtx)
+    ).resolves.toMatchObject({ id: tree.id, isArchived: true })
+    await expect(
+      getCompetenceTree({ id: tree.id }, otherCtx)
+    ).resolves.toBeNull()
+    await expect(
+      getCourseCompetenceTrees({ courseId: course.id }, otherCtx)
+    ).resolves.toEqual([])
+
+    await expect(
+      restoreCompetenceTree({ id: tree.id }, ownerCtx)
+    ).resolves.toBe(true)
+    await expect(
+      getCompetenceTree({ id: tree.id }, otherCtx)
+    ).resolves.toMatchObject({ id: tree.id, isArchived: false })
+
+    for (const [index, status] of [
+      PublicationStatus.DRAFT,
+      PublicationStatus.PUBLISHED,
+    ].entries()) {
+      const quiz = await prisma.practiceQuiz.create({
+        data: {
+          name: `adaptive-usage-${index}`,
+          displayName: `Adaptive usage ${index}`,
+          ownerId: ownerCtx.user.sub,
+          courseId: course.id,
+          mode: PracticeQuizMode.ADAPTIVE,
+          status,
+          pointsMultiplier: 0,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: false,
+        },
+      })
+      await prisma.practiceQuizAdaptiveConfig.create({
+        data: { practiceQuizId: quiz.id, competenceTreeId: tree.id },
+      })
+    }
+
+    const [summary] = await getCompetenceTrees({}, ownerCtx)
+    expect(summary).toMatchObject({
+      adaptiveQuizCount: 2,
+      draftAdaptiveQuizCount: 1,
+      publishedAdaptiveQuizCount: 1,
+    })
+    await expect(
+      getCompetenceTree({ id: tree.id }, ownerCtx)
+    ).resolves.toMatchObject({
+      adaptiveQuizCount: 2,
+      draftAdaptiveQuizCount: 1,
+      publishedAdaptiveQuizCount: 1,
+    })
+
+    await deleteCompetenceTree({ id: tree.id }, ownerCtx)
+    await expect(
+      restoreCompetenceTree({ id: tree.id }, ownerCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'NOT_FOUND' } })
+    expect(
+      await prisma.competenceTree.findUnique({ where: { id: tree.id } })
+    ).toMatchObject({ isDeleted: true, isArchived: false })
+  })
+
+  it('updates one element assignment without replacing tree structure', async () => {
+    const element = await createSingleChoiceElement(ownerCtx)
+    const tree = await createCompetenceTree(
+      { input: treeInput(element.id) },
+      ownerCtx
+    )
+    const originalAssignment = tree.elementAssignments[0]!
+    const originalNodeIds = tree.nodes.map(({ id }) => id)
+    const originalLevelIds = tree.levels.map(({ id }) => id)
+
+    await expect(
+      getElementCompetenceTrees({ elementId: element.id }, ownerCtx)
+    ).resolves.toEqual([expect.objectContaining({ id: tree.id })])
+
+    const updated = await updateCompetenceTreeElementAssignment(
+      {
+        treeId: tree.id,
+        elementId: element.id,
+        assignment: {
+          leafNodeId: originalAssignment.leafNodeId,
+          levelId: originalAssignment.levelId,
+          enabled: false,
+          enablePercentInput: false,
+          discrimination: 1.8,
+        },
+      },
+      ownerCtx
+    )
+    expect(updated.nodes.map(({ id }) => id)).toEqual(originalNodeIds)
+    expect(updated.levels.map(({ id }) => id)).toEqual(originalLevelIds)
+    expect(updated.elementAssignments).toEqual([
+      expect.objectContaining({
+        id: originalAssignment.id,
+        enabled: false,
+        discrimination: 1.8,
+      }),
+    ])
+    await expect(
+      updateCompetenceTreeElementAssignment(
+        {
+          treeId: tree.id,
+          elementId: element.id,
+          assignment: {
+            leafNodeId: originalAssignment.leafNodeId,
+            levelId: originalAssignment.levelId,
+            enabled: false,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    ).resolves.toMatchObject({
+      elementAssignments: [
+        expect.objectContaining({
+          id: originalAssignment.id,
+          discrimination: null,
+        }),
+      ],
+    })
+
+    const otherElement = await createSingleChoiceElement(otherCtx)
+    await expect(
+      getElementCompetenceTrees({ elementId: otherElement.id }, ownerCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    await expect(
+      updateCompetenceTreeElementAssignment(
+        {
+          treeId: tree.id,
+          elementId: otherElement.id,
+          assignment: {
+            leafNodeId: originalAssignment.leafNodeId,
+            levelId: originalAssignment.levelId,
+            enabled: true,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+
+    const unsupported = await prisma.element.create({
+      data: {
+        type: ElementType.CONTENT,
+        name: 'Unsupported adaptive content',
+        content: 'Content',
+        options: {},
+        ownerId: ownerCtx.user.sub,
+      },
+    })
+    await expect(
+      updateCompetenceTreeElementAssignment(
+        {
+          treeId: tree.id,
+          elementId: unsupported.id,
+          assignment: {
+            leafNodeId: originalAssignment.leafNodeId,
+            levelId: originalAssignment.levelId,
+            enabled: true,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'COMPETENCE_TREE_INVALID',
+        issues: expect.arrayContaining([
+          expect.objectContaining({ code: 'ASSIGNMENT_TYPE_UNSUPPORTED' }),
+        ]),
+      },
+    })
+
+    await prisma.competenceTreeLeafLevelCoverage.updateMany({
+      where: {
+        treeId: tree.id,
+        leafNodeId: originalAssignment.leafNodeId,
+        levelId: originalAssignment.levelId,
+      },
+      data: { enabled: false },
+    })
+    await expect(
+      updateCompetenceTreeElementAssignment(
+        {
+          treeId: tree.id,
+          elementId: element.id,
+          assignment: {
+            leafNodeId: originalAssignment.leafNodeId,
+            levelId: originalAssignment.levelId,
+            enabled: false,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'COMPETENCE_TREE_ASSIGNMENT_COVERAGE_INVALID',
+      },
+    })
+    await prisma.competenceTreeLeafLevelCoverage.updateMany({
+      where: {
+        treeId: tree.id,
+        leafNodeId: originalAssignment.leafNodeId,
+        levelId: originalAssignment.levelId,
+      },
+      data: { enabled: true },
+    })
+
+    await expect(
+      updateCompetenceTreeElementAssignment(
+        { treeId: tree.id, elementId: element.id, assignment: null },
+        ownerCtx
+      )
+    ).resolves.toMatchObject({ elementAssignments: [] })
+    await expect(
+      getElementCompetenceTrees({ elementId: element.id }, ownerCtx)
+    ).resolves.toEqual([])
+  })
+
+  it('rejects free-text assignments without a controlled answer', async () => {
+    const element = await createFreeTextElement(ownerCtx, [])
+
+    await expect(
+      createCompetenceTree({ input: treeInput(element.id) }, ownerCtx)
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'COMPETENCE_TREE_INVALID',
+        issues: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'ASSIGNMENT_CONTROLLED_ANSWER_REQUIRED',
+          }),
+        ]),
+      },
+    })
+
+    await prisma.element.update({
+      where: { id: element.id },
+      data: { options: { solutions: ['Zurich', 'Zuerich'] } },
+    })
+    await expect(
+      createCompetenceTree({ input: treeInput(element.id) }, ownerCtx)
+    ).resolves.toMatchObject({
+      elementAssignments: [
+        expect.objectContaining({ elementType: ElementType.FREE_TEXT }),
+      ],
     })
   })
 
@@ -306,10 +610,14 @@ describe('competence tree management', () => {
     const attempt = await prisma.adaptivePracticeQuizAttempt.create({
       data: {
         configId: config.id,
+        competenceTreeId: tree.id,
         practiceQuizId: quiz.id,
         courseId: course.id,
         participantId: participant.id,
         participationId: participation.id,
+        status: AdaptivePracticeQuizAttemptStatus.ABANDONED,
+        stopReason: AdaptivePracticeQuizStopReason.ABANDONED,
+        completedAt: new Date(),
       },
     })
 
@@ -317,6 +625,8 @@ describe('competence tree management', () => {
       prisma.adaptivePracticeQuizEstimate.create({
         data: {
           attemptId: attempt.id,
+          configId: config.id,
+          competenceTreeId: tree.id,
           nodeKind: AdaptiveEstimateNodeKind.COMPETENCE,
           nodeId: null,
           theta: 0,
@@ -328,6 +638,8 @@ describe('competence tree management', () => {
     await prisma.adaptivePracticeQuizEstimate.create({
       data: {
         attemptId: attempt.id,
+        configId: config.id,
+        competenceTreeId: tree.id,
         nodeKind: AdaptiveEstimateNodeKind.OVERALL,
         nodeId: null,
         theta: 0,
@@ -339,6 +651,8 @@ describe('competence tree management', () => {
       prisma.adaptivePracticeQuizEstimate.create({
         data: {
           attemptId: attempt.id,
+          configId: config.id,
+          competenceTreeId: tree.id,
           nodeKind: AdaptiveEstimateNodeKind.OVERALL,
           nodeId: null,
           theta: 0.1,
@@ -351,6 +665,23 @@ describe('competence tree management', () => {
     await expect(
       replaceCompetenceTree(
         { id: tree.id, input: treeInput(element.id) },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'COMPETENCE_TREE_STRUCTURE_LOCKED' },
+    })
+    await expect(
+      updateCompetenceTreeElementAssignment(
+        {
+          treeId: tree.id,
+          elementId: element.id,
+          assignment: {
+            leafNodeId: tree.elementAssignments[0]!.leafNodeId,
+            levelId: tree.elementAssignments[0]!.levelId,
+            enabled: true,
+            enablePercentInput: false,
+          },
+        },
         ownerCtx
       )
     ).rejects.toMatchObject({

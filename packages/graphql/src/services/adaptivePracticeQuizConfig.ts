@@ -9,6 +9,10 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 import {
+  assertAdaptiveLearningCourseEnabled,
+  lockAdaptiveLearningCourseEnabled,
+} from './adaptiveLearningRollout.js'
+import {
   MAX_ADAPTIVE_QUESTION_CAP,
   validateAdaptiveQuizReadiness,
   validateAdaptiveSettings,
@@ -21,6 +25,7 @@ import {
 } from './adaptivePracticeQuizReadiness.js'
 import {
   deriveAdaptiveItemParameters,
+  hasControlledAdaptiveAnswer,
   isSupportedAdaptiveElementType,
 } from './competenceTrees.js'
 
@@ -61,6 +66,8 @@ export type AdaptivePracticeQuizConfigInput = {
 
 export type AdaptivePracticeQuizNodeView = AdaptiveConfiguredNode & {
   order: number
+  overrideEnabled: boolean
+  effectiveEnabled: boolean
 }
 
 export type AdaptivePracticeQuizAssignmentView = Omit<
@@ -92,32 +99,56 @@ export type AdaptivePracticeQuizConfigView = Pick<
   | 'poolPublishedAt'
 >
 
+export type AdaptivePracticeQuizResolvedSettingsView =
+  ResolvedPresetSettings & {
+    competenceTreeId: string
+  }
+
+export type AdaptivePracticeQuizTreeView = {
+  id: string
+  name: string
+  displayName: string
+  description: string | null
+  maxDepth: number
+  thetaMin: number
+  thetaMax: number
+  levels: Array<
+    DB.CompetenceTreeLevel & {
+      theta: number
+      lowerBound: number
+      upperBound: number
+    }
+  >
+}
+
 export type AdaptivePracticeQuizPreview = {
   practiceQuizId: string
   mode: DB.PracticeQuizMode
   config: AdaptivePracticeQuizConfigView
-  competenceTree: {
-    id: string
-    name: string
-    displayName: string
-    description: string | null
-    maxDepth: number
-    thetaMin: number
-    thetaMax: number
-    levels: Array<
-      DB.CompetenceTreeLevel & {
-        theta: number
-        lowerBound: number
-        upperBound: number
-      }
-    >
-  }
+  competenceTree: AdaptivePracticeQuizTreeView
   nodes: AdaptivePracticeQuizNodeView[]
   assignments: AdaptivePracticeQuizAssignmentView[]
   readiness: AdaptiveQuizReadiness
   publishedPoolSize: number
   awardsPoints: false
   awardsExperiencePoints: false
+}
+
+export type AdaptivePracticeQuizSetupPreview = {
+  settings: AdaptivePracticeQuizResolvedSettingsView
+  competenceTree: AdaptivePracticeQuizTreeView
+  nodes: AdaptivePracticeQuizNodeView[]
+  assignments: AdaptivePracticeQuizAssignmentView[]
+  readiness: AdaptiveQuizReadiness
+  awardsPoints: false
+  awardsExperiencePoints: false
+}
+
+export type PracticeQuizPublicationPreview = {
+  mode: DB.PracticeQuizMode
+  canSchedule: boolean
+  readiness: AdaptiveQuizReadiness | null
+  rootNodes: AdaptivePracticeQuizNodeView[]
 }
 
 export type PreparedAdaptiveAssignment = Omit<
@@ -128,6 +159,10 @@ export type PreparedAdaptiveAssignment = Omit<
   elementVersion: number
   choiceCount: number | null
   enablePercentInput: boolean
+  sourceEnabled: boolean
+  overrideEnabled: boolean
+  effectiveEnabled: boolean
+  overrideDiscrimination: number | null
   element: DB.Element
 }
 
@@ -194,55 +229,13 @@ export async function replaceAdaptivePracticeQuizConfig(
   },
   prisma: DB.Prisma.TransactionClient
 ): Promise<string> {
+  await lockAdaptiveLearningCourseEnabled(courseId, prisma)
   await lockCompetenceTreeForAdaptiveConfig(prisma, input.competenceTreeId)
-  const tree = await prisma.competenceTree.findFirst({
-    where: {
-      id: input.competenceTreeId,
-      isDeleted: false,
-      courseLinks: {
-        some: {
-          courseId,
-          course: {
-            OR: [
-              { ownerId: userId },
-              {
-                permissions: {
-                  some: {
-                    userId,
-                    permissionLevel: {
-                      in: [
-                        DB.PermissionLevel.WRITE,
-                        DB.PermissionLevel.ADMIN,
-                        DB.PermissionLevel.OWNER,
-                      ],
-                    },
-                  },
-                },
-              },
-            ],
-          },
-        },
-      },
-    },
-    include: adaptiveTreeInclude,
-  })
-  if (!tree) {
-    throw serviceError(
-      'The selected competence tree is not linked to a course you can edit.',
-      'ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE'
-    )
-  }
-
-  const settings = resolvePresetSettings(input, tree.defaultDiscrimination)
-  const prepared = prepareConfiguration({
-    tree,
-    settings,
-    nodeOverrides: input.nodeOverrides ?? [],
-    elementOverrides: input.elementOverrides ?? [],
-    researchSettingsProvided:
-      input.researchSettings !== null &&
-      typeof input.researchSettings !== 'undefined',
-  })
+  const { settings, prepared } = await prepareConfigurationInput(
+    { courseId, input, userId },
+    prisma
+  )
+  const tree = prepared.tree
 
   const existing = await prisma.practiceQuizAdaptiveConfig.findUnique({
     where: { practiceQuizId },
@@ -287,7 +280,7 @@ export async function replaceAdaptivePracticeQuizConfig(
       configId: config.id,
       competenceTreeId: tree.id,
       nodeId: node.id,
-      enabled: node.enabled,
+      enabled: node.overrideEnabled,
       weight: node.weight,
       questionCap: node.questionCap,
     })),
@@ -297,13 +290,8 @@ export async function replaceAdaptivePracticeQuizConfig(
       configId: config.id,
       competenceTreeId: tree.id,
       assignmentId: assignment.id,
-      enabled: assignment.enabled,
-      discrimination:
-        input.preset === DB.AdaptivePracticeQuizPreset.RESEARCH
-          ? (input.elementOverrides?.find(
-              (override) => override.assignmentId === assignment.id
-            )?.discrimination ?? null)
-          : null,
+      enabled: assignment.overrideEnabled,
+      discrimination: assignment.overrideDiscrimination,
     })),
   })
 
@@ -340,29 +328,143 @@ export async function getAdaptivePracticeQuizPreview(
     practiceQuizId: quiz.id,
     mode: quiz.mode,
     config: prepared.config,
-    competenceTree: {
-      id: prepared.tree.id,
-      name: prepared.tree.name,
-      displayName: prepared.tree.displayName,
-      description: prepared.tree.description,
-      maxDepth: prepared.tree.maxDepth,
-      thetaMin: prepared.tree.thetaMin,
-      thetaMax: prepared.tree.thetaMax,
-      levels: mapTreeLevels(prepared.tree, prepared.config.levelMappingRule),
-    },
-    nodes: prepared.nodes,
-    assignments: prepared.assignments.map(
-      ({ element: _element, ...assignment }) => ({
-        ...assignment,
-        a: assignment.discrimination,
-        b: assignment.difficulty,
-        c: assignment.guessing,
-      })
+    ...serializePreparedConfiguration(
+      prepared,
+      prepared.config.levelMappingRule
     ),
-    readiness: prepared.readiness,
     publishedPoolSize,
-    awardsPoints: false,
-    awardsExperiencePoints: false,
+  }
+}
+
+export async function getAdaptivePracticeQuizSetupPreview(
+  {
+    courseId,
+    input,
+  }: { courseId: string; input: AdaptivePracticeQuizConfigInput },
+  ctx: ContextWithUser
+): Promise<AdaptivePracticeQuizSetupPreview> {
+  await assertAdaptiveLearningCourseEnabled(courseId, ctx.prisma)
+  const { settings, prepared } = await prepareConfigurationInput(
+    { courseId, input, userId: ctx.user.sub },
+    ctx.prisma
+  )
+  return {
+    settings: { competenceTreeId: prepared.tree.id, ...settings },
+    ...serializePreparedConfiguration(prepared, settings.levelMappingRule),
+  }
+}
+
+export async function getPracticeQuizPublicationPreview(
+  { id }: { id: string },
+  ctx: ContextWithUser
+): Promise<PracticeQuizPublicationPreview | null> {
+  const quiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id, isDeleted: false },
+    select: {
+      id: true,
+      mode: true,
+      course: { select: { isAdaptiveLearningEnabled: true } },
+    },
+  })
+  if (!quiz) return null
+  if (quiz.mode === DB.PracticeQuizMode.STANDARD) {
+    return {
+      mode: quiz.mode,
+      canSchedule: true,
+      readiness: null,
+      rootNodes: [],
+    }
+  }
+
+  const loaded = await loadAdaptiveConfigurationForQuiz(ctx.prisma, quiz.id)
+  const readiness =
+    loaded?.prepared.readiness ?? missingAdaptiveConfigurationReadiness()
+  return {
+    mode: quiz.mode,
+    canSchedule: false,
+    readiness: quiz.course.isAdaptiveLearningEnabled
+      ? readiness
+      : {
+          ...readiness,
+          ready: false,
+          errors: [
+            {
+              code: 'ADAPTIVE_COURSE_DISABLED',
+              message: 'Adaptive learning is not enabled for this course.',
+              parameters: {},
+              path: 'courseId',
+            },
+            ...readiness.errors,
+          ],
+        },
+    rootNodes:
+      loaded?.prepared.nodes.filter((node) => node.parentId === null) ?? [],
+  }
+}
+
+async function prepareConfigurationInput(
+  {
+    courseId,
+    input,
+    userId,
+  }: {
+    courseId: string
+    input: AdaptivePracticeQuizConfigInput
+    userId: string
+  },
+  prisma: DB.PrismaClient | DB.Prisma.TransactionClient
+) {
+  const tree = await prisma.competenceTree.findFirst({
+    where: {
+      id: input.competenceTreeId,
+      isDeleted: false,
+      isArchived: false,
+      courseLinks: {
+        some: {
+          courseId,
+          course: {
+            OR: [
+              { ownerId: userId },
+              {
+                permissions: {
+                  some: {
+                    userId,
+                    permissionLevel: {
+                      in: [
+                        DB.PermissionLevel.WRITE,
+                        DB.PermissionLevel.ADMIN,
+                        DB.PermissionLevel.OWNER,
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    },
+    include: adaptiveTreeInclude,
+  })
+  if (!tree) {
+    throw serviceError(
+      'The selected competence tree is not linked to a course you can edit.',
+      'ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE'
+    )
+  }
+
+  const settings = resolvePresetSettings(input, tree.defaultDiscrimination)
+  return {
+    settings,
+    prepared: prepareConfiguration({
+      tree,
+      settings,
+      nodeOverrides: input.nodeOverrides ?? [],
+      elementOverrides: input.elementOverrides ?? [],
+      researchSettingsProvided:
+        input.researchSettings !== null &&
+        typeof input.researchSettings !== 'undefined',
+    }),
   }
 }
 
@@ -406,6 +508,7 @@ export async function loadAdaptiveConfigurationForQuiz(
           code: 'ADAPTIVE_STACKS_FORBIDDEN',
           message:
             'Adaptive practice quizzes cannot contain standard element stacks.',
+          parameters: {},
           path: 'stacks',
         },
       ],
@@ -506,6 +609,7 @@ function prepareConfiguration({
       code: 'ADAPTIVE_RESEARCH_SETTINGS_FORBIDDEN',
       message:
         'Advanced research settings are only valid for the research preset.',
+      parameters: {},
       path: 'researchSettings',
     })
   }
@@ -522,7 +626,7 @@ function prepareConfiguration({
     nodeOverrideMap,
     errors
   )
-  const nodes: AdaptivePracticeQuizNodeView[] = tree.nodes.map((node) => {
+  const nodesWithOverrides = tree.nodes.map((node) => {
     const override = nodeOverrideMap.get(node.id)
     return {
       id: node.id,
@@ -531,7 +635,7 @@ function prepareConfiguration({
       name: node.name,
       depth: node.depth,
       order: node.order,
-      enabled: override?.enabled ?? true,
+      overrideEnabled: override?.enabled ?? true,
       weight:
         node.kind === DB.AdaptiveNodeKind.COMPETENCE
           ? (normalizedRootWeights.get(node.id) ?? 0)
@@ -539,6 +643,26 @@ function prepareConfiguration({
       questionCap: override?.questionCap ?? null,
     }
   })
+  const effectiveNodeEnabled = new Map<number, boolean>()
+  for (const node of nodesWithOverrides
+    .slice()
+    .sort((left, right) => left.depth - right.depth)) {
+    const ancestorEnabled =
+      node.parentId === null
+        ? true
+        : (effectiveNodeEnabled.get(node.parentId) ?? false)
+    effectiveNodeEnabled.set(node.id, node.overrideEnabled && ancestorEnabled)
+  }
+  const nodes: AdaptivePracticeQuizNodeView[] = nodesWithOverrides.map(
+    (node) => {
+      const effectiveEnabled = effectiveNodeEnabled.get(node.id) ?? false
+      return {
+        ...node,
+        enabled: effectiveEnabled,
+        effectiveEnabled,
+      }
+    }
+  )
 
   const mappedLevels = mapTreeLevels(tree, settings.levelMappingRule)
   const levelsById = new Map(mappedLevels.map((level) => [level.id, level]))
@@ -555,6 +679,7 @@ function prepareConfiguration({
       errors.push({
         code: 'ADAPTIVE_ASSIGNMENT_INVALID',
         message: `Assignment ${assignment.id} does not have a valid adaptive element type and level.`,
+        parameters: { assignmentId: assignment.id },
         path: `elementOverrides.${assignment.id}`,
         assignmentId: assignment.id,
       })
@@ -573,6 +698,16 @@ function prepareConfiguration({
             settings.defaultDiscrimination)
           : DEFAULT_DISCRIMINATION,
     })
+    const sourceEnabled = assignment.enabled
+    const overrideEnabled = override?.enabled ?? true
+    const overrideDiscrimination = override?.discrimination ?? null
+    const effectiveEnabled =
+      sourceEnabled &&
+      enabledCoverageCells.has(
+        `${assignment.leafNodeId}:${assignment.levelId}`
+      ) &&
+      overrideEnabled &&
+      (effectiveNodeEnabled.get(assignment.leafNodeId) ?? false)
     assignments.push({
       id: assignment.id,
       elementId: assignment.elementId,
@@ -581,17 +716,16 @@ function prepareConfiguration({
       elementType: assignment.element.type,
       leafNodeId: assignment.leafNodeId,
       levelId: assignment.levelId,
-      enabled:
-        assignment.enabled &&
-        enabledCoverageCells.has(
-          `${assignment.leafNodeId}:${assignment.levelId}`
-        ) &&
-        (override?.enabled ?? true),
+      enabled: effectiveEnabled,
+      sourceEnabled,
+      overrideEnabled,
+      effectiveEnabled,
+      overrideDiscrimination,
       available: !assignment.element.isDeleted,
       discrimination: parameters.a,
       difficulty: parameters.b,
       guessing: parameters.c,
-      controlledAnswerReady: isControlledAnswerReady(
+      controlledAnswerReady: hasControlledAdaptiveAnswer(
         assignment.element.type,
         assignment.element.options
       ),
@@ -675,6 +809,7 @@ function validateNodeOverrides(
       errors.push({
         code: 'ADAPTIVE_NODE_OVERRIDE_INVALID',
         message: `Node override ${override.nodeId} is duplicated or does not belong to the selected tree.`,
+        parameters: { nodeId: override.nodeId },
         path: `nodeOverrides.${override.nodeId}`,
         nodeId: override.nodeId,
       })
@@ -688,6 +823,7 @@ function validateNodeOverrides(
       errors.push({
         code: 'ADAPTIVE_NON_ROOT_WEIGHT_FORBIDDEN',
         message: 'Quiz weights are only supported for root competences.',
+        parameters: {},
         path: `nodeOverrides.${override.nodeId}.weight`,
         nodeId: override.nodeId,
       })
@@ -702,6 +838,10 @@ function validateNodeOverrides(
       errors.push({
         code: 'ADAPTIVE_NODE_CAP_INVALID',
         message: `Node question caps must be integers between 1 and ${MAX_ADAPTIVE_QUESTION_CAP}.`,
+        parameters: {
+          minimumValue: 1,
+          maximumValue: MAX_ADAPTIVE_QUESTION_CAP,
+        },
         path: `nodeOverrides.${override.nodeId}.questionCap`,
         nodeId: override.nodeId,
       })
@@ -729,6 +869,7 @@ function validateElementOverrides(
       errors.push({
         code: 'ADAPTIVE_ELEMENT_OVERRIDE_INVALID',
         message: `Element override ${override.assignmentId} is duplicated or does not belong to the selected tree.`,
+        parameters: { assignmentId: override.assignmentId },
         path: `elementOverrides.${override.assignmentId}`,
         assignmentId: override.assignmentId,
       })
@@ -743,6 +884,7 @@ function validateElementOverrides(
           code: 'ADAPTIVE_DISCRIMINATION_OVERRIDE_FORBIDDEN',
           message:
             'Quiz-specific discrimination overrides require the research preset.',
+          parameters: {},
           path: `elementOverrides.${override.assignmentId}.discrimination`,
           assignmentId: override.assignmentId,
         })
@@ -754,6 +896,10 @@ function validateElementOverrides(
         errors.push({
           code: 'ADAPTIVE_DISCRIMINATION_OVERRIDE_INVALID',
           message: `Discrimination must be greater than 0 and at most ${MAX_DISCRIMINATION}.`,
+          parameters: {
+            minimumValue: 0,
+            maximumValue: MAX_DISCRIMINATION,
+          },
           path: `elementOverrides.${override.assignmentId}.discrimination`,
           assignmentId: override.assignmentId,
         })
@@ -781,6 +927,7 @@ function normalizeRootWeights(
       errors.push({
         code: 'ADAPTIVE_ROOT_WEIGHT_INVALID',
         message: `Enabled competence ${node.name} must have a positive finite weight.`,
+        parameters: { nodeName: node.name },
         path: `nodeOverrides.${node.id}.weight`,
         nodeId: node.id,
       })
@@ -818,80 +965,64 @@ function mapTreeLevels(
   }))
 }
 
+function serializePreparedConfiguration(
+  prepared: Omit<PreparedAdaptiveConfiguration, 'config'>,
+  levelMappingRule: DB.AdaptiveLevelMappingRule
+) {
+  return {
+    competenceTree: {
+      id: prepared.tree.id,
+      name: prepared.tree.name,
+      displayName: prepared.tree.displayName,
+      description: prepared.tree.description,
+      maxDepth: prepared.tree.maxDepth,
+      thetaMin: prepared.tree.thetaMin,
+      thetaMax: prepared.tree.thetaMax,
+      levels: mapTreeLevels(prepared.tree, levelMappingRule),
+    },
+    nodes: prepared.nodes,
+    assignments: prepared.assignments.map(
+      ({ element: _element, ...assignment }) => ({
+        ...assignment,
+        a: assignment.discrimination,
+        b: assignment.difficulty,
+        c: assignment.guessing,
+      })
+    ),
+    readiness: prepared.readiness,
+    awardsPoints: false as const,
+    awardsExperiencePoints: false as const,
+  }
+}
+
+function missingAdaptiveConfigurationReadiness(): AdaptiveQuizReadiness {
+  return {
+    ready: false,
+    errors: [
+      {
+        code: 'ADAPTIVE_CONFIG_MISSING',
+        message: 'Adaptive practice quiz configuration was not found.',
+        parameters: {},
+        path: 'adaptiveConfig',
+      },
+    ],
+    warnings: [],
+    coverages: [],
+    rootReachability: [],
+    enabledRootCount: 0,
+    enabledLeafCount: 0,
+    enabledAssignmentCount: 0,
+    expectedQuestionCount: 0,
+    estimatedDurationMinutes: 0,
+  }
+}
+
 function getChoiceCount(options: unknown): number | null {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
     return null
   }
   const choices = (options as Record<string, unknown>).choices
   return Array.isArray(choices) ? choices.length : null
-}
-
-function isControlledAnswerReady(
-  type: DB.ElementType,
-  options: unknown
-): boolean {
-  if (!options || typeof options !== 'object' || Array.isArray(options)) {
-    return false
-  }
-  const value = options as Record<string, unknown>
-
-  if (
-    type === DB.ElementType.SC ||
-    type === DB.ElementType.MC ||
-    type === DB.ElementType.KPRIM
-  ) {
-    if (!Array.isArray(value.choices) || value.choices.length < 2) return false
-    if (type === DB.ElementType.KPRIM && value.choices.length !== 4) {
-      return false
-    }
-    const correctness = value.choices.map((choice) =>
-      choice && typeof choice === 'object' && !Array.isArray(choice)
-        ? (choice as Record<string, unknown>).correct
-        : undefined
-    )
-    const correctCount = correctness.filter(
-      (correct) => correct === true
-    ).length
-    if (!correctness.every((correct) => typeof correct === 'boolean')) {
-      return false
-    }
-    if (type === DB.ElementType.SC) return correctCount === 1
-    if (type === DB.ElementType.MC) return correctCount >= 1
-    return true
-  }
-
-  if (type === DB.ElementType.NUMERICAL) {
-    const exactSolutions = Array.isArray(value.exactSolutions)
-      ? value.exactSolutions.filter(
-          (solution) =>
-            typeof solution === 'number' && Number.isFinite(solution)
-        )
-      : []
-    const ranges = Array.isArray(value.solutionRanges)
-      ? value.solutionRanges.filter((range) => {
-          if (!range || typeof range !== 'object' || Array.isArray(range)) {
-            return false
-          }
-          const { min, max } = range as Record<string, unknown>
-          return (
-            (typeof min === 'number' && Number.isFinite(min)) ||
-            (typeof max === 'number' && Number.isFinite(max))
-          )
-        })
-      : []
-    return exactSolutions.length > 0 || ranges.length > 0
-  }
-
-  if (type === DB.ElementType.FREE_TEXT) {
-    return (
-      Array.isArray(value.solutions) &&
-      value.solutions.some(
-        (solution) => typeof solution === 'string' && solution.trim().length > 0
-      )
-    )
-  }
-
-  return false
 }
 
 function throwInvalidConfig(issues: AdaptiveReadinessIssue[]): never {
@@ -905,12 +1036,12 @@ async function lockCompetenceTreeForAdaptiveConfig(
   competenceTreeId: string
 ): Promise<void> {
   const rows = await prisma.$queryRaw<
-    Array<{ id: string; isDeleted: boolean }>
-  >`SELECT "id", "isDeleted"
+    Array<{ id: string; isDeleted: boolean; isArchived: boolean }>
+  >`SELECT "id", "isDeleted", "isArchived"
     FROM "CompetenceTree"
     WHERE "id" = ${competenceTreeId}::uuid
     FOR SHARE`
-  if (!rows[0] || rows[0].isDeleted) {
+  if (!rows[0] || rows[0].isDeleted || rows[0].isArchived) {
     throw serviceError(
       'The selected competence tree is not linked to a course you can edit.',
       'ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE'

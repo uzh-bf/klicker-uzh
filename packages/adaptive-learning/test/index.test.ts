@@ -13,8 +13,10 @@ import {
   matchResultMessage,
   matchResultMessages,
   minimumReachableStandardError,
+  normalizeAdaptiveEstimateForChart,
   normalizeFreeTextResponse,
   normalizeNumericalResponse,
+  normalizeThetaForChart,
   probability,
   selectNextItem,
   selectSubCompetence,
@@ -41,6 +43,35 @@ describe('adaptive-learning core', () => {
 
     expect(levels[0]?.theta).toBe(0)
     expect(mapThetaToLevel(2, levels)?.label).toBe('Complete')
+  })
+
+  it('normalizes estimates and uncertainty to bounded chart coordinates', () => {
+    expect(normalizeThetaForChart(0)).toBe(0.5)
+    expect(normalizeThetaForChart(-9)).toBe(0)
+    expect(normalizeThetaForChart(9)).toBe(1)
+    expect(
+      normalizeAdaptiveEstimateForChart({
+        theta: 0,
+        standardError: 0.5,
+        z: 2,
+      })
+    ).toEqual({
+      position: 0.5,
+      lowerPosition: 1 / 3,
+      upperPosition: 2 / 3,
+    })
+  })
+
+  it('rejects invalid chart-normalization inputs', () => {
+    expect(() => normalizeThetaForChart(0, { min: 1, max: 1 })).toThrowError(
+      TypeError
+    )
+    expect(() =>
+      normalizeAdaptiveEstimateForChart({
+        theta: 0,
+        standardError: Number.POSITIVE_INFINITY,
+      })
+    ).toThrowError(TypeError)
   })
 
   it('computes 3PL probabilities and information', () => {
@@ -83,6 +114,17 @@ describe('adaptive-learning core', () => {
     expect(mapThetaToLevel(2, levels)?.label).toBe('B1')
     expect(mapThetaToLevel(0, levels, undefined, 'MASTERY')?.label).toBe('A2')
     expect(mapThetaToLevel(2, levels, undefined, 'MASTERY')?.label).toBe('B1')
+    expect(
+      mapLevelsToTheta(levels, undefined, 'NEAREST').map((level) => [
+        level.label,
+        level.lowerBound,
+        level.upperBound,
+      ])
+    ).toEqual([
+      ['A1', Number.NEGATIVE_INFINITY, -1.5],
+      ['A2', -1.5, 1.5],
+      ['B1', 1.5, Number.POSITIVE_INFINITY],
+    ])
     expect(
       mapLevelsToTheta(levels, undefined, 'MASTERY').map((level) => [
         level.label,
@@ -294,6 +336,10 @@ describe('adaptive-learning core', () => {
   })
 
   it('normalizes numerical adaptive responses', () => {
+    expect(normalizeNumericalResponse('0,5')).toEqual({
+      value: 0.5,
+      normalized: '0.5',
+    })
     expect(normalizeNumericalResponse('1,5')).toEqual({
       value: 1.5,
       normalized: '1.5',
@@ -311,6 +357,7 @@ describe('adaptive-learning core', () => {
       normalized: '0.001',
     })
     expect(normalizeNumericalResponse('1,200').value).toBeNull()
+    expect(normalizeNumericalResponse('12,000').value).toBeNull()
     expect(normalizeNumericalResponse('0,500')).toEqual({
       value: 0.5,
       normalized: '0.5',
@@ -378,6 +425,12 @@ describe('adaptive-learning core', () => {
     ])
     expect(largeWeights?.theta).toBe(0)
     expect(largeWeights?.standardError).toBeCloseTo(0.354, 3)
+    expect(
+      aggregateWeightedEstimates([
+        { theta: -1, standardError: 0.5, weight: 0 },
+        { theta: 1, standardError: 0.5, weight: 0 },
+      ])
+    ).toBeNull()
   })
 
   it('validates disabled pools', () => {

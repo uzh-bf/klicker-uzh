@@ -2,7 +2,9 @@
 
 Created: 2026-07-09
 
-Updated: 2026-07-10
+Updated: 2026-07-13
+
+Status: Production hardening reopened after the 2026-07-13 final review. Keep adaptive learning disabled outside dedicated development/test courses until Phases 8-13 are complete; broad rollout additionally requires Phase 14 pilot evidence and signoff.
 
 Review corpus:
 
@@ -12,6 +14,7 @@ Review corpus:
 - `project/2026-07-07-adaptive-learning-v2-review.md`
 - `project/2026-07-08-adaptive-learning-v2-remediation-review.md`
 - `project/2026-07-09-adaptive-learning-production-review.md`
+- 2026-07-13 final senior review of the complete working tree; its findings and evidence are captured below.
 
 Reference concept: `/Users/paldov/Downloads/Adaptive Assessment (standalone).html`
 
@@ -29,7 +32,7 @@ The feature is based on reusable competence trees:
 - Element assignments connect supported element types to a tree, leaf subcompetence, and level.
 - The adaptive quiz is not a standalone activity. It is a new mode of `PracticeQuiz`.
 
-Production readiness means lecturers can author valid competence trees, assign elements to leaf-level cells, configure an adaptive practice quiz against a tree, publish only when the pool is reachable and safe, students can complete an adaptive practice quiz through the existing practice quiz route, and owners can inspect anonymous level-band distributions.
+Production readiness means lecturers can author valid competence trees, assign elements to leaf-level cells, configure an adaptive practice quiz against a tree, publish only when the pool is reachable and safe, students can complete an adaptive practice quiz through the existing practice quiz route, and owners can inspect anonymous level-band distributions. It also means privacy suppression is resistant to differencing and missingness, sharing revocation is honored before publication, lifecycle operations are serializable, migrations leave no invalid runtime state, authoring failures are recoverable, database work is bounded, production telemetry exists, and the actual shipped presets pass predeclared synthetic and real-course measurement gates.
 
 The supplied standalone HTML is a product reference only. Its coverage matrix, resume flow, readiness feedback, and result trajectory inform the experience, but the implementation must use KlickerUZH's existing activity, navigation, design-system, permission, and evaluation patterns.
 
@@ -44,8 +47,10 @@ The supplied standalone HTML is a product reference only. Its coverage matrix, r
 - Do not add an `AdaptiveAssessment` activity, route, activity tile, or seven-step standalone wizard.
 - Do not copy the reference HTML's visual shell, implementation-note rail, bespoke phone frames, typography, spacing, or color treatment.
 - Do not draw one result line per competence or subcompetence; depth-5 trees would make that chart unreadable.
+- Do not enable adaptive scheduled publication until a transactional outbox and idempotent reconciler exist. Immediate publication is the supported production-v1 contract.
+- Do not invent automated learning recommendations from confidence or uncertainty. Production v1 is explicitly diagnostic/placement practice; any future next-step recommendation must be teacher-authored and independently reviewed.
 
-## Review Finding Coverage
+## Earlier Review Finding Coverage
 
 | Finding | Plan coverage |
 | --- | --- |
@@ -54,16 +59,62 @@ The supplied standalone HTML is a product reference only. Its coverage matrix, r
 | F3: Served-item integrity | Phase 3 makes the server choose and persist the served assignment and rejects arbitrary submissions. |
 | F4: Tree validation missing | Phase 1 moves full shape validation into the competence-tree service. |
 | F5: Mapping semantics need presets | Product decisions and Phase 2 introduce presets over raw mapping-rule knobs. |
-| F6: Stop conditions need reachability validation | Phase 2 blocks publish on zero cells and warns on unreachable SE or excessive expected length. |
-| F7: Simulation not production-shaped | Phase 4 ports the sweep harness into package tests with mixed pools and explicit gates. |
+| F6: Stop conditions need reachability validation | Phase 2 added warnings; Phase 11 promotes structurally unreachable product-preset states to publication blockers. |
+| F7: Simulation not production-shaped | Phase 4 ported the production runtime; Phase 11 removes preset drift and adds classification, hard-cap, exposure, and misspecification gates. |
 | F8: Numeric/free-text boundaries | Phase 4 fixes `0,xxx` comma decimals and enforces controlled-answer free text. |
 | F9: Dead adaptive shared components | Phase 4 deletes or refactors `packages/shared-components/src/adaptive/` before UI reuse. |
-| F10: Old adaptive tables/seeds remain | Phase 0 marks legacy clearly; Phase 7 removes after no-data or migration decision. |
-| F11: Account deletion/tree lifecycle | Phase 0 decides and tests the lifecycle policy before real attempts exist. |
+| F10: Old adaptive tables/seeds remain | Phase 0 marked legacy clearly; Phase 14 executes the staging/production decision before any cleanup. |
+| F11: Account deletion/tree lifecycle | Phase 10 replaces the unsafe cascade with an enforced transfer/retention contract and deletion tests. |
 | F12: Aggregation must not be oversold | Product decisions and Phase 3 use weighted estimates for quiz summaries and careful labels. |
-| F13: CI mismatch | Phase 0 adds CI-native scripts/workflows and dependency build order. |
+| F13: CI mismatch | Phase 0 added package CI; Phase 8 makes the cross-layer trigger and Node/pnpm environment reproducible. |
 | F14: Docs missing | Phase 0 adds `docs/adaptive-learning.md` and links it from `docs/index.md`. |
-| F15: Future behavior implicit | Service helper section centralizes runtime contracts in GraphQL services. |
+| F15: Future behavior implicit | Phases 9-13 extract explicit privacy, authorization, lifecycle, repository, cohort, and serializer modules. |
+
+## Final Review And Production Gap Coverage
+
+The final review found no P0 algorithmic corruption, but it did find release-blocking P1 behavior and additional production gaps in the earlier review corpus. Every row below must end in code/test evidence, a signed operational decision, or an explicit non-goal enforced by the product.
+
+| ID | Remaining finding or gate | Current evidence | Required phase |
+| --- | --- | --- | --- |
+| R1 | Simulations pass while most clean Placement/Diagnostic attempts stop at `TOTAL_QUESTION_CAP`; test profiles also drift from shipped defaults. | `packages/adaptive-learning/test/simulation.test.ts:15-134`; `docs/adaptive-learning.md:248-267` | 11 |
+| R2 | `standardErrorThreshold` and `showLiveEstimate` are saved and displayed but do not affect participant runtime. | `packages/graphql/src/services/adaptivePracticeQuizConfig.ts:759-798`; `packages/adaptive-learning/src/runtime.ts:25-33`; `packages/graphql/src/schema/adaptivePracticeQuizRuntime.ts:188-201` | 11, 12 |
+| R3 | Cohort duration, anomaly, and insufficient-data fields can disclose a singleton through missingness or a complementary cell; query-time releases are not yet persisted as stable privacy-safe snapshots. | `packages/graphql/src/services/adaptivePracticeQuizzes.ts:1551-1603,1749-1818` | 9, 13 |
+| R4 | Element access is checked when a tree assignment is created but not revalidated before grading data is snapshotted for publication. | `packages/graphql/src/services/competenceTreeInput.ts:237-267`; `packages/graphql/src/services/adaptivePracticeQuizPublication.ts:58-132` | 9 |
+| R5 | Attempt start can race the zero-attempt decision in hard quiz deletion and then be removed by cascade. | `packages/graphql/src/services/practiceQuizzes.ts:969-1002`; `packages/graphql/src/services/adaptivePracticeQuizzes.ts:183-245` | 10 |
+| R6 | The Phase 3 migration can retain an `IN_PROGRESS` attempt without `nextPoolItemId` because the state check is `NOT VALID`. | `packages/prisma/src/prisma/schema/migrations/20260710210000_adaptive_practice_quiz_runtime/migration.sql:18-24,102-106,187-195,251-275` | 10 |
+| R7 | Element save and adaptive mapping are two commits; a mapping failure can be mistaken for a failed element save or silently abandoned. | `apps/frontend-manage/src/components/elements/manipulation/ElementEditForm.tsx:146-170` | 12 |
+| R8 | Reparenting updates only nodes, leaving coverage/assignments on a node that became an internal node and is no longer visible in the matrix. | `apps/frontend-manage/src/components/resources/competenceTrees/HierarchyEditor.tsx:381-391`; `CoverageMatrix.tsx:39-46` | 12 |
+| R9 | Terminal submission performs sequential per-node estimate upserts; cohort evaluation materializes all attempts/responses in application memory. | `packages/graphql/src/services/adaptivePracticeQuizzes.ts:652-692,1114-1141` | 13 |
+| R10 | Adaptive runtime/config services mix commands, locking, persistence, privacy, diagnostics, read models, and serialization in files over 1,000 lines. | `packages/graphql/src/services/adaptivePracticeQuizzes.ts`; `adaptivePracticeQuizConfig.ts` | 13 |
+| R11 | Competence-tree owner deletion still cascades, while course/participant deletion semantics can erase or reshape adaptive history without an explicit retention decision. | `packages/prisma/src/prisma/schema/competence.prisma:65,334-344`; `docs/adaptive-learning.md:275-286` | 10 |
+| R12 | Unsaved tree navigation, hierarchy semantics, programmatic labels/focus, nested result disclosure icons, and transient-error recovery are incomplete. | `CompetenceTreeEditor.tsx:107-117`; `HierarchyEditor.tsx`; `AdaptivePracticeQuizResult.tsx:32-45`; `AdaptiveCompetenceProfile.tsx:84-94` | 12 |
+| R13 | Tree catalogs and element mapping load unbounded lists, and the adaptive CI workflow does not trigger on all cross-layer dependencies. | `competenceTreeManagement.ts:150-183`; `.github/workflows/test-adaptive-learning.yml` | 8, 13 |
+| R14 | Monitoring is query-time only; retry exhaustion, integrity rejection, cap rates, and rollout denials have no privacy-safe operational signal or alert. | `adaptivePracticeQuizzes.ts:1845-1889`; `docs/adaptive-learning-operations.md:58-91` | 13 |
+| R15 | Browser automation does not assert every claimed privacy boundary, negative recovery flow, locale, viewport, and accessibility state. | `playwright/tests/Z-adaptive-learning.spec.ts:342-412`; `docs/adaptive-learning.md:299-310` | 12, 14 |
+| R16 | The real-course pilot, teacher comparison, standard setting, fairness review, legacy-data decision, rollback rehearsal, and named signoffs remain open. | `docs/adaptive-learning-operations.md:94-175` | 14 |
+
+## Production Release Definition
+
+The course feature flag remains default-off throughout implementation. These states are intentionally distinct:
+
+1. **Engineering-safe:** Phases 8-10 complete. No known direct serializer disclosure, permission, migration, deletion, or data-loss blocker remains; aggregate history remains test-only until Phase 13 adds stable privacy-safe release snapshots.
+2. **Pilot-ready:** Phases 11-13 complete. Shipped presets pass synthetic gates, authoring/runtime UX is recoverable and accessible, scale SLOs pass, and deployment monitoring/rollback are rehearsed. Only named pilot courses may be enabled.
+3. **Production-ready:** Phase 14 complete. The pre-registered real-course pilot meets every measurement and operational gate, legacy data has a signed disposition, and teaching, privacy, product/data-owner, and operations approvals are attached to the rollout record.
+
+No phase may redefine a failing release gate merely to make CI green. A threshold change requires a documented psychometric or operational rationale and an independent review.
+
+## Final Hardening Decisions
+
+- Preserve the approved domain: reusable cross-course `CompetenceTree`, nested depth at most five, leaf-only assignment, and adaptive delivery as `PracticeQuiz.mode = ADAPTIVE`.
+- Production v1 supports `NUMERICAL`, `SC`, `MC`, `KPRIM`, and controlled-answer `FREE_TEXT` only. Item `b` comes from the selected level, `c` is inferred from type/choice count, and `a = 1.2` remains the conservative uncalibrated default.
+- Remove `standardErrorThreshold` and `showLiveEstimate` from production-v1 input, output, Prisma, Manage, and participant contracts. Classification-in-band is the only precision stop; students receive level-band results after completion, not a live estimate.
+- A tree assignment is not an irrevocable element-content grant. The tree owner must still hold element `READ` permission when a new publication snapshot is materialized. A valid immutable snapshot remains authoritative for already-started/historical attempts.
+- Keep `k = 5` as the v1 privacy threshold. Suppression applies to every value, complement, missingness cell, anomaly flag, percentile source population, and item diagnostic before serialization.
+- Persist privacy-safe cohort release snapshots at fixed five-distinct-participant boundaries. Snapshots contain versioned aggregate payloads only: no participant ids, raw responses, or exact per-person timings. The privacy/data owner must approve whether such anonymous snapshots survive participant erasure; until then, broad rollout remains blocked.
+- Hard deletion of a practice quiz, course, or tree is forbidden once adaptive attempts or published snapshots exist. Owner closure requires an explicit, idempotent transfer/retention operation; the database must not cascade used trees.
+- Adaptive scheduling stays unavailable in production v1. The UI and API continue to reject it explicitly; it is not a hidden partial feature.
+- The student result remains one overall trajectory plus nested final bands. The endpoint, headline, profile overall row, stored result, and text summary continue to use the same server computation.
+- Production v1 is diagnostic/placement practice. Per-item correctness feedback and automated recommendations remain absent to protect the item bank and avoid unsupported pedagogy; result purpose and limitations must be explicit and teacher-approved.
 
 ## Domain Vocabulary
 
@@ -93,7 +144,7 @@ Expose presets first, not raw psychometric settings:
 
 - Placement/mastery: `MASTERY`, conservative wording, no live estimate.
 - Diagnostic/self-assessment: `NEAREST`, level-band wording, no high-stakes claims.
-- Research/calibration: advanced settings visible, explicitly marked for internal or pilot use.
+- Research/calibration: advanced selection/mapping settings visible, explicitly marked for internal or pilot use. Live participant estimates remain unavailable in every preset; Research changes analysis controls, not the student disclosure contract.
 
 ### Item Parameters
 
@@ -337,18 +388,15 @@ All adaptive GraphQL mutations and queries must use existing permission helpers 
 | Edit tree | Lecturer/user | Tree owner only. Structural edits are rejected once a published adaptive quiz references the tree; duplicate the tree instead. |
 | Delete tree | Lecturer/user | Tree owner/admin and no linked attempts, or soft-delete/reassign policy. |
 | Link tree to course | Lecturer/user | Tree access plus course WRITE/ADMIN. |
-| Assign element to tree leaf | Lecturer/user | Tree write plus element permission according to the existing sharing policy. |
+| Assign element to tree leaf | Lecturer/user | Tree owner plus current element READ permission. The assignment does not outlive the owner's underlying authority for future publications. |
 | Create/edit adaptive practice quiz | Lecturer/user | Course/practice quiz write plus tree access; tree must already be linked to the target course or linked transactionally with audit. Structural/config edits are blocked after attempts exist; duplicate the quiz instead. |
-| Publish adaptive practice quiz | Lecturer/user | Publish permission plus successful readiness validation. |
+| Publish adaptive practice quiz | Lecturer/user | Practice-quiz publish permission, successful readiness, valid tree-course grant, and transactional revalidation that the tree owner still has READ access to every source element. |
 | Start/resume attempt | Participant | Participation row for the quiz course. Do not use `Participation.isActive` as the access gate. |
 | Submit response | Participant | Own in-progress attempt and currently served assignment only. |
 | View own result | Participant | Own completed attempt; participant serializer exposes level bands and normalized chart positions, not raw theta/SE. |
-| View class results | Lecturer/user | Practice quiz owner/admin; anonymous buckets only. |
+| View class results | Lecturer/user | Practice quiz ADMIN; only fixed-release, `k = 5` privacy-safe aggregate snapshots. |
 
-Small-bucket suppression belongs in the result serialization service. Recommended default until an institutional threshold is chosen:
-
-- Suppress leaf-level level buckets below `n < 5`.
-- Suppress all adaptive result distributions when the cohort is below the course analytics threshold.
+Small-bucket suppression belongs in one server policy and uses fixed `k = 5` for v1. Every released value, complement, missingness population, anomaly flag, percentile source, node distribution, and item diagnostic must pass the policy before serialization. React receives only released aggregate values or an explicit suppressed state.
 
 ## Canonical Service Helpers
 
@@ -358,6 +406,7 @@ Create a small service/helper layer that all GraphQL resolvers and UI-facing ser
 - `getEffectiveTree`
 - `getEffectiveQuizPool`
 - `materializeAdaptiveQuizPool`
+- `authorizeAdaptivePoolMaterialization`
 - `validateCompetenceTreeShape`
 - `validateAdaptiveQuizReadiness`
 - `getReachabilityWarnings`
@@ -371,6 +420,10 @@ Create a small service/helper layer that all GraphQL resolvers and UI-facing ser
 - `serializeParticipantAdaptiveState`
 - `serializeStudentAdaptiveResult`
 - `serializeLecturerAdaptiveResults`
+- `suppressAdaptiveAggregate`
+- `lockAdaptivePracticeQuizLifecycle`
+- `bulkUpsertAdaptiveEstimates`
+- `materializeAdaptiveCohortSnapshot`
 
 These helpers should call `@klicker-uzh/adaptive-learning` for level mapping, guessing, 3PL probability/information, MAP estimates, reachability, classification intervals, normalization, aggregation, and result-message decisions.
 
@@ -387,8 +440,8 @@ Tasks:
 - [x] Add `test:run` to `packages/adaptive-learning/package.json`.
 - [x] Add adaptive-learning package checks to CI or the existing package-test workflow.
 - [x] Ensure workflows build `@klicker-uzh/adaptive-learning` before `@klicker-uzh/graphql` imports it.
-- [x] Decide account deletion/tree lifecycle policy: soft delete, reassign to system/course owner, or clear admin-facing hard-block.
-- [ ] Add a service-level deletion test once the policy is implemented.
+- [x] Record the initial account deletion/tree lifecycle policy: transfer or hard-block rather than deleting used history.
+- [ ] Implement and test that policy in Phase 10; the current owner cascade is not an acceptable implementation.
 - [x] Mark old `packages/prisma/src/prisma/schema/adaptive.prisma` models and old seed helpers as legacy, or remove them if no data migration is required.
 - [ ] Ensure no production-visible flag exposes unfinished adaptive mode.
 
@@ -518,38 +571,41 @@ Purpose: make the student runtime deterministic, tamper-resistant, and participa
 
 Tasks:
 
-- [ ] Add `packages/graphql/src/services/adaptivePracticeQuizzes.ts`.
-- [ ] Add participant mutations:
-  - [ ] Start adaptive practice quiz attempt.
-  - [ ] Resume in-progress attempt.
-  - [ ] Submit response to currently served assignment.
-  - [ ] Abandon attempt.
-- [ ] Add participant queries for current adaptive state and completion result.
-- [ ] Server-select and persist the next immutable published pool item rather than a live tree assignment.
-- [ ] Add a coverage warm-up phase that serves scorable evidence from every enabled root before unrestricted information-based selection; this guarantees the overall trajectory can become defined.
-- [ ] Stop individual root competences with the canonical classification-interval-within-band rule after minimum evidence.
-- [ ] Finish when all enabled roots are classified; use total cap, pool exhaustion, and insufficient data as explicit fallback stop reasons.
-- [ ] Keep per-leaf caps and coverage targets for breadth, not as independent claims that every leaf estimate is precise.
-- [ ] Return participant-safe element payloads without solutions or hidden grading data.
-- [ ] Snapshot delivered element data/options into `elementSnapshot` at delivery or before grading.
-- [ ] Submit mutation must reject arbitrary assignment ids, foreign assignments, disabled assignments, repeated answers, and cross-participant attempts.
-- [ ] Verify the served pool item belongs to the quiz's published snapshot and supported type.
-- [ ] Grade supported element types:
-  - [ ] `SC`
-  - [ ] `MC`
-  - [ ] `KPRIM`
-  - [ ] `NUMERICAL`
-  - [ ] controlled-answer `FREE_TEXT`
-- [ ] Persist normalized response, correctness, score, order, estimates, stop reason, final level, and completion time.
-- [ ] For each accepted response, recompute the affected leaf and every ancestor from pooled descendant responses.
-- [ ] Compute final estimates for overall, all enabled root competences, and every enabled subcompetence node, including non-leaf intermediate nodes.
-- [ ] Use only normalized root competence weights for the overall estimate; never aggregate subcompetence estimates into it.
-- [ ] Propagate overall standard error as `sqrt(sum(w_i^2 * SE_i^2))` over disjoint root response sets.
-- [ ] Store a nullable overall trajectory point on the response once every enabled root has scorable evidence.
-- [ ] Make ordered response rows the sole trajectory history and stop writing duplicate attempt-level theta/SE arrays.
-- [ ] Serialize student results as level bands, normalized trajectory coordinates, confidence and near-boundary language, and a nested node profile.
-- [ ] Suppress a node level and return `INSUFFICIENT_DATA` when it has fewer than four scorable responses.
-- [ ] Serialize lecturer results as anonymous buckets with small-bucket suppression.
+- [x] Add `packages/graphql/src/services/adaptivePracticeQuizzes.ts`.
+- [x] Add participant mutations:
+  - [x] Start adaptive practice quiz attempt.
+  - [x] Resume in-progress attempt.
+  - [x] Submit response to currently served assignment.
+  - [x] Abandon attempt.
+- [x] Add participant queries for current adaptive state and completion result.
+- [x] Enforce attempt policy at runtime: `FIRST_COMPLETED` blocks retakes after completion but permits replacing abandonment; `LATEST_COMPLETED` permits new attempts.
+- [x] Server-select and persist the next immutable published pool item rather than a live tree assignment.
+- [x] Add a coverage warm-up phase that serves scorable evidence from every enabled root before unrestricted information-based selection; this guarantees the overall trajectory can become defined.
+- [x] Stop individual root competences with the canonical classification-interval-within-band rule after minimum evidence.
+- [x] Finish when all enabled roots are classified; use total cap, pool exhaustion, and insufficient data as explicit fallback stop reasons.
+- [x] Keep per-leaf caps and coverage targets for breadth, not as independent claims that every leaf estimate is precise.
+- [x] Return participant-safe element payloads without solutions or hidden grading data.
+- [x] Snapshot delivered element data/options into `elementSnapshot` at delivery or before grading.
+- [x] Project routing-only pool fields for selection/reporting and load full `elementData` only for the currently served item.
+- [x] Submit mutation must reject arbitrary assignment ids, foreign assignments, disabled assignments, repeated answers, and cross-participant attempts.
+- [x] Verify the served pool item belongs to the quiz's published snapshot and supported type.
+- [x] Grade supported element types:
+  - [x] `SC`
+  - [x] `MC`
+  - [x] `KPRIM`
+  - [x] `NUMERICAL`
+  - [x] controlled-answer `FREE_TEXT`
+- [x] Persist normalized response, correctness, score, order, estimates, stop reason, final level, and completion time.
+- [x] For each accepted response, recompute the affected leaf and every ancestor from pooled descendant responses.
+- [x] Compute final estimates for overall, all enabled root competences, and every enabled subcompetence node, including non-leaf intermediate nodes.
+- [x] Use only normalized root competence weights for the overall estimate; never aggregate subcompetence estimates into it.
+- [x] Propagate overall standard error as `sqrt(sum(w_i^2 * SE_i^2))` over disjoint root response sets.
+- [x] Store a nullable overall trajectory point on the response once every enabled root has scorable evidence.
+- [x] Make ordered response rows the sole trajectory history and stop writing duplicate attempt-level theta/SE arrays.
+- [x] Serialize student results as level bands, normalized trajectory coordinates, confidence and near-boundary language, and a nested node profile.
+- [x] Suppress a node level and return `INSUFFICIENT_DATA` when it has fewer than four scorable responses.
+- [x] Serialize lecturer results as anonymous buckets with small-bucket suppression.
+- [x] Convert exhausted Prisma/adapter serialization retries to the stable `ADAPTIVE_ATTEMPT_CONFLICT` API error.
 
 Acceptance criteria:
 
@@ -575,37 +631,39 @@ Purpose: ensure the math and normalization gates match production pools, not ide
 
 Tasks:
 
-- [ ] Port `project/adaptive-learning-sweep-harness.mjs` into `packages/adaptive-learning/test`.
-- [ ] Add preset simulations:
-  - [ ] Placement/mastery.
-  - [ ] Diagnostic/nearest.
-  - [ ] Short-form.
-  - [ ] Long-form.
-- [ ] Add item mix simulations:
-  - [ ] SC-only.
-  - [ ] SC/MC/KPRIM.
-  - [ ] Numerical/free-text.
-  - [ ] Mixed pool.
-- [ ] Add pool-size scenarios: sparse, target, rich.
-- [ ] Add mislabel-noise scenarios with shifted item levels.
-- [ ] Track exact accuracy, adjacent accuracy, mean absolute level error, mean and 95th percentile question count, stop reasons, and per-level bias.
-- [ ] Define shipping gates for each preset.
-- [ ] Add reachability tests for SC, MC, KPRIM, numerical, and free-text pools.
-- [ ] Add hierarchy invariants for tree depths 1 through 5:
-  - [ ] Node estimates pool all descendant responses exactly once.
-  - [ ] Reordering or inserting an intermediate subcompetence does not change root/overall estimates.
-  - [ ] Disabled roots and their descendants do not contribute.
-  - [ ] Root weight normalization is stable and rejects an all-zero configuration.
-- [ ] Add trajectory tests:
-  - [ ] No point is emitted before every enabled root has evidence.
-  - [ ] Every point has finite bounded coordinates and an ordered interval.
-  - [ ] Standard-error intervals may widen or narrow; tests do not assert false monotonicity.
-  - [ ] Final point, final estimate, level badge, and canonical mapping helper agree.
-  - [ ] Participant chart normalization never exposes raw theta or standard error.
-- [ ] Relax decimal-comma parsing for `0,xxx` and add tests for `0,5`, `0,500`, `1,200`, and `12,000`.
-- [ ] Enforce free-text controlled-answer boundaries in service validation.
-- [ ] Delete or refactor `packages/shared-components/src/adaptive/` before any UI reuse.
-- [ ] Add tests proving frontend band assignment matches package `mapThetaToLevel` for `NEAREST` and `MASTERY` if shared components remain.
+- [x] Replace `project/adaptive-learning-sweep-harness.mjs` with package-owned deterministic simulations that execute the production runtime.
+- [x] Add product-profile and form-length simulations:
+  - [x] Placement/mastery.
+  - [x] Diagnostic/nearest.
+  - [x] Short-form cap overlay (not a persisted preset).
+  - [x] Long-form cap/rich-pool overlay (not a persisted preset).
+- [x] Add item mix simulations:
+  - [x] SC-only.
+  - [x] SC/MC/KPRIM.
+  - [x] Numerical/free-text.
+  - [x] Mixed pool.
+- [x] Add pool-size scenarios: sparse, target, rich.
+- [x] Add mislabel-noise scenarios with shifted item levels.
+- [x] Track exact accuracy, adjacent accuracy, mean absolute level error, mean and 95th percentile question count, stop reasons, per-level accuracy, and signed per-level bias.
+- [x] Define explicit regression gates for every clean profile, including zero unexpected fallback.
+- [x] Add analytical and routed reachability coverage for SC, MC, KPRIM, numerical, and free-text pools.
+- [x] Add hierarchy invariants across legal maximum depths 2 through 5, while structural validation rejects a depth-1 root without a subcompetence:
+  - [x] Node estimates pool all descendant responses exactly once.
+  - [x] Reordering or inserting an intermediate subcompetence does not change root/overall estimates.
+  - [x] Disabled roots and their descendants do not contribute.
+  - [x] Root weight normalization is stable and rejects an all-zero configuration.
+- [x] Add trajectory tests:
+  - [x] No point is emitted before every enabled root has evidence.
+  - [x] Every point has finite bounded coordinates and an ordered interval.
+  - [x] Standard-error intervals may widen or narrow; tests do not assert false monotonicity.
+  - [x] Final point, final estimate, level badge, and canonical mapping helper agree.
+  - [x] Participant chart normalization never exposes raw theta or standard error.
+- [x] Pin decimal-comma behavior with tests for `0,5`, `0,500`, `1,200`, and `12,000`.
+- [x] Enforce free-text controlled-answer boundaries in tree, readiness, and runtime services.
+- [x] Delete the unused `packages/shared-components/src/adaptive/` directory before UI reuse.
+- [x] Keep canonical `NEAREST` and `MASTERY` mapping tests in the package; no frontend band-assignment helper remains.
+- [x] Benchmark prepared runtime creation, first selection, and a 999-response decision at 500 nodes, 20 levels, and 10,000 items.
+- [x] Obtain an independent psychometric/code review of the final gates and shared runtime before declaring Phase 4 complete.
 
 Acceptance criteria:
 
@@ -625,48 +683,48 @@ Purpose: let lecturers author, validate, publish, and inspect adaptive practice 
 
 Tasks:
 
-- [ ] Add `pages/resources/competenceTrees.tsx` and a resource-list entry using existing Manage navigation and page chrome.
-- [ ] Build the competence-tree library:
-  - [ ] Owned and linked/read-only filters.
-  - [ ] Search, create, duplicate, archive, and course-link actions.
-  - [ ] Usage status showing linked courses and draft/published quiz references.
-- [ ] Build the tree editor using the interaction contract above:
-  - [ ] Ordered level editor with canonical band preview.
-  - [ ] Collapsible depth-5 outline with selected-node details.
-  - [ ] Add child, reorder, reparent, duplicate branch, and delete controls.
-  - [ ] Root competence default weights with automatic normalization preview.
-  - [ ] Leaf-by-level coverage matrix with filters and sticky headers.
-  - [ ] Validation summary that separates blocking errors from warnings and links each issue to its editor location.
-  - [ ] Structural-lock message and `Duplicate tree` action when a published quiz references the tree.
-- [ ] Add element editor integration as a focused `Adaptive mapping` section:
-  - [ ] Show all accessible tree assignments for the element.
-  - [ ] Select or link a competence tree, then select a breadcrumb-labelled leaf and level `b`.
-  - [ ] Show inferred `c`, read-only default `a`, and numerical percent-input behavior.
-  - [ ] Hide assignment controls for unsupported element types and explain the supported set.
-  - [ ] Validate controlled-answer `FREE_TEXT` before assignment.
-- [ ] Extend the existing four-step PracticeQuiz wizard rather than adding a seven-step flow:
-  - [ ] Information step: segmented `STANDARD` / `ADAPTIVE` mode selector while the activity remains labelled Practice quiz.
-  - [ ] Description step: unchanged apart from adaptive-context copy when needed.
-  - [ ] Settings step: course, preset, attempt policy summary, timer/result display options, and collapsed expert settings for research mode.
-  - [ ] Questions step: keep `StackCreationStep` for standard mode; render a new adaptive setup step for adaptive mode.
-- [ ] Build the adaptive setup step:
-  - [ ] Select an accessible tree already linked to the chosen course.
-  - [ ] Offer a permission-checked transactional link for an owned tree that is not linked yet.
-  - [ ] Preview the complete nested hierarchy with quiz-specific enable/disable toggles.
-  - [ ] Cascading disable confirmation explains which descendants and elements leave the effective pool.
-  - [ ] Adjust quiz-specific root weights and show normalized percentages.
-  - [ ] Preview assignments in a dense filterable table with enable/disable overrides.
-  - [ ] Show the coverage matrix, expected length, reachability warnings, and authoritative publish readiness response.
-- [ ] Add adaptive panels under the existing PracticeQuiz evaluation route:
-  - [ ] Anonymous overall level distribution.
-  - [ ] Root competence distributions.
-  - [ ] Expandable nested subcompetence distributions.
-  - [ ] Completed, in-progress, abandoned, capped, and insufficient-data counts.
-  - [ ] Stop-reason and near-boundary summaries.
-  - [ ] Small-bucket suppression messaging from server-provided states.
-  - [ ] Item exposure/fit tab hidden until pilot calibration data reaches its minimum sample threshold.
-- [ ] Add `de` and `en` i18n entries.
-- [ ] Add `data-cy` hooks for key workflows.
+- [x] Add `/resources/competenceTrees`, `/resources/competenceTrees/new`, and `/resources/competenceTrees/[id]` using existing Manage navigation and page chrome.
+- [x] Build the competence-tree library:
+  - [x] Owned and linked/read-only filters.
+  - [x] Search, create, duplicate, archive/restore, and course-link actions.
+  - [x] Usage status showing linked courses and draft/published quiz references.
+- [x] Build the tree editor using the interaction contract above:
+  - [x] Ordered level editor with canonical band preview.
+  - [x] Collapsible depth-5 outline with selected-node details.
+  - [x] Add child, reorder, reparent, duplicate branch, and delete controls.
+  - [x] Root competence default weights with automatic normalization preview.
+  - [x] Leaf-by-level coverage matrix with filters and sticky headers.
+  - [x] Validation summary that separates blocking errors from warnings and links each issue to its editor location.
+  - [x] Structural-lock message and `Duplicate tree` action when any adaptive quiz config references the tree; v1 intentionally locks earlier than publication.
+- [x] Add element editor integration as a focused `Adaptive mapping` section:
+  - [x] Show all accessible tree assignments for the element.
+  - [x] Select a competence tree, then select a breadcrumb-labelled leaf and level `b`.
+  - [x] Show inferred `c`, read-only default/effective `a`, and numerical percent-input behavior.
+  - [x] Hide assignment controls for unsupported element types and explain the supported set.
+  - [x] Validate controlled-answer `FREE_TEXT` before assignment.
+- [x] Extend the existing four-step PracticeQuiz wizard rather than adding a seven-step flow:
+  - [x] Information step: segmented `STANDARD` / `ADAPTIVE` mode selector while the activity remains labelled Practice quiz.
+  - [x] Description step: unchanged apart from adaptive-context copy when needed.
+  - [x] Settings step: course, preset, attempt policy summary, timer/result display options, and collapsed expert settings for research mode.
+  - [x] Questions step: keep `StackCreationStep` for standard mode; render a new adaptive setup step for adaptive mode.
+- [x] Build the adaptive setup step:
+  - [x] Select an accessible tree already linked to the chosen course.
+  - [x] Offer a permission-checked transactional link for an owned tree that is not linked yet.
+  - [x] Preview the complete nested hierarchy with quiz-specific enable/disable toggles.
+  - [x] Cascading disable confirmation explains which descendants and elements leave the effective pool.
+  - [x] Adjust quiz-specific root weights and show normalized percentages.
+  - [x] Preview assignments in a dense filterable table with enable/disable overrides.
+  - [x] Show the coverage matrix, expected length, reachability warnings, and authoritative publish readiness response.
+- [x] Add adaptive panels under the existing PracticeQuiz evaluation route:
+  - [x] Anonymous overall level distribution.
+  - [x] Root competence distributions.
+  - [x] Expandable nested subcompetence distributions.
+  - [x] Completed, in-progress, abandoned, capped, pool-exhausted, and insufficient-data counts.
+  - [x] Stop-reason and near-boundary summaries.
+  - [x] Small-bucket suppression messaging from server-provided states.
+  - [x] Keep item exposure/fit absent until pilot calibration data reaches its minimum sample threshold.
+- [x] Add `de` and `en` i18n entries.
+- [x] Add `data-cy` hooks for key workflows.
 
 Acceptance criteria:
 
@@ -689,38 +747,42 @@ Purpose: put adaptive delivery inside the existing practice quiz route with hone
 
 Tasks:
 
-- [ ] Update the existing practice quiz page to branch on `PracticeQuiz.mode`.
-- [ ] Render standard quizzes with the current stack runner.
-- [ ] Render adaptive quizzes with focused components under the same route, for example `AdaptivePracticeQuiz`, `AdaptivePracticeQuizIntro`, `AdaptivePracticeQuizQuestion`, `AdaptivePracticeQuizResult`, `AdaptiveResultTrajectoryChart`, and `AdaptiveCompetenceProfile`.
-- [ ] Add intro screen:
-  - [ ] Purpose.
-  - [ ] Expected length or cap.
-  - [ ] No backtracking if that is the selected runtime rule.
-  - [ ] Resume behavior.
-  - [ ] Result use and privacy note.
-  - [ ] Optional self-assessment warm start when enabled by the preset.
-- [ ] Reuse existing participant question renderers for `SC`, `MC`, `KPRIM`, `NUMERICAL`, and controlled-answer `FREE_TEXT`.
-- [ ] Show honest progress as `Question N, at most M` plus plain-language status such as building/refining the estimate.
-- [ ] Do not copy the reference's numeric "estimate settling" percentage; it implies precision and a fixed convergence path the runtime cannot guarantee.
-- [ ] Hide live theta and live level by default.
-- [ ] Support resume state.
-- [ ] Support an explicit start-over action that atomically abandons the current attempt before creating another one.
-- [ ] Submit only through the served-assignment mutation.
-- [ ] Preserve the existing PracticeQuiz embed completion signal. For adaptive mode, use the configured question cap as the upper-bound `totalSteps` until the embed protocol can carry an explicit upper-bound flag.
-- [ ] Add completion screen:
-  - [ ] Headline overall level band or explicit incomplete-result state.
-  - [ ] One line chart showing the weighted overall estimate over answered questions.
-  - [ ] Server-provided level-band backgrounds and central/interval positions.
-  - [ ] Confidence ribbon derived from standard errors without exposing raw theta/SE.
-  - [ ] Endpoint marker that matches the headline result exactly.
-  - [ ] Expandable depth-5 competence profile with root and nested subcompetence bands.
-  - [ ] Response counts and `INSUFFICIENT_DATA` states for under-measured nodes.
-  - [ ] Confidence and near-boundary wording.
-  - [ ] Gentle insufficient-pool or early-stop wording.
-  - [ ] Recommended next practice if available.
-  - [ ] Textual chart/profile summary for screen-reader and nonvisual access.
-- [ ] Add `de` and `en` i18n entries.
-- [ ] Add `data-cy` hooks for student workflow.
+- [x] Update the existing practice quiz page to branch on `PracticeQuiz.mode`.
+- [x] Render standard quizzes with the current stack runner.
+- [x] Render adaptive quizzes with focused components under the same route, for example `AdaptivePracticeQuiz`, `AdaptivePracticeQuizIntro`, `AdaptivePracticeQuizQuestion`, `AdaptivePracticeQuizResult`, `AdaptiveResultTrajectoryChart`, and `AdaptiveCompetenceProfile`.
+- [x] Add intro screen:
+  - [x] Purpose.
+  - [x] Expected length or cap.
+  - [x] No backtracking if that is the selected runtime rule.
+  - [x] Resume behavior.
+  - [x] Result use and privacy note.
+  - [x] Keep optional self-assessment absent while every production preset disables the retired warm start.
+- [x] Reuse existing participant question renderers for `SC`, `MC`, `KPRIM`, `NUMERICAL`, and controlled-answer `FREE_TEXT`.
+- [x] Show honest progress as `Question N, at most M` plus plain-language status such as building/refining the estimate.
+- [x] Do not copy the reference's numeric "estimate settling" percentage; it implies precision and a fixed convergence path the runtime cannot guarantee.
+- [x] Hide live theta and live level by default.
+- [x] Support resume state, including attempts with zero submitted answers.
+- [x] Support an explicit start-over action that atomically abandons the current attempt before creating another one.
+- [x] Let the server expose whether a completed attempt may be repeated; show Practice again for `LATEST_COMPLETED` and keep it absent for `FIRST_COMPLETED`.
+- [x] Derive owner/shared-lecturer preview capability from permissions so previews never invoke participant runtime.
+- [x] Submit only through the served-assignment mutation.
+- [x] Prevent a late initial state query from overwriting mutation-authored attempt state.
+- [x] Preserve the existing PracticeQuiz embed completion signal. For adaptive mode, use the configured question cap as the upper-bound `totalSteps` until the embed protocol can carry an explicit upper-bound flag.
+- [x] Add completion screen:
+  - [x] Headline overall level band or explicit incomplete-result state.
+  - [x] One line chart showing the weighted overall estimate over answered questions.
+  - [x] Server-provided level-band backgrounds and central/interval positions.
+  - [x] Confidence ribbon derived from standard errors without exposing raw theta/SE.
+  - [x] Endpoint marker that matches the headline result exactly.
+  - [x] Expandable depth-5 competence profile with root and nested subcompetence bands.
+  - [x] Response counts and `INSUFFICIENT_DATA` states for under-measured nodes.
+  - [x] Confidence and near-boundary wording.
+  - [x] Gentle insufficient-pool or early-stop wording.
+  - [x] Keep recommendations absent until a didactically valid server-authored rule exists; confidence alone must not select a competence.
+  - [x] Textual chart/profile summary for screen-reader and nonvisual access.
+- [x] Reset scroll and focus the progress heading for each newly served question; expose selected state and accessible names on all five answer controls.
+- [x] Add `de` and `en` i18n entries.
+- [x] Add `data-cy` hooks for student workflow.
 
 Acceptance criteria:
 
@@ -745,15 +807,21 @@ Purpose: ship safely, measure real behavior, then remove old adaptive leftovers.
 
 Tasks:
 
-- [ ] Feature-flag adaptive practice quiz mode to selected courses.
+- [x] Feature-flag adaptive practice quiz mode to selected courses with a default-off persisted course gate and reversible administrative mutation.
 - [ ] Pilot with at least one tree that passes coverage and readiness gates.
-- [ ] Monitor stop reasons, question counts, near-boundary rates, item exposure, observed/expected correctness, item misfit, and support tickets.
+- [x] Add anonymous monitoring for stop reasons, question counts/timing, near-boundary rates, response integrity, item exposure, observed/expected correctness, and item misfit.
+- [ ] Monitor those signals and support tickets in a real selected-course pilot.
 - [ ] Review result distributions with teaching staff before using for placement.
-- [ ] Add calibration dashboard data collection if pilot requires it.
-- [ ] Decide whether old adaptive tables have real data that needs migration.
+- [x] Add privacy-suppressed pilot diagnostics needed to decide whether deeper calibration work is warranted.
+- [x] Add a read-only aggregate audit for the old adaptive tables and deliberately retain them pending environment evidence.
+- [ ] Run the legacy audit in staging and production and decide whether real data needs migration, archival, or approved deletion.
 - [ ] Remove old standalone adaptive schema, old seed helpers, and old relations from `Course`, `Element`, `Participant`, and `User` if no migration is needed.
-- [ ] Add Playwright E2E coverage for adaptive creation, publication, student runtime, and lecturer results.
-- [ ] Write support playbook and operational documentation.
+- [x] Add Playwright E2E coverage for the rollout gate, depth-5 tree creation/reuse, assignment, adaptive PracticeQuiz creation/publication, student runtime/result bands, and anonymous lecturer results.
+- [x] Close the Phase 7 production review findings for adaptive metadata access, fixed five-participant release batching, post-attempt rollback/republication, legacy terminal stop-reason migration, timer/timing integrity, and retry-safe end-to-end assertions.
+- [x] Replace backend-authored English validation/readiness sentences with structured issue codes and parameters that Manage localizes while retaining the server message as a compatibility fallback.
+- [x] Write the enable/rollback, support, privacy, ownership-transfer, pilot-gate, and legacy-audit operational runbook.
+
+Historical Phase 7 status before the final review: rollout controls and local release evidence were implemented. Anonymous and unrelated callers cannot enumerate adaptive metadata; cohort analytics advance only at fixed five-distinct-participant boundaries; active/abandoned counts remain hidden; post-attempt unpublish/republish preserves the immutable pool; terminal legacy attempts receive meaningful stop reasons; and the student timer preserves missing timing as unknown. R1-R16 reopen engineering readiness because the initial suppression, lifecycle, migration, stopping, scale, and UX contracts are not yet sufficient for a pilot or broad rollout.
 
 Acceptance criteria:
 
@@ -769,19 +837,366 @@ Verification:
 - Targeted Playwright E2E suite for adaptive learning.
 - Browser evidence captured with `npx agent-browser`.
 
+Local Phase 7 evidence on 2026-07-13 includes a clean 184-migration PostgreSQL 17 replay, a populated pre-runtime migration fixture covering four terminal stop-reason paths, 79 focused adaptive/competence-tree GraphQL tests, 32 package tests, 19 runtime simulations, the 10,000-item guardrail, and a five-test Chromium journey with four distinct items and five completed participants. Root typecheck, formatting, Syncpack, affected lint, all 22 sequential production build tasks, and a 210-rule OpenGrep scan pass. The host-only `check:all` wrapper remains blocked by the unrelated existing `apps/chat` ESLint plugin resolution issue; its constituent gates pass in the development container. Browser screenshots confirm the question timer, the four-point student level-band result, and the first five-participant lecturer release. Sixth-participant fixed-release behavior is covered at the service layer but not yet asserted by the browser journey. This is local engineering evidence only; it does not establish pilot or broad-production readiness. The Phase 8-14, real-course, external-signoff, and staging/production gates remain open.
+
+### Phase 8 - Reopen The Baseline And Make It Reproducible
+
+Purpose: turn the current large working tree into a reviewable baseline, stop overclaiming readiness, and install regression gates before further behavior changes.
+
+Tasks:
+
+- [ ] Keep `Course.isAdaptiveLearningEnabled = false` for every non-test/non-pilot course. Record the enabled-course allow-list before each deployment.
+- [ ] Audit the current 90 modified tracked paths and 52 untracked paths. Classify each as intended adaptive work, generated artifact, test evidence, documentation, or unrelated user work; never stage unrelated paths.
+- [ ] Regenerate GraphQL schema/operations and Prisma clients once, verify the generated diff, then create a coherent checkpoint commit for the already implemented Phases 3-7 so remediation commits remain reviewable. Do not push or open a PR as part of this phase unless separately requested.
+- [ ] Update `docs/adaptive-learning.md`, `docs/adaptive-learning-operations.md`, and this plan so they no longer claim engineering completion or browser proof that the Playwright spec does not assert.
+- [ ] Add named automated regressions, adjacent to the owning service/package tests, for every code-testable R1-R15 behavior before or together with its fix. For operational/external gates such as R16, add a versioned evidence checklist with named owner, artifact, threshold, and signoff instead. A test may be demonstrated red locally, but no intentionally failing test is committed.
+- [ ] Make `.github/workflows/test-adaptive-learning.yml` use the root Volta Node 24 and pnpm 11.5.0 pins, a frozen lockfile install, and path filters covering:
+  - `packages/adaptive-learning/**`
+  - adaptive Prisma schema/migrations/audits
+  - adaptive GraphQL services/schema/ops/tests and generated contracts
+  - Manage/PWA adaptive components and i18n
+  - the focused Playwright spec/config/fixtures
+  - the workflow itself
+- [ ] Keep the normal monorepo check/build workflows authoritative; the focused workflow is an early deterministic package/simulation gate, not a replacement.
+- [ ] Reconcile the branch with current `v3` only after the checkpoint is reproducible. Resolve conflicts without discarding existing user changes and rerun affected gates.
+
+Acceptance criteria:
+
+- A fresh checkout of the checkpoint can install with the pinned toolchain, regenerate without unexplained drift, and run the focused adaptive checks.
+- `git status --short` is empty after generation/formatting, apart from explicitly documented user-owned changes that are excluded from the adaptive commit.
+- The course gate prevents a participant or lecturer from discovering an unfinished adaptive mode outside the allow-list.
+- Documentation distinguishes historical Phase 7 evidence, newly reopened engineering blockers, pilot readiness, and broad production readiness.
+
+Verification:
+
+- `pnpm install --frozen-lockfile`
+- `pnpm --filter @klicker-uzh/graphql generate`
+- `pnpm --filter @klicker-uzh/adaptive-learning check`
+- `pnpm --filter @klicker-uzh/adaptive-learning test:run`
+- `git diff --check`
+- Two clean-cache focused CI runs on the same commit produce the same deterministic simulation metrics.
+
+### Phase 9 - Close Privacy And Publication-Authorization Blockers
+
+Purpose: make every lecturer aggregate non-disclosive and ensure element-sharing revocation is serialized with new publication snapshots.
+
+Tasks:
+
+- [ ] Extract `packages/graphql/src/services/adaptivePracticeQuizPrivacy.ts` as the only implementation of adaptive suppression. Keep the public cohort serializer unable to bypass it.
+- [ ] Implement field-aware suppression helpers for categorical, binary, missingness, anomaly, and percentile metrics:
+  - Every non-empty value cell and its complement must be either zero or at least `k = 5`.
+  - Known and missing source populations for durations/estimates must each be zero or at least five before a percentile or missingness indicator is returned.
+  - `insufficientData`, `nearBoundary`, integrity mismatch, missing duration, stop-reason, level-band, and item-diagnostic outputs use the same rule.
+  - A suppressed value is `null` with an explicit suppression reason; never return zero as a substitute.
+- [ ] Move integrity/anomaly details that cannot be released under `k = 5` to privacy-safe operational telemetry. Do not expose participant ids, attempt ids, raw responses, or exact individual timings in logs.
+- [ ] Add a table-driven privacy suite spanning cohort sizes 0-15, release boundaries 5/10/15, `1/(n-1)` complements, one known or one missing duration, one sufficient/insufficient result, retakes, deletion, and repeated polling. Verify that two allowed queries cannot be differenced into a singleton.
+- [ ] Define publication authority as follows: only the tree owner can author an assignment; the owner must still hold current element `READ` permission when a new immutable pool is materialized; a linked-course quiz manager may publish through the valid tree grant without receiving element content.
+- [ ] Add `packages/graphql/src/services/adaptivePracticeQuizPublicationAuthorization.ts` to resolve and revalidate all source elements inside the publication transaction.
+- [ ] Serialize sharing revocation and publication on the same element lock order. Publication takes the source-element lock, rechecks current owner permission, then copies content. Revocation takes the conflicting lock before removing derived/direct permission. The serial result is either a fully authorized snapshot or a failed publication with no pool/status change.
+- [ ] Mark revoked or deleted draft assignments unavailable in setup/readiness previews and return a structured localized issue code. Do not silently remove them from the shared tree.
+- [ ] Preserve already-published immutable snapshots for started and historical attempts. Add an operational takedown path that disables new starts/delivery without rewriting historical grading; exceptional redaction requires privacy/content-owner approval and a separate audited migration.
+- [ ] Re-run the complete permission matrix: tree owner, linked-course manager, direct element share, revoked share, unrelated lecturer, quiz owner, enrolled participant, foreign participant, and anonymous caller.
+
+Acceptance criteria:
+
+- No R3 singleton or complementary disclosure remains in the query-time serializer at any release boundary or under missing data. Real-course cohorts remain disabled until Phase 13 also makes releases persistent and stable under erasure/repeated reads.
+- Revoking element access before or concurrently with publication cannot produce a new snapshot from unauthorized content.
+- Existing valid snapshots remain internally coherent and participant payloads still contain no solutions, `a`/`b`/`c`, theta, or standard error.
+- The lecturer dashboard can explain suppression without exposing which student caused it.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/graphql test:local -- adaptivePracticeQuizzes`
+- Focused publication/configuration/sharing service tests against PostgreSQL.
+- GraphQL schema test for participant and cohort redaction.
+- Browser inspection of suppressed five-person and ten-person cohorts, including one missing duration and one insufficient result.
+
+### Phase 10 - Repair Lifecycle, Migration, Ownership, And Retention
+
+Purpose: guarantee valid serial outcomes for starts/deletes and make account/course deletion and migration forward-safe before real attempts exist.
+
+Tasks:
+
+- [ ] Introduce one documented lock order used by publication, start, restart, unpublish, delete, and course disable: course gate -> `PracticeQuiz` -> adaptive config -> attempt. Put raw row-lock helpers in `adaptivePracticeQuizRepository.ts` rather than scattering SQL.
+- [ ] Move `deletePracticeQuiz` lookup, permission check, `PracticeQuiz FOR UPDATE`, adaptive-config lock, attempt recount, and hard-delete/soft-delete decision into one transaction.
+- [ ] Make attempt start take the compatible quiz/config locks before checking publication state or creating an attempt. A start racing deletion must either commit a durable attempt and force soft deletion, or fail with a stable not-found/unavailable error.
+- [ ] Add barrier-controlled concurrent service tests for start/delete, start/unpublish, restart/disable, and double start. Repeat enough times to exercise transaction retry; assert only valid serial outcomes.
+- [ ] Append a forward repair migration; do not rewrite a migration that may already have run:
+  - Audit every `IN_PROGRESS` attempt with null/foreign `nextPoolItemId`.
+  - Conservatively convert an unrecoverable row to `ABANDONED`, set `stopReason = ABANDONED`, clear the next item, and set `completedAt` deterministically.
+  - Preflight-fail instead of guessing for cross-config/tree identities or corrupt response ordering.
+  - Repair or quarantine violations of every active-runtime `NOT VALID` check, then `VALIDATE CONSTRAINT` with a bounded lock/statement plan.
+- [ ] Extend the populated upgrade fixture with null and non-null legacy next pointers, zero-response and answered in-progress attempts, malformed response snapshots, and every terminal status. A successful migration leaves no invalid or unresumable `IN_PROGRESS` row.
+- [ ] Change the `CompetenceTree.owner` foreign key from cascade to `Restrict`. Make the existing ownership-transfer script idempotent and add an account-closure preflight that blocks deletion until every used/linked tree has an approved successor.
+- [ ] Prevent hard deletion of a PracticeQuiz or Course once adaptive attempts exist; Phase 13 extends the same restriction to persisted cohort snapshots. Use database restrictions as the final guard and service-level archive/retention behavior as the user-facing contract.
+- [ ] Preserve participant erasure under the existing account policy. Until Phase 13, query-time cohorts recompute and suppress below a complete release boundary; Phase 13 implements the privacy owner's decision for non-identifying persisted snapshots.
+- [ ] Add lifecycle tests for unused, linked, draft-configured, published, attempted, and released-result trees/quizzes/courses, including account transfer and query-time participant erasure at release boundaries. Phase 13 adds snapshot-retention variants.
+- [ ] Name the production migration executor and owner in `docs/data-and-migrations.md`; document preflight queries, backup point, lock/statement timeouts, abort thresholds, monitoring, restore test, and forward-fix procedure.
+- [ ] Rehearse the course kill switch with an active attempt: submit fails closed while disabled, abandon/support remains available, and re-enabling resumes the same immutable item without duplicate response or pool change.
+
+Acceptance criteria:
+
+- Repeated lifecycle concurrency tests show no successful start followed by a missing attempt and no deletion that silently removes adaptive history.
+- A populated migration replay leaves all active runtime constraints validated and zero invalid `IN_PROGRESS` rows.
+- Direct database deletion cannot cascade a used competence tree or quiz with adaptive history.
+- Account closure is impossible until ownership transfer/retention succeeds and is auditable.
+- A timed staging rehearsal and restore/forward-fix drill are approved by operations before production migration.
+
+Verification:
+
+- `pnpm run prisma:migrate`
+- `pnpm run prisma:sync`
+- Clean full-chain PostgreSQL 17 migration replay.
+- Populated pre-repair -> latest upgrade fixture and constraint audit.
+- Focused GraphQL lifecycle/concurrency/account-deletion tests.
+- Staging disable/re-enable and migration rollback drill recorded in `docs/adaptive-learning-operations.md`.
+
+### Phase 11 - Make The Shipped Measurement Contract Earn Its Gates
+
+Purpose: eliminate inert settings and preset drift, then tune selection/stopping against production-shaped evidence that measures successful adaptive classification rather than merely reaching a cap.
+
+Tasks:
+
+- [ ] Define canonical product preset defaults once in `@klicker-uzh/adaptive-learning` and consume them from GraphQL configuration, Manage form defaults, readiness, runtime, seeds, and simulations. Add a contract test that fails when any layer drifts.
+- [ ] Remove `standardErrorThreshold` and `showLiveEstimate` from Prisma, GraphQL inputs/views/generated operations, Manage forms/i18n, seeds, and docs through a forward cleanup migration. Preserve `minimumReachableStandardError` only as an internal readiness diagnostic; it is not a runtime stop or lecturer knob.
+- [ ] Add a field-to-behavior contract test for every remaining adaptive setting. Each persisted/public field must name exactly one runtime, readiness, display, or audit consumer. Delete forced legacy fields whose value can never vary.
+- [ ] Extend `AdaptiveSimulationMetrics` with:
+  - `classificationRate` and `totalQuestionCapRate`
+  - rates by preset, level, root, and distance from the nearest level boundary
+  - maximum/percentile item exposure
+  - root failure reason: breadth missing, interval crossing a boundary, node cap, global cap, or pool exhaustion
+  - timing estimates using the same product duration assumption as readiness
+- [ ] Generate Placement and Diagnostic simulations from canonical shipped defaults. Keep short/long forms as explicitly named stress overlays; never describe the short-form overlay as a shippable preset.
+- [ ] Add true-versus-configured discrimination sweeps with configured `a = 1.2` and true `a in {0.8, 1.0, 1.2, 1.5}`, plus 0%, 10%, and 20% adjacent-level mislabelling. Preserve all five supported item-type mixes and sparse/target/rich pools.
+- [ ] Diagnose why each clean learner reaches the cap before changing the algorithm. Tune root routing, boundary-targeted item selection, top-information randomesque selection, evidence allocation, and/or classification interval policy only through canonical runtime helpers. Do not add a second simulation-only algorithm.
+- [ ] Keep classification-in-band as the primary stop. Clearly placed learners should stop early; boundary learners may consume the cap and receive honest near-boundary/capped language. Never stop merely because an estimate is numerically stable while its interval crosses a level boundary.
+- [ ] Promote impossible minimum-evidence/cap combinations and structurally unreachable root-level classification bands from warnings to publication errors for Placement and Diagnostic. Research may expose the diagnostics but cannot publish to a real course through the production gate while they remain unresolved.
+- [ ] Require at least five independent, enabled, scorable items per enabled leaf-level coverage cell for production Placement/Diagnostic publication. Keep structural tree editing permissive; enforce the blueprint in adaptive readiness, with breadcrumb-labelled issue codes.
+- [ ] Add an authoring/standard-setting protocol to the operations guide: two independent subject experts level each pilot item, disagreements are reconciled, weighted kappa is reported, and level descriptors/boundaries are approved before the pilot.
+- [ ] Keep randomesque selection package-pure and measure exposure first. Tune pool size/top-information ratio until maximum simulated exposure is at most 40%; introduce cohort-stateful exposure control only if the predeclared gate cannot be met without it.
+- [ ] Produce one deterministic machine-readable simulation report artifact for CI and one concise Markdown summary for reviewers. Threshold changes require review of the report diff.
+
+Synthetic shipping gates for the canonical clean target/rich Placement and Diagnostic profiles:
+
+| Metric | Required gate |
+| --- | --- |
+| Exact level agreement | `>= 0.70` overall |
+| Same-or-adjacent agreement | `>= 0.95` overall and per level where the stratum is populated |
+| Per-level exact agreement | `>= 0.60` |
+| Mean absolute level error | `<= 0.35` |
+| Absolute signed per-level bias | `<= 0.50` bands |
+| Interior learner classification | `>= 0.90` when true ability is at least 25% of a band width from a boundary |
+| Overall `TOTAL_QUESTION_CAP` rate | `<= 0.25` per shipped preset |
+| Unexpected pool/node/insufficient fallback | `0` in clean target/rich profiles |
+| Maximum item exposure | `<= 0.40` |
+| Mean length | `<= 0.85 * totalQuestionCap` |
+| Determinism | Identical metrics for identical seeds/configuration |
+
+Acceptance criteria:
+
+- The current 262/300 Placement and 280/300 Diagnostic hard-cap behavior cannot pass.
+- The shipped defaults, readiness model, runtime, UI copy, and simulation profile are identical by contract.
+- All product-preset pools are reachable under their cap and pass every synthetic gate without weakening thresholds to match the current output.
+- The final chart endpoint, stored estimate, headline band, nested overall row, and text summary remain exactly consistent after algorithm changes.
+- Psychometric reviewers sign the simulation report and standard-setting protocol before any real-course pilot.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/adaptive-learning check`
+- `pnpm --filter @klicker-uzh/adaptive-learning test:run`
+- `pnpm --filter @klicker-uzh/adaptive-learning test:simulation:report`
+- GraphQL configuration/readiness/runtime contract tests.
+- Independent recomputation of hierarchy/root/overall estimates from deterministic fixture responses within `1e-9`.
+
+### Phase 12 - Make Authoring And Participant UX Recoverable And Accessible
+
+Purpose: close the remaining authoring-integrity and accessibility gaps while preserving KlickerUZH's existing practice-quiz routes and visual language.
+
+Tasks:
+
+- [ ] Replace node-only reparenting with one pure full-form structural command in `treeHelpers.ts` that updates nodes, coverage, assignments, selection, and validation state together.
+- [ ] Use these explicit reparent rules:
+  - Block reparenting onto a populated leaf; require the author to move/delete that leaf's assignments and coverage deliberately.
+  - Remove only empty/default coverage when a target leaf becomes an internal node; never silently move real assignments to an arbitrary branch.
+  - When the old parent loses its final child and becomes a subcompetence leaf, initialize visible default coverage cells that the author must complete before readiness can pass.
+  - Reject root-kind violations, cycles, and any subtree whose new depth exceeds five before mutating the form.
+- [ ] Clear stale server-validation output on every structural/form edit and rerun server-authoritative validation before save. Never hide orphaned rows merely because the matrix now filters them out.
+- [ ] Add focused pure tests for add child, move, reorder, reparent, duplicate, and delete across depths 1-5, including every leaf/internal transition and preservation/removal rule.
+- [ ] Treat element persistence and tree mapping as two explicit domain outcomes rather than pretending they are atomic across all generic element mutations:
+  - After element success, retain the returned element id and pending mapping durably in the existing autosave/local-storage state.
+  - If mapping fails, show “Element saved; adaptive assignment not saved,” keep the modal in a retry state, and prevent duplicate element creation.
+  - Provide idempotent Retry assignment and an explicit “Keep element unmapped” confirmation. Do not emit the combined success state until one is chosen.
+  - Restore and reconcile the pending state after navigation/reopen; clear it only after the server confirms the mapping or the author explicitly abandons it.
+- [ ] Add a shared pages-router unsaved-changes hook covering `beforeunload`, browser back/forward, header/sidebar links, and programmatic navigation. Use it in the competence-tree editor and test save/discard/cancel behavior.
+- [ ] Use semantic nested lists or a conforming ARIA tree for the hierarchy. Expose expanded, selected, depth, and position state; bind every visible label to its control; keep add/reorder/reparent/delete keyboard-operable without drag-and-drop.
+- [ ] Fix the course-row composite interaction so the course link and action buttons are semantic siblings and nested keyboard activation cannot navigate unexpectedly.
+- [ ] Add programmatic labels to adaptive assignment search/filters, tree selection, weight/cap controls, and every dense coverage control. Keep a visible focus indicator on programmatically focused question/result headings.
+- [ ] Fix nested competence-profile disclosure state so opening an ancestor does not rotate closed descendant chevrons. Preserve a textual hierarchy/result equivalent.
+- [ ] Add localized Retry actions for publication readiness, setup preview, attempt state/submission, and result-query failures. A retry must preserve form/answer state and cannot duplicate a response.
+- [ ] Remove the two retired setting controls and verify that completed students still receive the requested level-band overview and one uncertainty trajectory.
+- [ ] Fix only the Manage shell/layout overflow necessary for adaptive pages. Verify no horizontal document overflow, clipped German labels, off-screen dialogs, or overlapping matrix controls at 390, 768, and desktop widths.
+- [ ] Keep all new copy paired in `de` and `en`, all commands on existing design-system controls, and all release-critical states on stable `data-cy`/test ids.
+
+Acceptance criteria:
+
+- No hierarchy edit can produce hidden invalid coverage/assignment state; every destructive reconciliation is visible and confirmed.
+- A mapping failure is never silent, never creates a duplicate element on retry, and remains recoverable after reopening the editor.
+- Dirty edits survive or produce a confirmation across every navigation path.
+- Tree authoring, adaptive quiz setup, participant completion, and result review are keyboard-operable with zero critical/serious accessibility findings.
+- Adaptive Manage and PWA surfaces fit the supported mobile/tablet/desktop viewports in English and German without incoherent overlap or horizontal page scrolling.
+
+Verification:
+
+- `pnpm --filter @klicker-uzh/frontend-manage check`
+- `pnpm --filter @klicker-uzh/frontend-pwa check`
+- Pure tree-helper and mapping-state tests.
+- Focused Playwright flows for reparent reconciliation, mapping failure/retry, unsaved navigation, transient submit/result recovery, and sixth-participant privacy boundary.
+- `npx agent-browser` desktop/mobile screenshots in `en` and `de`, keyboard pass, accessible-name inspection, and `scrollWidth <= clientWidth` assertions.
+
+### Phase 13 - Bound Database Work, Split Services, And Add Operations Signals
+
+Purpose: make runtime and cohort behavior scalable, maintainable, and observable without replacing the validated domain model.
+
+Tasks:
+
+- [ ] Split `adaptivePracticeQuizzes.ts` behind a stable facade/re-export layer:
+  - `adaptivePracticeQuizCommands.ts`: start/resume/restart/submit/abandon orchestration only.
+  - `adaptivePracticeQuizRepository.ts`: selects, locks, bulk estimate writes, and retry primitives.
+  - `adaptivePracticeQuizParticipantViews.ts`: participant state/result serialization only.
+  - `adaptivePracticeQuizCohort.ts`: release selection and aggregate read model.
+  - `adaptivePracticeQuizPrivacy.ts`: all `k = 5` suppression.
+  - `adaptivePracticeQuizDiagnostics.ts`: timing, exposure, expected/observed, and misfit aggregation.
+- [ ] Split `adaptivePracticeQuizConfig.ts` into configuration command, preparation/validation, and read-model modules while retaining one public service facade for resolvers.
+- [ ] Keep modules acyclic and dependency-directed: schema -> service facade -> command/read model -> repository/pure package. React must not import GraphQL service internals.
+- [ ] Replace sequential estimate upserts with one parameterized, chunked `INSERT ... ON CONFLICT DO UPDATE` repository operation for overall plus node estimates. Preserve unique/index/check invariants and use the same transaction as response/next-item completion.
+- [ ] Add a maximum-tree database benchmark (500 nodes, 10,000 pool items) with concurrent submissions. Record query count, lock/retry rate, p50/p95/p99 transaction time, and explain plans.
+- [ ] Add a typed, versioned `AdaptivePracticeQuizCohortSnapshot` model containing only server-generated aggregate JSON, release size/watermark, policy version, and timestamps. It must contain no participant/attempt ids, raw answers, or exact person-level timings.
+- [ ] Materialize at most one snapshot per fixed five-participant release boundary under a quiz/config lock. Build it lazily on the lecturer read path or through an existing reliable job only after proving idempotency; do not add work to the participant submission transaction.
+- [ ] Apply the approved participant-erasure policy to snapshots and add deletion tests at five- and ten-participant boundaries. If aggregate retention is not approved, invalidate the affected snapshot and suppress until a fresh complete boundary.
+- [ ] Select canonical first/latest attempts and calculate level/stop/timing/item aggregates in PostgreSQL or bounded cursor batches. Never load an unbounded course history into application memory.
+- [ ] Add indexes matching completed-attempt release order, participant attempt selection, estimate node/level aggregation, and response pool-item diagnostics. Validate each with production-shaped `EXPLAIN (ANALYZE, BUFFERS)` evidence.
+- [ ] Add cursor pagination and server-side search for competence-tree/course catalogs. Load current element mappings first and lazy-load a bounded picker page instead of fetching every readable tree on editor mount.
+- [ ] Add privacy-safe structured operational events through the repository's existing logger; do not add a telemetry dependency solely for this feature. Cover:
+  - attempt start/completion/abandonment and stop reason
+  - hard-cap/pool-exhaustion rates
+  - serialization retries and exhaustion
+  - stale/replayed/foreign-item rejection
+  - readiness/publication blocks and sharing revocation
+  - cohort snapshot generation latency/failure
+  - course-gate denial and kill-switch activation
+- [ ] Use course/quiz ids and aggregate counts only where operationally necessary. Never log participant ids, attempt ids, raw responses, solution data, theta, or exact individual timings.
+- [ ] Define dashboards and alert thresholds in the operations guide. At minimum alert on pool exhaustion in a production preset, integrity rejection spikes, retry exhaustion, cohort snapshot failure, and hard-cap rate above the approved pilot ceiling.
+- [ ] Keep each extracted adaptive service focused and reviewable. Target facade files below 250 lines and implementation modules below 700 lines; exceeding the target requires an explicit module-boundary rationale in review.
+
+Production-shaped engineering SLOs, measured on the approved staging/production-sized clone:
+
+| Path | Gate |
+| --- | --- |
+| Submit response transaction | p95 `<= 750 ms`, p99 `<= 1.5 s`, retry exhaustion `0` in load test |
+| Estimate persistence | Bounded/chunked query count independent of node count; no per-node awaits |
+| Cohort result read at 10,000 participants / 500,000 responses | p95 `<= 2 s`, no full-history application materialization, process RSS increase `< 100 MB` |
+| Tree catalog first page at 10,000 trees | p95 `<= 500 ms`, bounded payload/page |
+| Cohort snapshot generation | Idempotent under concurrent reads; exactly one snapshot per release/policy version |
+
+Acceptance criteria:
+
+- Runtime submission and cohort evaluation meet the SLOs without weakening serializable integrity or privacy.
+- The 1,893/1,061-line service concentration is removed and every extracted boundary has direct contract tests.
+- Tree/mapping initial loads are bounded and remain responsive with production-shaped fixtures.
+- A dashboard and alert-firing drill exist, and an audit confirms operational output contains no participant-level data.
+
+Verification:
+
+- GraphQL service tests and PostgreSQL integration/load fixtures.
+- `EXPLAIN (ANALYZE, BUFFERS)` artifacts for the four critical queries.
+- `pnpm --filter @klicker-uzh/graphql check`
+- `pnpm --filter @klicker-uzh/graphql build`
+- `opengrep scan --config auto` over all adaptive service/schema/UI changes.
+
+### Phase 14 - Controlled Pilot, Independent Review, And Broad Rollout
+
+Purpose: prove subject-specific validity and operational safety, then move from a named pilot to broad production without weakening the course-level rollback boundary.
+
+Tasks:
+
+- [ ] Freeze the release candidate, generate clients, and run the complete verification matrix from a clean checkout. No untracked source/generated artifacts remain.
+- [ ] Run the migration chain and forward-repair migration on a production-sized clone with the named operations owner, backup/restore point, lock budgets, abort criteria, and rollback/forward-fix drill.
+- [ ] Execute the legacy `AdaptiveAssessment*` audit with read-only staging and production roles. Archive signed aggregate-only output and choose one outcome per environment:
+  - no data: approved cleanup migration and restore proof
+  - seed-only data: explicit approved purge/retention
+  - real data: immutable archive or reviewed migration mapping before any drop
+- [ ] Extend `playwright/tests/Z-adaptive-learning.spec.ts` or split it into independent fixtures so it proves, rather than merely documents:
+  - default-off course gate and non-enumeration
+  - depth-5 cross-course tree reuse and permission boundaries
+  - invalid reparent prevention/reconciliation
+  - element-save/mapping failure and idempotent retry
+  - publication revocation failure
+  - all five item types, resume/start-over, stale/double submit, and transient retry
+  - completed level bands/trajectory consistency
+  - five-person release, sixth participant remaining hidden, ten-person release, singleton missingness/complement suppression
+  - English/German and desktop/mobile critical paths
+- [ ] Capture real app screenshots/traces for the changed Manage/PWA states and attach them to the final PR description or comment.
+- [ ] Run an independent final branch review after implementation. Use `$thermo-nuclear-code-quality-review`; resolve findings or record a named, dated deferral that cannot affect safety/production gates.
+- [ ] Pre-register the pilot before enabling a course:
+  - named course/tree/preset and intended diagnostic/placement use
+  - inclusion/exclusion and missing-data rules
+  - independent teacher labels and two-expert standard setting
+  - target of at least 100 valid completed attempts overall and at least 30 in any level/subgroup for which a separate claim is made
+  - confidence intervals and fairness strata approved by privacy/teaching owners
+  - support owner, incident channel, kill-switch owner, and rollback rehearsal time
+- [ ] Once Phases 8-13 and pilot preregistration are complete, add only the named pilot course to the allow-list. Run the pilot with no participant-identifying export. Review item-level diagnostics only where `n >= 30`; remove/rewrite/relevel or explicitly adjudicate every retained item with absolute observed-minus-expected residual `>= 0.25`.
+- [ ] Recompute a sample of pilot attempts independently from immutable responses and verify one contribution per ancestor, root-only weighted aggregation, and final estimate agreement within `1e-9`.
+- [ ] Require all pilot gates below. A failed gate returns the course to disabled, records the reason, remediates the pool/algorithm/content, and repeats the relevant pilot evidence.
+- [ ] Obtain named teaching, privacy/DPO, product/data-owner, and operations approvals. Placement remains advisory and not high-stakes until those owners separately approve consequential use.
+- [ ] After the named pilot and every Phase 14 gate pass, roll out progressively to limited additional courses and then broad availability. Observe at least one complete teaching cycle at each real-course expansion stage.
+
+Real-course go/no-go gates:
+
+| Area | Required gate |
+| --- | --- |
+| Independent exact agreement | `>= 0.70` with 95% CI reported |
+| Independent same-or-adjacent agreement | `>= 0.95` |
+| Median / p95 completion time | `<= 25 min` / `<= 35 min` |
+| `TOTAL_QUESTION_CAP` rate | `<= 0.25` overall; interior-learner failures separately investigated |
+| Pool/node exhaustion and integrity failures | `0` unexplained cases |
+| Item exposure | maximum `<= 0.40` |
+| Item diagnostics | each retained flagged item has `n >= 30` and residual `< 0.25`, or signed adjudication and repeat evidence |
+| Standard setting | two subject experts, weighted kappa `>= 0.70`, no unresolved disagreement over one band |
+| Fairness | predeclared analyzable strata have `n >= 30`; no unexplained exact-agreement gap over 10 percentage points |
+| Privacy and support | zero singleton/differencing disclosure, zero participant-level telemetry, successful incident/rollback drill |
+| External approval | named teaching, privacy, product/data-owner, and operations signoff |
+
+Acceptance criteria:
+
+- All R1-R16 rows are closed with code/test/operational evidence; no safety-critical finding is deferred.
+- All synthetic and pilot gates pass on the shipped preset/configuration, not a private test-only profile.
+- Migrations, account/course retention, kill switch, and restore/forward-fix behavior have been rehearsed in the deployment environment.
+- The final branch is clean, generated artifacts are current, CI is green, screenshots are attached, and an independent maintainability review has no unresolved blocker.
+- The single preregistered pilot entry is permitted after Phase 13. Only after all Phase 14 criteria pass may the plan move from `project/plans_wip/` to the completed-plan location or the allow-list broaden beyond that pilot.
+
+Verification:
+
+- `pnpm run check:all`
+- `pnpm run build` using the production-equivalent concurrency available in CI
+- `pnpm --filter @klicker-uzh/adaptive-learning test:run`
+- `pnpm --filter @klicker-uzh/graphql test:local`
+- `pnpm --filter @klicker-uzh/graphql generate`
+- `pnpm --filter @klicker-uzh/playwright test -- tests/Z-adaptive-learning.spec.ts --project=chromium`
+- `npx agent-browser` against the real local stack for final desktop/mobile `en`/`de` screenshots and payload inspection
+- Clean and populated PostgreSQL migration replays plus staging rehearsal evidence
+- Final `opengrep scan --config auto` and `$thermo-nuclear-code-quality-review`
+
 ## Next Implementation Slice Recommendation
 
-Phases 0 through 2 are complete at the backend-contract level. The next slice should implement the server-authoritative participant attempt runtime against `PracticeQuizAdaptivePoolItem`; the Manage editor can consume the stable Phase 1/2 contracts in parallel once runtime payloads are fixed.
+Do not start a real-course pilot next. The next slice is **Phase 8 followed immediately by the safety portions of Phase 9**:
 
-Recommended scope:
+1. Keep every non-test course disabled and record the allow-list.
+2. Make the existing working tree reproducible, generated-artifact clean, and reviewable as a checkpoint.
+3. Correct the readiness/documentation overclaims and focused CI triggers.
+4. Add the privacy differencing/missingness regression matrix.
+5. Extract the suppression policy and close R3 before moving to publication authorization, lifecycle, or measurement tuning.
 
-1. Start/resume an attempt only from a published immutable pool and persist the currently served `nextPoolItemId`.
-2. Grade only the served pool item, reject replay/tampering/cross-participant submissions, and write ordered response snapshots.
-3. Add hierarchical routing, stopping, final estimates, and participant-safe level-band/trajectory serializers.
-4. Keep adaptive responses outside standard PracticeQuiz points, XP, and leaderboard writes.
-5. Add participant service tests before the PWA consumes the runtime contract.
-
-Do not include the tree editor UI in this slice. It should consume a stable, permission-tested API in the following vertical slice.
+This is the smallest stable slice because it establishes a trustworthy baseline and closes a live information-disclosure risk without depending on later algorithm or UI work.
 
 ## Verification Matrix
 
@@ -792,23 +1207,32 @@ Do not include the tree editor UI in this slice. It should consume a stable, per
 | GraphQL schema/op change | `pnpm --filter @klicker-uzh/graphql generate`, `pnpm --filter @klicker-uzh/graphql check`, targeted service tests. |
 | Manage UI change | `pnpm --filter @klicker-uzh/frontend-manage check`, i18n pair check, agent-browser screenshots. |
 | PWA result/chart change | `pnpm --filter @klicker-uzh/frontend-pwa check`, chart transformation tests, i18n pair check, accessibility/text fallback, desktop/mobile agent-browser screenshots, participant payload inspection. |
+| Privacy/cohort change | Full `n = 0..15` value/complement/missingness matrix, fixed-release polling/differencing tests, and lecturer payload inspection. |
+| Authorization/publication change | Complete owner/linked/revoked/unrelated matrix plus barrier-controlled concurrent revocation/publication test. |
+| Attempt/lifecycle transaction change | PostgreSQL barrier tests for start/delete/unpublish/disable and transaction-retry assertions. |
+| Migration/constraint change | Clean full replay, populated upgrade fixture, constraint audit/validation, analytics sync, staging-sized rehearsal, and restore/forward-fix evidence. |
+| Cohort/query/performance change | Production-shaped fixture, query-count assertion, `EXPLAIN (ANALYZE, BUFFERS)`, p95/p99/RSS evidence, and concurrent idempotency test. |
+| Accessibility/navigation change | Keyboard flow, accessible-name/role inspection, supported viewport overflow assertions, and focused Playwright/agent-browser evidence in `de` and `en`. |
 | Cross-layer feature slice | `pnpm run check:all`, relevant package tests, targeted Playwright E2E, browser evidence. |
 
 Do not rely on a root-wide blind `pnpm run test:run` unless the environment is already known healthy and the runtime budget is acceptable. Prefer targeted tests first, then broader checks before PR.
 
 ## Seed And Fixture Plan
 
-- Add a small v2 competence tree seed only after service validation exists.
-- Seed one reusable tree linked to two test courses to exercise reuse permissions.
-- Include one depth-5 branch and at least two root competences so hierarchy and weighted aggregation are exercised.
-- Seed supported element assignments across at least three levels, multiple leaves, and all five supported element types.
+- [x] Seed one reusable tree linked to two test courses to exercise reuse permissions.
+- [x] Include one depth-5 branch and at least two root competences so hierarchy and weighted aggregation are exercised.
+- [x] Seed supported element assignments across at least three levels, multiple leaves, and all five supported element types.
 - Do not seed old standalone adaptive assessments except as explicitly marked legacy data.
 - Ensure seeded adaptive quizzes are safe by default:
   - Not published unless the pool passes readiness.
   - No solution leakage.
   - No `showSolutions` equivalent for adaptive completion unless separately designed.
-- Add Playwright fixtures for lecturer, course, tree, adaptive quiz, and participant attempts.
-- Add deterministic completed-attempt fixtures for a near-boundary result, an insufficient-data node, and a trajectory whose final point can be asserted against the final level.
+- [x] Add Playwright fixtures for lecturer, course, tree, adaptive quiz, and participant attempts.
+- [x] Add deterministic completed-attempt fixtures for a near-boundary result, an insufficient-data node, and a trajectory whose final point can be asserted against the final level.
+- [ ] Add privacy fixtures for value/complement/missingness cells at 4/5/6/9/10 participants, retakes, participant erasure, and immutable cohort-release snapshots.
+- [ ] Add permission fixtures where a tree owner receives then loses direct/derived element access while a linked-course manager configures a quiz.
+- [ ] Add migration fixtures for stranded in-progress attempts and every `NOT VALID` runtime constraint.
+- [ ] Add production-shaped scale fixtures for 500 nodes/10,000 pool items and 10,000 participants/500,000 responses without adding those volumes to the default seed.
 
 ## Data And Migration Plan
 
@@ -817,30 +1241,50 @@ Do not rely on a root-wide blind `pnpm run test:run` unless the environment is a
 - If no real data exists, drop old tables and relations in a cleanup migration.
 - If real data exists, define archival or migration semantics before dropping.
 - Structurally lock competence trees referenced by published adaptive quizzes. V1 uses duplication for changes rather than an implicit live update or full revision graph.
-- Add `PracticeQuizAdaptivePoolItem` (or an equivalently named model) and migrate `nextAssignmentId` / response assignment references to the immutable published pool item.
+- [x] Add `PracticeQuizAdaptivePoolItem` and migrate the next-item/response runtime to immutable published pool items.
 - [x] Add same-tree foreign keys for competence-tree parents, coverage rows, and assignments; add a partial unique index/check constraint for coherent overall estimates (`20260710152000_adaptive_tree_integrity`).
 - [x] Add equivalent same-tree constraints for quiz node/element overrides with the Phase 2 config write path (`20260710190000_adaptive_practice_quiz_configuration`).
 - [x] Add composite config/quiz, config/pool, and response pool-identity constraints before Phase 3 writes attempts (`20260710190000_adaptive_practice_quiz_configuration`).
 - [x] Add participant/participation/course identity constraints and enforce pool references for new responses without invalidating historical nullable rows.
-- Store source element id and version for audit, but serve and grade from the snapshotted element data and effective item parameters.
+- [x] Store source element id and version for audit, but serve and grade from the snapshotted element data and effective item parameters.
 - For user deletion, prefer soft-delete/reassign or clear hard-block behavior over cascading away used trees.
-- Before attempt runtime work, migrate `AdaptivePracticeQuizResponse.thetaAfter` / `standardErrorAfter` to explicitly named nullable overall reporting fields or document the existing names with those exact semantics.
-- Stop storing `thetaHistory` and `standardErrorHistory` JSON after ordered response rows become canonical; remove the columns in the same migration if no deployed data depends on them, otherwise deprecate and backfill first.
-- Run `pnpm run prisma:sync` so the analytics schema receives the final adaptive attempt/estimate shape.
+- [x] Migrate response trajectory columns to explicitly named nullable overall reporting fields.
+- [x] Remove `thetaHistory` and `standardErrorHistory`; ordered response rows are the canonical trajectory.
+- [x] Run `pnpm run prisma:sync` so the analytics schema receives the final adaptive attempt/estimate shape.
+- [x] Add actionable migration preflights for legacy cross-tree final levels, estimate nodes, and estimate levels; verify each against a populated 181-migration fixture.
+- [ ] Append a forward repair migration for invalid `IN_PROGRESS` rows and validate every active adaptive runtime constraint.
+- [ ] Remove `standardErrorThreshold` and `showLiveEstimate` through a forward cleanup migration and regenerate all clients/analytics schema.
+- [ ] Change used-tree/attempt lifecycle foreign keys from destructive cascades to the Phase 10 restrict/retention policy.
+- [ ] Add the typed, versioned privacy-safe cohort snapshot model and required release/aggregation indexes.
+- [ ] Rehearse all forward migrations against a production-sized clone with backup, restore, lock-budget, and forward-fix evidence.
+- [ ] Execute and sign the staging/production legacy audit before creating any old-schema drop migration.
 
-## Open Decisions
+## Required External Decisions
 
-1. What is the institutional small-bucket suppression threshold for adaptive result distributions?
-2. After the pilot, should structural tree duplication gain explicit revision lineage, or is independent duplication sufficient?
-3. After calibration, which evidence threshold permits item-specific `a` overrides outside research/calibration mode?
+These decisions do not block Phase 8, but they block the named phase and therefore broad production:
 
-These are rollout/evolution decisions. They do not block implementation of the first production slice: use `n < 5`, independent duplication, and fixed `a = 1.2` outside research mode until they are resolved.
+1. **Anonymous snapshot retention after participant erasure (Phase 13):** privacy/data owner approves retaining versioned `k >= 5` aggregate snapshots with no identifiers/raw responses, or requires invalidation and re-suppression.
+2. **Production migration execution (Phase 10):** operations names the executor/job, backup/restore owner, lock budgets, abort criteria, and forward-fix owner.
+3. **Pilot purpose and strata (Phase 14):** teaching/privacy owners approve whether the first pilot is Diagnostic or Placement, independent labels, analyzable groups, and exclusions before data collection.
+4. **Legacy data disposition (Phase 14):** product/data owner signs migrate/archive/delete per environment after the read-only audit.
+5. **Consequential placement (after Phase 14):** separate institutional approval is required before a level band controls access, grading, or enrollment. Passing the engineering/pilot plan alone does not authorize high-stakes use.
+
+Evolution defaults remain fixed and do not block v1: `k = 5`, independent tree duplication without revision lineage, `a = 1.2` outside reviewed calibration, immediate-only publication, and no automated recommendation.
 
 ## Progress Log
 
+- 2026-07-13: Reopened production readiness after the final full-working-tree review. Added R1-R16 traceability and Phases 8-14 for reproducibility, privacy/publication authorization, lifecycle/migration/retention, meaningful measurement gates, recoverable accessible UX, bounded database/service architecture, observability, and controlled rollout. No real-course pilot may start until Phases 8-13 pass.
 - 2026-07-09: Completed Phase 0 documentation/CI work and added the Phase 1 competence-tree validation skeleton with targeted tests.
 - 2026-07-10: Reviewed the supplied standalone HTML and chose the Klicker-native split: reusable tree library, adaptive branch in the existing four-step PracticeQuiz wizard, existing participant/evaluation routes, and no standalone adaptive activity.
 - 2026-07-10: Locked the student result design to one weighted overall trajectory with a standard-error interval plus an expandable depth-5 final competence profile.
 - 2026-07-10: Completed the Phase 1 transactional competence-tree API, permissions, structural lock, generated operations, numerical normalization edge case, and focused unit/integration verification.
 - 2026-07-10: Completed and independently reviewed Phase 2. The remediation passes added participant hiding before Phase 3, immediate-only publication, shared-cap/common-theta and classification-band readiness with per-leaf minimum reservation, deleted-source rejection, all-false KPRIM support, batched pools, bounded tree sizes, preserved Research migration semantics, new-response pool enforcement, and composite participant/course/quiz/config/pool/response constraints.
 - 2026-07-10: Deferred only runtime-owned concerns to Phase 3: first-attempt serialization against pool replacement, participant serializers/submission authorization, and removal of nullable live-assignment compatibility fields. A durable scheduling outbox remains required before adaptive scheduling can be enabled.
+- 2026-07-10: Completed Phase 3. The runtime now serializes pool publication against first attempt, serves and grades immutable snapshots, retries serializable conflicts, rejects tampering/replay/cross-participant access, routes deterministically across the depth-5 hierarchy, persists canonical estimates/trajectory, returns participant-safe level bands, and suppresses lecturer cohorts at the serializer boundary. Generic participant listings remain closed until Phase 6, and adaptive scheduling still requires an outbox/reconciler.
+- 2026-07-10: Closed the independent Phase 3 review findings: enforced first-completed retakes, added three populated migration preflights, split routing/reporting/delivery projections, converted retry exhaustion to a stable API error, and added GraphQL-level cohort permission coverage. Mixed-pool simulation and the 10,000-item benchmark remain Phase 4 gates.
+- 2026-07-12: Completed Phase 4. Deterministic package simulations now call the production runtime and gate recovery, bias, form length, fallback, item mixes, pool sizes, and item-label noise; hierarchy/trajectory invariants, controlled free-text and numerical boundaries, and the 500-node/10,000-item benchmark pass. The independent review found and verified fixes for non-contiguous MC/KPRIM choice IDs and empty MC responses conflicting with the non-empty guessing space. Monorepo typecheck, Prettier, Syncpack, targeted builds/tests, database lifecycle tests, frontend checks, and focused OpenGrep pass; root lint remains blocked only by the unrelated existing `apps/chat` missing `eslint-plugin-react-hooks` setup.
+- 2026-07-12: Started Phase 5 with a contract-first Manage implementation. The audit confirmed that authoring must add real tree archive/restore and usage metadata, narrow element-assignment mutations, an unsaved server-authoritative setup preview, an executor-safe publication preview, round-trippable override/effective states, and richer hierarchical cohort summaries before the UI is wired.
+- 2026-07-12: Completed Phase 5 Manage authoring and reporting. The reusable tree library/editor, five-type element mapping, four-step adaptive PracticeQuiz branch, permission-checked course linking, unsaved and publication-time readiness previews, immediate-only adaptive publication, and anonymous depth-5 cohort dashboard are wired through generated operations. A clean deterministic seed provides a cross-course depth-5 tree and 15 balanced completed attempts; browser evidence covers desktop and 390 px feature content. The existing desktop Manage navigation remains wider than 390 px and is recorded as inherited global responsive debt.
+- 2026-07-12: Closed the independent Phase 5 review with no P0 remaining. Cohort results now require quiz `ADMIN`, adaptive evaluation actions require manager access, mode-switch warnings cover the complete adaptive config, course-link actions respect course write access, dense switches/targets have explicit accessible names, and the tree editor protects unsaved work. The draft-time structural lock remains the intentional Phase 2 v1 contract. Structured localization of backend issue parameters and Playwright automation remain Phase 7 rollout gates.
+- 2026-07-13: Completed Phase 6 in the existing student PracticeQuiz route. The PWA now provides intro, zero-answer resume, atomic start over, policy-authorized retakes, permission-derived lecturer preview, all five accessible answer controls, server-served submissions, honest upper-bound progress, durable completion, one normalized uncertainty trajectory, level bands, an expandable depth-5 profile, localized text, and a race-free embed-ready handshake. Production-build browser QA covers desktop/mobile English and German, every supported item type, resume/restart, insufficient and classified results, depth 5, payload privacy, and `currentStep = 5` / `totalSteps = 12` embed completion. Independent review also closed stale-query overwrite, sparse endpoint, focus/scroll, result-evidence consistency, and unsupported confidence-based recommendation findings; Phase 7 Playwright automation remains the next gate.
+- 2026-07-13: Completed the Phase 7 engineering controls and independent production review remediation. Adaptive discovery/bootstrap now requires enrollment or derived quiz permission; cohort analytics use fixed five-distinct-participant releases that retakes cannot advance, with no live lifecycle counts; unpublish/republish preserves the exact post-attempt pool; the runtime migration backfills meaningful terminal stop reasons; missing/implausible timing is handled explicitly and `showTimer` reaches the student route; and the retry-safe Playwright journey proves a four-item result headline against persisted state plus five-person anonymous release. Clean and populated PostgreSQL 17 migration checks, service tests, and real Manage/PWA screenshots pass. Real-course psychometric evidence, teaching/privacy/operations signoff, and staging/production legacy-audit decisions remain open by design.

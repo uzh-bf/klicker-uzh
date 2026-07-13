@@ -36,6 +36,16 @@ enum AdaptivePracticeQuizAttemptStatus {
   ABANDONED
 }
 
+enum AdaptivePracticeQuizStopReason {
+  CLASSIFIED
+  ALL_ROOTS_CLASSIFIED
+  TOTAL_QUESTION_CAP
+  NODE_QUESTION_CAP
+  POOL_EXHAUSTED
+  INSUFFICIENT_DATA
+  ABANDONED
+}
+
 model CompetenceTree {
   id String @id @default(uuid()) @db.Uuid
 
@@ -43,6 +53,7 @@ model CompetenceTree {
   displayName String
   description String?
   isDeleted   Boolean @default(false)
+  isArchived  Boolean @default(false)
 
   maxDepth Int   @default(5)
   thetaMin Float @default(-3)
@@ -176,7 +187,6 @@ model CompetenceTreeElementAssignment {
 
   quizElementOverrides PracticeQuizAdaptiveElementOverride[]
   publishedPoolItems   PracticeQuizAdaptivePoolItem[]
-  nextAttempts         AdaptivePracticeQuizAttempt[]         @relation("AdaptivePracticeQuizAttemptNextAssignment")
   responses            AdaptivePracticeQuizResponse[]
 
   createdAt DateTime @default(now())
@@ -225,6 +235,7 @@ model PracticeQuizAdaptiveConfig {
 
   @@unique([id, competenceTreeId], map: "pqac_id_tree_key")
   @@unique([id, practiceQuizId], map: "pqac_id_quiz_key")
+  @@unique([id, practiceQuizId, competenceTreeId], map: "pqac_id_quiz_tree_key")
   @@index([competenceTreeId], map: "pqac_tree_idx")
 }
 
@@ -311,6 +322,7 @@ model AdaptivePracticeQuizAttempt {
   id String @id @default(uuid()) @db.Uuid
 
   status               AdaptivePracticeQuizAttemptStatus @default(IN_PROGRESS)
+  stopReason           AdaptivePracticeQuizStopReason?
   currentTheta         Float                             @default(0)
   currentStandardError Float?
   finalTheta           Float?
@@ -318,13 +330,10 @@ model AdaptivePracticeQuizAttempt {
   finalLevelId         Int?
   elapsedSeconds       Int?
   nextPoolItemId       Int?
-  // Transitional live-tree reference. Phase 3 runtime uses nextPoolItemId only.
-  nextAssignmentId     Int?
-  thetaHistory         Json?
-  standardErrorHistory Json?
 
-  config   PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId], references: [id, practiceQuizId], onDelete: Cascade, onUpdate: Cascade)
-  configId String                     @db.Uuid
+  config           PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId, competenceTreeId], references: [id, practiceQuizId, competenceTreeId], onDelete: Cascade, onUpdate: Cascade)
+  configId         String                     @db.Uuid
+  competenceTreeId String                     @db.Uuid
 
   practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId, courseId], references: [id, courseId], onDelete: Cascade, onUpdate: Cascade)
   practiceQuizId String       @db.Uuid
@@ -336,10 +345,9 @@ model AdaptivePracticeQuizAttempt {
   participation   Participation @relation(fields: [participationId, participantId, courseId], references: [id, participantId, courseId], onDelete: Cascade, onUpdate: Cascade)
   participationId Int
 
-  finalLevel CompetenceTreeLevel? @relation("AdaptivePracticeQuizAttemptFinalLevel", fields: [finalLevelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  finalLevel CompetenceTreeLevel? @relation("AdaptivePracticeQuizAttemptFinalLevel", fields: [competenceTreeId, finalLevelId], references: [treeId, id], onDelete: NoAction, onUpdate: Cascade)
 
-  nextAssignment CompetenceTreeElementAssignment? @relation("AdaptivePracticeQuizAttemptNextAssignment", fields: [nextAssignmentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  nextPoolItem   PracticeQuizAdaptivePoolItem?    @relation("AdaptivePracticeQuizAttemptNextPoolItem", fields: [configId, nextPoolItemId], references: [configId, id], onDelete: NoAction, onUpdate: Cascade)
+  nextPoolItem PracticeQuizAdaptivePoolItem? @relation("AdaptivePracticeQuizAttemptNextPoolItem", fields: [configId, nextPoolItemId], references: [configId, id], onDelete: NoAction, onUpdate: Cascade)
 
   responses AdaptivePracticeQuizResponse[]
   estimates AdaptivePracticeQuizEstimate[]
@@ -349,28 +357,29 @@ model AdaptivePracticeQuizAttempt {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  @@unique([id, configId], map: "apqa_id_config_key")
+  @@unique([id, configId, competenceTreeId], map: "apqa_id_config_tree_key")
   @@index([practiceQuizId, participantId, status], map: "apqa_quiz_participant_status_idx")
   @@index([participationId, practiceQuizId], map: "apqa_participation_quiz_idx")
   @@index([finalLevelId], map: "apqa_final_level_idx")
-  @@index([nextAssignmentId], map: "apqa_next_assignment_idx")
   @@index([nextPoolItemId], map: "apqa_next_pool_item_idx")
   @@index([configId, practiceQuizId], map: "apqa_config_quiz_idx")
   @@index([participationId, participantId, courseId], map: "apqa_participation_identity_idx")
   @@index([configId, nextPoolItemId], map: "apqa_config_next_pool_idx")
-  @@unique([id, configId], map: "apqa_id_config_key")
 }
 
 model AdaptivePracticeQuizResponse {
   id Int @id @default(autoincrement())
 
-  order              Int
-  response           Json
-  normalizedResponse Json?
-  correct            Boolean
-  thetaBefore        Float
-  thetaAfter         Float
-  standardErrorAfter Float
-  elapsedSeconds     Int?
+  order                     Int
+  response                  Json
+  normalizedResponse        Json
+  score                     Float
+  correct                   Boolean
+  overallThetaBefore        Float?
+  overallThetaAfter         Float?
+  overallStandardErrorAfter Float?
+  elapsedSeconds            Int?
 
   attempt   AdaptivePracticeQuizAttempt @relation(fields: [attemptId, configId], references: [id, configId], onDelete: Cascade, onUpdate: Cascade)
   attemptId String                      @db.Uuid
@@ -398,22 +407,25 @@ model AdaptivePracticeQuizEstimate {
   id Int @id @default(autoincrement())
 
   nodeKind      AdaptiveEstimateNodeKind
-  theta         Float
+  theta         Float?
   standardError Float?
   responseCount Int
-  stopReason    String?
+  stopReason    AdaptivePracticeQuizStopReason?
 
-  attempt   AdaptivePracticeQuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  attemptId String                      @db.Uuid
+  attempt          AdaptivePracticeQuizAttempt @relation(fields: [attemptId, configId, competenceTreeId], references: [id, configId, competenceTreeId], onDelete: Cascade, onUpdate: Cascade)
+  attemptId        String                      @db.Uuid
+  configId         String                      @db.Uuid
+  competenceTreeId String                      @db.Uuid
 
-  node   CompetenceTreeNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  node   CompetenceTreeNode? @relation(fields: [competenceTreeId, nodeId], references: [treeId, id], onDelete: NoAction, onUpdate: Cascade)
   nodeId Int?
 
-  level   CompetenceTreeLevel? @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  level   CompetenceTreeLevel? @relation(fields: [competenceTreeId, levelId], references: [treeId, id], onDelete: NoAction, onUpdate: Cascade)
   levelId Int?
 
   createdAt DateTime @default(now())
 
   @@unique([attemptId, nodeKind, nodeId], map: "apqe_attempt_kind_node_key")
   @@index([nodeKind, levelId], map: "apqe_kind_level_idx")
+  @@index([configId, competenceTreeId], map: "apqe_config_tree_idx")
 }

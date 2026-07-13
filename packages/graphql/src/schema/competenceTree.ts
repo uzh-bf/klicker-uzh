@@ -6,6 +6,7 @@ import type {
   CompetenceTreeCourseView,
   CompetenceTreeCoverageInput as CompetenceTreeCoverageInputType,
   CompetenceTreeDetail,
+  CompetenceTreeElementAssignmentUpdateInput as CompetenceTreeElementAssignmentUpdateInputType,
   CompetenceTreeInput as CompetenceTreeInputType,
   CompetenceTreeLevelInput as CompetenceTreeLevelInputType,
   CompetenceTreeLevelView,
@@ -81,6 +82,21 @@ export const CompetenceTreeAssignmentInput =
       enabled: t.boolean({ required: true }),
       discrimination: t.float({ required: false }),
       enablePercentInput: t.boolean({ required: true }),
+    }),
+  })
+
+export const CompetenceTreeElementAssignmentUpdateInputRef =
+  builder.inputRef<CompetenceTreeElementAssignmentUpdateInputType>(
+    'CompetenceTreeElementAssignmentUpdateInput'
+  )
+export const CompetenceTreeElementAssignmentUpdateInput =
+  CompetenceTreeElementAssignmentUpdateInputRef.implement({
+    fields: (t) => ({
+      leafNodeId: t.int({ required: true }),
+      levelId: t.int({ required: true }),
+      enabled: t.boolean({ required: true }),
+      enablePercentInput: t.boolean({ required: true }),
+      discrimination: t.float({ required: false }),
     }),
   })
 
@@ -286,6 +302,10 @@ export const CompetenceTreeSummaryType = CompetenceTreeSummaryRef.implement({
     levelCount: t.exposeInt('levelCount'),
     nodeCount: t.exposeInt('nodeCount'),
     assignmentCount: t.exposeInt('assignmentCount'),
+    adaptiveQuizCount: t.exposeInt('adaptiveQuizCount'),
+    draftAdaptiveQuizCount: t.exposeInt('draftAdaptiveQuizCount'),
+    publishedAdaptiveQuizCount: t.exposeInt('publishedAdaptiveQuizCount'),
+    isArchived: t.exposeBoolean('isArchived'),
     isOwner: t.exposeBoolean('isOwner'),
     canEdit: t.exposeBoolean('canEdit'),
     isStructurallyLocked: t.exposeBoolean('isStructurallyLocked'),
@@ -313,6 +333,10 @@ export const CompetenceTree = CompetenceTreeRef.implement({
     levelCount: t.exposeInt('levelCount'),
     nodeCount: t.exposeInt('nodeCount'),
     assignmentCount: t.exposeInt('assignmentCount'),
+    adaptiveQuizCount: t.exposeInt('adaptiveQuizCount'),
+    draftAdaptiveQuizCount: t.exposeInt('draftAdaptiveQuizCount'),
+    publishedAdaptiveQuizCount: t.exposeInt('publishedAdaptiveQuizCount'),
+    isArchived: t.exposeBoolean('isArchived'),
     isOwner: t.exposeBoolean('isOwner'),
     canEdit: t.exposeBoolean('canEdit'),
     isStructurallyLocked: t.exposeBoolean('isStructurallyLocked'),

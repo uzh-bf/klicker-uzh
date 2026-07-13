@@ -50,6 +50,7 @@ query GetActivityTemplate($templateId: String!) {
       pointsMultiplier
       resetTimeDays
       orderType
+      mode
 
       stacks {
         id

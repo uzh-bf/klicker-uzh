@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { processElementData } from '@klicker-uzh/util'
+import { lockAdaptiveLearningCourseEnabled } from './adaptiveLearningRollout.js'
 import {
   adaptiveServiceError,
   loadAdaptiveConfigurationForQuiz,
@@ -12,6 +13,18 @@ export async function materializeAdaptivePracticeQuizPool(
   practiceQuizId: string,
   prisma: DB.Prisma.TransactionClient
 ): Promise<{ poolSize: number; readiness: AdaptiveQuizReadiness }> {
+  const quiz = await prisma.practiceQuiz.findUnique({
+    where: { id: practiceQuizId, isDeleted: false },
+    select: { courseId: true },
+  })
+  if (!quiz) {
+    throw adaptiveServiceError(
+      'Adaptive practice quiz was not found.',
+      'ADAPTIVE_QUIZ_NOT_FOUND'
+    )
+  }
+  await lockAdaptiveLearningCourseEnabled(quiz.courseId, prisma)
+  await lockAdaptivePracticeQuizConfig(practiceQuizId, prisma)
   await lockAdaptiveSourceElements(practiceQuizId, prisma)
   const loaded = await loadAdaptiveConfigurationForQuiz(prisma, practiceQuizId)
   if (!loaded) {
@@ -157,14 +170,31 @@ export async function assertAdaptivePublishedPool(
 
 export async function clearAdaptivePublishedPool(
   practiceQuizId: string,
-  prisma: DB.Prisma.TransactionClient
+  prisma: DB.Prisma.TransactionClient,
+  {
+    retainWhenAttemptsExist = false,
+  }: { retainWhenAttemptsExist?: boolean } = {}
 ): Promise<void> {
+  await lockAdaptivePracticeQuizConfig(practiceQuizId, prisma)
   const config = await prisma.practiceQuizAdaptiveConfig.findUnique({
     where: { practiceQuizId },
-    select: { id: true, _count: { select: { attempts: true } } },
+    select: {
+      id: true,
+      poolPublishedAt: true,
+      _count: { select: { attempts: true, publishedPool: true } },
+    },
   })
   if (!config) return
   if (config._count.attempts > 0) {
+    if (retainWhenAttemptsExist) {
+      if (!config.poolPublishedAt || config._count.publishedPool === 0) {
+        throw adaptiveServiceError(
+          'The adaptive practice quiz has attempts but no reusable published pool.',
+          'ADAPTIVE_POOL_MISSING'
+        )
+      }
+      return
+    }
     throw adaptiveServiceError(
       'The adaptive pool cannot be cleared after an attempt exists.',
       'ADAPTIVE_POOL_LOCKED'
@@ -177,6 +207,32 @@ export async function clearAdaptivePublishedPool(
     where: { id: config.id },
     data: { poolPublishedAt: null },
   })
+}
+
+export async function lockAdaptivePracticeQuizConfig(
+  practiceQuizId: string,
+  prisma: DB.Prisma.TransactionClient
+): Promise<string | null> {
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "PracticeQuizAdaptiveConfig"
+    WHERE "practiceQuizId" = ${practiceQuizId}::uuid
+    FOR UPDATE
+  `
+  return rows[0]?.id ?? null
+}
+
+export async function lockAdaptivePracticeQuizConfigForAttempt(
+  practiceQuizId: string,
+  prisma: DB.Prisma.TransactionClient
+): Promise<string | null> {
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "PracticeQuizAdaptiveConfig"
+    WHERE "practiceQuizId" = ${practiceQuizId}::uuid
+    FOR KEY SHARE
+  `
+  return rows[0]?.id ?? null
 }
 
 function getEffectivelyEnabledNodes(

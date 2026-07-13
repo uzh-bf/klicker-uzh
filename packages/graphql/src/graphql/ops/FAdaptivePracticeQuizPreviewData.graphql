@@ -47,6 +47,8 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
     depth
     order
     enabled
+    overrideEnabled
+    effectiveEnabled
     weight
     questionCap
   }
@@ -59,6 +61,10 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
     leafNodeId
     levelId
     enabled
+    sourceEnabled
+    overrideEnabled
+    effectiveEnabled
+    overrideDiscrimination
     available
     controlledAnswerReady
     choiceCount
@@ -68,47 +74,6 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
     c
   }
   readiness {
-    ready
-    errors {
-      code
-      message
-      path
-      nodeId
-      leafNodeId
-      levelId
-      assignmentId
-    }
-    warnings {
-      code
-      message
-      path
-      nodeId
-      leafNodeId
-      levelId
-      assignmentId
-    }
-    coverages {
-      coverageId
-      leafNodeId
-      levelId
-      targetItemCount
-      enabledAssignmentCount
-      ready
-    }
-    rootReachability {
-      nodeId
-      availableItemCount
-      allocatedQuestionCount
-      minimumReachableStandardError
-      thresholdReachable
-      classifiableLevelCount
-      levelCount
-      allLevelsPotentiallyClassifiable
-    }
-    enabledRootCount
-    enabledLeafCount
-    enabledAssignmentCount
-    expectedQuestionCount
-    estimatedDurationMinutes
+    ...AdaptivePracticeQuizReadinessData
   }
 }

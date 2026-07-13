@@ -23,6 +23,7 @@ model Course {
   isGamificationEnabled  Boolean @default(true)
   isGroupCreationEnabled Boolean @default(true)
   isAssessmentEnabled    Boolean @default(false)
+  isAdaptiveLearningEnabled Boolean @default(false)
 
   groupDeadlineDate         DateTime
   preferredGroupSize        Int      @default(3)

@@ -32,6 +32,9 @@ import ElementInformationFields from './ElementInformationFields'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import InstanceUpdateSwitch from './InstanceUpdateSwitch'
 import StudentElementPreview from './StudentElementPreview'
+import AdaptiveElementMapping from './adaptive/AdaptiveElementMapping'
+import { PendingAdaptiveMapping } from './adaptive/types'
+import useAdaptiveMappingMutation from './adaptive/useAdaptiveMappingMutation'
 import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
 import CaseStudyOptions from './options/CaseStudyOptions'
 import ChoicesOptions from './options/ChoicesOptions'
@@ -77,7 +80,7 @@ function ElementEditForm({
   initialValues?: ElementFormTypes
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus }
-  ) => Promise<boolean>
+  ) => Promise<number | true | null>
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
   // instance update controls
   updateInstances: boolean
@@ -87,6 +90,13 @@ function ElementEditForm({
 }) {
   const t = useTranslations()
   const [activeTab, setActiveTab] = useState('preview')
+  const [pendingMapping, setPendingMapping] =
+    useState<PendingAdaptiveMapping | null>(null)
+  const {
+    saveMapping: savePendingMapping,
+    error: pendingMappingError,
+    clearError: clearPendingMappingError,
+  } = useAdaptiveMappingMutation()
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -135,19 +145,34 @@ function ElementEditForm({
           validationSchema={questionManipulationSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
-            const success = await onSubmitElement(values)
+            const persistedElementId = await onSubmitElement(values)
 
-            // close modal, set success toast
-            setSubmitting(false)
-            if (!success) {
+            if (persistedElementId === null) {
+              setSubmitting(false)
               toast({
                 type: 'error',
                 message: t('manage.elements.questionSavedFailed'),
                 options: { duration: 6000 },
               })
-            } else {
-              onSuccess()
+              return
             }
+
+            if (pendingMapping && typeof persistedElementId === 'number') {
+              const mappingSaved = await savePendingMapping({
+                treeId: pendingMapping.treeId,
+                elementId: persistedElementId,
+                assignment: pendingMapping.assignment,
+              })
+
+              if (!mappingSaved) {
+                setSubmitting(false)
+                return
+              }
+            }
+
+            // close modal, set success toast
+            setSubmitting(false)
+            onSuccess()
           }}
         >
           {({
@@ -155,6 +180,7 @@ function ElementEditForm({
             errors,
             isSubmitting,
             isValid,
+            dirty,
             setFieldValue,
             setFieldTouched,
             validateForm,
@@ -290,6 +316,29 @@ function ElementEditForm({
                       />
                     )}
                   </Form>
+
+                  {!isTemplate ? (
+                    <AdaptiveElementMapping
+                      elementId={elementId}
+                      elementType={values.type}
+                      choiceCount={
+                        values.type === ElementType.Sc ||
+                        values.type === ElementType.Mc ||
+                        values.type === ElementType.Kprim
+                          ? values.options.choices.length
+                          : undefined
+                      }
+                      editMode={mode === ElementEditMode.EDIT}
+                      inputsDisabled={inputsDisabled}
+                      formDirty={dirty}
+                      pendingMapping={pendingMapping}
+                      onPendingMappingChange={(mapping) => {
+                        clearPendingMappingError()
+                        setPendingMapping(mapping)
+                      }}
+                      mutationError={pendingMappingError}
+                    />
+                  ) : null}
 
                   {Object.keys(errors).length !== 0 && (
                     <ElementFormErrors errors={errors} />
