@@ -48,7 +48,7 @@ interface PracticeQuizProps {
   showResetLocalStorage?: boolean
   embedded?: boolean
   previewOnly?: boolean
-  refetch?: () => void
+  refetch?: () => Promise<unknown> | void
 }
 
 function PracticeQuiz({

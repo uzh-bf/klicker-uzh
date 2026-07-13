@@ -13,7 +13,7 @@ interface EscapeRoomProgressProps {
   activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity' | 'liveQuiz'
   activityId: string
   progress: EscapeRoomProgressType
-  onReset: () => void
+  onReset: () => Promise<unknown>
   canReset?: boolean
 }
 
@@ -93,7 +93,7 @@ function EscapeRoomProgress({
           groupId: attempt.groupId ?? undefined,
         },
       })
-      onReset()
+      await onReset()
     } catch {
       setError(t('manage.evaluation.escapeRoomResetError'))
     } finally {

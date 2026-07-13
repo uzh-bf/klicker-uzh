@@ -159,9 +159,7 @@ function ElementStack({
     })
     if (!escapeError) {
       toast({
-        message: t('shared.generic.systemError' as any, {
-          defaultValue: 'Something went wrong. Please try again.',
-        }),
+        message: t('shared.generic.systemError'),
         type: 'error',
       })
       return

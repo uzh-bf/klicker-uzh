@@ -11,7 +11,7 @@ import Leaderboard, {
   LeaderboardCombinedEntry,
 } from '@klicker-uzh/shared-components/src/Leaderboard'
 import { useSessionStorage } from '@uidotdev/usehooks'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -129,6 +129,7 @@ function ActivityEvaluation({
   // non-escape-room activities, so the tab only appears when data is present.
   const {
     data: escapeRoomData,
+    error: escapeRoomError,
     refetch: refetchEscapeRoom,
     startPolling: startEscapeRoomPolling,
     stopPolling: stopEscapeRoomPolling,
@@ -205,6 +206,20 @@ function ActivityEvaluation({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col">
+        {escapeRoomError ? (
+          <div className="flex flex-col items-start gap-2 p-4">
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+            <Button
+              data-cy="escape-room-progress-retry"
+              onClick={() => void refetchEscapeRoom()}
+            >
+              {t('shared.generic.tryAgain')}
+            </Button>
+          </div>
+        ) : null}
         {instanceResults.length > 0 && typeof activeStack === 'number' && (
           <ElementEvaluation
             requireShowResultsConfirmation={
@@ -315,7 +330,7 @@ function ActivityEvaluation({
               activityType={escapeRoomActivityType}
               activityId={activityId}
               progress={escapeRoomProgress}
-              onReset={() => refetchEscapeRoom()}
+              onReset={refetchEscapeRoom}
             />
           )}
       </div>

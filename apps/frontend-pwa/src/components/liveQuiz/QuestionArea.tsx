@@ -252,6 +252,7 @@ function QuestionArea({
   useSingleStudentResponse({
     instance: currentInstance,
     setStudentResponse,
+    resetKey: responseStorageQuizId,
   })
 
   // keep a ref to the latest studentResponse for autosave

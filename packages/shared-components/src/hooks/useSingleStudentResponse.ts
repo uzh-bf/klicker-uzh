@@ -7,79 +7,79 @@ import type {
   InstanceStackStudentResponseType,
 } from '../StudentElement'
 
+function getInitialSingleStudentResponse(
+  instance?: ElementInstance | null,
+  defaultRead = false
+): InstanceStackStudentResponseType | null {
+  if (!instance) return null
+
+  if (instance.elementData.__typename === 'ChoicesElementData') {
+    return {
+      type: instance.elementData.type as ElementChoicesType,
+      response: instance.elementData.options.choices.reduce(
+        (acc, _, ix) => ({ ...acc, [ix]: undefined }),
+        {} as Record<number, boolean | undefined>
+      ),
+      valid: false,
+    }
+  }
+  if (instance.elementData.__typename === 'ContentElementData') {
+    return {
+      type: ElementType.Content,
+      response: defaultRead ? true : undefined,
+      valid: true,
+    }
+  }
+  if (instance.elementData.__typename === 'CaseStudyElementData') {
+    const { cases, items, criteria } = instance.elementData.options
+    const response = cases.reduce<CaseStudyStudentResponseType>(
+      (acc, caseObj) => {
+        acc[caseObj.id] = (items ?? []).reduce<
+          CaseStudyStudentResponseType['']
+        >((itemAcc, item) => {
+          itemAcc[item.id] = criteria.reduce<
+            CaseStudyStudentResponseType['']['']
+          >((criterionAcc, criterion) => {
+            criterionAcc[criterion.id] = undefined
+            return criterionAcc
+          }, {})
+          return itemAcc
+        }, {})
+        return acc
+      },
+      {}
+    )
+
+    return { type: ElementType.CaseStudy, response, valid: false }
+  }
+
+  return {
+    type: instance.elementData.type,
+    response: undefined,
+    valid: false,
+  }
+}
+
 function useSingleStudentResponse({
   instance,
   setStudentResponse,
   defaultRead = false,
+  resetKey,
 }: {
   instance?: ElementInstance | null
   setStudentResponse: React.Dispatch<
     React.SetStateAction<InstanceStackStudentResponseType>
   >
   defaultRead?: boolean
+  resetKey?: unknown
 }) {
   useEffect(() => {
-    if (!instance) {
-      return
-    }
-
-    if (instance.elementData.__typename === 'ChoicesElementData') {
-      setStudentResponse({
-        type: instance.elementData.type as ElementChoicesType,
-        response: instance.elementData.options.choices.reduce(
-          (acc, _, ix) => {
-            return { ...acc, [ix]: undefined }
-          },
-          {} as Record<number, boolean | undefined>
-        ),
-        valid: false,
-      })
-    } else if (instance.elementData.__typename === 'ContentElementData') {
-      setStudentResponse({
-        type: ElementType.Content,
-        response: defaultRead ? true : undefined,
-        valid: true,
-      })
-    } else if (instance.elementData.__typename === 'CaseStudyElementData') {
-      const cases = instance.elementData.options.cases
-      const items = instance.elementData.options.items
-      const criteria = instance.elementData.options.criteria
-
-      // compute the correct empty type by reducing cases, items and criteria
-      const emptyResponse = cases.reduce<CaseStudyStudentResponseType>(
-        (acc, caseObj) => {
-          acc[caseObj.id] = (items ?? []).reduce<
-            CaseStudyStudentResponseType['']
-          >((itemAcc, item) => {
-            itemAcc[item.id] = criteria.reduce<
-              CaseStudyStudentResponseType['']['']
-            >((criterionAcc, criterion) => {
-              criterionAcc[criterion.id] = undefined
-              return criterionAcc
-            }, {})
-            return itemAcc
-          }, {})
-          return acc
-        },
-        {}
-      )
-
-      setStudentResponse({
-        type: ElementType.CaseStudy,
-        response: emptyResponse,
-        valid: false,
-      })
-    }
-    // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
-    // SELECTION response can be set to undefined -> will be overwritten in SelectionQuestion component
-    else {
-      setStudentResponse({
-        type: instance.elementData.type,
-        response: undefined,
-        valid: false,
-      })
-    }
-  }, [instance])
+    const initialResponse = getInitialSingleStudentResponse(
+      instance,
+      defaultRead
+    )
+    if (initialResponse) setStudentResponse(initialResponse)
+  }, [defaultRead, instance, resetKey, setStudentResponse])
 }
 
 export default useSingleStudentResponse

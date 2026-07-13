@@ -35,7 +35,7 @@ export function useEscapeRoom({
 }: {
   activity: EscapeRoomActivityInput | null | undefined
   activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
-  refetch: () => void
+  refetch: () => Promise<unknown> | void
 }) {
   const [startAttemptMutation, { loading: starting }] = useMutation(
     StartEscapeRoomAttemptDocument

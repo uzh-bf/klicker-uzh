@@ -8,7 +8,9 @@ import {
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import EscapeRoomProgress from '../../../components/evaluation/EscapeRoomProgress'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
@@ -17,6 +19,7 @@ import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimel
 
 function Cockpit() {
   const router = useRouter()
+  const t = useTranslations()
 
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
@@ -64,18 +67,19 @@ function Cockpit() {
       block.id === cockpitData.cockpitQuiz?.activeBlock?.id &&
       !!block.escapeRoomConfig
   )
-  const { data: escapeRoomData, refetch: refetchEscapeRoom } = useQuery(
-    GetEscapeRoomProgressDocument,
-    {
-      variables: {
-        liveQuizId: router.query.id as string,
-        elementBlockId: activeEscapeBlock?.id,
-      },
-      skip: !router.query.id || !activeEscapeBlock,
-      pollInterval: activeEscapeBlock ? 2000 : 0,
-      fetchPolicy: 'network-only',
-    }
-  )
+  const {
+    data: escapeRoomData,
+    error: escapeRoomError,
+    refetch: refetchEscapeRoom,
+  } = useQuery(GetEscapeRoomProgressDocument, {
+    variables: {
+      liveQuizId: router.query.id as string,
+      elementBlockId: activeEscapeBlock?.id,
+    },
+    skip: !router.query.id || !activeEscapeBlock,
+    pollInterval: activeEscapeBlock ? 2000 : 0,
+    fetchPolicy: 'network-only',
+  })
 
   // data has not been received yet
   if (cockpitLoading || !cockpitData?.cockpitQuiz)
@@ -157,10 +161,16 @@ function Cockpit() {
           activityType="liveQuiz"
           activityId={String(activeEscapeBlock.id)}
           progress={escapeRoomData.escapeRoomProgress}
-          onReset={() => void refetchEscapeRoom()}
+          onReset={refetchEscapeRoom}
           canReset={canResetEscapeRoom ?? false}
         />
       )}
+      {activeEscapeBlock && escapeRoomError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
     </Layout>
   )
 }

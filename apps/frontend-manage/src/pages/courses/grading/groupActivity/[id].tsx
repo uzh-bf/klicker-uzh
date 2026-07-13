@@ -42,15 +42,15 @@ function GroupActivityGrading() {
     },
     skip: !router.query.id,
   })
-  const { data: escapeRoomData, refetch: refetchEscapeRoom } = useQuery(
-    GetEscapeRoomProgressDocument,
-    {
-      variables: { groupActivityId: router.query.id as string },
-      skip:
-        !router.query.id || !data?.getGradingGroupActivity?.escapeRoomConfig,
-      pollInterval: 5000,
-    }
-  )
+  const {
+    data: escapeRoomData,
+    error: escapeRoomError,
+    refetch: refetchEscapeRoom,
+  } = useQuery(GetEscapeRoomProgressDocument, {
+    variables: { groupActivityId: router.query.id as string },
+    skip: !router.query.id || !data?.getGradingGroupActivity?.escapeRoomConfig,
+    pollInterval: 5000,
+  })
 
   const groupActivity = data?.getGradingGroupActivity
   const maxPoints =
@@ -115,14 +115,20 @@ function GroupActivityGrading() {
             activityId={groupActivity.id}
             progress={escapeRoomData.escapeRoomProgress}
             canReset={groupActivity.canResetEscapeRoom ?? false}
-            onReset={() => {
+            onReset={async () => {
               setSelectedSubmission(undefined)
               setCurrentEditing(false)
-              void Promise.all([refetchEscapeRoom(), refetchGroupActivity()])
+              await Promise.all([refetchEscapeRoom(), refetchGroupActivity()])
             }}
           />
         </div>
       )}
+      {escapeRoomError ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      ) : null}
       <div className="flex flex-row">
         <div className="w-1/2 pr-6">
           <H2 className={{ root: 'mb-2' }}>
