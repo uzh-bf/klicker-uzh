@@ -38,8 +38,12 @@ function QrPrintPage() {
   const sheets = useMemo(() => {
     if (!printData) return []
     const codes = [printData.code, ...printData.decoys]
+    // Shuffle so the real code never sits in a predictable slot on the sheet;
+    // use a CSPRNG since the ordering is a (light) anti-cheat measure.
     for (let index = codes.length - 1; index > 0; index--) {
-      const swapIndex = Math.floor(Math.random() * (index + 1))
+      const randomBuffer = new Uint32Array(1)
+      crypto.getRandomValues(randomBuffer)
+      const swapIndex = randomBuffer[0]! % (index + 1)
       ;[codes[index], codes[swapIndex]] = [codes[swapIndex]!, codes[index]!]
     }
     return codes

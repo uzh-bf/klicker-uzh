@@ -847,7 +847,8 @@ test.describe.serial('Escape room workflows', () => {
     page = testPage
     testInfo.setTimeout(600_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
+    // the microlearning tile lives on the student home page (not the practice
+    // quiz repetition page reached via the "quizzes" link)
     await page.getByTestId(`microlearning-${MICRO.displayName}`).click()
     await page.getByTestId('start-microlearning').click()
     await page.getByTestId('escape-room-start').click()

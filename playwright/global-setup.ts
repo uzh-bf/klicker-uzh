@@ -319,9 +319,7 @@ export async function seedDatabase() {
             password: participantPassword,
             username,
             email: `${username}@test.uzh.ch`,
-            participations: {
-              create: { courseId: COURSE_ID_TEST, isActive: true },
-            },
+            participations: { create: { courseId: COURSE_ID_TEST } },
           },
           update: {},
         })
