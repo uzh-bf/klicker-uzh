@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-11'
+timestamp: '2026-07-13'
 tags:
   - backend
   - hatchet
@@ -45,6 +45,7 @@ LiveQuiz Escape Room responses take a synchronous validation branch (`apps/respo
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+- Daily cron (`0 2 * * *`, 02:00 UTC): `prune-escape-rooms` marks finished Escape Room attempts as processed and applies retention cleanup
 
 ## Running locally (config-derived — verify on your machine)
 

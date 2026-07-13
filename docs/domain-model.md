@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-11'
+timestamp: '2026-07-13'
 tags:
   - backend
   - prisma
@@ -63,6 +63,8 @@ Activities (PracticeQuiz, MicroLearning, GroupActivity) and LiveQuiz blocks (`El
 - **`EscapeRoomAttempt`** (`quiz.prisma`) — Tracks a participant's or group's progress in an active Escape Room, containing their start/completion times, accumulated penalty seconds, used hints, lockout expiration, and status.
 - **`EscapeRoomStatus`** — Lifecycle state of an attempt: `IN_PROGRESS`, `COMPLETED`, or `EXPIRED`.
 
+Escape Room configuration is validated before persistence in every supported mode. The game time must be an integer from 1 through 86,400 seconds, and the per-hint penalty must be an integer from 0 through 3,600 seconds.
+
 Attempts are scoped uniquely to a participant/group and activity/block to prevent multiple active attempts. Evaluation and penalty calculations are handled in the backend (`packages/graphql/src/services/`) and validated at response time.
 
 GroupActivity Escape Rooms use one attempt shared by every member of the participant group and accept exactly one valid response for every supported answerable instance. The backend validates activity membership, response IDs/types/payloads, and gradability before any write, then commits aggregate results, decisions, lockout/expiry, and attempt completion in one serializable transaction. Incorrect answers keep the editable group response state for retry after the shared lockout. Content and flashcard instances are not answerable; an activity with no answerable instances fails closed.
@@ -79,9 +81,11 @@ Participant countdowns start from the server-calculated `EscapeRoomAttempt.remai
 
 LiveQuiz Escape Rooms are scoped to a non-assessment `ElementBlock` and accept only SC, MC, KPRIM, numerical, free-text, and QR Scan questions. Assessment LiveQuizzes reject Escape Room blocks because their correlated assessment response path has different identity and persistence semantics. The lecturer configures the mode, game time, hint penalty, intro text, and per-instance hints from the block settings dialog; owner-only hint readback restores those values during editing. Temporary participants are ineligible; a regular participant must explicitly start the attempt through GraphQL before response-api accepts an answer. The participant view restores the attempt and already-revealed hints after reload, applies hint penalties and lockouts to the game controls, and keys local progress to the attempt identity so a lecturer reset starts cleanly. The attempt remains in progress until every answerable instance in the block has been cleared.
 
+During a LiveQuiz Escape Room attempt, participant queries and activation subscriptions expose authored content only for the current uncleared stage. Answers and hints are rejected unless they belong to that stage, so a client cannot skip ahead by submitting a later instance directly. Refetches after attempt start and stage completion keep the participant view aligned with the server-owned order.
+
 While an Escape Room block is active, the LiveQuiz cockpit polls block-scoped progress. The progress contract binds the `liveQuizId` and `elementBlockId` pair before returning participant identities; completed attempts show the full supported-instance count. Reset controls are exposed only when the cockpit caller has WRITE permission, even though ordinary cockpit execution requires only EXECUTE.
 
-The lecturer dashboard is roster-based for participant-scoped course activities: every active enrolled participant is returned, with `NOT_STARTED` and zero progress when no attempt exists, while users outside the activity's course are absent. GroupActivity monitoring instead shows one shared row per group attempt on the live-capable grading page. Attempt-backed rows retain in-progress/completed/expired state; reset is shown only to lecturers with WRITE access and removes both the attempt and shared GroupActivity instance. Dashboards poll only while their relevant view is active.
+The lecturer dashboard is roster-based for participant-scoped course activities: every enrolled participant is returned, with `NOT_STARTED` and zero progress when no attempt exists, while users outside the activity's course are absent. A participant's `isActive` flag affects leaderboard eligibility, not Escape Room roster membership. GroupActivity monitoring instead shows one shared row per group attempt on the live-capable grading page. Attempt-backed rows retain in-progress/completed/expired state; reset is shown only to lecturers with WRITE access and removes both the attempt and shared GroupActivity instance. Dashboards poll only while their relevant view is active.
 
 ## Gamification details
 

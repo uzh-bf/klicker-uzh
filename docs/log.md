@@ -1,5 +1,12 @@
 # Log
 
+## 2026-07-13
+
+- **Update**: Escape Room configuration now rejects non-integer or out-of-range game times and hint penalties before database access in all four modes; the shared five-second grace policy is used by GraphQL and response-api.
+- **Update**: LiveQuiz Escape Rooms now enforce server-owned stage order for participant content, answers, and hints, and participant clients resynchronize after attempt start and stage completion.
+- **Update**: Escape Room runtime hardening now expires incorrect-response counters, resets participant response state when an attempt scope changes, awaits dashboard resets, reports initial progress-query failures, and protects QR print data with schema-level element permission checks.
+- **Update**: [async-and-workers](./async-and-workers.md), [domain-model](./domain-model.md), and [graphql-api-layer](./graphql-api-layer.md) now document the 02:00 UTC prune schedule, all-enrolled roster semantics, configuration limits, LiveQuiz stage masking, and QR print authorization.
+
 ## 2026-07-11
 
 - **Update**: QR Scan questions can now be answered across all Escape Room modes through native browser scanning or validated manual entry; exact-code grading remains server-side, malformed values fail closed, and QR placement outside Escape Room activities is rejected.
