@@ -8,6 +8,9 @@ services:
           - '${WORKSPACE:-klicker-uzh}-db'
 
   app:
+    environment:
+      WORKSPACE: '${WORKSPACE:-}'
+      DEVROUTER_WORKSPACE: '${DEVROUTER_WORKSPACE:-}'
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
       - 'auth.klicker.localhost:host-gateway'
