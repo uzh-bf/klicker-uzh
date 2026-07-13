@@ -1,4 +1,4 @@
-# Dev container (Phase 1 + Phase 2 Tier 1)
+# Self-contained dev container
 
 Self-contained local environment for `klicker-uzh`. No Infisical/Doppler, no
 external EduID, no `/etc/hosts` edits — clone, route through devrouter, and run.
@@ -40,7 +40,7 @@ Use this if you are running in a headless cloud server or want to avoid installi
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.26 and start it:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.28 and start it:
    ```bash
    devrouter up && devrouter tls install   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -127,7 +127,7 @@ hatchet DB migrations finishing. If the API is down, check
 
 | Service                             | Image                                      | Purpose                                                |
 | ----------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs `turbo dev` for the core + Tier-1 apps + workers  |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers     |
 | `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
 | `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub          |
 | `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                          |

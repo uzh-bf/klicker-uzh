@@ -12,12 +12,11 @@
 # retain the one-at-a-time localhost fallback documented in
 # `.devcontainer/README.md`.
 #
-# PHASE 1: core apps. PHASE 2 Tier 1 adds olat-api (3030) + response-api (7078);
-# the two hatchet workers run in the same container with no port/route. Remaining
-# Phase 2: lti (4000) and chat (3004).
+# The container runs every routed app plus the two Hatchet workers. Workers have
+# no route; analytics, Office add-in, and docs remain outside this stack.
 version: 1
 devrouter:
-  version: 0.0.26
+  version: 0.0.28
 project:
   name: klicker-uzh
 apps:

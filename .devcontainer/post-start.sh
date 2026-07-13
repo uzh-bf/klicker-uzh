@@ -68,10 +68,10 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# Run every routed app plus the two Hatchet workers. LTI uses the `dev:lti`
-# task; the other apps use `dev`. Bypass the Infisical wrappers because the
-# container owns its env. Fully detach so the DevPod agent pipe is released.
-DEV_CMD='pnpm exec turbo run dev dev:lti \
+# Run every routed app plus the two Hatchet workers. Bypass the Infisical
+# wrappers because the container owns its env. Fully detach so the DevPod agent
+# pipe is released.
+DEV_CMD='pnpm exec turbo run dev \
   --filter=@klicker-uzh/backend-docker \
   --filter=@klicker-uzh/auth \
   --filter=@klicker-uzh/frontend-pwa \

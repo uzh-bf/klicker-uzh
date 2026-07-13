@@ -1,5 +1,5 @@
-# Self-contained dev stack for the klicker-uzh devcontainer (core apps + Phase 2
-# Tier 1). Intentionally does NOT extend the root docker-compose.yml (which carries
+# Self-contained dev stack for every routed app plus the two Hatchet workers.
+# Intentionally does NOT extend the root docker-compose.yml (which carries
 # the legacy per-repo Traefik + the `full`-profile prebuilt images). A single compose
 # project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
 #

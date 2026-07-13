@@ -22,7 +22,7 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs all core apps via `turbo dev` and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
+Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
 
 1. **Start the container:**
    ```bash
@@ -32,7 +32,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 2. **Accessing the apps:**
    - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after starting devcontainer (`devpod up .` or via VS Code) without devrouter: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
    - **Mode 2 (devrouter overlay):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.26 and start it on the host (`devrouter up && devrouter tls install`).
+     1. Install devrouter ≥ 0.0.28 and start it on the host (`devrouter up && devrouter tls install`).
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter workspace ensure .
@@ -41,6 +41,10 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
 
 `post-start.sh` records its owned process group and a workspace/origin/command fingerprint in `/tmp/klicker-dev-process.state`. Re-running it is idempotent for an exact match, replaces only its own stale group, and refuses to kill an unknown process.
+
+The published `@devrouter/cli@0.0.28` lifecycle was verified from a linked worktree on 2026-07-13: all ten routes were registered, in-container Git resolved the exact worktree, and a warm repeat preserved the same app container and owned process group.
+
+`devrouter doctor --repo .` currently inspects the port-free base Compose file without the selected devrouter overlay, so it can warn that aliases are missing or upstreams do not match. For a linked worktree, `devrouter workspace ensure .` is the runtime authority: it resolves the overlay and fails unless the actual container aliases and routes match. Do not add devnet aliases to the base file to silence the static warning.
 
 ### Path B: Host-based Setup (Legacy)
 

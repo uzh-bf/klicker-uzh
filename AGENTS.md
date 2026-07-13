@@ -131,9 +131,9 @@ devpod up . # primary checkout / plain localhost fallback
 
 For a linked worktree, complete the routed devrouter flow below. Use `devpod ssh <workspace-id>` for a shell after startup (`workspace ensure` prints the ID; the primary checkout uses `klicker-uzh`).
 
-The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. Covers the core apps (backend, auth, frontend-pwa/manage/control) plus olat-api, response-api, and the two Hatchet workers (Phase 2 Tier 1; workers have no port/route); All runnable apps are included (no analytics/office-addin/docs). See `.devcontainer/README.md`.
+The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
 
-**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.26 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.28 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter up && devrouter tls install # Traefik + devnet + mkcert CA
@@ -213,3 +213,23 @@ Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
 - **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).
+
+<!-- devrouter -->
+
+## devrouter
+
+This repository uses [devrouter](https://github.com/rschlaefli/devrouter) for local dev routing.
+All apps and dependencies are declared in `.devrouter.yml`.
+
+Full reference (config schema, docker requirements, env injection, commands):
+`.agents/skills/devrouter/SKILL.md`
+
+Quick validation sequence:
+
+- `devrouter up`
+- `devrouter tls install` (required when repo defines tcp/postgres apps)
+- `devrouter app ls --repo .`
+- Linked devcontainer worktree: `devrouter workspace ensure .`
+- Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
+- `devrouter ls`
+<!-- /devrouter -->

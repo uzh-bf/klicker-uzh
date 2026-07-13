@@ -29,9 +29,10 @@
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
     "build:ts": "rollup -c",
     "check": "tsc --noEmit",
+    "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "rollup -c --watch",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev:lti",
-    "dev:lti": "npm-run-all --parallel dev:build dev:run",
+    "dev:lti": "pnpm run dev",
     "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
     "start": "node dist/index.js"
   },

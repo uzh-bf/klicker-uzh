@@ -9,7 +9,6 @@ services:
 
   app:
     environment:
-      WORKSPACE: '${WORKSPACE:-}'
       DEVROUTER_WORKSPACE: '${DEVROUTER_WORKSPACE:-}'
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
