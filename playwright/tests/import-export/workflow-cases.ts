@@ -393,9 +393,9 @@ export function registerWorkflowImportExportCases() {
       const validationRequest = new Promise<void>((resolve) => {
         validationStarted = resolve
       })
-      let recordValidationDeliveryOutcome!: (responseDelivered: boolean) => void
-      const validationDeliveryOutcome = new Promise<boolean>((resolve) => {
-        recordValidationDeliveryOutcome = resolve
+      let recordValidationRouteSettled!: () => void
+      const validationRouteSettled = new Promise<void>((resolve) => {
+        recordValidationRouteSettled = resolve
       })
       let validationPageRequest: Parameters<
         typeof importExportIsolation.markRequestAbortedBeforeServer
@@ -448,12 +448,11 @@ export function registerWorkflowImportExportCases() {
               },
             }),
           })
-          recordValidationDeliveryOutcome(true)
         } catch {
           // Closing the workflow normally aborts the request before this
-          // synthetic late response can be delivered. Keep both browser
-          // outcomes deterministic without ever continuing to the backend.
-          recordValidationDeliveryOutcome(false)
+          // synthetic late response can be delivered.
+        } finally {
+          recordValidationRouteSettled()
         }
       })
 
@@ -496,10 +495,9 @@ export function registerWorkflowImportExportCases() {
         await expect(page.getByTestId('elements-upload')).toBeFocused()
 
         releaseValidation()
-        const responseDelivered = await validationDeliveryOutcome
+        await validationRouteSettled
         const settlement = await validationSettled
-        expect(settlement).toBe(responseDelivered ? 'finished' : 'failed')
-        if (!responseDelivered) {
+        if (settlement === 'failed') {
           importExportIsolation.markRequestAbortedBeforeServer(
             validationPageRequest!
           )

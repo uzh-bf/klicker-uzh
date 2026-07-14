@@ -48,6 +48,10 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
     name: string
     importFingerprint: string
   }
+
+  // ORDER BY id alone lets PostgreSQL choose the primary key and filter an
+  // unbounded table prefix per candidate. The false-inclusive/true-exclusive
+  // full-key range selects exactly the active composite-index prefix.
   const [existingElements, existingAnswerCollections] = await Promise.all([
     elementFingerprints.length === 0
       ? []
@@ -60,11 +64,38 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
           CROSS JOIN LATERAL (
             SELECT "id", "name", "importFingerprint"
             FROM "Element"
-            WHERE "ownerId" = ${ctx.user.sub}::uuid
-              AND "isDeleted" = false
-              AND "importFingerprintVersion" = ${IMPORT_EXPORT_FINGERPRINT_VERSION}
-              AND "importFingerprint" = candidates."importFingerprint"
-            ORDER BY "id"
+            WHERE ROW(
+              "ownerId",
+              "importFingerprintVersion",
+              "importFingerprint",
+              "isDeleted",
+              "id"
+            ) >= ROW(
+              ${ctx.user.sub}::uuid,
+              ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+              candidates."importFingerprint",
+              false,
+              '-2147483648'::integer
+            )
+              AND ROW(
+                "ownerId",
+                "importFingerprintVersion",
+                "importFingerprint",
+                "isDeleted",
+                "id"
+              ) < ROW(
+                ${ctx.user.sub}::uuid,
+                ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+                candidates."importFingerprint",
+                true,
+                '-2147483648'::integer
+              )
+            ORDER BY
+              "ownerId",
+              "importFingerprintVersion",
+              "importFingerprint",
+              "isDeleted",
+              "id"
             LIMIT 1
           ) AS matched
           LIMIT ${elementFingerprints.length}
@@ -82,11 +113,38 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
           CROSS JOIN LATERAL (
             SELECT "id", "name", "importFingerprint"
             FROM "AnswerCollection"
-            WHERE "ownerId" = ${ctx.user.sub}::uuid
-              AND "isDeleted" = false
-              AND "importFingerprintVersion" = ${IMPORT_EXPORT_FINGERPRINT_VERSION}
-              AND "importFingerprint" = candidates."importFingerprint"
-            ORDER BY "id"
+            WHERE ROW(
+              "ownerId",
+              "importFingerprintVersion",
+              "importFingerprint",
+              "isDeleted",
+              "id"
+            ) >= ROW(
+              ${ctx.user.sub}::uuid,
+              ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+              candidates."importFingerprint",
+              false,
+              '-2147483648'::integer
+            )
+              AND ROW(
+                "ownerId",
+                "importFingerprintVersion",
+                "importFingerprint",
+                "isDeleted",
+                "id"
+              ) < ROW(
+                ${ctx.user.sub}::uuid,
+                ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+                candidates."importFingerprint",
+                true,
+                '-2147483648'::integer
+              )
+            ORDER BY
+              "ownerId",
+              "importFingerprintVersion",
+              "importFingerprint",
+              "isDeleted",
+              "id"
             LIMIT 1
           ) AS matched
           LIMIT ${answerCollectionFingerprints.length}

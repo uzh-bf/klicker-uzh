@@ -22,11 +22,14 @@ export function useImportExportTestEnvironment() {
   const originalImportExportEnabled = process.env.IMPORT_EXPORT_ENABLED
   const originalImportExportPrivatePreviewOnly =
     process.env.IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY
+  const originalImportExportTokenSecret = process.env.IMPORT_EXPORT_TOKEN_SECRET
   const originalAssessmentMode = process.env.ASSESSMENT_MODE
 
   beforeAll(() => {
     process.env.IMPORT_EXPORT_ENABLED = 'true'
     process.env.IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY = 'false'
+    process.env.IMPORT_EXPORT_TOKEN_SECRET =
+      'test-only-import-export-token-secret-000000000000'
     delete process.env.ASSESSMENT_MODE
   })
 
@@ -42,6 +45,12 @@ export function useImportExportTestEnvironment() {
     } else {
       process.env.IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY =
         originalImportExportPrivatePreviewOnly
+    }
+
+    if (typeof originalImportExportTokenSecret === 'undefined') {
+      delete process.env.IMPORT_EXPORT_TOKEN_SECRET
+    } else {
+      process.env.IMPORT_EXPORT_TOKEN_SECRET = originalImportExportTokenSecret
     }
 
     if (typeof originalAssessmentMode === 'undefined') {

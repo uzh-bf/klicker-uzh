@@ -434,11 +434,38 @@ describe.sequential('bounded import duplicate lookup', () => {
       CROSS JOIN LATERAL (
         SELECT "id", "name", "importFingerprint"
         FROM "Element"
-        WHERE "ownerId" = ${ownerId}::uuid
-          AND "isDeleted" = false
-          AND "importFingerprintVersion" = ${IMPORT_EXPORT_FINGERPRINT_VERSION}
-          AND "importFingerprint" = candidates."importFingerprint"
-        ORDER BY "id"
+        WHERE ROW(
+          "ownerId",
+          "importFingerprintVersion",
+          "importFingerprint",
+          "isDeleted",
+          "id"
+        ) >= ROW(
+          ${ownerId}::uuid,
+          ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+          candidates."importFingerprint",
+          false,
+          '-2147483648'::integer
+        )
+          AND ROW(
+            "ownerId",
+            "importFingerprintVersion",
+            "importFingerprint",
+            "isDeleted",
+            "id"
+          ) < ROW(
+            ${ownerId}::uuid,
+            ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+            candidates."importFingerprint",
+            true,
+            '-2147483648'::integer
+          )
+        ORDER BY
+          "ownerId",
+          "importFingerprintVersion",
+          "importFingerprint",
+          "isDeleted",
+          "id"
         LIMIT 1
       ) AS matched
       LIMIT 2
@@ -457,11 +484,38 @@ describe.sequential('bounded import duplicate lookup', () => {
       CROSS JOIN LATERAL (
         SELECT "id", "name", "importFingerprint"
         FROM "AnswerCollection"
-        WHERE "ownerId" = ${ownerId}::uuid
-          AND "isDeleted" = false
-          AND "importFingerprintVersion" = ${IMPORT_EXPORT_FINGERPRINT_VERSION}
-          AND "importFingerprint" = candidates."importFingerprint"
-        ORDER BY "id"
+        WHERE ROW(
+          "ownerId",
+          "importFingerprintVersion",
+          "importFingerprint",
+          "isDeleted",
+          "id"
+        ) >= ROW(
+          ${ownerId}::uuid,
+          ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+          candidates."importFingerprint",
+          false,
+          '-2147483648'::integer
+        )
+          AND ROW(
+            "ownerId",
+            "importFingerprintVersion",
+            "importFingerprint",
+            "isDeleted",
+            "id"
+          ) < ROW(
+            ${ownerId}::uuid,
+            ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+            candidates."importFingerprint",
+            true,
+            '-2147483648'::integer
+          )
+        ORDER BY
+          "ownerId",
+          "importFingerprintVersion",
+          "importFingerprint",
+          "isDeleted",
+          "id"
         LIMIT 1
       ) AS matched
       LIMIT 2

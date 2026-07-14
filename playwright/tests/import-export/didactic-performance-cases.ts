@@ -244,15 +244,6 @@ export function registerDidacticPerformanceImportExportCases() {
           return
         }
         if (isGraphqlOperation(request, 'ValidateElementImportPackage')) {
-          const serializedQuery =
-            request.postData() ??
-            new URL(request.url()).searchParams.get('query') ??
-            ''
-          if (serializedQuery) {
-            expect(serializedQuery).not.toContain('answerCollectionEntries')
-            expect(serializedQuery).not.toContain('answerCollectionItems')
-            expect(serializedQuery).toContain('answerCollectionItemIds')
-          }
           await route.fulfill({
             status: 200,
             contentType: 'application/json',

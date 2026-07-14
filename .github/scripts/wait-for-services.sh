@@ -14,6 +14,10 @@ if [ "${1:-}" = "--" ]; then
   fi
 fi
 
+# Keep local import/export package storage shared between Turbo services and
+# the command that runs after readiness, even when Turbo strips TMPDIR.
+export LOCAL_IMPORT_EXPORT_PACKAGE_DIR="${LOCAL_IMPORT_EXPORT_PACKAGE_DIR:-${TMPDIR:-${TMP:-${TEMP:-/tmp}}}/klicker-import-export-packages}"
+
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
