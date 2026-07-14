@@ -50,8 +50,17 @@ managed_pid="$first_pid"
 [ "$(pgrep -fc -- "$pattern")" = "1" ]
 
 klicker_reconcile_dev_process "$command" "100-1"
-read -r matching_pid _ _ <"$state_file"
+read -r matching_pid matching_pgid matching_fingerprint <"$state_file"
 [ "$matching_pid" = "$first_pid" ]
+
+printf '%s %s\n' "$matching_pid" "$matching_pgid" >"$state_file"
+if klicker_reconcile_dev_process "$command" "100-1" 2>"$test_dir/missing-fingerprint.err"; then
+  echo "state without a fingerprint was incorrectly accepted" >&2
+  exit 1
+fi
+grep -Fq "Invalid dev-process state while an unowned process is running" "$test_dir/missing-fingerprint.err"
+kill -0 "$matching_pid"
+printf '%s %s %s\n' "$matching_pid" "$matching_pgid" "$matching_fingerprint" >"$state_file"
 
 export KLICKER_DEV_HEALTH_URLS=http://127.0.0.1:1
 export KLICKER_DEV_HEALTH_ATTEMPTS=1

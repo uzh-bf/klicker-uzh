@@ -68,18 +68,18 @@
 
 - Result: passed on 2026-07-14 with published `@devrouter/cli@0.0.29`.
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/worktree-lifecycle-hardening` at fresh `origin/v3` base `eef745d06`.
-- Identity: persisted DevPod/workspace ID `codex-worktree-lifecycle-hardeni`; final app container `11b0920d9d5422258e0d4c2c525f2acf2cb8a04a78ad5dd71e152dc596bcc151`.
-- Runtime: final state `654 654 3348913417-1223`; `WORKSPACE` and `DEVROUTER_WORKSPACE` both equal the persisted identity; in-container Git resolves `/workspaces/klicker-uzh`. One Turbo `dev` task set runs the routed apps and workers; no duplicate `dev:lti` tasks or `EADDRINUSE` failures remain.
-- Routing: published `@devrouter/cli@0.0.29` verified nine HTTPS routes plus the PostgreSQL TCP route. After a Manage production build made its live route return HTTP 500, one automatic recreate restored all routes. A warm repeat preserved app container `11b0920d9d54` and owned process group `654`.
+- Identity: persisted DevPod/workspace ID `codex-worktree-lifecycle-hardeni`; final app container `e7b7e93d304cd787ca332440c2d9968d4cb1c9167cc29c093bc9bd5e460a1568`.
+- Runtime: final state `649 649 3348913417-1223`; `WORKSPACE` and `DEVROUTER_WORKSPACE` both equal the persisted identity; in-container Git resolves `/workspaces/klicker-uzh`. One Turbo `dev` task set runs the routed apps and workers; no duplicate `dev:lti` tasks or `EADDRINUSE` failures remain.
+- Routing: published `@devrouter/cli@0.0.29` verified nine HTTPS routes plus the PostgreSQL TCP route. After a Manage production build made its live route return HTTP 500, one automatic recreate restored all routes. The review-cleanup Compose change triggered one expected configuration recreate; a following warm repeat preserved app container `e7b7e93d304c` and owned process group `649`.
 - Browser: `agent-browser` completed the delegated `lecturer` login from the routed manage host, returned to the same worktree-specific manage host, rendered the seeded library, and reported no page errors. Before/after captures: `/tmp/klicker-worktree-before-login.png` and `/tmp/klicker-worktree-after-login.png`.
 - Database: all three local databases have their corresponding application role as owner; LTI starts its canonical `dev` task and listens on port 4000.
-- Live-discovered corrections: tolerate Compose containers without a Docker healthcheck; propagate `DEVROUTER_WORKSPACE` through the overlay while inheriting base `WORKSPACE`; give LTI the canonical `dev` task so Turbo launches each package once; assign local database ownership during initialization; recover an owned Turbo group whose child apps became unhealthy after a production build replaced live Next.js output.
+- Live-discovered corrections: tolerate Compose containers without a Docker healthcheck; propagate `DEVROUTER_WORKSPACE` through the overlay while inheriting base `WORKSPACE`; give LTI the canonical `dev` task so Turbo launches each package once; assign local database ownership during initialization; recover an owned Turbo group whose child apps became unhealthy after a production build replaced live Next.js output; classify a missing state fingerprint as malformed; require Devrouter's Git-common-dir value during Compose interpolation with an actionable error.
 - Preserved: `trees/escape-room-production`, its dirty feature changes, and its existing DevPod/routes were not modified.
 - Known unrelated issue: Hatchet heartbeat still logs `TypeError: this.logger[message.type] is not a function`. Startup, routing, Git identity, database initialization, and process reuse still pass; Hatchet SDK behavior remains feature/runtime follow-up scope.
 
 ## Verification
 
-- Focused lifecycle test, Bash syntax, ShellCheck, merged Compose validation, Prettier, `git diff --check`, and Opengrep all pass; Opengrep found 0 findings.
+- Focused lifecycle test, Bash syntax, ShellCheck, merged Compose validation, Prettier, `git diff --check`, and Opengrep all pass; Opengrep found 0 findings. The lifecycle regression now covers a missing fingerprint, and Compose fails immediately with the `DEVROUTER_GIT_COMMON_DIR must be set by devrouter workspace ensure` message when that required value is absent.
 - TypeScript checks pass serially for 31/31 tasks. A production-mode serial build passes 21/21 tasks.
 - Root pre-commit checks and the pre-push production build pass; serial TypeScript and production build verification also pass for every task.
 - Mandatory browser smoke passed delegated lecturer login, worktree-local redirect, seeded-library rendering, and browser error inspection.
@@ -87,12 +87,6 @@
 - Final maintainability and security reviews found no blocking issue after unhealthy-runtime recovery and devrouter's fail-closed container/route ownership checks.
 - Wiki validator was unavailable; affected Markdown was formatted and checked directly.
 
-## Local commits
+## Branch status
 
-- `f96f5ae2` `docs(project): add worktree lifecycle integration plan`
-- `018f473b0` `fix(devcontainer): reconcile worktree runtime identity`
-- `dde478177` `docs(devcontainer): standardize worktree ensure flow`
-- `6c7359cc9` `fix(devcontainer): expose Devrouter workspace identity`
-- `7b732711c` `fix(devcontainer): start LTI task in workspace stack`
-- `dccda325e` `fix(devcontainer): assign local database owners`
-- `fix(devcontainer): recover unhealthy owned runtime` (this final local commit)
+- Ten focused commits cover the plan, runtime identity, documentation, service and database startup, owned-runtime recovery, Devrouter 0.0.29 integration, and review cleanup. `git log origin/v3..HEAD` is the commit-level source of truth.

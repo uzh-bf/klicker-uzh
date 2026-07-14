@@ -39,8 +39,8 @@ services:
       # Linked worktree .git files point into this absolute host path. workspace
       # ensure supplies it and validates the same-path mount inside the container.
       - type: bind
-        source: '${DEVROUTER_GIT_COMMON_DIR}'
-        target: '${DEVROUTER_GIT_COMMON_DIR}'
+        source: '${DEVROUTER_GIT_COMMON_DIR:?DEVROUTER_GIT_COMMON_DIR must be set by devrouter workspace ensure}'
+        target: '${DEVROUTER_GIT_COMMON_DIR:?DEVROUTER_GIT_COMMON_DIR must be set by devrouter workspace ensure}'
 
 networks:
   devnet:

@@ -108,7 +108,8 @@ klicker_reconcile_dev_process() (
 
   if [ -f "$state_file" ]; then
     read -r pid pgid stored_fingerprint extra <"$state_file" || true
-    if ! [[ "$pid" =~ ^[1-9][0-9]*$ ]] ||
+    if [ -z "$stored_fingerprint" ] ||
+      ! [[ "$pid" =~ ^[1-9][0-9]*$ ]] ||
       ! [[ "$pgid" =~ ^[1-9][0-9]*$ ]] ||
       [ -n "$extra" ]; then
       if pgrep -f -- "$process_pattern" >/dev/null 2>&1; then
