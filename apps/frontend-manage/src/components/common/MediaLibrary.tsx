@@ -10,7 +10,7 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { ReactNode, Suspense, useCallback, useState } from 'react'
-import Dropzone from 'react-dropzone'
+import Dropzone, { type FileRejection } from 'react-dropzone'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
@@ -25,8 +25,10 @@ interface MediaUploadDropzoneProps {
   inputAriaLabel?: string
   compact?: boolean
   isUploading?: boolean
+  maxSize?: number
   multiple?: boolean
   onDropAccepted: (files: File[]) => void | Promise<void>
+  onDropRejected?: (fileRejections: FileRejection[]) => void
   data?: {
     cy?: string
   }
@@ -45,26 +47,39 @@ export function MediaUploadDropzone({
   inputAriaLabel,
   compact = false,
   isUploading = false,
+  maxSize,
   multiple = false,
   onDropAccepted,
+  onDropRejected,
   data,
   className,
 }: MediaUploadDropzoneProps) {
   return (
     <Dropzone
       onDropAccepted={onDropAccepted}
+      onDropRejected={onDropRejected}
       multiple={multiple}
       accept={accept}
+      maxSize={maxSize}
+      disabled={isUploading}
     >
       {({ getRootProps, getInputProps, isDragActive }) => (
         <div
           {...getRootProps({
             className: twMerge(
-              'flex-1 p-2 hover:cursor-pointer hover:bg-slate-100',
+              'flex-1 p-2',
+              isUploading
+                ? 'cursor-not-allowed opacity-60'
+                : 'hover:cursor-pointer hover:bg-slate-100',
               compact ? 'flex min-h-10 items-center' : 'flex min-h-32 flex-col',
               className?.root
             ),
             'data-cy': data?.cy,
+            'aria-busy': isUploading,
+            'aria-disabled': isUploading,
+            'aria-label': inputAriaLabel,
+            role: 'button',
+            tabIndex: isUploading ? -1 : 0,
           })}
         >
           <div className={twMerge('font-bold', className?.title)}>

@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ElementManipulationInput } from '@klicker-uzh/types'
-import { MAX_ELEMENT_POINTS_MULTIPLIER } from './importExportPackageConfig.js'
+import { MAX_ELEMENT_POINTS_MULTIPLIER } from './elementDomain.js'
 
 function validateElementInputs({
   id,

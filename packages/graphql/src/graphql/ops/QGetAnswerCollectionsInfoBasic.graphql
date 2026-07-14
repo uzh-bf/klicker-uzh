@@ -1,8 +1,0 @@
-query GetAnswerCollectionsInfoBasic {
-  getAnswerCollectionsInfoBasic {
-    id
-    name
-    numOfEntries
-    version
-  }
-}

@@ -37,7 +37,7 @@ export async function clickVisibleByTestId(
 ) {
   const locator = await findVisibleByTestId(page, testId, timeout)
   await locator.scrollIntoViewIfNeeded().catch(() => undefined)
-  await locator.click()
+  await locator.click({ timeout })
 }
 
 export async function openActivityActionMenu(

@@ -95,6 +95,12 @@ jobs:
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
+      - name: Run import/export app unit tests
+        run: |
+          pnpm --filter @klicker-uzh/backend-docker test:run
+          pnpm --filter @klicker-uzh/frontend-manage test:run
+          pnpm --filter @klicker-uzh/hatchet-worker-general test:run
+
       - name: Upload Playwright build outputs
         uses: actions/upload-artifact@v4
         with:

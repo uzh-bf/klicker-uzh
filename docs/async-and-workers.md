@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-07-14'
 tags:
   - backend
   - hatchet
@@ -37,12 +37,16 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
 
-`apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
+`apps/hatchet-worker-general` (`src/index.ts`) selects workflows via the `HATCHET_WORKFLOWS` env var. Every runtime except explicit development/test requires an allowlist and rejects empty, duplicate, unknown, or missing required import/export maintenance keys. This fails closed for missing, staging, or misspelled `NODE_ENV` values. Development/test defaults to all workflows. Assessment workers derive a no-maintenance responsibility from the shared runtime configuration, exclude the import/export workflows from the development/test default, and reject them if explicitly configured:
 
 - `create-audit-log-entry` (event-driven)
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
+- `refresh-import-export-fingerprints` — collection-scoped, post-commit didactic refresh with keyset continuation
+- `cleanup-import-export-packages` — hourly record-scoped artifact/staging cleanup at minute 30; no container enumeration. It isolates per-record failures, processes up to ten 100-row batches per category, reports remaining backlog, and returns a failed task result when a hard cleanup/unsafe-target failure remains.
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+
+Incremental import/export fingerprint refresh is idempotent. Authoring commits null fingerprint/version dirty markers before enqueueing; a missing worker or failed enqueue does not roll back authored content. Historical media and fingerprint backfills are deliberately operator-controlled GraphQL CLI operations rather than globally triggerable Hatchet tasks. They use advisory locks, bounded keyset batches, protected progress manifests, and an explicit resume path; media classification finishes before fingerprint backfill and downloads no blob inside a database transaction. The production operation aliases and worker allowlist are executable repository contracts, while target execution evidence remains a release gate in the production runbook.
 
 ## Running locally (config-derived — verify on your machine)
 

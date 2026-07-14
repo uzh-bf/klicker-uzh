@@ -313,13 +313,7 @@ export const test = base.extend<KlickerUZHFixtures>({
 
   logoutUser: async ({ context }, use) => {
     await use(async () => {
-      const cookies = await context.cookies()
-      const sessionCookie = cookies.find(
-        (c) => c.name === 'next-auth.session-token'
-      )
-      if (sessionCookie) {
-        await context.clearCookies()
-      }
+      await context.clearCookies()
     })
   },
 

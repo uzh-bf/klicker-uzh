@@ -1,6 +1,13 @@
-import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
+import {
+  Priority,
+  type HatchetClient,
+  type TaskWorkflowDeclaration,
+} from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type {
+  HatchetHandlers,
+  RefreshImportExportFingerprintsInput,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -35,6 +42,33 @@ export function prepareHatchetTasks({
     redisCache,
     prisma,
   }
+
+  // ! IMPORT / EXPORT FINGERPRINT MAINTENANCE
+  // #region
+  let refreshImportExportFingerprints: TaskWorkflowDeclaration<
+    RefreshImportExportFingerprintsInput,
+    { success: boolean; processed: number }
+  >
+  refreshImportExportFingerprints = hatchet.task({
+    name: 'refresh-import-export-fingerprints',
+    retries: 3,
+    defaultPriority: Priority.LOW,
+    fn: async (input, executionContext) => {
+      const result = await handlers.handleRefreshImportExportFingerprints(
+        input,
+        globalContext,
+        executionContext
+      )
+      if (typeof result.nextAfterElementId === 'number') {
+        await refreshImportExportFingerprints.runNoWait({
+          answerCollectionId: input.answerCollectionId,
+          afterElementId: result.nextAfterElementId,
+        })
+      }
+      return { success: true, processed: result.processed }
+    },
+  })
+  // #endregion
 
   // ! AUDIT LOGGING
   // #region
@@ -279,7 +313,7 @@ export function prepareHatchetTasks({
     retries: 3,
     defaultPriority: Priority.LOW,
     onCrons: [
-      '30 0 * * *', // running daily at 00:30 (UTC)
+      '30 * * * *', // running hourly at minute 30 (UTC)
     ],
     fn: async (_, executionContext) => {
       const success = await handlers.handleCleanupImportExportPackages(
@@ -306,6 +340,7 @@ export function prepareHatchetTasks({
   // #endregion
 
   return {
+    refreshImportExportFingerprints,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

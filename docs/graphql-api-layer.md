@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-13'
 tags:
   - backend
   - graphql
@@ -20,6 +20,10 @@ tags:
 2. **Object-level permission — `withPermission(argsToCheck, PermissionLevel, resolver)`** (`packages/graphql/src/services/sharing.ts:withPermission`). Maps resolver args to a `PermissionCheck` (one of `courseId | liveQuizId | practiceQuizId | microLearningId | groupActivityId | elementId | answerCollectionId | catalogCollectionId`) and a required `PermissionLevel`. **On failure it returns `null` instead of throwing** — clients see a null field, not an error.
 3. **Derived-permission lookup — `checkAccess`** (same file): resolves ownership and sharing grants (`DerivedPermission`) for the target object.
 
+Runtime feature capabilities add a service-owned layer when process configuration and persisted user state must participate. Element import/export exposes `canUseElementImportExport` to authenticated users (restricted scopes receive `false`) and repeats its authoritative assertion as the first statement of every public operation. Because the capability is fetched with the global user profile, its resolver fails closed to `false` on a private-preview lookup failure and logs no exception text; operation-level assertions remain strict and return the stable infrastructure code instead of silently granting or downgrading access. The schema's full-access guard remains in place; the service check is defense in depth and provides the kill switch/private-preview/assessment decision.
+
+Element import validation keeps large relation data normalized in its public response. `packages/graphql/src/schema/element.ts:ElementImportPackagePreviewElement` exposes an answer-collection ref and selected integer IDs, while the full entry values appear once in the top-level answer-collection objects requested by `packages/graphql/src/graphql/ops/MValidateElementImportPackage.graphql`. Its options use the nine-member Pothos union in `packages/graphql/src/schema/elementImportPreviewOptions.ts`; the operation must keep exhaustive inline fragments so generated clients receive a `__typename`-discriminated union rather than `Json`/`any`. Choice correctness is nullable because packages without a sample solution have no scoring key. Do not re-add per-element pool/value fields: 100 elements may legally share one 2,000-entry pool, so repetition would create response-size amplification.
+
 Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on courseId), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ). Existing fields use `t.withAuth(...)` exclusively — follow them rather than inventing `authScopes` variants.
 
 ## Layering contract
@@ -32,6 +36,7 @@ Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on c
 
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.
 - Service-level errors: prefer `GraphQLError` with `extensions.code` (e.g. `LIVE_QUIZ_PIN_INVALID`, `FORBIDDEN` in `services/liveQuizzes.ts`). Plain `throw new Error` exists in older code — don't add more.
+- Element import/export uses the closed `ImportExportErrorCode` / `ImportExportWarningCode` GraphQL enums from `packages/graphql/src/lib/importExportErrors.ts`. Domain causes are redacted before transport, preview arrays are enum-typed, and unknown failures map to `IMPORT_EXPORT_INFRASTRUCTURE_FAILURE`; see the [Import/Export Error Contract](./import-export-error-contract.md).
 
 ## Client operations and codegen
 

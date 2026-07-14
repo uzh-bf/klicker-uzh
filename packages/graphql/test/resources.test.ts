@@ -12,7 +12,9 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { refreshElementImportFingerprint } from '../src/services/importExportFingerprints.js'
 import {
   addAnswerCollectionOption,
   createAnswerCollection,
@@ -466,6 +468,49 @@ describe('Integration tests for resource management (e.g. answer collections)', 
     expect(dbAC).toBeTruthy()
     expect(dbAC!.name).toBe(updatedName)
     expect(dbAC!.description).toBe(updatedDescription)
+  })
+
+  it('keeps linked element fingerprints stable when collection metadata changes', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const collection = await prisma.answerCollection.findUniqueOrThrow({
+      where: { id: AC1!.id },
+      include: { entries: true },
+    })
+    const entry = collection.entries[0]!
+    const element = await prisma.element.create({
+      data: {
+        type: ElementType.SELECTION,
+        name: 'Linked Selection',
+        content: 'Choose an option',
+        options: {
+          answerCollection: AC1!.id,
+          correctAnswers: [entry.id],
+        },
+        ownerId: userOne.id,
+        answerCollectionId: collection.id,
+        answerCollectionItems: {
+          connect: {
+            id: entry.id,
+          },
+        },
+      },
+    })
+    await refreshElementImportFingerprint(element.id, prisma)
+    const before = await prisma.element.findUniqueOrThrow({
+      where: { id: element.id },
+      select: { importFingerprint: true },
+    })
+
+    await modifyAnswerCollection(
+      { id: AC1!.id, name: 'Updated Linked Collection' },
+      userOneCtx
+    )
+
+    const after = await prisma.element.findUniqueOrThrow({
+      where: { id: element.id },
+      select: { importFingerprint: true },
+    })
+    expect(after.importFingerprint).toBe(before.importFingerprint)
   })
 
   it('Verify that answer collections can be deleted when unused (hard deletion case)', async () => {
@@ -946,6 +991,110 @@ describe('Integration tests for resource management (e.g. answer collections)', 
     expect(dbEntry).toBeTruthy()
     expect(dbEntry!.value).toBe(newEntry)
     expect(dbEntry!.collectionId).toBe(AC1!.id)
+  })
+
+  it('dirties high-fan-out fingerprints atomically without waiting for Hatchet', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const collection = await prisma.answerCollection.findUniqueOrThrow({
+      where: { id: AC1!.id },
+      include: { entries: true },
+    })
+    await prisma.element.createMany({
+      data: Array.from({ length: 101 }, (_, index) => ({
+        type: ElementType.SELECTION,
+        name: `High fan-out ${index}`,
+        content: 'Choose an option',
+        options: { hasSampleSolution: false, numberOfInputs: 1 },
+        ownerId: userOne.id,
+        answerCollectionId: collection.id,
+        importFingerprint: 'a'.repeat(64),
+        importFingerprintVersion: 1,
+      })),
+    })
+
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
+      .mockImplementation(() => new Promise(() => {}))
+
+    try {
+      const mutation = editAnswerCollectionEntry(
+        {
+          id: collection.entries[0]!.id,
+          collectionId: collection.id,
+          value: 'Updated without waiting',
+        },
+        userOneCtx
+      )
+      const result = await Promise.race([
+        mutation,
+        new Promise<'timeout'>((resolve) =>
+          setTimeout(() => resolve('timeout'), 1000)
+        ),
+      ])
+
+      expect(result).not.toBe('timeout')
+      expect(runNoWait).toHaveBeenCalledTimes(1)
+      await expect(
+        prisma.element.count({
+          where: {
+            answerCollectionId: collection.id,
+            importFingerprint: null,
+            importFingerprintVersion: null,
+          },
+        })
+      ).resolves.toBe(101)
+      await expect(
+        prisma.answerCollection.findUniqueOrThrow({
+          where: { id: collection.id },
+          select: {
+            importFingerprint: true,
+            importFingerprintVersion: true,
+          },
+        })
+      ).resolves.toEqual({
+        importFingerprint: null,
+        importFingerprintVersion: null,
+      })
+    } finally {
+      runNoWait.mockRestore()
+    }
+  })
+
+  it('keeps an entry write successful when fingerprint enqueueing fails', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
+      .mockRejectedValue(new Error('Hatchet unavailable'))
+
+    try {
+      const entry = await addAnswerCollectionOption(
+        { collectionId: AC1!.id, value: 'Durably dirty' },
+        userOneCtx
+      )
+      await Promise.resolve()
+
+      expect(entry.value).toBe('Durably dirty')
+      expect(runNoWait).toHaveBeenCalledTimes(1)
+      expect(warn).toHaveBeenCalledWith(
+        '[ImportExportFingerprint] REFRESH_ENQUEUE_FAILED'
+      )
+      await expect(
+        prisma.answerCollection.findUniqueOrThrow({
+          where: { id: AC1!.id },
+          select: {
+            importFingerprint: true,
+            importFingerprintVersion: true,
+          },
+        })
+      ).resolves.toEqual({
+        importFingerprint: null,
+        importFingerprintVersion: null,
+      })
+    } finally {
+      runNoWait.mockRestore()
+      warn.mockRestore()
+    }
   })
 
   it('Test that the deletion of answer collection entries is possible if they are not used in an element', async () => {

@@ -649,6 +649,9 @@ async function cleanupDatabase() {
     // delete all elements and resources
     await prisma.element.deleteMany(),
       await prisma.answerCollection.deleteMany()
+    await prisma.importMediaStaging.deleteMany()
+    await prisma.elementImportReceipt.deleteMany()
+    await prisma.importExportPackageArtifact.deleteMany()
     await prisma.mediaFile.deleteMany()
 
     // delete all catalog collections

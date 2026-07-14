@@ -2,6 +2,12 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
+import {
+  ImportExportDomainError,
+  ImportExportErrorCode,
+  toImportExportGraphQLError,
+} from '../lib/importExportErrors.js'
+import { MAX_IMPORT_EXPORT_ELEMENTS } from '../lib/importExportPackageConfig.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
@@ -11,6 +17,7 @@ import * as ElementImportExportService from '../services/elementImportExport.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as ImportExportAuthorizationService from '../services/importExportAuthorization.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
@@ -99,7 +106,6 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
-  AnswerCollectionsInfoBasic,
   ChatModelCapability,
   Chatbot,
 } from './resource.js'
@@ -122,6 +128,42 @@ import {
   TemplateElementInformation,
 } from './template.js'
 import { MediaFile, User, UserInfo, UserLogin, UserLoginScope } from './user.js'
+
+type ElementExportPackageArgs = { elementIds: number[] }
+type ElementExportPackageContext = Parameters<
+  typeof ElementImportExportService.getElementExportPackageLink
+>[1]
+
+export async function resolveElementExportPackageLinkAtBoundary(
+  args: ElementExportPackageArgs,
+  ctx: ElementExportPackageContext,
+  service: typeof ElementImportExportService.getElementExportPackageLink = ElementImportExportService.getElementExportPackageLink
+) {
+  if (args.elementIds.length > MAX_IMPORT_EXPORT_ELEMENTS) {
+    throw toImportExportGraphQLError(
+      new ImportExportDomainError(ImportExportErrorCode.TOO_MANY_ELEMENTS)
+    )
+  }
+
+  return await service(args, ctx)
+}
+
+export async function resolveElementExportPackagePreviewAtBoundary(
+  args: ElementExportPackageArgs,
+  ctx: ElementExportPackageContext,
+  service: typeof ElementImportExportService.getElementExportPackagePreview = ElementImportExportService.getElementExportPackagePreview
+) {
+  if (args.elementIds.length > MAX_IMPORT_EXPORT_ELEMENTS) {
+    return {
+      elements: [],
+      answerCollections: [],
+      warnings: [],
+      errors: [ImportExportErrorCode.TOO_MANY_ELEMENTS],
+    } satisfies Awaited<ReturnType<typeof service>>
+  }
+
+  return await service(args, ctx)
+}
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -240,6 +282,15 @@ export const Query = builder.queryType({
           if (!user) return null
 
           return user
+        },
+      }),
+
+      canUseElementImportExport: t.withAuth(asUser).field({
+        type: 'Boolean',
+        resolve: async (_, __, ctx) => {
+          return await ImportExportAuthorizationService.getElementImportExportCapability(
+            ctx
+          )
         },
       }),
 
@@ -873,10 +924,7 @@ export const Query = builder.queryType({
           elementIds: t.arg.intList({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await ElementImportExportService.getElementExportPackageLink(
-            args,
-            ctx
-          )
+          return await resolveElementExportPackageLinkAtBoundary(args, ctx)
         },
       }),
 
@@ -887,10 +935,7 @@ export const Query = builder.queryType({
           elementIds: t.arg.intList({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await ElementImportExportService.getElementExportPackagePreview(
-            args,
-            ctx
-          )
+          return await resolveElementExportPackagePreviewAtBoundary(args, ctx)
         },
       }),
 
@@ -1446,14 +1491,6 @@ export const Query = builder.queryType({
         type: [AnswerCollection],
         resolve: async (_, __, ctx) => {
           return await ResourcesService.getAnswerCollectionsInfo(ctx)
-        },
-      }),
-
-      getAnswerCollectionsInfoBasic: t.withAuth(asUser).field({
-        nullable: true,
-        type: [AnswerCollectionsInfoBasic],
-        resolve: async (_, __, ctx) => {
-          return await ResourcesService.getAnswerCollectionsInfoBasic(ctx)
         },
       }),
 

@@ -19,8 +19,17 @@ const STORE = 0
 const DEFLATE = 8
 const DATA_DESCRIPTOR_FLAG = 0x0008
 const UTF8_FILENAME_FLAG = 0x0800
-const SUPPORTED_GENERAL_PURPOSE_FLAGS =
-  DATA_DESCRIPTOR_FLAG | UTF8_FILENAME_FLAG
+const SUPPORTED_GENERAL_PURPOSE_FLAGS = UTF8_FILENAME_FLAG
+
+export class InvalidZipError extends Error {
+  constructor(
+    message: string,
+    override readonly cause?: unknown
+  ) {
+    super(message)
+    this.name = 'InvalidZipError'
+  }
+}
 
 const crcTable = new Uint32Array(256)
 for (let n = 0; n < 256; n++) {
@@ -40,35 +49,69 @@ function crc32(buffer: Buffer) {
 }
 
 function validateZipPath(path: string) {
+  const segments = path.split('/')
   if (
     path.length === 0 ||
     path.startsWith('/') ||
     path.startsWith('\\') ||
-    path.includes('..') ||
-    path.includes('\\')
+    path.includes('\\') ||
+    /^[A-Za-z]:/.test(path) ||
+    /[\u0000-\u001f\u007f]/.test(path) ||
+    path !== path.normalize('NFC') ||
+    segments.some(
+      (segment) => segment === '' || segment === '.' || segment === '..'
+    )
   ) {
-    throw new Error(`Invalid ZIP entry path: ${path}`)
+    throw new InvalidZipError(`Invalid ZIP entry path: ${path}`)
   }
 }
 
+function decodeZipPath(bytes: Buffer, usesUtf8: boolean) {
+  if (!usesUtf8 && bytes.some((byte) => byte > 0x7f)) {
+    throw new InvalidZipError('ZIP entry path must be UTF-8.')
+  }
+
+  let path: string
+  try {
+    path = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  } catch (error) {
+    throw new InvalidZipError('Invalid ZIP entry path encoding.', error)
+  }
+
+  validateZipPath(path)
+  return path
+}
+
 export function createZip(files: ZipFileInput[]) {
+  if (files.length > 0xffff) {
+    throw new InvalidZipError('ZIP archive contains too many files.')
+  }
+
   const localParts: Buffer[] = []
   const centralParts: Buffer[] = []
+  const paths = new Set<string>()
   let offset = 0
 
   for (const file of files) {
     validateZipPath(file.path)
+    if (paths.has(file.path)) {
+      throw new InvalidZipError('ZIP archive contains duplicate paths.')
+    }
+    paths.add(file.path)
 
     const data = Buffer.isBuffer(file.data)
       ? file.data
       : Buffer.from(file.data, 'utf8')
     const fileName = Buffer.from(file.path, 'utf8')
+    if (fileName.length > 0xffff || data.length > 0xffff_ffff) {
+      throw new InvalidZipError('ZIP entry is too large.')
+    }
     const checksum = crc32(data)
 
     const localHeader = Buffer.alloc(30)
     localHeader.writeUInt32LE(LOCAL_FILE_HEADER_SIGNATURE, 0)
     localHeader.writeUInt16LE(20, 4)
-    localHeader.writeUInt16LE(0, 6)
+    localHeader.writeUInt16LE(UTF8_FILENAME_FLAG, 6)
     localHeader.writeUInt16LE(STORE, 8)
     localHeader.writeUInt16LE(0, 10)
     localHeader.writeUInt16LE(0, 12)
@@ -84,7 +127,7 @@ export function createZip(files: ZipFileInput[]) {
     centralHeader.writeUInt32LE(CENTRAL_DIRECTORY_SIGNATURE, 0)
     centralHeader.writeUInt16LE(20, 4)
     centralHeader.writeUInt16LE(20, 6)
-    centralHeader.writeUInt16LE(0, 8)
+    centralHeader.writeUInt16LE(UTF8_FILENAME_FLAG, 8)
     centralHeader.writeUInt16LE(STORE, 10)
     centralHeader.writeUInt16LE(0, 12)
     centralHeader.writeUInt16LE(0, 14)
@@ -101,6 +144,9 @@ export function createZip(files: ZipFileInput[]) {
 
     centralParts.push(centralHeader, fileName)
     offset += localHeader.length + fileName.length + data.length
+    if (offset > 0xffff_ffff) {
+      throw new InvalidZipError('ZIP archive is too large.')
+    }
   }
 
   const centralDirectory = Buffer.concat(centralParts)
@@ -119,14 +165,21 @@ export function createZip(files: ZipFileInput[]) {
 }
 
 function findEndOfCentralDirectory(buffer: Buffer) {
+  if (buffer.length < 22) {
+    throw new InvalidZipError('Invalid ZIP archive.')
+  }
+
   const minOffset = Math.max(0, buffer.length - 0xffff - 22)
   for (let offset = buffer.length - 22; offset >= minOffset; offset--) {
-    if (buffer.readUInt32LE(offset) === END_OF_CENTRAL_DIRECTORY_SIGNATURE) {
+    if (
+      buffer.readUInt32LE(offset) === END_OF_CENTRAL_DIRECTORY_SIGNATURE &&
+      offset + 22 + buffer.readUInt16LE(offset + 20) === buffer.length
+    ) {
       return offset
     }
   }
 
-  throw new Error('Invalid ZIP archive.')
+  throw new InvalidZipError('Invalid ZIP archive.')
 }
 
 export function parseZip(
@@ -136,24 +189,56 @@ export function parseZip(
     maxUncompressedBytes = 10 * 1024 * 1024,
   }: { maxEntries?: number; maxUncompressedBytes?: number } = {}
 ) {
+  if (
+    !Number.isInteger(maxEntries) ||
+    maxEntries < 0 ||
+    !Number.isInteger(maxUncompressedBytes) ||
+    maxUncompressedBytes < 0
+  ) {
+    throw new InvalidZipError('Invalid ZIP parser limits.')
+  }
+
   const endOffset = findEndOfCentralDirectory(buffer)
+  const diskNumber = buffer.readUInt16LE(endOffset + 4)
+  const centralDirectoryDisk = buffer.readUInt16LE(endOffset + 6)
+  const entriesOnDisk = buffer.readUInt16LE(endOffset + 8)
   const entryCount = buffer.readUInt16LE(endOffset + 10)
+  const centralDirectorySize = buffer.readUInt32LE(endOffset + 12)
   const centralDirectoryOffset = buffer.readUInt32LE(endOffset + 16)
 
+  if (
+    diskNumber !== 0 ||
+    centralDirectoryDisk !== 0 ||
+    entriesOnDisk !== entryCount
+  ) {
+    throw new InvalidZipError('Multi-disk ZIP archives are unsupported.')
+  }
+
+  if (
+    centralDirectoryOffset + centralDirectorySize !== endOffset ||
+    centralDirectoryOffset > endOffset
+  ) {
+    throw new InvalidZipError('Invalid ZIP central directory bounds.')
+  }
+
   if (entryCount > maxEntries) {
-    throw new Error('ZIP archive contains too many files.')
+    throw new InvalidZipError('ZIP archive contains too many files.')
   }
 
   const entries: ParsedZipEntry[] = []
   let centralOffset = centralDirectoryOffset
   let totalUncompressedBytes = 0
+  const paths = new Set<string>()
+  const localHeaderOffsets = new Set<number>()
+  const localRanges: Array<{ start: number; end: number }> = []
+  const centralDirectoryEnd = endOffset
 
   for (let ix = 0; ix < entryCount; ix++) {
     if (
-      centralOffset + 46 > buffer.length ||
+      centralOffset + 46 > centralDirectoryEnd ||
       buffer.readUInt32LE(centralOffset) !== CENTRAL_DIRECTORY_SIGNATURE
     ) {
-      throw new Error('Invalid ZIP central directory.')
+      throw new InvalidZipError('Invalid ZIP central directory.')
     }
 
     const compressionMethod = buffer.readUInt16LE(centralOffset + 10)
@@ -164,37 +249,53 @@ export function parseZip(
     const fileNameLength = buffer.readUInt16LE(centralOffset + 28)
     const extraLength = buffer.readUInt16LE(centralOffset + 30)
     const commentLength = buffer.readUInt16LE(centralOffset + 32)
+    const diskStart = buffer.readUInt16LE(centralOffset + 34)
     const localHeaderOffset = buffer.readUInt32LE(centralOffset + 42)
     const fileNameStart = centralOffset + 46
     const fileNameEnd = fileNameStart + fileNameLength
+    const centralEntryEnd = fileNameEnd + extraLength + commentLength
 
-    if (fileNameEnd > buffer.length) {
-      throw new Error('Invalid ZIP central directory entry.')
+    if (centralEntryEnd > centralDirectoryEnd || diskStart !== 0) {
+      throw new InvalidZipError('Invalid ZIP central directory entry.')
     }
 
-    const path = buffer.subarray(fileNameStart, fileNameEnd).toString('utf8')
-
-    validateZipPath(path)
+    if (generalPurposeBitFlag & DATA_DESCRIPTOR_FLAG) {
+      throw new InvalidZipError('ZIP data descriptors are unsupported.')
+    }
 
     if ((generalPurposeBitFlag & ~SUPPORTED_GENERAL_PURPOSE_FLAGS) !== 0) {
-      throw new Error('Unsupported ZIP entry flags.')
+      throw new InvalidZipError('Unsupported ZIP entry flags.')
     }
 
     if (compressionMethod !== STORE && compressionMethod !== DEFLATE) {
-      throw new Error('Unsupported ZIP compression method.')
+      throw new InvalidZipError('Unsupported ZIP compression method.')
     }
+
+    const centralFileName = buffer.subarray(fileNameStart, fileNameEnd)
+    const path = decodeZipPath(
+      centralFileName,
+      Boolean(generalPurposeBitFlag & UTF8_FILENAME_FLAG)
+    )
+    if (paths.has(path)) {
+      throw new InvalidZipError('ZIP archive contains duplicate paths.')
+    }
+    paths.add(path)
 
     totalUncompressedBytes += uncompressedSize
     if (totalUncompressedBytes > maxUncompressedBytes) {
-      throw new Error('ZIP archive is too large.')
+      throw new InvalidZipError('ZIP archive is too large.')
     }
 
     if (
-      localHeaderOffset + 30 > buffer.length ||
+      localHeaderOffset + 30 > centralDirectoryOffset ||
       buffer.readUInt32LE(localHeaderOffset) !== LOCAL_FILE_HEADER_SIGNATURE
     ) {
-      throw new Error('Invalid ZIP local file header.')
+      throw new InvalidZipError('Invalid ZIP local file header.')
     }
+    if (localHeaderOffsets.has(localHeaderOffset)) {
+      throw new InvalidZipError('ZIP local file headers overlap.')
+    }
+    localHeaderOffsets.add(localHeaderOffset)
 
     const localFileNameLength = buffer.readUInt16LE(localHeaderOffset + 26)
     const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28)
@@ -208,64 +309,72 @@ export function parseZip(
     const dataStart = localFileNameEnd + localExtraLength
     const dataEnd = dataStart + compressedSize
 
-    if (localFileNameEnd > buffer.length) {
-      throw new Error('Invalid ZIP local file name.')
+    if (
+      dataStart > centralDirectoryOffset ||
+      dataEnd > centralDirectoryOffset
+    ) {
+      throw new InvalidZipError('Invalid ZIP local file name.')
     }
 
-    const localPath = buffer
-      .subarray(localFileNameStart, localFileNameEnd)
-      .toString('utf8')
+    const localFileName = buffer.subarray(localFileNameStart, localFileNameEnd)
+    const localPath = decodeZipPath(
+      localFileName,
+      Boolean(localFlags & UTF8_FILENAME_FLAG)
+    )
 
-    if (localPath !== path) {
-      throw new Error('ZIP central and local paths do not match.')
+    if (!localFileName.equals(centralFileName) || localPath !== path) {
+      throw new InvalidZipError('ZIP central and local paths do not match.')
     }
 
     if (
       localFlags !== generalPurposeBitFlag ||
       localCompressionMethod !== compressionMethod
     ) {
-      throw new Error('ZIP central and local metadata do not match.')
+      throw new InvalidZipError('ZIP central and local metadata do not match.')
     }
 
-    const usesDataDescriptor = Boolean(
-      generalPurposeBitFlag & DATA_DESCRIPTOR_FLAG
-    )
     const localSizeMetadataMatches =
       localChecksum === expectedChecksum &&
       localCompressedSize === compressedSize &&
       localUncompressedSize === uncompressedSize
-    const localSizeMetadataEmpty =
-      localChecksum === 0 &&
-      localCompressedSize === 0 &&
-      localUncompressedSize === 0
 
-    if (
-      (!usesDataDescriptor && !localSizeMetadataMatches) ||
-      (usesDataDescriptor &&
-        !localSizeMetadataMatches &&
-        !localSizeMetadataEmpty)
-    ) {
-      throw new Error('ZIP central and local metadata do not match.')
+    if (!localSizeMetadataMatches) {
+      throw new InvalidZipError('ZIP central and local metadata do not match.')
     }
 
-    if (dataEnd > buffer.length) {
-      throw new Error('Invalid ZIP entry size.')
+    if (compressionMethod === STORE && compressedSize !== uncompressedSize) {
+      throw new InvalidZipError('Invalid stored ZIP entry size.')
     }
 
     const compressedData = buffer.subarray(dataStart, dataEnd)
-    const data =
-      compressionMethod === STORE
-        ? Buffer.from(compressedData)
-        : inflateRawSync(compressedData, {
-            maxOutputLength: uncompressedSize,
-          })
+    let data: Buffer
+    try {
+      if (compressionMethod === STORE) {
+        data = Buffer.from(compressedData)
+      } else {
+        const inflated = inflateRawSync(compressedData, {
+          info: true,
+          maxOutputLength: Math.max(1, uncompressedSize),
+        }) as unknown as {
+          buffer: Buffer
+          engine: { bytesWritten: number }
+        }
+        if (inflated.engine.bytesWritten !== compressedData.length) {
+          throw new InvalidZipError('Invalid ZIP compressed data length.')
+        }
+        data = inflated.buffer
+      }
+    } catch (error) {
+      if (error instanceof InvalidZipError) throw error
+      throw new InvalidZipError('Invalid ZIP compressed data.', error)
+    }
 
     if (data.length !== uncompressedSize) {
-      throw new Error('Invalid ZIP entry length.')
+      throw new InvalidZipError('Invalid ZIP entry length.')
     }
 
     if (crc32(data) !== expectedChecksum) {
-      throw new Error('Invalid ZIP entry checksum.')
+      throw new InvalidZipError('Invalid ZIP entry checksum.')
     }
 
     entries.push({
@@ -274,8 +383,25 @@ export function parseZip(
       compressedSize,
       uncompressedSize,
     })
+    localRanges.push({ start: localHeaderOffset, end: dataEnd })
 
-    centralOffset = fileNameEnd + extraLength + commentLength
+    centralOffset = centralEntryEnd
+  }
+
+  if (centralOffset !== centralDirectoryEnd) {
+    throw new InvalidZipError('Invalid ZIP central directory size.')
+  }
+
+  localRanges.sort((left, right) => left.start - right.start)
+  let expectedLocalOffset = 0
+  for (const range of localRanges) {
+    if (range.start !== expectedLocalOffset || range.end < range.start) {
+      throw new InvalidZipError('ZIP local file ranges are not canonical.')
+    }
+    expectedLocalOffset = range.end
+  }
+  if (expectedLocalOffset !== centralDirectoryOffset) {
+    throw new InvalidZipError('ZIP local file ranges are incomplete.')
   }
 
   return entries

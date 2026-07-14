@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-07-07'
+timestamp: '2026-07-14'
 tags:
   - ci
   - deployment
@@ -40,9 +40,16 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **stg** (`*.klicker.stg.df-app.ch`): workers ride the floating `v3` tag; releases tracked via a `rollout.klicker.uzh.ch/release` pod annotation.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names.
+- **Import/export is fail-closed**: absent `IMPORT_EXPORT_ENABLED=true`, user operations and Manage entry points stay disabled. Assessment mode hard-disables the feature. Target chart values, external secrets, worker allowlists, and staged enablement still require operator review and evidence under the production runbook; do not infer readiness from the application gate alone.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 
+## Database migrations
+
+Deployment images and Helm charts do not run Prisma migrations. The repository exposes production-only import/export operation aliases, but no workflow orchestrates the inspect/deploy/reinspect sequence for normal and assessment databases. A named DBA/release owner, approved runner and reviewer boundary, backup/PITR proof, previous-image smoke, and the external Helm executor remain required. The backend boot-time `Migration` runner is a separate data-fix mechanism and does not apply Prisma migrations.
+
+Import/export must remain gated off while its additive migration, backfills, deferred-constraint validation, and infrastructure preflight execute. [Data & Migrations](./data-and-migrations.md#importexport-additive-migration) contains the target audit and large-table paths; the [Import/Export Production Runbook](./import-export-production-runbook.md) contains the operator-controlled sequence, exact operation aliases, evidence schema, and rollback posture. Every owner/evidence field left `TBD` remains a release blocker.
+
 ## Open questions (verify before documenting further)
 
-Who/what runs `helm upgrade` on tag push, and where `prisma migrate deploy` is invoked during deployment — neither is discoverable in-repo.
+Who owns and invokes the existing manual Prisma deployment aliases and `helm upgrade`, in what order, and where their evidence is stored remains undiscoverable in-repo.

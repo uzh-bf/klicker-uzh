@@ -263,13 +263,6 @@ type AnswerCollection {
   updatedAt: Date
 }
 
-type AnswerCollectionBasic {
-  id: Int!
-  name: String!
-  numOfEntries: Int
-  version: Int!
-}
-
 type AnswerCollectionEntry {
   id: Int!
   numSolutionUsages: Int
@@ -1089,8 +1082,8 @@ type ElementExportPackageLink {
 type ElementExportPackagePreview {
   answerCollections: [ElementExportPackagePreviewAnswerCollection!]!
   elements: [ElementExportPackagePreviewElement!]!
-  errors: [String!]!
-  warnings: [String!]!
+  errors: [ImportExportErrorCode!]!
+  warnings: [ImportExportWarningCode!]!
 }
 
 type ElementExportPackagePreviewAnswerCollection {
@@ -1124,9 +1117,9 @@ type ElementFeedback {
 type ElementImportPackagePreview {
   answerCollections: [ElementImportPackagePreviewAnswerCollection!]!
   elements: [ElementImportPackagePreviewElement!]!
-  errors: [String!]!
+  errors: [ImportExportErrorCode!]!
   importToken: String
-  warnings: [String!]!
+  warnings: [ImportExportWarningCode!]!
 }
 
 type ElementImportPackagePreviewAnswerCollection {
@@ -1134,26 +1127,37 @@ type ElementImportPackagePreviewAnswerCollection {
   description: String!
   entries: [ElementImportPackagePreviewEntry!]!
   existingAnswerCollectionId: Int
+  existingAnswerCollectionName: String
   name: String!
   ref: String!
 }
 
+type ElementImportPackagePreviewCaseStudyOptions {
+  cases: [CaseStudyCase!]!
+  criteria: [CaseStudyCriterion!]!
+  hasSampleSolution: Boolean!
+  type: ElementType!
+}
+
+type ElementImportPackagePreviewContentOptions {
+  type: ElementType!
+}
+
 type ElementImportPackagePreviewElement {
   alreadyImported: Boolean!
-  answerCollectionEntries: [ElementImportPackagePreviewEntry!]!
   answerCollectionId: Int
-  answerCollectionItems: [ElementImportPackagePreviewEntry!]!
+  answerCollectionItemIds: [Int!]!
   answerCollectionRef: String
   basePoints: Boolean!
   content: String!
   existingElementId: Int
+  existingElementName: String
   explanation: String
   name: String!
-  options: Json!
+  options: ElementImportPackagePreviewOptions!
   pointsMultiplier: Int!
   ref: String!
   status: ElementStatus!
-  tags: [String!]!
   type: ElementType!
 }
 
@@ -1162,16 +1166,72 @@ type ElementImportPackagePreviewEntry {
   value: String!
 }
 
+type ElementImportPackagePreviewFlashcardOptions {
+  type: ElementType!
+}
+
+type ElementImportPackagePreviewFreeTextOptions {
+  hasSampleSolution: Boolean!
+  restrictions: FreeTextRestrictions
+  solutions: [String!]
+  type: ElementType!
+}
+
+type ElementImportPackagePreviewKPRIMOptions {
+  choices: [Choice!]!
+  displayMode: ElementDisplayMode!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  type: ElementType!
+}
+
+type ElementImportPackagePreviewMCOptions {
+  choices: [Choice!]!
+  displayMode: ElementDisplayMode!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  type: ElementType!
+}
+
+type ElementImportPackagePreviewNumericalOptions {
+  accuracy: Int
+  exactSolutions: [Float!]
+  hasSampleSolution: Boolean!
+  placeholder: String
+  restrictions: NumericalRestrictions
+  solutionRanges: [NumericalSolutionRange!]
+  type: ElementType!
+  unit: String
+}
+
+union ElementImportPackagePreviewOptions = ElementImportPackagePreviewCaseStudyOptions | ElementImportPackagePreviewContentOptions | ElementImportPackagePreviewFlashcardOptions | ElementImportPackagePreviewFreeTextOptions | ElementImportPackagePreviewKPRIMOptions | ElementImportPackagePreviewMCOptions | ElementImportPackagePreviewNumericalOptions | ElementImportPackagePreviewSCOptions | ElementImportPackagePreviewSelectionOptions
+
+type ElementImportPackagePreviewSCOptions {
+  choices: [Choice!]!
+  displayMode: ElementDisplayMode!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  type: ElementType!
+}
+
+type ElementImportPackagePreviewSelectionOptions {
+  hasSampleSolution: Boolean!
+  numberOfInputs: Int!
+  type: ElementType!
+}
+
 type ElementImportPackageResult {
   importedAnswerCollections: Int!
   importedElements: Int!
   skippedElements: Int!
+  warnings: [ImportExportWarningCode!]!
 }
 
 type ElementImportPackageUpload {
-  blobName: String!
+  artifactId: String!
   expiresAt: Date!
-  uploadSasURL: String!
+  uploadCapability: String!
+  uploadURL: String!
 }
 
 type ElementInstance {
@@ -1642,6 +1702,46 @@ type GroupMessage {
   updatedAt: Date!
 }
 
+enum ImportExportErrorCode {
+  ANSWER_COLLECTION_EXPORT_PERMISSION
+  ELEMENT_EXPORT_PERMISSION
+  ELEMENT_NOT_PORTABLE
+  EXPORT_AGGREGATE_LIMIT
+  EXPORT_PACKAGE_TOO_LARGE
+  EXPORT_SOURCE_CHANGED
+  IMPORT_AGGREGATE_LIMIT
+  IMPORT_ARTIFACT_QUOTA_EXCEEDED
+  IMPORT_EXPORT_DISABLED
+  IMPORT_EXPORT_INFRASTRUCTURE_FAILURE
+  IMPORT_EXPORT_RATE_LIMITED
+  IMPORT_EXPORT_RATE_LIMIT_UNAVAILABLE
+  IMPORT_INVALID_OPTIONS
+  IMPORT_INVALID_PACKAGE
+  IMPORT_INVALID_SELECTION
+  IMPORT_IN_PROGRESS
+  IMPORT_MANIFEST_NOT_AT_ROOT
+  IMPORT_PACKAGE_CHANGED
+  IMPORT_PACKAGE_EXPIRED
+  IMPORT_PACKAGE_NOT_FOUND
+  IMPORT_PACKAGE_TOO_LARGE
+  IMPORT_REPLAY_MISMATCH
+  IMPORT_TOKEN_EXPIRED
+  IMPORT_TOKEN_INVALID
+  IMPORT_UNSAFE_REFERENCE
+  IMPORT_UNSUPPORTED_FILE_TYPE
+  IMPORT_UNSUPPORTED_PACKAGE
+  IMPORT_UPLOAD_TOO_LARGE
+  TOO_MANY_ELEMENTS
+}
+
+enum ImportExportWarningCode {
+  IMPORT_CLEANUP_PENDING
+  IMPORT_EXTERNAL_MEDIA_NOT_PACKAGED
+  IMPORT_MEDIA_NOT_INCLUDED
+  IMPORT_STATUS_NORMALIZED_TO_REVIEW
+  IMPORT_UNUSED_MEDIA
+}
+
 union InstanceEvaluation = CaseStudyInstanceEvaluation | ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
 
 type InstanceFeedback {
@@ -1958,7 +2058,7 @@ type Mutation {
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
-  prepareElementImportPackageUpload(filename: String!): ElementImportPackageUpload
+  prepareElementImportPackageUpload(bytes: Int!, filename: String!): ElementImportPackageUpload
   promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
@@ -2003,7 +2103,7 @@ type Mutation {
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
-  validateElementImportPackage(blobName: String!): ElementImportPackagePreview
+  validateElementImportPackage(artifactId: String!): ElementImportPackagePreview
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
@@ -2417,6 +2517,7 @@ type Query {
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
+  canUseElementImportExport: Boolean!
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!
@@ -2438,7 +2539,6 @@ type Query {
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
   getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
-  getAnswerCollectionsInfoBasic: [AnswerCollectionBasic!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]

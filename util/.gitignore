@@ -1,5 +1,2 @@
 *.tar
 *.dump
-*.gpg
-*.sha256
-*latest

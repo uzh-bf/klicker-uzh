@@ -15,10 +15,8 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import {
-  computeAnswerCollectionImportFingerprint,
-  refreshElementImportFingerprint,
-} from './importExportFingerprints.js'
+import { computeAnswerCollectionDidacticFingerprint } from '../lib/importExportFingerprintCanonicalization.js'
+import { refreshElementImportFingerprint } from './importExportFingerprints.js'
 
 // ! Helper functions
 // #region
@@ -4659,21 +4657,20 @@ export async function copyAnswerCollectionToAccount(
   })
 
   await ctx.prisma.$transaction(async (prisma) => {
-    const name =
-      importCount > 0 ? `${collection.name} (${importCount})` : collection.name
+    const collectionFingerprint = computeAnswerCollectionDidacticFingerprint({
+      entries: collection.entries,
+    })
     // create new answer collection with the content of the original one
     const newCollection = await prisma.answerCollection.create({
       data: {
         originalId: collection.id,
-        name,
+        name:
+          importCount > 0
+            ? `${collection.name} (${importCount})`
+            : collection.name,
         description: collection.description,
-        version: collection.version,
-        importFingerprint: computeAnswerCollectionImportFingerprint({
-          name,
-          description: collection.description,
-          version: collection.version,
-          entries: collection.entries.map((entry) => ({ value: entry.value })),
-        }),
+        importFingerprint: collectionFingerprint?.fingerprint ?? null,
+        importFingerprintVersion: collectionFingerprint?.version ?? null,
         owner: {
           connect: {
             id: ctx.user.sub,
@@ -6912,5 +6909,4 @@ export async function getObjectActivity(
     isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
   }))
 }
-
 // #endregion

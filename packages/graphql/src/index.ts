@@ -1,15 +1,21 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
-export { assertImportExportTokenSecretConfig } from './services/elementImportExport.js'
+export {
+  getImportExportErrorCode,
+  ImportExportErrorCode,
+} from './lib/importExportErrors.js'
+export {
+  getImportExportStartupResponsibilities,
+  initializeImportExportRuntimeConfig,
+} from './lib/importExportRuntimeConfig.js'
+export { assertImportExportTokenSecretConfig } from './lib/importExportTokenSecret.js'
+export { getLocalImportedMediaDownload } from './services/mediaStorage.js'
 export {
   assertImportExportPackageStorageConfig,
-  cleanupImportExportPackages,
-  decodeLocalImportExportPackageBlobName,
-  handleCleanupImportExportPackages,
+  downloadLocalElementExportPackage,
   isLocalImportExportPackageStorageEnabled,
-  readLocalImportExportPackageBlob,
-  writeLocalImportExportPackageBlob,
+  uploadPreparedElementImportPackage,
 } from './services/packageStorage.js'
 
 import builder from './builder.js'
@@ -54,6 +60,7 @@ import {
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
 } from './services/groups.js'
+import { handleRefreshImportExportFingerprints } from './services/importExportFingerprintMaintenance.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -78,6 +85,7 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleRefreshImportExportFingerprints,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

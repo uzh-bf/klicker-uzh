@@ -1,7 +1,7 @@
-mutation PrepareElementImportPackageUpload($filename: String!) {
-  prepareElementImportPackageUpload(filename: $filename) {
-    uploadSasURL
-    blobName
-    expiresAt
+mutation PrepareElementImportPackageUpload($filename: String!, $bytes: Int!) {
+  prepareElementImportPackageUpload(filename: $filename, bytes: $bytes) {
+    uploadURL
+    uploadCapability
+    artifactId
   }
 }

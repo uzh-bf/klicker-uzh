@@ -8,6 +8,16 @@ import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
+export type RefreshImportExportFingerprintsInput = {
+  answerCollectionId: number
+  afterElementId?: number
+}
+
+export type ImportExportFingerprintRefreshResult = {
+  processed: number
+  nextAfterElementId?: number
+}
+
 export interface HatchetHandlerGlobalContext {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -20,6 +30,11 @@ export interface HatchetHandlerGlobalContext {
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
+  handleRefreshImportExportFingerprints: (
+    input: RefreshImportExportFingerprintsInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<ImportExportFingerprintRefreshResult>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -99,6 +114,10 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  refreshImportExportFingerprints: TaskWorkflowDeclaration<
+    RefreshImportExportFingerprintsInput,
+    { success: boolean; processed: number }
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

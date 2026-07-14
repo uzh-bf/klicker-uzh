@@ -17,6 +17,31 @@ global:
 podAnnotations:
   reloader.stakater.com/auto: 'true'
 
+importExport:
+  enabled: false
+  privatePreviewOnly: true
+  packageStorage: azure
+  packageTtlHours: 24
+  rateLimitWindowSeconds: 900
+  rateLimits:
+    preview: 30
+    export: 30
+    upload: 30
+    validate: 30
+    import: 5
+  concurrency:
+    leaseTtlMs: 120000
+    previewPerUser: 2
+    previewGlobal: 8
+    exportPerUser: 2
+    exportGlobal: 8
+  timeouts:
+    httpHeadersMs: 10000
+    httpRequestMs: 120000
+    uploadBodyMs: 60000
+    azureMetadataMs: 10000
+    azureTransferMs: 60000
+
 hatchet:
   client:
     tlsStrategy: 'none'

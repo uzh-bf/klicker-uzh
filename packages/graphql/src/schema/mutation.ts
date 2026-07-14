@@ -2,6 +2,12 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
+import {
+  ImportExportDomainError,
+  ImportExportErrorCode,
+  toImportExportGraphQLError,
+} from '../lib/importExportErrors.js'
+import { MAX_IMPORT_EXPORT_ELEMENTS } from '../lib/importExportPackageConfig.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
@@ -98,6 +104,28 @@ import {
   UserLogin,
   UserLoginScope,
 } from './user.js'
+
+type ImportElementPackageArgs = {
+  importToken: string
+  selectedElementRefs: string[]
+}
+type ImportElementPackageContext = Parameters<
+  typeof ElementImportExportService.importElementPackage
+>[1]
+
+export async function resolveImportElementPackageAtBoundary(
+  args: ImportElementPackageArgs,
+  ctx: ImportElementPackageContext,
+  service: typeof ElementImportExportService.importElementPackage = ElementImportExportService.importElementPackage
+) {
+  if (args.selectedElementRefs.length > MAX_IMPORT_EXPORT_ELEMENTS) {
+    throw toImportExportGraphQLError(
+      new ImportExportDomainError(ImportExportErrorCode.INVALID_SELECTION)
+    )
+  }
+
+  return await service(args, ctx)
+}
 
 // shorthand for frequently accessed functions
 const checkAccess = SharingService.checkAccess
@@ -3507,6 +3535,7 @@ export const Mutation = builder.mutationType({
         type: ElementImportPackageUpload,
         args: {
           filename: t.arg.string({ required: true }),
+          bytes: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await ElementImportExportService.prepareElementImportPackageUpload(
@@ -3520,7 +3549,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: ElementImportPackagePreview,
         args: {
-          blobName: t.arg.string({ required: true }),
+          artifactId: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await ElementImportExportService.validateElementImportPackage(
@@ -3538,13 +3567,7 @@ export const Mutation = builder.mutationType({
           selectedElementRefs: t.arg.stringList({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await ElementImportExportService.importElementPackage(
-            {
-              importToken: args.importToken,
-              selectedElementRefs: args.selectedElementRefs,
-            },
-            ctx
-          )
+          return await resolveImportElementPackageAtBoundary(args, ctx)
         },
       }),
 

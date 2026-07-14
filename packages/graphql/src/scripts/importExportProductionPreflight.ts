@@ -1,22 +1,46 @@
-import { assertImportExportTokenSecretConfig } from '../services/elementImportExport.js'
+import {
+  ImportExportOperationError,
+  createOperationOutput,
+  parseDatabaseTarget,
+  requireMasterGateOff,
+  runOperationCli,
+} from '../lib/importExportOperations/runtime.js'
+import { assertImportExportTokenSecretConfig } from '../lib/importExportTokenSecret.js'
 import { checkImportExportPackageStorageReadiness } from '../services/packageStorage.js'
 
-async function run() {
+export async function runImportExportProductionPreflight(
+  env: NodeJS.ProcessEnv = process.env
+) {
+  requireMasterGateOff(env)
+  if (parseDatabaseTarget(env) !== 'normal') {
+    throw new ImportExportOperationError('PREFLIGHT_NORMAL_TARGET_REQUIRED')
+  }
   assertImportExportTokenSecretConfig()
 
+  // This entry point is production-only: a metadata-only check must never be
+  // reported as release preflight evidence.
   const result = await checkImportExportPackageStorageReadiness({
-    sasRoundTrip: process.env.IMPORT_EXPORT_PREFLIGHT_SAS_ROUNDTRIP === 'true',
+    sasRoundTrip: true,
   })
 
-  console.log(
-    `[ImportExportProductionPreflight] OK container=${result.containerName} sasRoundTrip=${result.sasRoundTrip}`
-  )
-  console.log(
-    '[ImportExportProductionPreflight] Reminder: browser CORS for SAS PUT/GET must still be validated from the frontend origin.'
+  return createOperationOutput(
+    'import-export-preflight',
+    {
+      outcome: 'success',
+      code: 'PREFLIGHT_COMPLETE',
+      checks: {
+        masterGateOff: true,
+        tokenSecretConfigured: true,
+        packageStorageReady: true,
+        sasRoundTrip: result.sasRoundTrip,
+      },
+    },
+    env
   )
 }
 
-run().catch((error) => {
-  console.error('[ImportExportProductionPreflight] FAILED', error)
-  process.exit(1)
-})
+const exitCode = await runOperationCli(
+  'import-export-preflight',
+  async () => await runImportExportProductionPreflight()
+)
+process.exitCode = exitCode

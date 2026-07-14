@@ -68,6 +68,8 @@ test.describe('Tests the availability of certain functionalities to catalyst use
     validateFeatureAvailability,
   }) => {
     await loginLecturer()
+    await expect(page.getByTestId('elements-download')).toBeVisible()
+    await expect(page.getByTestId('elements-upload')).toBeVisible()
     await validateFeatureAvailability(page, {
       publicPreview: true,
       privatePreview: true,
@@ -85,6 +87,9 @@ test.describe('Tests the availability of certain functionalities to catalyst use
     })
     await loginLecturer()
     await page.reload()
+    await expect(page.getByTestId('create-practice-quiz')).toBeVisible()
+    await expect(page.getByTestId('elements-download')).not.toBeAttached()
+    await expect(page.getByTestId('elements-upload')).not.toBeAttached()
     await validateFeatureAvailability(page, {
       publicPreview: true,
       privatePreview: false,
@@ -102,6 +107,8 @@ test.describe('Tests the availability of certain functionalities to catalyst use
     })
     await loginLecturer()
     await page.reload()
+    await expect(page.getByTestId('elements-download')).toBeVisible()
+    await expect(page.getByTestId('elements-upload')).toBeVisible()
     await validateFeatureAvailability(page, {
       publicPreview: false,
       privatePreview: true,
@@ -119,6 +126,9 @@ test.describe('Tests the availability of certain functionalities to catalyst use
     })
     await loginLecturer()
     await page.reload()
+    await expect(page.getByTestId('create-practice-quiz')).toBeVisible()
+    await expect(page.getByTestId('elements-download')).not.toBeAttached()
+    await expect(page.getByTestId('elements-upload')).not.toBeAttached()
     await validateFeatureAvailability(page, {
       publicPreview: false,
       privatePreview: false,

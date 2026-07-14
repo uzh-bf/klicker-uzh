@@ -22,6 +22,7 @@ import {
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
+  type RefreshImportExportFingerprintsInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -37,6 +38,7 @@ import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
 } from 'src/services/groups.js'
+import { handleRefreshImportExportFingerprints } from 'src/services/importExportFingerprintMaintenance.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -77,39 +79,6 @@ type TestInitializationResult = {
   userSixCtx: ContextWithUser
 }
 
-function isPrismaPermissionError(error: unknown) {
-  if (!error || typeof error !== 'object') return false
-
-  const maybePrismaError = error as { code?: string; message?: string }
-  return (
-    maybePrismaError.code === 'EPERM' ||
-    maybePrismaError.code === 'P1010' ||
-    /permission denied|eperm/i.test(maybePrismaError.message ?? '')
-  )
-}
-
-function createTestDatabasePermissionError(operation: string, error: unknown) {
-  const message =
-    `Test database user lacks permissions for ${operation}. ` +
-    'Use a writable test DATABASE_URL with INSERT/UPDATE/DELETE privileges on the Prisma schema before running DB-backed GraphQL tests.'
-  const wrapped = new Error(message)
-
-  Object.defineProperty(wrapped, 'cause', {
-    value: error,
-    enumerable: false,
-  })
-
-  return wrapped
-}
-
-function throwIfTestDatabasePermissionError(operation: string, error: unknown) {
-  if (isPrismaPermissionError(error)) {
-    throw createTestDatabasePermissionError(operation, error)
-  }
-
-  throw error
-}
-
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
 export async function testInitialization(
@@ -118,24 +87,20 @@ export async function testInitialization(
   emitter: EventEmitter
 ): Promise<TestInitializationResult> {
   // upsert all users in the database
-  try {
-    await Promise.all(
-      [userOne, userTwo, userThree, userFour, userFive, userSix].map(
-        async (user) =>
-          await prisma.user.upsert({
-            where: { id: user.id },
-            update: {},
-            create: {
-              id: user.id,
-              email: user.email,
-              shortname: user.shortname,
-            },
-          })
-      )
+  await Promise.all(
+    [userOne, userTwo, userThree, userFour, userFive, userSix].map(
+      async (user) =>
+        await prisma.user.upsert({
+          where: { id: user.id },
+          update: {},
+          create: {
+            id: user.id,
+            email: user.email,
+            shortname: user.shortname,
+          },
+        })
     )
-  } catch (error) {
-    throwIfTestDatabasePermissionError('User upsert test setup', error)
-  }
+  )
 
   // verify that users have been created correctly in the database
   const dbUsers = await prisma.user.findMany()
@@ -165,8 +130,14 @@ export async function testInitialization(
   })
 
   const pubSub = createPubSub()
-  const redisExec = new Redis({ host: '127.0.0.1', port: 6379 })
-  const redisAssessmentExec = new Redis({ host: '127.0.0.1', port: 6380 })
+  const redisExec = new Redis({
+    host: process.env.REDIS_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+  })
+  const redisAssessmentExec = new Redis({
+    host: process.env.REDIS_ASSESSMENT_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6380),
+  })
 
   const hatchetCtx = {
     hatchet,
@@ -179,6 +150,16 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    refreshImportExportFingerprints: hatchet.task({
+      name: 'refresh-import-export-fingerprints',
+      fn: async (input: RefreshImportExportFingerprintsInput) => {
+        const result = await handleRefreshImportExportFingerprints(
+          input,
+          hatchetCtx
+        )
+        return { success: true, processed: result.processed }
+      },
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({
@@ -388,11 +369,7 @@ export async function testInitialization(
 export async function testCleanup(prisma: PrismaClient) {
   // audit logs do not carry foreign keys, so they need explicit cleanup between
   // tests that reuse deterministic object ids.
-  try {
-    await prisma.auditLogEntry.deleteMany()
-  } catch (error) {
-    throwIfTestDatabasePermissionError('AuditLogEntry cleanup', error)
-  }
+  await prisma.auditLogEntry.deleteMany()
 
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
@@ -412,6 +389,12 @@ export async function testCleanup(prisma: PrismaClient) {
       `Permissions or derived permissions still exist in the database: ${dbPermissions} permissions, ${dbPermissionsDerived} derived permissions`
     )
   }
+
+  // Durable import/export rows deliberately restrict owner/receipt deletion
+  // until exact cleanup records have been removed.
+  await prisma.importMediaStaging.deleteMany()
+  await prisma.elementImportReceipt.deleteMany()
+  await prisma.importExportPackageArtifact.deleteMany()
 
   // delete all users, participants and user groups / participant groups that have been added for the test run
   await prisma.user.deleteMany()

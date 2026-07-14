@@ -48,6 +48,12 @@ import {
   type TemplateBlockInput as TemplateBlockInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import {
+  ImportExportErrorCode as ImportExportErrorCodeEnum,
+  ImportExportWarningCode as ImportExportWarningCodeEnum,
+  type ImportExportErrorCode as ImportExportErrorCodeType,
+  type ImportExportWarningCode as ImportExportWarningCodeType,
+} from '../lib/importExportErrors.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
   CaseStudyCaseSolution,
@@ -64,6 +70,10 @@ import {
   NumericalSolutionRange,
   SelectionElementOptions,
 } from './elementData.js'
+import {
+  createElementImportPackagePreviewOptions,
+  ElementImportPackagePreviewOptions,
+} from './elementImportPreviewOptions.js'
 import { FlashcardCorrectness } from './evaluation.js'
 import {
   CaseStudyCaseResponse,
@@ -75,6 +85,13 @@ import { PermissionLevel, SharingType } from './sharing.js'
 export const SortByType = builder.enumType('SortByType', {
   values: Object.values(SortByTypeEnum),
 })
+export const ImportExportErrorCode = builder.enumType('ImportExportErrorCode', {
+  values: Object.values(ImportExportErrorCodeEnum),
+})
+export const ImportExportWarningCode = builder.enumType(
+  'ImportExportWarningCode',
+  { values: Object.values(ImportExportWarningCodeEnum) }
+)
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -983,8 +1000,8 @@ export const ElementExportPackagePreviewAnswerCollection =
 export interface IElementExportPackagePreview {
   elements: IElementExportPackagePreviewElement[]
   answerCollections: IElementExportPackagePreviewAnswerCollection[]
-  warnings: string[]
-  errors: string[]
+  warnings: ImportExportWarningCodeType[]
+  errors: ImportExportErrorCodeType[]
 }
 export const ElementExportPackagePreviewRef =
   builder.objectRef<IElementExportPackagePreview>('ElementExportPackagePreview')
@@ -997,14 +1014,15 @@ export const ElementExportPackagePreview =
       answerCollections: t.expose('answerCollections', {
         type: [ElementExportPackagePreviewAnswerCollection],
       }),
-      warnings: t.exposeStringList('warnings'),
-      errors: t.exposeStringList('errors'),
+      warnings: t.expose('warnings', { type: [ImportExportWarningCode] }),
+      errors: t.expose('errors', { type: [ImportExportErrorCode] }),
     }),
   })
 
 export interface IElementImportPackageUpload {
-  uploadSasURL: string
-  blobName: string
+  uploadURL: string
+  uploadCapability: string
+  artifactId: string
   expiresAt: Date
 }
 export const ElementImportPackageUploadRef =
@@ -1012,8 +1030,9 @@ export const ElementImportPackageUploadRef =
 export const ElementImportPackageUpload =
   ElementImportPackageUploadRef.implement({
     fields: (t) => ({
-      uploadSasURL: t.exposeString('uploadSasURL'),
-      blobName: t.exposeString('blobName'),
+      uploadURL: t.exposeString('uploadURL'),
+      uploadCapability: t.exposeString('uploadCapability'),
+      artifactId: t.exposeString('artifactId'),
       expiresAt: t.expose('expiresAt', { type: 'Date' }),
     }),
   })
@@ -1040,6 +1059,7 @@ export interface IElementImportPackagePreviewAnswerCollection {
   description: string
   alreadyImported: boolean
   existingAnswerCollectionId?: number | null
+  existingAnswerCollectionName?: string | null
   entries: IElementImportPackagePreviewEntry[]
 }
 export const ElementImportPackagePreviewAnswerCollectionRef =
@@ -1056,6 +1076,12 @@ export const ElementImportPackagePreviewAnswerCollection =
       existingAnswerCollectionId: t.exposeInt('existingAnswerCollectionId', {
         nullable: true,
       }),
+      existingAnswerCollectionName: t.exposeString(
+        'existingAnswerCollectionName',
+        {
+          nullable: true,
+        }
+      ),
       entries: t.expose('entries', {
         type: [ElementImportPackagePreviewEntry],
       }),
@@ -1072,13 +1098,12 @@ export interface IElementImportPackagePreviewElement {
   basePoints: boolean
   explanation?: string | null
   status: DB.ElementStatus
-  tags: string[]
   alreadyImported: boolean
   existingElementId?: number | null
+  existingElementName?: string | null
   answerCollectionId?: number | null
   answerCollectionRef?: string | null
-  answerCollectionItems: IElementImportPackagePreviewEntry[]
-  answerCollectionEntries: IElementImportPackagePreviewEntry[]
+  answerCollectionItemIds: number[]
 }
 export const ElementImportPackagePreviewElementRef =
   builder.objectRef<IElementImportPackagePreviewElement>(
@@ -1091,14 +1116,19 @@ export const ElementImportPackagePreviewElement =
       name: t.exposeString('name'),
       content: t.exposeString('content'),
       type: t.expose('type', { type: ElementType }),
-      options: t.expose('options', { type: 'Json' }),
+      options: t.field({
+        type: ElementImportPackagePreviewOptions,
+        resolve: createElementImportPackagePreviewOptions,
+      }),
       pointsMultiplier: t.exposeInt('pointsMultiplier'),
       basePoints: t.exposeBoolean('basePoints'),
       explanation: t.exposeString('explanation', { nullable: true }),
       status: t.expose('status', { type: ElementStatus }),
-      tags: t.exposeStringList('tags'),
       alreadyImported: t.exposeBoolean('alreadyImported'),
       existingElementId: t.exposeInt('existingElementId', {
+        nullable: true,
+      }),
+      existingElementName: t.exposeString('existingElementName', {
         nullable: true,
       }),
       answerCollectionId: t.exposeInt('answerCollectionId', {
@@ -1107,11 +1137,9 @@ export const ElementImportPackagePreviewElement =
       answerCollectionRef: t.exposeString('answerCollectionRef', {
         nullable: true,
       }),
-      answerCollectionItems: t.expose('answerCollectionItems', {
-        type: [ElementImportPackagePreviewEntry],
-      }),
-      answerCollectionEntries: t.expose('answerCollectionEntries', {
-        type: [ElementImportPackagePreviewEntry],
+      answerCollectionItemIds: t.field({
+        type: ['Int'],
+        resolve: (element) => element.answerCollectionItemIds,
       }),
     }),
   })
@@ -1120,8 +1148,8 @@ export interface IElementImportPackagePreview {
   importToken?: string | null
   elements: IElementImportPackagePreviewElement[]
   answerCollections: IElementImportPackagePreviewAnswerCollection[]
-  warnings: string[]
-  errors: string[]
+  warnings: ImportExportWarningCodeType[]
+  errors: ImportExportErrorCodeType[]
 }
 export const ElementImportPackagePreviewRef =
   builder.objectRef<IElementImportPackagePreview>('ElementImportPackagePreview')
@@ -1135,8 +1163,8 @@ export const ElementImportPackagePreview =
       answerCollections: t.expose('answerCollections', {
         type: [ElementImportPackagePreviewAnswerCollection],
       }),
-      warnings: t.exposeStringList('warnings'),
-      errors: t.exposeStringList('errors'),
+      warnings: t.expose('warnings', { type: [ImportExportWarningCode] }),
+      errors: t.expose('errors', { type: [ImportExportErrorCode] }),
     }),
   })
 
@@ -1144,6 +1172,7 @@ export interface IElementImportPackageResult {
   importedElements: number
   importedAnswerCollections: number
   skippedElements: number
+  warnings: ImportExportWarningCodeType[]
 }
 export const ElementImportPackageResultRef =
   builder.objectRef<IElementImportPackageResult>('ElementImportPackageResult')
@@ -1153,6 +1182,7 @@ export const ElementImportPackageResult =
       importedElements: t.exposeInt('importedElements'),
       importedAnswerCollections: t.exposeInt('importedAnswerCollections'),
       skippedElements: t.exposeInt('skippedElements'),
+      warnings: t.expose('warnings', { type: [ImportExportWarningCode] }),
     }),
   })
 

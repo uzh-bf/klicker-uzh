@@ -9,22 +9,15 @@ import {
   Element,
   GetUserElementsDocument,
   SharingType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-import DownloadModal from '~/components/elements/manipulation/DownloadModal'
-import UploadModal from '~/components/elements/manipulation/UploadModal'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
@@ -44,9 +37,24 @@ import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
 
+const DownloadModal = dynamic(
+  () => import('~/components/elements/manipulation/DownloadModal'),
+  { ssr: false }
+)
+const UploadModal = dynamic(
+  () => import('~/components/elements/manipulation/UploadModal'),
+  { ssr: false }
+)
+
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const { data: featureAccess, loading: loadingFeatureAccess } = useQuery(
+    UserProfileDocument,
+    { fetchPolicy: 'cache-and-network' }
+  )
+  const canUseElementImportExport =
+    !loadingFeatureAccess && featureAccess?.canUseElementImportExport === true
 
   // search, filter and pagination states
   const [searchString, setSearchString] = useState('')
@@ -76,19 +84,26 @@ function Index() {
   const [downloadElements, setDownloadElements] = useState<Element[] | null>(
     null
   )
-  const seenElementIds = useRef<
-    Record<
-      string,
-      {
-        downloadLink: string
-        filename: string
-        expiresAt: string
-      }
-    >
-  >({})
-
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+
+  const closeImportModal = useCallback(() => {
+    setUploadElements(false)
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[data-cy="elements-upload"]')
+        ?.focus()
+    })
+  }, [])
+
+  const closeExportModal = useCallback(() => {
+    setDownloadElements(null)
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[data-cy="elements-download"]')
+        ?.focus()
+    })
+  }, [])
 
   // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
@@ -189,6 +204,13 @@ function Index() {
     setSelectedElements(nextSelection)
     setDownloadElements(Object.values(nextSelection))
   }, [elements, selectedElements])
+
+  useEffect(() => {
+    if (canUseElementImportExport) return
+
+    setUploadElements(false)
+    setDownloadElements(null)
+  }, [canUseElementImportExport])
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -410,37 +432,47 @@ function Index() {
                     </Button.Label>
                   </Button>
                 ) : null}
-                <Button
-                  className={{
-                    root: 'h-9',
-                  }}
-                  onClick={openDownloadModal}
-                  disabled={selectedElementCount === 0}
-                  aria-label={
-                    selectedElementCount === 0
-                      ? t('manage.elements.downloadElementsDisabledNoSelection')
-                      : t('shared.generic.download')
-                  }
-                  title={
-                    selectedElementCount === 0
-                      ? t('manage.elements.downloadElementsDisabledNoSelection')
-                      : t('manage.elements.downloadElementsPackage')
-                  }
-                  data={{ cy: 'elements-download' }}
-                >
-                  <Button.Icon icon={faDownload} />
-                  <Button.Label>{t('shared.generic.download')}</Button.Label>
-                </Button>
-                <Button
-                  className={{
-                    root: 'h-9',
-                  }}
-                  onClick={() => setUploadElements(true)}
-                  data={{ cy: 'elements-upload' }}
-                >
-                  <Button.Icon icon={faUpload} />
-                  <Button.Label>{t('shared.generic.upload')}</Button.Label>
-                </Button>
+                {canUseElementImportExport ? (
+                  <>
+                    <Button
+                      className={{
+                        root: 'h-9',
+                      }}
+                      onClick={openDownloadModal}
+                      disabled={selectedElementCount === 0}
+                      aria-label={
+                        selectedElementCount === 0
+                          ? t(
+                              'manage.elements.downloadElementsDisabledNoSelection'
+                            )
+                          : t('shared.generic.download')
+                      }
+                      title={
+                        selectedElementCount === 0
+                          ? t(
+                              'manage.elements.downloadElementsDisabledNoSelection'
+                            )
+                          : t('manage.elements.downloadElementsPackage')
+                      }
+                      data={{ cy: 'elements-download' }}
+                    >
+                      <Button.Icon icon={faDownload} />
+                      <Button.Label>
+                        {t('shared.generic.download')}
+                      </Button.Label>
+                    </Button>
+                    <Button
+                      className={{
+                        root: 'h-9',
+                      }}
+                      onClick={() => setUploadElements(true)}
+                      data={{ cy: 'elements-upload' }}
+                    >
+                      <Button.Icon icon={faUpload} />
+                      <Button.Label>{t('shared.generic.upload')}</Button.Label>
+                    </Button>
+                  </>
+                ) : null}
                 <Button
                   primary
                   onClick={() => {
@@ -562,18 +594,15 @@ function Index() {
           }}
         />
       )}
-      {downloadElements && (
+      {canUseElementImportExport && downloadElements && (
         <DownloadModal
           selectedElements={downloadElements}
-          seenElementIds={seenElementIds}
-          onClose={() => {
-            setDownloadElements(null)
-          }}
+          onClose={closeExportModal}
         />
       )}
-      {uploadElements && (
+      {canUseElementImportExport && uploadElements && (
         <UploadModal
-          onClose={() => setUploadElements(false)}
+          onClose={closeImportModal}
           refetchElements={async () => {
             await refetchElements()
           }}

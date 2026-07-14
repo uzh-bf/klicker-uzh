@@ -86,6 +86,9 @@ export async function cleanupDatabase() {
     await prisma.element.deleteMany()
     await prisma.answerCollection.deleteMany()
 
+    await prisma.importMediaStaging.deleteMany()
+    await prisma.elementImportReceipt.deleteMany()
+    await prisma.importExportPackageArtifact.deleteMany()
     await prisma.mediaFile.deleteMany()
     await prisma.catalogCollection.deleteMany()
     await prisma.auditLogEntry.deleteMany()

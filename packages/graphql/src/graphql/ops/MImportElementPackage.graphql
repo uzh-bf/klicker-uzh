@@ -7,7 +7,6 @@ mutation ImportElementPackage(
     selectedElementRefs: $selectedElementRefs
   ) {
     importedElements
-    importedAnswerCollections
-    skippedElements
+    warnings
   }
 }

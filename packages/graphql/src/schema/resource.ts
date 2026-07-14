@@ -86,24 +86,6 @@ export const AnswerCollection = AnswerCollectionRef.implement({
   }),
 })
 
-interface IAnswerCollectionsInfoBasic {
-  id: number
-  name: string
-  numOfEntries?: number
-  version: number
-}
-export const AnswerCollectionsInfoBasicRef =
-  builder.objectRef<IAnswerCollectionsInfoBasic>('AnswerCollectionBasic')
-export const AnswerCollectionsInfoBasic =
-  AnswerCollectionsInfoBasicRef.implement({
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-      name: t.exposeString('name'),
-      numOfEntries: t.exposeInt('numOfEntries', { nullable: true }),
-      version: t.exposeInt('version'),
-    }),
-  })
-
 // #endregion
 
 // ----- CHATBOTS -----

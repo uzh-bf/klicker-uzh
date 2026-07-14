@@ -1524,8 +1524,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',
       modifyBasePoints: 'Basispunkte ändern',
-      downloadElements: '{numElements} Elemente herunterladen',
-      uploadElements: 'Elemente hochladen',
       awardBasePoints: 'Basispunkte vergeben',
       noElementsWillBeUpdated: 'Keine Elemente werden verändert',
       nElementsWillBeUpdated: '{number} Elemente werden angepasst',
@@ -1767,112 +1765,151 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',
       questionSavedFailed:
         'Beim Speichern der Frage ist ein Fehler aufgetreten. Bitte beachten Sie die Fehlermeldungen im Formular und überprüfen Sie die Eingaben.',
-      elementNumberImportDescription: 'Nr.',
-      elementTitleImportDescription: 'Titel',
-      elementTypeImportDescription: 'Typ',
-      elementStatusImportDescription: 'Status',
       contentImportDescription: 'Inhalt',
       explanationImportDescription: 'Erklärung',
-      elementAnswerCollectionImportDescription: 'Antwortsammlung',
-      pointsMultiplierImportDescription: 'Punkte-Multiplikator',
-      basePointsImportDescription: 'Basispunkte',
       optionsImportDescription: 'Optionen',
-      elementExists: 'Vorhanden',
-      elementImport: 'Importieren',
       importElements: 'Elemente importieren',
       exportElements: 'Elemente exportieren',
       importElementsInfo:
-        'Importierte Pakete werden als neue Elemente und Antwort-Sammlungen in Ihrem Fragenpool erstellt. Ursprungs-IDs, Berechtigungen, Aktivitaetsresultate und private Metadaten werden nicht uebernommen.',
+        'Importierte Pakete erstellen neue private Elemente und Antwortsammlungen in Ihrem Fragenpool. Ursprungs-IDs, Tags, Berechtigungen, Aktivitätsresultate und private Metadaten werden nicht übernommen.',
+      elementImportCopyrightSolutionsDisclosure:
+        'Pakete können Lösungen und urheberrechtlich geschützte Lehrmaterialien enthalten. Importieren Sie Inhalte nur, wenn Sie zu deren Nutzung berechtigt sind.',
+      elementExportCopyrightSolutionsDisclosure:
+        'Pakete können Lösungen und urheberrechtlich geschützte Lehrmaterialien enthalten. Teilen oder verbreiten Sie Inhalte nur, wenn Sie dazu berechtigt sind.',
+      elementImportPsychometricDisclosure:
+        'Importierte Elemente sind unkalibrierte Kopien mit dem Status «Prüfung». Antworten von Teilnehmenden, Itemstatistiken, Schwierigkeit, Trennschärfe, Reliabilität, Validität, Kalibrierung, Analysen und Bewertungsverläufe werden nicht übernommen.',
       exportElementsInfo:
-        'Exporte enthalten nur wiederverwendbare Elementinhalte. Besitzer, Berechtigungen, Aktivitaetsresultate und private Metadaten werden nicht exportiert.',
+        'Exporte enthalten nur wiederverwendbare Elementinhalte. Tags, Besitzer, Berechtigungen, Aktivitätsresultate und private Metadaten werden nicht exportiert.',
       exportElementsPackageInfo:
-        'Verknuepfte Antwort-Sammlungen werden automatisch eingeschlossen, wenn Sie Bearbeitungsrechte darauf haben.',
-      packageAnswerCollections: 'Antwort-Sammlungen',
+        'Verknüpfte Antwortsammlungen werden automatisch eingeschlossen, wenn Sie Administrator oder Besitzer davon sind.',
+      packageAnswerCollections: 'Antwortsammlungen',
       packageAnswerCollectionsExportDescription:
-        '{numCollections} verknuepfte Antwort-Sammlungen werden in das ZIP-Paket aufgenommen.',
+        '{numCollections, plural, =0 {Keine verknüpften Antwortsammlungen werden in das ZIP-Paket aufgenommen.} one {# verknüpfte Antwortsammlung wird in das ZIP-Paket aufgenommen.} other {# verknüpfte Antwortsammlungen werden in das ZIP-Paket aufgenommen.}}',
       packageAnswerCollectionsImportDescription:
-        '{numCollections} Antwort-Sammlungen werden vor den ausgewaehlten Elementen erstellt.',
+        '{numCollections, plural, =0 {Die ausgewählten Elemente benötigen keine Antwortsammlungen.} one {# Antwortsammlung wird vor den ausgewählten Elementen erstellt.} other {# Antwortsammlungen werden vor den ausgewählten Elementen erstellt.}}',
       packageAnswerCollectionsEmpty:
-        'Dieses Paket enthaelt keine Antwort-Sammlungen.',
-      packageAnswerCollectionEntries: '{count} Eintraege',
+        'Dieses Paket enthält keine Antwortsammlungen.',
+      packageAnswerCollectionEntries:
+        '{count, plural, =0 {Keine Einträge} one {# Eintrag} other {# Einträge}}',
       packageAnswerCollectionUsedBy: 'Verwendet von: {elements}',
-      packageAnswerCollectionMoreEntries: '+{count} weitere',
       packageAnswerCollectionDuplicate: 'Bereits vorhanden',
+      packageAnswerCollectionDuplicateExisting: 'Entspricht "{name}"',
       packageAnswerCollectionDuplicateSummary:
-        '{count} Antwort-Sammlungen entsprechen bestehenden Inhalten. Sie werden trotzdem als neue Sammlungen erstellt, wenn Sie ausgewaehlte Elemente importieren, die sie benoetigen.',
-      packagePreviewLoading: 'Paketinhalt wird geprueft...',
+        '{count, plural, =0 {Keine benötigten Antwortsammlungen entsprechen bestehenden Inhalten.} one {# benötigte Antwortsammlung entspricht bestehenden Inhalten. Sie wird trotzdem als neue Sammlung erstellt, wenn Sie ein Element importieren, das sie benötigt.} other {# benötigte Antwortsammlungen entsprechen bestehenden Inhalten. Sie werden trotzdem als neue Sammlungen erstellt, wenn Sie ausgewählte Elemente importieren, die sie benötigen.}}',
+      packagePreviewLoading: 'Paketinhalt wird geprüft…',
       packagePreviewError:
-        'Der Paketinhalt konnte nicht geprueft werden. Bitte pruefen Sie Ihre Berechtigungen.',
+        'Der Paketinhalt konnte nicht geprüft werden. Bitte versuchen Sie es erneut.',
       packageElementExportPermissionError:
-        'Einige ausgewaehlte Elemente koennen nicht exportiert werden. Sie benoetigen Bearbeitungsrechte auf allen ausgewaehlten Elementen.',
+        'Einige ausgewählte Elemente können nicht exportiert werden. Sie müssen Administrator oder Besitzer aller ausgewählten Elemente sein.',
       packageAnswerCollectionExportPermissionError:
-        'Der Export wurde blockiert, weil mindestens eine verknuepfte Antwort-Sammlung nicht eingeschlossen werden kann. Sie benoetigen Bearbeitungsrechte auf allen verknuepften Antwort-Sammlungen.',
+        'Der Export wurde blockiert, weil mindestens eine verknüpfte Antwortsammlung nicht eingeschlossen werden kann. Sie müssen Administrator oder Besitzer aller verknüpften Antwortsammlungen sein.',
       packageTooManyElementsError:
-        'Der Export wurde blockiert, weil ein Elementpaket hoechstens 100 Elemente enthalten kann.',
+        'Der Export wurde blockiert, weil ein Elementpaket höchstens 100 Elemente enthalten kann.',
+      packageExportTooLargeError:
+        'Der Export wurde blockiert, weil das Paket zu gross wäre. Teilen Sie die Auswahl auf oder entfernen Sie grosse Mediendateien.',
+      packageElementNotPortableError:
+        'Mindestens ein ausgewähltes Element oder eine verknüpfte Antwort-Sammlung verletzt die Anforderungen für portable Pakete. Prüfen und korrigieren oder kürzen Sie die betroffenen Inhalte und versuchen Sie es erneut.',
+      packageAggregateLimitError:
+        'Die Auswahl überschreitet die Grenzen für portable Pakete. Teilen Sie sie in kleinere Gruppen auf oder reduzieren Sie wiederholte Links und komplexe Formatierungen. Versuchen Sie es danach erneut.',
+      packageExportSourceChangedError:
+        'Die Quelldaten wurden während der Paketerstellung geändert. Prüfen Sie die Auswahl und versuchen Sie es erneut.',
+      packageRateLimitedError:
+        'Es wurden zu viele Paketanfragen gestellt. Bitte warten Sie und versuchen Sie es erneut.',
+      packageArtifactQuotaError:
+        'Es sind noch zu viele temporäre Pakete gespeichert. Warten Sie, bis ältere Pakete abgelaufen sind, und versuchen Sie es erneut.',
+      packageServiceUnavailableError:
+        'Der Paketdienst ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.',
+      packageFeatureDisabledError:
+        'Der Import und Export von Elementpaketen ist derzeit nicht verfügbar.',
+      packageDownloadPreparing: 'Paketdownload wird vorbereitet…',
       uploadElementsFile: 'ZIP-Paket hochladen',
       uploadElementsZipDescription:
-        'Ziehen Sie ein KlickerUZH Elemente-ZIP-Paket hierher oder klicken Sie, um eine Datei auszuwaehlen.',
+        'Ziehen Sie ein KlickerUZH-Elementpaket im ZIP-Format hierher oder klicken Sie, um eine Datei auszuwählen.',
       dropElementsZip: 'Legen Sie das ZIP-Paket hier ab.',
-      reviewElementsBeforeImport: 'Elemente pruefen',
+      reviewElementsBeforeImport: 'Elemente prüfen',
       elementImportEmptyState:
-        'Laden Sie ein gueltiges Elementpaket hoch, um den Inhalt zu pruefen.',
+        'Laden Sie ein gültiges Elementpaket hoch, um den Inhalt zu prüfen.',
       elementImportPreviewEmptyState:
-        'Waehlen Sie eine Vorschau, um ein Element vor dem Import zu pruefen.',
+        'Wählen Sie eine Vorschau, um ein Element vor dem Import zu prüfen.',
       elementImportPreview: 'Vorschau',
       elementImportSelectionSummary:
-        '{selected}/{total} Elemente fuer den Import ausgewaehlt',
-      importSelectedElements: 'Ausgewaehlte Elemente importieren',
+        '{selected, plural, =0 {Keine Elemente ausgewählt} one {# Element ausgewählt} other {# Elemente ausgewählt}} {total, plural, =0 {(leeres Paket)} one {(von # Element)} other {(von # Elementen)}}',
+      elementImportSelectAll: 'Alle auswählen',
+      elementImportSelectNone: 'Alle abwählen',
+      elementImportExcludeDuplicates: 'Bestehende Übereinstimmungen abwählen',
+      elementImportSelectionToggle: '«{name}» importieren',
+      importSelectedElements: 'Ausgewählte Elemente importieren',
       elementImportValidationSuccess:
-        '{number} Elemente sind bereit fuer den Import.',
+        '{number, plural, =0 {Keine Elemente sind zum Import bereit.} one {# Element ist zum Import bereit.} other {# Elemente sind zum Import bereit.}}',
+      elementImportStatusUploading: 'Paket wird hochgeladen…',
+      elementImportStatusValidating: 'Paketinhalt wird geprüft…',
+      elementImportStatusReviewing: 'Das Paket ist zur Prüfung bereit.',
+      elementImportStatusImporting: 'Ausgewählte Elemente werden importiert…',
+      elementImportStatusRefreshing:
+        'Import abgeschlossen. Die Elementliste wird aktualisiert…',
+      elementImportSubmittingStatus:
+        'Ausgewählte Elemente werden importiert. Lassen Sie dieses Fenster geöffnet.',
+      elementImportDidacticReview: 'Lösungen und Bewertung',
+      elementImportAnswerPool:
+        '{count, plural, =0 {Keine Einträge im Antwortpool} one {# Eintrag im Antwortpool} other {# Einträge im Antwortpool}}',
+      elementImportNoSampleSolution: 'Keine Musterlösung',
+      elementImportNumericalPlaceholder: 'Eingabeplatzhalter',
+      elementImportIncorrect: 'Falsch',
+      elementImportCriterionStep: 'Schrittweite: {step}',
+      elementImportPreviewElement: 'Vorschau für «{name}»',
       elementImportUploadFailed:
         'Das Paket konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut.',
-      elementImportParseError:
-        'Das Paket konnte nicht gelesen werden. Bitte laden Sie eine gueltige ZIP-Datei hoch.',
       elementImportInvalidFile:
         'Die Datei entspricht nicht dem KlickerUZH Elementpaket-Format.',
+      elementImportUnsupportedPackage:
+        'Diese Paketversion wird nicht unterstützt. Exportieren Sie mit der aktuellen KlickerUZH-Version ein neues Paket.',
       elementImportFileTooLarge:
         'Das Paket ist zu gross. Laden Sie eine ZIP-Datei bis {size} hoch.',
+      elementImportAggregateLimit:
+        'Das Paket enthält zu viele Elemente, Antwort-Sammlungen, Einträge oder Mediendateien. Teilen Sie es in kleinere Pakete auf oder exportieren Sie eine kleinere Auswahl und laden Sie es erneut hoch.',
+      elementImportArtifactQuotaExceeded:
+        'Es sind noch zu viele temporäre Pakete gespeichert. Warten Sie, bis ältere Pakete abgelaufen sind, und versuchen Sie es erneut.',
       elementImportPackageNotFound:
         'Das hochgeladene Paket konnte nicht gefunden werden. Bitte laden Sie es erneut hoch.',
       elementImportInvalidOptions:
-        'Das Paket enthaelt Elementoptionen, die in KlickerUZH nicht gueltig sind.',
-      elementImportTagsInManifest:
-        'Element-Tags muessen in der Element-JSON-Datei definiert werden, nicht in manifest.json.',
+        'Das Paket enthält Elementoptionen, die in KlickerUZH nicht gültig sind.',
       elementImportManifestNotAtRoot:
         'Die ZIP-Datei muss manifest.json auf oberster Ebene enthalten. Komprimieren Sie den Paketinhalt, nicht den umschliessenden Ordner.',
       elementImportStatusNormalizedWarning:
-        'Importierte Elemente werden vor der Verwendung auf den Status Pruefung gesetzt.',
-      elementImportTagsOmittedWarning:
-        'Persoenliche Tags werden fuer die Duplikaterkennung beruecksichtigt, aber nicht in Ihren Fragenpool importiert.',
-      elementImportDuplicatesWarning:
-        'Einige Paketinhalte entsprechen bestehenden Ressourcen in Ihrem Fragenpool.',
+        'Importierte Elemente erhalten vor der Verwendung den Status «Prüfung».',
       elementImportExternalMediaWarning:
-        'Externe Medienlinks bleiben als Links erhalten und werden nicht in Ihre Medienbibliothek kopiert.',
+        'Automatisch geladene externe Bilder werden nicht kopiert und beim Import durch einen sichtbaren Platzhalter ersetzt. Normale Links bleiben unverändert.',
       elementImportMediaMissingWarning:
-        'Einige KlickerUZH Medien konnten nicht eingeschlossen werden und bleiben mit dem urspruenglichen Ort verknuepft.',
-      elementImportAnswerCollectionRequired:
-        'Das Element "{name}" benoetigt eine Antwort-Sammlung. Exportieren und importieren Sie zuerst die benoetigte Antwort-Sammlung.',
-      elementImportAnswerCollectionMissing:
-        'Die Antwort-Sammlung {id} fehlt oder ist nicht zugaenglich. Importieren oder teilen Sie die Antwort-Sammlung, bevor Sie diese Elemente importieren.',
-      elementImportAnswerCollectionItemsMissing:
-        'Die Antwort-Sammlung {id} enthaelt nicht die benoetigten Eintraege. Bitte verwenden Sie die passende Antwort-Sammlung, bevor Sie diese Elemente importieren.',
+        'Einige KlickerUZH-Bilder konnten nicht eingeschlossen werden und werden beim Import durch einen sichtbaren Platzhalter ersetzt.',
+      elementImportUnusedMediaWarning:
+        'Das Paket enthält Medien, auf die von den ausgewählten Elementen nicht verwiesen wird. Diese Medien werden nicht importiert.',
+      elementImportCleanupPendingWarning:
+        'Der Import wurde abgeschlossen, die Bereinigung temporärer Paketdaten steht jedoch noch aus.',
+      elementImportGenericWarning:
+        'Das Paket wurde mit einem Hinweis akzeptiert. Prüfen Sie die importierten Elemente vor der Verwendung.',
       elementImportNoElementsSelected:
-        'Waehlen Sie mindestens ein Element fuer den Import aus.',
-      elementImportTagsAvailableSummary:
-        '{count} Tag-Namen sind in diesem Paket verfuegbar.',
-      elementImportNoTagsAvailable:
-        'Dieses Paket enthaelt keine uebertragbaren Tag-Metadaten.',
+        'Wählen Sie mindestens ein Element für den Import aus.',
+      elementImportSelectionInvalid:
+        'Die ausgewählten Elemente stimmen nicht mehr mit diesem Paket überein. Laden Sie das Paket erneut hoch.',
+      elementImportInProgress:
+        'Dieses Paket wird bereits importiert. Warten Sie, bis der Import abgeschlossen ist.',
+      elementImportRateLimited:
+        'Es wurden zu viele Importanfragen gestellt. Bitte warten Sie und versuchen Sie es erneut.',
+      elementImportServiceUnavailable:
+        'Der Importdienst ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.',
       elementImportDuplicate: 'Bereits importiert',
+      elementImportDuplicateExisting: 'Entspricht "{name}"',
       elementImportDuplicateSummary:
-        '{count} Elemente entsprechen bestehenden Inhalten. Sie bleiben auswaehlbar und werden als neue Elemente importiert, wenn sie ausgewaehlt sind.',
-      elementImportSuccess: '{number} Elemente wurden erfolgreich importiert.',
-      elementImportPartialError:
-        '{number} Elemente wurden importiert, der restliche Import ist jedoch fehlgeschlagen. Bitte pruefen Sie die Datei und versuchen Sie es erneut.',
+        '{count, plural, =0 {Keine ausgewählten Elemente entsprechen bestehenden Inhalten.} one {# ausgewähltes Element entspricht bestehenden Inhalten. Es bleibt auswählbar und wird als neues Element importiert.} other {# ausgewählte Elemente entsprechen bestehenden Inhalten. Sie bleiben auswählbar und werden als neue Elemente importiert.}}',
+      elementImportSuccess:
+        '{number, plural, =0 {Keine Elemente wurden importiert.} one {# Element wurde erfolgreich importiert.} other {# Elemente wurden erfolgreich importiert.}}',
       elementImportError:
-        'Die Elemente konnten nicht importiert werden. Bitte pruefen Sie die Datei und versuchen Sie es erneut.',
+        'Die Elemente konnten nicht importiert werden. Bitte prüfen Sie die Datei und versuchen Sie es erneut.',
+      elementImportRefreshFailed:
+        'Der Import war erfolgreich, aber die Elementliste konnte nicht aktualisiert werden. Laden Sie die Seite neu; importieren Sie das Paket nicht erneut.',
       elementDownloadFailed: 'Die Elemente konnten nicht exportiert werden.',
       downloadElementsDisabledNoSelection:
-        'Waehlen Sie mindestens ein Element aus, bevor Sie es herunterladen.',
+        'Wählen Sie mindestens ein Element aus, bevor Sie es herunterladen.',
       downloadElementsPackage: 'Elementpaket herunterladen',
     },
     activityWizard: {

@@ -6,19 +6,28 @@ import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operation
 import {
   assertImportExportPackageStorageConfig,
   assertImportExportTokenSecretConfig,
-  decodeLocalImportExportPackageBlobName,
   enhanceContext,
+  getImportExportStartupResponsibilities,
+  initializeImportExportRuntimeConfig,
   isLocalImportExportPackageStorageEnabled,
-  readLocalImportExportPackageBlob,
   schema,
-  writeLocalImportExportPackageBlob,
 } from '@klicker-uzh/graphql'
+import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
+import {
+  registerImportExportPreflightRoute,
+  registerImportExportRoutes,
+  type ImportExportRouteContext,
+} from './importExportRoutes.js'
+import {
+  getImportExportManageOriginForStartup,
+  shouldMaskGraphqlErrors,
+} from './runtimeSecurityConfig.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -26,18 +35,34 @@ declare namespace global {
   let __coverage__: any
 }
 
+type PrepareAppContext = Omit<ImportExportRouteContext, 'tasks'> & {
+  tasks: PreparedHatchetTasks
+}
+
 function prepareApp({
   prisma,
   redisExec,
   redisAssessmentExec,
   pubSub,
-  cache,
   emitter,
   hatchet,
   tasks,
-}: any) {
-  assertImportExportPackageStorageConfig()
-  assertImportExportTokenSecretConfig()
+}: PrepareAppContext) {
+  const importExportConfig = initializeImportExportRuntimeConfig()
+  const importExportResponsibilities = getImportExportStartupResponsibilities(
+    'backend',
+    importExportConfig
+  )
+  const importExportEnabled = importExportResponsibilities.userOperations
+  const importExportManageOrigin = getImportExportManageOriginForStartup({
+    userOperations: importExportEnabled,
+  })
+  if (importExportResponsibilities.requiresPackageStorage) {
+    assertImportExportPackageStorageConfig()
+  }
+  if (importExportResponsibilities.requiresTokenSecret) {
+    assertImportExportTokenSecretConfig()
+  }
 
   const armor = new EnvelopArmor({
     maxDepth: {
@@ -50,6 +75,12 @@ function prepareApp({
   const enhancements = armor.protect()
 
   const app = express()
+
+  if (importExportManageOrigin) {
+    registerImportExportPreflightRoute(app, {
+      manageOrigin: importExportManageOrigin,
+    })
+  }
 
   /* istanbul ignore next */
   if (global.__coverage__) {
@@ -71,8 +102,12 @@ function prepareApp({
   )
 
   // Custom JWT middleware to replace passport-jwt
-  async function jwtMiddleware(req: any, res: any, next: any) {
-    let token = null
+  async function jwtMiddleware(
+    req: express.Request,
+    _res: express.Response,
+    next: express.NextFunction
+  ) {
+    let token: string | null = null
 
     // Assessment mode: only check for student NextAuth cookie
     if (process.env.ASSESSMENT_MODE === 'true') {
@@ -120,9 +155,9 @@ function prepareApp({
     if (token) {
       try {
         user = await verifyJWT(token, process.env.APP_SECRET as string)
-      } catch (error) {
+      } catch {
         // JWT verification failed, continue with user = null
-        console.log('JWT verification failed:', error)
+        console.log('JWT verification failed')
       }
     }
 
@@ -195,7 +230,7 @@ function prepareApp({
     }),
     logging: true,
     cors: false,
-    maskedErrors: !process.env.DEBUG,
+    maskedErrors: shouldMaskGraphqlErrors(),
     graphqlEndpoint: '/api/graphql',
   })
 
@@ -203,43 +238,28 @@ function prepareApp({
     res.send('OK')
   })
 
-  if (isLocalImportExportPackageStorageEnabled()) {
-    app.put(
-      '/api/import-export-packages/:blobName',
-      express.raw({ type: '*/*', limit: '12mb' }),
-      async (req, res) => {
-        try {
-          const blobName = decodeLocalImportExportPackageBlobName(
-            req.params.blobName
-          )
-          await writeLocalImportExportPackageBlob(blobName, req.body)
-          res.status(201).send('OK')
-        } catch (error) {
-          console.error('Local import/export package upload failed:', error)
-          res.status(400).send('Invalid package reference.')
-        }
-      }
-    )
-
-    app.get('/api/import-export-packages/:blobName', async (req, res) => {
-      try {
-        const blobName = decodeLocalImportExportPackageBlobName(
-          req.params.blobName
-        )
-        const buffer = await readLocalImportExportPackageBlob(blobName)
-        res.setHeader('Content-Type', 'application/zip')
-        res.setHeader('Cache-Control', 'no-store')
-        res.send(buffer)
-      } catch (error) {
-        console.error('Local import/export package download failed:', error)
-        res.status(404).send('Package not found.')
-      }
+  if (importExportManageOrigin) {
+    registerImportExportRoutes(app, {
+      context: {
+        prisma,
+        redisExec,
+        redisAssessmentExec,
+        pubSub,
+        emitter,
+        hatchet,
+        // Import/export does not invoke tasks; this bridges the pre-existing
+        // runtime/shared Hatchet task declaration mismatch.
+        tasks: tasks as unknown as ImportExportRouteContext['tasks'],
+      },
+      manageOrigin: importExportManageOrigin,
+      localStorageEnabled: isLocalImportExportPackageStorageEnabled(),
+      uploadBodyTimeoutMs: importExportConfig.timeouts.uploadBodyMs,
     })
   }
 
   app.use('/api/graphql', yogaApp as any)
 
-  return { app, yogaApp }
+  return { app, yogaApp, importExportConfig }
 }
 
 export default prepareApp

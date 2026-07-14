@@ -1,5 +1,5 @@
-mutation ValidateElementImportPackage($blobName: String!) {
-  validateElementImportPackage(blobName: $blobName) {
+mutation ValidateElementImportPackage($artifactId: String!) {
+  validateElementImportPackage(artifactId: $artifactId) {
     importToken
     warnings
     errors
@@ -9,6 +9,7 @@ mutation ValidateElementImportPackage($blobName: String!) {
       description
       alreadyImported
       existingAnswerCollectionId
+      existingAnswerCollectionName
       entries {
         id
         value
@@ -19,24 +20,122 @@ mutation ValidateElementImportPackage($blobName: String!) {
       name
       content
       type
-      options
+      options {
+        __typename
+        ... on ElementImportPackagePreviewSCOptions {
+          type
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
+          choices {
+            ix
+            value
+            correct
+            feedback
+          }
+        }
+        ... on ElementImportPackagePreviewMCOptions {
+          type
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
+          choices {
+            ix
+            value
+            correct
+            feedback
+          }
+        }
+        ... on ElementImportPackagePreviewKPRIMOptions {
+          type
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
+          choices {
+            ix
+            value
+            correct
+            feedback
+          }
+        }
+        ... on ElementImportPackagePreviewNumericalOptions {
+          type
+          hasSampleSolution
+          accuracy
+          placeholder
+          unit
+          restrictions {
+            min
+            max
+          }
+          solutionRanges {
+            min
+            max
+          }
+          exactSolutions
+        }
+        ... on ElementImportPackagePreviewFreeTextOptions {
+          type
+          hasSampleSolution
+          restrictions {
+            maxLength
+          }
+          solutions
+        }
+        ... on ElementImportPackagePreviewContentOptions {
+          type
+        }
+        ... on ElementImportPackagePreviewFlashcardOptions {
+          type
+        }
+        ... on ElementImportPackagePreviewSelectionOptions {
+          type
+          hasSampleSolution
+          numberOfInputs
+        }
+        ... on ElementImportPackagePreviewCaseStudyOptions {
+          type
+          hasSampleSolution
+          criteria {
+            id
+            name
+            order
+            min
+            max
+            step
+            unit
+            labels {
+              min
+              mid
+              max
+            }
+          }
+          cases {
+            id
+            title
+            description
+            order
+            solutions {
+              itemId
+              criteriaSolutions {
+                criterionId
+                min
+                max
+              }
+            }
+          }
+        }
+      }
       pointsMultiplier
       basePoints
       explanation
       status
-      tags
       alreadyImported
       existingElementId
+      existingElementName
       answerCollectionId
       answerCollectionRef
-      answerCollectionItems {
-        id
-        value
-      }
-      answerCollectionEntries {
-        id
-        value
-      }
+      answerCollectionItemIds
     }
   }
 }

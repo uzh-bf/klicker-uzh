@@ -116,13 +116,11 @@ migrate(prisma).then(() => {
   console.log('Hatchet tasks initialized.', Object.keys(tasks))
   // #endregion
 
-  const { app, yogaApp } = prepareApp({
+  const { app, yogaApp, importExportConfig } = prepareApp({
     prisma,
-    redisCache,
     redisExec,
     redisAssessmentExec,
     pubSub,
-    cache,
     emitter,
     hatchet: hatchetClient,
     tasks,
@@ -190,5 +188,7 @@ migrate(prisma).then(() => {
       wsServer as Parameters<typeof useServer>[1]
     )
   })
+  server.headersTimeout = importExportConfig.timeouts.httpHeadersMs
+  server.requestTimeout = importExportConfig.timeouts.httpRequestMs
 })
 // #endregion

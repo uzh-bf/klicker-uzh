@@ -27,23 +27,17 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
+import {
+  canonicalizeElementAuthoringOptions,
+  canonicalizeElementDomainUpdate,
+  ElementDomainValidationError,
+} from '../lib/elementDomain.js'
+import { SUPPORTED_MEDIA_CONTENT_TYPE_EXTENSIONS } from '../lib/mediaContentTypes.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
 import { refreshElementImportFingerprint } from './importExportFingerprints.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
-
-async function refreshElementImportFingerprints(
-  elementIds: number[],
-  ctx: ContextWithUser
-) {
-  await Promise.all(
-    Array.from(new Set(elementIds)).map((elementId) =>
-      refreshElementImportFingerprint(elementId, ctx.prisma)
-    )
-  )
-}
 
 export async function getUserElements(
   {
@@ -440,6 +434,53 @@ export async function manipulateElement(
   let tagsToDisconnect: string[] = []
   let collectionAnswersToDisconnect: number[] = []
 
+  // Partial edits need the persisted shared fields and options to validate the
+  // resulting element, rather than validating only the fields present in the
+  // request.
+  const isNewElement = typeof id === 'undefined' || id === null
+  const elementPrev = !isNewElement
+    ? await ctx.prisma.element.findUnique({
+        where: { id, isDeleted: false },
+        include: {
+          tags: { orderBy: { order: 'asc' } },
+          answerCollectionItems: true,
+        },
+      })
+    : undefined
+
+  if (!isNewElement && (!elementPrev || elementPrev.type !== type)) {
+    return null
+  }
+
+  const previousOptions =
+    elementPrev?.options &&
+    typeof elementPrev.options === 'object' &&
+    !Array.isArray(elementPrev.options)
+      ? elementPrev.options
+      : undefined
+  const optionsForValidation =
+    typeof options !== 'undefined'
+      ? options
+      : !elementPrev
+        ? options
+        : type === DB.ElementType.SELECTION
+          ? {
+              ...previousOptions,
+              answerCollection: elementPrev.answerCollectionId,
+              correctAnswers: elementPrev.answerCollectionItems.map(
+                (entry) => entry.id
+              ),
+            }
+          : type === DB.ElementType.CASE_STUDY
+            ? {
+                ...previousOptions,
+                answerCollection: elementPrev.answerCollectionId,
+                collectionItemIds: elementPrev.answerCollectionItems.map(
+                  (entry) => entry.id
+                ),
+              }
+            : elementPrev.options
+
   // validate if all required fields and options are specified
   const validInputs = validateElementInputs({
     id,
@@ -451,38 +492,37 @@ export async function manipulateElement(
     basePoints,
     pointsMultiplier,
   })
-  const processedOptions = validateAndProcessElementOptions(type, options)
-
-  // if the provided information is not valid for the element creation / editing, return null
-  if (!validInputs || processedOptions === null) {
-    return null
+  let canonicalOptions
+  try {
+    canonicalOptions = canonicalizeElementAuthoringOptions(
+      type,
+      optionsForValidation as ElementManipulationInput['options']
+    )
+  } catch (error) {
+    if (error instanceof ElementDomainValidationError) return null
+    throw error
   }
 
-  // fetch the existing element to compare before/after state
-  const isNewElement = typeof id === 'undefined' || id === null
-  const elementPrev = !isNewElement
-    ? await ctx.prisma.element.findUnique({
-        where: { id: id, isDeleted: false },
-        include: {
-          tags: { orderBy: { order: 'asc' } },
-          answerCollectionItems: true,
-        },
-      })
-    : undefined
+  // if the provided information is not valid for the element creation / editing, return null
+  if (!validInputs) {
+    return null
+  }
+  let processedOptions = canonicalOptions.options
+  let answerCollectionId = canonicalOptions.relations.answerCollectionId
+  let selectedAnswerCollectionItemIds = canonicalOptions.relations.selectedIds
+  let answerCollectionEntryIds: number[] | undefined
 
   // determine which tags have been deconnected
-  if (elementPrev?.tags) {
+  if (elementPrev?.tags && tags) {
     tagsToDisconnect = elementPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
 
   // (SE & CS only) validate that the user has access to the answer collection that should be used
-  if (
-    (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) &&
-    options &&
-    options.answerCollection
-  ) {
+  if (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) {
+    if (typeof answerCollectionId !== 'number') return null
+
     if (templateId) {
       // fetch all answer collections that are either available directly or through template
       const availableAnswerCollections = await getAnswerCollectionsElements(
@@ -491,19 +531,20 @@ export async function manipulateElement(
       )
 
       // check if the answer collection that should be linked is available
-      const validAccess = availableAnswerCollections.some(
-        (collection) => collection.id === options.answerCollection
+      const answerCollection = availableAnswerCollections.find(
+        (collection) => collection.id === answerCollectionId
       )
 
-      if (!validAccess) {
-        return null
-      }
+      if (!answerCollection) return null
+      answerCollectionEntryIds = answerCollection.entries.map(
+        (entry) => entry.id
+      )
     } else {
       // access check for answer collection
       const validAccess = await checkAccess(
         [
           {
-            answerCollectionId: options.answerCollection,
+            answerCollectionId,
             minimumPermissionLevel: DB.PermissionLevel.READ,
           },
         ],
@@ -513,17 +554,81 @@ export async function manipulateElement(
       if (!validAccess) {
         return null
       }
+
+      const answerCollection = await ctx.prisma.answerCollection.findFirst({
+        where: { id: answerCollectionId, isDeleted: false },
+        select: { entries: { select: { id: true } } },
+      })
+      if (!answerCollection) return null
+      answerCollectionEntryIds = answerCollection.entries.map(
+        (entry) => entry.id
+      )
+    }
+
+    try {
+      canonicalOptions = canonicalizeElementAuthoringOptions(
+        type,
+        optionsForValidation as ElementManipulationInput['options'],
+        { poolIds: answerCollectionEntryIds }
+      )
+      processedOptions = canonicalOptions.options
+      answerCollectionId = canonicalOptions.relations.answerCollectionId
+      selectedAnswerCollectionItemIds = canonicalOptions.relations.selectedIds
+    } catch (error) {
+      if (error instanceof ElementDomainValidationError) return null
+      throw error
     }
   }
+
+  let canonicalDomain
+  try {
+    canonicalDomain = canonicalizeElementDomainUpdate({
+      type,
+      content,
+      explanation,
+      basePoints,
+      pointsMultiplier,
+      options: processedOptions,
+      relations:
+        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
+          ? {
+              answerCollectionId,
+              poolIds: answerCollectionEntryIds,
+              selectedIds: selectedAnswerCollectionItemIds,
+              caseSolutionReferenceKey:
+                type === DB.ElementType.CASE_STUDY
+                  ? ('itemId' as const)
+                  : undefined,
+            }
+          : undefined,
+      previous: elementPrev
+        ? {
+            content: elementPrev.content,
+            explanation: elementPrev.explanation,
+            basePoints: elementPrev.basePoints,
+            pointsMultiplier: elementPrev.pointsMultiplier,
+          }
+        : undefined,
+    })
+  } catch (error) {
+    if (error instanceof ElementDomainValidationError) return null
+    throw error
+  }
+  processedOptions = canonicalDomain.options
+  answerCollectionId = canonicalDomain.relations.answerCollectionId
+  selectedAnswerCollectionItemIds = canonicalDomain.relations.selectedIds
 
   // (SE only) determine which answer options are no longer considered to be correct
   if (type === DB.ElementType.SELECTION && elementPrev?.answerCollectionItems) {
     const prevSolutionsIds = elementPrev.answerCollectionItems.map(
       (sol) => sol.id
     )
-    collectionAnswersToDisconnect = options?.hasSampleSolution
-      ? prevSolutionsIds.filter((sol) => !options.correctAnswers?.includes(sol))
-      : prevSolutionsIds
+    collectionAnswersToDisconnect =
+      processedOptions.hasSampleSolution === true
+        ? prevSolutionsIds.filter(
+            (sol) => !selectedAnswerCollectionItemIds.includes(sol)
+          )
+        : prevSolutionsIds
   }
 
   // (CS only) determine which answer options are no longer used in the case study
@@ -536,7 +641,7 @@ export async function manipulateElement(
       (item) => item.id
     )
     collectionAnswersToDisconnect = previousItemIds.filter(
-      (item) => !options?.collectionItemIds?.includes(item)
+      (item) => !selectedAnswerCollectionItemIds.includes(item)
     )
   }
 
@@ -546,13 +651,10 @@ export async function manipulateElement(
       status: status!,
       type,
       name: name!,
-      content: content!,
-      explanation: explanation ?? undefined,
-      basePoints:
-        type === DB.ElementType.CONTENT || type === DB.ElementType.FLASHCARD
-          ? false
-          : basePoints!,
-      pointsMultiplier: pointsMultiplier!,
+      content: canonicalDomain.content,
+      explanation: canonicalDomain.explanation ?? undefined,
+      basePoints: canonicalDomain.basePoints,
+      pointsMultiplier: canonicalDomain.pointsMultiplier,
       options: processedOptions,
       owner: { connect: { id: ctx.user.sub } },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
@@ -567,26 +669,42 @@ export async function manipulateElement(
       // connect the selection question to the corresponding answer collection
       answerCollection:
         type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? { connect: { id: options!.answerCollection! } }
+          ? { connect: { id: answerCollectionId! } }
           : undefined,
       // connect the answer collection options to the selection question if sample solution is enabled
       answerCollectionItems:
-        type === DB.ElementType.SELECTION && options!.hasSampleSolution
-          ? { connect: options!.correctAnswers!.map((id) => ({ id })) }
+        type === DB.ElementType.SELECTION &&
+        processedOptions.hasSampleSolution === true
+          ? {
+              connect: selectedAnswerCollectionItemIds.map((id) => ({ id })),
+            }
           : type === DB.ElementType.CASE_STUDY
-            ? { connect: options!.collectionItemIds!.map((id) => ({ id })) }
+            ? {
+                connect: selectedAnswerCollectionItemIds.map((id) => ({ id })),
+              }
             : undefined,
     },
     update: {
+      importFingerprint: null,
+      importFingerprintVersion: null,
       status: status ?? undefined,
       name: name ?? undefined,
-      content: content ?? undefined,
-      explanation: typeof explanation === 'undefined' ? undefined : explanation,
+      content:
+        typeof content === 'undefined' ? undefined : canonicalDomain.content,
+      explanation:
+        typeof explanation === 'undefined'
+          ? undefined
+          : canonicalDomain.explanation,
       basePoints:
         type === DB.ElementType.CONTENT || type === DB.ElementType.FLASHCARD
           ? false
-          : basePoints!,
-      pointsMultiplier: pointsMultiplier ?? 1,
+          : typeof basePoints === 'undefined'
+            ? undefined
+            : canonicalDomain.basePoints,
+      pointsMultiplier:
+        typeof pointsMultiplier === 'undefined'
+          ? undefined
+          : canonicalDomain.pointsMultiplier,
       version: { increment: 1 },
       options: options ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
@@ -608,17 +726,18 @@ export async function manipulateElement(
       // connect new answer collection and disconnect previous one if they are not the same
       answerCollection:
         type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? { connect: { id: options!.answerCollection! } }
+          ? { connect: { id: answerCollectionId! } }
           : undefined,
       // connect or disconnect the answer collection options if sample solution is enabled
       answerCollectionItems:
         type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
           ? {
               connect:
-                type === DB.ElementType.SELECTION && options?.hasSampleSolution
-                  ? options.correctAnswers!.map((id) => ({ id }))
+                type === DB.ElementType.SELECTION &&
+                processedOptions.hasSampleSolution === true
+                  ? selectedAnswerCollectionItemIds.map((id) => ({ id }))
                   : type === DB.ElementType.CASE_STUDY
-                    ? options?.collectionItemIds?.map((id) => ({ id }))
+                    ? selectedAnswerCollectionItemIds.map((id) => ({ id }))
                     : undefined,
               disconnect: collectionAnswersToDisconnect.map((id) => ({ id })),
             }
@@ -694,11 +813,11 @@ export async function manipulateElement(
 
   if (
     (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) &&
-    typeof options?.answerCollection !== 'undefined'
+    typeof answerCollectionId === 'number'
   ) {
     ctx.emitter.emit('invalidate', {
       typename: 'AnswerCollection',
-      id: options.answerCollection,
+      id: answerCollectionId,
     })
   }
 
@@ -820,12 +939,17 @@ export async function applyElementBatchOperations(
   // needs to be sequential since element instance updates potentially include derived permission updates
   const updatedElements: DB.Element[] = []
   for (const element of dbElements) {
+    const changesDidacticIdentity =
+      (typeof multiplier !== 'undefined' && multiplier !== null) ||
+      (typeof basePoints !== 'undefined' && basePoints !== null)
     const updatedElement = await ctx.prisma.$transaction(async (tx) => {
       // execute the element update
       const updatedElement = await tx.element.update({
         where: { id: element.id },
         data: {
           version: { increment: 1 },
+          importFingerprint: changesDidacticIdentity ? null : undefined,
+          importFingerprintVersion: changesDidacticIdentity ? null : undefined,
           isArchived: archive ? true : unarchive ? false : undefined,
           status: status ?? undefined,
           pointsMultiplier:
@@ -857,7 +981,9 @@ export async function applyElementBatchOperations(
 
       return updatedElement
     })
-    await refreshElementImportFingerprint(updatedElement.id, ctx.prisma)
+    if (changesDidacticIdentity) {
+      await refreshElementImportFingerprint(updatedElement.id, ctx.prisma)
+    }
     updatedElements.push(updatedElement)
   }
 
@@ -881,7 +1007,6 @@ export async function changeElementStatus(
     where: { id: elementId },
     data: { status },
   })
-  await refreshElementImportFingerprint(element.id, ctx.prisma)
 
   if (status && status !== previousElement.status) {
     const modificationDetails: ActivityLogModificationDetails = {
@@ -1057,38 +1182,22 @@ export async function editTag(
     return null
   }
 
+  // update the tag as requested
   const tag = await ctx.prisma.tag.update({
     where: { id, ownerId: ctx.user.sub },
     data: { name },
-    include: { questions: { select: { id: true } } },
   })
-  await refreshElementImportFingerprints(
-    tag.questions.map((element) => element.id),
-    ctx
-  )
 
   return tag
 }
 
 export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
-  const linkedElements = await ctx.prisma.element.findMany({
-    where: {
-      ownerId: ctx.user.sub,
-      tags: { some: { id } },
-    },
-    select: { id: true },
-  })
-
   const tag = await ctx.prisma.tag.delete({
     where: {
       id: id,
       ownerId: ctx.user.sub,
     },
   })
-  await refreshElementImportFingerprints(
-    linkedElements.map((element) => element.id),
-    ctx
-  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Tag',
@@ -1126,18 +1235,6 @@ export async function updateTagOrdering(
   return reorderedTags
 }
 
-// map mime types of images to file extensions
-const FILE_EXTENSIONS: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/gif': 'gif',
-  'image/svg+xml': 'svg',
-  'image/webp': 'webp',
-  'image/tiff': 'tiff',
-  'image/bmp': 'bmp',
-  'application/json': 'json',
-}
-
 export async function getFileUploadSas(
   { fileName, contentType }: { fileName: string; contentType: string },
   ctx: ContextWithUser
@@ -1160,7 +1257,10 @@ export async function getFileUploadSas(
     })
   }
 
-  const fileExtension = FILE_EXTENSIONS[contentType]
+  const fileExtension = SUPPORTED_MEDIA_CONTENT_TYPE_EXTENSIONS[contentType]
+  if (!fileExtension) {
+    throw new Error('Unsupported media content type.')
+  }
 
   const id = randomUUID()
   const blobName = `${id}.${fileExtension}`

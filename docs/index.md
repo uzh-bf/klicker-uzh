@@ -12,7 +12,8 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 
 - [Getting Started](./getting-started.md) - Toolchain, first-time setup, infrastructure, dev-server paths, and the failure signatures you will hit on a fresh clone.
 - [Architecture Overview](./architecture-overview.md) - System map, request flow from browser to resolver, the async response pipeline, and where business logic lives.
-- [Domain Model](./domain-model.md) - Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
+- [Domain Model](./domain-model.md) - Core entities (User vs Participant, Course, Element, activities), canonical element invariants, status lifecycles, and the two-track gamification system.
+- [Import/Export Error Contract](./import-export-error-contract.md) - Closed server-owned error and warning codes, localized recovery behavior, regression ownership, and telemetry privacy.
 - [GraphQL API Layer](./graphql-api-layer.md) - Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
 - [Data & Migrations](./data-and-migrations.md) - Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
 - [Async & Workers](./async-and-workers.md) - The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
@@ -21,6 +22,7 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [Chat Platform](./chat-platform.md) - The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
 - [Testing](./testing.md) - Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
 - [CI & Deployment](./ci-and-deployment.md) - PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
+- [Import/Export Production Runbook](./import-export-production-runbook.md) - Protected migration and post-deploy operations, exact aliases, evidence/owner blockers, canary recovery, rotation, and rollback.
 - [Developing a Feature](./developing-a-feature.md) - The full-stack feature lifecycle step by step, with a real commit as the worked example and routing to the page or skill for each step.
 
 ## Skill routing
