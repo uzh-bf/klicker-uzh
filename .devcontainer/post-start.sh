@@ -68,56 +68,14 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# Run every routed app plus the two Hatchet workers. Bypass the Infisical
-# wrappers because the container owns its env. Fully detach so the DevPod agent
-# pipe is released.
-DEV_CMD='pnpm exec turbo run dev \
-  --filter=@klicker-uzh/backend-docker \
-  --filter=@klicker-uzh/auth \
-  --filter=@klicker-uzh/frontend-pwa \
-  --filter=@klicker-uzh/frontend-manage \
-  --filter=@klicker-uzh/frontend-control \
-  --filter=@klicker-uzh/olat-api \
-  --filter=@klicker-uzh/response-api \
-  --filter=@klicker-uzh/lti-service \
-  --filter=@klicker-uzh/chat \
-  --filter=@klicker-uzh/hatchet-worker-general \
-  --filter=@klicker-uzh/hatchet-worker-response-processor \
-  --concurrency 30'
-
-# A production build can replace Next.js dev output while Turbo's parent stays
-# alive. On a repeated start, reuse the owned process only when every routed app
-# is reachable and returns a non-5xx response; otherwise restart the whole group.
-export KLICKER_DEV_HEALTH_URLS='http://127.0.0.1:3000
-http://127.0.0.1:3010
-http://127.0.0.1:3001
-http://127.0.0.1:3002
-http://127.0.0.1:3003
-http://127.0.0.1:3030/health
-http://127.0.0.1:7078
-http://127.0.0.1:4000
-http://127.0.0.1:3004'
-
-# The fingerprint changes when this worktree's identity, public origins, or dev
-# command changes. Reconcile only the process group marked and recorded by this
-# container; never kill a foreign process that merely resembles Turbo.
-RUNTIME_FINGERPRINT="$({
-  printf 'workspace=%s\n' "${WORKSPACE:-primary}"
-  printf 'devrouter_workspace=%s\n' "${DEVROUTER_WORKSPACE:-}"
-  printf 'api=%s\n' "$APP_ORIGIN_API"
-  printf 'auth=%s\n' "$APP_ORIGIN_AUTH"
-  printf 'pwa=%s\n' "$APP_ORIGIN_PWA"
-  printf 'manage=%s\n' "$APP_ORIGIN_MANAGE"
-  printf 'control=%s\n' "$APP_ORIGIN_CONTROL"
-  printf 'lti=%s\n' "$APP_ORIGIN_LTI"
-  printf 'chat=%s\n' "$APP_ORIGIN_CHAT"
-  printf 'response=%s\n' "$NEXT_PUBLIC_ADD_RESPONSE_URL"
-  printf 'cookie=%s\n' "$COOKIE_DOMAIN"
-  printf 'command=%s\n' "$DEV_CMD"
-} | cksum | awk '{print $1 "-" $2}')"
-
-. .devcontainer/dev-process.sh
-klicker_reconcile_dev_process "$DEV_CMD" "$RUNTIME_FINGERPRINT"
+# Run every routed app plus both Hatchet workers without Infisical. Devrouter
+# owns generic locking, process-group identity, and bounded replacement; this
+# repository owns only the application command and environment above.
+devrouter-process ensure \
+  --name klicker-dev \
+  --match 'turbo run dev' \
+  --log /tmp/dev.log \
+  -- pnpm run dev:container
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF

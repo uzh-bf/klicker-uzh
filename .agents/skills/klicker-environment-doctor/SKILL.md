@@ -65,11 +65,11 @@ The container manages infra services and app servers automatically in the backgr
 
 ```bash
 bash .devcontainer/post-start.sh
-cat /tmp/klicker-dev-process.state
+cat /tmp/devrouter-process-klicker-dev.state
 tail -n 50 /tmp/dev.log   # inspect server startup logs
 ```
 
-An exact fingerprint is reused only while all routed app endpoints remain below 500; a stale or unhealthy owned process group is restarted; an unknown process is reported and left untouched. For a linked worktree that fails before container entry, run `devrouter workspace ensure .` on the host so one stale exact-path DevPod can be recreated once.
+The packaged `devrouter-process` helper reuses an exact workspace/command fingerprint, replaces a stale owned process group, and leaves unknown processes untouched. It does not check application health. For linked worktrees, run `devrouter workspace ensure .` on the host so all routes are checked and one stale or unhealthy exact-path DevPod can be recreated once.
 
 `devrouter doctor --repo .` statically inspects `.devcontainer/docker-compose.yml` and may warn that devnet aliases are missing or proxy upstreams do not match. Klicker intentionally keeps aliases in `.devcontainer/docker-compose.devrouter.yml`; `workspace ensure` resolves that overlay and is the authoritative runtime proof. Do not add devnet aliases to the base Compose file merely to silence those warnings.
 

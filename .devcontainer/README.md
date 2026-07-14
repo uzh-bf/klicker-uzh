@@ -40,7 +40,7 @@ Use this if you are running in a headless cloud server or want to avoid installi
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.29 and start it:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.30 and start it:
    ```bash
    devrouter up && devrouter tls install   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -137,12 +137,12 @@ hatchet DB migrations finishing. If the API is down, check
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
-`post-start.sh` (reconcile the owned `turbo dev` process group). The runtime
-state is `/tmp/klicker-dev-process.state`: an exact workspace/origin/command
-fingerprint is reused only while all routed apps remain healthy, a stale or
-unhealthy owned group is replaced boundedly, and an unknown process is never
-killed. This also repairs Next.js dev output invalidated by a production build;
-run `devrouter workspace ensure .` again after such a build.
+`post-start.sh` (set Klicker origins and call the packaged `devrouter-process`
+helper). Runtime state is `/tmp/devrouter-process-klicker-dev.state`: an exact
+workspace/command fingerprint is reused, stale owned groups are replaced
+boundedly, and unknown processes are never killed. HTTP readiness remains in
+`devrouter workspace ensure .`; rerun it after a production build so stale
+Next.js dev output can trigger the single container-recreate budget.
 
 ## Notes
 

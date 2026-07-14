@@ -32,7 +32,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 2. **Accessing the apps:**
    - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after starting devcontainer (`devpod up .` or via VS Code) without devrouter: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
    - **Mode 2 (devrouter overlay):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.29 and start it on the host (`devrouter up && devrouter tls install`).
+     1. Install devrouter ≥ 0.0.30 and start it on the host (`devrouter up && devrouter tls install`).
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter workspace ensure .
@@ -40,9 +40,11 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops in linked worktrees; `workspace ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
 
-`post-start.sh` records its owned process group and a workspace/origin/command fingerprint in `/tmp/klicker-dev-process.state`. Re-running it is idempotent for an exact match, replaces only its own stale group, and refuses to kill an unknown process.
+`post-start.sh` keeps Klicker's environment and origin setup local, then calls the packaged `devrouter-process` helper. The helper records its owned process group and workspace/command fingerprint in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
 
-The published `@devrouter/cli@0.0.29` lifecycle was verified from a linked worktree on 2026-07-14: all ten routes were registered, in-container Git resolved the exact worktree, and a warm repeat preserved the same app container and owned process group. After a production build made the running Manage app return HTTP 500, `workspace ensure` spent its single recovery recreate, reran the devcontainer lifecycle, and restored every route without manual repair.
+Devrouter owns generic process lifecycle and HTTP readiness. `workspace ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
+
+The published `@devrouter/cli@0.0.30` path was verified from a linked worktree on 2026-07-14: a cold reconcile rebuilt the image, loaded the packaged helper, mounted the exact worktree, and brought up all ten routes. A warm repeat preserved the app container and managed process state. Delegated lecturer login returned to the same worktree-specific Manage host and rendered the seeded library.
 
 `devrouter doctor --repo .` currently inspects the port-free base Compose file without the selected devrouter overlay, so it can warn that aliases are missing or upstreams do not match. For a linked worktree, `devrouter workspace ensure .` is the runtime authority: it resolves the overlay and fails unless the actual container aliases and routes match. Do not add devnet aliases to the base file to silence the static warning.
 

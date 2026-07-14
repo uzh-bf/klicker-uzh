@@ -133,7 +133,7 @@ For a linked worktree, complete the routed devrouter flow below. Use `devpod ssh
 
 The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
 
-**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.29 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.30 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter up && devrouter tls install # Traefik + devnet + mkcert CA
