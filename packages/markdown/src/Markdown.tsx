@@ -15,13 +15,8 @@ import remarkRehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
-import {
-  VideoEmbed,
-  getKalturaId,
-  getKalturaPartnerId,
-  getKalturaUiConfId,
-  getYoutubeId,
-} from './VideoEmbed.js'
+import { VideoEmbed } from './VideoEmbed.js'
+import { parseVideoEmbedUrl } from './VideoEmbedUrl.js'
 
 export interface MarkdownProps {
   className?: {
@@ -155,27 +150,11 @@ function Markdown({
                     : ''
                 const isVideoLabel =
                   labelText === 'video' || labelText === 'embed'
-                const youtubeId =
-                  href && isVideoLabel ? getYoutubeId(href) : null
-                const kalturaId =
-                  href && isVideoLabel ? getKalturaId(href) : null
-                const kalturaPartnerId =
-                  href && kalturaId ? getKalturaPartnerId(href) : null
-                const kalturaUiConfId =
-                  href && kalturaId ? getKalturaUiConfId(href) : null
+                const video =
+                  href && isVideoLabel ? parseVideoEmbedUrl(href) : null
 
-                if (youtubeId) {
-                  return <VideoEmbed provider="youtube" videoId={youtubeId} />
-                }
-                if (kalturaId) {
-                  return (
-                    <VideoEmbed
-                      provider="kaltura"
-                      videoId={kalturaId}
-                      partnerId={kalturaPartnerId}
-                      uiConfId={kalturaUiConfId}
-                    />
-                  )
+                if (video) {
+                  return <VideoEmbed {...video} />
                 }
 
                 if (withLinkButtons) {
@@ -191,11 +170,11 @@ function Markdown({
                       rel={rel}
                       {...rest}
                     >
-                      <div>
+                      <span>
                         {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
                         {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
-                      </div>
-                      <div>{children}</div>
+                      </span>
+                      <span>{children}</span>
                     </a>
                   )
                 }
