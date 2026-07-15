@@ -290,6 +290,65 @@ type AssessmentParticipant {
   id: String!
 }
 
+type AssessmentReportComparison {
+  cohortSize: Int!
+  histogram: [AssessmentReportHistogramBin!]!
+  percentile: Int!
+}
+
+type AssessmentReportCourse {
+  displayName: String!
+  id: String!
+  name: String!
+}
+
+enum AssessmentReportCredentialStatus {
+  ACTIVE
+  REVOKED
+  SUPERSEDED
+}
+
+type AssessmentReportHistogramBin {
+  binEnd: Float!
+  binStart: Float!
+  count: Int!
+}
+
+enum AssessmentReportIdentitySource {
+  COURSE_INVITATION
+}
+
+type AssessmentReportResults {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  availableTotalPoints: Float!
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  totalPoints: Float!
+}
+
+type AssessmentReportSnapshot {
+  comparison: AssessmentReportComparison
+  course: AssessmentReportCourse!
+  results: AssessmentReportResults!
+  subject: AssessmentReportSubject!
+  version: Int!
+}
+
+type AssessmentReportSubject {
+  email: String!
+  source: AssessmentReportIdentitySource!
+}
+
+enum AssessmentReportVerificationStatus {
+  ACTIVE
+  DATA_UNAVAILABLE
+  REVOKED
+  SUPERSEDED
+}
+
 type AssessmentResultsCourse {
   availableBasePoints: Float!
   availableBonusPoints: Float!
@@ -945,6 +1004,21 @@ type CourseActivityList {
   practiceQuizzes: [CourseActivityItem!]!
 }
 
+type CourseAssessmentReportRecord {
+  id: ID!
+  issuedAt: Date!
+  revokedAt: Date
+  status: AssessmentReportCredentialStatus!
+  subjectEmail: String!
+  supersededAt: Date
+  verificationToken: String!
+}
+
+type CourseAssessmentReportRecordPage {
+  records: [CourseAssessmentReportRecord!]!
+  totalCount: Int!
+}
+
 type CourseLeaderboard {
   averageActiveScore: Float!
   computedAt: Date
@@ -1006,11 +1080,6 @@ type CourseSummary {
   numOfParticipantGroups: Int!
   numOfParticipations: Int!
   numOfPracticeQuizzes: Int!
-}
-
-enum CredentialType {
-  COURSE_ASSESSMENT_INSIGHTS
-  COURSE_COMPLETION_CERTIFICATE
 }
 
 enum CreditResetPeriod {
@@ -1554,12 +1623,6 @@ type GroupMessage {
   updatedAt: Date!
 }
 
-type HistogramBin {
-  binEnd: Float!
-  binStart: Float!
-  count: Int!
-}
-
 union InstanceEvaluation = CaseStudyInstanceEvaluation | ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
 
 type InstanceFeedback {
@@ -1604,6 +1667,13 @@ type InstanceUpdateActivityInfo {
   activityName: String!
   activityType: ActivityType!
   status: PublicationStatus!
+}
+
+type IssuedAssessmentReport {
+  issuedAt: Date!
+  snapshot: AssessmentReportSnapshot!
+  status: AssessmentReportCredentialStatus!
+  token: String!
 }
 
 """
@@ -1848,7 +1918,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
-  issueCredential(courseId: String!, metadata: Json!, type: CredentialType!): VerifiableCredential!
+  issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1893,7 +1963,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
-  revokeCredential(id: String!): VerifiableCredential!
+  revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
@@ -2313,6 +2383,25 @@ type PracticeQuiz {
   updatedAt: Date
 }
 
+type PublicAssessmentReportCourse {
+  displayName: String!
+  name: String!
+}
+
+type PublicAssessmentReportSnapshot {
+  comparison: AssessmentReportComparison
+  course: PublicAssessmentReportCourse!
+  results: AssessmentReportResults!
+  subject: AssessmentReportSubject!
+  version: Int!
+}
+
+type PublicAssessmentReportVerification {
+  issuedAt: Date!
+  snapshot: PublicAssessmentReportSnapshot
+  status: AssessmentReportVerificationStatus!
+}
+
 enum PublicationStatus {
   DRAFT
   ENDED
@@ -2331,6 +2420,7 @@ type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
+  assessmentReportVerification(token: String!): PublicAssessmentReportVerification
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
@@ -2345,8 +2435,9 @@ type Query {
   controlLiveQuiz(id: String!): LiveQuiz
   countCatalogSharingRequests: Int!
   course(id: String!): Course
+  courseAssessmentReportRecordCount(courseId: String!): Int!
+  courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
-  courseVerificationRecords(courseId: String!): [VerifiableCredential!]!
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   feedbacks(quizId: String!): [Feedback!]
@@ -2444,7 +2535,6 @@ type Query {
   userScope: UserLoginScope
   userTags: [Tag!]
   validateAvailableLiveQuiz(courseId: String!, quizId: String!): Boolean
-  verifiableCredential(token: String!): VerifiableCredential
 }
 
 type QuestionFeedback {
@@ -2747,14 +2837,9 @@ type StudentAssessmentInstanceResponse {
 }
 
 type StudentAssessmentResults {
-  courseName: String
   groupActivities: [ActivityStudentPerformance!]!
-  hasEnoughData: Boolean
-  histogram: [HistogramBin!]
   liveQuizzes: [ActivityStudentPerformance!]!
   microLearnings: [ActivityStudentPerformance!]!
-  participantEmail: String
-  percentile: Float
   practiceQuizzes: [ActivityStudentPerformance!]!
 }
 
@@ -2937,17 +3022,6 @@ enum UserRole {
   PARTICIPANT
   TEMPORARY_PARTICIPANT
   USER
-}
-
-type VerifiableCredential {
-  course: Course!
-  expiresAt: Date
-  id: ID!
-  isRevoked: Boolean!
-  issuedAt: Date!
-  metadata: Json!
-  token: String!
-  type: CredentialType!
 }
 
 type WeekdayActivityAnalytics {
