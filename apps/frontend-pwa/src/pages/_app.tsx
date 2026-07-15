@@ -32,7 +32,11 @@ function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (MATOMO_URL && MATOMO_SITE_ID) {
-      init({ url: MATOMO_URL, siteId: MATOMO_SITE_ID })
+      init({
+        url: MATOMO_URL,
+        siteId: MATOMO_SITE_ID,
+        excludeUrlsPatterns: [/\/verify(?:$|[?#])/],
+      })
     }
 
     // if we are on iOS or android, register for push notifications

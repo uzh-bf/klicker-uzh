@@ -1120,20 +1120,42 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noPointsCorrection: '+ 0 Punkte (keine Änderung): {reason}',
       nonZeroPointCorrection:
         '{points} Punkte ({basePoints} Basispunkte, {correctnessPoints} Korrektheitspunkte, {bonusPoints} Bonuspunkte): {reason}',
-      performanceInsightsTitle: 'Performance-Insights & Peer-Vergleich',
-      percentileText: 'Du befindest dich im {percentile}. Perzentil.',
+      reportTitle: 'Assessment-Leistungsbericht',
+      issuedAt: 'Ausgestellt am',
+      reportTimeZone: 'Europe/Zurich',
+      courseReferenceLabel: 'Interne Kursreferenz',
+      identitySourceLabel: 'Verifizierte Identitätsquelle',
+      identitySourceCourseInvitation:
+        'E-Mail-Adresse aus der angenommenen Assessment-Kurseinladung',
+      achievedPointsLabel: 'Erreicht',
+      availablePointsLabel: 'Verfügbar',
+      performanceInsightsTitle: 'Peer-Vergleich',
+      percentileText: 'Perzentilrang: {percentile}.',
       percentileExplanation:
         'Das Perzentil gibt an, wie viel Prozent der Teilnehmenden eine tiefere oder gleiche Punktzahl als du erreicht haben. Ein Perzentil von 75% bedeutet beispielsweise, dass deine Leistung gleich gut oder besser als 75% der Peer-Gruppe war.',
       histogramTitle: 'Punkteverteilung im Kurs',
       histogramDescription:
-        'Das folgende Diagramm zeigt die Verteilung der erreichten Gesamtpunktzahlen aller Studierenden in diesem Kurs. Dein Standpunkt ist hervorgehoben.',
+        'Das Diagramm zeigt die aggregierte Verteilung der Gesamtpunktzahlen aktiver Teilnehmender. Dein Punktebereich ist hervorgehoben.',
+      histogramUserRange: 'Dein Punktebereich: {range}.',
       notEnoughDataForComparison:
-        'Für einen Peer-Vergleich sind mindestens 5 Teilnehmende mit Resultaten erforderlich. Sobald genügend Daten vorliegen, wird diese Übersicht freigeschaltet.',
+        'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
       exportReportButton: 'Performance-Bericht exportieren (HTML)',
       exportReportExplanation:
-        'Lade einen detaillierten, didaktisch aufbereiteten Bericht mit deiner Punkteübersicht und dem Peer-Vergleich als HTML-Datei herunter.',
+        'Stelle einen HTML-Bericht aus dem aktuellen Assessment-Datensatz aus. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
+      exportReportNotEligibleError:
+        'Für diesen Kurs kann kein Assessment-Bericht ausgestellt werden. Prüfe, ob du eingeschrieben bist und die bewerteten Aktivitäten beendet wurden, oder kontaktiere deine Dozierenden.',
+      exportReportIdentityUnverifiedError:
+        'Es konnte keine E-Mail aus einer angenommenen Assessment-Kurseinladung bestätigt werden. Bitte kontaktiere die Kursadministration oder den Support.',
+      exportReportRevokedError:
+        'Dieser unveränderte Assessment-Bericht wurde widerrufen und kann nicht erneut ausgestellt werden. Kontaktiere deine Dozierenden, falls die verlässlichen Berichtsdaten korrigiert werden müssen.',
+      exportReportInvalidDataError:
+        'Die Assessment-Daten konnten für den Bericht nicht validiert werden. Bitte versuche es später erneut oder kontaktiere deine Dozierenden.',
+      exportReportIssuanceError:
+        'Der Assessment-Bericht konnte nicht ausgestellt werden. Prüfe deine Verbindung und versuche es erneut.',
+      exportReportDownloadError:
+        'Der Bericht wurde ausgestellt, aber die HTML-Datei konnte nicht erstellt oder heruntergeladen werden. Bitte versuche den Download erneut.',
       privacyAndTransparencyNotice:
-        'Hinweis zu Datenschutz & Transparenz: Alle Peer-Daten sind vollständig anonymisiert und in grössere Bänder (Klassen) aggregiert. Es werden zu keinem Zeitpunkt einzelne Punktzahlen oder persönliche Identifikatoren anderer Studierender übertragen oder angezeigt.',
+        'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
       studentEmailLabel: 'Studierende/r',
       pointsSummaryLabel: 'Punkteübersicht',
@@ -1141,6 +1163,40 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       countLabel: 'Anzahl',
       binLabel: 'Punktebereich',
       privacyNoticeTitle: 'Datenschutz & Transparenz',
+      verificationTitle: 'Assessment-Datensatz prüfen',
+      verificationText:
+        'KlickerUZH speichert den Assessment-Snapshot, der in diesem Bericht dargestellt wird. Öffne die Verifizierungsseite, um den Status des Datensatzes zu prüfen und seine aktuellen Angaben mit dieser Datei zu vergleichen.',
+      verificationLink: 'Verifizierungsseite öffnen',
+      verificationQrAlt: 'QR-Code zur KlickerUZH-Verifizierungsseite',
+      verificationPageTitle: 'Assessment-Bericht prüfen | KlickerUZH',
+      verificationHeading: 'Assessment-Bericht verifizieren',
+      verificationIntro:
+        'Prüfe den aktuellen Status und die serverseitig gespeicherten Angaben eines KlickerUZH-Assessment-Berichts.',
+      verificationLoading: 'Assessment-Datensatz wird geladen',
+      verificationInvalidLinkTitle: 'Ungültiger Verifizierungslink',
+      verificationMissingToken:
+        'Dieser Link enthält keinen Verifizierungsschlüssel.',
+      verificationInvalidToken:
+        'Der Verifizierungsschlüssel in diesem Link hat ein ungültiges Format.',
+      verificationLoadError:
+        'Der Assessment-Datensatz konnte nicht geladen werden. Bitte versuche es später erneut.',
+      verificationNotFoundTitle: 'Assessment-Datensatz nicht gefunden',
+      verificationNotFoundText:
+        'Für diesen Verifizierungslink existiert kein Assessment-Bericht.',
+      verificationActiveTitle: 'Aktiver Assessment-Datensatz',
+      verificationActiveText:
+        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem heruntergeladenen Bericht.',
+      verificationRevokedTitle: 'Widerrufener Assessment-Datensatz',
+      verificationRevokedText:
+        'Dieser am {date} ausgestellte Bericht wurde widerrufen und darf nicht mehr als aktiv behandelt werden. Seine Angaben werden nicht offengelegt.',
+      verificationSupersededTitle: 'Ersetzter Assessment-Datensatz',
+      verificationSupersededText:
+        'Später wurde ein geänderter Assessment-Snapshot ausgestellt. Dieser ältere Bericht ist nicht mehr aktiv; seine Angaben werden nicht offengelegt.',
+      verificationDataUnavailableTitle: 'Assessment-Daten nicht verfügbar',
+      verificationDataUnavailableText:
+        'Der Datensatz existiert, aber seine gespeicherten Angaben können nicht sicher validiert werden. Es werden keine Angaben offengelegt.',
+      verificationIdentityTitle: 'Berichtsidentität',
+      cohortSizeLabel: 'Vergleichsgruppe: {count} aktive Teilnehmende',
     },
   },
   manage: {
@@ -1355,6 +1411,42 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       responseBy: 'Antwort von {email}',
       noSampleSolution: 'Keine Musterlösung',
       detailedResultsLiveQuiz: 'Detailierte Resultate für dieses Live Quiz',
+      reportRecordsButton: 'Assessment-Berichte ({count})',
+      reportRecordsTitle: 'Ausgestellte Assessment-Berichte',
+      reportRecordsLoadError:
+        'Die Assessment-Berichte konnten nicht geladen werden. Bitte prüfe deine Berechtigungen und versuche es erneut.',
+      reportRecordsEmpty:
+        'Es wurden keine passenden Assessment-Berichte gefunden.',
+      reportSearchPlaceholder: 'Empfänger-E-Mail suchen',
+      reportStatusAll: 'Alle Status',
+      reportStatusActive: 'Aktiv',
+      reportStatusRevoked: 'Widerrufen',
+      reportStatusSuperseded: 'Ersetzt',
+      reportRecipient: 'Empfänger:in',
+      reportToken: 'Verifizierungsschlüssel',
+      reportIssuedAt: 'Ausgestellt',
+      reportStatus: 'Status',
+      reportStatusChangedAt: 'Status geändert',
+      reportActions: 'Aktionen',
+      reportCopyLinkTooltip: 'Verifizierungslink kopieren',
+      reportLinkCopied: 'Der Verifizierungslink wurde kopiert.',
+      reportLinkCopyError:
+        'Der Verifizierungslink konnte nicht kopiert werden.',
+      reportRevoke: 'Widerrufen',
+      reportRevokeTitle: 'Assessment-Bericht widerrufen',
+      reportRevokeConfirm: 'Bericht widerrufen',
+      reportRevokeMessage:
+        'Den aktiven Assessment-Bericht für {email} widerrufen? Der bestehende Verifizierungslink zeigt den Datensatz sofort als widerrufen an.',
+      reportRevokePolicy:
+        'Derselbe unveränderte Assessment-Snapshot kann nicht erneut ausgestellt werden. Wenn sich verlässliche Angaben zu Identität, Kurs oder Punkten später ändern, kann die studierende Person einen neuen aktiven Bericht ausstellen.',
+      reportRevocationSuccess: 'Der Assessment-Bericht wurde widerrufen.',
+      reportAlreadyInactive:
+        'Der Assessment-Bericht wurde inaktiv, bevor er widerrufen werden konnte. Sein aktueller Status wird in der Liste angezeigt.',
+      reportRevocationError:
+        'Der Assessment-Bericht konnte nicht widerrufen werden. Der lokale Status wurde nicht geändert.',
+      reportRecordsRefreshError:
+        'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliesse und öffne den Dialog erneut, um den aktuellen Status zu laden.',
+      reportTimeZone: 'Europe/Zurich',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
