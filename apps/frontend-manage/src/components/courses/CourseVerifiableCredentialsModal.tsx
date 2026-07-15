@@ -1,11 +1,27 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import {
+  AssessmentReportCredentialStatus,
   MRevokeCredentialDocument,
   QGetCourseVerificationRecordsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { routing } from '@klicker-uzh/i18n'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import {
+  Modal,
+  Select,
+  TextField,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
+import { useLocale, useTranslations } from 'next-intl'
+import { useDeferredValue, useEffect, useState } from 'react'
+import Pagination from '../common/Pagination'
+import CourseVerifiableCredentialsList, {
+  type AssessmentReportRecord,
+} from './CourseVerifiableCredentialsList'
+
+type StatusFilter = 'ALL' | AssessmentReportCredentialStatus
 
 export default function CourseVerifiableCredentialsModal({
   courseId,
@@ -15,128 +31,244 @@ export default function CourseVerifiableCredentialsModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  const locale = useLocale()
+  const [searchString, setSearchString] = useState('')
+  const deferredSearchString = useDeferredValue(searchString)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [pendingRevocation, setPendingRevocation] =
+    useState<AssessmentReportRecord | null>(null)
+  const [revokingId, setRevokingId] = useState<string | null>(null)
+
+  const queryVariables = {
+    courseId,
+    statusFilter: statusFilter === 'ALL' ? undefined : [statusFilter],
+    searchString: deferredSearchString.trim() || undefined,
+    numEntries: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  }
 
   const { data, loading, error, refetch } = useQuery(
     QGetCourseVerificationRecordsDocument,
     {
-      variables: { courseId },
+      variables: queryVariables,
       fetchPolicy: 'network-only',
     }
   )
+  const [revokeAssessmentReport] = useMutation(MRevokeCredentialDocument)
 
-  const [revokeCredential, { loading: revoking }] = useMutation(
-    MRevokeCredentialDocument
-  )
+  const page = data?.courseAssessmentReportRecords
+  const records = page?.records ?? []
+  const totalCount = page?.totalCount ?? 0
+  const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
 
-  const handleRevoke = async (id: string) => {
-    if (
-      !window.confirm(
-        'Möchten Sie dieses Zertifikat wirklich widerrufen? / Are you sure you want to revoke this credential?'
-      )
-    ) {
-      return
-    }
+  useEffect(() => {
+    if (!loading && currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, loading, totalPages])
+
+  function setPageSizeAndReset(value: number | ((previous: number) => number)) {
+    setPageSize(value)
+    setCurrentPage(1)
+  }
+
+  async function copyVerificationLink(record: AssessmentReportRecord) {
     try {
-      await revokeCredential({
-        variables: { id },
+      const baseUrl = (
+        process.env.NEXT_PUBLIC_ASSESSMENT_URL ??
+        process.env.NEXT_PUBLIC_PWA_URL ??
+        'https://assessment.klicker.com'
+      ).replace(/\/$/, '')
+      const localePrefix = locale === routing.defaultLocale ? '' : `/${locale}`
+      await navigator.clipboard.writeText(
+        `${baseUrl}${localePrefix}/verify#${record.verificationToken}`
+      )
+      toast({
+        type: 'success',
+        message: t('manage.assessment.reportLinkCopied'),
       })
-      refetch()
-    } catch (e) {
-      console.error('Failed to revoke credential', e)
+    } catch {
+      toast({
+        type: 'error',
+        message: t('manage.assessment.reportLinkCopyError'),
+      })
+    }
+  }
+
+  async function confirmRevocation() {
+    if (!pendingRevocation) return
+    const record = pendingRevocation
+    setRevokingId(record.id)
+
+    try {
+      const response = await revokeAssessmentReport({
+        variables: { id: record.id },
+      })
+      const updatedRecord = response.data?.revokeAssessmentReport
+      if (
+        !updatedRecord ||
+        updatedRecord.status === AssessmentReportCredentialStatus.Active
+      ) {
+        throw new Error('ASSESSMENT_REPORT_REVOCATION_FAILED')
+      }
+      setPendingRevocation(null)
+      toast({
+        type:
+          updatedRecord.status === AssessmentReportCredentialStatus.Revoked
+            ? 'success'
+            : 'warning',
+        message:
+          updatedRecord.status === AssessmentReportCredentialStatus.Revoked
+            ? t('manage.assessment.reportRevocationSuccess')
+            : t('manage.assessment.reportAlreadyInactive'),
+      })
+      try {
+        await refetch()
+      } catch {
+        toast({
+          type: 'warning',
+          message: t('manage.assessment.reportRecordsRefreshError'),
+          options: { duration: 10000 },
+        })
+      }
+    } catch {
+      toast({
+        type: 'error',
+        message: t('manage.assessment.reportRevocationError'),
+        options: { duration: 10000 },
+      })
+    } finally {
+      setRevokingId(null)
     }
   }
 
   return (
-    <Modal
-      open
-      onClose={onClose}
-      title="Ausgestellte Leistungsberichte / Issued Performance Reports"
-      className={{ content: 'max-w-4xl' }}
-    >
-      {loading ? (
-        <div className="flex h-32 items-center justify-center">
-          <Loader />
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        title={t('manage.assessment.reportRecordsTitle')}
+        className={{
+          content: 'min-w-0 max-w-[calc(100%-2rem)] p-4 md:max-w-6xl md:p-6',
+        }}
+        dataCloseButton={{ cy: 'close-assessment-report-records' }}
+      >
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <TextField
+            id="assessment-report-search"
+            label={t('manage.assessment.reportSearchPlaceholder')}
+            value={searchString}
+            onChange={(value: string) => {
+              setSearchString(value)
+              setCurrentPage(1)
+            }}
+            placeholder={t('manage.assessment.reportSearchPlaceholder')}
+            icon={faMagnifyingGlass}
+            className={{ field: 'w-full md:w-80', input: 'pl-8! h-9' }}
+            data={{ cy: 'assessment-report-search' }}
+          />
+          <div className="w-full md:w-52">
+            <label
+              htmlFor="assessment-report-status-filter"
+              className="mb-1 block text-sm font-semibold"
+            >
+              {t('manage.assessment.reportStatus')}
+            </label>
+            <Select
+              id="assessment-report-status-filter"
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value as StatusFilter)
+                setCurrentPage(1)
+              }}
+              items={[
+                {
+                  value: 'ALL',
+                  label: t('manage.assessment.reportStatusAll'),
+                },
+                {
+                  value: AssessmentReportCredentialStatus.Active,
+                  label: t('manage.assessment.reportStatusActive'),
+                },
+                {
+                  value: AssessmentReportCredentialStatus.Revoked,
+                  label: t('manage.assessment.reportStatusRevoked'),
+                },
+                {
+                  value: AssessmentReportCredentialStatus.Superseded,
+                  label: t('manage.assessment.reportStatusSuperseded'),
+                },
+              ]}
+              className={{ trigger: 'h-9 w-full' }}
+              data={{ cy: 'assessment-report-status-filter' }}
+            />
+          </div>
         </div>
-      ) : error ? (
-        <UserNotification
-          type="error"
-          message="Fehler beim Laden der Leistungsberichte / Error loading credentials"
-        />
-      ) : !data?.courseVerificationRecords ||
-        data.courseVerificationRecords.length === 0 ? (
-        <div className="py-8 text-center text-sm text-slate-500">
-          Für diesen Kurs wurden noch keine Leistungsberichte ausgestellt.
-          <br />
-          No performance reports have been issued for this course yet.
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-            <thead className="text-2xs bg-slate-50 uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-4 py-3 font-semibold">
-                  Empfänger / Recipient
-                </th>
-                <th className="px-4 py-3 font-semibold">Token / ID</th>
-                <th className="px-4 py-3 font-semibold">
-                  Ausgestellt / Issued At
-                </th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 text-right font-semibold">
-                  Aktionen / Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {data.courseVerificationRecords.map((record) => {
-                const metadata = record.metadata as any
-                const email = metadata?.studentEmail || 'N/A'
 
-                return (
-                  <tr key={record.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 font-semibold text-slate-700">
-                      {email}
-                    </td>
-                    <td className="text-2xs select-all break-all px-4 py-3 font-mono text-slate-500">
-                      {record.token}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {new Date(record.issuedAt).toLocaleString(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </td>
-                    <td className="px-4 py-3">
-                      {record.isRevoked ? (
-                        <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
-                          Widerrufen / Revoked
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 font-medium text-green-700 ring-1 ring-inset ring-green-600/10">
-                          Aktiv / Active
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {!record.isRevoked && (
-                        <Button
-                          onClick={() => handleRevoke(record.id)}
-                          disabled={revoking}
-                          className={{
-                            root: 'text-2xs rounded-md border border-red-200/50 bg-red-50 px-2 py-1 font-medium text-red-600 transition-all hover:bg-red-100/70',
-                          }}
-                        >
-                          <Button.Label>Widerrufen / Revoke</Button.Label>
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Modal>
+        {error ? (
+          <div className="mb-4" role="alert">
+            <UserNotification
+              type="error"
+              message={t('manage.assessment.reportRecordsLoadError')}
+            />
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="flex h-32 items-center justify-center" role="status">
+            <Loader />
+          </div>
+        ) : error && !data ? null : records.length === 0 ? (
+          <div className="py-8 text-center text-sm text-slate-600">
+            {t('manage.assessment.reportRecordsEmpty')}
+          </div>
+        ) : (
+          <>
+            <CourseVerifiableCredentialsList
+              records={records}
+              locale={locale}
+              revokingId={revokingId}
+              onCopy={copyVerificationLink}
+              onRevoke={setPendingRevocation}
+            />
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              numOfObjects={totalCount}
+              pageSize={pageSize}
+              setPageSize={setPageSizeAndReset}
+            />
+          </>
+        )}
+      </Modal>
+
+      {pendingRevocation ? (
+        <Modal
+          open
+          hideCloseButton
+          onClose={() => setPendingRevocation(null)}
+          title={t('manage.assessment.reportRevokeTitle')}
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => setPendingRevocation(null)}
+          primaryLabel={t('manage.assessment.reportRevokeConfirm')}
+          primaryButtonStyle="destructive"
+          primaryLoading={revokingId === pendingRevocation.id}
+          onPrimaryAction={confirmRevocation}
+          className={{ content: 'max-w-lg' }}
+          dataPrimaryAction={{ cy: 'confirm-assessment-report-revocation' }}
+          dataSecondaryAction={{ cy: 'cancel-assessment-report-revocation' }}
+        >
+          <p className="mb-3 text-base">
+            {t('manage.assessment.reportRevokeMessage', {
+              email: pendingRevocation.subjectEmail,
+            })}
+          </p>
+          <p className="text-sm text-slate-600">
+            {t('manage.assessment.reportRevokePolicy')}
+          </p>
+        </Modal>
+      ) : null}
+    </>
   )
 }

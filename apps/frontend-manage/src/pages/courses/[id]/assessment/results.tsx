@@ -1,7 +1,10 @@
 import { useQuery } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import { faAward, faListCheck } from '@fortawesome/free-solid-svg-icons'
-import { GetAssessmentResultsCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetAssessmentResultsCourseDocument,
+  QGetCourseVerificationRecordCountDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -33,6 +36,14 @@ function CourseAssessmentResults() {
 
   const { data, loading, error } = useQuery(
     GetAssessmentResultsCourseDocument,
+    {
+      variables: { courseId: router.query.id as string },
+      skip: !router.query.id,
+      fetchPolicy: 'network-only',
+    }
+  )
+  const { data: reportCountData } = useQuery(
+    QGetCourseVerificationRecordCountDocument,
     {
       variables: { courseId: router.query.id as string },
       skip: !router.query.id,
@@ -76,7 +87,11 @@ function CourseAssessmentResults() {
             data={{ cy: 'assessment-quiz-credentials' }}
           >
             <Button.Icon icon={faAward} />
-            <Button.Label>Zertifikate / Credentials</Button.Label>
+            <Button.Label>
+              {t('manage.assessment.reportRecordsButton', {
+                count: reportCountData?.courseAssessmentReportRecordCount ?? 0,
+              })}
+            </Button.Label>
           </Button>
           {course.numberOfCorrections > 0 && (
             <Button
