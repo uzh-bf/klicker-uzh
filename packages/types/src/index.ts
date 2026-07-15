@@ -13,6 +13,7 @@ import type {
 } from '@klicker-uzh/prisma/client'
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './assessmentReport.js'
 export * from './hatchet.js'
 
 // ----- ACTIVITY LOG TYPES -----
@@ -1005,12 +1006,6 @@ export type StudentAssessmentResultsItem = {
   correctnessPoints: number
   bonusPoints: number
 }
-export type HistogramBin = {
-  binStart: number
-  binEnd: number
-  count: number
-}
-
 export type AssessmentResultsLiveQuiz = {
   name: string
   quizBasePoints: number
