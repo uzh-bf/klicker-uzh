@@ -126,6 +126,7 @@ model User {
   answerCollections  AnswerCollection[]
   chatbots           Chatbot[]
   chatbotDisclaimers ChatbotDisclaimer[]
+  kbs                KB[]
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

@@ -1,0 +1,51 @@
+// ----- KNOWLEDGE BASES -----
+// #region
+
+enum KBResourceStatus {
+  UPLOADED
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model KB {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  resources KBResource[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model KBResource {
+  id String @id @default(uuid()) @db.Uuid
+
+  title            String
+  originalFilename String
+  mimeType         String
+  sizeBytes        Int
+  blobName         String
+  blobHref         String
+
+  status        KBResourceStatus @default(UPLOADED)
+  statusMessage String?
+  ingestedAt    DateTime?
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, status])
+}
+
+// #endregion
