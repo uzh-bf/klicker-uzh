@@ -1,8 +1,13 @@
 // ----- KNOWLEDGE BASES -----
 // #region
 
+enum KBResourceType {
+  BLOB // uploaded file stored in Azure Blob Storage
+  URL // external web resource (e.g., website, Kaltura MediaSpace video) fetched during ingestion
+}
+
 enum KBResourceStatus {
-  UPLOADED
+  ADDED // resource registered (blob uploaded or URL added), not yet queued for ingestion
   QUEUED
   PROCESSING
   READY
@@ -28,14 +33,20 @@ model KB {
 model KBResource {
   id String @id @default(uuid()) @db.Uuid
 
-  title            String
-  originalFilename String
-  mimeType         String
-  sizeBytes        Int
-  blobName         String
-  blobHref         String
+  type  KBResourceType
+  title String
 
-  status        KBResourceStatus @default(UPLOADED)
+  // URL resources: location of the external web resource
+  sourceUrl String?
+
+  // BLOB resources: upload metadata and blob location (resolver-enforced as required for type BLOB)
+  originalFilename String?
+  mimeType         String?
+  sizeBytes        Int?
+  blobName         String?
+  blobHref         String?
+
+  status        KBResourceStatus @default(ADDED)
   statusMessage String?
   ingestedAt    DateTime?
 

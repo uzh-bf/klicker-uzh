@@ -1,5 +1,8 @@
 -- CreateEnum
-CREATE TYPE "public"."KBResourceStatus" AS ENUM ('UPLOADED', 'QUEUED', 'PROCESSING', 'READY', 'FAILED');
+CREATE TYPE "public"."KBResourceType" AS ENUM ('BLOB', 'URL');
+
+-- CreateEnum
+CREATE TYPE "public"."KBResourceStatus" AS ENUM ('ADDED', 'QUEUED', 'PROCESSING', 'READY', 'FAILED');
 
 -- CreateTable
 CREATE TABLE "public"."KB" (
@@ -16,13 +19,15 @@ CREATE TABLE "public"."KB" (
 -- CreateTable
 CREATE TABLE "public"."KBResource" (
     "id" UUID NOT NULL,
+    "type" "public"."KBResourceType" NOT NULL,
     "title" TEXT NOT NULL,
-    "originalFilename" TEXT NOT NULL,
-    "mimeType" TEXT NOT NULL,
-    "sizeBytes" INTEGER NOT NULL,
-    "blobName" TEXT NOT NULL,
-    "blobHref" TEXT NOT NULL,
-    "status" "public"."KBResourceStatus" NOT NULL DEFAULT 'UPLOADED',
+    "sourceUrl" TEXT,
+    "originalFilename" TEXT,
+    "mimeType" TEXT,
+    "sizeBytes" INTEGER,
+    "blobName" TEXT,
+    "blobHref" TEXT,
+    "status" "public"."KBResourceStatus" NOT NULL DEFAULT 'ADDED',
     "statusMessage" TEXT,
     "ingestedAt" TIMESTAMP(3),
     "kbId" UUID NOT NULL,
