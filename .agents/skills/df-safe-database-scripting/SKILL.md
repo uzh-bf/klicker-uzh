@@ -59,6 +59,8 @@ Before running the mutating writes on production:
    - No existing records were overwritten or set to zero.
    - Print a clear summary: `Verification Summary: X Successes, 0 Mismatches`.
 
+Bind the before dump to a deterministic hash of the validated input payload. A later dry run must not overwrite an existing before dump when either the database state or payload hash differs. Treat an existing after dump as a completed-run receipt and refuse to rerun.
+
 ---
 
 ## 3. Gitignore Contract
@@ -76,3 +78,5 @@ All scripts and files must preserve repository hygiene. Ensure that the target p
 # Verification state dumps
 *dump*.json
 ```
+
+The Summer School portfolio implementation at `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts` is the repository reference for this protocol: dry-run creates the comparison and payload-bound before dump, while write mode requires an unchanged snapshot and verifies all mutations inside one transaction.

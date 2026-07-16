@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-07'
+timestamp: '2026-07-16'
 tags:
   - backend
   - prisma
@@ -40,6 +40,16 @@ Three independent seed paths — changing one does NOT update the others:
 3. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
 
 `prisma:setup` is destructive — run only against demonstrably test-seeded databases.
+
+### Production batch seeds
+
+Production batch inputs, comparison sheets, and state dumps stay local and gitignored. The Summer School portfolio seed is isolated from the earlier activity seed and is safe-by-default:
+
+```bash
+pnpm --filter @klicker-uzh/prisma-data seed:prod:summerschool:portfolio
+```
+
+The default command only validates production references, resolves usernames case-insensitively, writes a comparison CSV and payload-bound before-state dump, and reports the intended point/XP and achievement changes. A write requires a separate `DRY_RUN=false` execution and refuses to start if production state or the payload no longer matches that dump. Dry-run cannot overwrite a changed snapshot, and an after-state dump blocks accidental replay. Writes run atomically and are verified before commit; the after-state dump records the result. Never reuse an earlier Summer School payload for a later activity.
 
 ## Typed Json fields
 
