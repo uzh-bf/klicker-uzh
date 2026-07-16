@@ -51,10 +51,18 @@ async function exportAssessmentReport(page: Page) {
   )
   const exportButton = page.getByTestId('export-report-button')
   await expect(exportButton).toBeVisible()
+  await exportButton.click()
+
+  const viewButton = page.getByTestId('view-assessment-report')
+  const downloadButton = page.getByTestId('download-assessment-report')
+  const refreshButton = page.getByTestId('refresh-assessment-report')
+  await expect(viewButton).toBeVisible()
+  await expect(downloadButton).toBeVisible()
+  await expect(refreshButton).toBeVisible()
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    exportButton.click(),
+    downloadButton.click(),
   ])
   const path = await download.path()
   if (!path) throw new Error('ASSESSMENT_REPORT_DOWNLOAD_PATH_MISSING')
@@ -124,6 +132,20 @@ test.describe('Assessment report credential lifecycle', () => {
     expect(content).toContain(
       `Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'`
     )
+
+    const reportPagePromise = page.waitForEvent('popup')
+    await page.getByTestId('view-assessment-report').click()
+    const reportPage = await reportPagePromise
+    await expect(reportPage).toHaveTitle(
+      `Assessment performance report - ${ASSESSMENT_REPORT_COURSE_NAME}`
+    )
+    await expect(
+      reportPage.getByRole('heading', {
+        name: 'Assessment performance report',
+      })
+    ).toBeVisible()
+    await reportPage.close()
+
     const histogramBarWidths = Array.from(
       content.matchAll(/<rect x="[^"]+" y="[^"]+" width="([^"]+)"/g),
       (match) => Number(match[1])

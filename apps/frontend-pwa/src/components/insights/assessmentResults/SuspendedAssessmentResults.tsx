@@ -1,5 +1,9 @@
 import { ApolloError, useMutation, useSuspenseQuery } from '@apollo/client'
-import { faDownload } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowUpRightFromSquare,
+  faDownload,
+  faRotate,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   GetStudentAssessmentResultsDocument,
   MIssueCredentialDocument,
@@ -9,10 +13,11 @@ import { routing } from '@klicker-uzh/i18n'
 import { ActivityType } from '@klicker-uzh/types'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useLocale, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AssessmentResultsList from './AssessmentResultsList'
 import {
-  downloadAssessmentReport,
+  type AssessmentReportArtifact,
+  createAssessmentReport,
   type ExportReportTexts,
   loadPublicImageAsDataUrl,
 } from './exportReport'
@@ -51,7 +56,39 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   })
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [reportArtifact, setReportArtifact] =
+    useState<AssessmentReportArtifact | null>(null)
   const [issueAssessmentReport] = useMutation(MIssueCredentialDocument)
+
+  useEffect(() => {
+    if (!reportArtifact) return
+
+    return () => {
+      URL.revokeObjectURL(reportArtifact.url)
+    }
+  }, [reportArtifact])
+
+  function handleViewReport() {
+    if (!reportArtifact) return
+    setExportError(null)
+    const reportWindow = window.open(reportArtifact.url, '_blank')
+    if (reportWindow) {
+      reportWindow.opener = null
+    } else {
+      setExportError(t('pwa.assessment.exportReportViewError'))
+    }
+  }
+
+  function handleDownloadReport() {
+    if (!reportArtifact) return
+    setExportError(null)
+    const link = document.createElement('a')
+    link.href = reportArtifact.url
+    link.download = reportArtifact.filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
 
   const results = data.studentAssessmentResults
   const liveQuizzes = results?.liveQuizzes ?? []
@@ -145,7 +182,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           verificationQrAlt: t('pwa.assessment.verificationQrAlt'),
         }
 
-        downloadAssessmentReport({
+        const artifact = createAssessmentReport({
           snapshot: report.snapshot,
           issuedAt: report.issuedAt,
           identitySourceLabel,
@@ -155,6 +192,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           qrCodeDataUrl,
           uzhLogoDataUrl,
         })
+        setReportArtifact(artifact)
       } catch {
         setExportError(t('pwa.assessment.exportReportDownloadError'))
       }
@@ -190,17 +228,66 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
             <UserNotification type="error" message={exportError} />
           </div>
         ) : null}
-        <Button
-          onClick={handleExport}
-          primary
-          fluid={false}
-          loading={isExporting}
-          disabled={isExporting}
-          data={{ cy: 'export-report-button' }}
-        >
-          <Button.Icon icon={faDownload} loading={isExporting} />
-          <Button.Label>{t('pwa.assessment.exportReportButton')}</Button.Label>
-        </Button>
+        {reportArtifact ? (
+          <div className="mb-4 space-y-3">
+            <UserNotification
+              type="success"
+              message={t('pwa.assessment.exportReportReady')}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleViewReport}
+                primary
+                fluid={false}
+                disabled={isExporting}
+                data={{ cy: 'view-assessment-report' }}
+              >
+                <Button.Icon icon={faArrowUpRightFromSquare} />
+                <Button.Label>
+                  {t('pwa.assessment.viewReportButton')}
+                </Button.Label>
+              </Button>
+              <Button
+                onClick={handleDownloadReport}
+                fluid={false}
+                disabled={isExporting}
+                data={{ cy: 'download-assessment-report' }}
+              >
+                <Button.Icon icon={faDownload} />
+                <Button.Label>
+                  {t('pwa.assessment.downloadReportButton')}
+                </Button.Label>
+              </Button>
+              <Button
+                onClick={handleExport}
+                fluid={false}
+                loading={isExporting}
+                disabled={isExporting}
+                data={{ cy: 'refresh-assessment-report' }}
+              >
+                <Button.Icon icon={faRotate} loading={isExporting} />
+                <Button.Label>
+                  {t('pwa.assessment.refreshReportButton')}
+                </Button.Label>
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {!reportArtifact ? (
+          <Button
+            onClick={handleExport}
+            primary
+            fluid={false}
+            loading={isExporting}
+            disabled={isExporting}
+            data={{ cy: 'export-report-button' }}
+          >
+            <Button.Icon icon={faDownload} loading={isExporting} />
+            <Button.Label>
+              {t('pwa.assessment.exportReportButton')}
+            </Button.Label>
+          </Button>
+        ) : null}
       </section>
 
       <div>

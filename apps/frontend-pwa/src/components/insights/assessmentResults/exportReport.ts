@@ -37,6 +37,11 @@ export interface ExportReportTexts {
   verificationQrAlt: string
 }
 
+export interface AssessmentReportArtifact {
+  filename: string
+  url: string
+}
+
 const REPORT_TIME_ZONE = 'Europe/Zurich'
 
 const HTML_ENTITIES: Record<string, string> = {
@@ -180,7 +185,7 @@ export async function loadPublicImageAsDataUrl(path: string) {
   })
 }
 
-export function downloadAssessmentReport({
+export function createAssessmentReport({
   snapshot,
   issuedAt,
   identitySourceLabel,
@@ -198,7 +203,7 @@ export function downloadAssessmentReport({
   verificationUrl: string
   qrCodeDataUrl: string
   uzhLogoDataUrl: string
-}) {
+}): AssessmentReportArtifact {
   const formattedIssuedAt = new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -345,16 +350,13 @@ export function downloadAssessmentReport({
 </html>`
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
   const filename = snapshot.course.displayName
     .normalize('NFKD')
     .replace(/[^a-z0-9]+/gi, '_')
     .replace(/^_+|_+$/g, '')
-  link.href = url
-  link.download = `KlickerUZH_Assessment_Report_${filename || 'Course'}.html`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
+
+  return {
+    filename: `KlickerUZH_Assessment_Report_${filename || 'Course'}.html`,
+    url: URL.createObjectURL(blob),
+  }
 }

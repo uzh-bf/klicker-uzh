@@ -1141,7 +1141,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
       exportReportButton: 'Performance-Bericht exportieren (HTML)',
       exportReportExplanation:
-        'Stelle einen HTML-Bericht aus dem aktuellen Assessment-Datensatz aus. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
+        'Stelle einen HTML-Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn öffnen oder herunterladen. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
+      exportReportReady:
+        'Dein Assessment-Bericht ist bereit. Öffne ihn in einem neuen Tab oder lade die HTML-Datei herunter.',
+      viewReportButton: 'Bericht öffnen',
+      downloadReportButton: 'Bericht herunterladen',
+      refreshReportButton: 'Bericht aktualisieren',
       exportReportNotEligibleError:
         'Für diesen Kurs kann kein Assessment-Bericht ausgestellt werden. Prüfe, ob du eingeschrieben bist und die bewerteten Aktivitäten beendet wurden, oder kontaktiere deine Dozierenden.',
       exportReportIdentityUnverifiedError:
@@ -1153,7 +1158,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       exportReportIssuanceError:
         'Der Assessment-Bericht konnte nicht ausgestellt werden. Prüfe deine Verbindung und versuche es erneut.',
       exportReportDownloadError:
-        'Der Bericht wurde ausgestellt, aber die HTML-Datei konnte nicht erstellt oder heruntergeladen werden. Bitte versuche den Download erneut.',
+        'Der Bericht wurde ausgestellt, aber die HTML-Datei konnte nicht erstellt werden. Bitte versuche es erneut.',
+      exportReportViewError:
+        'Der Bericht konnte nicht in einem neuen Tab geöffnet werden. Erlaube Pop-ups für diese Seite oder lade stattdessen die HTML-Datei herunter.',
       privacyAndTransparencyNotice:
         'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
