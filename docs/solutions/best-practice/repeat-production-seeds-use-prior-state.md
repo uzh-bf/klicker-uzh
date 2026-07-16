@@ -33,8 +33,9 @@ Use this pattern for follow-up points, XP, achievement, or correction batches th
 
 ## Examples
 
-- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:151` queries participation for warnings without treating it as the only source of truth.
-- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:186` reads the leaderboard, XP, and achievement state that the operation extends.
-- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:227` fails if the expected existing course leaderboard record is absent.
-- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:328` blocks completed runs before querying production.
-- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:334` hashes the validated payload; lines 353-378 protect the payload-bound before snapshot before any write, and lines 380-407 check it again inside the transaction.
+- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:166` queries participation for warnings without treating it as the only source of truth.
+- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:200` reads the leaderboard, XP, and achievement state that the operation extends.
+- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:241` fails if the expected existing course leaderboard record is absent.
+- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:342` blocks completed runs before querying production.
+- `packages/prisma-data/src/data/seedSummerSchoolPortfolio2026.ts:348` hashes the validated payload; lines 367-374 protect the payload-bound before snapshot before any write, and lines 384-400 check it again before and inside the transaction.
+- [PR #5180](https://github.com/uzh-bf/klicker-uzh/pull/5180) records the production evidence, review hardening, and verification for the reference implementation.

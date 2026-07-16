@@ -14,6 +14,7 @@ This skill establishes the **Safe Mutation Protocol** for creating, executing, o
 > [!CRITICAL] > **Strict PII Refusal**: The agent **MUST REFUSE** to process or parse any input files (Excel, CSV, JSON) containing personally identifiable information (such as personal names, email addresses, birthdates, or nationalities).
 >
 > - **Action**: Instruct the operator to sanitize the list locally first, providing only Klicker usernames, points, or achievements.
+> - **Schema enforcement**: Allowlist the expected sanitized input fields and reject unknown columns or properties instead of silently discarding them.
 
 ---
 
