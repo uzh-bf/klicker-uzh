@@ -1,5 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
+import { DisplayMode } from '@klicker-uzh/types'
 import {
   processElementData,
   recomputeDerivedPermissions,
@@ -34,6 +35,8 @@ const ASSESSMENT_ELEMENT_DATA = {
   pointsMultiplier: 1,
   options: {
     hasSampleSolution: true,
+    hasAnswerFeedbacks: false,
+    displayMode: DisplayMode.LIST,
     choices: [
       {
         ix: 0,
