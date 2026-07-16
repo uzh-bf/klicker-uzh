@@ -48,6 +48,11 @@ const COURSE_ID =
 const PORTFOLIO_ACHIEVEMENT_ID = 21
 const PORTFOLIO_ACHIEVEMENT_NAME = 'Portfolio Professional'
 const DRY_RUN = process.env.DRY_RUN !== 'false'
+const ALLOWED_INPUT_KEYS = new Set([
+  'username',
+  'points_delta',
+  'portfolio_award',
+])
 
 function loadInput(): PortfolioSeedEntry[] {
   if (!fs.existsSync(inputUrl)) {
@@ -65,6 +70,15 @@ function loadInput(): PortfolioSeedEntry[] {
     }
 
     const row = value as Record<string, unknown>
+    const unsupportedKeys = Object.keys(row).filter(
+      (key) => !ALLOWED_INPUT_KEYS.has(key)
+    )
+    if (unsupportedKeys.length > 0) {
+      throw new Error(
+        `Input row ${index + 1} contains unsupported fields: ${unsupportedKeys.join(', ')}`
+      )
+    }
+
     const username = typeof row.username === 'string' ? row.username.trim() : ''
     if (username.length === 0) {
       throw new Error(`Input row ${index + 1} has no username`)
