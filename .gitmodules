@@ -1,0 +1,3 @@
+[submodule "modules/eval"]
+	path = modules/eval
+	url = git@gitlab.uzh.ch:ai-infrastructure/evaluation.git
