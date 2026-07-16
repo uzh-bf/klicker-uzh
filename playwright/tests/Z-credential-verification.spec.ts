@@ -36,7 +36,7 @@ async function loginAssessmentStudent(loginFactory: LoginFactory) {
       email: ASSESSMENT_REPORT_SUBJECT_EMAIL,
       sub: ASSESSMENT_REPORT_PARTICIPANT_IDS[0]!,
       role: 'PARTICIPANT',
-      scope: 'EDUID',
+      scope: 'ACCOUNT_OWNER',
       catalystInstitutional: false,
       catalystIndividual: false,
     },

@@ -15,7 +15,10 @@ import {
   hashAssessmentReportSnapshot,
   issueAssessmentReport,
 } from '../src/services/assessmentReports.js'
-import { getAssessmentResultsCourse } from '../src/services/courses.js'
+import {
+  getAssessmentResultsCourse,
+  getStudentAssessmentResults,
+} from '../src/services/courses.js'
 import {
   getCourseAssessmentReportRecordCount,
   getCourseAssessmentReportRecords,
@@ -139,6 +142,65 @@ async function cleanupFixtures() {
 describe('assessment report credential services', () => {
   afterEach(cleanupFixtures)
   afterAll(async () => prisma.$disconnect())
+
+  it('allows invitation-backed participants to access results without an Edu-ID scope', async () => {
+    const fixture = await createFixture()
+
+    await expect(
+      getStudentAssessmentResults(
+        {
+          courseId: fixture.course.id,
+          participantId: fixture.participant.id,
+        },
+        participantContext(fixture.participant.id, UserLoginScope.ACCOUNT_OWNER)
+      )
+    ).resolves.toEqual({
+      liveQuizzes: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    })
+  })
+
+  it('keeps participant assessment-result access invitation-backed and self-scoped', async () => {
+    const fixture = await createFixture()
+
+    await expect(
+      getStudentAssessmentResults(
+        {
+          courseId: fixture.course.id,
+          participantId: '00000000-0000-0000-0000-000000000000',
+        },
+        fixture.participantCtx
+      )
+    ).rejects.toThrow(
+      'Participants can only access their own assessment results'
+    )
+
+    await prisma.participantInvitation.updateMany({
+      where: {
+        courseId: fixture.course.id,
+        participantId: fixture.participant.id,
+      },
+      data: {
+        status: InvitationStatus.PENDING,
+        acceptedAt: null,
+        participantId: null,
+      },
+    })
+
+    await expect(
+      getStudentAssessmentResults(
+        {
+          courseId: fixture.course.id,
+          participantId: fixture.participant.id,
+        },
+        fixture.participantCtx
+      )
+    ).rejects.toThrow(
+      'Active assessment participation with an accepted invitation not found'
+    )
+  })
 
   it('uses the accepted non-UZH course invitation without an Edu-ID scope', async () => {
     const fixture = await createFixture()

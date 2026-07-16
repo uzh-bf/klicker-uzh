@@ -562,25 +562,39 @@ export async function getStudentAssessmentResults(
     }
   )
 
-  // verify that the student is logged in as an assessment participant and has a participation in the course
+  // Participant access is backed by the accepted course invitation, independent
+  // of the login mechanism used for the current session.
   if (!isAssessmentCourseAdmin) {
-    if (ctx.user.scope !== DB.UserLoginScope.EDUID) {
+    if (participantId !== ctx.user.sub) {
       throw new Error(
-        'Only logged in assessment participants can access assessment results'
+        'Participants can only access their own assessment results'
       )
     }
 
-    const participation = await ctx.prisma.participation.findUnique({
+    const participation = await ctx.prisma.participation.findFirst({
       where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
+        courseId,
+        participantId,
+        isActive: true,
+        participant: { isActive: true },
+        course: {
+          isAssessmentEnabled: true,
+          participantInvitations: {
+            some: {
+              participantId,
+              status: DB.InvitationStatus.ACCEPTED,
+              acceptedAt: { not: null },
+            },
+          },
         },
       },
+      select: { id: true },
     })
 
     if (!participation) {
-      throw new Error('Participation not found')
+      throw new Error(
+        'Active assessment participation with an accepted invitation not found'
+      )
     }
   }
 
