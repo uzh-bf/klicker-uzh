@@ -1609,6 +1609,12 @@ type KB {
   updatedAt: Date!
 }
 
+type KBFileUpload {
+  blobName: String!
+  containerName: String!
+  uploadSasURL: String!
+}
+
 type KBResource {
   createdAt: Date!
   id: ID!
@@ -1815,6 +1821,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
+  confirmKbFileUpload(blobName: String!, kbId: ID!, mimeType: String!, originalFilename: String!, sizeBytes: Int!, title: String!): KBResource!
   copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   correctAssessmentPointsInstance(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, instanceId: Int!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
   correctAssessmentPointsLiveQuiz(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, liveQuizId: String!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
@@ -1825,6 +1832,7 @@ type Mutation {
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createKb(description: String, name: String!): KB!
+  createKbUrlResource(kbId: ID!, title: String!, url: String!): KBResource!
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
@@ -1846,6 +1854,7 @@ type Mutation {
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
   deleteKb(id: ID!): KB!
+  deleteKbResource(id: ID!): KBResource!
   deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
@@ -1915,6 +1924,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback

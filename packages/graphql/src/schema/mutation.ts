@@ -42,7 +42,7 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
-import { KB } from './knowledge.js'
+import { KB, KBFileUpload, KBResource } from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -1654,6 +1654,58 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.deleteKb(args, ctx)
+        },
+      }),
+
+      requestKbFileUpload: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBFileUpload,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.requestKbFileUpload(args, ctx)
+        },
+      }),
+
+      confirmKbFileUpload: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          blobName: t.arg.string({ required: true }),
+          title: t.arg.string({ required: true }),
+          originalFilename: t.arg.string({ required: true }),
+          mimeType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.confirmKbFileUpload(args, ctx)
+        },
+      }),
+
+      createKbUrlResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          url: t.arg.string({ required: true }),
+          title: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.createKbUrlResource(args, ctx)
+        },
+      }),
+
+      deleteKbResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKbResource(args, ctx)
         },
       }),
 

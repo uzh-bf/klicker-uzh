@@ -1,6 +1,21 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 
+interface IKBFileUpload {
+  uploadSasURL: string
+  containerName: string
+  blobName: string
+}
+
+export const KBFileUploadRef = builder.objectRef<IKBFileUpload>('KBFileUpload')
+export const KBFileUpload = KBFileUploadRef.implement({
+  fields: (t) => ({
+    uploadSasURL: t.exposeString('uploadSasURL'),
+    containerName: t.exposeString('containerName'),
+    blobName: t.exposeString('blobName'),
+  }),
+})
+
 export const KBResourceType = builder.enumType('KBResourceType', {
   values: Object.values(DB.KBResourceType),
 })

@@ -3,6 +3,9 @@ import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
+import KnowledgeBaseFileDropzone from './components/KnowledgeBaseFileDropzone'
+import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
+import KnowledgeBaseUrlForm from './components/KnowledgeBaseUrlForm'
 
 function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
   const t = useTranslations()
@@ -40,11 +43,11 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
       {data.getKb.description ? (
         <p className="mt-2 text-slate-600">{data.getKb.description}</p>
       ) : null}
-      <UserNotification
-        type="info"
-        message={t('kb.resourcesPlaceholder')}
-        className={{ root: 'mt-6' }}
-      />
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <KnowledgeBaseFileDropzone kbId={kbId} />
+        <KnowledgeBaseUrlForm kbId={kbId} />
+      </div>
+      <KnowledgeBaseResourceList kbId={kbId} resources={data.getKb.resources} />
     </div>
   )
 }

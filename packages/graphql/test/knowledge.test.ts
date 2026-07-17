@@ -1,12 +1,18 @@
+import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { KBResourceType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  confirmKbFileUpload,
   createKb,
+  createKbUrlResource,
   deleteKb,
+  deleteKbResource,
   getKb,
   getUserKbs,
+  requestKbFileUpload,
 } from '../src/services/knowledge.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 
@@ -16,6 +22,15 @@ describe('Integration tests for knowledge base CRUD', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
+  let previousBlobAccountName: string | undefined
+  let previousBlobAccessKey: string | undefined
+  let containerName: string
+  let requestedBlobName: string
+  let createIfNotExists: ReturnType<typeof vi.fn>
+  let blobExists: ReturnType<typeof vi.fn>
+  let getBlobProperties: ReturnType<typeof vi.fn>
+  let deleteBlobIfExists: ReturnType<typeof vi.fn>
+  let getBlobClient: ReturnType<typeof vi.fn>
 
   beforeAll(async () => {
     const initialized = await initializePrisma()
@@ -33,9 +48,63 @@ describe('Integration tests for knowledge base CRUD', () => {
     const initialized = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
+
+    previousBlobAccountName = process.env.BLOB_STORAGE_ACCOUNT_NAME
+    previousBlobAccessKey = process.env.BLOB_STORAGE_ACCESS_KEY
+    process.env.BLOB_STORAGE_ACCOUNT_NAME = 'kbtestaccount'
+    process.env.BLOB_STORAGE_ACCESS_KEY = Buffer.alloc(32).toString('base64')
+
+    containerName = ''
+    requestedBlobName = ''
+    createIfNotExists = vi.fn().mockResolvedValue({ succeeded: true })
+    blobExists = vi.fn().mockResolvedValue(true)
+    getBlobProperties = vi.fn().mockResolvedValue({
+      contentLength: 1024,
+      contentType: 'application/pdf',
+    })
+    deleteBlobIfExists = vi.fn().mockResolvedValue({ succeeded: true })
+    const blobClient = {
+      get url() {
+        return `https://kbtestaccount.blob.core.windows.net/${containerName}/${requestedBlobName}`
+      },
+      exists: blobExists,
+      getProperties: getBlobProperties,
+      deleteIfExists: deleteBlobIfExists,
+    }
+    getBlobClient = vi.fn().mockImplementation((blobName: string) => {
+      requestedBlobName = blobName
+      return blobClient
+    })
+    const containerClient = {
+      get containerName() {
+        return containerName
+      },
+      createIfNotExists,
+      getBlobClient,
+    }
+    vi.spyOn(
+      BlobServiceClient.prototype,
+      'getContainerClient'
+    ).mockImplementation((name: string) => {
+      containerName = name
+      return containerClient as never
+    })
   })
 
-  afterEach(async () => await testCleanup(prisma))
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    if (previousBlobAccountName === undefined) {
+      delete process.env.BLOB_STORAGE_ACCOUNT_NAME
+    } else {
+      process.env.BLOB_STORAGE_ACCOUNT_NAME = previousBlobAccountName
+    }
+    if (previousBlobAccessKey === undefined) {
+      delete process.env.BLOB_STORAGE_ACCESS_KEY
+    } else {
+      process.env.BLOB_STORAGE_ACCESS_KEY = previousBlobAccessKey
+    }
+    await testCleanup(prisma)
+  })
 
   it('creates and lists only the current users knowledge bases', async () => {
     const created = await createKb(
@@ -82,6 +151,36 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBeNull()
   })
 
+  it('deletes blob resources before deleting their knowledge base', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: created.id,
+        type: KBResourceType.BLOB,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        blobName: 'd6c22240-7380-4bbf-8c7a-2f907b8e2677.pdf',
+        blobHref:
+          'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
+      },
+    })
+    deleteBlobIfExists.mockImplementation(async () => {
+      await expect(
+        prisma.kBResource.findUnique({ where: { id: resource.id } })
+      ).resolves.toBeTruthy()
+      return { succeeded: true }
+    })
+
+    await deleteKb({ id: created.id }, userOneCtx)
+
+    expect(deleteBlobIfExists).toHaveBeenCalledOnce()
+    await expect(
+      prisma.kB.findUnique({ where: { id: created.id } })
+    ).resolves.toBeNull()
+  })
+
   it('denies reads and deletion to a foreign owner without revealing existence', async () => {
     const created = await createKb({ name: 'Private notes' }, userOneCtx)
 
@@ -93,6 +192,338 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
     await expect(
       prisma.kB.findUnique({ where: { id: created.id } })
+    ).resolves.toBeTruthy()
+  })
+
+  it('rejects invalid file uploads and foreign knowledge bases before storage access', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'malware.exe',
+          contentType: 'application/octet-stream',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB file type is not supported')
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'slides.pptx',
+          contentType:
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          sizeBytes: 25 * 1024 * 1024 + 1,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB file size is invalid')
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'notes.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userTwoCtx
+      )
+    ).rejects.toThrow('KB not found')
+  })
+
+  it('issues a private blob-scoped upload ticket without creating a resource', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+
+    expect(containerName).toBe(`kb-${userOneCtx.user.sub}`)
+    expect(createIfNotExists).toHaveBeenCalledWith()
+    expect(ticket.containerName).toBe(containerName)
+    expect(ticket.blobName).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.pdf$/
+    )
+    const uploadUrl = new URL(ticket.uploadSasURL)
+    expect(uploadUrl.searchParams.get('sp')).toBe('cw')
+    expect(uploadUrl.searchParams.get('sr')).toBe('b')
+    const expiry = Date.parse(uploadUrl.searchParams.get('se') ?? '')
+    expect(expiry).toBeGreaterThan(Date.now() + 14 * 60 * 1000)
+    expect(expiry).toBeLessThanOrEqual(Date.now() + 15 * 60 * 1000 + 1000)
+    await expect(
+      prisma.kBResource.count({ where: { kbId: created.id } })
+    ).resolves.toBe(0)
+  })
+
+  it('confirms a matching blob idempotently', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const args = {
+      kbId: created.id,
+      blobName: ticket.blobName,
+      title: 'Finance notes',
+      originalFilename: 'notes.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 1024,
+    }
+
+    const first = await confirmKbFileUpload(args, userOneCtx)
+    const second = await confirmKbFileUpload(args, userOneCtx)
+
+    expect(first.id).toBe(ticket.blobName.slice(0, -4))
+    expect(second.id).toBe(first.id)
+    expect(blobExists).toHaveBeenCalledOnce()
+    expect(getBlobProperties).toHaveBeenCalledOnce()
+    await expect(
+      prisma.kBResource.count({ where: { blobName: ticket.blobName } })
+    ).resolves.toBe(1)
+  })
+
+  it('does not reveal a foreign resource through blob confirmation', async () => {
+    const ownedKb = await createKb({ name: 'Owned notes' }, userOneCtx)
+    const foreignKb = await createKb({ name: 'Foreign notes' }, userTwoCtx)
+    const foreignBlobId = 'a38eec07-5125-40b2-a245-019d58eab5d1'
+    await prisma.kBResource.create({
+      data: {
+        id: foreignBlobId,
+        kbId: foreignKb.id,
+        type: KBResourceType.BLOB,
+        title: 'Foreign file',
+        originalFilename: 'foreign.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        blobName: `${foreignBlobId}.pdf`,
+        blobHref:
+          'https://kbtestaccount.blob.core.windows.net/foreign/foreign.pdf',
+      },
+    })
+    blobExists.mockResolvedValue(false)
+
+    const confirm = (blobName: string) =>
+      confirmKbFileUpload(
+        {
+          kbId: ownedKb.id,
+          blobName,
+          title: 'Probe',
+          originalFilename: 'probe.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+
+    await expect(confirm(`${foreignBlobId}.pdf`)).rejects.toThrow(
+      'KB blob was not found'
+    )
+    await expect(
+      confirm('b151cb31-064b-49c0-b53b-fe732171660f.pdf')
+    ).rejects.toThrow('KB blob was not found')
+  })
+
+  it('does not delete the winning blob during concurrent cross-KB confirmation', async () => {
+    const firstKb = await createKb({ name: 'First notes' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: firstKb.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const confirm = (kbId: string) =>
+      confirmKbFileUpload(
+        {
+          kbId,
+          blobName: ticket.blobName,
+          title: 'Finance notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+
+    const results = await Promise.allSettled([
+      confirm(firstKb.id),
+      confirm(secondKb.id),
+    ])
+
+    expect(results.filter(({ status }) => status === 'fulfilled')).toHaveLength(
+      1
+    )
+    expect(results.filter(({ status }) => status === 'rejected')).toHaveLength(
+      1
+    )
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBResource.count({ where: { blobName: ticket.blobName } })
+    ).resolves.toBe(1)
+  })
+
+  it('returns one resource for concurrent confirmation retries', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const args = {
+      kbId: created.id,
+      blobName: ticket.blobName,
+      title: 'Finance notes',
+      originalFilename: 'notes.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 1024,
+    }
+
+    const [first, second] = await Promise.all([
+      confirmKbFileUpload(args, userOneCtx),
+      confirmKbFileUpload(args, userOneCtx),
+    ])
+
+    expect(second.id).toBe(first.id)
+    await expect(
+      prisma.kBResource.count({ where: { blobName: ticket.blobName } })
+    ).resolves.toBe(1)
+  })
+
+  it('rejects absent blobs and deletes mismatched uploads', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const args = {
+      kbId: created.id,
+      blobName: ticket.blobName,
+      title: 'Finance notes',
+      originalFilename: 'notes.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 1024,
+    }
+    blobExists.mockResolvedValueOnce(false)
+    await expect(confirmKbFileUpload(args, userOneCtx)).rejects.toThrow(
+      'KB blob was not found'
+    )
+
+    getBlobProperties.mockResolvedValue({
+      contentLength: 1025,
+      contentType: 'application/pdf',
+    })
+
+    await expect(confirmKbFileUpload(args, userOneCtx)).rejects.toThrow(
+      'KB blob metadata is invalid'
+    )
+    expect(deleteBlobIfExists).toHaveBeenCalledOnce()
+    await expect(
+      prisma.kBResource.count({ where: { kbId: created.id } })
+    ).resolves.toBe(0)
+  })
+
+  it('validates URL resources and denies foreign knowledge bases', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+
+    await expect(
+      createKbUrlResource(
+        { kbId: created.id, title: 'Invalid', url: 'not-a-url' },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB resource URL is invalid')
+    await expect(
+      createKbUrlResource(
+        { kbId: created.id, title: 'FTP', url: 'ftp://example.com/file' },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB resource URL is invalid')
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'Foreign',
+          url: 'https://example.com',
+        },
+        userTwoCtx
+      )
+    ).rejects.toThrow('KB not found')
+  })
+
+  it('creates and deletes an owned URL resource', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.test/watch?id=123',
+      },
+      userOneCtx
+    )
+
+    expect(resource).toMatchObject({
+      kbId: created.id,
+      title: 'Lecture recording',
+      type: KBResourceType.URL,
+      sourceUrl: 'https://video.example.test/watch?id=123',
+    })
+    await expect(
+      deleteKbResource({ id: resource.id }, userTwoCtx)
+    ).rejects.toThrow('KB resource not found')
+
+    await deleteKbResource({ id: resource.id }, userOneCtx)
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toBeNull()
+  })
+
+  it('keeps a blob resource row when storage deletion fails', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: created.id,
+        type: KBResourceType.BLOB,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        blobName: '8d2140ef-04b4-41cb-a5a9-ff25381f9fdb.pdf',
+        blobHref:
+          'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
+      },
+    })
+    deleteBlobIfExists.mockRejectedValue(new Error('storage unavailable'))
+
+    await expect(
+      deleteKbResource({ id: resource.id }, userOneCtx)
+    ).rejects.toThrow('storage unavailable')
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
     ).resolves.toBeTruthy()
   })
 })

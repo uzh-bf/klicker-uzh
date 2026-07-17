@@ -2164,6 +2164,15 @@ importers:
       '@apollo/client':
         specifier: ^3.13.8
         version: 3.13.8(@types/react@19.1.12)(graphql-ws@6.0.6(graphql@16.11.0)(ws@8.18.3))(graphql@16.11.0)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
+      '@azure/storage-blob':
+        specifier: ^12.25.0
+        version: 12.25.0
+      '@fortawesome/free-solid-svg-icons':
+        specifier: ^6.7.2
+        version: 6.7.2
+      '@fortawesome/react-fontawesome':
+        specifier: ^0.2.2
+        version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.2)
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../graphql
@@ -2179,6 +2188,9 @@ importers:
       react:
         specifier: ^19.1.2
         version: 19.1.2
+      react-dropzone:
+        specifier: ^14.2.9
+        version: 14.2.9(react@19.1.2)
     devDependencies:
       '@types/react':
         specifier: ^19.1.8

@@ -9,11 +9,15 @@
   },
   "peerDependencies": {
     "@apollo/client": "^3.13.8",
+    "@azure/storage-blob": "^12.25.0",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
     "@uzh-bf/design-system": "4.1.6",
     "next-intl": "^4.3.4",
-    "react": "^19.1.2"
+    "react": "^19.1.2",
+    "react-dropzone": "^14.2.9"
   },
   "scripts": {
     "check": "tsc --noEmit"
