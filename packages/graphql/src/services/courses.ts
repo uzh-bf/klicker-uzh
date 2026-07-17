@@ -23,7 +23,7 @@ import { prop, sortBy } from 'remeda'
 import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
-import { orderStacks } from '../lib/util.js'
+import { computeRanks, orderStacks } from '../lib/util.js'
 import { checkAccess } from './sharing.js'
 
 // custom date parser
@@ -302,9 +302,7 @@ export async function getCourseOverviewData(
         [prop('name'), 'asc']
       )
 
-      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
-        return { ...entry, rank: ix + 1 }
-      })
+      const filteredGroupEntries = computeRanks(sortedGroupEntries)
 
       const groupCreationPoolEntry =
         await ctx.prisma.groupAssignmentPoolEntry.findUnique({
@@ -2513,10 +2511,12 @@ async function computeRollingLeaderboardEntries(
   })
 
   // sort the leaderboard entries and add rank, level, and compute statistics
-  const sortedScores = sortBy(
-    Object.values(leaderboardScores),
-    [prop('score'), 'desc'],
-    [prop('username'), 'asc']
+  const sortedScores = computeRanks(
+    sortBy(
+      Object.values(leaderboardScores),
+      [prop('score'), 'desc'],
+      [prop('username'), 'asc']
+    )
   )
   const { leaderboardEntries, count, sum } = sortedScores.reduce<{
     leaderboardEntries: {
@@ -2532,7 +2532,7 @@ async function computeRollingLeaderboardEntries(
     count: number
     sum: number
   }>(
-    (acc, scoreEntry, ix) => {
+    (acc, scoreEntry) => {
       acc.leaderboardEntries.push({
         id: Math.floor(random(1000000000)),
         participantId: scoreEntry.participantId,
@@ -2540,7 +2540,7 @@ async function computeRollingLeaderboardEntries(
         avatar: scoreEntry.avatar,
         score: scoreEntry.score,
         isSelf: scoreEntry.isSelf,
-        rank: ix + 1,
+        rank: scoreEntry.rank,
         level: levelFromXp(scoreEntry.xp),
       })
       acc.count += 1
@@ -2632,17 +2632,18 @@ export async function getStudentCourseLeaderboard(
         }
       )
 
-      const sortedEntries = sortBy(
-        allEntries.mapped,
-        [prop('score'), 'desc'],
-        [prop('username'), 'asc']
+      const sortedEntries = computeRanks(
+        sortBy(
+          allEntries.mapped,
+          [prop('score'), 'desc'],
+          [prop('username'), 'asc']
+        )
       )
 
-      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
-        if (ix < 10 || entry.participantId === ctx.user?.sub)
-          return { ...entry, rank: ix + 1 }
-        return []
-      })
+      // keep the top 10 entries, plus the requesting participant's own entry
+      const filteredEntries = sortedEntries.filter(
+        (entry, ix) => ix < 10 || entry.participantId === ctx.user?.sub
+      )
 
       return {
         leaderboard: filteredEntries,

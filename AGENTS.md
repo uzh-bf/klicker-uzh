@@ -132,14 +132,16 @@ devpod ssh klicker-uzh # shell inside the container
 
 The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. Covers the core apps (backend, auth, frontend-pwa/manage/control) plus olat-api, response-api, and the two Hatchet workers (Phase 2 Tier 1; workers have no port/route); All runnable apps are included (no analytics/office-addin/docs). See `.devcontainer/README.md`.
 
-**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.21) fronts the stack over the shared `devnet` network and routes each `*.klicker.localhost` host to the one container's internal port. One-time host setup **before** the container starts:
+**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.23 recommended; ≥ 0.0.21 required) fronts the stack over the shared `devnet` network and routes each `*.klicker.localhost` host to the one container's internal port. The devrouter overlay uses `${WORKSPACE}-app` / `${WORKSPACE}-db` aliases, so parallel worktrees must use one stable token for both DevPod and route registration (`WORKSPACE=<slug> devpod up .`, then `devrouter app run <app> --workspace <slug>`). One-time host setup **before** the container starts:
 
 ```bash
-dev up && dev tls install                                       # Traefik + devnet + mkcert CA
-for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+devrouter up && devrouter tls install                           # Traefik + devnet + mkcert CA
+for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
 ```
 
-Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.localhost`; Postgres for host tooling at `db.klicker.localhost:5432` (`sslmode=require sslnegotiation=direct`). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.localhost` for the primary checkout, or `https://{app}.klicker.<workspace>.localhost` for a linked worktree; Postgres for host tooling at `db.klicker[.<workspace>].localhost:5432` (`sslmode=require sslnegotiation=direct`). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+
+**Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use a dev-only rule like `https://*.localhost`; keep production storage accounts exact.
 
 ### Legacy host-based stack
 
@@ -187,7 +189,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **Task tracking**: ClickUp is the source of truth; GitHub Issues are not actively used.
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
 - If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
-- Never commit secrets, `.env` files, or credentials.
+- Never commit secrets, `.env` files, or credentials. **This repo is public** — anything committed on any branch, once pushed, is permanent public history that deleting the file later does not remove.
+- **Data hygiene before every commit.** Review staged content (`git diff --cached`, and open any staged data file) for secrets _and_ real personal data — participant/student names, email addresses, matriculation/Studi-IDs, raw response exports, course rosters. Be especially wary of bulk data files (`.csv`, `.json`, `.sql` dumps): these are the highest-risk carriers and are easy to sweep in with `git add .`. Real course-data pulls belong outside the repo (add a `.gitignore` rule); if such data must be versioned, it goes in a private location with direct identifiers removed first. Pseudonymous ids (participant UUIDs) are lower-risk but still get the same scrutiny. When in doubt, do not commit — ask.
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
@@ -196,6 +199,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 ## Engineering Wiki
 
 Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
+
+Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
 
 ## AI Assistance (Skills)
 
