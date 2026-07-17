@@ -156,6 +156,7 @@ function Comparison({ snapshot }: { snapshot: Snapshot }) {
       score: snapshot.results.totalPoints,
       bin,
       isLast: index === comparison.histogram.length - 1,
+      availableTotalPoints: snapshot.results.availableTotalPoints,
     })
   })
   const userBin = comparison.histogram[userBinIndex]

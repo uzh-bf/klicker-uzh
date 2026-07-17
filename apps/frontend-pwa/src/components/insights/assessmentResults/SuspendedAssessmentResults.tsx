@@ -135,6 +135,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
             score: report.snapshot.results.totalPoints,
             bin,
             isLast: index === histogram.length - 1,
+            availableTotalPoints: report.snapshot.results.availableTotalPoints,
           })
         })
         const numberFormatter = new Intl.NumberFormat(locale, {

@@ -7,13 +7,22 @@ export function isScoreInHistogramBin({
   score,
   bin,
   isLast,
+  availableTotalPoints,
 }: {
   score: number
   bin: AssessmentReportHistogramBin
   isLast: boolean
+  // Bonus points can push a score above the available total, which would
+  // otherwise fall outside every bin and highlight none of them.
+  availableTotalPoints?: number
 }) {
+  const clampedScore =
+    availableTotalPoints === undefined
+      ? score
+      : Math.min(Math.max(score, 0), availableTotalPoints)
   return (
-    score >= bin.binStart && (isLast ? score <= bin.binEnd : score < bin.binEnd)
+    clampedScore >= bin.binStart &&
+    (isLast ? clampedScore <= bin.binEnd : clampedScore < bin.binEnd)
   )
 }
 

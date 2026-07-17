@@ -837,10 +837,56 @@ describe('assessment report credential services', () => {
           fixture.lecturerCtx
         )
       ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+      // Revocation normalizes lack of course-admin access to the same
+      // NOT_FOUND outcome as a non-existent id, so it cannot be used as an
+      // existence oracle for credentials on courses the caller can't admin.
       await expect(
         revokeAssessmentReport({ id: record.id }, fixture.lecturerCtx)
-      ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+      ).rejects.toMatchObject({ extensions: { code: 'NOT_FOUND' } })
     }
+  })
+
+  it('reports revocation of an existing but unauthorized record the same as a non-existent one', async () => {
+    const fixture = await createFixture()
+    const issued = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    const record = await prisma.verifiableCredential.findUniqueOrThrow({
+      where: { token: issued.token },
+    })
+    await prisma.derivedPermission.update({
+      where: {
+        courseId_userId: {
+          courseId: fixture.course.id,
+          userId: fixture.lecturer.id,
+        },
+      },
+      data: { permissionLevel: PermissionLevel.WRITE },
+    })
+
+    const [existingResult, missingResult] = await Promise.allSettled([
+      revokeAssessmentReport({ id: record.id }, fixture.lecturerCtx),
+      revokeAssessmentReport(
+        { id: '00000000-0000-0000-0000-000000000000' },
+        fixture.lecturerCtx
+      ),
+    ])
+
+    expect(existingResult.status).toBe('rejected')
+    expect(missingResult.status).toBe('rejected')
+    const existingError =
+      existingResult.status === 'rejected' ? existingResult.reason : null
+    const missingError =
+      missingResult.status === 'rejected' ? missingResult.reason : null
+    expect(existingError).toMatchObject({
+      message: 'ASSESSMENT_REPORT_NOT_FOUND',
+      extensions: { code: 'NOT_FOUND' },
+    })
+    expect(missingError).toMatchObject({
+      message: 'ASSESSMENT_REPORT_NOT_FOUND',
+      extensions: { code: 'NOT_FOUND' },
+    })
   })
 
   it('allows a full-access delegated lecturer with ADMIN permission to revoke', async () => {

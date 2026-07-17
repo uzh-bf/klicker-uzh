@@ -589,6 +589,27 @@ async function getEquivalentActiveRecord({
   )
 }
 
+async function getEquivalentActiveRecordWithRetry(params: {
+  courseId: string
+  participantId: string
+  prisma: DB.PrismaClient
+}) {
+  for (let attempt = 0; attempt < TRANSACTION_RETRY_LIMIT; attempt++) {
+    try {
+      return await getEquivalentActiveRecord(params)
+    } catch (error) {
+      if (
+        isPrismaError(error, 'P2034') &&
+        attempt < TRANSACTION_RETRY_LIMIT - 1
+      ) {
+        continue
+      }
+      throw error
+    }
+  }
+  return null
+}
+
 export async function issueAssessmentReport(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
@@ -620,7 +641,7 @@ export async function issueAssessmentReport(
         continue
       }
       if (isPrismaError(error, 'P2002')) {
-        const winner = await getEquivalentActiveRecord({
+        const winner = await getEquivalentActiveRecordWithRetry({
           courseId,
           participantId: ctx.user.sub,
           prisma: ctx.prisma,

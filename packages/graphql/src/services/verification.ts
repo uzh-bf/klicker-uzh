@@ -174,12 +174,27 @@ export async function revokeAssessmentReport(
     },
     select: courseAssessmentReportRecordSelect,
   })
-  if (!record) {
+
+  // Authorize before revealing whether the record exists: a caller without
+  // admin access on the record's course gets the same outcome as a
+  // non-existent id, so credential ids cannot be used as an existence oracle
+  // across courses the caller does not administer.
+  const hasAdminAccess = record
+    ? await checkAccess(
+        [
+          {
+            courseId: record.courseId,
+            minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+          },
+        ],
+        ctx
+      )
+    : false
+  if (!record || !hasAdminAccess) {
     throw new GraphQLError('ASSESSMENT_REPORT_NOT_FOUND', {
       extensions: { code: 'NOT_FOUND' },
     })
   }
-  await requireCourseAdminAccess(record.courseId, ctx)
 
   if (record.status !== DB.CredentialStatus.ACTIVE) return record
 

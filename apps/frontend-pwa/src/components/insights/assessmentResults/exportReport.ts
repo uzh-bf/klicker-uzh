@@ -67,11 +67,13 @@ function formatNumber(value: number, locale: string) {
 function createHistogramSvg({
   histogram,
   totalPoints,
+  availableTotalPoints,
   texts,
   locale,
 }: {
   histogram: NonNullable<AssessmentReportSnapshot['comparison']>['histogram']
   totalPoints: number
+  availableTotalPoints: number
   texts: ExportReportTexts
   locale: string
 }) {
@@ -89,6 +91,7 @@ function createHistogramSvg({
       score: totalPoints,
       bin,
       isLast: index === histogram.length - 1,
+      availableTotalPoints,
     })
   })
 
@@ -160,6 +163,7 @@ function createHistogramTable(
         score: snapshot.results.totalPoints,
         bin,
         isLast: index === histogram.length - 1,
+        availableTotalPoints: snapshot.results.availableTotalPoints,
       })
       return `<tr${isUserBin ? ' class="user-bin"' : ''}>
         <td>${escapeHtml(formatNumber(bin.binStart, locale))}-${escapeHtml(formatNumber(bin.binEnd, locale))}${isUserBin ? ` <span class="user-bin-label">(${escapeHtml(texts.yourScore)})</span>` : ''}</td>
@@ -248,6 +252,7 @@ export function createAssessmentReport({
        <div class="chart">${createHistogramSvg({
          histogram: snapshot.comparison.histogram,
          totalPoints: snapshot.results.totalPoints,
+         availableTotalPoints: snapshot.results.availableTotalPoints,
          texts,
          locale,
        })}</div>
