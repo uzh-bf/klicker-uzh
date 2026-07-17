@@ -12,6 +12,7 @@ import {
   deleteKbResource,
   getKb,
   getUserKbs,
+  ingestKbResource,
   requestKbFileUpload,
 } from '../src/services/knowledge.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
@@ -525,5 +526,179 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
     ).resolves.toBeTruthy()
+  })
+
+  it('queues an owned URL resource with a self-contained Hatchet payload', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.test/course',
+      },
+      userOneCtx
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    const queued = await ingestKbResource({ id: resource.id }, userOneCtx)
+
+    expect(queued.status).toBe('QUEUED')
+    expect(runNoWait).toHaveBeenCalledWith({
+      resourceId: resource.id,
+      kbId: created.id,
+      type: 'URL',
+      title: 'Lecture recording',
+      sourceUrl: 'https://video.example.test/course',
+    })
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({ status: 'QUEUED' })
+  })
+
+  it('queues a READY blob resource with its private container location', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: created.id,
+        type: KBResourceType.BLOB,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        blobName: '79a40d25-78cf-4bde-9661-a07747d7b715.pdf',
+        blobHref:
+          'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
+        status: 'READY',
+      },
+    })
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    const queued = await ingestKbResource({ id: resource.id }, userOneCtx)
+
+    expect(queued.status).toBe('QUEUED')
+    expect(runNoWait).toHaveBeenCalledWith({
+      resourceId: resource.id,
+      kbId: created.id,
+      type: 'BLOB',
+      title: 'Finance notes',
+      blobName: resource.blobName,
+      containerName: `kb-${userOneCtx.user.sub}`,
+    })
+  })
+
+  it('denies foreign or already active resources without dispatching', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.test/course',
+      },
+      userOneCtx
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    await expect(
+      ingestKbResource({ id: resource.id }, userTwoCtx)
+    ).rejects.toThrow('KB resource not found')
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: 'PROCESSING' },
+    })
+    await expect(
+      ingestKbResource({ id: resource.id }, userOneCtx)
+    ).rejects.toThrow('KB resource cannot be ingested')
+    expect(runNoWait).not.toHaveBeenCalled()
+  })
+
+  it('claims a resource once when ingestion requests race', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.test/course',
+      },
+      userOneCtx
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    const results = await Promise.allSettled([
+      ingestKbResource({ id: resource.id }, userOneCtx),
+      ingestKbResource({ id: resource.id }, userOneCtx),
+    ])
+
+    expect(
+      results.filter((result) => result.status === 'fulfilled')
+    ).toHaveLength(1)
+    expect(
+      results.filter((result) => result.status === 'rejected')
+    ).toHaveLength(1)
+    expect(runNoWait).toHaveBeenCalledTimes(1)
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({ status: 'QUEUED' })
+  })
+
+  it('restores a FAILED resource status when Hatchet dispatch fails', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.test/course',
+      },
+      userOneCtx
+    )
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: 'FAILED' },
+    })
+    vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait').mockRejectedValue(
+      new Error('Hatchet unavailable')
+    )
+
+    await expect(
+      ingestKbResource({ id: resource.id }, userOneCtx)
+    ).rejects.toThrow('KB ingestion could not be queued')
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({ status: 'FAILED' })
+  })
+
+  it('does not roll back a resource that advanced after dispatch began', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.test/course',
+      },
+      userOneCtx
+    )
+    vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait').mockImplementation(
+      async () => {
+        await prisma.kBResource.update({
+          where: { id: resource.id },
+          data: { status: 'PROCESSING' },
+        })
+        throw new Error('Hatchet response lost')
+      }
+    )
+
+    await expect(
+      ingestKbResource({ id: resource.id }, userOneCtx)
+    ).rejects.toThrow('KB ingestion could not be queued')
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({ status: 'PROCESSING' })
   })
 })

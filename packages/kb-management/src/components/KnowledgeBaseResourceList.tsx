@@ -1,11 +1,20 @@
+import { useMutation } from '@apollo/client'
 import { faFileLines, faLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  GetKbDocument,
+  IngestKbResourceDocument,
   KbResourceStatus,
   KbResourceType,
   type GetKbQuery,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Badge, Button, H3, UserNotification } from '@uzh-bf/design-system'
+import {
+  Badge,
+  Button,
+  H3,
+  toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal'
@@ -32,6 +41,8 @@ function KnowledgeBaseResourceList({
   const format = useFormatter()
   const [deletionTarget, setDeletionTarget] =
     useState<KnowledgeBaseResource | null>(null)
+  const [ingestingId, setIngestingId] = useState<string | null>(null)
+  const [ingestResource] = useMutation(IngestKbResourceDocument)
 
   const formatFileSize = (sizeBytes: number | null | undefined) => {
     if (sizeBytes === null || sizeBytes === undefined) return '—'
@@ -58,6 +69,24 @@ function KnowledgeBaseResourceList({
         return t('kb.statusReady')
       case KbResourceStatus.Failed:
         return t('kb.statusFailed')
+    }
+  }
+
+  const handleIngest = async (resource: KnowledgeBaseResource) => {
+    if (ingestingId !== null) return
+    setIngestingId(resource.id)
+    try {
+      await ingestResource({
+        variables: { id: resource.id },
+        refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
+        awaitRefetchQueries: true,
+      })
+      toast({ type: 'success', message: t('kb.ingestResourceSuccess') })
+    } catch (error) {
+      console.error('Failed to queue KB resource ingestion', error)
+      toast({ type: 'error', message: t('kb.ingestResourceError') })
+    } finally {
+      setIngestingId(null)
     }
   }
 
@@ -110,13 +139,29 @@ function KnowledgeBaseResourceList({
                   })}
                 </span>
               </div>
-              <Button
-                destructive
-                onClick={() => setDeletionTarget(resource)}
-                data={{ cy: `delete-kb-resource-${resource.id}` }}
-              >
-                <Button.Label>{t('shared.generic.delete')}</Button.Label>
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  primary
+                  onClick={() => handleIngest(resource)}
+                  loading={ingestingId === resource.id}
+                  disabled={
+                    ingestingId !== null ||
+                    resource.status === KbResourceStatus.Queued ||
+                    resource.status === KbResourceStatus.Processing
+                  }
+                  data={{ cy: `ingest-kb-resource-${resource.id}` }}
+                >
+                  <Button.Label>{t('kb.ingestResource')}</Button.Label>
+                </Button>
+                <Button
+                  destructive
+                  disabled={ingestingId !== null}
+                  onClick={() => setDeletionTarget(resource)}
+                  data={{ cy: `delete-kb-resource-${resource.id}` }}
+                >
+                  <Button.Label>{t('shared.generic.delete')}</Button.Label>
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

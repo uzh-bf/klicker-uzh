@@ -1709,6 +1709,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      ingestKbResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.ingestKbResource(args, ctx)
+        },
+      }),
+
       createAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,

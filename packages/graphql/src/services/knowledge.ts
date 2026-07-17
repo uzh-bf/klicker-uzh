@@ -5,6 +5,7 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
+import type { IngestKBResourceInput } from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
@@ -369,4 +370,70 @@ export async function deleteKbResource(
   }
 
   return ctx.prisma.kBResource.delete({ where: { id } })
+}
+
+export async function ingestKbResource(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const resource = await getOwnedKbResourceOrThrow(ctx, id)
+  if (
+    resource.status !== DB.KBResourceStatus.ADDED &&
+    resource.status !== DB.KBResourceStatus.READY &&
+    resource.status !== DB.KBResourceStatus.FAILED
+  ) {
+    throw new GraphQLError('KB resource cannot be ingested')
+  }
+
+  const basePayload = {
+    resourceId: resource.id,
+    kbId: resource.kbId,
+    title: resource.title,
+  }
+  let payload: IngestKBResourceInput
+  if (resource.type === DB.KBResourceType.BLOB) {
+    if (!resource.blobName) {
+      throw new GraphQLError('KB blob metadata is invalid')
+    }
+    payload = {
+      ...basePayload,
+      type: DB.KBResourceType.BLOB,
+      blobName: resource.blobName,
+      containerName: getKbContainerName(ctx.user.sub),
+    }
+  } else {
+    if (!resource.sourceUrl) {
+      throw new GraphQLError('KB resource URL is invalid')
+    }
+    payload = {
+      ...basePayload,
+      type: DB.KBResourceType.URL,
+      sourceUrl: resource.sourceUrl,
+    }
+  }
+
+  const claim = await ctx.prisma.kBResource.updateMany({
+    where: { id: resource.id, status: resource.status },
+    data: { status: DB.KBResourceStatus.QUEUED },
+  })
+  if (claim.count !== 1) {
+    throw new GraphQLError('KB resource cannot be ingested')
+  }
+
+  try {
+    await ctx.tasks.ingestKBResource.runNoWait(payload)
+  } catch {
+    await ctx.prisma.kBResource.updateMany({
+      where: {
+        id: resource.id,
+        status: DB.KBResourceStatus.QUEUED,
+      },
+      data: { status: resource.status },
+    })
+    throw new GraphQLError('KB ingestion could not be queued')
+  }
+
+  return ctx.prisma.kBResource.findUniqueOrThrow({
+    where: { id: resource.id },
+  })
 }

@@ -1169,6 +1169,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Möchten Sie „{title}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
     deleteResourceSuccess: 'Ressource wurde gelöscht.',
     deleteResourceError: 'Die Ressource konnte nicht gelöscht werden.',
+    ingestResource: 'Verarbeiten',
+    ingestResourceSuccess: 'Ressource wurde zur Verarbeitung eingeplant.',
+    ingestResourceError:
+      'Die Ressource konnte nicht zur Verarbeitung eingeplant werden.',
   },
   manage: {
     general: {

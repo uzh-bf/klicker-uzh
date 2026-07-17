@@ -1166,6 +1166,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Are you sure you want to delete “{title}”? This action cannot be undone.',
     deleteResourceSuccess: 'Resource deleted.',
     deleteResourceError: 'The resource could not be deleted.',
+    ingestResource: 'Ingest',
+    ingestResourceSuccess: 'Resource queued for ingestion.',
+    ingestResourceError: 'The resource could not be queued for ingestion.',
   },
   manage: {
     general: {

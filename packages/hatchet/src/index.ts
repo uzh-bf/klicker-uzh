@@ -1,6 +1,6 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type { HatchetHandlers, IngestKBResourceInput } from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -54,6 +54,20 @@ export function prepareHatchetTasks({
 
       // TODO: send the message to the actual audit log service with the correlation ID as a key?
       ctx.logger.info(`Audit log entry: ${info}`, args)
+    },
+  })
+
+  const ingestKBResource = hatchet.task({
+    name: 'ingest-kb-resource',
+    retries: 3,
+    fn: async (input: IngestKBResourceInput, ctx) => {
+      // Stub seam: the real ingestion service call is implemented separately.
+      await ctx.logger.info('KB ingestion dispatch stub', {
+        resourceId: input.resourceId,
+        kbId: input.kbId,
+        type: input.type,
+      })
+      return { success: true }
     },
   })
   // #endregion
@@ -302,6 +316,7 @@ export function prepareHatchetTasks({
     endExpiredMicroLearning,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
+    ingestKBResource,
     createAuditLogEntry,
   }
 }
