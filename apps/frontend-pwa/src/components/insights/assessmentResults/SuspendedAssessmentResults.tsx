@@ -99,6 +99,9 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   async function handleExport() {
     setIsExporting(true)
     setExportError(null)
+    // Drop any previously rendered artifact: a failed re-issue must not leave a
+    // stale (possibly revoked) report on screen presented as ready.
+    setReportArtifact(null)
     try {
       let report: IssuedAssessmentReport
       try {

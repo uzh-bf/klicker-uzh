@@ -1421,7 +1421,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reportRecordsButton: 'Assessment-Berichte ({count})',
       reportRecordsTitle: 'Ausgestellte Assessment-Berichte',
       reportRecordsLoadError:
-        'Die Assessment-Berichte konnten nicht geladen werden. Bitte prüfe deine Berechtigungen und versuche es erneut.',
+        'Die Assessment-Berichte konnten nicht geladen werden. Bitte prüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
       reportRecordsEmpty:
         'Es wurden keine passenden Assessment-Berichte gefunden.',
       reportSearchPlaceholder: 'Empfänger-E-Mail suchen',
@@ -1452,7 +1452,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reportRevocationError:
         'Der Assessment-Bericht konnte nicht widerrufen werden. Der lokale Status wurde nicht geändert.',
       reportRecordsRefreshError:
-        'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliesse und öffne den Dialog erneut, um den aktuellen Status zu laden.',
+        'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliessen und öffnen Sie den Dialog erneut, um den aktuellen Status zu laden.',
       reportTimeZone: 'Europe/Zurich',
     },
     support: {
