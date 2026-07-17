@@ -1,6 +1,10 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
+export {
+  handleKBIngestionWebhook,
+  signKBIngestionWebhook,
+} from './services/knowledgeWebhooks.js'
 
 import builder from './builder.js'
 
