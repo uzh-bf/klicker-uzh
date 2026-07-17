@@ -53,6 +53,7 @@ function CreateKnowledgeBaseModal({ onClose }: { onClose: () => void }) {
     >
       <div className="space-y-4">
         <TextField
+          id="knowledge-base-name"
           value={name}
           onChange={setName}
           label={t('kb.nameLabel')}
@@ -62,6 +63,7 @@ function CreateKnowledgeBaseModal({ onClose }: { onClose: () => void }) {
           data={{ cy: 'knowledge-base-name' }}
         />
         <TextareaField
+          id="knowledge-base-description"
           value={description}
           onChange={setDescription}
           label={t('kb.descriptionLabel')}

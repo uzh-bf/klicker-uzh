@@ -11,6 +11,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import React, { useState } from 'react'
 import CreateKnowledgeBaseModal from './components/CreateKnowledgeBaseModal'
 import DeleteKnowledgeBaseModal from './components/DeleteKnowledgeBaseModal'
@@ -39,9 +40,20 @@ function KnowledgeBaseManager() {
       </div>
 
       {loading ? (
-        <div className="mt-6 space-y-3" data-cy="knowledge-base-loading">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+        <div
+          className="mt-6 space-y-3"
+          data-cy="knowledge-base-loading"
+          role="status"
+          aria-label={t('shared.generic.loading')}
+        >
+          <Skeleton
+            className="h-20 w-full motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+          <Skeleton
+            className="h-20 w-full motion-reduce:animate-none"
+            aria-hidden="true"
+          />
         </div>
       ) : error ? (
         <UserNotification
@@ -70,18 +82,18 @@ function KnowledgeBaseManager() {
               key={kb.id}
               className="flex items-stretch overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
             >
-              <a
+              <Link
                 href={`/resources/knowledgeBases/${kb.id}`}
                 className="min-w-0 flex-1 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
                 data-cy={`knowledge-base-row-${kb.id}`}
               >
-                <span className="block font-medium text-slate-900">
+                <span className="block truncate font-medium text-slate-900">
                   {kb.name}
                 </span>
                 <span className="mt-1 block truncate text-sm text-slate-600">
                   {kb.description || t('kb.noDescription')}
                 </span>
-              </a>
+              </Link>
               <div className="flex items-center border-l border-slate-200 px-3">
                 <Button
                   destructive

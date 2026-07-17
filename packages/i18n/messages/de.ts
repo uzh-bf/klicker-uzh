@@ -1154,6 +1154,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Registrieren Sie eine Website oder Medienressource für die Verarbeitung.',
     resourceTitleLabel: 'Titel',
     urlLabel: 'URL',
+    invalidUrl:
+      'Geben Sie eine gültige URL ein, die mit http:// oder https:// beginnt.',
     linkSuccess: 'Link wurde zur Wissensdatenbank hinzugefügt.',
     linkError: 'Der Link konnte nicht hinzugefügt werden.',
     resourcesTitle: 'Ressourcen',

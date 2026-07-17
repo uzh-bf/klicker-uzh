@@ -101,7 +101,11 @@ function KnowledgeBaseFileDropzone({ kbId }: { kbId: string }) {
   })
 
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+    <section
+      id="kb-file-upload"
+      tabIndex={-1}
+      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+    >
       <H3>{t('kb.fileUploadTitle')}</H3>
       <p className="mt-1 text-sm text-slate-600">
         {t('kb.fileUploadDescription')}

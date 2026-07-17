@@ -20,10 +20,13 @@ function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
+  const [urlTouched, setUrlTouched] = useState(false)
   const [createUrlResource, { loading }] = useMutation(
     CreateKbUrlResourceDocument
   )
-  const valid = Boolean(title.trim()) && isValidWebUrl(url.trim())
+  const urlValid = isValidWebUrl(url.trim())
+  const urlInvalid = urlTouched && Boolean(url.trim()) && !urlValid
+  const valid = Boolean(title.trim()) && urlValid
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -37,6 +40,7 @@ function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
       })
       setTitle('')
       setUrl('')
+      setUrlTouched(false)
       toast({ type: 'success', message: t('kb.linkSuccess') })
     } catch (error) {
       console.error('Failed to create KB URL resource', error)
@@ -45,7 +49,11 @@ function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
   }
 
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+    <section
+      id="kb-link-form"
+      tabIndex={-1}
+      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+    >
       <H3>{t('kb.linkTitle')}</H3>
       <p className="mt-1 text-sm text-slate-600">{t('kb.linkDescription')}</p>
       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
@@ -67,13 +75,26 @@ function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
           type="url"
           required
           disabled={loading}
+          onBlur={() => setUrlTouched(true)}
+          aria-invalid={urlInvalid}
+          aria-describedby={urlInvalid ? 'kb-url-error' : undefined}
           data={{ cy: 'kb-url' }}
         />
+        {urlInvalid ? (
+          <p
+            id="kb-url-error"
+            role="alert"
+            className="text-sm text-red-700"
+            data-cy="kb-url-error"
+          >
+            {t('kb.invalidUrl')}
+          </p>
+        ) : null}
         <Button
           primary
           type="submit"
           loading={loading}
-          disabled={!valid}
+          disabled={!valid || loading}
           data={{ cy: 'add-kb-url-resource' }}
         >
           <Button.Label>{t('kb.linkTitle')}</Button.Label>

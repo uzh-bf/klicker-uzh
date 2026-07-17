@@ -15,6 +15,7 @@
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
     "@uzh-bf/design-system": "4.1.6",
+    "next": "^15.5.18",
     "next-intl": "^4.3.4",
     "react": "^19.1.2",
     "react-dropzone": "^14.2.9"

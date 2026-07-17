@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { faFileLines, faLink } from '@fortawesome/free-solid-svg-icons'
+import {
+  faFileLines,
+  faLink,
+  faSpinner,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetKbDocument,
@@ -8,13 +12,7 @@ import {
   KbResourceType,
   type GetKbQuery,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Badge,
-  Button,
-  H3,
-  toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Badge, Button, H3, toast, Tooltip } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal'
@@ -57,19 +55,67 @@ function KnowledgeBaseResourceList({
     })} MB`
   }
 
-  const statusLabel = (status: KbResourceStatus) => {
+  const getStatusPresentation = (status: KbResourceStatus) => {
     switch (status) {
       case KbResourceStatus.Added:
-        return t('kb.statusAdded')
+        return {
+          label: t('kb.statusAdded'),
+          className: 'border-slate-300 bg-slate-100 text-slate-700',
+        }
       case KbResourceStatus.Queued:
-        return t('kb.statusQueued')
+        return {
+          label: t('kb.statusQueued'),
+          className: 'border-amber-300 bg-amber-100 text-amber-900',
+        }
       case KbResourceStatus.Processing:
-        return t('kb.statusProcessing')
+        return {
+          label: t('kb.statusProcessing'),
+          className: 'border-amber-300 bg-amber-100 text-amber-900',
+        }
       case KbResourceStatus.Ready:
-        return t('kb.statusReady')
+        return {
+          label: t('kb.statusReady'),
+          className: 'border-green-300 bg-green-100 text-green-800',
+        }
       case KbResourceStatus.Failed:
-        return t('kb.statusFailed')
+        return {
+          label: t('kb.statusFailed'),
+          className: 'border-red-300 bg-red-100 text-red-800',
+        }
     }
+  }
+
+  const renderStatus = (resource: KnowledgeBaseResource) => {
+    const status = getStatusPresentation(resource.status)
+    const badge = (
+      <Badge
+        variant="outline"
+        className={status.className}
+        data-cy={`kb-resource-status-${resource.id}`}
+      >
+        {resource.status === KbResourceStatus.Processing ? (
+          <FontAwesomeIcon
+            icon={faSpinner}
+            className="h-3 w-3 animate-spin motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+        ) : null}
+        {status.label}
+      </Badge>
+    )
+
+    return resource.status === KbResourceStatus.Failed &&
+      resource.statusMessage ? (
+      <Tooltip
+        tooltip={resource.statusMessage}
+        data={{ cy: `kb-resource-status-message-${resource.id}` }}
+        dataContent={{ cy: `kb-resource-status-tooltip-${resource.id}` }}
+      >
+        {badge}
+      </Tooltip>
+    ) : (
+      badge
+    )
   }
 
   const handleIngest = async (resource: KnowledgeBaseResource) => {
@@ -94,11 +140,28 @@ function KnowledgeBaseResourceList({
     <section className="mt-8" data-cy="kb-resource-list">
       <H3>{t('kb.resourcesTitle')}</H3>
       {resources.length === 0 ? (
-        <UserNotification
-          type="info"
-          message={t('kb.noResources')}
-          className={{ root: 'mt-2' }}
-        />
+        <div
+          className="mt-3 rounded-md border border-dashed border-slate-300 p-6 text-center"
+          data-cy="kb-resources-empty"
+        >
+          <p className="text-slate-600">{t('kb.noResources')}</p>
+          <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
+            <a
+              href="#kb-file-upload"
+              className="bg-primary-100 hover:bg-primary-80 inline-flex min-h-10 w-full items-center justify-center rounded-md px-4 py-2 font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 sm:w-auto"
+              data-cy="kb-empty-upload-resource"
+            >
+              {t('kb.fileUploadTitle')}
+            </a>
+            <a
+              href="#kb-link-form"
+              className="text-primary-100 border-primary-100 hover:bg-uzh-blue-20 inline-flex min-h-10 w-full items-center justify-center rounded-md border px-4 py-2 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 sm:w-auto"
+              data-cy="kb-empty-add-link"
+            >
+              {t('kb.linkTitle')}
+            </a>
+          </div>
+        </div>
       ) : (
         <ul className="mt-3 space-y-3">
           {resources.map((resource) => (
@@ -123,13 +186,12 @@ function KnowledgeBaseResourceList({
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                <Badge
-                  variant="outline"
-                  data-cy={`kb-resource-status-${resource.id}`}
-                >
-                  {statusLabel(resource.status)}
-                </Badge>
+              <div
+                className="flex flex-wrap items-center gap-2 text-sm text-slate-600"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {renderStatus(resource)}
                 <span>
                   {t('kb.updatedAt', {
                     date: format.dateTime(new Date(resource.updatedAt), {
@@ -139,7 +201,7 @@ function KnowledgeBaseResourceList({
                   })}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 <Button
                   primary
                   onClick={() => handleIngest(resource)}
@@ -150,6 +212,7 @@ function KnowledgeBaseResourceList({
                     resource.status === KbResourceStatus.Processing
                   }
                   data={{ cy: `ingest-kb-resource-${resource.id}` }}
+                  className={{ root: 'w-full sm:w-auto' }}
                 >
                   <Button.Label>{t('kb.ingestResource')}</Button.Label>
                 </Button>
@@ -158,6 +221,7 @@ function KnowledgeBaseResourceList({
                   disabled={ingestingId !== null}
                   onClick={() => setDeletionTarget(resource)}
                   data={{ cy: `delete-kb-resource-${resource.id}` }}
+                  className={{ root: 'w-full sm:w-auto' }}
                 >
                   <Button.Label>{t('shared.generic.delete')}</Button.Label>
                 </Button>

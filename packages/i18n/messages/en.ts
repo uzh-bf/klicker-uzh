@@ -1151,6 +1151,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     linkDescription: 'Register a website or media resource for ingestion.',
     resourceTitleLabel: 'Title',
     urlLabel: 'URL',
+    invalidUrl: 'Enter a valid URL starting with http:// or https://.',
     linkSuccess: 'Link added to the knowledge base.',
     linkError: 'The link could not be added.',
     resourcesTitle: 'Resources',
