@@ -124,6 +124,7 @@ export async function getCourseAssessmentReportRecords(
   },
   ctx: ContextWithUser
 ): Promise<CourseAssessmentReportRecordPage> {
+  requireFullAccess(ctx)
   await requireCourseAdminAccess(courseId, ctx)
 
   const where: DB.Prisma.VerifiableCredentialWhereInput = {
@@ -152,6 +153,7 @@ export async function getCourseAssessmentReportRecordCount(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  requireFullAccess(ctx)
   await requireCourseAdminAccess(courseId, ctx)
   return await ctx.prisma.verifiableCredential.count({
     where: {

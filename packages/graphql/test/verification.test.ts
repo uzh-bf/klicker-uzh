@@ -846,6 +846,49 @@ describe('assessment report credential services', () => {
     }
   })
 
+  it('requires full account access for lecturer record access, not only course admin', async () => {
+    const fixture = await createFixture()
+    await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+
+    // A course admin on a restricted-scope login (e.g. delegated or
+    // session-exec access) must not be able to enumerate subject emails and
+    // credential history, even though the course permission itself is ADMIN.
+    for (const scope of [
+      UserLoginScope.READ_ONLY,
+      UserLoginScope.SESSION_EXEC,
+    ]) {
+      const restrictedCtx = lecturerContext(fixture.lecturer.id, scope)
+      await expect(
+        getCourseAssessmentReportRecords(
+          { courseId: fixture.course.id },
+          restrictedCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+      await expect(
+        getCourseAssessmentReportRecordCount(
+          { courseId: fixture.course.id },
+          restrictedCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    }
+
+    for (const scope of [
+      UserLoginScope.ACCOUNT_OWNER,
+      UserLoginScope.FULL_ACCESS,
+    ]) {
+      const allowedCtx = lecturerContext(fixture.lecturer.id, scope)
+      await expect(
+        getCourseAssessmentReportRecordCount(
+          { courseId: fixture.course.id },
+          allowedCtx
+        )
+      ).resolves.toBe(1)
+    }
+  })
+
   it('reports revocation of an existing but unauthorized record the same as a non-existent one', async () => {
     const fixture = await createFixture()
     const issued = await issueAssessmentReport(

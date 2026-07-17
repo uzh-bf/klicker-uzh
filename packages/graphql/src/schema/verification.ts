@@ -215,7 +215,7 @@ builder.queryFields((t) => ({
     args: { token: t.arg.string({ required: true }) },
     resolve: (_, args, ctx) => getPublicAssessmentReport(args, ctx),
   }),
-  courseAssessmentReportRecords: t.withAuth(asUser).field({
+  courseAssessmentReportRecords: t.withAuth(asUserFullAccess).field({
     type: CourseAssessmentReportRecordPageRef,
     args: {
       courseId: t.arg.string({ required: true }),
@@ -229,7 +229,7 @@ builder.queryFields((t) => ({
     },
     resolve: (_, args, ctx) => getCourseAssessmentReportRecords(args, ctx),
   }),
-  courseAssessmentReportRecordCount: t.withAuth(asUser).int({
+  courseAssessmentReportRecordCount: t.withAuth(asUserFullAccess).int({
     args: { courseId: t.arg.string({ required: true }) },
     resolve: (_, args, ctx) => getCourseAssessmentReportRecordCount(args, ctx),
   }),
